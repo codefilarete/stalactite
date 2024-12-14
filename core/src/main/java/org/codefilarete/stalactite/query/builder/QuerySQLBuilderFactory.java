@@ -184,37 +184,10 @@ public class QuerySQLBuilderFactory {
 		@Override
 		public String toSQL() {
 			StringAppender result = new StringAppender(500);
-			toSQL(new StringSQLAppender(result, dmlNameProvider));
+			appendTo(new StringSQLAppender(result, dmlNameProvider));
 			return result.toString();
 		}
 			
-		public void toSQL(SQLAppender sql) {
-			sql.cat("select ", selectSQLBuilder.toSQL());
-			sql.cat(" from ", fromSqlBuilder.toSQL());
-			if (!query.getWhereSurrogate().getConditions().isEmpty()) {
-				sql.cat(" where ", whereSqlBuilder.toSQL());
-			}
-			
-			GroupBy groupBy = query.getGroupBySurrogate();
-			if (!groupBy.getGroups().isEmpty()) {
-				cat(groupBy, sql.cat(" group by "));
-			}
-			
-			Having having = query.getHavingSurrogate();
-			if (!having.getConditions().isEmpty()) {
-				havingBuilder.appendTo(sql.cat(" having "));
-			}
-			
-			OrderBy orderBy = query.getOrderBySurrogate();
-			if (!orderBy.getColumns().isEmpty()) {
-				cat(orderBy, sql.cat(" order by "));
-			}
-			
-			Limit limit = query.getLimitSurrogate();
-			sql.catIf(limit.getCount() != null, " limit " + limit.getCount())
-					.catIf(limit.getOffset() != null, " offset " + limit.getOffset());
-		}
-		
 		/**
 		 * Creates a {@link PreparedSQL} from Query given at construction time.
 		 *
@@ -227,7 +200,7 @@ public class QuerySQLBuilderFactory {
 			return preparedSQLAppender;
 		}
 		
-		public void appendTo(ExpandableSQLAppender sqlWrapper) {
+		public void appendTo(SQLAppender sqlWrapper) {
 			sqlWrapper.cat("select ", selectSQLBuilder.toSQL());
 			sqlWrapper.cat(" from ");
 			fromSqlBuilder.appendTo(sqlWrapper);

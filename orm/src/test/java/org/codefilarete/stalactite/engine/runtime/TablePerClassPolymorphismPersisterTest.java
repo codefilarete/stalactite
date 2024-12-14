@@ -575,19 +575,19 @@ class TablePerClassPolymorphismPersisterTest {
 							+ ", Toto.b as " + totoBAlias
 							+ ", Toto.DISCRIMINATOR as " + totoDTYPEAlias
 							+ " from ("
-							+ "(select TotoA.id as id,"
+							+ "select TotoA.id as id,"
 							+ " TotoA.x as x,"
 							+ " TotoA.q as q,"
 							+ " TotoA.a as a,"
 							+ " cast(null as null) as b,"
-							+ " 'TotoA' as DISCRIMINATOR from TotoA)"
-							+ " union all"
-							+ " (select TotoB.id as id,"
+							+ " 'TotoA' as DISCRIMINATOR from TotoA"
+							+ " union all "
+							+ "select TotoB.id as id,"
 							+ " TotoB.x as x,"
 							+ " TotoB.q as q,"
 							+ " cast(null as null) as a,"
 							+ " TotoB.b as b,"
-							+ " 'TotoB' as DISCRIMINATOR from TotoB))"
+							+ " 'TotoB' as DISCRIMINATOR from TotoB)"
 							+ " as Toto where Toto.x = ?"));
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 42);
 			assertCapturedPairsEqual(expectedPairs);
@@ -633,19 +633,19 @@ class TablePerClassPolymorphismPersisterTest {
 							+ ", Toto.b as " + totoBAlias
 							+ ", Toto.DISCRIMINATOR as " + totoDTYPEAlias
 							+ " from ("
-							+ "(select TotoA.id as id,"
+							+ "select TotoA.id as id,"
 							+ " TotoA.x as x,"
 							+ " TotoA.q as q,"
 							+ " TotoA.a as a,"
 							+ " cast(null as null) as b,"
-							+ " 'TotoA' as DISCRIMINATOR from TotoA)"
+							+ " 'TotoA' as DISCRIMINATOR from TotoA"
 							+ " union all"
-							+ " (select TotoB.id as id,"
+							+ " select TotoB.id as id,"
 							+ " TotoB.x as x,"
 							+ " TotoB.q as q,"
 							+ " cast(null as null) as a,"
 							+ " TotoB.b as b,"
-							+ " 'TotoB' as DISCRIMINATOR from TotoB))"
+							+ " 'TotoB' as DISCRIMINATOR from TotoB)"
 							+ " as Toto where Toto.x = ?"
 							+ " order by Toto.x asc"));
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 42);
@@ -711,15 +711,15 @@ class TablePerClassPolymorphismPersisterTest {
 			verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).containsExactly(
 					"select Toto.id as " + idAlias + ", " + totoDTYPEAlias + " from ("
-							+ "(select TotoA.id as " + idAlias
+							+ "select TotoA.id as " + idAlias
 							+ ", TotoA.x as " + xAlias
 							+ ", TotoA.q as " + qAlias
-							+ ", 'TotoA' as " + totoDTYPEAlias + " from TotoA)"
+							+ ", 'TotoA' as " + totoDTYPEAlias + " from TotoA"
 							+ " union all"
-							+ " (select TotoB.id as " + idAlias
+							+ " select TotoB.id as " + idAlias
 							+ ", TotoB.x as " + xAlias
 							+ ", TotoB.q as " + qAlias
-							+ ", 'TotoB' as " + totoDTYPEAlias + " from TotoB))"
+							+ ", 'TotoB' as " + totoDTYPEAlias + " from TotoB)"
 							+ " as Toto where Toto.q = ?",
 					"select TotoA.a as " + totoAAlias
 							+ ", TotoA.id as " + totoAIdAlias

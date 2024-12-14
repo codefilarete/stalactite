@@ -66,15 +66,8 @@ public class FromSQLBuilderFactory {
 		
 		@Override
 		public String toSQL() {
-			if (from.getRoot() == null) {
-				// invalid SQL
-				throw new IllegalArgumentException("Empty from");
-			}
 			StringAppender result = new StringAppender();
-			FromGenerator fromGenerator = new FromGenerator(new StringSQLAppender(result, dmlNameProvider), dmlNameProvider);
-			fromGenerator.cat(from.getRoot());
-			Iterator<Join> joinIterator = from.getJoins().iterator();
-			joinIterator.forEachRemaining(fromGenerator::cat);
+			appendTo(new StringSQLAppender(result, dmlNameProvider));
 			return result.toString();
 		}
 		
@@ -85,7 +78,7 @@ public class FromSQLBuilderFactory {
 			return preparedSQLAppender;
 		}
 		
-		public void appendTo(ExpandableSQLAppender preparedSQLAppender) {
+		public void appendTo(SQLAppender preparedSQLAppender) {
 			if (from.getRoot() == null) {
 				// invalid SQL
 				throw new IllegalArgumentException("Empty from");
@@ -106,7 +99,8 @@ public class FromSQLBuilderFactory {
 					// tableAlias may be null which produces invalid SQL in a majority of cases, but not when it is the only element in the From clause ...
 					sql.cat("(");
 					pseudoTableSqlBuilder.appendTo(preparedSQLAppender);
-					sql.cat(") as ").cat(getAliasOrDefault(pseudoTable));
+					String alias = getAliasOrDefault(pseudoTable);
+					sql.cat(")").catIf(alias != null, " as " + alias);
 				}
 			};
 			fromGenerator.cat(from.getRoot());
@@ -164,14 +158,14 @@ public class FromSQLBuilderFactory {
 			
 			void cat(Query query) {
 				QuerySQLBuilder unionBuilder = querySQLBuilderFactory.queryBuilder(query);
-				unionBuilder.toSQL(sql);
+				unionBuilder.appendTo(sql);
 			}
 			
 			void cat(PseudoTable pseudoTable) {
 				PseudoTableSQLBuilder pseudoTableSqlBuilder = pseudoTableSQLBuilderFactory.pseudoTableBuilder(pseudoTable.getQueryStatement(), querySQLBuilderFactory);
 				// tableAlias may be null which produces invalid SQL in a majority of cases, but not when it is the only element in the From clause ...
 				sql.cat("(");
-				pseudoTableSqlBuilder.toSQL(sql);
+				pseudoTableSqlBuilder.appendTo(sql);
 				String alias = getAliasOrDefault(pseudoTable);
 				sql.cat(")").catIf(alias != null, " as " + alias);
 			}

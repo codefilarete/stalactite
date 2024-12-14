@@ -1,15 +1,11 @@
 package org.codefilarete.stalactite.query.builder;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryStatement;
-import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.tool.StringAppender;
-import org.codefilarete.tool.trace.ModifiableInt;
 
 /**
  * Factory of {@link PseudoTableSQLBuilder} 
@@ -18,7 +14,7 @@ import org.codefilarete.tool.trace.ModifiableInt;
  */
 public class PseudoTableSQLBuilderFactory {
 	
-	private static final String UNION_ALL_SEPARATOR = ") union all (";
+	private static final String UNION_ALL_SEPARATOR = " union all ";
 	
 	public PseudoTableSQLBuilderFactory() {
 	}
@@ -46,49 +42,24 @@ public class PseudoTableSQLBuilderFactory {
 		@Override
 		public CharSequence toSQL() {
 			StringAppender result = new StringAppender(500);
-			toSQL(new StringSQLAppender(result, new DMLNameProvider(queryStatement.getAliases()::get)));
+			appendTo(new StringSQLAppender(result, new DMLNameProvider(queryStatement.getAliases()::get)));
 			return result.toString();
-		}
-		
-		public void toSQL(SQLAppender sqlAppender) {
-			UnionGenerator sql = new UnionGenerator(sqlAppender);
-			queryStatement.getQueries().forEach(query -> {
-				sql.cat(query);
-				sqlAppender.cat(" union all ");
-			});
-			sqlAppender.removeLastChars(" union all ".length());
 		}
 		
 		@Override
 		public ExpandableSQLAppender toPreparableSQL() {
 			ExpandableSQLAppender expandableSQLAppender = new ExpandableSQLAppender(querySQLBuilderFactory.getParameterBinderRegistry(), new DMLNameProvider(queryStatement.getAliases()::get));
 			appendTo(expandableSQLAppender);
-			
-//			PreparedSQL preparedSQL = new PreparedSQL(preparedSQLAppender.getSQL(), preparedSQLAppender.getParameterBinders());
-//			preparedSQL.setValues(preparedSQLAppender.getValues());
 			return expandableSQLAppender;
 		}
 		
-		public void appendTo(ExpandableSQLAppender preparedSQLAppender) {
+		public void appendTo(SQLAppender preparedSQLAppender) {
 			Set<Query> queries = queryStatement.getQueries();
-			Map<Integer, PreparedStatementWriter> parameterBinders = new HashMap<>();
-			Map<Integer, Object> values = new HashMap<>();
-			ModifiableInt parameterIndex = new ModifiableInt(1);
-			preparedSQLAppender.cat("(");
 			queries.forEach(query -> {
 				querySQLBuilderFactory.queryBuilder(query).appendTo(preparedSQLAppender);
 				preparedSQLAppender.cat(UNION_ALL_SEPARATOR);
-//				preparedSQLAppender.getValues().values().forEach(value -> {
-//					// since ids are all
-//					values.put(parameterIndex.getValue(), value);
-//					// NB: parameter binder is expected to be always the same since we always put ids
-//					parameterBinders.put(parameterIndex.getValue(),
-//							preparedSQLAppender.getParameterBinder(1 + parameterIndex.getValue() % preparedSql.getValues().size()));
-//					parameterIndex.increment();
-//				});
 			});
 			preparedSQLAppender.removeLastChars(UNION_ALL_SEPARATOR.length());
-			preparedSQLAppender.cat(")");
 		}
 		
 		private class UnionGenerator {
@@ -101,7 +72,7 @@ public class PseudoTableSQLBuilderFactory {
 			
 			private void cat(Query query) {
 				QuerySQLBuilder unionBuilder = querySQLBuilderFactory.queryBuilder(query);
-				unionBuilder.toSQL(sqlAppender);
+				unionBuilder.appendTo(sqlAppender);
 			}
 		}
 	}

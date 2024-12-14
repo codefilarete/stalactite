@@ -224,9 +224,9 @@ class QuerySQLBuilderTest {
 						Maps.forHashMap(Integer.class, Object.class).add(1, 1) },
 				{ select(colTotoA, colTataB).from(tableToto, "T").where(colTotoB, eq(11)).unionAll(
 						select(colTotoA, colTataB).from(tableToto, "T").where(colTotoB, eq(22))),
-						"(select T.a, Tata.b from Toto as T where T.b = ?)"
+						"select T.a, Tata.b from Toto as T where T.b = ?"
 								+ " union all"
-								+ " (select T.a, Tata.b from Toto as T where T.b = ?)",
+								+ " select T.a, Tata.b from Toto as T where T.b = ?",
 						Maps.forHashMap(Integer.class, Object.class).add(1, 11).add(2, 22)},
 		};
 	}
