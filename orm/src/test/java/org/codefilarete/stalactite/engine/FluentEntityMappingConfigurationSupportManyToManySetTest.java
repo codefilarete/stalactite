@@ -79,69 +79,173 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		
 
 	}
-
-	@Test
-	void foreignKeysAreCreated() throws SQLException {
-		EntityPersister<Answer, Identifier<Long>> answerPersister = entityBuilder(Answer.class, LONG_TYPE)
-				.mapKey(Answer::getId, ALREADY_ASSIGNED)
-				.mapManyToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION)
-				.cascading(READ_ONLY)
-				.build(persistenceContext);
-		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
-		
-		ResultSetIterator<JdbcForeignKey> fkChoiceIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getImportedKeys(null, null,
-				"ANSWER_CHOICES")) {
-			@Override
-			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
-				return new JdbcForeignKey(
-						rs.getString("FK_NAME"),
-						rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
-						rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
-				);
-			}
-		};
-		Set<String> foundForeignKey = Iterables.collect(() -> fkChoiceIterator, JdbcForeignKey::getSignature, HashSet::new);
-		assertThat(foundForeignKey).containsExactlyInAnyOrder(
-				new JdbcForeignKey("FK_ANSWER_CHOICES_ANSWER_ID_ANSWER_ID", "ANSWER_CHOICES", "ANSWER_ID", "ANSWER", "ID").getSignature(),
-				new JdbcForeignKey("FK_ANSWER_CHOICES_CHOICES_ID_CHOICE_ID", "ANSWER_CHOICES", "CHOICES_ID", "CHOICE", "ID").getSignature()
-		);
-	}
 	
-	@Test
-	void foreignKeysAreCreated_targetTableSpecified() throws SQLException {
-		Table targetTable = new Table("MyChoice");
+	@Nested
+	class ForeignKeyCreation {
 		
-		EntityPersister<Answer, Identifier<Long>> answerPersister = entityBuilder(Answer.class, LONG_TYPE)
-				.mapKey(Answer::getId, ALREADY_ASSIGNED)
-				.mapManyToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION, targetTable)
-				.cascading(READ_ONLY)
-				.build(persistenceContext);
+		@Test
+		void foreignKeysAreCreated() throws SQLException {
+			EntityPersister<Answer, Identifier<Long>> answerPersister = entityBuilder(Answer.class, LONG_TYPE)
+					.mapKey(Answer::getId, ALREADY_ASSIGNED)
+					.mapManyToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION)
+					.cascading(READ_ONLY)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
+			
+			ResultSetIterator<JdbcForeignKey> fkChoiceIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getImportedKeys(null, null,
+					"ANSWER_CHOICES")) {
+				@Override
+				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+					return new JdbcForeignKey(
+							rs.getString("FK_NAME"),
+							rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+							rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+					);
+				}
+			};
+			Set<String> foundForeignKey = Iterables.collect(() -> fkChoiceIterator, JdbcForeignKey::getSignature, HashSet::new);
+			assertThat(foundForeignKey).containsExactlyInAnyOrder(
+					new JdbcForeignKey("FK_ANSWER_CHOICES_ANSWER_ID_ANSWER_ID", "ANSWER_CHOICES", "ANSWER_ID", "ANSWER", "ID").getSignature(),
+					new JdbcForeignKey("FK_ANSWER_CHOICES_CHOICES_ID_CHOICE_ID", "ANSWER_CHOICES", "CHOICES_ID", "CHOICE", "ID").getSignature()
+			);
+		}
 		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
+		@Test
+		void withTargetTable_targetTableIsUsed() throws SQLException {
+			EntityPersister<Answer, Identifier<Long>> answerPersister = entityBuilder(Answer.class, LONG_TYPE)
+					.mapKey(Answer::getId, ALREADY_ASSIGNED)
+					.mapManyToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION, new Table("MyChoice"))
+					.cascading(READ_ONLY)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
+			
+			ResultSetIterator<Table> tableIterator = new ResultSetIterator<Table>(currentConnection.getMetaData().getTables(null, currentConnection.getSchema(),
+					null, null)) {
+				@Override
+				public Table convert(ResultSet rs) throws SQLException {
+					return new Table(
+							rs.getString("TABLE_NAME")
+					);
+				}
+			};
+			Set<String> foundTables = Iterables.collect(() -> tableIterator, Table::getName, HashSet::new);
+			assertThat(foundTables).containsExactlyInAnyOrder("ANSWER", "MYCHOICE", "ANSWER_CHOICES");
+			
+			ResultSetIterator<JdbcForeignKey> fkChoiceIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getImportedKeys(null, null,
+					"ANSWER_CHOICES")) {
+				@Override
+				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+					return new JdbcForeignKey(
+							rs.getString("FK_NAME"),
+							rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+							rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+					);
+				}
+			};
+			Set<String> foundForeignKey = Iterables.collect(() -> fkChoiceIterator, JdbcForeignKey::getSignature, HashSet::new);
+			assertThat(foundForeignKey).containsExactlyInAnyOrder(
+					new JdbcForeignKey("FK_ANSWER_CHOICES_ANSWER_ID_ANSWER_ID", "ANSWER_CHOICES", "ANSWER_ID", "ANSWER", "ID").getSignature(),
+					new JdbcForeignKey("FK_ANSWER_CHOICES_CHOICES_ID_MYCHOICE_ID", "ANSWER_CHOICES", "CHOICES_ID", "MYCHOICE", "ID").getSignature()
+			);
+		}
 		
-		Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
+		@Test
+		void withTargetTableSetByTargetEntity_tableSetByTargetEntityIsUSed() throws SQLException {
+			EntityPersister<Answer, Identifier<Long>> answerPersister = entityBuilder(Answer.class, LONG_TYPE)
+					.mapKey(Answer::getId, ALREADY_ASSIGNED)
+					.mapManyToMany(Answer::getChoices,  entityBuilder(Choice.class, LONG_TYPE, new Table<>("PossibleChoices"))
+							.mapKey(Choice::getId, ALREADY_ASSIGNED)
+							.map(Choice::getLabel))
+					.cascading(READ_ONLY)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
+			
+			ResultSetIterator<Table> tableIterator = new ResultSetIterator<Table>(currentConnection.getMetaData().getTables(null, currentConnection.getSchema(),
+					null, null)) {
+				@Override
+				public Table convert(ResultSet rs) throws SQLException {
+					return new Table(
+							rs.getString("TABLE_NAME")
+					);
+				}
+			};
+			Set<String> foundTables = Iterables.collect(() -> tableIterator, Table::getName, HashSet::new);
+			assertThat(foundTables).containsExactlyInAnyOrder("ANSWER", "POSSIBLECHOICES", "ANSWER_CHOICES");
+			
+			ResultSetIterator<JdbcForeignKey> fkChoiceIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getImportedKeys(null, null,
+					"ANSWER_CHOICES")) {
+				@Override
+				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+					return new JdbcForeignKey(
+							rs.getString("FK_NAME"),
+							rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+							rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+					);
+				}
+			};
+			Set<String> foundForeignKey = Iterables.collect(() -> fkChoiceIterator, JdbcForeignKey::getSignature, HashSet::new);
+			assertThat(foundForeignKey).containsExactlyInAnyOrder(
+					new JdbcForeignKey("FK_ANSWER_CHOICES_ANSWER_ID_ANSWER_ID", "ANSWER_CHOICES", "ANSWER_ID", "ANSWER", "ID").getSignature(),
+					new JdbcForeignKey("FK_ANSWER_CHOICES_CHOICES_ID_POSSIBLECHOICES_ID", "ANSWER_CHOICES", "CHOICES_ID", "POSSIBLECHOICES", "ID").getSignature()
+			);
+		}
 		
-		ResultSetIterator<JdbcForeignKey> fkChoiceIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getImportedKeys(null, null,
-				"ANSWER_CHOICES")) {
-			@Override
-			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
-				return new JdbcForeignKey(
-						rs.getString("FK_NAME"),
-						rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
-						rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
-				);
-			}
-		};
-		Set<String> foundForeignKey = Iterables.collect(() -> fkChoiceIterator, JdbcForeignKey::getSignature, HashSet::new);
-		assertThat(foundForeignKey).containsExactlyInAnyOrder(
-				new JdbcForeignKey("FK_ANSWER_CHOICES_ANSWER_ID_ANSWER_ID", "ANSWER_CHOICES", "ANSWER_ID", "ANSWER", "ID").getSignature(),
-				new JdbcForeignKey("FK_ANSWER_CHOICES_CHOICES_ID_MYCHOICE_ID", "ANSWER_CHOICES", "CHOICES_ID", "MYCHOICE", "ID").getSignature()
-		);
+		@Test
+		void withTargetTableAndTableSetByTargetEntity_targetTableIsUsed() throws SQLException {
+			EntityPersister<Answer, Identifier<Long>> answerPersister = entityBuilder(Answer.class, LONG_TYPE)
+					.mapKey(Answer::getId, ALREADY_ASSIGNED)
+					.mapManyToMany(Answer::getChoices,  entityBuilder(Choice.class, LONG_TYPE, new Table<>("PossibleChoices"))
+							.mapKey(Choice::getId, ALREADY_ASSIGNED)
+							.map(Choice::getLabel), new Table("MyChoice"))
+					.cascading(READ_ONLY)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
+			
+			ResultSetIterator<Table> tableIterator = new ResultSetIterator<Table>(currentConnection.getMetaData().getTables(null, currentConnection.getSchema(),
+					null, null)) {
+				@Override
+				public Table convert(ResultSet rs) throws SQLException {
+					return new Table(
+							rs.getString("TABLE_NAME")
+					);
+				}
+			};
+			Set<String> foundTables = Iterables.collect(() -> tableIterator, Table::getName, HashSet::new);
+			assertThat(foundTables).containsExactlyInAnyOrder("ANSWER", "MYCHOICE", "ANSWER_CHOICES");
+			
+			ResultSetIterator<JdbcForeignKey> fkChoiceIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getImportedKeys(null, null,
+					"ANSWER_CHOICES")) {
+				@Override
+				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+					return new JdbcForeignKey(
+							rs.getString("FK_NAME"),
+							rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+							rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+					);
+				}
+			};
+			Set<String> foundForeignKey = Iterables.collect(() -> fkChoiceIterator, JdbcForeignKey::getSignature, HashSet::new);
+			assertThat(foundForeignKey).containsExactlyInAnyOrder(
+					new JdbcForeignKey("FK_ANSWER_CHOICES_ANSWER_ID_ANSWER_ID", "ANSWER_CHOICES", "ANSWER_ID", "ANSWER", "ID").getSignature(),
+					new JdbcForeignKey("FK_ANSWER_CHOICES_CHOICES_ID_MYCHOICE_ID", "ANSWER_CHOICES", "CHOICES_ID", "MYCHOICE", "ID").getSignature()
+			);
+		}
 	}
 	
 	@Test
