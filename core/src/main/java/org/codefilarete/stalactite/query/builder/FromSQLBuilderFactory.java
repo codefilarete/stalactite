@@ -1,7 +1,5 @@
 package org.codefilarete.stalactite.query.builder;
 
-import java.util.Iterator;
-
 import org.codefilarete.stalactite.query.builder.PseudoTableSQLBuilderFactory.PseudoTableSQLBuilder;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.From;
@@ -9,7 +7,6 @@ import org.codefilarete.stalactite.query.model.From.AbstractJoin;
 import org.codefilarete.stalactite.query.model.From.AbstractJoin.JoinDirection;
 import org.codefilarete.stalactite.query.model.From.ColumnJoin;
 import org.codefilarete.stalactite.query.model.From.CrossJoin;
-import org.codefilarete.stalactite.query.model.From.Join;
 import org.codefilarete.stalactite.query.model.From.KeyJoin;
 import org.codefilarete.stalactite.query.model.From.RawTableJoin;
 import org.codefilarete.stalactite.query.model.Fromable;
@@ -66,9 +63,9 @@ public class FromSQLBuilderFactory {
 		
 		@Override
 		public String toSQL() {
-			StringAppender result = new StringAppender();
-			appendTo(new StringSQLAppender(result, dmlNameProvider));
-			return result.toString();
+			StringSQLAppender result = new StringSQLAppender(dmlNameProvider);
+			appendTo(result);
+			return result.getSQL();
 		}
 		
 		@Override
@@ -83,29 +80,9 @@ public class FromSQLBuilderFactory {
 				// invalid SQL
 				throw new IllegalArgumentException("Empty from");
 			}
-			FromGenerator fromGenerator = new FromGenerator(preparedSQLAppender, dmlNameProvider) {
-				
-				/** Overridden to make it call pseudoTableBuilder.toPreparableSQL(..) instead of toSQL(..). Not a really good design */
-				@Override
-				void cat(Query query) {
-					QuerySQLBuilder unionBuilder = querySQLBuilderFactory.queryBuilder(query);
-					unionBuilder.appendTo(preparedSQLAppender);
-				}
-				
-				/** Overridden to make it call pseudoTableBuilder.toPreparableSQL(..) instead of toSQL(..). Not a really good design */
-				@Override
-				void cat(PseudoTable pseudoTable) {
-					PseudoTableSQLBuilder pseudoTableSqlBuilder = pseudoTableSQLBuilderFactory.pseudoTableBuilder(pseudoTable.getQueryStatement(), querySQLBuilderFactory);
-					// tableAlias may be null which produces invalid SQL in a majority of cases, but not when it is the only element in the From clause ...
-					sql.cat("(");
-					pseudoTableSqlBuilder.appendTo(preparedSQLAppender);
-					String alias = getAliasOrDefault(pseudoTable);
-					sql.cat(")").catIf(alias != null, " as " + alias);
-				}
-			};
+			FromGenerator fromGenerator = new FromGenerator(preparedSQLAppender, dmlNameProvider);
 			fromGenerator.cat(from.getRoot());
-			Iterator<Join> joinIterator = from.getJoins().iterator();
-			joinIterator.forEachRemaining(fromGenerator::cat);
+			from.getJoins().forEach(fromGenerator::cat);
 		}
 		
 		/**
@@ -119,7 +96,7 @@ public class FromSQLBuilderFactory {
 			private static final String CROSS_JOIN = " cross join ";
 			private static final String ON = " on ";
 			
-			final SQLAppender sql;
+			private final SQLAppender sql;
 			private final DMLNameProvider dmlNameProvider;
 			
 			public FromGenerator(SQLAppender sql,
@@ -152,16 +129,16 @@ public class FromSQLBuilderFactory {
 			
 			private void cat(Table table) {
 				String tableAlias = dmlNameProvider.getAlias(table);
-				cat(table.getName());
+				sql.catTable(table);
 				sql.catIf(!Strings.isEmpty(tableAlias), " as " + tableAlias);
 			}
 			
-			void cat(Query query) {
+			private void cat(Query query) {
 				QuerySQLBuilder unionBuilder = querySQLBuilderFactory.queryBuilder(query);
 				unionBuilder.appendTo(sql);
 			}
 			
-			void cat(PseudoTable pseudoTable) {
+			private void cat(PseudoTable pseudoTable) {
 				PseudoTableSQLBuilder pseudoTableSqlBuilder = pseudoTableSQLBuilderFactory.pseudoTableBuilder(pseudoTable.getQueryStatement(), querySQLBuilderFactory);
 				// tableAlias may be null which produces invalid SQL in a majority of cases, but not when it is the only element in the From clause ...
 				sql.cat("(");

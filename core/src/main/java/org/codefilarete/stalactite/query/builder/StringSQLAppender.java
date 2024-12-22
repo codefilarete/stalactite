@@ -2,8 +2,11 @@ package org.codefilarete.stalactite.query.builder;
 
 import javax.annotation.Nullable;
 
+import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.QueryStatement.PseudoColumn;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
+import org.codefilarete.stalactite.sql.ddl.DDLAppender;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.tool.StringAppender;
 
@@ -14,12 +17,18 @@ import org.codefilarete.tool.StringAppender;
  */
 public class StringSQLAppender implements SQLAppender {
 	
-	private final StringAppender delegate;
-	private final DMLNameProvider dmlNameProvider;
+	private final DDLAppender delegate;
 	
-	public StringSQLAppender(StringAppender stringAppender, DMLNameProvider dmlNameProvider) {
-		delegate = stringAppender;
-		this.dmlNameProvider = dmlNameProvider;
+	public StringSQLAppender(DMLNameProvider dmlNameProvider) {
+		this.delegate = new QualifiedNameDDLAppender(dmlNameProvider);
+	}
+	
+	private StringSQLAppender(DDLAppender delegate) {
+		this.delegate = delegate;
+	}
+	
+	public DDLAppender getDelegate() {
+		return delegate;
 	}
 	
 	@Override
@@ -41,9 +50,6 @@ public class StringSQLAppender implements SQLAppender {
 		if (value instanceof CharSequence) {
 			// specialized case to escape single quotes
 			delegate.cat("'", value.toString().replace("'", "''"), "'");
-		} else if (value instanceof Column) {
-			// Columns are simply appended (no binder needed nor index increment)
-			delegate.cat(dmlNameProvider.getName((Column) value));
 		} else {
 			delegate.cat(value);
 		}
@@ -51,9 +57,15 @@ public class StringSQLAppender implements SQLAppender {
 	}
 	
 	@Override
-	public StringSQLAppender catColumn(Column column) {
+	public StringSQLAppender catColumn(Selectable<?> column) {
 		// Columns are simply appended (no binder needed nor index increment)
-		delegate.cat(dmlNameProvider.getName(column));
+		delegate.cat(column);
+		return this;
+	}
+	
+	@Override
+	public SQLAppender catTable(Fromable table) {
+		delegate.cat(table);
 		return this;
 	}
 	
@@ -66,5 +78,38 @@ public class StringSQLAppender implements SQLAppender {
 	@Override
 	public String getSQL() {
 		return delegate.toString();
+	}
+	
+	@Override
+	public SubSQLAppender newSubPart(DMLNameProvider dmlNameProvider) {
+		return new DefaultSubSQLAppender(new StringSQLAppender(new QualifiedNameDDLAppender(this.delegate.getAppender(), dmlNameProvider))) {
+			@Override
+			public SQLAppender close() {
+				// nothing special
+				return StringSQLAppender.this;
+			}
+		};
+	}
+	
+	private static class QualifiedNameDDLAppender extends DDLAppender {
+		
+		public QualifiedNameDDLAppender(DMLNameProvider dmlNameProvider) {
+			super(dmlNameProvider);
+		}
+		
+		public QualifiedNameDDLAppender(StringBuilder delegate, DMLNameProvider dmlNameProvider) {
+			super(delegate, dmlNameProvider);
+		}
+		
+		@Override
+		public StringAppender cat(Object o) {
+			if (o instanceof Column || o instanceof PseudoColumn) {
+				return super.cat(dmlNameProvider.getName((Selectable<?>) o));
+			} else if (o instanceof Selectable) {
+				return super.cat(((Selectable<?>) o).getExpression());
+			} else {
+				return super.cat(o);
+			}
+		}
 	}
 }

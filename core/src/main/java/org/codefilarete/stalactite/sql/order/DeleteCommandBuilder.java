@@ -18,7 +18,6 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
-import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 
@@ -43,9 +42,9 @@ public class DeleteCommandBuilder<T extends Table<T>> implements SQLBuilder, Pre
 	
 	@Override
 	public String toSQL() {
-		StringAppender result = new StringAppender();
-		appendTo(new StringSQLAppender(result, dmlNameProvider), dmlNameProvider);
-		return result.toString();
+		StringSQLAppender result = new StringSQLAppender(dmlNameProvider);
+		appendTo(result, dmlNameProvider);
+		return result.getSQL();
 	}
 	
 	@Override

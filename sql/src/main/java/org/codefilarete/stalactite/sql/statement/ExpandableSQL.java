@@ -36,7 +36,7 @@ public class ExpandableSQL {
 		this.expandableParameters = new HashMap<>(this.parsedSQL.getSqlSnippets().size() / 2);
 		convertParsedParametersToExpandableParameters(parameterValuesSize);
 	}
-
+	
 	private void convertParsedParametersToExpandableParameters(Map<String, Integer> parameterValuesSize) {
 		StringBuilder preparedSQLBuilder = new StringBuilder();
 		// index for prepared statement mark (?), used to compute mark indexes of parameters

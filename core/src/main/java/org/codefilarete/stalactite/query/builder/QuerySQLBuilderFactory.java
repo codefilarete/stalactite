@@ -23,7 +23,6 @@ import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
-import org.codefilarete.tool.StringAppender;
 
 /**
  * Factory for {@link QuerySQLBuilder}.
@@ -183,9 +182,9 @@ public class QuerySQLBuilderFactory {
 		 */
 		@Override
 		public String toSQL() {
-			StringAppender result = new StringAppender(500);
-			appendTo(new StringSQLAppender(result, dmlNameProvider));
-			return result.toString();
+			StringSQLAppender result = new StringSQLAppender(dmlNameProvider);
+			appendTo(result);
+			return result.getSQL();
 		}
 			
 		/**
@@ -260,7 +259,7 @@ public class QuerySQLBuilderFactory {
 			} else if (column instanceof SQLFunction) {
 				functionSQLBuilder.cat((SQLFunction) column, sql);
 			} else if (column instanceof Selectable) {
-				sql.cat(dmlNameProvider.getName((Selectable) column));
+				sql.catColumn((Selectable<?>) column);
 			}
 		}
 	}

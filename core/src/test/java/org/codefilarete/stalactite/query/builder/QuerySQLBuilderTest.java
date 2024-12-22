@@ -129,11 +129,11 @@ class QuerySQLBuilderTest {
 				{ select(colTotoA, colTataB).from(tableToto, "T").where(colTotoB, "= 1").groupBy(colTotoA)
 						.having(sum(colTotoB), " > 1").limit(2),
 						"select T.a, Tata.b from Toto as T where T.b = 1 group by T.a having sum(T.b) > 1 limit 2" },
-				{ select(colTotoA, colTataB).from(tableToto, "T").where(colTotoB, "= 1").unionAll( 
-						select(colTotoA, colTataB).from(tableToto, "T").where(colTotoB, "= 1")),
-						"select T.a, Tata.b from Toto as T where T.b = 1"
+				{ select(colTotoA, colTataB).from(tableToto, "T1").where(colTotoB, "= 1").unionAll( 
+						select(colTotoA, colTataB).from(tableToto, "T2").where(colTotoB, "= 1")),
+						"select T1.a, Tata.b from Toto as T1 where T1.b = 1"
 								+ " union all"
-								+ " select T.a, Tata.b from Toto as T where T.b = 1" },
+								+ " select T2.a, Tata.b from Toto as T2 where T2.b = 1" },
 				// sub-select in joins
 				{ select(colTotoA, colTotoB)
 						.from(tableToto, "T")
@@ -223,10 +223,10 @@ class QuerySQLBuilderTest {
 						"select Toto.a, x.b from Toto inner join Tata as x on Toto.a = x.a where x.b = ?",
 						Maps.forHashMap(Integer.class, Object.class).add(1, 1) },
 				{ select(colTotoA, colTataB).from(tableToto, "T").where(colTotoB, eq(11)).unionAll(
-						select(colTotoA, colTataB).from(tableToto, "T").where(colTotoB, eq(22))),
+						select(colTotoA, colTataB).from(tableToto, "T1").where(colTotoB, eq(22))),
 						"select T.a, Tata.b from Toto as T where T.b = ?"
 								+ " union all"
-								+ " select T.a, Tata.b from Toto as T where T.b = ?",
+								+ " select T1.a, Tata.b from Toto as T1 where T1.b = ?",
 						Maps.forHashMap(Integer.class, Object.class).add(1, 11).add(2, 22)},
 		};
 	}

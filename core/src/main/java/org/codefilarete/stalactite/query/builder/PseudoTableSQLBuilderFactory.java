@@ -3,9 +3,9 @@ package org.codefilarete.stalactite.query.builder;
 import java.util.Set;
 
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
+import org.codefilarete.stalactite.query.builder.SQLAppender.SubSQLAppender;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryStatement;
-import org.codefilarete.tool.StringAppender;
 
 /**
  * Factory of {@link PseudoTableSQLBuilder} 
@@ -41,9 +41,9 @@ public class PseudoTableSQLBuilderFactory {
 		
 		@Override
 		public CharSequence toSQL() {
-			StringAppender result = new StringAppender(500);
-			appendTo(new StringSQLAppender(result, new DMLNameProvider(queryStatement.getAliases()::get)));
-			return result.toString();
+			StringSQLAppender result = new StringSQLAppender(new DMLNameProvider(queryStatement.getAliases()::get));
+			appendTo(result);
+			return result.getSQL();
 		}
 		
 		@Override
@@ -56,24 +56,13 @@ public class PseudoTableSQLBuilderFactory {
 		public void appendTo(SQLAppender preparedSQLAppender) {
 			Set<Query> queries = queryStatement.getQueries();
 			queries.forEach(query -> {
-				querySQLBuilderFactory.queryBuilder(query).appendTo(preparedSQLAppender);
+				QuerySQLBuilder sqlBuilder = querySQLBuilderFactory.queryBuilder(query);
+				SubSQLAppender subAppender = preparedSQLAppender.newSubPart(new DMLNameProvider(query.getFromSurrogate().getTableAliases()::get));
+				sqlBuilder.appendTo(subAppender);
+				subAppender.close();
 				preparedSQLAppender.cat(UNION_ALL_SEPARATOR);
 			});
 			preparedSQLAppender.removeLastChars(UNION_ALL_SEPARATOR.length());
-		}
-		
-		private class UnionGenerator {
-			
-			private final SQLAppender sqlAppender;
-			
-			private UnionGenerator(SQLAppender sqlAppender) {
-				this.sqlAppender = sqlAppender;
-			}
-			
-			private void cat(Query query) {
-				QuerySQLBuilder unionBuilder = querySQLBuilderFactory.queryBuilder(query);
-				unionBuilder.appendTo(sqlAppender);
-			}
 		}
 	}
 }

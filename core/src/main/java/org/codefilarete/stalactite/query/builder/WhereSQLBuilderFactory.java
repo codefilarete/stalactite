@@ -9,7 +9,6 @@ import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.LogicalOperator;
 import org.codefilarete.stalactite.query.model.RawCriterion;
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.query.model.Variable;
 import org.codefilarete.stalactite.query.model.operator.BiOperandOperator;
 import org.codefilarete.stalactite.query.model.operator.SQLFunction;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
@@ -17,7 +16,6 @@ import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.StringAppender;
 
 /**
  * Factory for {@link WhereSQLBuilder}. It's overridable through {@link org.codefilarete.stalactite.sql.Dialect#setQuerySQLBuilderFactory(QuerySQLBuilderFactory)}
@@ -91,17 +89,9 @@ public class WhereSQLBuilderFactory {
 		
 		@Override
 		public String toSQL() {
-			return appendTo(new StringAppender());
-		}
-		
-		public String appendTo(StringAppender sql) {
-			appendTo(new StringSQLAppender(sql, dmlNameProvider));
-			return sql.toString();
-		}
-		
-		public void appendTo(SQLAppender sql) {
-			WhereAppender whereAppender = new WhereAppender(sql, dmlNameProvider, operatorSqlBuilder, functionSQLBuilder);
-			whereAppender.cat(where);
+			StringSQLAppender result = new StringSQLAppender(dmlNameProvider);
+			appendTo(result);
+			return result.getSQL();
 		}
 		
 		@Override
@@ -109,6 +99,11 @@ public class WhereSQLBuilderFactory {
 			ExpandableSQLAppender preparedSQLAppender = new ExpandableSQLAppender(parameterBinderRegistry, dmlNameProvider);
 			appendTo(preparedSQLAppender);
 			return preparedSQLAppender;
+		}
+		
+		public void appendTo(SQLAppender sql) {
+			WhereAppender whereAppender = new WhereAppender(sql, operatorSqlBuilder, functionSQLBuilder);
+			whereAppender.cat(where);
 		}
 		
 		public class WhereAppender {
@@ -119,16 +114,12 @@ public class WhereSQLBuilderFactory {
 			
 			private final FunctionSQLBuilder functionSQLBuilder;
 			
-			private final DMLNameProvider dmlNameProvider;
-			
 			public WhereAppender(SQLAppender sql,
-								 DMLNameProvider dmlNameProvider,
 								 OperatorSQLBuilder operatorSqlBuilder,
 								 FunctionSQLBuilder functionSQLBuilder) {
 				this.sql = sql;
 				this.operatorSqlBuilder = operatorSqlBuilder;
 				this.functionSQLBuilder = functionSQLBuilder;
-				this.dmlNameProvider = dmlNameProvider;
 			}
 			
 			/**
@@ -202,14 +193,14 @@ public class WhereSQLBuilderFactory {
 						} catch (BindingException e) {
 							throw new IllegalArgumentException("Unknown criterion type " + Reflections.toString(condition.getClass()));
 						}
-						sql.catValue((Variable<?>) condition);
+						sql.catValue(condition);
 					}
 				}
 			}
 			
 			public void cat(Selectable column) {
-				// delegated to dmlNameProvider
-				sql.cat(this.dmlNameProvider.getName(column));
+				// delegated to SQLAppender
+				sql.catColumn(column);
 			}
 			
 			public void cat(LogicalOperator operator) {

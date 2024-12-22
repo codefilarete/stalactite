@@ -10,12 +10,16 @@ import org.codefilarete.stalactite.query.builder.DMLNameProvider;
  */
 public class DDLAppender extends StringAppender {
 	
-	/** Made transient to comply with {@link java.io.Serializable} contract of parent class */
-	private final transient DMLNameProvider dmlNameProvider;
+	protected final DMLNameProvider dmlNameProvider;
 	
 	public DDLAppender(DMLNameProvider dmlNameProvider, Object... o) {
 		this.dmlNameProvider = dmlNameProvider;
-		// we don't all super(o) because it may need dmlNameProvider
+		cat(o);
+	}
+	
+	public DDLAppender(StringBuilder delegate, DMLNameProvider dmlNameProvider, Object... o) {
+		super(delegate);
+		this.dmlNameProvider = dmlNameProvider;
 		cat(o);
 	}
 	

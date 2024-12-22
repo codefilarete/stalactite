@@ -18,7 +18,6 @@ import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.trace.ModifiableInt;
 
 /**
@@ -38,7 +37,7 @@ public class InsertCommandBuilder<T extends Table<T>> implements SQLBuilder {
 	
 	@Override
 	public String toSQL() {
-		return toSQL(new StringSQLAppender(new StringAppender(), new DMLNameProvider(new HashMap<>())) {
+		return toSQL(new StringSQLAppender(new DMLNameProvider(new HashMap<>())) {
 			@Override
 			public <V> StringSQLAppender catValue(@Nullable Selectable<V> column, Object value) {
 				if (value == UpdateColumn.PLACEHOLDER) {
@@ -103,7 +102,7 @@ public class InsertCommandBuilder<T extends Table<T>> implements SQLBuilder {
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(new HashMap<>());
 		
 		// We ask for SQL generation through a PreparedSQLWrapper because we need SQL placeholders for where + update clause
-		PreparedSQLAppender preparedSQLAppender = new PreparedSQLAppender(new StringSQLAppender(new StringAppender(), dmlNameProvider), columnBinderRegistry, dmlNameProvider);
+		PreparedSQLAppender preparedSQLAppender = new PreparedSQLAppender(new StringSQLAppender(dmlNameProvider), columnBinderRegistry);
 		String sql = toSQL(preparedSQLAppender);
 		
 		Map<Integer, Object> values = new HashMap<>(preparedSQLAppender.getValues());

@@ -40,7 +40,7 @@ public class Dialect {
 	
 	private QuerySQLBuilderFactory querySQLBuilderFactory;
 	
-	private PseudoTableSQLBuilderFactory pseudoTableSQLBuilderFactory;
+	private final PseudoTableSQLBuilderFactory pseudoTableSQLBuilderFactory;
 	
 	/**
 	 * Creates a default dialect, with a {@link DefaultTypeMapping} and a default {@link ColumnBinderRegistry}

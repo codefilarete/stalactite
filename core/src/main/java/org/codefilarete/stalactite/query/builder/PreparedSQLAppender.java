@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.UnvaluedVariable;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
@@ -24,15 +25,22 @@ public class PreparedSQLAppender implements SQLAppender {
 	private final ColumnBinderRegistry parameterBinderRegistry;
 	private final Map<Integer, ParameterBinder> parameterBinders;
 	private final Map<Integer, Object> values;
-	private final ModifiableInt paramCounter = new ModifiableInt(1);
-	private final DMLNameProvider dmlNameProvider;
+	private final ModifiableInt paramCounter;
 	
-	public PreparedSQLAppender(SQLAppender sqlAppender, ColumnBinderRegistry parameterBinderRegistry, DMLNameProvider dmlNameProvider) {
-		this.surrogate = sqlAppender;
+	public PreparedSQLAppender(SQLAppender sqlAppender, ColumnBinderRegistry parameterBinderRegistry) {
+		this(sqlAppender, parameterBinderRegistry, new HashMap<>(), new HashMap<>(), new ModifiableInt(1));
+	}
+	
+	private PreparedSQLAppender(SQLAppender surrogate,
+								ColumnBinderRegistry parameterBinderRegistry,
+								Map<Integer, ParameterBinder> parameterBinders,
+								Map<Integer, Object> values,
+								ModifiableInt paramCounter) {
+		this.surrogate = surrogate;
 		this.parameterBinderRegistry = parameterBinderRegistry;
-		this.dmlNameProvider = dmlNameProvider;
-		this.parameterBinders = new HashMap<>();
-		this.values = new HashMap<>();
+		this.parameterBinders = parameterBinders;
+		this.values = values;
+		this.paramCounter = paramCounter;
 	}
 	
 	public Map<Integer, Object> getValues() {
@@ -98,9 +106,9 @@ public class PreparedSQLAppender implements SQLAppender {
 	private PreparedSQLAppender catValue(Object value, ParameterBinder<?> binderSupplier) {
 		if (value instanceof ValuedVariable) {
 			Object innerValue = ((ValuedVariable) value).getValue();
-			if (innerValue instanceof Selectable) {
+			if (innerValue instanceof Column) {
 				// Columns are simply appended (no binder needed nor index increment)
-				surrogate.cat(dmlNameProvider.getName((Selectable) innerValue));
+				surrogate.catColumn((Column) innerValue);
 			} else {
 				appendPlaceholder(innerValue, binderSupplier);
 			}
@@ -118,9 +126,15 @@ public class PreparedSQLAppender implements SQLAppender {
 	}
 	
 	@Override
-	public PreparedSQLAppender catColumn(Column column) {
+	public PreparedSQLAppender catColumn(Selectable<?> column) {
 		// Columns are simply appended (no binder needed nor index increment)
-		surrogate.cat(dmlNameProvider.getName(column));
+		surrogate.catColumn(column);
+		return this;
+	}
+	
+	@Override
+	public SQLAppender catTable(Fromable table) {
+		surrogate.catTable(table);
 		return this;
 	}
 	
@@ -133,5 +147,22 @@ public class PreparedSQLAppender implements SQLAppender {
 	@Override
 	public String getSQL() {
 		return surrogate.getSQL();
+	}
+	
+	@Override
+	public SubSQLAppender newSubPart(DMLNameProvider dmlNameProvider) {
+		SQLAppender self = PreparedSQLAppender.this;
+		return new DefaultSubSQLAppender(new PreparedSQLAppender(
+				this.surrogate.newSubPart(dmlNameProvider),
+				this.parameterBinderRegistry,
+				this.parameterBinders,
+				this.values,
+				this.paramCounter)) {
+			@Override
+			public SQLAppender close() {
+				// nothing special
+				return self;
+			}
+		};
 	}
 }

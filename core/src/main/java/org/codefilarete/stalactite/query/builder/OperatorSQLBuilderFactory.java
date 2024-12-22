@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.FunctionSQLBuilder;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
 import org.codefilarete.stalactite.query.model.Variable;
@@ -22,6 +23,7 @@ import org.codefilarete.stalactite.query.model.operator.SQLFunction;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.VisibleForTesting;
 
 /**
  * A class made to print a {@link ConditionalOperator}
@@ -72,7 +74,7 @@ public class OperatorSQLBuilderFactory {
 				} else if (operator instanceof In) {
 					catIn((In<V>) operator, sql, column);
 				} else if (operator instanceof Like) {
-					catLike((Like) operator, sql, (Selectable<CharSequence>) column);
+					catLike((Like) operator, sql, column);
 				} else if (operator instanceof IsNull) {
 					catIsNull((IsNull) operator, sql);
 				} else {
@@ -233,11 +235,13 @@ public class OperatorSQLBuilderFactory {
 		 * 
 		 * @author Guillaume Mary
 		 */
-		private static class LikePatternAppender implements SQLAppender {
+		@VisibleForTesting
+		static class LikePatternAppender implements SQLAppender {
 			private final Like<?> like;
 			private final SQLAppender sql;
 			
-			public LikePatternAppender(Like<?> like, SQLAppender sql) {
+			@VisibleForTesting
+			LikePatternAppender(Like<?> like, SQLAppender sql) {
 				this.like = like;
 				this.sql = sql;
 			}
@@ -247,13 +251,14 @@ public class OperatorSQLBuilderFactory {
 				if (variable instanceof ValuedVariable) {
 					V value = ((ValuedVariable<V>) variable).getValue();
 					if (value instanceof CharSequence) {
-						return sql.catValue((Selectable<CharSequence>) column, addWildcards((CharSequence) value));
+						sql.catValue((Selectable<CharSequence>) column, addWildcards((CharSequence) value));
 					} else {
-						return sql.catValue(column, variable);
+						sql.catValue(column, variable);
 					}
 				} else {
-					return sql.catValue(column, variable);
+					sql.catValue(column, variable);
 				}
+				return this;
 			}
 			
 			private CharSequence addWildcards(CharSequence effectiveValue) {
@@ -273,33 +278,55 @@ public class OperatorSQLBuilderFactory {
 				}
 				if (value instanceof Selectable) {
 					// unwrapping raw Selectable
-					return sql.catValue(addWildcards(((Selectable<CharSequence>) value).getExpression()));
+					sql.catValue(addWildcards(((Selectable<CharSequence>) value).getExpression()));
 				} else if (value instanceof CharSequence) {
-					return sql.catValue(addWildcards((CharSequence) value));
+					sql.catValue(addWildcards((CharSequence) value));
 				} else {
 					throw new UnsupportedOperationException("Appending '" + value + "'"
 							+ (value == null ? "" : " (type " + Reflections.toString(value.getClass()) + ")") + " is not supported");
 				}
+				return this;
 			}
 			
 			@Override
 			public SQLAppender cat(String s, String... ss) {
-				return sql.cat(s, ss);
+				sql.cat(s, ss);
+				return this;
 			}
 			
 			@Override
-			public SQLAppender catColumn(Column column) {
-				return sql.catColumn(column);
+			public SQLAppender catColumn(Selectable<?> column) {
+				sql.catColumn(column);
+				return this;
+			}
+			
+			@Override
+			public SQLAppender catTable(Fromable table) {
+				sql.catTable(table);
+				return this;
 			}
 			
 			@Override
 			public SQLAppender removeLastChars(int length) {
-				return sql.removeLastChars(length);
+				sql.removeLastChars(length);
+				return this;
 			}
 			
 			@Override
 			public String getSQL() {
 				return sql.getSQL();
+			}
+			
+			@Override
+			public SubSQLAppender newSubPart(DMLNameProvider dmlNameProvider) {
+				SQLAppender self = this;
+				return new DefaultSubSQLAppender(new LikePatternAppender(this.like, this.sql.newSubPart(dmlNameProvider))) {
+					@Override
+					public SQLAppender close() {
+						// nothing special;
+						return self;
+					}
+				};
 			}
 		}
 	}

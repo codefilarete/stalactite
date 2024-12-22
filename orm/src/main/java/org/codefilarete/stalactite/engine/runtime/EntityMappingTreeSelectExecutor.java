@@ -1,7 +1,6 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -322,12 +321,8 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 	 */
 	private static class JoinDDLAppender extends DDLAppender {
 		
-		/** Made transient to comply with {@link Serializable} contract of parent class */
-		private final transient DMLNameProvider dmlNameProvider;
-		
 		private JoinDDLAppender(DMLNameProvider dmlNameProvider) {
 			super(dmlNameProvider);
-			this.dmlNameProvider = dmlNameProvider;
 		}
 		
 		/** Overridden to change the way {@link Column}s are appended : their table prefix are added */

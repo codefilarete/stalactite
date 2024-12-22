@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.codefilarete.stalactite.query.model.From.AbstractJoin.JoinDirection;
 import org.codefilarete.stalactite.query.model.From.Join;
+import org.codefilarete.stalactite.query.model.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.tool.Strings;
@@ -58,6 +59,9 @@ public class From implements Iterable<Join>, JoinChain<From> {
 	 */
 	public From setRoot(Fromable root) {
 		this.root = root;
+		if (root instanceof PseudoTable) {
+			this.setAlias(root, root.getName());
+		}
 		return this;
 	}
 	

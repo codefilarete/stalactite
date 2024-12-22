@@ -2,8 +2,8 @@ package org.codefilarete.stalactite.query.builder;
 
 import javax.annotation.Nullable;
 
+import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**
  * The contract for printing a where clause : need to print a String and a value.
@@ -39,13 +39,14 @@ public interface SQLAppender {
 	SQLAppender catValue(Object value);
 	
 	/**
-	 * Appends column name to underlying SQL statement. To be used when {@link #catValue(Selectable, Object)} can't be
-	 * applied.
+	 * Appends column name to underlying SQL statement.
 	 *
 	 * @param column the column to be printed
 	 * @return this
 	 */
-	SQLAppender catColumn(Column column);
+	SQLAppender catColumn(Selectable<?> column);
+	
+	SQLAppender catTable(Fromable table);
 	
 	SQLAppender removeLastChars(int length);
 	
@@ -61,4 +62,93 @@ public interface SQLAppender {
 	}
 	
 	String getSQL();
+	
+	SubSQLAppender newSubPart(DMLNameProvider dmlNameProvider);
+	
+	interface SubSQLAppender extends SQLAppender {
+		
+		SubSQLAppender cat(String s, String... ss);
+		
+		<V> SubSQLAppender catValue(@Nullable Selectable<V> column, Object value);
+		
+		SubSQLAppender catValue(Object value);
+		
+		SubSQLAppender catColumn(Selectable<?> column);
+		
+		SubSQLAppender catTable(Fromable table);
+		
+		SubSQLAppender removeLastChars(int length);
+		
+		SQLAppender close();
+	}
+	
+	abstract class DefaultSubSQLAppender implements SubSQLAppender {
+		
+		private final SQLAppender delegate;
+		
+		public DefaultSubSQLAppender(SQLAppender delegate) {
+			this.delegate = delegate;
+		}
+		
+		public SQLAppender getDelegate() {
+			return delegate;
+		}
+		
+		@Override
+		public SubSQLAppender cat(String s, String... ss) {
+			delegate.cat(s, ss);
+			return this;
+		}
+		
+		@Override
+		public <V> SubSQLAppender catValue(@Nullable Selectable<V> column, Object value) {
+			delegate.catValue(column, value);
+			return this;
+		}
+		
+		@Override
+		public SubSQLAppender catValue(Object value) {
+			delegate.catValue(value);
+			return this;
+		}
+		
+		@Override
+		public SubSQLAppender catColumn(Selectable<?> column) {
+			delegate.catColumn(column);
+			return this;
+		}
+		
+		@Override
+		public SubSQLAppender catTable(Fromable table) {
+			delegate.catTable(table);
+			return this;
+		}
+		
+		@Override
+		public SubSQLAppender removeLastChars(int length) {
+			delegate.removeLastChars(length);
+			return this;
+		}
+		
+		@Override
+		public SubSQLAppender catIf(boolean condition, String s) {
+			delegate.catIf(condition, s);
+			return this;
+		}
+		
+		@Override
+		public boolean isEmpty() {
+			return delegate.isEmpty();
+		}
+		
+		@Override
+		public String getSQL() {
+			return delegate.getSQL();
+		}
+		
+		@Override
+		public SubSQLAppender newSubPart(DMLNameProvider dmlNameProvider) {
+			return delegate.newSubPart(dmlNameProvider);
+		}
+	}
 }

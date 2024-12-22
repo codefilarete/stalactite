@@ -10,7 +10,6 @@ import org.codefilarete.stalactite.query.model.operator.SQLFunction;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.Strings;
 
 /**
@@ -65,17 +64,16 @@ public class SelectSQLBuilderFactory {
 		
 		@Override
 		public String toSQL() {
-			StringAppender sql = new StringAppender(200);
-			sql.catIf(this.select.isDistinct(), "distinct ");
-			cat(this.select, sql);
-			return sql.toString();
+			StringSQLAppender result = new StringSQLAppender(dmlNameProvider);
+			result.catIf(this.select.isDistinct(), "distinct ");
+			cat(this.select, result);
+			return result.getSQL();
 		}
 		
-		private void cat(Iterable<? extends Selectable<?> /* String, Column or AliasedColumn */> select, StringAppender sql) {
-			StringSQLAppender appenderWrapper = new StringSQLAppender(sql, dmlNameProvider);
+		private void cat(Iterable<? extends Selectable<?> /* String, Column or AliasedColumn */> select, StringSQLAppender sql) {
 			for (Object o : select) {
 				if (o instanceof SQLFunction) {
-					cat((SQLFunction) o, appenderWrapper);
+					cat((SQLFunction) o, sql);
 				} else if (o instanceof Selectable) {	// must be after previous ifs because they deal with dedicated Selectable cases
 					cat((Selectable) o, sql);
 				} else if (o instanceof Iterable) {
@@ -85,18 +83,18 @@ public class SelectSQLBuilderFactory {
 				}
 				sql.cat(", ");
 			}
-			if (Strings.tail(sql, 2).equals(", ")) {	// if not, means select was empty
+			if (Strings.tail(sql.getSQL(), 2).equals(", ")) {	// if not, means select was empty
 				// cut the trailing comma
-				sql.cutTail(2);
+				sql.removeLastChars(2);
 			}
 		}
 		
-		protected void cat(Selectable<?> column, StringAppender sql) {
+		protected void cat(Selectable<?> column, StringSQLAppender sql) {
 			String alias = select.getAliases().get(column);
-			sql.cat(dmlNameProvider.getName(column)).catIf(!Strings.isEmpty(alias), " as ", alias);
+			sql.catColumn(column).catIf(!Strings.isEmpty(alias), " as " + alias);
 		}
 		
-		private void cat(SQLFunction<?, ?> operator, SQLAppender appenderWrapper) {
+		private void cat(SQLFunction<?, ?> operator, StringSQLAppender appenderWrapper) {
 			String alias = select.getAliases().get(operator);	// can be UnitaryOperator which is Selectable
 			functionSQLBuilder.cat(operator, appenderWrapper);
 			appenderWrapper.catIf(!Strings.isEmpty(alias), " as " + alias);
