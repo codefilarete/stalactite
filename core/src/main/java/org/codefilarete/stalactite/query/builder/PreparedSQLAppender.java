@@ -7,7 +7,7 @@ import java.util.Map;
 
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.query.model.UnvaluedVariable;
+import org.codefilarete.stalactite.query.model.Placeholder;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
 import org.codefilarete.stalactite.query.model.Variable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -87,8 +87,8 @@ public class PreparedSQLAppender implements SQLAppender {
 		ParameterBinder<?> parameterBinder = null;
 		if (value instanceof ValuedVariable) {
 			parameterBinder = getParameterBinderFromRegistry(((ValuedVariable) value).getValue());
-		} else if (value instanceof UnvaluedVariable) {
-			parameterBinder = parameterBinderRegistry.getBinder(((UnvaluedVariable) value).getValueType());
+		} else if (value instanceof Placeholder) {
+			parameterBinder = parameterBinderRegistry.getBinder(((Placeholder) value).getValueType());
 		}
 		return parameterBinder;
 	}	

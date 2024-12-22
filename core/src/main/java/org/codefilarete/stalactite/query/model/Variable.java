@@ -6,7 +6,7 @@ package org.codefilarete.stalactite.query.model;
  * 
  * @param <V>
  * @see ValuedVariable
- * @see UnvaluedVariable
+ * @see Placeholder
  * @author Guillaume Mary
  */
 public interface Variable<V> {

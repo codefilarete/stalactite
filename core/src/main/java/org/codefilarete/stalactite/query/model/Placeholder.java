@@ -1,18 +1,18 @@
 package org.codefilarete.stalactite.query.model;
 
 /**
- * Container of aa named placeholder value
+ * Container of a named placeholder : a variable that doesn't have a value yet
  * 
  * @param <T> value type or type composing V
  * @param <V> value type
  * @author Guillaume Mary
  */
-public class UnvaluedVariable<T, V> implements Variable<V> {
+public class Placeholder<T, V> implements Variable<V> {
 	
 	private final String name;
 	private final Class<T> valueType;
 	
-	public UnvaluedVariable(String name, Class<T> valueType) {
+	public Placeholder(String name, Class<T> valueType) {
 		this.name = name;
 		this.valueType = valueType;
 	}

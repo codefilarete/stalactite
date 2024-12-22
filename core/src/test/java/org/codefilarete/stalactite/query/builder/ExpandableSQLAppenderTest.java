@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.query.builder;
 
 import java.util.HashMap;
 
-import org.codefilarete.stalactite.query.model.UnvaluedVariable;
+import org.codefilarete.stalactite.query.model.Placeholder;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -25,7 +25,7 @@ class ExpandableSQLAppenderTest {
 		testInstance.cat("select * from Toto where id = ")
 				.catValue(new ValuedVariable<>(42))
 				.cat(" and name = ")
-				.catValue(nameCol, new UnvaluedVariable<>("name", String.class));
+				.catValue(nameCol, new Placeholder<>("name", String.class));
 		
 		assertThat(testInstance.getSQL()).isEqualTo("select * from Toto where id = :1 and name = :name");
 		assertThat(testInstance.getSqlSnippets())
@@ -33,9 +33,9 @@ class ExpandableSQLAppenderTest {
 				.usingRecursiveFieldByFieldElementComparator()
 				.containsExactly(
 				"select * from Toto where id = ",
-				new UnvaluedVariable<>("1", int.class),
+				new Placeholder<>("1", int.class),
 				" and name = ",
-				new UnvaluedVariable<>("name", String.class),
+				new Placeholder<>("name", String.class),
 				"");
 		assertThat(testInstance.getValues()).containsAllEntriesOf(Maps.forHashMap(String.class, Object.class)
 				.add("1", 42));
@@ -49,7 +49,7 @@ class ExpandableSQLAppenderTest {
 		testInstance.cat("select * from Toto where id = ")
 				.catValue(new ValuedVariable<>(42))
 				.cat(" and name = ")
-				.catValue(nameCol, new UnvaluedVariable<>("name", String.class));
+				.catValue(nameCol, new Placeholder<>("name", String.class));
 		
 		PreparedSQL preparedSQL;
 		// non exhaustive value set : values present in SQL are kept
@@ -86,11 +86,11 @@ class ExpandableSQLAppenderTest {
 		testInstance.cat("select * from Toto where id = ")
 				.catValue(new ValuedVariable<>(42))
 				.cat(" and name = ")
-				.catValue(nameCol, new UnvaluedVariable<>("name", String.class))
+				.catValue(nameCol, new Placeholder<>("name", String.class))
 				.cat(" or id = ")
 				.catValue(new ValuedVariable<>(77))
 				.cat(" and name = ")
-				.catValue(nameCol, new UnvaluedVariable<>("name", String.class));
+				.catValue(nameCol, new Placeholder<>("name", String.class));
 		
 		PreparedSQL preparedSQL = testInstance.toPreparedSQL(Maps.forHashMap(String.class, Object.class).add("name", "John Doe"));
 		assertThat(preparedSQL.getSQL()).isEqualTo("select * from Toto where id = ? and name = ? or id = ? and name = ?");

@@ -6,7 +6,7 @@ import java.util.Set;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Criteria;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
-import org.codefilarete.stalactite.query.model.UnvaluedVariable;
+import org.codefilarete.stalactite.query.model.Placeholder;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -116,7 +116,7 @@ public class Update<T extends Table<T>> {
 	 */
 	public static class UpdateColumn<T extends Table<T>> {
 		
-		public static final UnvaluedVariable<Object, Object> PLACEHOLDER = new UnvaluedVariable<>("?", Object.class);
+		public static final Placeholder<Object, Object> PLACEHOLDER = new Placeholder<>("?", Object.class);
 		
 		private final Column<T, Object> column;
 		private final Object value;

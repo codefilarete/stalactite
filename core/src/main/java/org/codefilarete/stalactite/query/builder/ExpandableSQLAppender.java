@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.query.model.UnvaluedVariable;
+import org.codefilarete.stalactite.query.model.Placeholder;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.statement.ExpandableSQL;
@@ -29,7 +29,7 @@ import org.codefilarete.tool.trace.ModifiableInt;
  * {@link SQLAppender} that can handle not-yet-set values from {@link ConditionalOperator}s as well as
  * already-set ones.
  * - Set values are those made of {@link ValuedVariable} and a numeric (incremental) placeholder is affected to them
- * - Not-yet-set values are placeholder ones made of {@link UnvaluedVariable} and the variable name is affected to them
+ * - Not-yet-set values are placeholder ones made of {@link Placeholder} and the variable name is affected to them
  * Final result can be converted to a {@link PreparedSQL} with given values, see {@link #toPreparedSQL(Map)} 
  * 
  * @see #toPreparedSQL(Map)
@@ -131,8 +131,8 @@ public class ExpandableSQLAppender implements SQLAppender {
 			} else {
 				addPlaceholder(value, getParameterBinderFromRegistry(value));
 			}
-		} else if (variable instanceof UnvaluedVariable) {
-			addPlaceholder((UnvaluedVariable<?, ?>) variable);
+		} else if (variable instanceof Placeholder) {
+			addPlaceholder((Placeholder<?, ?>) variable);
 		} else {
 			addPlaceholder(variable, getParameterBinderFromRegistry(variable));
 		}
@@ -143,8 +143,8 @@ public class ExpandableSQLAppender implements SQLAppender {
 		ParameterBinder<?> parameterBinder;
 		if (value instanceof ValuedVariable) {
 			parameterBinder = getParameterBinderFromRegistry(((ValuedVariable) value).getValue());
-		} else if (value instanceof UnvaluedVariable) {
-			parameterBinder = parameterBinderRegistry.getBinder(((UnvaluedVariable) value).getValueType());
+		} else if (value instanceof Placeholder) {
+			parameterBinder = parameterBinderRegistry.getBinder(((Placeholder) value).getValueType());
 		} else {
 			Class<?> binderType = value.getClass().isArray() ? value.getClass().getComponentType() : value.getClass();
 			parameterBinder = parameterBinderRegistry.getBinder(binderType);
@@ -161,15 +161,15 @@ public class ExpandableSQLAppender implements SQLAppender {
 			} else {
 				addPlaceholder(innerValue, binderSupplier);
 			}
-		} else if (value instanceof UnvaluedVariable) {
-			addPlaceholder((UnvaluedVariable<?, ?>) value);
+		} else if (value instanceof Placeholder) {
+			addPlaceholder((Placeholder<?, ?>) value);
 		} else {
 			addPlaceholder(value, binderSupplier);
 		}
 		return this;
 	}
 	
-	private void addPlaceholder(UnvaluedVariable<?, ?> variable) {
+	private void addPlaceholder(Placeholder<?, ?> variable) {
 		sqlSnippets.add(variable);
 		parameterBinders.put(variable.getName(), parameterBinderRegistry.getBinder(variable.getValueType()));
 		initCurrentSqlSnippet();
@@ -177,7 +177,7 @@ public class ExpandableSQLAppender implements SQLAppender {
 	
 	private void addPlaceholder(Object value, ParameterBinder<?> binderSupplier) {
 		String paramName = String.valueOf(paramCounter.increment());
-		sqlSnippets.add(new UnvaluedVariable<>(paramName, binderSupplier.getColumnType()));
+		sqlSnippets.add(new Placeholder<>(paramName, binderSupplier.getColumnType()));
 		parameterBinders.put(paramName, binderSupplier);
 		values.put(paramName, value);
 		initCurrentSqlSnippet();
@@ -215,8 +215,8 @@ public class ExpandableSQLAppender implements SQLAppender {
 	@Override
 	public String getSQL() {
 		return this.sqlSnippets.stream().map(sqlSnippet -> {
-			if (sqlSnippet instanceof UnvaluedVariable) {
-				return ":" + ((UnvaluedVariable<?, ?>) sqlSnippet).getName();
+			if (sqlSnippet instanceof Placeholder) {
+				return ":" + ((Placeholder<?, ?>) sqlSnippet).getName();
 			} else if (sqlSnippet instanceof StringSQLAppender) {
 				// inner SQL case
 				return ((StringSQLAppender) sqlSnippet).getSQL();
@@ -271,8 +271,8 @@ public class ExpandableSQLAppender implements SQLAppender {
 			
 			void add(ExpandableSQLAppender appender) {
 				appender.sqlSnippets.forEach(sqlSnippet -> {
-					if (sqlSnippet instanceof UnvaluedVariable) {
-						add((UnvaluedVariable) sqlSnippet);
+					if (sqlSnippet instanceof Placeholder) {
+						add((Placeholder) sqlSnippet);
 					} else if (sqlSnippet instanceof StringSQLAppender) {
 						add((StringSQLAppender) sqlSnippet);
 					} else if (sqlSnippet instanceof DefaultSubSQLAppender) {
@@ -281,7 +281,7 @@ public class ExpandableSQLAppender implements SQLAppender {
 				});
 			}
 			
-			void add(UnvaluedVariable variable) {
+			void add(Placeholder variable) {
 				parsedSQL.addParam(variable.getName());
 			}
 			

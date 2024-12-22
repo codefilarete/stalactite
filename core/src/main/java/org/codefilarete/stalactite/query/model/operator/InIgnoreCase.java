@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.query.model.operator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.codefilarete.stalactite.query.model.UnvaluedVariable;
+import org.codefilarete.stalactite.query.model.Placeholder;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
 import org.codefilarete.stalactite.query.model.Variable;
 import org.codefilarete.tool.collection.Arrays;
@@ -42,7 +42,7 @@ public class InIgnoreCase extends BiOperandOperator<Iterable<CharSequence>> {
 					new In<>(Iterables.stream(rawValue).map(LowerCase::new).collect(Collectors.toList()))
 							.not(isNot())
 			);
-		} else if (value instanceof UnvaluedVariable) {
+		} else if (value instanceof Placeholder) {
 			return Arrays.asList(
 					new LowerCase<>(leftOperand),
 					new In<>(value)

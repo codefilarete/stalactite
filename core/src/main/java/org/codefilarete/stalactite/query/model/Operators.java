@@ -384,7 +384,7 @@ public interface Operators {
 	 * @param <T> value type
 	 */
 	static <T, V> ConditionalOperator<T, V> arg(String name, ConditionalOperator<T, V> delegate, Class<T> type) {
-		delegate.setValue(new UnvaluedVariable<>(name, type));
+		delegate.setValue(new Placeholder<>(name, type));
 		return delegate;
 	}
 	
