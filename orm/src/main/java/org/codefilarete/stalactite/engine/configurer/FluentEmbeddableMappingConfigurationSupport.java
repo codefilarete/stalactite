@@ -50,6 +50,7 @@ import static org.codefilarete.tool.Nullable.nullable;
 public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmbeddableMappingBuilder<C>, LambdaMethodUnsheller,
 		EmbeddableMappingConfiguration<C> {
 	
+	@Nullable
 	private EmbeddableMappingConfigurationProvider<? super C> superMappingBuilder;
 	
 	/** Owning class of mapped properties */
@@ -93,6 +94,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	}
 	
 	@Override
+	@Nullable
 	public EmbeddableMappingConfiguration<? super C> getMappedSuperClassConfiguration() {
 		return superMappingBuilder == null ? null : superMappingBuilder.getConfiguration();
 	}

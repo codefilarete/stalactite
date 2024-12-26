@@ -22,6 +22,7 @@ public interface EmbeddableMappingConfiguration<C> {
 	Class<C> getBeanType();
 	
 	@SuppressWarnings("squid:S1452" /* Can't remove wildcard here because it requires to create a local generic "super" type which is forbidden */)
+	@Nullable
 	EmbeddableMappingConfiguration<? super C> getMappedSuperClassConfiguration();
 	
 	List<Linkage> getPropertiesMapping();

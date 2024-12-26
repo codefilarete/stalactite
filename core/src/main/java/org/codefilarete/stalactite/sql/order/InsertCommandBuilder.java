@@ -66,9 +66,7 @@ public class InsertCommandBuilder<T extends Table<T>> implements SQLBuilder {
 		while (columnIterator.hasNext()) {
 			UpdateColumn c = columnIterator.next();
 			result.cat(c.getColumn().getName());
-			if (columnIterator.hasNext()) {
-				result.catIf(columnIterator.hasNext(), ", ");
-			}
+			result.catIf(columnIterator.hasNext(), ", ");
 		}
 		
 		result.cat(") values (");
@@ -77,9 +75,7 @@ public class InsertCommandBuilder<T extends Table<T>> implements SQLBuilder {
 		while (columnIterator2.hasNext()) {
 			UpdateColumn c = columnIterator2.next();
 			catUpdateObject(c, result);
-			if (columnIterator2.hasNext()) {
-				result.catIf(columnIterator2.hasNext(), ", ");
-			}
+			result.catIf(columnIterator2.hasNext(), ", ");
 		}
 		
 		result.cat(")");
@@ -89,7 +85,7 @@ public class InsertCommandBuilder<T extends Table<T>> implements SQLBuilder {
 	
 	/**
 	 * Method that must append the given value coming from the "set" clause to the given SQLAppender.
-	 * Let protected to cover unexpected cases (because {@link UpdateColumn} handle Objects as value)
+	 * Left protected to cover unexpected cases (because {@link UpdateColumn} handle Objects as value)
 	 *
 	 * @param value the value to append as a String in the {@link SQLAppender}
 	 * @param result the final SQL appender
@@ -122,7 +118,7 @@ public class InsertCommandBuilder<T extends Table<T>> implements SQLBuilder {
 				if (values.get(index).equals(UpdateColumn.PLACEHOLDER)) {
 					values.remove(index);
 				}
-				columnIndexes.put((Column<T, Object>) c.getColumn(), index);
+				columnIndexes.put(c.getColumn(), index);
 			}
 		});
 		

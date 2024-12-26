@@ -700,8 +700,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				mappingCollector.currentKey = entityMappingConfiguration;
 				if (initMapping) {
 					// we can't clear those maps since they are given to 
-					mappingCollector.currentColumnMap = new HashMap();
-					mappingCollector.currentReadonlyColumnMap = new HashMap();
+					mappingCollector.currentColumnMap = new HashMap<>();
+					mappingCollector.currentReadonlyColumnMap = new HashMap<>();
 					mappingCollector.readConverters.clear();
 					mappingCollector.writeConverters.clear();
 					mappingCollector.currentMapping = null;
