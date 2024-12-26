@@ -399,8 +399,9 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			
 			Mapping<C, TT> castedMapping = (Mapping<C, TT>) mapping;
 			PrimaryKey<TT, I> subclassPK = castedMapping.targetTable.getPrimaryKey();
+			boolean isIdentifyingConfiguration = identification.getIdentificationDefiner().getPropertiesMapping() == mapping.giveEmbeddableConfiguration();
 			ClassMapping<C, I, TT> currentMappingStrategy = createClassMappingStrategy(
-					identification.getIdentificationDefiner().getPropertiesMapping() == mapping.giveEmbeddableConfiguration(),
+					isIdentifyingConfiguration,
 					castedMapping.targetTable,
 					castedMapping.getMapping(),
 					castedMapping.getReadonlyMapping(),
@@ -428,8 +429,11 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 																							 Dialect dialect,
 																							 ConnectionConfiguration connectionConfiguration) {
 		EntityMappingConfiguration mappingConfiguration = (EntityMappingConfiguration) mapping.mappingConfiguration;
+		// If there's some mapped inheritance, then the identifying configuration is the one with the join table
+		boolean isIdentifyingConfiguration = this.entityMappingConfiguration.getInheritanceConfiguration() == null
+					|| !this.entityMappingConfiguration.getInheritanceConfiguration().isJoinTable();
 		ClassMapping<C, I, T> mappingStrategy = createClassMappingStrategy(
-				identification.getIdentificationDefiner().getPropertiesMapping() == mappingConfiguration.getPropertiesMapping(),
+				isIdentifyingConfiguration,
 				mapping.targetTable,
 				mapping.mapping,
 				mapping.readonlyMapping,

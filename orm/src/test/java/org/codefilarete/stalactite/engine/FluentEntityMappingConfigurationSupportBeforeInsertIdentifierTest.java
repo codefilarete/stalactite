@@ -5,13 +5,19 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.model.Timestamp;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer;
+import org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.function.Sequence;
@@ -22,7 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
-import static org.codefilarete.tool.Nullable.nullable;
+import static org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders.STRING_READER;
 
 /**
  * @author Guillaume Mary
@@ -98,9 +104,13 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 		carPersister.insert(dummyCar);
 		assertThat(dummyCar.getEngine().getId()).isNotNull();
 		
-		Set<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
+		ResultSetRowTransformer<Engine, Long> engineTransformer = new ResultSetRowTransformer<>(Engine.class, "engineId", DefaultResultSetReaders.LONG_READER, Engine::new);
+		engineTransformer.add("engineModel", STRING_READER, Engine::setModel);
+		BeanRelationFixer<Car, Engine> carEngineRelationFixer = BeanRelationFixer.of(Car::setEngine);
+		Set<Car> allCars = persistenceContext.newQuery("select id, model, Engine.id as engineId, Engine.model as engineModel from Car inner join Engine on Car.engineId = Engine.id", Car.class)
 				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
 				.map("model", Car::setModel)
+				.map(carEngineRelationFixer, engineTransformer)
 				.execute(Accumulators.toSet());
 		assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
 		
@@ -135,9 +145,13 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 		carPersister.insert(dummyCar);
 		assertThat(dummyCar.getEngine().getId()).isNotNull();
 		
-		Set<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
+		ResultSetRowTransformer<Engine, Long> engineTransformer = new ResultSetRowTransformer<>(Engine.class, "engineId", DefaultResultSetReaders.LONG_READER, Engine::new);
+		engineTransformer.add("engineModel", STRING_READER, Engine::setModel);
+		BeanRelationFixer<Car, Engine> carEngineRelationFixer = BeanRelationFixer.of(Car::setEngine);
+		Set<Car> allCars = persistenceContext.newQuery("select id, model, Engine.id as engineId, Engine.model as engineModel from Car inner join Engine on Car.id = Engine.carId", Car.class)
 				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
 				.map("model", Car::setModel)
+				.map(carEngineRelationFixer, engineTransformer)
 				.execute(Accumulators.toSet());
 		assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
 		
@@ -154,6 +168,7 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 				.getConfiguration();
 		
 		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = entityBuilder(Vehicle.class, long.class)
+				.map(Vehicle::getName)
 				.mapSuperClass(inheritanceConfiguration)
 				.getConfiguration();
 		
@@ -169,17 +184,20 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
 		
-		Car dummyCar = new Car(1L);
+		Car dummyCar = new Car();
+		dummyCar.setName("Toto");
 		dummyCar.setModel("Renault");
 		
 		// insert test
 		carPersister.insert(dummyCar);
 		
-		Set<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
+		Set<Car> allCars = persistenceContext.newQuery("select id, model, name from Car", Car.class)
 				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
 				.map("model", Car::setModel)
+				.map("name", Car::setName)
 				.execute(Accumulators.toSet());
-		assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
+		assertThat(allCars)
+				.containsExactlyInAnyOrder(dummyCar);
 		
 		// select test
 		Car loadedCar = carPersister.select(1L);
@@ -208,7 +226,7 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
 		
-		Car dummyCar = new Car(1L);
+		Car dummyCar = new Car();
 		dummyCar.setModel("Renault");
 		
 		// insert test
@@ -256,6 +274,16 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 		private Color color;
 		
 		private Engine engine;
+		
+		private String name;
+		
+		public String getName() {
+			return name;
+		}
+		
+		public void setName(String name) {
+			this.name = name;
+		}
 		
 		public Vehicle(Long id) {
 			super(id);
@@ -336,10 +364,7 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 		
 		@Override
 		public boolean equals(Object o) {
-			if (this == o) return true;
-			if (o == null || getClass() != o.getClass()) return false;
-			Car car = (Car) o;
-			return Objects.equals(model, car.model);
+			return EqualsBuilder.reflectionEquals(this, o);
 		}
 		
 		/**
@@ -348,7 +373,7 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 		 */
 		@Override
 		public String toString() {
-			return "Car{id=" + getId() + ", color=" + nullable(getColor()).map(Color::getRgb).get() + ", model='" + model + "\'}";
+			return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
 		}
 	}
 	
@@ -363,6 +388,10 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 		public Engine() {
 		}
 		
+		public Engine(Long id) {
+			this.id = id;
+		}
+		
 		public Engine(String model) {
 			this.model = model;
 		}
@@ -373,6 +402,10 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 		
 		public String getModel() {
 			return model;
+		}
+		
+		public void setModel(String model) {
+			this.model = model;
 		}
 		
 		@Override

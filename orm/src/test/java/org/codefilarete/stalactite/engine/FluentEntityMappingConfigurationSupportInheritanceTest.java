@@ -398,11 +398,11 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			
 			EntityMappingConfiguration<Vehicle, Identifier<Long>> inheritanceConfiguration2 = entityBuilder(Vehicle.class, LONG_TYPE)
 					.mapSuperClass(inheritanceConfiguration)
+					.map(Vehicle::getColor)
 					.getConfiguration();
 			
 			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
 					.map(Car::getModel)
-					.map(Car::getColor)
 					.mapSuperClass(inheritanceConfiguration2)
 					.build(persistenceContext);
 			
