@@ -16,10 +16,10 @@ import org.codefilarete.tool.Strings;
  */
 public class DMLNameProvider {
 	
-	private final Function<Fromable, String> tableAliases;
+	private final Function<Fromable, String> tableAliaser;
 	
-	public DMLNameProvider(Function<Fromable, String> tableAliases) {
-		this.tableAliases = tableAliases;
+	public DMLNameProvider(Function<Fromable, String> tableAliaser) {
+		this.tableAliaser = tableAliaser;
 	}
 	
 	public DMLNameProvider(Map<? extends Fromable, String> tableAliases) {
@@ -52,7 +52,7 @@ public class DMLNameProvider {
 	}
 	
 	public String getAlias(Fromable table) {
-		return tableAliases.apply(table);
+		return tableAliaser.apply(table);
 	}
 	
 	public String getTablePrefix(Fromable table) {

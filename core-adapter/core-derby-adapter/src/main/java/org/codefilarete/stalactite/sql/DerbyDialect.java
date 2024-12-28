@@ -40,7 +40,7 @@ public class DerbyDialect extends Dialect {
 
 	@Override
 	protected DDLTableGenerator newDdlTableGenerator() {
-		return new DerbyDDLTableGenerator(getSqlTypeRegistry());
+		return new DerbyDDLTableGenerator(getSqlTypeRegistry(), getDmlNameProviderFactory());
 	}
 	
 	@Override

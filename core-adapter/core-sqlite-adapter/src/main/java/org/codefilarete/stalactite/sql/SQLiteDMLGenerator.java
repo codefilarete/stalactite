@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.sql;
 
 import java.util.stream.Collectors;
 
-import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSQL;
@@ -15,15 +14,7 @@ import org.codefilarete.tool.function.Predicates;
 
 public class SQLiteDMLGenerator extends DMLGenerator {
 	
-	public SQLiteDMLGenerator(ParameterBinderIndex<Column, ParameterBinder> columnBinderRegistry) {
-		super(columnBinderRegistry);
-	}
-	
-	public SQLiteDMLGenerator(ParameterBinderIndex<Column, ParameterBinder> columnBinderRegistry, Sorter<Column> columnSorter) {
-		super(columnBinderRegistry, columnSorter);
-	}
-	
-	public SQLiteDMLGenerator(ParameterBinderIndex<Column, ParameterBinder> columnBinderRegistry, Sorter<Column> columnSorter, DMLNameProvider dmlNameProvider) {
+	public SQLiteDMLGenerator(ParameterBinderIndex<Column, ParameterBinder> columnBinderRegistry, Sorter<Column> columnSorter, DMLNameProviderFactory dmlNameProvider) {
 		super(columnBinderRegistry, columnSorter, dmlNameProvider);
 	}
 	

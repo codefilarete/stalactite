@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.model.Fromable;
@@ -28,6 +29,11 @@ public class HSQLDBDialect extends Dialect {
 	
 	public HSQLDBDialect() {
 		super(new HSQLDBTypeMapping());
+	}
+	
+	@Override
+	protected DMLNameProviderFactory newDMLNameProviderFactory() {
+		return HSQLDBDMLNameProvider::new;
 	}
 	
 	@Override
@@ -66,6 +72,10 @@ public class HSQLDBDialect extends Dialect {
 		
 		/** HSQLDB keywords to be escape. TODO: to be completed */
 		public static final Set<String> KEYWORDS = Collections.unmodifiableSet(Arrays.asTreeSet(String.CASE_INSENSITIVE_ORDER));
+		
+		public HSQLDBDMLNameProvider(Function<Fromable, String> tableAliaser) {
+			super(tableAliaser);
+		}
 		
 		public HSQLDBDMLNameProvider(Map<Table, String> tableAliases) {
 			super(tableAliases);

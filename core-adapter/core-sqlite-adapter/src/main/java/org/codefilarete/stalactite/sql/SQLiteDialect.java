@@ -8,6 +8,7 @@ import java.util.stream.LongStream;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.SQLiteDDLTableGenerator;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.ReadOperationFactory;
 import org.codefilarete.stalactite.sql.statement.SQLStatement;
@@ -38,12 +39,12 @@ public class SQLiteDialect extends Dialect {
 	
 	@Override
 	protected DMLGenerator newDmlGenerator(ColumnBinderRegistry columnBinderRegistry) {
-		return new SQLiteDMLGenerator(columnBinderRegistry);
+		return new SQLiteDMLGenerator(columnBinderRegistry, NoopSorter.INSTANCE, getDmlNameProviderFactory());
 	}
 	
 	@Override
 	protected DDLTableGenerator newDdlTableGenerator() {
-		return new SQLiteDDLTableGenerator(getSqlTypeRegistry());
+		return new SQLiteDDLTableGenerator(getSqlTypeRegistry(), getDmlNameProviderFactory());
 	}
 	
 	@Override

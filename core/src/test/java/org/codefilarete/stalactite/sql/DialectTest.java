@@ -33,6 +33,7 @@ class DialectTest {
 	void operatorPrintIsOverridden_itIsTakenIntoAccountInDeleteAndQuery() throws SQLException {
 		Dialect testInstance = new Dialect();
 		QuerySQLBuilderFactoryBuilder querySQLBuilderFactoryBuilder = new QuerySQLBuilderFactoryBuilder(
+				testInstance.getDmlNameProviderFactory(),
 				testInstance.getColumnBinderRegistry(),
 				testInstance.getSqlTypeRegistry().getJavaTypeToSqlTypeMapping());
 		querySQLBuilderFactoryBuilder.withOperatorSQLBuilderFactory(
@@ -86,6 +87,7 @@ class DialectTest {
 		}
 		
 		QuerySQLBuilderFactoryBuilder querySQLBuilderFactoryBuilder = new QuerySQLBuilderFactoryBuilder(
+				testInstance.getDmlNameProviderFactory(),
 				testInstance.getColumnBinderRegistry(),
 				testInstance.getSqlTypeRegistry().getJavaTypeToSqlTypeMapping());
 		querySQLBuilderFactoryBuilder.withOperatorSQLBuilderFactory(

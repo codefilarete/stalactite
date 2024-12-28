@@ -18,6 +18,7 @@ import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.id.manager.JDBCGeneratedKeysIdentifierManager;
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -58,7 +59,7 @@ class InsertExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 	@BeforeEach
 	void setUp() {
 		PersistenceConfiguration<Toto, Integer, T> persistenceConfiguration = giveDefaultPersistenceConfiguration();
-		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
+		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter(), DMLNameProvider::new);
 		testInstance = new InsertExecutor<>(persistenceConfiguration.classMappingStrategy,
 			new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
 	}
@@ -129,7 +130,7 @@ class InsertExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 	@Test
 	void insert_withVersioningStrategy() throws SQLException {
 		InsertExecutor<VersionnedToto, Integer, ?> testInstance;
-		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
+		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter(), DMLNameProvider::new);
 		
 		PreparedStatement preparedStatement = mock(PreparedStatement.class);
 		when(preparedStatement.executeLargeBatch()).thenReturn(new long[] { 1 });
@@ -222,7 +223,7 @@ class InsertExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 			when(jdbcMock.connection.prepareStatement(jdbcMock.sqlCaptor.capture(), eq(Statement.RETURN_GENERATED_KEYS))).thenReturn(jdbcMock.preparedStatement);
 			
 			
-			DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
+			DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter(), DMLNameProvider::new);
 			InsertExecutor<Toto, Integer, ?> testInstance = new InsertExecutor<>(persistenceConfiguration.classMappingStrategy,
 					new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
 			List<Toto> totoList = Arrays.asList(new Toto(17, 23), new Toto(29, 31), new Toto(37, 41), new Toto(43, 53));

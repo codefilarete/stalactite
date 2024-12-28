@@ -1,7 +1,6 @@
 package org.codefilarete.stalactite.sql.statement;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -9,10 +8,12 @@ import java.util.TreeSet;
 
 import org.codefilarete.stalactite.engine.runtime.DMLExecutor;
 import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
 import org.codefilarete.stalactite.sql.ddl.DDLAppender;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderIndex;
 import org.codefilarete.tool.Strings;
@@ -40,20 +41,12 @@ public class DMLGenerator {
 	
 	protected Sorter<Column> columnSorter;
 	
-	protected final DMLNameProvider dmlNameProvider;
+	protected final DMLNameProviderFactory dmlNameProviderFactory;
 	
-	public DMLGenerator(ParameterBinderIndex<Column, ParameterBinder> columnBinderRegistry) {
-		this(columnBinderRegistry, NoopSorter.INSTANCE);
-	}
-	
-	public DMLGenerator(ParameterBinderIndex<Column, ParameterBinder> columnBinderRegistry, Sorter<Column> columnSorter) {
-		this(columnBinderRegistry, columnSorter, new DMLNameProvider(Collections.emptyMap()));
-	}
-	
-	public DMLGenerator(ParameterBinderIndex<Column, ParameterBinder> columnBinderRegistry, Sorter<Column> columnSorter, DMLNameProvider dmlNameProvider) {
+	public DMLGenerator(ParameterBinderIndex<Column, ParameterBinder> columnBinderRegistry, Sorter<Column> columnSorter, DMLNameProviderFactory dmlNameProviderFactory) {
 		this.columnBinderRegistry = columnBinderRegistry;
 		setColumnSorter(columnSorter);
-		this.dmlNameProvider = dmlNameProvider;
+		this.dmlNameProviderFactory = dmlNameProviderFactory;
 	}
 	
 	public ParameterBinderIndex<Column, ParameterBinder> getColumnBinderRegistry() {
@@ -86,7 +79,7 @@ public class DMLGenerator {
 	public <T extends Table<T>> ColumnParameterizedSQL<T> buildInsert(Iterable<? extends Column<T, Object>> columns) {
 		Iterable<Column> sortedColumns = sort(columns);
 		Table table = Iterables.first(sortedColumns).getTable();
-		DDLAppender sqlInsert = new DDLAppender(dmlNameProvider, "insert into ", table, "(");
+		DDLAppender sqlInsert = new DDLAppender(dmlNameProviderFactory.build(Fromable::getAbsoluteName), "insert into ", table, "(");
 		sqlInsert.ccat(sortedColumns, ", ");
 		sqlInsert.cat(") values (");
 		
@@ -125,7 +118,7 @@ public class DMLGenerator {
 	public <T extends Table<T>> PreparedUpdate<T> buildUpdate(Iterable<? extends Column<T, Object>> columns, Iterable<? extends Column<T, Object>> where) {
 		Iterable<Column> sortedColumns = sort(columns);
 		Table table = Iterables.first(sortedColumns).getTable();
-		DDLAppender sqlUpdate = new DDLAppender(dmlNameProvider, "update ", table, " set ");
+		DDLAppender sqlUpdate = new DDLAppender(dmlNameProviderFactory.build(Fromable::getAbsoluteName), "update ", table, " set ");
 		Map<UpwhereColumn<T>, Integer> upsertIndexes = new HashMap<>(10);
 		Map<UpwhereColumn<T>, ParameterBinder> parameterBinders = new HashMap<>();
 		int positionCounter = 1;
@@ -155,7 +148,7 @@ public class DMLGenerator {
 	 * @return a (kind of) prepared statement parameterized by {@link Column}
 	 */
 	public <T extends Table<T>> ColumnParameterizedSQL<T> buildDelete(T table, Iterable<? extends Column<T, Object>> where) {
-		DDLAppender sqlDelete = new DDLAppender(dmlNameProvider, "delete from ", table);
+		DDLAppender sqlDelete = new DDLAppender(dmlNameProviderFactory.build(Fromable::getAbsoluteName), "delete from ", table);
 		sqlDelete.cat(" where ");
 		ParameterizedWhere<T> parameterizedWhere = appendWhere(sqlDelete, where);
 		sqlDelete.cutTail(5);
@@ -174,7 +167,7 @@ public class DMLGenerator {
 	 */
 	@SuppressWarnings("squid:ForLoopCounterChangedCheck")
 	public <T extends Table<T>> ColumnParameterizedSQL<T> buildDeleteByKey(T table, Collection<Column<T, Object>> keyColumns, int whereValuesCount) {
-		DDLAppender sqlDelete = new DDLAppender(dmlNameProvider, "delete from ", table, " where ");
+		DDLAppender sqlDelete = new DDLAppender(dmlNameProviderFactory.build(Fromable::getAbsoluteName), "delete from ", table, " where ");
 		ParameterizedWhere parameterizedWhere = appendTupledWhere(sqlDelete, keyColumns, whereValuesCount);
 		Map<Column<T, Object>, int[]> columnToIndex = parameterizedWhere.getColumnToIndex();
 		Map<Column<T, Object>, ParameterBinder<?>> parameterBinders = parameterizedWhere.getParameterBinders();
@@ -192,7 +185,7 @@ public class DMLGenerator {
 	 */
 	public <T extends Table<T>> ColumnParameterizedSQL<T> buildSelect(T table, Iterable<? extends Column<T, ?>> columns, Iterable<? extends Column<T, Object>> where) {
 		Iterable<Column> sortedColumns = sort(columns);
-		DDLAppender sqlSelect = new DDLAppender(dmlNameProvider, "select ");
+		DDLAppender sqlSelect = new DDLAppender(dmlNameProviderFactory.build(Fromable::getAbsoluteName), "select ");
 		sqlSelect.ccat(sortedColumns, ", ");
 		sqlSelect.cat(" from ", table, " where ");
 		ParameterizedWhere<T> parameterizedWhere = appendWhere(sqlSelect, where);
@@ -212,6 +205,7 @@ public class DMLGenerator {
 	 */
 	public <T extends Table<T>> ColumnParameterizedSelect<T> buildSelectByKey(T table, Iterable<? extends Column<T, Object>> columns, Collection<Column<T, Object>> keyColumns, int whereValuesCount) {
 		Iterable<Column> sortedColumns = sort(columns);
+		DMLNameProvider dmlNameProvider = dmlNameProviderFactory.build(Fromable::getAbsoluteName);
 		DDLAppender sqlSelect = new DDLAppender(dmlNameProvider, "select ");
 		Map<String, ParameterBinder<?>> selectParameterBinders = new HashMap<>();
 		for (Column column : sortedColumns) {

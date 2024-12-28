@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.sql;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.model.Fromable;
@@ -22,6 +23,11 @@ public class H2Dialect extends Dialect {
 	}
 	
 	@Override
+	protected DMLNameProviderFactory newDMLNameProviderFactory() {
+		return H2DMLNameProvider::new;
+	}
+	
+	@Override
 	protected H2DDLTableGenerator newDdlTableGenerator() {
 		return new H2DDLTableGenerator(getSqlTypeRegistry());
 	}
@@ -31,6 +37,10 @@ public class H2Dialect extends Dialect {
 		
 		/** H2 keywords to be escape. TODO: to be completed */
 		public static final Set<String> KEYWORDS = Collections.unmodifiableSet(Arrays.asTreeSet(String.CASE_INSENSITIVE_ORDER));
+		
+		public H2DMLNameProvider(Function<Fromable, String> tableAliaser) {
+			super(tableAliaser);
+		}
 		
 		public H2DMLNameProvider(Map<Table, String> tableAliases) {
 			super(tableAliases);

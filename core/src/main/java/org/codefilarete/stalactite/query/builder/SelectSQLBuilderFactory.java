@@ -1,14 +1,11 @@
 package org.codefilarete.stalactite.query.builder;
 
-import java.util.Map;
-
 import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.FunctionSQLBuilder;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.operator.SQLFunction;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.Strings;
 
@@ -51,10 +48,6 @@ public class SelectSQLBuilderFactory {
 		private final Select select;
 		private final DMLNameProvider dmlNameProvider;
 		private final FunctionSQLBuilder functionSQLBuilder;
-		
-		public SelectSQLBuilder(Select select, Map<Table, String> tableAliases, FunctionSQLBuilder functionSQLBuilder) {
-			this(select, new DMLNameProvider(tableAliases), functionSQLBuilder);
-		}
 		
 		public SelectSQLBuilder(Select select, DMLNameProvider dmlNameProvider, FunctionSQLBuilder functionSQLBuilder) {
 			this.select = select;

@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.sql.ddl;
 
 
+import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**
@@ -8,8 +9,8 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
  */
 public class DerbyDDLTableGenerator extends DDLTableGenerator {
 	
-	public DerbyDDLTableGenerator(SqlTypeRegistry typeMapping) {
-		super(typeMapping);
+	public DerbyDDLTableGenerator(SqlTypeRegistry typeMapping, DMLNameProviderFactory dmlNameProviderFactory) {
+		super(typeMapping, dmlNameProviderFactory);
 	}
 	
 	/**

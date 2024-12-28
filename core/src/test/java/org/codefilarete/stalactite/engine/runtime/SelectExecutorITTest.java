@@ -3,20 +3,20 @@ package org.codefilarete.stalactite.engine.runtime;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.runtime.DMLExecutorTest.ComposedId;
 import org.codefilarete.stalactite.engine.runtime.DMLExecutorTest.PersistenceConfiguration;
 import org.codefilarete.stalactite.engine.runtime.DMLExecutorTest.Tata;
 import org.codefilarete.stalactite.engine.runtime.DMLExecutorTest.Toto;
-import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
-import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
+import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.test.DatabaseIntegrationTest;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
@@ -35,11 +35,11 @@ abstract class SelectExecutorITTest<T extends Table<T>> extends DatabaseIntegrat
 	@Test
 	void select() throws SQLException {
 		PersistenceConfiguration<Toto, Integer, T> persistenceConfiguration = DMLExecutorTest.giveDefaultPersistenceConfiguration();
-		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
+		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter(), DMLNameProvider::new);
 		
 		Connection connection = connectionProvider.giveConnection();
 		ConnectionProvider connectionProvider = new SimpleConnectionProvider(connection);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getSqlTypeRegistry(), connectionProvider);
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), connectionProvider);
 		ddlDeployer.getDdlGenerator().addTables(persistenceConfiguration.classMappingStrategy.getTargetTable());
 		ddlDeployer.deployDDL();
 		connection.prepareStatement("insert into Toto(a, b, c) values (1, 10, 100)").execute();
@@ -69,11 +69,11 @@ abstract class SelectExecutorITTest<T extends Table<T>> extends DatabaseIntegrat
 	@Test
 	void select_composedId_idIsItSelf() throws SQLException {
 		PersistenceConfiguration<Toto, Toto, T> persistenceConfiguration = DMLExecutorTest.giveIdAsItselfPersistenceConfiguration();
-		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
+		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter(), DMLNameProvider::new);
 		
 		Connection connection = connectionProvider.giveConnection();
 		ConnectionProvider connectionProvider = new SimpleConnectionProvider(connection);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getSqlTypeRegistry(), connectionProvider);
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), connectionProvider);
 		ddlDeployer.getDdlGenerator().addTables(persistenceConfiguration.classMappingStrategy.getTargetTable());
 		ddlDeployer.deployDDL();
 		connection.prepareStatement("insert into Toto(a, b, c) values (1, 10, 100)").execute();
@@ -95,11 +95,11 @@ abstract class SelectExecutorITTest<T extends Table<T>> extends DatabaseIntegrat
 	@Test
 	void select_composedId_idIsABean() throws SQLException {
 		PersistenceConfiguration<Tata, ComposedId, T> persistenceConfiguration = DMLExecutorTest.giveComposedIdPersistenceConfiguration();
-		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
+		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter(), DMLNameProvider::new);
 		
 		Connection connection = connectionProvider.giveConnection();
 		ConnectionProvider connectionProvider = new SimpleConnectionProvider(connection);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getSqlTypeRegistry(), connectionProvider);
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), connectionProvider);
 		ddlDeployer.getDdlGenerator().addTables(persistenceConfiguration.classMappingStrategy.getTargetTable());
 		ddlDeployer.deployDDL();
 		connection.prepareStatement("insert into Tata(a, b, c) values (1, 10, 100)").execute();

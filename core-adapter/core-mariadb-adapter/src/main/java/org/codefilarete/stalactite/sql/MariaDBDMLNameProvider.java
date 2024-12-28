@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.sql;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.model.Fromable;
@@ -30,6 +31,10 @@ public class MariaDBDMLNameProvider extends DMLNameProvider {
 			"UNSIGNED", "USE", "UTC_DATE", "UTC_TIME", "UTC_TIMESTAMP", "VARBINARY", "VARCHARACTER", "WHILE", "XOR", "YEAR_MONTH", "ZEROFILL",
 			"label", "id", "owner", "idx", "ConstantChoice"
 	));
+	
+	public MariaDBDMLNameProvider(Function<Fromable, String> tableAliaser) {
+		super(tableAliaser);
+	}
 	
 	public MariaDBDMLNameProvider(Map<Table, String> tableAliases) {
 		super(tableAliases);

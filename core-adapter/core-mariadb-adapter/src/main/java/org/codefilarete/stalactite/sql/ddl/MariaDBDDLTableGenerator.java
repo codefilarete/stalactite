@@ -14,7 +14,7 @@ import org.codefilarete.tool.StringAppender;
 public class MariaDBDDLTableGenerator extends DDLTableGenerator {
 	
 	public MariaDBDDLTableGenerator(SqlTypeRegistry typeMapping) {
-		super(typeMapping, new MariaDBDMLNameProvider(Collections.emptyMap()));
+		super(typeMapping, function -> new MariaDBDMLNameProvider(Collections.emptyMap()));
 	}
 	
 	/**

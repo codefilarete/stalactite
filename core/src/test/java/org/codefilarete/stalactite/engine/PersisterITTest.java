@@ -66,7 +66,7 @@ abstract class PersisterITTest extends DatabaseIntegrationTest {
 		
 		testInstance = new BeanPersister<>(totoClassMappingStrategy, dialect, new ConnectionConfigurationSupport(connectionProvider, 3));
 		
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getSqlTypeRegistry(), connectionProvider);
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), connectionProvider);
 		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));
 		ddlDeployer.deployDDL();
 	}

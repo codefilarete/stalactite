@@ -45,7 +45,7 @@ public class DDLDeployer {
 	private final DDLGenerator ddlGenerator;
 	
 	/**
-	 * Simple constructor that gets its informations from the given {@link PersistenceContext}: {@link DDLGenerator} from its
+	 * Simple constructor that gets its information from the given {@link PersistenceContext}: {@link DDLGenerator} from its
 	 * {@link Dialect} and {@link ConnectionProvider}
 	 * 
 	 * @param persistenceContext a {@link PersistenceContext}, source of arguments for {@link #DDLDeployer(DDLTableGenerator, ConnectionProvider)}
@@ -54,17 +54,6 @@ public class DDLDeployer {
 	public DDLDeployer(PersistenceContext persistenceContext) {
 		this(persistenceContext.getDialect().getDdlTableGenerator(), persistenceContext.getConnectionProvider());
 		ddlGenerator.addTables(collectTables(persistenceContext));
-	}
-	
-	/**
-	 * Basic constructor that will create id own default {@link DDLGenerator}
-	 * Tables to deploy must be added through {@link #getDdlGenerator()}.addTables(..)
-	 * 
-	 * @param sqlTypeRegistry the SQL types per Column or Java type provider
-	 * @param connectionProvider the {@link Connection} provider for executing SQL scripts
-	 */
-	public DDLDeployer(SqlTypeRegistry sqlTypeRegistry, ConnectionProvider connectionProvider) {
-		this(new DDLTableGenerator(sqlTypeRegistry), connectionProvider);
 	}
 	
 	/**

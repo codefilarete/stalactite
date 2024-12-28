@@ -11,6 +11,7 @@ import org.codefilarete.stalactite.query.builder.SQLAppender;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
 import org.codefilarete.stalactite.query.builder.StringSQLAppender;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.order.Update.UpdateColumn;
@@ -31,13 +32,16 @@ public class InsertCommandBuilder<T extends Table<T>> implements SQLBuilder {
 	
 	private final Insert<T> insert;
 	
-	public InsertCommandBuilder(Insert<T> insert) {
+	private final DMLNameProviderFactory dmlNameProviderFactory;
+	
+	public InsertCommandBuilder(Insert<T> insert, DMLNameProviderFactory dmlNameProviderFactory) {
 		this.insert = insert;
+		this.dmlNameProviderFactory = dmlNameProviderFactory;
 	}
 	
 	@Override
 	public String toSQL() {
-		return toSQL(new StringSQLAppender(new DMLNameProvider(new HashMap<>())) {
+		return toSQL(new StringSQLAppender(dmlNameProviderFactory.build(new HashMap<>())) {
 			@Override
 			public <V> StringSQLAppender catValue(@Nullable Selectable<V> column, Object value) {
 				if (value == UpdateColumn.PLACEHOLDER) {

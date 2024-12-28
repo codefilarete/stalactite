@@ -22,6 +22,7 @@ import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
  */
 public class QuerySQLBuilderFactoryBuilder {
 	
+	protected final DMLNameProviderFactory dmlNameProviderFactory;
 	protected final ColumnBinderRegistry parameterBinderRegistry;
 	protected final JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping;
 	protected SelectSQLBuilderFactory selectBuilderFactory;
@@ -32,7 +33,8 @@ public class QuerySQLBuilderFactoryBuilder {
 	protected OperatorSQLBuilderFactory operatorSQLBuilderFactory;
 	protected FunctionSQLBuilderFactory functionSQLBuilderFactory;
 	
-	public QuerySQLBuilderFactoryBuilder(ColumnBinderRegistry parameterBinderRegistry, JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping) {
+	public QuerySQLBuilderFactoryBuilder(DMLNameProviderFactory dmlNameProviderFactory, ColumnBinderRegistry parameterBinderRegistry, JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping) {
+		this.dmlNameProviderFactory = dmlNameProviderFactory;
 		this.parameterBinderRegistry = parameterBinderRegistry;
 		this.javaTypeToSqlTypeMapping = javaTypeToSqlTypeMapping;
 	}
@@ -100,6 +102,6 @@ public class QuerySQLBuilderFactoryBuilder {
 		if (selectBuilderFactory == null) {
 			withSelectBuilderFactory(new SelectSQLBuilderFactory(functionSQLBuilderFactory));
 		}
-		return new QuerySQLBuilderFactory(parameterBinderRegistry, selectBuilderFactory, fromSqlBuilderFactory, pseudoTableSQLBuilderFactory, whereSqlBuilderFactory, havingBuilderFactory, functionSQLBuilderFactory);
+		return new QuerySQLBuilderFactory(dmlNameProviderFactory, parameterBinderRegistry, selectBuilderFactory, fromSqlBuilderFactory, pseudoTableSQLBuilderFactory, whereSqlBuilderFactory, havingBuilderFactory, functionSQLBuilderFactory);
 	}
 }

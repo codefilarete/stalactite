@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.sql;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.model.Fromable;
@@ -39,6 +40,10 @@ public class MySQLDMLNameProvider extends DMLNameProvider {
 			"USING", "UTC_DATE", "UTC_TIME", "UTC_TIMESTAMP", "VALUES", "VARBINARY", "VARCHAR", "VARCHARACTER", "VARYING", "VIRTUAL", "WHEN", "WHERE", "WHILE",
 			"WINDOW", "WITH", "WRITE", "XOR", "YEAR_MONTH", "ZEROFILL"
 	));
+	
+	public MySQLDMLNameProvider(Function<Fromable, String> tableAliaser) {
+		super(tableAliaser);
+	}
 	
 	public MySQLDMLNameProvider(Map<Table, String> tableAliases) {
 		super(tableAliases);

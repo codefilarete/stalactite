@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.sql;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.LongSupplier;
 
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
@@ -52,13 +53,22 @@ public class OracleDialect extends Dialect {
 		return (GeneratedKeysReader<I>) new OracleGeneratedKeysReader(keyName);
 	}
 	
+	@Override
+	protected DMLNameProviderFactory newDMLNameProviderFactory() {
+		return OracleDMLNameProvider::new;
+	}
+	
 	public static class OracleDMLNameProvider extends DMLNameProvider {
 		
-		/** Oracle keywords to be escape. TODO: to be completed */
+		/** Oracle keywords to be escaped. TODO: to be completed */
 		public static final Set<String> KEYWORDS = Collections.unmodifiableSet(Arrays.asTreeSet(String.CASE_INSENSITIVE_ORDER));
 		
-		public OracleDMLNameProvider(Map<Table, String> tableAliases) {
+		public OracleDMLNameProvider(Map<? extends Fromable, String> tableAliases) {
 			super(tableAliases);
+		}
+		
+		public OracleDMLNameProvider(Function<Fromable, String> tableAliaser) {
+			super(tableAliaser);
 		}
 		
 		@Override

@@ -12,6 +12,7 @@ import org.codefilarete.stalactite.engine.runtime.SelectExecutor.InternalExecuto
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -48,7 +49,7 @@ class SelectExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 	@BeforeEach
 	public void setUp() throws SQLException {
 		PersistenceConfiguration<Toto, Integer, T> persistenceConfiguration = giveDefaultPersistenceConfiguration();
-		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
+		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter(), DMLNameProvider::new);
 		testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, jdbcMock.transactionManager, dmlGenerator, 3);
 	}
 	
@@ -182,7 +183,7 @@ class SelectExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 	@Test
 	void select_multiple_composedId_lastBlockContainsOneValue() throws SQLException {
 		PersistenceConfiguration<Toto, Toto, T> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
-		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
+		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter(), DMLNameProvider::new);
 		SelectExecutor<Toto, Toto, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, jdbcMock.transactionManager, dmlGenerator, 3);
 		
 		// mocking executeQuery not to return null because select method will use the ResultSet
@@ -205,7 +206,7 @@ class SelectExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 	@Test
 	void select_multiple_composedId_lastBlockContainsMultipleValue() throws SQLException {
 		PersistenceConfiguration<Toto, Toto, T> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
-		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
+		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter(), DMLNameProvider::new);
 		SelectExecutor<Toto, Toto, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, jdbcMock.transactionManager, dmlGenerator, 3);
 		
 		// mocking executeQuery not to return null because select method will use the ResultSet
@@ -228,7 +229,7 @@ class SelectExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 	@Test
 	void select_multiple_composedId_lastBlockSizeIsInOperatorSize() throws SQLException {
 		PersistenceConfiguration<Toto, Toto, T> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
-		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
+		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter(), DMLNameProvider::new);
 		SelectExecutor<Toto, Toto, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, jdbcMock.transactionManager, dmlGenerator, 3);
 		
 		// mocking executeQuery not to return null because select method will use the ResultSet

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.codefilarete.stalactite.engine.StaleStateObjectException;
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -35,7 +36,7 @@ class DeleteExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 	@BeforeEach
 	void setUp() {
 		PersistenceConfiguration<Toto, Integer, T> persistenceConfiguration = giveDefaultPersistenceConfiguration();
-		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
+		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter(), DMLNameProvider::new);
 		testInstance = new DeleteExecutor<>(persistenceConfiguration.classMappingStrategy,
 											new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
 	}
@@ -160,7 +161,7 @@ class DeleteExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 	@Test
 	void deleteById_composedId_multiple_lastBlockContainsOneValue() throws Exception {
 		PersistenceConfiguration<Toto, Toto, ?> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
-		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
+		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter(), DMLNameProvider::new);
 		DeleteExecutor<Toto, Toto, ?> testInstance = new DeleteExecutor<>(persistenceConfiguration.classMappingStrategy,
 				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
 		
@@ -186,7 +187,7 @@ class DeleteExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 	@Test
 	void deleteById_composedId_multiple_lastBlockContainsMultipleValue() throws Exception {
 		PersistenceConfiguration<Toto, Toto, ?> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
-		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
+		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter(), DMLNameProvider::new);
 		DeleteExecutor<Toto, Toto, ?> testInstance = new DeleteExecutor<>(persistenceConfiguration.classMappingStrategy,
 				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
 		
@@ -216,7 +217,7 @@ class DeleteExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 	@Test
 	void deleteById_composedId_multiple_lastBlockSizeIsInOperatorSize() throws Exception {
 		PersistenceConfiguration<Toto, Toto, ?> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
-		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
+		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter(), DMLNameProvider::new);
 		DeleteExecutor<Toto, Toto, ?>testInstance = new DeleteExecutor<>(persistenceConfiguration.classMappingStrategy,
 				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
 		

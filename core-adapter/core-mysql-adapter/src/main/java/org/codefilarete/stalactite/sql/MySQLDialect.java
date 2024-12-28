@@ -1,11 +1,7 @@
 package org.codefilarete.stalactite.sql;
 
-import java.util.Collections;
-
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.MySQLDDLTableGenerator;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
@@ -35,13 +31,13 @@ public class MySQLDialect extends Dialect {
 	}
 	
 	@Override
-	public DDLTableGenerator newDdlTableGenerator() {
-		return new MySQLDDLTableGenerator(getSqlTypeRegistry());
+	protected DMLNameProviderFactory newDMLNameProviderFactory() {
+		return MySQLDMLNameProvider::new;
 	}
 	
 	@Override
-	protected DMLGenerator newDmlGenerator(ColumnBinderRegistry columnBinderRegistry) {
-		return new DMLGenerator(columnBinderRegistry, NoopSorter.INSTANCE, new MySQLDMLNameProvider(Collections.emptyMap()));
+	public DDLTableGenerator newDdlTableGenerator() {
+		return new MySQLDDLTableGenerator(getSqlTypeRegistry());
 	}
 	
 	@Override

@@ -485,7 +485,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		
 		@Override
 		public void execute() {
-			InsertStatement<T> insertStatement = new InsertCommandBuilder<>(this).toStatement(dialect.getColumnBinderRegistry());
+			InsertStatement<T> insertStatement = new InsertCommandBuilder<>(this, dialect.getDmlNameProviderFactory()).toStatement(dialect.getColumnBinderRegistry());
 			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(insertStatement, getConnectionProvider())) {
 				writeOperation.setValues(insertStatement.getValues());
 				writeOperation.execute();

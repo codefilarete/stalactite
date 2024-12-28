@@ -22,8 +22,8 @@ import org.codefilarete.tool.collection.PairIterator;
 
 /**
  * Factory for {@link FromSQLBuilder}. It's overridable by giving your own implementation to
- * {@link QuerySQLBuilderFactory#QuerySQLBuilderFactory(ColumnBinderRegistry, SelectSQLBuilderFactory,
- * FromSQLBuilderFactory, PseudoTableSQLBuilderFactory, WhereSQLBuilderFactory, WhereSQLBuilderFactory, FunctionSQLBuilderFactory)}
+ * {@link QuerySQLBuilderFactory#QuerySQLBuilderFactory(org.codefilarete.stalactite.sql.DMLNameProviderFactory, ColumnBinderRegistry,
+ * SelectSQLBuilderFactory, FromSQLBuilderFactory, PseudoTableSQLBuilderFactory, WhereSQLBuilderFactory, WhereSQLBuilderFactory, FunctionSQLBuilderFactory)}
  * 
  * @author Guillaume Mary
  */

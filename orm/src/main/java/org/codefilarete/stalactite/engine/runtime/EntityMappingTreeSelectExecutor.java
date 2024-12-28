@@ -4,6 +4,7 @@ import javax.annotation.Nullable;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -29,7 +30,9 @@ import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.JoinLink;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.DDLAppender;
@@ -89,10 +92,13 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 		this.blockSize = dialect.getInOperatorMaxSize();
 		this.primaryKey = entityMapping.getTargetTable().getPrimaryKey();
 		// NB: in the condition, table and columns are from the main strategy, so there's no need to use aliases
-		this.whereClauseDMLNameProvider = new WhereClauseDMLNameProvider(entityMapping.getTargetTable(), entityMapping.getTargetTable().getAbsoluteName());
+		this.whereClauseDMLNameProvider = new WhereClauseDMLNameProvider(
+				entityMapping.getTargetTable(),
+				entityMapping.getTargetTable().getAbsoluteName(),
+				dialect.getDmlNameProviderFactory());
 		this.connectionProvider = connectionProvider;
 		
-		this.dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new NoopSorter(), whereClauseDMLNameProvider);
+		this.dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new NoopSorter(), k -> whereClauseDMLNameProvider);
 		
 		parameterBinderForPKInSelect = new ParameterBinderIndexFromMap<>(Iterables.map(primaryKey.getColumns(), Function.identity(), dialect.getColumnBinderRegistry()::getBinder));
 		
@@ -292,16 +298,23 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 		}
 	}
 	
+	/**
+	 * Designed as both inheriting from {@link DMLNameProvider} for type compatibility with {@link org.codefilarete.stalactite.query.builder.SQLAppender}s
+	 * methods, and as a wrapper of a {@link DMLNameProvider} to let user call a shared {@link DMLNameProviderFactory}.
+	 * @author Guillaume Mary
+	 */
 	private static class WhereClauseDMLNameProvider extends DMLNameProvider {
 		
 		private final Table whereTable;
 		private final String whereTableAlias;
+		private final DMLNameProvider delegate;
 		
-		private WhereClauseDMLNameProvider(Table whereTable, @Nullable String whereTableAlias) {
+		private WhereClauseDMLNameProvider(Table whereTable, @Nullable String whereTableAlias, DMLNameProviderFactory delegateFactory) {
 			// we don't care about the aliases because we redefine our way of getting them, see #getAlias
 			super(java.util.Collections.emptyMap());
 			this.whereTable = whereTable;
 			this.whereTableAlias = whereTableAlias;
+			this.delegate = delegateFactory.build(new HashMap<>());
 		}
 		
 		/** Overridden to get alias of the root and only for it, throws exception if given table is not where table one */
@@ -313,6 +326,21 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 				// anti unexpected usage
 				throw new IllegalArgumentException("Table " + table.getName() + " is not expected to be used in the where clause");
 			}
+		}
+		
+		@Override
+		public String getSimpleName(Selectable<?> column) {
+			return delegate.getSimpleName(column);
+		}
+		
+		@Override
+		public String getTablePrefix(Fromable table) {
+			return delegate.getTablePrefix(table);
+		}
+		
+		@Override
+		public String getName(Selectable<?> column) {
+			return delegate.getName(column);
 		}
 	}
 	

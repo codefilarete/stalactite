@@ -21,7 +21,7 @@ public class DDLTableGeneratorTest {
 	
 	@Test
 	void generateCreateTable() {
-		DDLTableGenerator testInstance = new DDLTableGenerator(null) {
+		DDLTableGenerator testInstance = new DDLTableGenerator(null, DMLNameProvider::new) {
 			@Override
 			protected String getSqlType(Column column) {
 				return "type";
@@ -71,7 +71,7 @@ public class DDLTableGeneratorTest {
 	
 	@Test
 	void generateDropTable() {
-		DDLTableGenerator testInstance = new DDLTableGenerator(null);
+		DDLTableGenerator testInstance = new DDLTableGenerator(null, DMLNameProvider::new);
 		
 		Table toto = new Table(null, "Toto");
 		
@@ -96,7 +96,7 @@ public class DDLTableGeneratorTest {
 	
 	@Test
 	void generateDropTableIfExists() {
-		DDLTableGenerator testInstance = new DDLTableGenerator(null);
+		DDLTableGenerator testInstance = new DDLTableGenerator(null, DMLNameProvider::new);
 		
 		Table toto = new Table(null, "Toto");
 		
@@ -121,7 +121,7 @@ public class DDLTableGeneratorTest {
 	
 	@Test
 	void generateAddColumn() {
-		DDLTableGenerator testInstance = new DDLTableGenerator(null) {
+		DDLTableGenerator testInstance = new DDLTableGenerator(null, DMLNameProvider::new) {
 			@Override
 			protected String getSqlType(Column column) {
 				return "type";
@@ -157,7 +157,7 @@ public class DDLTableGeneratorTest {
 	
 	@Test
 	void generateDropColumn() {
-		DDLTableGenerator testInstance = new DDLTableGenerator(null) {
+		DDLTableGenerator testInstance = new DDLTableGenerator(null, DMLNameProvider::new) {
 			@Override
 			protected String getSqlType(Column column) {
 				return "type";
@@ -193,7 +193,7 @@ public class DDLTableGeneratorTest {
 	
 	@Test
 	void generateCreateIndex() {
-		DDLTableGenerator testInstance = new DDLTableGenerator(null);
+		DDLTableGenerator testInstance = new DDLTableGenerator(null, DMLNameProvider::new);
 		
 		Table t = new Table(null, "Toto");
 		Column colA = t.addColumn("A", String.class);
@@ -225,7 +225,7 @@ public class DDLTableGeneratorTest {
 	
 	@Test
 	void generateDropIndex() {
-		DDLTableGenerator testInstance = new DDLTableGenerator(null);
+		DDLTableGenerator testInstance = new DDLTableGenerator(null, DMLNameProvider::new);
 		
 		Table t = new Table(null, "Toto");
 		Column<Table, String> colA = t.addColumn("A", String.class);
@@ -258,7 +258,7 @@ public class DDLTableGeneratorTest {
 	
 	@Test
 	void generateCreateForeignKey() {
-		DDLTableGenerator testInstance = new DDLTableGenerator(null);
+		DDLTableGenerator testInstance = new DDLTableGenerator(null, DMLNameProvider::new);
 		
 		Table toto = new Table(null, "Toto");
 		Column colA = toto.addColumn("A", String.class);
@@ -293,7 +293,7 @@ public class DDLTableGeneratorTest {
 	
 	@Test
 	void generateDropForeignKey() {
-		DDLTableGenerator testInstance = new DDLTableGenerator(null);
+		DDLTableGenerator testInstance = new DDLTableGenerator(null, DMLNameProvider::new);
 		
 		Table toto = new Table(null, "Toto");
 		Column colA = toto.addColumn("A", String.class);

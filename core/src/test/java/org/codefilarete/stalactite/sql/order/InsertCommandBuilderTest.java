@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.sql.order;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.order.InsertCommandBuilder.InsertStatement;
@@ -29,7 +30,7 @@ class InsertCommandBuilderTest {
 				.set(columnA)
 				.set(columnB, "tata");
 		
-		InsertCommandBuilder<T> testInstance = new InsertCommandBuilder<>(insert);
+		InsertCommandBuilder<T> testInstance = new InsertCommandBuilder<>(insert, DMLNameProvider::new);
 		
 		assertThat(testInstance.toSQL()).isEqualTo("insert into Toto(a, b) values (?, 'tata')");
 	}
@@ -45,7 +46,7 @@ class InsertCommandBuilderTest {
 				.set(columnB, "tata")
 				.set(columnC);
 		
-		InsertCommandBuilder<T> testInstance = new InsertCommandBuilder<>(insert);
+		InsertCommandBuilder<T> testInstance = new InsertCommandBuilder<>(insert, DMLNameProvider::new);
 		
 		ColumnBinderRegistry binderRegistry = new ColumnBinderRegistry();
 		

@@ -37,7 +37,7 @@ public class DeleteCommandBuilder<T extends Table<T>> implements SQLBuilder, Pre
 	public DeleteCommandBuilder(Delete<T> delete, Dialect dialect) {
 		this.delete = delete;
 		this.dialect = dialect;
-		this.dmlNameProvider = new MultiTableAwareDMLNameProvider();
+		this.dmlNameProvider = new MultiTableAwareDMLNameProvider(dialect.getDmlNameProviderFactory());
 	}
 	
 	@Override

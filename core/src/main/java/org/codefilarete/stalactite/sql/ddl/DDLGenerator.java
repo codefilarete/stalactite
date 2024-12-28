@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.sql.ddl;
 
 import java.util.*;
 
+import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
 import org.codefilarete.stalactite.sql.ddl.structure.UniqueConstraint;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -30,8 +31,8 @@ public class DDLGenerator implements DDLProvider {
 	 * 
 	 * @param sqlTypeRegistry the mapping to be used to get SQL type of columns
 	 */
-	public DDLGenerator(SqlTypeRegistry sqlTypeRegistry) {
-		this.ddlTableGenerator = new DDLTableGenerator(sqlTypeRegistry);
+	public DDLGenerator(SqlTypeRegistry sqlTypeRegistry, DMLNameProviderFactory dmlNameProviderFactory) {
+		this.ddlTableGenerator = new DDLTableGenerator(sqlTypeRegistry, dmlNameProviderFactory);
 	}
 	
 	public DDLGenerator(DDLTableGenerator ddlTableGenerator) {

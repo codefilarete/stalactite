@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.sql.ddl;
 
 
+import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.ddl.structure.UniqueConstraint;
@@ -11,8 +12,8 @@ import org.codefilarete.tool.StringAppender;
  */
 public class SQLiteDDLTableGenerator extends DDLTableGenerator {
 	
-	public SQLiteDDLTableGenerator(SqlTypeRegistry typeMapping) {
-		super(typeMapping);
+	public SQLiteDDLTableGenerator(SqlTypeRegistry typeMapping, DMLNameProviderFactory dmlNameProviderFactory) {
+		super(typeMapping, dmlNameProviderFactory);
 	}
 	
 	/**

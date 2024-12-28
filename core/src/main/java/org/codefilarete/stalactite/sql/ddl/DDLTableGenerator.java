@@ -1,8 +1,9 @@
 package org.codefilarete.stalactite.sql.ddl;
 
-import java.util.Collections;
+import java.util.HashMap;
 
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Index;
@@ -20,13 +21,17 @@ public class DDLTableGenerator {
 	
 	protected final DMLNameProvider dmlNameProvider;
 	
-	public DDLTableGenerator(SqlTypeRegistry typeMapping) {
-		this(typeMapping, new DMLNameProvider(Collections.emptyMap()));
-	}
-
 	public DDLTableGenerator(SqlTypeRegistry typeMapping, DMLNameProvider dmlNameProvider) {
 		this.typeMapping = typeMapping;
 		this.dmlNameProvider = dmlNameProvider;
+	}
+
+	public DDLTableGenerator(SqlTypeRegistry typeMapping) {
+		this(typeMapping, DMLNameProvider::new);
+	}
+	
+	public DDLTableGenerator(SqlTypeRegistry typeMapping, DMLNameProviderFactory dmlNameProviderFactory) {
+		this(typeMapping, dmlNameProviderFactory.build(new HashMap<>()));
 	}
 	
 	public String generateCreateTable(Table<?> table) {

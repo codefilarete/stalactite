@@ -44,7 +44,7 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 	public UpdateCommandBuilder(Update<T> update, Dialect dialect) {
 		this.update = update;
 		this.dialect = dialect;
-		this.dmlNameProvider = new MultiTableAwareDMLNameProvider();
+		this.dmlNameProvider = new MultiTableAwareDMLNameProvider(dialect.getDmlNameProviderFactory());
 	}
 	
 	@Override

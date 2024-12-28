@@ -29,7 +29,7 @@ class DMLGeneratorTest {
 	public void setUp() {
 		currentDialect = new Dialect(new JavaTypeToSqlTypeMapping());
 		stringBinder = currentDialect.getColumnBinderRegistry().getBinder(String.class);
-		testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE);
+		testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, DMLNameProvider::new);
 	}
 	
 	@Test
@@ -62,7 +62,7 @@ class DMLGeneratorTest {
 				return super.getSimpleName(column);
 			}
 		};
-		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, dmlNameProvider);
+		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, k -> dmlNameProvider);
 
 		ColumnParameterizedSQL builtInsert = testInstance.buildInsert(toto.getColumns());
 		assertThat(builtInsert.getSQL()).isEqualTo("insert into Toto('key', B) values (?, ?)");
@@ -106,7 +106,7 @@ class DMLGeneratorTest {
 				return super.getSimpleName(column);
 			}
 		};
-		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, dmlNameProvider);
+		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, k -> dmlNameProvider);
 		
 		PreparedUpdate builtUpdate = testInstance.buildUpdate(toto.getColumns(), Arrays.asList(colA, colB));
 		assertThat(builtUpdate.getSQL()).isEqualTo("update Toto set 'key' = ?, B = ? where 'key' = ? and B = ?");
@@ -148,7 +148,7 @@ class DMLGeneratorTest {
 				return super.getSimpleName(column);
 			}
 		};
-		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, dmlNameProvider);
+		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, k -> dmlNameProvider);
 		
 		ColumnParameterizedSQL builtDelete = testInstance.buildDelete(toto, Arrays.asList(colA));
 		assertThat(builtDelete.getSQL()).isEqualTo("delete from Toto where 'key' = ?");
@@ -201,7 +201,7 @@ class DMLGeneratorTest {
 				return super.getSimpleName(column);
 			}
 		};
-		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, dmlNameProvider);
+		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, k -> dmlNameProvider);
 		
 		Set<Column<Table, Object>> singleton = (Set) Collections.singleton(colA);
 		ColumnParameterizedSQL builtDelete = testInstance.buildDeleteByKey(toto, singleton, 1);
@@ -239,7 +239,7 @@ class DMLGeneratorTest {
 				return super.getSimpleName(column);
 			}
 		};
-		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, dmlNameProvider);
+		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, k -> dmlNameProvider);
 		
 		ColumnParameterizedSQL builtSelect = testInstance.buildSelect(toto, Arrays.asList(colA, colB), Arrays.asList(colA, colB));
 		assertThat(builtSelect.getSQL()).isEqualTo("select 'key', B from Toto where 'key' = ? and B = ?");
@@ -294,7 +294,7 @@ class DMLGeneratorTest {
 				return super.getSimpleName(column);
 			}
 		};
-		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, dmlNameProvider);
+		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, k -> dmlNameProvider);
 		
 		Set<Column<Table, Object>> keys = Collections.singleton(colA);
 		ColumnParameterizedSQL builtSelect = testInstance.buildSelectByKey(toto, Arrays.asList(colA, colB), keys, 5);

@@ -58,7 +58,7 @@ public class SelectSQLBuilderTest {
 	@ParameterizedTest
 	@MethodSource("toSQL_data")
 	public void toSQL(SelectChain<Select> select, Map<Table, String> tableAliases, String expected) {
-		SelectSQLBuilder testInstance = new SelectSQLBuilder(select.getSelect(), tableAliases, new FunctionSQLBuilder(new DMLNameProvider(tableAliases), new DefaultTypeMapping()));
+		SelectSQLBuilder testInstance = new SelectSQLBuilder(select.getSelect(), new DMLNameProvider(tableAliases::get), new FunctionSQLBuilder(new DMLNameProvider(tableAliases), new DefaultTypeMapping()));
 		assertThat(testInstance.toSQL()).isEqualTo(expected);
 	}
 }

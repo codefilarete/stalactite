@@ -18,6 +18,7 @@ import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
 import org.codefilarete.stalactite.query.model.operator.SQLFunction;
+import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -45,23 +46,27 @@ public class QuerySQLBuilderFactory {
 	private final WhereSQLBuilderFactory whereBuilderFactory;
 	private final WhereSQLBuilderFactory havingBuilderFactory;
 	private final FunctionSQLBuilderFactory functionSQLBuilderFactory;
+	private final DMLNameProviderFactory dmlNameProviderFactory;
 	
 	/**
 	 * Main constructor
 	 *
+	 * @param dmlNameProviderFactory
 	 * @param parameterBinderRegistry necessary while using {@link PreparableSQLBuilder#toPreparableSQL()} after calling {@link #queryBuilder(Query)}
 	 * @param selectBuilderFactory factory for select clause
 	 * @param fromBuilderFactory factory for from clause
 	 * @param whereBuilderFactory factory for where clause
 	 * @param havingBuilderFactory factory for having clause
 	 */
-	public QuerySQLBuilderFactory(ColumnBinderRegistry parameterBinderRegistry,
+	public QuerySQLBuilderFactory(DMLNameProviderFactory dmlNameProviderFactory,
+								  ColumnBinderRegistry parameterBinderRegistry,
 								  SelectSQLBuilderFactory selectBuilderFactory,
 								  FromSQLBuilderFactory fromBuilderFactory,
 								  PseudoTableSQLBuilderFactory pseudoTableSQLBuilderFactory,
 								  WhereSQLBuilderFactory whereBuilderFactory,
 								  WhereSQLBuilderFactory havingBuilderFactory,
 								  FunctionSQLBuilderFactory functionSQLBuilderFactory) {
+		this.dmlNameProviderFactory = dmlNameProviderFactory;
 		this.parameterBinderRegistry = parameterBinderRegistry;
 		this.selectBuilderFactory = selectBuilderFactory;
 		this.fromBuilderFactory = fromBuilderFactory;
@@ -76,7 +81,8 @@ public class QuerySQLBuilderFactory {
 	 * 
 	 * @param javaTypeToSqlTypeMapping a {@link Query}
 	 */
-	public QuerySQLBuilderFactory(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping, ColumnBinderRegistry parameterBinderRegistry) {
+	public QuerySQLBuilderFactory(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping, DMLNameProviderFactory dmlNameProviderFactory, ColumnBinderRegistry parameterBinderRegistry) {
+		this.dmlNameProviderFactory = dmlNameProviderFactory;
 		this.parameterBinderRegistry = parameterBinderRegistry;
 		this.selectBuilderFactory = new SelectSQLBuilderFactory(javaTypeToSqlTypeMapping);
 		this.fromBuilderFactory = new FromSQLBuilderFactory();
@@ -110,6 +116,10 @@ public class QuerySQLBuilderFactory {
 		return functionSQLBuilderFactory;
 	}
 	
+	public DMLNameProviderFactory getDmlNameProviderFactory() {
+		return dmlNameProviderFactory;
+	}
+	
 	public QuerySQLBuilder queryBuilder(Query query, Iterable<AbstractCriterion> where) {
 		if (where.iterator().hasNext()) {    // prevents from empty where causing malformed SQL
 			query.getWhere().and(where);
@@ -125,7 +135,7 @@ public class QuerySQLBuilderFactory {
 	}
 	
 	public QuerySQLBuilder queryBuilder(Query query) {
-		DMLNameProvider dmlNameProvider = new DMLNameProvider(query.getFromSurrogate().getTableAliases()::get);
+		DMLNameProvider dmlNameProvider = dmlNameProviderFactory.build(query.getFromSurrogate().getTableAliases()::get);
 		return new QuerySQLBuilder(query,
 				dmlNameProvider,
 				selectBuilderFactory.queryBuilder(query.getSelectSurrogate(), dmlNameProvider),

@@ -9,6 +9,7 @@ import org.codefilarete.stalactite.engine.runtime.RawQuery;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.Fromable;
@@ -71,7 +72,7 @@ class EntityTreeQueryBuilderTest {
 		};
 		
 		EntityTreeQuery<?> entityTreeQuery = testInstance.buildSelectQuery();
-		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilderFactory(new DefaultTypeMapping(), new ColumnBinderRegistry()).queryBuilder(entityTreeQuery.getQuery());
+		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilderFactory(new DefaultTypeMapping(), DMLNameProvider::new, new ColumnBinderRegistry()).queryBuilder(entityTreeQuery.getQuery());
 		
 		RawQuery actual = new RawQuery(sqlQueryBuilder.toSQL());
 		assertThat(actual.getColumns()).containsExactlyInAnyOrder(
@@ -172,7 +173,7 @@ class EntityTreeQueryBuilderTest {
 		};
 		
 		EntityTreeQuery treeQuery = testInstance.buildSelectQuery();
-		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilderFactory(new DefaultTypeMapping(), new ColumnBinderRegistry()).queryBuilder(treeQuery.getQuery());
+		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilderFactory(new DefaultTypeMapping(), DMLNameProvider::new, new ColumnBinderRegistry()).queryBuilder(treeQuery.getQuery());
 		assertThat(sqlQueryBuilder.toSQL()).isEqualTo(expected);
 		
 		Map<Column, String> expectedColumnClones = new HashMap<>();
@@ -233,7 +234,7 @@ class EntityTreeQueryBuilderTest {
 		EntityJoinTree entityJoinTree = new EntityJoinTree(new EntityMappingAdapter(rootMappingStrategy), rootMappingStrategy.getTargetTable());
 		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree, new ColumnBinderRegistry());
 		entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingAdapter(classMappingStrategy), leftJoinColumn, rightJoinColumn, null, INNER, null, Collections.emptySet());
-		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilderFactory(new DefaultTypeMapping(), new ColumnBinderRegistry()).queryBuilder(testInstance.buildSelectQuery().getQuery());
+		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilderFactory(new DefaultTypeMapping(), DMLNameProvider::new, new ColumnBinderRegistry()).queryBuilder(testInstance.buildSelectQuery().getQuery());
 		assertThat(sqlQueryBuilder.toSQL()).isEqualTo(expectedSQL);
 	}
 	
@@ -275,7 +276,7 @@ class EntityTreeQueryBuilderTest {
 		};
 		
 		EntityTreeQuery entityTreeQuery = testInstance.buildSelectQuery();
-		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilderFactory(new DefaultTypeMapping(), new ColumnBinderRegistry()).queryBuilder(entityTreeQuery.getQuery());
+		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilderFactory(new DefaultTypeMapping(), DMLNameProvider::new, new ColumnBinderRegistry()).queryBuilder(entityTreeQuery.getQuery());
 		
 		RawQuery actual = new RawQuery(sqlQueryBuilder.toSQL());
 		assertThat(actual.getColumns()).containsExactlyInAnyOrder(
@@ -342,7 +343,7 @@ class EntityTreeQueryBuilderTest {
 		};
 		
 		EntityTreeQuery entityTreeQuery = testInstance.buildSelectQuery();
-		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilderFactory(new DefaultTypeMapping(), new ColumnBinderRegistry()).queryBuilder(entityTreeQuery.getQuery());
+		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilderFactory(new DefaultTypeMapping(), DMLNameProvider::new, new ColumnBinderRegistry()).queryBuilder(entityTreeQuery.getQuery());
 		
 		RawQuery actual = new RawQuery(sqlQueryBuilder.toSQL());
 		assertThat(actual.getColumns()).containsExactlyInAnyOrder(
@@ -419,7 +420,7 @@ class EntityTreeQueryBuilderTest {
 		};
 		
 		EntityTreeQuery entityTreeQuery = testInstance.buildSelectQuery();
-		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilderFactory(new DefaultTypeMapping(), new ColumnBinderRegistry()).queryBuilder(entityTreeQuery.getQuery());
+		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilderFactory(new DefaultTypeMapping(), DMLNameProvider::new, new ColumnBinderRegistry()).queryBuilder(entityTreeQuery.getQuery());
 		
 		RawQuery actual = new RawQuery(sqlQueryBuilder.toSQL());
 		assertThat(actual.getColumns()).containsExactlyInAnyOrder(

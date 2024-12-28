@@ -141,7 +141,7 @@ public class FromSQLBuilderTest {
 	public void toSQL(From from, String expected) {
 		FromSQLBuilder testInstance = new FromSQLBuilder(from,
 				new DMLNameProvider(from.getTableAliases()::get),
-				new QuerySQLBuilderFactory(new DefaultTypeMapping(), new ColumnBinderRegistry()),
+				new QuerySQLBuilderFactory(new DefaultTypeMapping(), DMLNameProvider::new, new ColumnBinderRegistry()),
 				new PseudoTableSQLBuilderFactory());
 		assertThat(testInstance.toSQL()).isEqualTo(expected);
 	}
@@ -172,7 +172,7 @@ public class FromSQLBuilderTest {
 				.setAlias(tableTutu, "tu");
 		FromSQLBuilder testInstance = new FromSQLBuilder(from,
 				new DMLNameProvider(from.getTableAliases()::get),
-				new QuerySQLBuilderFactory(new DefaultTypeMapping(), new ColumnBinderRegistry()),
+				new QuerySQLBuilderFactory(new DefaultTypeMapping(), DMLNameProvider::new, new ColumnBinderRegistry()),
 				new PseudoTableSQLBuilderFactory());
 		from.getTableAliases().put(tableToto2, "toChanged");
 		from.getTableAliases().put(tableTutu, "tuChanged");

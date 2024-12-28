@@ -1,13 +1,15 @@
 package org.codefilarete.stalactite.sql;
 
-import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.builder.PseudoTableSQLBuilderFactory;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
 import org.codefilarete.stalactite.sql.ddl.DDLGenerator;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.ReadOperationFactory;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
@@ -42,6 +44,8 @@ public class Dialect {
 	
 	private final PseudoTableSQLBuilderFactory pseudoTableSQLBuilderFactory;
 	
+	private final DMLNameProviderFactory dmlNameProviderFactory;
+	
 	/**
 	 * Creates a default dialect, with a {@link DefaultTypeMapping} and a default {@link ColumnBinderRegistry}
 	 */
@@ -62,24 +66,29 @@ public class Dialect {
 	public Dialect(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping, ColumnBinderRegistry columnBinderRegistry) {
 		this.sqlTypeRegistry = new SqlTypeRegistry(javaTypeToSqlTypeMapping);
 		this.columnBinderRegistry = columnBinderRegistry;
+		this.dmlNameProviderFactory = newDMLNameProviderFactory();
 		this.dmlGenerator = newDmlGenerator(columnBinderRegistry);
 		this.ddlTableGenerator = newDdlTableGenerator();
 		this.writeOperationFactory = newWriteOperationFactory();
 		this.readOperationFactory = newReadOperationFactory();
-		this.querySQLBuilderFactory = new QuerySQLBuilderFactoryBuilder(columnBinderRegistry, javaTypeToSqlTypeMapping).build();
+		this.querySQLBuilderFactory = new QuerySQLBuilderFactoryBuilder(dmlNameProviderFactory, columnBinderRegistry, javaTypeToSqlTypeMapping).build();
 		this.pseudoTableSQLBuilderFactory = new PseudoTableSQLBuilderFactory();
 	}
 	
+	protected DMLNameProviderFactory newDMLNameProviderFactory() {
+		return DMLNameProvider::new;
+	}
+	
+	protected DMLGenerator newDmlGenerator(ColumnBinderRegistry columnBinderRegistry) {
+		return new DMLGenerator(columnBinderRegistry, NoopSorter.INSTANCE, dmlNameProviderFactory);
+	}
+	
 	protected DDLTableGenerator newDdlTableGenerator() {
-		return new DDLTableGenerator(getSqlTypeRegistry());
+		return new DDLTableGenerator(getSqlTypeRegistry(), dmlNameProviderFactory);
 	}
 	
 	public DDLTableGenerator getDdlTableGenerator() {
 		return ddlTableGenerator;
-	}
-	
-	protected DMLGenerator newDmlGenerator(ColumnBinderRegistry columnBinderRegistry) {
-		return new DMLGenerator(columnBinderRegistry);
 	}
 	
 	public DMLGenerator getDmlGenerator() {
@@ -126,6 +135,10 @@ public class Dialect {
 	
 	public ColumnBinderRegistry getColumnBinderRegistry() {
 		return columnBinderRegistry;
+	}
+	
+	public DMLNameProviderFactory getDmlNameProviderFactory() {
+		return dmlNameProviderFactory;
 	}
 	
 	public int getInOperatorMaxSize() {

@@ -6,6 +6,7 @@ import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQL
 import org.codefilarete.stalactite.query.builder.SQLAppender.SubSQLAppender;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryStatement;
+import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
 
 /**
  * Factory of {@link PseudoTableSQLBuilder} 
@@ -33,22 +34,24 @@ public class PseudoTableSQLBuilderFactory {
 		
 		private final QueryStatement queryStatement;
 		private final QuerySQLBuilderFactory querySQLBuilderFactory;
+		private final DMLNameProviderFactory dmlNameProviderFactory;
 		
 		public PseudoTableSQLBuilder(QueryStatement queryStatement, QuerySQLBuilderFactory querySQLBuilderFactory) {
 			this.queryStatement = queryStatement;
 			this.querySQLBuilderFactory = querySQLBuilderFactory;
+			this.dmlNameProviderFactory = querySQLBuilderFactory.getDmlNameProviderFactory();
 		}
 		
 		@Override
 		public CharSequence toSQL() {
-			StringSQLAppender result = new StringSQLAppender(new DMLNameProvider(queryStatement.getAliases()::get));
+			StringSQLAppender result = new StringSQLAppender(dmlNameProviderFactory.build(queryStatement.getAliases()::get));
 			appendTo(result);
 			return result.getSQL();
 		}
 		
 		@Override
 		public ExpandableSQLAppender toPreparableSQL() {
-			ExpandableSQLAppender expandableSQLAppender = new ExpandableSQLAppender(querySQLBuilderFactory.getParameterBinderRegistry(), new DMLNameProvider(queryStatement.getAliases()::get));
+			ExpandableSQLAppender expandableSQLAppender = new ExpandableSQLAppender(querySQLBuilderFactory.getParameterBinderRegistry(), dmlNameProviderFactory.build(queryStatement.getAliases()::get));
 			appendTo(expandableSQLAppender);
 			return expandableSQLAppender;
 		}
@@ -57,7 +60,7 @@ public class PseudoTableSQLBuilderFactory {
 			Set<Query> queries = queryStatement.getQueries();
 			queries.forEach(query -> {
 				QuerySQLBuilder sqlBuilder = querySQLBuilderFactory.queryBuilder(query);
-				SubSQLAppender subAppender = preparedSQLAppender.newSubPart(new DMLNameProvider(query.getFromSurrogate().getTableAliases()::get));
+				SubSQLAppender subAppender = preparedSQLAppender.newSubPart(dmlNameProviderFactory.build(query.getFromSurrogate().getTableAliases()::get));
 				sqlBuilder.appendTo(subAppender);
 				subAppender.close();
 				preparedSQLAppender.cat(UNION_ALL_SEPARATOR);
