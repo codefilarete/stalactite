@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 
 import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -30,13 +31,13 @@ class DeleteCommandBuilderTest {
 		Delete<T> delete = new Delete<>(totoTable);
 		delete.where(columnA, Operators.eq(44)).or(columnA, Operators.eq(columnB));
 		
-		DeleteCommandBuilder<T> testInstance = new DeleteCommandBuilder<>(delete, new Dialect());
+		DeleteCommandBuilder<T> testInstance = new DeleteCommandBuilder<>(delete, new DefaultDialect());
 		
 		assertThat(testInstance.toSQL()).isEqualTo("delete from Toto where a = 44 or a = b");
 		
 		delete = new Delete<>(totoTable);
 		
-		testInstance = new DeleteCommandBuilder<>(delete, new Dialect());
+		testInstance = new DeleteCommandBuilder<>(delete, new DefaultDialect());
 		
 		assertThat(testInstance.toSQL()).isEqualTo("delete from Toto");
 	}
@@ -53,14 +54,14 @@ class DeleteCommandBuilderTest {
 		Delete<T1> delete = new Delete<>(totoTable);
 		delete.where(columnA, Operators.eq(columnX)).or(columnA, Operators.eq(columnY));
 		
-		DeleteCommandBuilder<T1> testInstance = new DeleteCommandBuilder<>(delete, new Dialect());
+		DeleteCommandBuilder<T1> testInstance = new DeleteCommandBuilder<>(delete, new DefaultDialect());
 		
 		assertThat(testInstance.toSQL()).isEqualTo("delete from Toto, Tata where Toto.a = Tata.x or Toto.a = Tata.y");
 		
 		delete = new Delete<>(totoTable);
 		delete.where(columnA, Operators.eq(columnX)).or(columnA, Operators.eq(columnY));
 		
-		testInstance = new DeleteCommandBuilder<>(delete, new Dialect());
+		testInstance = new DeleteCommandBuilder<>(delete, new DefaultDialect());
 		
 		assertThat(testInstance.toSQL()).isEqualTo("delete from Toto, Tata where Toto.a = Tata.x or Toto.a = Tata.y");
 	}
@@ -74,7 +75,7 @@ class DeleteCommandBuilderTest {
 		Delete<T> delete = new Delete<>(totoTable);
 		delete.where(columnA,  Operators.in(42L, 43L)).or(columnA, Operators.eq(columnB));
 		
-		Dialect dialect = new Dialect();
+		Dialect dialect = new DefaultDialect();
 		DeleteCommandBuilder<T> testInstance = new DeleteCommandBuilder<>(delete, dialect);
 		
 		PreparedSQL result = testInstance.toPreparableSQL().toPreparedSQL(new HashMap<>());

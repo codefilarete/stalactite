@@ -5,15 +5,15 @@ import java.util.List;
 
 import org.codefilarete.stalactite.engine.runtime.AssociationRecordInsertionCascaderTest.Key;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecordInsertionCascaderTest.Keyboard;
-import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.tool.StringAppender;
-import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.stalactite.id.Identifier;
-import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
-import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.DefaultDialect;
+import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
@@ -42,7 +42,7 @@ class IndexedAssociationRecordInsertionCascaderTest {
 		when(keyClassMappingStrategyMock.getId(any(Key.class))).thenAnswer((Answer<Identifier<Long>>) invocation ->
 				((Key) invocation.getArgument(0)).getId());
 		AssociationRecordPersister persisterStub =
-				new AssociationRecordPersister(classMappingStrategyMock, new Dialect(), new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 1));
+				new AssociationRecordPersister(classMappingStrategyMock, new DefaultDialect(), new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 1));
 		IndexedAssociationRecordInsertionCascader<Keyboard, Key, Identifier, Identifier, List<Key>> testInstance
 				= new IndexedAssociationRecordInsertionCascader<>(persisterStub, Keyboard::getKeys, classMappingStrategyMock, keyClassMappingStrategyMock);
 		

@@ -47,6 +47,7 @@ import org.codefilarete.stalactite.id.StatefulIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
@@ -1324,7 +1325,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		Connection connectionMock = mock(Connection.class);
 		
 		// since we mock connection, we use a non-specific Dialect to avoid specific behavior on a generic connection
-		Dialect dialect = new Dialect();
+		Dialect dialect = new DefaultDialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getDmlGenerator().sortColumnsAlphabetically();	// for steady checks on SQL orders
 		
@@ -1423,7 +1424,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		Connection connectionMock = mock(Connection.class);
 		
 		// since we mock connection, we use a non-specific Dialect to avoid specific behavior on a generic connection
-		Dialect dialect = new Dialect();
+		Dialect dialect = new DefaultDialect();
 		dialect.getColumnBinderRegistry().register((Class) UUID_TYPE, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getDmlGenerator().sortColumnsAlphabetically();	// for steady checks on SQL orders
 		

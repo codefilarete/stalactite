@@ -41,7 +41,7 @@ import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
 import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
-import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -85,7 +85,7 @@ class SingleTablePolymorphismPersisterTest {
 	private ArgumentCaptor<String> statementArgCaptor;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
 	private ClassMapping<AbstractToto, Identifier<Integer>, ?> totoClassMapping;
-	private Dialect dialect;
+	private DefaultDialect dialect;
 	private final EffectiveBatchedRowCount effectiveBatchedRowCount = new EffectiveBatchedRowCount();
 	private final Holder<Long> expectedRowCountForUpdate = new Holder<>();
 	private Connection connection;
@@ -166,7 +166,7 @@ class SingleTablePolymorphismPersisterTest {
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
 		simpleTypeMapping.put(Identifier.class, "int");
 		
-		dialect = new Dialect(simpleTypeMapping);
+		dialect = new DefaultDialect(simpleTypeMapping);
 		dialect.setInOperatorMaxSize(3);
 		dialect.getColumnBinderRegistry().register(Identifier.class, new ParameterBinder<Identifier>() {
 			@Override

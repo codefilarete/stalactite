@@ -7,7 +7,7 @@ import org.codefilarete.stalactite.engine.SeparateTransactionExecutor;
 import org.codefilarete.stalactite.engine.SeparateTransactionExecutor.JdbcOperation;
 import org.codefilarete.stalactite.mapping.id.sequence.SequencePersister;
 import org.codefilarete.stalactite.mapping.id.sequence.SequenceStorageOptions;
-import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
@@ -22,7 +22,7 @@ public class SequencePersisterTest {
 	
 	@Test
 	void constructorWithoutArgs_usesDefaultStorageOptions() {
-		SequencePersister testInstance = new SequencePersister(new Dialect(), mock(SeparateTransactionExecutor.class), 42);
+		SequencePersister testInstance = new SequencePersister(new DefaultDialect(), mock(SeparateTransactionExecutor.class), 42);
 		SequencePersister.SequenceTable sequenceTable = testInstance.getMapping().getTargetTable();
 
 		// Note that we don't use equals() method because it compares Table partially
@@ -42,7 +42,7 @@ public class SequencePersisterTest {
 	@Test
 	void constructorWithOptions() {
 		SequenceStorageOptions storageOptions = new SequenceStorageOptions("myTable", "mySequenceNameCol", "myNextValCol");
-		SequencePersister testInstance = new SequencePersister(storageOptions, new Dialect(), mock(SeparateTransactionExecutor.class), 42);
+		SequencePersister testInstance = new SequencePersister(storageOptions, new DefaultDialect(), mock(SeparateTransactionExecutor.class), 42);
 		SequencePersister.SequenceTable sequenceTable = testInstance.getMapping().getTargetTable();
 
 		// Note that we don't use equals() method because it compares Table partially
@@ -69,7 +69,7 @@ public class SequencePersisterTest {
 			((JdbcOperation) invocationOnMock.getArgument(0)).execute();
 			return null;
 		}).when(separateTransactionExecutorMock).executeInNewTransaction(any());
-		SequencePersister testInstance = new SequencePersister(new Dialect(), separateTransactionExecutorMock, 42) {
+		SequencePersister testInstance = new SequencePersister(new DefaultDialect(), separateTransactionExecutorMock, 42) {
 			
 			@Override
 			public Sequence select(String sequenceName) {
@@ -105,7 +105,7 @@ public class SequencePersisterTest {
 			((JdbcOperation) invocationOnMock.getArgument(0)).execute();
 			return null;
 		}).when(separateTransactionExecutorMock).executeInNewTransaction(any());
-		SequencePersister testInstance = new SequencePersister(new Dialect(), separateTransactionExecutorMock, 42) {
+		SequencePersister testInstance = new SequencePersister(new DefaultDialect(), separateTransactionExecutorMock, 42) {
 
 			@Override
 			public Sequence select(String sequenceName) {

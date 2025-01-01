@@ -4,6 +4,7 @@ import org.codefilarete.stalactite.query.builder.PseudoTableSQLBuilderFactory.Ps
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryProvider;
 import org.codefilarete.stalactite.query.model.Union;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -15,7 +16,7 @@ import static org.codefilarete.stalactite.query.model.QueryEase.select;
 
 class PseudoTableSQLBuilderFactoryTest {
 	
-	private final Dialect dialect = new Dialect();
+	private final Dialect dialect = new DefaultDialect();
 	private final QuerySQLBuilderFactory querySQLBuilderFactory = dialect.getQuerySQLBuilderFactory();
 	
 	public static Object[][] toSQL() {

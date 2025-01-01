@@ -25,7 +25,7 @@ import org.codefilarete.tool.function.ThrowingBiFunction;
 /**
  * @author Guillaume Mary
  */
-public class HSQLDBDialect extends Dialect { 
+public class HSQLDBDialect extends DefaultDialect { 
 	
 	public HSQLDBDialect() {
 		super(new HSQLDBTypeMapping());

@@ -15,7 +15,7 @@ import org.codefilarete.stalactite.sql.statement.binder.MariaDBTypeMapping;
  * 
  * @author Guillaume Mary
  */
-public class MariaDBDialect extends Dialect {
+public class MariaDBDialect extends DefaultDialect {
 	
 	public MariaDBDialect() {
 		super(new MariaDBTypeMapping(), new ColumnBinderRegistry());

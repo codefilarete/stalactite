@@ -99,7 +99,7 @@ public class InsertCommandBuilder<T extends Table<T>> implements SQLBuilder {
 	}
 	
 	public InsertStatement<T> toStatement(ColumnBinderRegistry columnBinderRegistry) {
-		DMLNameProvider dmlNameProvider = new DMLNameProvider(new HashMap<>());
+		DMLNameProvider dmlNameProvider = dmlNameProviderFactory.build(new HashMap<>());
 		
 		// We ask for SQL generation through a PreparedSQLWrapper because we need SQL placeholders for where + update clause
 		PreparedSQLAppender preparedSQLAppender = new PreparedSQLAppender(new StringSQLAppender(dmlNameProvider), columnBinderRegistry);

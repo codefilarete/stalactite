@@ -21,6 +21,7 @@ import org.codefilarete.stalactite.mapping.id.manager.JDBCGeneratedKeysIdentifie
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -51,7 +52,7 @@ import static org.mockito.Mockito.*;
  */
 class InsertExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest {
 	
-	private final Dialect dialect = new Dialect(new JavaTypeToSqlTypeMapping()
+	private final Dialect dialect = new DefaultDialect(new JavaTypeToSqlTypeMapping()
 		.with(Integer.class, "int"));
 	
 	private InsertExecutor<Toto, Integer, T> testInstance;

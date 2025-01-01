@@ -23,7 +23,7 @@ import org.codefilarete.tool.collection.Iterables;
 /**
  * @author Guillaume Mary
  */
-public class OracleDialect extends Dialect { 
+public class OracleDialect extends DefaultDialect { 
 	
 	public OracleDialect() {
 		super(new OracleTypeMapping());

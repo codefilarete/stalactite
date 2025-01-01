@@ -15,14 +15,13 @@ import org.codefilarete.stalactite.sql.statement.SQLStatement;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.stalactite.sql.statement.WriteOperation.RowCountListener;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.SQLiteTypeMapping;
 import org.codefilarete.tool.function.ThrowingBiFunction;
 
 /**
  * @author Guillaume Mary
  */
-public class SQLiteDialect extends Dialect {
+public class SQLiteDialect extends DefaultDialect {
 
 	public SQLiteDialect() {
 		super(new SQLiteTypeMapping());
@@ -38,8 +37,8 @@ public class SQLiteDialect extends Dialect {
 	}
 	
 	@Override
-	protected DMLGenerator newDmlGenerator(ColumnBinderRegistry columnBinderRegistry) {
-		return new SQLiteDMLGenerator(columnBinderRegistry, NoopSorter.INSTANCE, getDmlNameProviderFactory());
+	protected DMLGenerator newDmlGenerator() {
+		return new SQLiteDMLGenerator(getColumnBinderRegistry(), NoopSorter.INSTANCE, getDmlNameProviderFactory());
 	}
 	
 	@Override

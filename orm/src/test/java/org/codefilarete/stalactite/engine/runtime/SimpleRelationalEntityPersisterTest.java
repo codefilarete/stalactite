@@ -54,7 +54,7 @@ import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.query.model.operator.Equals;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
-import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -109,7 +109,7 @@ class SimpleRelationalEntityPersisterTest {
 	private ArgumentCaptor<String> statementArgCaptor;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
 	private ClassMapping<Toto, Identifier<Integer>, ?> totoClassMappingStrategy_ontoTable1;
-	private Dialect dialect;
+	private DefaultDialect dialect;
 	private Key<Table, Identifier<Integer>> leftJoinColumn;
 	private Key<Table, Identifier<Integer>> rightJoinColumn;
 	private final EffectiveBatchedRowCount effectiveBatchedRowCount = new EffectiveBatchedRowCount();
@@ -166,7 +166,7 @@ class SimpleRelationalEntityPersisterTest {
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
 		simpleTypeMapping.put(Identifier.class, "int");
 		
-		dialect = new Dialect(simpleTypeMapping);
+		dialect = new DefaultDialect(simpleTypeMapping);
 		dialect.setInOperatorMaxSize(3);
 		dialect.getColumnBinderRegistry().register(Identifier.class, new ParameterBinder<Identifier>() {
 			@Override

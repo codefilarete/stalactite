@@ -15,12 +15,13 @@ import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
+import org.codefilarete.stalactite.engine.runtime.EntityCriteriaSupport.EntityGraphNode;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.codefilarete.stalactite.engine.runtime.EntityCriteriaSupport.EntityGraphNode;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -43,7 +44,7 @@ class EntityCriteriaSupportTest {
 	@Test
 	void apiUsage() {
 		
-		Dialect dialect = new Dialect();
+		Dialect dialect = new DefaultDialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "bigint");
 		
@@ -80,7 +81,7 @@ class EntityCriteriaSupportTest {
 	
 	@Test
 	void graphNode_getColumn() {
-		Dialect dialect = new Dialect();
+		Dialect dialect = new DefaultDialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		
 		PersistenceContext dummyPersistenceContext = new PersistenceContext(mock(ConnectionProvider.class), dialect);
@@ -99,7 +100,7 @@ class EntityCriteriaSupportTest {
 	
 	@Test
 	void graphNode_getColumn_withRelationOneToOne() {
-		Dialect dialect = new Dialect();
+		Dialect dialect = new DefaultDialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "bigint");
 		
@@ -132,7 +133,7 @@ class EntityCriteriaSupportTest {
 	
 	@Test
 	void graphNode_getColumn_withRelationOneToMany() {
-		Dialect dialect = new Dialect();
+		Dialect dialect = new DefaultDialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		
 		PersistenceContext dummyPersistenceContext = new PersistenceContext(mock(ConnectionProvider.class), dialect);
@@ -165,7 +166,7 @@ class EntityCriteriaSupportTest {
 	
 	@Test
 	void graphNode_getColumn_doesntExist_throwsException() {
-		Dialect dialect = new Dialect();
+		Dialect dialect = new DefaultDialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		
 		PersistenceContext dummyPersistenceContext = new PersistenceContext(mock(ConnectionProvider.class), dialect);
@@ -184,7 +185,7 @@ class EntityCriteriaSupportTest {
 	
 	@Test
 	void graphNode_getColumn_many_doesntExist_throwsException() {
-		Dialect dialect = new Dialect();
+		Dialect dialect = new DefaultDialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		
 		PersistenceContext dummyPersistenceContext = new PersistenceContext(mock(ConnectionProvider.class), dialect);

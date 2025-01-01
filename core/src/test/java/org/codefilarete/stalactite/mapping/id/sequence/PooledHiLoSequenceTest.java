@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.mapping.id.sequence;
 
 import org.codefilarete.stalactite.engine.SeparateTransactionExecutor;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.DDLGenerator;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -9,7 +10,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Guillaume Mary
@@ -75,7 +78,7 @@ class PooledHiLoSequenceTest {
         simpleTypeMapping.put(String.class, "VARCHAR(255)");
 
         PooledHiLoSequenceOptions totoSequenceOptions = new PooledHiLoSequenceOptions(10, "Toto", SequenceStorageOptions.DEFAULT);
-        Dialect dialect = new Dialect(simpleTypeMapping);
+        Dialect dialect = new DefaultDialect(simpleTypeMapping);
         PooledHiLoSequence testInstance = new PooledHiLoSequence(totoSequenceOptions, dialect, mock(SeparateTransactionExecutor.class), 50);
 
         // Generating sequence table schema

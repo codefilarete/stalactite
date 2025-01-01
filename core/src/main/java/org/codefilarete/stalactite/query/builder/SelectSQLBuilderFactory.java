@@ -10,7 +10,7 @@ import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.Strings;
 
 /**
- * Factory for {@link SelectSQLBuilder}. It's overridable through {@link org.codefilarete.stalactite.sql.Dialect#setQuerySQLBuilderFactory(QuerySQLBuilderFactory)}
+ * Factory for {@link SelectSQLBuilder}. It's overridable through {@link org.codefilarete.stalactite.sql.Dialect}
  * which then let one gives its own implementation of {@link SelectSQLBuilderFactory}.
  *
  * @author Guillaume Mary

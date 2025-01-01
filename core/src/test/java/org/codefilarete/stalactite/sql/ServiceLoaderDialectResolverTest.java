@@ -2,11 +2,8 @@ package org.codefilarete.stalactite.sql;
 
 import java.util.Set;
 
-import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.DialectResolver;
-import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver;
-import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver.DatabaseSignet;
+import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -20,13 +17,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ServiceLoaderDialectResolverTest {
 	
 	static Object[][] giveMatchingEntry() {
-		DummyDialectEntry dialectA1 = new DummyDialectEntry(new DatabaseSignet("A", 1, 10), new Dialect());
-		DummyDialectEntry dialectB110 = new DummyDialectEntry(new DatabaseSignet("B", 1, 10), new Dialect());
-		DummyDialectEntry dialectB120 = new DummyDialectEntry(new DatabaseSignet("B", 1, 20), new Dialect());
-		DummyDialectEntry dialectB210 = new DummyDialectEntry(new DatabaseSignet("B", 2, 10), new Dialect());
-		DummyDialectEntry dialectB220 = new DummyDialectEntry(new DatabaseSignet("B", 2, 20), new Dialect());
-		DummyDialectEntry dialectB310 = new DummyDialectEntry(new DatabaseSignet("B", 3, 10), new Dialect());
-		DummyDialectEntry dialectC110 = new DummyDialectEntry(new DatabaseSignet("C", 1, 10), new Dialect());
+		DummyDialectEntry dialectA1 = new DummyDialectEntry(new DatabaseSignet("A", 1, 10), new DefaultDialect());
+		DummyDialectEntry dialectB110 = new DummyDialectEntry(new DatabaseSignet("B", 1, 10), new DefaultDialect());
+		DummyDialectEntry dialectB120 = new DummyDialectEntry(new DatabaseSignet("B", 1, 20), new DefaultDialect());
+		DummyDialectEntry dialectB210 = new DummyDialectEntry(new DatabaseSignet("B", 2, 10), new DefaultDialect());
+		DummyDialectEntry dialectB220 = new DummyDialectEntry(new DatabaseSignet("B", 2, 20), new DefaultDialect());
+		DummyDialectEntry dialectB310 = new DummyDialectEntry(new DatabaseSignet("B", 3, 10), new DefaultDialect());
+		DummyDialectEntry dialectC110 = new DummyDialectEntry(new DatabaseSignet("C", 1, 10), new DefaultDialect());
 		Set<DummyDialectEntry> availableDialects = Arrays.asSet(dialectA1, dialectB110, dialectB120, dialectB210, dialectB220, dialectB310, dialectC110);
 		
 		return new Object[][] {
@@ -54,8 +51,8 @@ class ServiceLoaderDialectResolverTest {
 	@Test
 	void determineDialect_noCompatibleDialectFound_throwsException() {
 		ServiceLoaderDialectResolver testInstance = new ServiceLoaderDialectResolver();
-		assertThatThrownBy(() -> testInstance.determineDialect(Arrays.asSet(new DummyDialectEntry(new DatabaseSignet("A", 0, 0), new Dialect()),
-															   new DummyDialectEntry(new DatabaseSignet("A", 0, 0), new Dialect())),
+		assertThatThrownBy(() -> testInstance.determineDialect(Arrays.asSet(new DummyDialectEntry(new DatabaseSignet("A", 0, 0), new DefaultDialect()),
+															   new DummyDialectEntry(new DatabaseSignet("A", 0, 0), new DefaultDialect())),
 															   new DatabaseSignet("B", 2, 10)))
 				// we only check main element of message : exception type and exact message is not so important 
 				.hasMessageContaining("Unable to determine dialect")

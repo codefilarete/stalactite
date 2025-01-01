@@ -15,10 +15,8 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMapp
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
-import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.QueryEase;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -102,18 +100,7 @@ class EntityGraphSelectorTest {
 		when(connectionProvider.giveConnection()).thenReturn(connectionMock);
 		when(connectionMock.prepareStatement(any())).thenReturn(preparedStatement);
 
-		EntityGraphSelector<Toto, Integer, ?> testInstance = new EntityGraphSelector<>(entityJoinTree, connectionProvider, new Dialect());
-		
-		
-		Query query = QueryEase.select(totoColId, "Toto_id")
-				.add(tataColId, "Tata_id")
-//		Query query = QueryEase.select(totoTable.getColumns())
-//				.add(tataTable.getColumns())
-				.from(totoTable)
-				.innerJoin(tataPrimaryKey, tataPrimaryKey)
-				.getQuery();
-//		Set<Toto> select = testInstance.selectFromQueryBean(query);
-//		System.out.println(select);
+		EntityGraphSelector<Toto, Integer, ?> testInstance = new EntityGraphSelector<>(entityJoinTree, connectionProvider, new DefaultDialect());
 		
 		Set<Toto> totos = testInstance.selectFromQueryBean("select Toto.id as Toto_id, Tata.id as Tata_id from Toto inner join Tata on Toto.id = Tata.id" +
 				" where Toto.id = :toto_id", Maps.asMap("toto_id", 7));

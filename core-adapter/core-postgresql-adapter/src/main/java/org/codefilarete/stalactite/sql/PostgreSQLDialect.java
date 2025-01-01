@@ -17,7 +17,7 @@ import org.codefilarete.tool.collection.Arrays;
 /**
  * @author Guillaume Mary
  */
-public class PostgreSQLDialect extends Dialect {
+public class PostgreSQLDialect extends DefaultDialect {
 	
 	public PostgreSQLDialect() {
 		super(new PostgreSQLTypeMapping());

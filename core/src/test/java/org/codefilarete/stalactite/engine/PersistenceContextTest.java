@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -45,7 +45,7 @@ public class PersistenceContextTest {
 		doNothing().when(preparedStatementMock).setLong(anyInt(), capture(long.class, valuesStatementCaptor));
 		doNothing().when(preparedStatementMock).setString(anyInt(), capture(String.class, valuesStatementCaptor));
 		
-		PersistenceContext testInstance = new PersistenceContext(new SimpleConnectionProvider(connectionMock), new Dialect());
+		PersistenceContext testInstance = new PersistenceContext(new SimpleConnectionProvider(connectionMock), new DefaultDialect());
 		Table totoTable = new Table("toto");
 		Column<Table, Long> id = totoTable.addColumn("id", long.class);
 		Column<Table, String> name = totoTable.addColumn("name", String.class);
@@ -67,7 +67,7 @@ public class PersistenceContextTest {
 		doNothing().when(preparedStatementMock).setLong(anyInt(), capture(long.class, valuesStatementCaptor));
 		doNothing().when(preparedStatementMock).setString(anyInt(), capture(String.class, valuesStatementCaptor));
 		
-		PersistenceContext testInstance = new PersistenceContext(new SimpleConnectionProvider(connectionMock), new Dialect());
+		PersistenceContext testInstance = new PersistenceContext(new SimpleConnectionProvider(connectionMock), new DefaultDialect());
 		Table totoTable = new Table("toto");
 		Column<Table, Long> id = totoTable.addColumn("id", long.class);
 		Column<Table, String> name = totoTable.addColumn("name", String.class);
@@ -89,7 +89,7 @@ public class PersistenceContextTest {
 		doNothing().when(preparedStatementMock).setLong(anyInt(), capture(long.class, valuesStatementCaptor));
 		doNothing().when(preparedStatementMock).setString(anyInt(), capture(String.class, valuesStatementCaptor));
 		
-		PersistenceContext testInstance = new PersistenceContext(new SimpleConnectionProvider(connectionMock), new Dialect());
+		PersistenceContext testInstance = new PersistenceContext(new SimpleConnectionProvider(connectionMock), new DefaultDialect());
 		Table totoTable = new Table("toto");
 		Column<Table, Long> id = totoTable.addColumn("id", long.class);
 		Column<Table, String> name = totoTable.addColumn("name", String.class);
@@ -111,7 +111,7 @@ public class PersistenceContextTest {
 		doNothing().when(preparedStatementMock).setLong(anyInt(), capture(long.class, valuesStatementCaptor));
 		doNothing().when(preparedStatementMock).setString(anyInt(), capture(String.class, valuesStatementCaptor));
 		
-		PersistenceContext testInstance = new PersistenceContext(new SimpleConnectionProvider(connectionMock), new Dialect());
+		PersistenceContext testInstance = new PersistenceContext(new SimpleConnectionProvider(connectionMock), new DefaultDialect());
 		Table totoTable = new Table("toto");
 		Column<Table, Long> id = totoTable.addColumn("id", long.class);
 		Column<Table, String> name = totoTable.addColumn("name", String.class);
@@ -136,7 +136,7 @@ public class PersistenceContextTest {
 			Maps.forHashMap(String.class, Object.class).add("id", 42).add("name", "tata").add("count", 666)
 		)));
 		
-		PersistenceContext testInstance = new PersistenceContext(new SimpleConnectionProvider(connectionMock), new Dialect());
+		PersistenceContext testInstance = new PersistenceContext(new SimpleConnectionProvider(connectionMock), new DefaultDialect());
 		
 		// test select
 		Integer count = testInstance.newQuery("select count(*) as count from Toto", Integer.class)

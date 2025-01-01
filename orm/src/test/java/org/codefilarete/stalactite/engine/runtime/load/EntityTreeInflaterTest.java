@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.En
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.RowTransformer;
-import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -96,7 +96,7 @@ class EntityTreeInflaterTest {
 				JoinType.OUTER,
 				Mockito.mock(BeanRelationFixer.class), Collections.emptySet());
 		
-		EntityTreeQuery<Country> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree, new Dialect().getColumnBinderRegistry()).buildSelectQuery();
+		EntityTreeQuery<Country> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree, new DefaultDialect().getColumnBinderRegistry()).buildSelectQuery();
 		EntityTreeInflater testInstance = entityTreeQuery.getInflater();
 		
 		

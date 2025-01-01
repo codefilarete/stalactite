@@ -13,6 +13,7 @@ import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -34,14 +35,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.codefilarete.stalactite.test.PairSetList.pairSetList;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Guillaume Mary
  */
 class SelectExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest {
 	
-	private final Dialect dialect = new Dialect(new JavaTypeToSqlTypeMapping()
+	private final Dialect dialect = new DefaultDialect(new JavaTypeToSqlTypeMapping()
 		.with(Integer.class, "int"));
 	
 	private SelectExecutor<Toto, Integer, T> testInstance;

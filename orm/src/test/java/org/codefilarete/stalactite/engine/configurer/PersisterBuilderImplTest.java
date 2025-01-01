@@ -38,6 +38,7 @@ import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifie
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
@@ -90,7 +91,7 @@ import static org.mockito.Mockito.withSettings;
  */
 public class PersisterBuilderImplTest {
 	
-	private static final Dialect DIALECT = new Dialect();
+	private static final Dialect DIALECT = new DefaultDialect();
 	
 	@BeforeAll
 	static void initBinders() {

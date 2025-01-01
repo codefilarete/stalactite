@@ -68,8 +68,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	
 	private static final int DEFAULT_BATCH_SIZE = 100;
 	
-	private final Dialect dialect;
-	private final TransactionAwareConnectionConfiguration connectionConfiguration;
+	private final PersistenceContextConfiguration configuration;
 	private final DefaultPersisterRegistry persisterRegistry = new DefaultPersisterRegistry();
 	
 	/**
@@ -138,8 +137,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	 * @param dialectResolver dialect provider
 	 */
 	public PersistenceContext(ConnectionConfiguration connectionConfiguration, DialectResolver dialectResolver) {
-		this.connectionConfiguration = new TransactionAwareConnectionConfiguration(connectionConfiguration);
-		this.dialect = dialectResolver.determineDialect(this.connectionConfiguration.giveConnection());
+		this(connectionConfiguration, dialectResolver.determineDialect(connectionConfiguration.getConnectionProvider().giveConnection()));
 	}
 	
 	/**
@@ -160,12 +158,11 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	 * @param dialect dialect to be used with {@link Connection}
 	 */
 	public PersistenceContext(ConnectionConfiguration connectionConfiguration, Dialect dialect) {
-		this.connectionConfiguration = new TransactionAwareConnectionConfiguration(connectionConfiguration);
-		this.dialect = dialect;
+		this.configuration = new PersistenceContextConfiguration(connectionConfiguration, dialect);
 	}
 	
 	public ConnectionProvider getConnectionProvider() {
-		return connectionConfiguration.getConnectionProvider();
+		return configuration.connectionConfiguration.getConnectionProvider();
 	}
 	
 	public int getJDBCBatchSize() {
@@ -173,7 +170,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	}
 	
 	public Dialect getDialect() {
-		return dialect;
+		return configuration.dialect;
 	}
 	
 	/**
@@ -207,7 +204,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	}
 	
 	public ConnectionConfiguration getConnectionConfiguration() {
-		return this.connectionConfiguration;
+		return this.configuration.getConnectionConfiguration();
 	}
 	
 	@Override
@@ -217,7 +214,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	
 	@Override
 	public <C> ExecutableBeanPropertyKeyQueryMapper<C> newQuery(Query query, Class<C> beanType) {
-		return newQuery(dialect.getQuerySQLBuilderFactory().queryBuilder(query), beanType);
+		return newQuery(this.configuration.getDialect().getQuerySQLBuilderFactory().queryBuilder(query), beanType);
 	}
 	
 	@Override
@@ -339,7 +336,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		}
 		Query query = QueryEase.select(selectableKeys).from(table).getQuery();
 		where.accept(query.getWhere());
-		QueryMapper<C> queryMapper = newTransformableQuery(dialect.getQuerySQLBuilderFactory().queryBuilder(query), beanType);
+		QueryMapper<C> queryMapper = newTransformableQuery(configuration.getDialect().getQuerySQLBuilderFactory().queryBuilder(query), beanType);
 		keyMapper.accept(queryMapper);
 		selectMappingSupport.appendTo(query, queryMapper);
 		return execute(queryMapper);
@@ -445,8 +442,8 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		 */
 		@Override
 		public void execute() {
-			UpdateStatement updateStatement = new UpdateCommandBuilder(this, dialect).toStatement();
-			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(updateStatement, getConnectionProvider())) {
+			UpdateStatement<?> updateStatement = new UpdateCommandBuilder<>(this, configuration.getDialect()).toStatement();
+			try (WriteOperation<Integer> writeOperation = configuration.getDialect().getWriteOperationFactory().createInstance(updateStatement, getConnectionProvider())) {
 				writeOperation.setValues(updateStatement.getValues());
 				writeOperation.execute();
 			}
@@ -485,8 +482,8 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		
 		@Override
 		public void execute() {
-			InsertStatement<T> insertStatement = new InsertCommandBuilder<>(this, dialect.getDmlNameProviderFactory()).toStatement(dialect.getColumnBinderRegistry());
-			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(insertStatement, getConnectionProvider())) {
+			InsertStatement<T> insertStatement = new InsertCommandBuilder<>(this, configuration.getDialect().getDmlNameProviderFactory()).toStatement(configuration.getDialect().getColumnBinderRegistry());
+			try (WriteOperation<Integer> writeOperation = configuration.getDialect().getWriteOperationFactory().createInstance(insertStatement, getConnectionProvider())) {
 				writeOperation.setValues(insertStatement.getValues());
 				writeOperation.execute();
 			}
@@ -501,8 +498,8 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		
 		@Override
 		public void execute() {
-			PreparedSQL deleteStatement = new DeleteCommandBuilder(this, dialect).toPreparableSQL().toPreparedSQL(new HashMap<>());
-			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(deleteStatement, getConnectionProvider())) {
+			PreparedSQL deleteStatement = new DeleteCommandBuilder<>(this, configuration.getDialect()).toPreparableSQL().toPreparedSQL(new HashMap<>());
+			try (WriteOperation<Integer> writeOperation = configuration.getDialect().getWriteOperationFactory().createInstance(deleteStatement, getConnectionProvider())) {
 				writeOperation.setValues(deleteStatement.getValues());
 				writeOperation.execute();
 			}
@@ -668,4 +665,22 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		}
 	}
 	
+	public static class PersistenceContextConfiguration {
+		
+		private final TransactionAwareConnectionConfiguration connectionConfiguration;
+		private final Dialect dialect;
+		
+		private PersistenceContextConfiguration(ConnectionConfiguration connectionConfiguration, Dialect dialect) {
+			this.connectionConfiguration = new TransactionAwareConnectionConfiguration(connectionConfiguration);
+			this.dialect = dialect;
+		}
+		
+		public Dialect getDialect() {
+			return dialect;
+		}
+		
+		public ConnectionConfiguration getConnectionConfiguration() {
+			return connectionConfiguration;
+		}
+	}
 }

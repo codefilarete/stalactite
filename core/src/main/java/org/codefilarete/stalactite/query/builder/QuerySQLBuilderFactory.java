@@ -32,8 +32,7 @@ import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
  * and whatsoever, because Stalactite SQL builders only generate SQL for known object type, through "if instanceof"
  * mechanism, which hardly let one extends it, making users depending on project release for new feature / function / operators.
  * 
- * A default one is available through {@link Dialect#getQuerySQLBuilderFactory()} is and changeable through
- * {@link Dialect#setQuerySQLBuilderFactory(QuerySQLBuilderFactory)} which then let one give its own implementation of {@link QuerySQLBuilder}.
+ * A default one is available through {@link Dialect#getQuerySQLBuilderFactory()}.
  * 
  * @author Guillaume Mary
  */

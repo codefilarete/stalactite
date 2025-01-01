@@ -4,13 +4,14 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.builder.PseudoTableSQLBuilderFactory.PseudoTableSQLBuilder;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryProvider;
 import org.codefilarete.stalactite.query.model.QueryStatement;
 import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -34,7 +35,7 @@ import static org.codefilarete.stalactite.query.model.QueryEase.select;
  */
 class QuerySQLBuilderTest {
 	
-	private final Dialect dialect = new Dialect();
+	private final Dialect dialect = new DefaultDialect();
 	
 	public static Object[][] toSQL() {
 		Table tableToto = new Table(null, "Toto");

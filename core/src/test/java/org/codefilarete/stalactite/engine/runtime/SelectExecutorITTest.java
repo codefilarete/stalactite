@@ -11,6 +11,7 @@ import org.codefilarete.stalactite.engine.runtime.DMLExecutorTest.Tata;
 import org.codefilarete.stalactite.engine.runtime.DMLExecutorTest.Toto;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
@@ -29,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 abstract class SelectExecutorITTest<T extends Table<T>> extends DatabaseIntegrationTest {
 	
-	private final Dialect dialect = new Dialect(new JavaTypeToSqlTypeMapping()
+	private final Dialect dialect = new DefaultDialect(new JavaTypeToSqlTypeMapping()
 													.with(Integer.class, "int"));
 	
 	@Test

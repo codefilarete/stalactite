@@ -15,7 +15,7 @@ import org.codefilarete.stalactite.sql.statement.binder.MySQLTypeMapping;
  * 
  * @author Guillaume Mary
  */
-public class MySQLDialect extends Dialect {
+public class MySQLDialect extends DefaultDialect {
 	
 	public MySQLDialect() {
 		super(new MySQLTypeMapping(), new ColumnBinderRegistry());

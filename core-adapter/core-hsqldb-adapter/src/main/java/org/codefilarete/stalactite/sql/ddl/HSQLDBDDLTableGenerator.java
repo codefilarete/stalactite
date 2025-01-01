@@ -6,6 +6,10 @@ import org.codefilarete.stalactite.sql.HSQLDBDialect.HSQLDBDMLNameProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 
+/**
+ * 
+ * @author Guillaume Mary
+ */
 public class HSQLDBDDLTableGenerator extends DDLTableGenerator {
 	
 	public HSQLDBDDLTableGenerator(SqlTypeRegistry typeMapping) {

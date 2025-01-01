@@ -21,7 +21,7 @@ import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierM
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
@@ -61,7 +61,7 @@ class BeanPersisterTest {
 		ClassMapping<Toto, Long, TotoTable> classMappingStrategy = new ClassMapping<>(Toto.class, totoTable,
 																					  mapping, identifier,
 																					  identifierInsertionManagerMock);
-		BeanPersister<Toto, Long, TotoTable> testInstance = new BeanPersister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
+		BeanPersister<Toto, Long, TotoTable> testInstance = new BeanPersister<Toto, Long, TotoTable>(classMappingStrategy, new DefaultDialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
@@ -95,7 +95,7 @@ class BeanPersisterTest {
 																						 mapping, identifier,
 																						 identifierInsertionManagerMock);
 		Holder<Toto> mockedSelectAnswer = new Holder<>();
-		BeanPersister<Toto, Integer, TotoTable> testInstance = new BeanPersister<Toto, Integer, TotoTable>(classMappingStrategy, new Dialect(),
+		BeanPersister<Toto, Integer, TotoTable> testInstance = new BeanPersister<Toto, Integer, TotoTable>(classMappingStrategy, new DefaultDialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
@@ -185,7 +185,7 @@ class BeanPersisterTest {
 		ClassMapping<Toto, Long, TotoTable> classMappingStrategy = new ClassMapping<>(Toto.class, totoTable,
 																					  mapping, identifier,
 																					  identifierInsertionManagerMock);
-		BeanPersister<Toto, Long, TotoTable> testInstance = new BeanPersister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
+		BeanPersister<Toto, Long, TotoTable> testInstance = new BeanPersister<Toto, Long, TotoTable>(classMappingStrategy, new DefaultDialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
@@ -224,7 +224,7 @@ class BeanPersisterTest {
 		ClassMapping<Toto, Long, TotoTable> classMappingStrategy = new ClassMapping<>(Toto.class, totoTable,
 																					  mapping, identifier,
 																					  new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));
-		BeanPersister<Toto, Long, TotoTable> testInstance = new BeanPersister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
+		BeanPersister<Toto, Long, TotoTable> testInstance = new BeanPersister<Toto, Long, TotoTable>(classMappingStrategy, new DefaultDialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
@@ -268,7 +268,7 @@ class BeanPersisterTest {
 		ClassMapping<Toto, Long, TotoTable> classMappingStrategy = new ClassMapping<>(Toto.class, totoTable,
 																					  mapping, identifier,
 																					  new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));
-		BeanPersister<Toto, Long, TotoTable> testInstance = new BeanPersister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
+		BeanPersister<Toto, Long, TotoTable> testInstance = new BeanPersister<Toto, Long, TotoTable>(classMappingStrategy, new DefaultDialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
@@ -307,7 +307,7 @@ class BeanPersisterTest {
 		ClassMapping<Toto, Long, TotoTable> classMappingStrategy = new ClassMapping<>(Toto.class, totoTable,
 																					  mapping, identifier,
 																					  new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));
-		BeanPersister<Toto, Long, TotoTable> testInstance = new BeanPersister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
+		BeanPersister<Toto, Long, TotoTable> testInstance = new BeanPersister<Toto, Long, TotoTable>(classMappingStrategy, new DefaultDialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
@@ -343,7 +343,7 @@ class BeanPersisterTest {
 		ClassMapping<Toto, Long, TotoTable> classMappingStrategy = new ClassMapping<>(Toto.class, totoTable,
 																					  mapping, identifier,
 																					  new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));
-		BeanPersister<Toto, Long, TotoTable> testInstance = new BeanPersister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
+		BeanPersister<Toto, Long, TotoTable> testInstance = new BeanPersister<Toto, Long, TotoTable>(classMappingStrategy, new DefaultDialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
@@ -379,7 +379,7 @@ class BeanPersisterTest {
 		ClassMapping<Toto, Integer, TotoTable> classMappingStrategy = new ClassMapping<>(Toto.class, totoTable,
 																						 mapping, identifier,
 																						 identifierInsertionManagerMock);
-		BeanPersister<Toto, Integer, TotoTable> testInstance = new BeanPersister<Toto, Integer, TotoTable>(classMappingStrategy, new Dialect(),
+		BeanPersister<Toto, Integer, TotoTable> testInstance = new BeanPersister<Toto, Integer, TotoTable>(classMappingStrategy, new DefaultDialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override

@@ -15,6 +15,7 @@ import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierM
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -45,7 +46,7 @@ import static org.mockito.Mockito.*;
  */
 class UpdateExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest {
 	
-	private final Dialect dialect = new Dialect(new JavaTypeToSqlTypeMapping()
+	private final Dialect dialect = new DefaultDialect(new JavaTypeToSqlTypeMapping()
 		.with(Integer.class, "int"));
 	
 	private UpdateExecutor<Toto, Integer, T> testInstance;

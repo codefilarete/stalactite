@@ -23,7 +23,7 @@ import org.codefilarete.tool.function.ThrowingBiFunction;
 /**
  * @author Guillaume Mary
  */
-public class DerbyDialect extends Dialect {
+public class DerbyDialect extends DefaultDialect {
 
 	public DerbyDialect() {
 		super(new DerbyTypeMapping());

@@ -31,6 +31,7 @@ import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
@@ -150,7 +151,7 @@ public class EntityMappingTreeSelectExecutorTest {
 		}
 		when(idMappingMock.getIdentifierAssembler()).thenReturn(t);
 		
-		Dialect dialect = new Dialect();
+		DefaultDialect dialect = new DefaultDialect();
 		// we set a in operator size to test overflow
 		dialect.setInOperatorMaxSize(3);
 		
@@ -195,7 +196,7 @@ public class EntityMappingTreeSelectExecutorTest {
 		when(classMappingStrategy.getIdMapping()).thenReturn(idMappingMock);
 		when(idMappingMock.getIdentifierAssembler()).thenReturn(new SimpleIdentifierAssembler(dummyPK));
 		
-		Dialect dialect = new Dialect();
+		DefaultDialect dialect = new DefaultDialect();
 		// we set a in operator size to test overflow
 		dialect.setInOperatorMaxSize(3);
 		
@@ -228,7 +229,7 @@ public class EntityMappingTreeSelectExecutorTest {
 		when(classMappingStrategy.getIdMapping()).thenReturn(idMappingMock);
 		
 		List<String> capturedSQL = new ArrayList<>();
-		Dialect dialect = new Dialect();
+		DefaultDialect dialect = new DefaultDialect();
 		// we set a in operator size to test overflow
 		dialect.setInOperatorMaxSize(3);
 		ConnectionProvider connectionProvider = mock(ConnectionProvider.class);
@@ -366,7 +367,7 @@ public class EntityMappingTreeSelectExecutorTest {
 	
 	protected static class JdbcArgCaptor {
 		
-		protected final Dialect dialect = new Dialect(new JavaTypeToSqlTypeMapping()
+		protected final Dialect dialect = new DefaultDialect(new JavaTypeToSqlTypeMapping()
 				.with(Integer.class, "int"));
 		
 		protected PreparedStatement preparedStatement;

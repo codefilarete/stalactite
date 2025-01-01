@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -31,7 +32,7 @@ class UpdateCommandBuilderTest {
 				.set(columnA)
 				.set(columnB);
 		update.where(columnA, Operators.eq(44)).or(columnA, Operators.eq(columnB));
-		Dialect dialect = new Dialect();
+		Dialect dialect = new DefaultDialect();
 		UpdateCommandBuilder<T> testInstance = new UpdateCommandBuilder<>(update, dialect);
 		assertThat(testInstance.toSQL()).isEqualTo("update Toto set a = ?, b = ? where a = 44 or a = b");
 		
@@ -63,7 +64,7 @@ class UpdateCommandBuilderTest {
 				.set(columnA)
 				.set(columnB);
 		update1.where(columnA, Operators.eq(columnX)).or(columnA, Operators.eq(columnY));
-		Dialect dialect = new Dialect();
+		Dialect dialect = new DefaultDialect();
 		UpdateCommandBuilder<T1> testInstance = new UpdateCommandBuilder<>(update1, dialect);
 		assertThat(testInstance.toSQL()).isEqualTo("update Toto, Tata set Toto.a = ?, Toto.b = ? where Toto.a = Tata.x or Toto.a = Tata.y");
 		
@@ -88,7 +89,7 @@ class UpdateCommandBuilderTest {
 				.set(columnC, "tata")
 				.set(columnD);
 		update.where(columnA, Operators.in(42L, 43L)).or(columnA, Operators.eq(columnB));
-		Dialect dialect = new Dialect();
+		Dialect dialect = new DefaultDialect();
 		UpdateCommandBuilder<T> testInstance = new UpdateCommandBuilder<T>(update, dialect);
 		
 		UpdateStatement<T> result = testInstance.toStatement();

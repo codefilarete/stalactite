@@ -27,11 +27,11 @@ import static org.codefilarete.stalactite.query.model.Operators.like;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class DialectTest {
+class DefaultDialectTest {
 	
 	@Test
 	void operatorPrintIsOverridden_itIsTakenIntoAccountInDeleteAndQuery() throws SQLException {
-		Dialect testInstance = new Dialect();
+		DefaultDialect testInstance = new DefaultDialect();
 		QuerySQLBuilderFactoryBuilder querySQLBuilderFactoryBuilder = new QuerySQLBuilderFactoryBuilder(
 				testInstance.getDmlNameProviderFactory(),
 				testInstance.getColumnBinderRegistry(),
@@ -77,7 +77,7 @@ class DialectTest {
 	
 	@Test
 	void userDefinedOperatorCanBeTakenIntoAccountByOperatorSQLBuilderOverride() throws SQLException {
-		Dialect testInstance = new Dialect();
+		DefaultDialect testInstance = new DefaultDialect();
 		
 		class MyOperator extends UnitaryOperator<String> {
 			

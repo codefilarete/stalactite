@@ -39,6 +39,7 @@ import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
@@ -56,7 +57,10 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Guillaume Mary
@@ -155,7 +159,7 @@ class OneToOneRelationConfigurerTest {
 		// no reverse column declared, hence relation is maintained through an association table
 		
 		// Checking tables structure foreign key presence
-		Dialect dialect = new Dialect();
+		Dialect dialect = new DefaultDialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		
@@ -275,7 +279,7 @@ class OneToOneRelationConfigurerTest {
 		countryCapitalRelation.setReverseColumn(cityTableCountryColumn);
 		
 		// Checking tables structure foreign key presence 
-		Dialect dialect = new Dialect();
+		Dialect dialect = new DefaultDialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		

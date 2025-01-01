@@ -1,15 +1,11 @@
 package org.codefilarete.stalactite.sql;
 
-import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.builder.PseudoTableSQLBuilderFactory;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
 import org.codefilarete.stalactite.sql.ddl.DDLGenerator;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
-import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
-import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.ReadOperationFactory;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
@@ -23,138 +19,29 @@ import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
  * 
  * @author Guillaume Mary
  */
-public class Dialect {
+public interface Dialect {
 	
-	private final SqlTypeRegistry sqlTypeRegistry;
+	DDLTableGenerator getDdlTableGenerator();
 	
-	private final ColumnBinderRegistry columnBinderRegistry;
+	DMLGenerator getDmlGenerator();
 	
-	/** Maximum number of values for a "in" operator */
-	private int inOperatorMaxSize = 1000;
+	WriteOperationFactory getWriteOperationFactory();
 	
-	private final DDLTableGenerator ddlTableGenerator;
+	ReadOperationFactory getReadOperationFactory();
 	
-	private final DMLGenerator dmlGenerator;
+	QuerySQLBuilderFactory getQuerySQLBuilderFactory();
 	
-	private final WriteOperationFactory writeOperationFactory;
+	PseudoTableSQLBuilderFactory getUnionSQLBuilderFactory();
 	
-	private final ReadOperationFactory readOperationFactory;
+	SqlTypeRegistry getSqlTypeRegistry();
 	
-	private QuerySQLBuilderFactory querySQLBuilderFactory;
+	ColumnBinderRegistry getColumnBinderRegistry();
 	
-	private final PseudoTableSQLBuilderFactory pseudoTableSQLBuilderFactory;
+	DMLNameProviderFactory getDmlNameProviderFactory();
 	
-	private final DMLNameProviderFactory dmlNameProviderFactory;
+	int getInOperatorMaxSize();
 	
-	/**
-	 * Creates a default dialect, with a {@link DefaultTypeMapping} and a default {@link ColumnBinderRegistry}
-	 */
-	public Dialect() {
-		this(new DefaultTypeMapping());
-	}
-	
-	/**
-	 * Creates a default dialect, with a default {@link ColumnBinderRegistry}
-	 */
-	public Dialect(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping) {
-		this(javaTypeToSqlTypeMapping, new ColumnBinderRegistry());
-	}
-	
-	/**
-	 * Creates a dialect with given {@link JavaTypeToSqlTypeMapping} and {@link ColumnBinderRegistry}
-	 */
-	public Dialect(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping, ColumnBinderRegistry columnBinderRegistry) {
-		this.sqlTypeRegistry = new SqlTypeRegistry(javaTypeToSqlTypeMapping);
-		this.columnBinderRegistry = columnBinderRegistry;
-		this.dmlNameProviderFactory = newDMLNameProviderFactory();
-		this.dmlGenerator = newDmlGenerator(columnBinderRegistry);
-		this.ddlTableGenerator = newDdlTableGenerator();
-		this.writeOperationFactory = newWriteOperationFactory();
-		this.readOperationFactory = newReadOperationFactory();
-		this.querySQLBuilderFactory = new QuerySQLBuilderFactoryBuilder(dmlNameProviderFactory, columnBinderRegistry, javaTypeToSqlTypeMapping).build();
-		this.pseudoTableSQLBuilderFactory = new PseudoTableSQLBuilderFactory();
-	}
-	
-	protected DMLNameProviderFactory newDMLNameProviderFactory() {
-		return DMLNameProvider::new;
-	}
-	
-	protected DMLGenerator newDmlGenerator(ColumnBinderRegistry columnBinderRegistry) {
-		return new DMLGenerator(columnBinderRegistry, NoopSorter.INSTANCE, dmlNameProviderFactory);
-	}
-	
-	protected DDLTableGenerator newDdlTableGenerator() {
-		return new DDLTableGenerator(getSqlTypeRegistry(), dmlNameProviderFactory);
-	}
-	
-	public DDLTableGenerator getDdlTableGenerator() {
-		return ddlTableGenerator;
-	}
-	
-	public DMLGenerator getDmlGenerator() {
-		return dmlGenerator;
-	}
-	
-	protected WriteOperationFactory newWriteOperationFactory() {
-		return new WriteOperationFactory();
-	}
-	
-	public WriteOperationFactory getWriteOperationFactory() {
-		return writeOperationFactory;
-	}
-	
-	protected ReadOperationFactory newReadOperationFactory() {
-		return new ReadOperationFactory();
-	}
-	
-	public ReadOperationFactory getReadOperationFactory() {
-		return readOperationFactory;
-	}
-	
-	public QuerySQLBuilderFactory getQuerySQLBuilderFactory() {
-		return querySQLBuilderFactory;
-	}
-	
-	public PseudoTableSQLBuilderFactory getUnionSQLBuilderFactory() {
-		return pseudoTableSQLBuilderFactory;
-	}
-	
-	/**
-	 * Change {@link QuerySQLBuilderFactory}
-	 * One can be interested in by using {@link QuerySQLBuilderFactoryBuilder}.
-	 * 
-	 * @param querySQLBuilderFactory
-	 */
-	public void setQuerySQLBuilderFactory(QuerySQLBuilderFactory querySQLBuilderFactory) {
-		this.querySQLBuilderFactory = querySQLBuilderFactory;
-	}
-	
-	public SqlTypeRegistry getSqlTypeRegistry() {
-		return sqlTypeRegistry;
-	}
-	
-	public ColumnBinderRegistry getColumnBinderRegistry() {
-		return columnBinderRegistry;
-	}
-	
-	public DMLNameProviderFactory getDmlNameProviderFactory() {
-		return dmlNameProviderFactory;
-	}
-	
-	public int getInOperatorMaxSize() {
-		return inOperatorMaxSize;
-	}
-	
-	public void setInOperatorMaxSize(int inOperatorMaxSize) {
-		if (inOperatorMaxSize <= 0) {
-			throw new IllegalArgumentException("SQL operator 'in' must contain at least 1 element");
-		}
-		this.inOperatorMaxSize = inOperatorMaxSize;
-	}
-	
-	public <I> GeneratedKeysReader<I> buildGeneratedKeysReader(String keyName, Class<I> columnType) {
-		return new GeneratedKeysReader<>(keyName, getColumnBinderRegistry().getBinder(columnType));
-	}
+	<I> GeneratedKeysReader<I> buildGeneratedKeysReader(String keyName, Class<I> columnType);
 	
 	/**
 	 * Indicates if this dialect supports what ANSI-SQL terms "row value constructor" syntax, also called tuple syntax.
@@ -162,8 +49,5 @@ public class Dialect {
 	 *
 	 * @return true if this SQL dialect supports "row value constructor" syntax, false otherwise.
 	 */
-	public boolean supportsTupleCondition() {
-		// returning false by default since most databases don't support it
-		return false;
-	}
+	boolean supportsTupleCondition();
 }

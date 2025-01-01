@@ -7,6 +7,7 @@ import java.util.Set;
 import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -27,7 +28,7 @@ class DMLGeneratorTest {
 	
 	@BeforeEach
 	public void setUp() {
-		currentDialect = new Dialect(new JavaTypeToSqlTypeMapping());
+		currentDialect = new DefaultDialect(new JavaTypeToSqlTypeMapping());
 		stringBinder = currentDialect.getColumnBinderRegistry().getBinder(String.class);
 		testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, DMLNameProvider::new);
 	}

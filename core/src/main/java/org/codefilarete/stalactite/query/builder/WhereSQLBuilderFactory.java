@@ -18,7 +18,7 @@ import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.tool.Reflections;
 
 /**
- * Factory for {@link WhereSQLBuilder}. It's overridable through {@link org.codefilarete.stalactite.sql.Dialect#setQuerySQLBuilderFactory(QuerySQLBuilderFactory)}
+ * Factory for {@link WhereSQLBuilder}. It's overridable through {@link org.codefilarete.stalactite.sql.Dialect}
  * which then let one gives its own implementation of {@link WhereSQLBuilderFactory}.
  *
  * @author Guillaume Mary

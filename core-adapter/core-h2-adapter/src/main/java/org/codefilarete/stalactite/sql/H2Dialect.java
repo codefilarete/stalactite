@@ -16,7 +16,7 @@ import org.codefilarete.tool.collection.Arrays;
 /**
  * @author Guillaume Mary
  */
-public class H2Dialect extends Dialect { 
+public class H2Dialect extends DefaultDialect { 
 	
 	public H2Dialect() {
 		super(new H2TypeMapping());
