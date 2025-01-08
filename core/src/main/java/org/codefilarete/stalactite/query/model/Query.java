@@ -1,8 +1,6 @@
 package org.codefilarete.stalactite.query.model;
 
-import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiFunction;
 
 import org.codefilarete.reflection.MethodReferenceDispatcher;
@@ -174,11 +172,6 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 	@Override
 	public Map<Selectable<?>, String> getAliases() {
 		return this.selectSurrogate.getAliases();
-	}
-	
-	@Override
-	public Set<Query> getQueries() {
-		return Collections.singleton(this);
 	}
 	
 	public FluentSelectClause select(Iterable<? extends Selectable<?>> selectables) {

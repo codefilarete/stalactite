@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.query.builder;
 
-import org.codefilarete.stalactite.query.builder.PseudoTableSQLBuilderFactory.PseudoTableSQLBuilder;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QueryStatementSQLBuilder;
 import org.codefilarete.stalactite.query.model.From;
 import org.codefilarete.stalactite.query.model.From.AbstractJoin;
 import org.codefilarete.stalactite.query.model.From.AbstractJoin.JoinDirection;
@@ -22,8 +22,7 @@ import org.codefilarete.tool.collection.PairIterator;
 
 /**
  * Factory for {@link FromSQLBuilder}. It's overridable by giving your own implementation to
- * {@link QuerySQLBuilderFactory#QuerySQLBuilderFactory(org.codefilarete.stalactite.sql.DMLNameProviderFactory, ColumnBinderRegistry,
- * SelectSQLBuilderFactory, FromSQLBuilderFactory, PseudoTableSQLBuilderFactory, WhereSQLBuilderFactory, WhereSQLBuilderFactory, FunctionSQLBuilderFactory)}
+ * {@link QuerySQLBuilderFactory#QuerySQLBuilderFactory(org.codefilarete.stalactite.sql.DMLNameProviderFactory, ColumnBinderRegistry, SelectSQLBuilderFactory, FromSQLBuilderFactory, WhereSQLBuilderFactory, WhereSQLBuilderFactory, FunctionSQLBuilderFactory)}
  * 
  * @author Guillaume Mary
  */
@@ -32,8 +31,8 @@ public class FromSQLBuilderFactory {
 	public FromSQLBuilderFactory() {
 	}
 	
-	public FromSQLBuilder fromBuilder(From from, DMLNameProvider dmlNameProvider, QuerySQLBuilderFactory querySQLBuilderFactory, PseudoTableSQLBuilderFactory pseudoTableSQLBuilderFactory) {
-		return new FromSQLBuilder(from, dmlNameProvider, querySQLBuilderFactory, pseudoTableSQLBuilderFactory);
+	public FromSQLBuilder fromBuilder(From from, DMLNameProvider dmlNameProvider, QuerySQLBuilderFactory querySQLBuilderFactory) {
+		return new FromSQLBuilder(from, dmlNameProvider, querySQLBuilderFactory);
 	}
 	
 	/**
@@ -52,13 +51,10 @@ public class FromSQLBuilderFactory {
 		
 		private final QuerySQLBuilderFactory querySQLBuilderFactory;
 		
-		private final PseudoTableSQLBuilderFactory pseudoTableSQLBuilderFactory;
-		
-		public FromSQLBuilder(From from, DMLNameProvider dmlNameProvider, QuerySQLBuilderFactory querySQLBuilderFactory, PseudoTableSQLBuilderFactory pseudoTableSQLBuilderFactory) {
+		public FromSQLBuilder(From from, DMLNameProvider dmlNameProvider, QuerySQLBuilderFactory querySQLBuilderFactory) {
 			this.from = from;
 			this.dmlNameProvider = dmlNameProvider;
 			this.querySQLBuilderFactory = querySQLBuilderFactory;
-			this.pseudoTableSQLBuilderFactory = pseudoTableSQLBuilderFactory;
 		}
 		
 		@Override
@@ -139,7 +135,7 @@ public class FromSQLBuilderFactory {
 			}
 			
 			private void cat(PseudoTable pseudoTable) {
-				PseudoTableSQLBuilder pseudoTableSqlBuilder = pseudoTableSQLBuilderFactory.pseudoTableBuilder(pseudoTable.getQueryStatement(), querySQLBuilderFactory);
+				QueryStatementSQLBuilder pseudoTableSqlBuilder = querySQLBuilderFactory.queryStatementBuilder(pseudoTable.getQueryStatement());
 				// tableAlias may be null which produces invalid SQL in a majority of cases, but not when it is the only element in the From clause ...
 				sql.cat("(");
 				pseudoTableSqlBuilder.appendTo(sql);

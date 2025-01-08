@@ -141,8 +141,8 @@ public class FromSQLBuilderTest {
 	public void toSQL(From from, String expected) {
 		FromSQLBuilder testInstance = new FromSQLBuilder(from,
 				new DMLNameProvider(from.getTableAliases()::get),
-				new QuerySQLBuilderFactory(new DefaultTypeMapping(), DMLNameProvider::new, new ColumnBinderRegistry()),
-				new PseudoTableSQLBuilderFactory());
+				new QuerySQLBuilderFactory(new DefaultTypeMapping(), DMLNameProvider::new, new ColumnBinderRegistry())
+		);
 		assertThat(testInstance.toSQL()).isEqualTo(expected);
 	}
 	
@@ -172,8 +172,8 @@ public class FromSQLBuilderTest {
 				.setAlias(tableTutu, "tu");
 		FromSQLBuilder testInstance = new FromSQLBuilder(from,
 				new DMLNameProvider(from.getTableAliases()::get),
-				new QuerySQLBuilderFactory(new DefaultTypeMapping(), DMLNameProvider::new, new ColumnBinderRegistry()),
-				new PseudoTableSQLBuilderFactory());
+				new QuerySQLBuilderFactory(new DefaultTypeMapping(), DMLNameProvider::new, new ColumnBinderRegistry())
+		);
 		from.getTableAliases().put(tableToto2, "toChanged");
 		from.getTableAliases().put(tableTutu, "tuChanged");
 		assertThat(testInstance.toSQL()).isEqualTo("Toto as to inner join Tata as ta on to.a = ta.a"

@@ -1,7 +1,6 @@
 package org.codefilarete.stalactite.sql;
 
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
-import org.codefilarete.stalactite.query.builder.PseudoTableSQLBuilderFactory;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
 import org.codefilarete.stalactite.sql.ddl.DDLGenerator;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
@@ -42,8 +41,6 @@ public class DefaultDialect implements Dialect {
 	
 	private QuerySQLBuilderFactory querySQLBuilderFactory;
 	
-	private final PseudoTableSQLBuilderFactory pseudoTableSQLBuilderFactory;
-	
 	private final DMLNameProviderFactory dmlNameProviderFactory;
 	
 	/**
@@ -72,7 +69,6 @@ public class DefaultDialect implements Dialect {
 		this.writeOperationFactory = newWriteOperationFactory();
 		this.readOperationFactory = newReadOperationFactory();
 		this.querySQLBuilderFactory = new QuerySQLBuilderFactoryBuilder(dmlNameProviderFactory, columnBinderRegistry, javaTypeToSqlTypeMapping).build();
-		this.pseudoTableSQLBuilderFactory = new PseudoTableSQLBuilderFactory();
 	}
 	
 	public DefaultDialect(SqlTypeRegistry sqlTypeRegistry,
@@ -81,7 +77,6 @@ public class DefaultDialect implements Dialect {
 						  DMLGenerator dmlGenerator,
 						  WriteOperationFactory writeOperationFactory,
 						  ReadOperationFactory readOperationFactory,
-						  PseudoTableSQLBuilderFactory pseudoTableSQLBuilderFactory,
 						  DMLNameProviderFactory dmlNameProviderFactory) {
 		this.sqlTypeRegistry = sqlTypeRegistry;
 		this.columnBinderRegistry = columnBinderRegistry;
@@ -89,7 +84,6 @@ public class DefaultDialect implements Dialect {
 		this.dmlGenerator = dmlGenerator;
 		this.writeOperationFactory = writeOperationFactory;
 		this.readOperationFactory = readOperationFactory;
-		this.pseudoTableSQLBuilderFactory = pseudoTableSQLBuilderFactory;
 		this.dmlNameProviderFactory = dmlNameProviderFactory;
 	}
 	
@@ -136,11 +130,6 @@ public class DefaultDialect implements Dialect {
 	@Override
 	public QuerySQLBuilderFactory getQuerySQLBuilderFactory() {
 		return querySQLBuilderFactory;
-	}
-	
-	@Override
-	public PseudoTableSQLBuilderFactory getUnionSQLBuilderFactory() {
-		return pseudoTableSQLBuilderFactory;
 	}
 	
 	/**

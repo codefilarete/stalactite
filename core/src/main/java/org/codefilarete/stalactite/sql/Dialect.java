@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.sql;
 
-import org.codefilarete.stalactite.query.builder.PseudoTableSQLBuilderFactory;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
 import org.codefilarete.stalactite.sql.ddl.DDLGenerator;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
@@ -30,8 +29,6 @@ public interface Dialect {
 	ReadOperationFactory getReadOperationFactory();
 	
 	QuerySQLBuilderFactory getQuerySQLBuilderFactory();
-	
-	PseudoTableSQLBuilderFactory getUnionSQLBuilderFactory();
 	
 	SqlTypeRegistry getSqlTypeRegistry();
 	

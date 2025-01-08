@@ -14,8 +14,6 @@ import org.codefilarete.tool.collection.KeepOrderSet;
  */
 public interface QueryStatement extends SelectablesPod {
 	
-	Set<Query> getQueries();
-	
 	/**
 	 * Wraps current instance to make it appendable into a From clause
 	 * @return an instance containing current instance and appendable into a From clause
@@ -35,7 +33,7 @@ public interface QueryStatement extends SelectablesPod {
 	}
 	
 	/**
-	 * Wrapper of Query and Union (as {@link QueryStatement}) to make them capable of being added to a From clause.
+	 * Wrapper of {@link Query} and {@link Union} (as {@link QueryStatement}) to make them capable of being added to a From clause.
 	 * 
 	 * @author Guillaume Mary
 	 */

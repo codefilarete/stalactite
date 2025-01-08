@@ -23,8 +23,10 @@ import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.JoinLink;
+import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.QueryStatement.PseudoTable;
+import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -34,6 +36,7 @@ import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.bean.Randomizer;
 import org.codefilarete.tool.bean.Randomizer.LinearRandomGenerator;
+import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -408,7 +411,15 @@ public class EntityJoinTree<C, I> {
 	@VisibleForTesting
 	Set<Table> lookupTable(PseudoTable pseudoTable) {
 		Set<Table> result = new HashSet<>();
-		pseudoTable.getQueryStatement().getQueries().forEach(query -> {
+		Set<Query> queries;
+		if (pseudoTable.getQueryStatement() instanceof Query) {
+			queries = Arrays.asSet((Query) pseudoTable.getQueryStatement());
+		} else if (pseudoTable.getQueryStatement() instanceof Union) {
+			queries = ((Union) pseudoTable.getQueryStatement()).getQueries();
+		} else {
+			throw new IllegalArgumentException("Pseudo table type is not supported: " + Reflections.toString(pseudoTable.getClass()));
+		}
+		queries.forEach(query -> {
 			Fromable rightTable =  query.getFromSurrogate().getRoot();
 			if (rightTable instanceof Table) {
 				result.add((Table) rightTable);
@@ -416,7 +427,7 @@ public class EntityJoinTree<C, I> {
 				result.addAll(lookupTable((PseudoTable) rightTable));
 			}
 		});
-		pseudoTable.getQueryStatement().getQueries().forEach(query -> query.getFromSurrogate().getJoins().forEach(join -> {
+		queries.forEach(query -> query.getFromSurrogate().getJoins().forEach(join -> {
 			Fromable rightTable = join.getRightTable();
 			if (rightTable instanceof Table) {
 				result.add((Table) rightTable);

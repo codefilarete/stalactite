@@ -4,8 +4,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.codefilarete.stalactite.query.builder.PseudoTableSQLBuilderFactory.PseudoTableSQLBuilder;
-import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.UnionSQLBuilder;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryProvider;
 import org.codefilarete.stalactite.query.model.QueryStatement;
@@ -16,8 +15,9 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
-import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Maps;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -156,38 +156,9 @@ class QuerySQLBuilderTest {
 	
 	@ParameterizedTest
 	@MethodSource("toSQL")
-	public void toSQL(QueryProvider<?> queryProvider, String expected) {
-		SQLBuilder testInstance = sqlBuilder(queryProvider.getQuery());
+	public void toSQL(QueryProvider<QueryStatement> queryProvider, String expected) {
+		SQLBuilder testInstance = dialect.getQuerySQLBuilderFactory().queryStatementBuilder(queryProvider.getQuery());
 		assertThat(testInstance.toSQL()).isEqualTo(expected);
-	}
-	
-	/**
-	 * Creates a {@link QuerySQLBuilder} or a {@link PseudoTableSQLBuilder} depending on given {@link QueryStatement} type.
-	 * Throws an exception if {@link QueryStatement} is neither a {@link Query} nor a {@link Union}.
-	 *
-	 * @param queryStatement a {@link Query} or a {@link Union}
-	 * @return a {@link QuerySQLBuilder} or a {@link PseudoTableSQLBuilder}
-	 */
-	private SQLBuilder sqlBuilder(QueryStatement queryStatement) {
-		QuerySQLBuilderFactory querySQLBuilderFactory = dialect.getQuerySQLBuilderFactory();
-		if (queryStatement instanceof Query) {
-			return querySQLBuilderFactory.queryBuilder((Query) queryStatement);
-		} else if (queryStatement instanceof Union) {
-			return new PseudoTableSQLBuilder(queryStatement, querySQLBuilderFactory);
-		} else {
-			throw new UnsupportedOperationException(Reflections.toString(queryStatement.getClass()) + " has no supported SQL generator");
-		}
-	}
-	
-	private PreparableSQLBuilder preparedSQLBuilder(QueryStatement queryStatement) {
-		QuerySQLBuilderFactory querySQLBuilderFactory = dialect.getQuerySQLBuilderFactory();
-		if (queryStatement instanceof Query) {
-			return querySQLBuilderFactory.queryBuilder((Query) queryStatement);
-		} else if (queryStatement instanceof Union) {
-			return dialect.getUnionSQLBuilderFactory().pseudoTableBuilder(queryStatement, querySQLBuilderFactory);
-		} else {
-			throw new UnsupportedOperationException(Reflections.toString(queryStatement.getClass()) + " has no supported SQL generator");
-		}
 	}
 	
 	public static Object[][] toPreparableSQL() {
@@ -234,10 +205,48 @@ class QuerySQLBuilderTest {
 	
 	@ParameterizedTest
 	@MethodSource("toPreparableSQL")
-	public void toPreparableSQL(QueryProvider<Query> queryProvider, String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
-		PreparableSQLBuilder testInstance = preparedSQLBuilder(queryProvider.getQuery());
+	public void toPreparableSQL(QueryProvider<QueryStatement> queryProvider, String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
+		PreparableSQLBuilder testInstance = dialect.getQuerySQLBuilderFactory().queryStatementBuilder(queryProvider.getQuery());
 		PreparedSQL preparedSQL = testInstance.toPreparableSQL().toPreparedSQL(new HashMap<>());
 		assertThat(preparedSQL.getSQL()).isEqualTo(expectedPreparedStatement);
 		assertThat(preparedSQL.getValues()).isEqualTo(expectedValues);
+	}
+	
+	@Nested
+	@TestInstance(TestInstance.Lifecycle.PER_CLASS)	// set to allow non-static method source for @ParameterizedTest
+	class UnionSQLBuilderTest {
+		
+		private final Dialect dialect = new DefaultDialect();
+		private final QuerySQLBuilderFactory querySQLBuilderFactory = dialect.getQuerySQLBuilderFactory();
+		
+		// this method is allowed to be non-static thanks to LifeCycle.PER_CLASS test class
+		public Object[][] toSQL() {
+			Table tableToto = new Table(null, "Toto");
+			Column colTotoA = tableToto.addColumn("a", String.class);
+			Column colTotoB = tableToto.addColumn("b", String.class);
+			Table tableTata = new Table(null, "Tata");
+			Column colTataA = tableTata.addColumn("a", String.class);
+			Column colTataB = tableTata.addColumn("b", String.class);
+			
+			Query query1 = select(colTotoA, colTotoB).from(tableToto).getQuery();
+			Query query2 = select(colTataA, colTataB).from(tableTata).getQuery();
+			
+			Query aliasedQuery1 = select(colTotoA, colTotoB).from(tableToto, "To").getQuery();
+			Query aliasedQuery2 = select(colTataA, colTataB).from(tableTata, "Ta").getQuery();
+			
+			return new Object[][] {
+					{ new Union(query1, query2),
+							"select Toto.a, Toto.b from Toto union all select Tata.a, Tata.b from Tata" },
+					{ new Union(aliasedQuery1, aliasedQuery2),
+							"select To.a, To.b from Toto as To union all select Ta.a, Ta.b from Tata as Ta" },
+			};
+		}
+		
+		@ParameterizedTest
+		@MethodSource("toSQL")
+		public void toSQL(Union union, String expected) {
+			UnionSQLBuilder testInstance = new UnionSQLBuilder(union, querySQLBuilderFactory);
+			assertThat(testInstance.toSQL()).isEqualTo(expected);
+		}
 	}
 }

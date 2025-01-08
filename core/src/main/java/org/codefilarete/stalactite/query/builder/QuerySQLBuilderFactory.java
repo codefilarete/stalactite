@@ -1,9 +1,12 @@
 package org.codefilarete.stalactite.query.builder;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 import org.codefilarete.stalactite.query.builder.FromSQLBuilderFactory.FromSQLBuilder;
 import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.FunctionSQLBuilder;
+import org.codefilarete.stalactite.query.builder.SQLAppender.SubSQLAppender;
 import org.codefilarete.stalactite.query.builder.SelectSQLBuilderFactory.SelectSQLBuilder;
 import org.codefilarete.stalactite.query.builder.WhereSQLBuilderFactory.WhereSQLBuilder;
 import org.codefilarete.stalactite.query.model.AbstractCriterion;
@@ -15,7 +18,9 @@ import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.query.model.OrderBy.OrderedColumn;
 import org.codefilarete.stalactite.query.model.OrderByChain.Order;
 import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.QueryStatement;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
 import org.codefilarete.stalactite.query.model.operator.SQLFunction;
 import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
@@ -24,6 +29,7 @@ import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.tool.Reflections;
 
 /**
  * Factory for {@link QuerySQLBuilder}.
@@ -41,7 +47,6 @@ public class QuerySQLBuilderFactory {
 	private final ColumnBinderRegistry parameterBinderRegistry;
 	private final SelectSQLBuilderFactory selectBuilderFactory;
 	private final FromSQLBuilderFactory fromBuilderFactory;
-	private final PseudoTableSQLBuilderFactory pseudoTableSQLBuilderFactory;
 	private final WhereSQLBuilderFactory whereBuilderFactory;
 	private final WhereSQLBuilderFactory havingBuilderFactory;
 	private final FunctionSQLBuilderFactory functionSQLBuilderFactory;
@@ -50,7 +55,7 @@ public class QuerySQLBuilderFactory {
 	/**
 	 * Main constructor
 	 *
-	 * @param dmlNameProviderFactory
+	 * @param dmlNameProviderFactory factory for SQL name provider
 	 * @param parameterBinderRegistry necessary while using {@link PreparableSQLBuilder#toPreparableSQL()} after calling {@link #queryBuilder(Query)}
 	 * @param selectBuilderFactory factory for select clause
 	 * @param fromBuilderFactory factory for from clause
@@ -61,7 +66,6 @@ public class QuerySQLBuilderFactory {
 								  ColumnBinderRegistry parameterBinderRegistry,
 								  SelectSQLBuilderFactory selectBuilderFactory,
 								  FromSQLBuilderFactory fromBuilderFactory,
-								  PseudoTableSQLBuilderFactory pseudoTableSQLBuilderFactory,
 								  WhereSQLBuilderFactory whereBuilderFactory,
 								  WhereSQLBuilderFactory havingBuilderFactory,
 								  FunctionSQLBuilderFactory functionSQLBuilderFactory) {
@@ -69,7 +73,6 @@ public class QuerySQLBuilderFactory {
 		this.parameterBinderRegistry = parameterBinderRegistry;
 		this.selectBuilderFactory = selectBuilderFactory;
 		this.fromBuilderFactory = fromBuilderFactory;
-		this.pseudoTableSQLBuilderFactory = pseudoTableSQLBuilderFactory;
 		this.whereBuilderFactory = whereBuilderFactory;
 		this.havingBuilderFactory = havingBuilderFactory;
 		this.functionSQLBuilderFactory = functionSQLBuilderFactory;
@@ -85,7 +88,6 @@ public class QuerySQLBuilderFactory {
 		this.parameterBinderRegistry = parameterBinderRegistry;
 		this.selectBuilderFactory = new SelectSQLBuilderFactory(javaTypeToSqlTypeMapping);
 		this.fromBuilderFactory = new FromSQLBuilderFactory();
-		this.pseudoTableSQLBuilderFactory = new PseudoTableSQLBuilderFactory();
 		this.whereBuilderFactory = new WhereSQLBuilderFactory(javaTypeToSqlTypeMapping, parameterBinderRegistry);
 		this.havingBuilderFactory = new WhereSQLBuilderFactory(javaTypeToSqlTypeMapping, parameterBinderRegistry);
 		this.functionSQLBuilderFactory = new FunctionSQLBuilderFactory(javaTypeToSqlTypeMapping);
@@ -138,11 +140,30 @@ public class QuerySQLBuilderFactory {
 		return new QuerySQLBuilder(query,
 				dmlNameProvider,
 				selectBuilderFactory.queryBuilder(query.getSelectSurrogate(), dmlNameProvider),
-				fromBuilderFactory.fromBuilder(query.getFromSurrogate(), dmlNameProvider, this, pseudoTableSQLBuilderFactory),
+				fromBuilderFactory.fromBuilder(query.getFromSurrogate(), dmlNameProvider, this),
 				whereBuilderFactory.whereBuilder(query.getWhereSurrogate(), dmlNameProvider),
 				havingBuilderFactory.whereBuilder(query.getHavingSurrogate(), dmlNameProvider),
 				functionSQLBuilderFactory.functionSQLBuilder(dmlNameProvider),
 				parameterBinderRegistry);
+	}
+	
+	public UnionSQLBuilder unionBuilder(Union union) {
+		return new UnionSQLBuilder(union, this);
+	}
+	
+	public QueryStatementSQLBuilder queryStatementBuilder(QueryStatement queryStatement) {
+		if (queryStatement instanceof Query) {
+			return queryBuilder((Query) queryStatement);
+		} else if (queryStatement instanceof Union) {
+			return unionBuilder((Union) queryStatement);
+		} else {
+			throw new IllegalArgumentException("Unsupported query statement type: " + Reflections.toString(queryStatement.getClass()));
+		}
+	}
+	
+	public interface QueryStatementSQLBuilder extends SQLBuilder, PreparableSQLBuilder {
+		
+		void appendTo(SQLAppender sqlWrapper);
 	}
 	
 	/**
@@ -152,7 +173,7 @@ public class QuerySQLBuilderFactory {
 	 * @see #toSQL()
 	 * @see #toPreparableSQL()
 	 */
-	public static class QuerySQLBuilder implements SQLBuilder, PreparableSQLBuilder {
+	public static class QuerySQLBuilder implements QueryStatementSQLBuilder {
 		
 		private final Query query;
 		private final DMLNameProvider dmlNameProvider;
@@ -208,6 +229,7 @@ public class QuerySQLBuilderFactory {
 			return preparedSQLAppender;
 		}
 		
+		@Override
 		public void appendTo(SQLAppender sqlWrapper) {
 			sqlWrapper.cat("select ", selectSQLBuilder.toSQL());
 			sqlWrapper.cat(" from ");
@@ -270,6 +292,58 @@ public class QuerySQLBuilderFactory {
 			} else if (column instanceof Selectable) {
 				sql.catColumn((Selectable<?>) column);
 			}
+		}
+	}
+	
+	/**
+	 * {@link SQLBuilder} for {@link QueryStatement} in a From clause. Based on the rendering of a union, but extended to {@link QueryStatement}
+	 * to be able to print also simple queries in a From.
+	 *
+	 * @author Guillaume Mary
+	 */
+	public static class UnionSQLBuilder implements QueryStatementSQLBuilder {
+		
+		private static final String UNION_ALL_SEPARATOR = " union all ";
+		
+		private final Union union;
+		private final QuerySQLBuilderFactory querySQLBuilderFactory;
+		private final DMLNameProviderFactory dmlNameProviderFactory;
+		
+		public UnionSQLBuilder(Union union, QuerySQLBuilderFactory querySQLBuilderFactory) {
+			this.union = union;
+			this.querySQLBuilderFactory = querySQLBuilderFactory;
+			this.dmlNameProviderFactory = querySQLBuilderFactory.getDmlNameProviderFactory();
+		}
+		
+		@Override
+		public CharSequence toSQL() {
+			// Note that we don't need (and can't give) aliases here because they are took on Union queries
+			StringSQLAppender result = new StringSQLAppender(dmlNameProviderFactory.build(Collections.emptyMap()));
+			appendTo(result);
+			return result.getSQL();
+		}
+		
+		@Override
+		public ExpandableSQLAppender toPreparableSQL() {
+			// Note that we don't need (and can't give) aliases here because they are took on Union queries
+			ExpandableSQLAppender expandableSQLAppender = new ExpandableSQLAppender(
+					querySQLBuilderFactory.getParameterBinderRegistry(),
+					dmlNameProviderFactory.build(Collections.emptyMap()));
+			appendTo(expandableSQLAppender);
+			return expandableSQLAppender;
+		}
+		
+		@Override
+		public void appendTo(SQLAppender preparedSQLAppender) {
+			Set<Query> queries = union.getQueries();
+			queries.forEach(query -> {
+				QuerySQLBuilder sqlBuilder = querySQLBuilderFactory.queryBuilder(query);
+				SubSQLAppender subAppender = preparedSQLAppender.newSubPart(dmlNameProviderFactory.build(query.getFromSurrogate().getTableAliases()::get));
+				sqlBuilder.appendTo(subAppender);
+				subAppender.close();
+				preparedSQLAppender.cat(UNION_ALL_SEPARATOR);
+			});
+			preparedSQLAppender.removeLastChars(UNION_ALL_SEPARATOR.length());
 		}
 	}
 }
