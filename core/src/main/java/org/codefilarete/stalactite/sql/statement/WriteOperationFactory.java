@@ -122,7 +122,7 @@ public class WriteOperationFactory {
 	 * @param expectedRowCount dynamic counter of expected count of rows to be updated by given SQL statement
 	 * @return a new {@link WriteOperation} with checking of updated row count to given one
 	 */
-	public <T extends Table<T>> WriteOperation<Column<T, Object>> createInstanceForInsertion(ColumnParameterizedSQL<T> sqlGenerator,
+	public <T extends Table<T>> WriteOperation<Column<T, ?>> createInstanceForInsertion(ColumnParameterizedSQL<T> sqlGenerator,
 																							 ConnectionProvider connectionProvider,
 																							 LongSupplier expectedRowCount) {
 		return createInstance(sqlGenerator, connectionProvider, (connection, sql) -> {

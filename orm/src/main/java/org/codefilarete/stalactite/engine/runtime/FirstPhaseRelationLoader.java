@@ -47,7 +47,7 @@ class FirstPhaseRelationLoader<C, I> implements EntityMerger<C> {
 	}
 	
 	@Override
-	public Set<Selectable<Object>> getSelectableColumns() {
+	public Set<Selectable<?>> getSelectableColumns() {
 		return (Set) idMapping.getIdentifierAssembler().getColumns();
 	}
 	

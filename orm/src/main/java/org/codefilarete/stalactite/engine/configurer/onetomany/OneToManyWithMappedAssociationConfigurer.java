@@ -46,9 +46,9 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 	
 	private Key<RIGHTTABLE, SRCID> foreignKey;
 	
-	private Set<Column<RIGHTTABLE, Object>> mappedReverseColumns;
+	private Set<Column<RIGHTTABLE, ?>> mappedReverseColumns;
 	
-	private Function<SRCID, Map<Column<RIGHTTABLE, Object>, Object>> reverseColumnsValueProvider;
+	private Function<SRCID, Map<Column<RIGHTTABLE, ?>, Object>> reverseColumnsValueProvider;
 	
 	OneToManyWithMappedAssociationConfigurer(OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE> associationConfiguration,
 											 ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
@@ -69,7 +69,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 		KeyBuilder<RIGHTTABLE, SRCID> foreignKeyBuilder = Key.from(mainTargetTable);
 		OneToManyRelation<SRC, TRGT, TRGTID, C> relation = associationConfiguration.getOneToManyRelation();
 		if (!relation.getForeignKeyNameMapping().isEmpty()) {
-			Map<Accessor<SRCID, Object>, Column<RIGHTTABLE, Object>> foreignKeyColumnMapping = new HashMap<>();
+			Map<Accessor<SRCID, ?>, Column<RIGHTTABLE, ?>> foreignKeyColumnMapping = new HashMap<>();
 			relation.getForeignKeyNameMapping().forEach((valueAccessPoint, colName) -> {
 				AccessorDefinition localAccessorDefinition = AccessorDefinition.giveDefinition(valueAccessPoint);
 				Accessor<SRCID, Object> accessor = valueAccessPoint instanceof Accessor
@@ -78,20 +78,20 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 				if (accessor == null) {
 					throw new UnsupportedOperationException("Can't get accessor from " + valueAccessPoint);
 				}
-				Column<RIGHTTABLE, Object> column = mainTargetTable.addColumn(colName, localAccessorDefinition.getMemberType());
+				Column<RIGHTTABLE, ?> column = mainTargetTable.addColumn(colName, localAccessorDefinition.getMemberType());
 				foreignKeyBuilder.addColumn(column);
 				foreignKeyColumnMapping.put(accessor, column);
 			});
 			mappedReverseColumns = new HashSet<>(foreignKeyColumnMapping.values());
 			reverseColumnsValueProvider = srcid -> {
-				Map<Column<RIGHTTABLE, Object>, Object> result = new HashMap<>();
+				Map<Column<RIGHTTABLE, ?>, Object> result = new HashMap<>();
 				foreignKeyColumnMapping.forEach((accessor, column) -> {
 					result.put(column, accessor.get(srcid));
 				});
 				return result;
 			};
 		} else if (!relation.getForeignKeyColumnMapping().isEmpty()) {
-			Map<Accessor<SRCID, Object>, Column<RIGHTTABLE, Object>> foreignKeyColumnMapping = new HashMap<>();
+			Map<Accessor<SRCID, ?>, Column<RIGHTTABLE, ?>> foreignKeyColumnMapping = new HashMap<>();
 			relation.getForeignKeyColumnMapping().forEach((valueAccessPoint, column) -> {
 				Accessor<SRCID, Object> accessor = valueAccessPoint instanceof Accessor
 						? (Accessor) valueAccessPoint
@@ -99,12 +99,12 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 				if (accessor == null) {
 					throw new UnsupportedOperationException("Can't get accessor from " + valueAccessPoint);
 				}
-				foreignKeyBuilder.addColumn((Column<RIGHTTABLE, Object>) column);
-				foreignKeyColumnMapping.put(accessor, (Column<RIGHTTABLE, Object>) column);
+				foreignKeyBuilder.addColumn((Column<RIGHTTABLE, ?>) column);
+				foreignKeyColumnMapping.put(accessor, (Column<RIGHTTABLE, ?>) column);
 			});
 			mappedReverseColumns = new HashSet<>(foreignKeyColumnMapping.values());
 			reverseColumnsValueProvider = srcid -> {
-				Map<Column<RIGHTTABLE, Object>, Object> result = new HashMap<>();
+				Map<Column<RIGHTTABLE, ?>, Object> result = new HashMap<>();
 				foreignKeyColumnMapping.forEach((accessor, column) -> {
 					result.put(column, accessor.get(srcid));
 				});
@@ -114,42 +114,42 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 			foreignKeyBuilder.addColumn((Column<RIGHTTABLE, Object>) relation.getReverseColumn());
 			mappedReverseColumns = Arrays.asHashSet((Column<RIGHTTABLE, Object>) relation.getReverseColumn());
 			reverseColumnsValueProvider = srcid -> {
-				Map<Column<RIGHTTABLE, Object>, Object> result = new HashMap<>();
-				result.put((Column<RIGHTTABLE, Object>) relation.getReverseColumn(), srcid);
+				Map<Column<RIGHTTABLE, ?>, Object> result = new HashMap<>();
+				result.put((Column<RIGHTTABLE, ?>) relation.getReverseColumn(), srcid);
 				return result;
 			};
 		} else if (relation.getReverseGetter() != null) {
 			// Please note that here Getter is only used to get foreign key column names, not to set values on reverse side
-			Map<Column<LEFTTABLE, Object>, Column<RIGHTTABLE, Object>> foreignKeyColumnMapping = new HashMap<>();
+			Map<Column<LEFTTABLE, ?>, Column<RIGHTTABLE, ?>> foreignKeyColumnMapping = new HashMap<>();
 			PrimaryKey<LEFTTABLE, SRCID> primaryKey = associationConfiguration.getSrcPersister().getMainTable().getPrimaryKey();
 			AccessorDefinition reverseGetterDefinition = AccessorDefinition.giveDefinition(Accessors.accessor(relation.getReverseGetter()));
 			primaryKey.getColumns().forEach(pkColumn -> {
 				String colName = associationConfiguration.getJoinColumnNamingStrategy().giveName(reverseGetterDefinition, pkColumn);
-				Column<RIGHTTABLE, Object> fkColumn = mainTargetTable.addColumn(colName, pkColumn.getJavaType(), pkColumn.getSize());
+				Column<RIGHTTABLE, ?> fkColumn = mainTargetTable.addColumn(colName, pkColumn.getJavaType(), pkColumn.getSize());
 				foreignKeyBuilder.addColumn(fkColumn);
 				foreignKeyColumnMapping.put(pkColumn, fkColumn);
 			});
 			mappedReverseColumns = new HashSet<>(foreignKeyColumnMapping.values());
 			reverseColumnsValueProvider = srcid -> {
 				IdentifierAssembler<SRCID, LEFTTABLE> identifierAssembler = associationConfiguration.getSrcPersister().getMapping().getIdMapping().<LEFTTABLE>getIdentifierAssembler();
-				Map<Column<LEFTTABLE, Object>, Object> columnValues = identifierAssembler.getColumnValues(srcid);
+				Map<Column<LEFTTABLE, ?>, Object> columnValues = identifierAssembler.getColumnValues(srcid);
 				return Maps.innerJoin(foreignKeyColumnMapping, columnValues);
 			};
 		} else if (relation.getReverseSetter() != null) {
 			// Please note that here Setter is only used to get foreign key column names, not to set values on reverse side
-			Map<Column<LEFTTABLE, Object>, Column<RIGHTTABLE, Object>> foreignKeyColumnMapping = new HashMap<>();
+			Map<Column<LEFTTABLE, ?>, Column<RIGHTTABLE, ?>> foreignKeyColumnMapping = new HashMap<>();
 			PrimaryKey<LEFTTABLE, SRCID> primaryKey = associationConfiguration.getSrcPersister().getMainTable().getPrimaryKey();
 			AccessorDefinition reverseGetterDefinition = AccessorDefinition.giveDefinition(Accessors.mutator(relation.getReverseSetter()));
 			primaryKey.getColumns().forEach(pkColumn -> {
 				String colName = associationConfiguration.getJoinColumnNamingStrategy().giveName(reverseGetterDefinition, pkColumn);
-				Column<RIGHTTABLE, Object> fkColumn = mainTargetTable.addColumn(colName, pkColumn.getJavaType(), pkColumn.getSize());
+				Column<RIGHTTABLE, ?> fkColumn = mainTargetTable.addColumn(colName, pkColumn.getJavaType(), pkColumn.getSize());
 				foreignKeyBuilder.addColumn(fkColumn);
 				foreignKeyColumnMapping.put(pkColumn, fkColumn);
 			});
 			mappedReverseColumns = new HashSet<>(foreignKeyColumnMapping.values());
 			reverseColumnsValueProvider = srcid -> {
 				IdentifierAssembler<SRCID, LEFTTABLE> identifierAssembler = associationConfiguration.getSrcPersister().getMapping().getIdMapping().<LEFTTABLE>getIdentifierAssembler();
-				Map<Column<LEFTTABLE, Object>, Object> columnValues = identifierAssembler.getColumnValues(srcid);
+				Map<Column<LEFTTABLE, ?>, Object> columnValues = identifierAssembler.getColumnValues(srcid);
 				return Maps.innerJoin(foreignKeyColumnMapping, columnValues);
 			};
 		} // else : no reverse side mapped, this case can't happen since OneToManyWithMappedAssociationConfigurer is only

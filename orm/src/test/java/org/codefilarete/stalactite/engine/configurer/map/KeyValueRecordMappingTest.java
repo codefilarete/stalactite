@@ -38,7 +38,7 @@ class KeyValueRecordMappingTest {
 			BiFunction<Row, ColumnedRow, String> entryKeyAssembler = (row, columnedRow) -> columnedRow.getValue(entryKeyColumn, row);
 			IdentifierAssembler<Long, LEFTTABLE> sourceIdentifierAssembler = new SimpleIdentifierAssembler<>(leftTableIdColumn);
 			// Since we test assemble() method there's no need of columns mapping because they are used at insertion time
-			Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKey2ForeignKeyMapping = Collections.emptyMap();
+			Map<Column<LEFTTABLE, ?>, Column<T, ?>> primaryKey2ForeignKeyMapping = Collections.emptyMap();
 			RecordIdAssembler<String, Long, T> testInstance = new RecordIdAssembler<>(
 					joinTable,
 					entryKeyAssembler,
@@ -88,8 +88,8 @@ class KeyValueRecordMappingTest {
 			IdentifierAssembler<String, RIGHTTABLE> entryKeyIdentifierAssembler = new SimpleIdentifierAssembler<>(rightTableIdColumn);
 			IdentifierAssembler<Long, LEFTTABLE> sourceIdentifierAssembler = new SimpleIdentifierAssembler<>(leftTableIdColumn);
 			// Since we test assemble() method there's no need of columns mapping because they are used at insertion time
-			Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKey2ForeignKeyMapping = Collections.emptyMap();
-			Map<Column<RIGHTTABLE, Object>, Column<T, Object>> rightTable2EntryKeyMapping = Collections.emptyMap();
+			Map<Column<LEFTTABLE, ?>, Column<T, ?>> primaryKey2ForeignKeyMapping = Collections.emptyMap();
+			Map<Column<RIGHTTABLE, ?>, Column<T, ?>> rightTable2EntryKeyMapping = Collections.emptyMap();
 			RecordIdAssembler<String, Long, T> testInstance = new RecordIdAssembler<>(
 					joinTable,
 					entryKeyIdentifierAssembler,
@@ -127,7 +127,7 @@ class KeyValueRecordMappingTest {
 			Column<LEFTTABLE, Long> leftTableIdColumn = leftTable.addColumn("id", long.class);
 			BiFunction<Row, ColumnedRow, String> entryKeyAssembler = (row, columnedRow) -> columnedRow.getValue(entryKeyColumn, row);
 			IdentifierAssembler<Long, LEFTTABLE> sourceIdentifierAssembler = new SimpleIdentifierAssembler<>(leftTableIdColumn);
-			Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKey2ForeignKeyMapping = (Map) Maps.forHashMap(Column.class, Column.class)
+			Map<Column<LEFTTABLE, ?>, Column<T, ?>> primaryKey2ForeignKeyMapping = (Map) Maps.forHashMap(Column.class, Column.class)
 					.add(leftTableIdColumn, joinTableIdColumn);
 			RecordIdAssembler<String, Long, T> testInstance = new RecordIdAssembler<>(
 					joinTable,
@@ -139,7 +139,7 @@ class KeyValueRecordMappingTest {
 			);
 			
 			
-			Map<Column<T, Object>, Object> actual = testInstance.getColumnValues(new RecordId<>(42L, "toto"));
+			Map<Column<T, ?>, Object> actual = testInstance.getColumnValues(new RecordId<>(42L, "toto"));
 			assertThat(actual).isEqualTo(Maps.forHashMap(Column.class, Object.class)
 					.add(joinTableIdColumn, 42L)
 					.add(entryKeyColumn, "toto"));
@@ -164,16 +164,16 @@ class KeyValueRecordMappingTest {
 				}
 				
 				@Override
-				public Map<Column<RIGHTTABLE, Object>, Object> getColumnValues(EntryKey id) {
-					return Maps.forHashMap((Class<Column<RIGHTTABLE, Object>>) (Class) Column.class, Object.class)
-							.add((Column) rightTableEntryKeyProp1Column, id.prop1)
+				public Map<Column<RIGHTTABLE, ?>, Object> getColumnValues(EntryKey id) {
+					return Maps.forHashMap((Class<Column<RIGHTTABLE, ?>>) (Class) Column.class, Object.class)
+							.add(rightTableEntryKeyProp1Column, id.prop1)
 							.add(rightTableEntryKeyProp2Column, id.prop2);
 				}
 			};
 			IdentifierAssembler<Long, LEFTTABLE> sourceIdentifierAssembler = new SimpleIdentifierAssembler<>(leftTableIdColumn);
-			Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKey2ForeignKeyMapping = (Map) Maps.forHashMap(Column.class, Column.class)
+			Map<Column<LEFTTABLE, ?>, Column<T, ?>> primaryKey2ForeignKeyMapping = (Map) Maps.forHashMap(Column.class, Column.class)
 					.add(leftTableIdColumn, joinTableIdColumn);
-			Map<Column<RIGHTTABLE, Object>, Column<T, Object>> rightTable2EntryKeyMapping = (Map) Maps.forHashMap(Column.class, Column.class)
+			Map<Column<RIGHTTABLE, ?>, Column<T, ?>> rightTable2EntryKeyMapping = (Map) Maps.forHashMap(Column.class, Column.class)
 					.add(rightTableEntryKeyProp1Column, entryKeyProp1Column)
 					.add(rightTableEntryKeyProp2Column, entryKeyProp2Column);
 			RecordIdAssembler<EntryKey, Long, T> testInstance = new RecordIdAssembler<>(
@@ -184,7 +184,7 @@ class KeyValueRecordMappingTest {
 					rightTable2EntryKeyMapping
 			);
 			
-			Map<Column<T, Object>, Object> actual = testInstance.getColumnValues(new RecordId<>(42L, new EntryKey(17, "toto")));
+			Map<Column<T, ?>, Object> actual = testInstance.getColumnValues(new RecordId<>(42L, new EntryKey(17, "toto")));
 			assertThat(actual).isEqualTo(Maps.forHashMap(Column.class, Object.class)
 					.add(joinTableIdColumn, 42L)
 					.add(entryKeyProp1Column, 17L)

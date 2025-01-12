@@ -45,7 +45,7 @@ public class CompositeKeyedBeanPersister<C, I, T extends Table<T>> extends BeanP
 	
 	private final SelectCompositeKeyExecutor<I, T> selectCompositeKeyExecutor;
 	
-	protected SQLOperationListener<Column<T, Object>> operationListener;
+	protected SQLOperationListener<Column<T, ?>> operationListener;
 	
 	private final CompositeKeyAlreadyAssignedIdentifierInsertionManager<C, I> compositeKeyInsertionManager;
 	
@@ -103,15 +103,15 @@ public class CompositeKeyedBeanPersister<C, I, T extends Table<T>> extends BeanP
 			// We distinguish the default case where packets are of the same size from the (last) case where it's different
 			// So we can apply the same read operation to all the firsts packets
 			T targetTable = getMapping().getTargetTable();
-			Set<Column<T, Object>> columnsToRead = getMapping().getSelectableColumns();
+			Set<Column<T, ?>> columnsToRead = getMapping().getSelectableColumns();
 			if (!parcels.isEmpty()) {
-				ReadOperation<Column<T, Object>> defaultReadOperation = newReadOperation(targetTable, columnsToRead, blockSize, localConnectionProvider);
+				ReadOperation<Column<T, ?>> defaultReadOperation = newReadOperation(targetTable, columnsToRead, blockSize, localConnectionProvider);
 				parcels.forEach(parcel -> result.addAll(selectCompositeKeyExecutor.execute(defaultReadOperation, parcel)));
 			}
 			
 			// last packet treatment (packet size may be different)
 			if (!lastParcel.isEmpty()) {
-				ReadOperation<Column<T, Object>> lastReadOperation = newReadOperation(targetTable, columnsToRead, lastBlockSize, localConnectionProvider);
+				ReadOperation<Column<T, ?>> lastReadOperation = newReadOperation(targetTable, columnsToRead, lastBlockSize, localConnectionProvider);
 				result.addAll(selectCompositeKeyExecutor.execute(lastReadOperation, lastParcel));
 			}
 		}
@@ -119,11 +119,11 @@ public class CompositeKeyedBeanPersister<C, I, T extends Table<T>> extends BeanP
 	}
 	
 	@SuppressWarnings("java:S2095")	// ReadOperation is closed at execution time and is not used in this method
-	private ReadOperation<Column<T, Object>> newReadOperation(T targetTable, Set<Column<T, Object>> columnsToRead, int blockSize,
+	private ReadOperation<Column<T, ?>> newReadOperation(T targetTable, Set<Column<T, ?>> columnsToRead, int blockSize,
 															  ConnectionProvider connectionProvider) {
 		PrimaryKey<T, ?> primaryKey = targetTable.getPrimaryKey();
 		ColumnParameterizedSelect<T> selectStatement = getDmlGenerator().buildSelectByKey(targetTable, columnsToRead, primaryKey.getColumns(), blockSize);
-		ReadOperation<Column<T, Object>> readOperation = new ReadOperation<>(selectStatement, connectionProvider);
+		ReadOperation<Column<T, ?>> readOperation = new ReadOperation<>(selectStatement, connectionProvider);
 		readOperation.setListener(this.operationListener);
 		return readOperation;
 	}
@@ -150,9 +150,9 @@ public class CompositeKeyedBeanPersister<C, I, T extends Table<T>> extends BeanP
 		}
 		
 		@VisibleForTesting
-		List<I> execute(ReadOperation<Column<T, Object>> operation, List<I> ids) {
-			Map<Column<T, Object>, Object> primaryKeyValues = primaryKeyProvider.getColumnValues(ids);
-			try (ReadOperation<Column<T, Object>> closeableOperation = operation) {
+		List<I> execute(ReadOperation<Column<T, ?>> operation, List<I> ids) {
+			Map<Column<T, ?>, Object> primaryKeyValues = primaryKeyProvider.getColumnValues(ids);
+			try (ReadOperation<Column<T, ?>> closeableOperation = operation) {
 				closeableOperation.setValues(primaryKeyValues);
 				return transform(closeableOperation, primaryKeyValues.size());
 			} catch (RuntimeException e) {
@@ -160,7 +160,7 @@ public class CompositeKeyedBeanPersister<C, I, T extends Table<T>> extends BeanP
 			}
 		}
 		
-		protected List<I> transform(ReadOperation<Column<T, Object>> closeableOperation, int size) {
+		protected List<I> transform(ReadOperation<Column<T, ?>> closeableOperation, int size) {
 			ResultSet resultSet = closeableOperation.execute();
 			// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
 			RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParameterizedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());

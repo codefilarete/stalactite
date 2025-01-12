@@ -29,8 +29,8 @@ public class AssociationRecordMapping<
 	public AssociationRecordMapping(ASSOCIATIONTABLE targetTable,
 									IdentifierAssembler<LEFTID, LEFTTABLE> leftIdentifierAssembler,
 									IdentifierAssembler<RIGHTID, RIGHTTABLE> rightIdentifierAssembler,
-									Map<Column<LEFTTABLE, Object>, Column<ASSOCIATIONTABLE, Object>> leftIdentifierColumnMapping,
-									Map<Column<RIGHTTABLE, Object>, Column<ASSOCIATIONTABLE, Object>> rightIdentifierColumnMapping
+									Map<Column<LEFTTABLE, ?>, Column<ASSOCIATIONTABLE, ?>> leftIdentifierColumnMapping,
+									Map<Column<RIGHTTABLE, ?>, Column<ASSOCIATIONTABLE, ?>> rightIdentifierColumnMapping
 									) {
 		super(AssociationRecord.class,
 				targetTable,
@@ -62,10 +62,10 @@ public class AssociationRecordMapping<
 							}
 							
 							@Override
-							public Map<Column<ASSOCIATIONTABLE, Object>, Object> getColumnValues(AssociationRecord id) {
-								Map<Column<LEFTTABLE, Object>, Object> leftValues = leftIdentifierAssembler.getColumnValues((LEFTID) id.getLeft());
-								Map<Column<RIGHTTABLE, Object>, Object> rightValues = rightIdentifierAssembler.getColumnValues((RIGHTID) id.getRight());
-								Map<Column<ASSOCIATIONTABLE, Object>, Object> result = new HashMap<>();
+							public Map<Column<ASSOCIATIONTABLE, ?>, Object> getColumnValues(AssociationRecord id) {
+								Map<Column<LEFTTABLE, ?>, Object> leftValues = leftIdentifierAssembler.getColumnValues((LEFTID) id.getLeft());
+								Map<Column<RIGHTTABLE, ?>, Object> rightValues = rightIdentifierAssembler.getColumnValues((RIGHTID) id.getRight());
+								Map<Column<ASSOCIATIONTABLE, ?>, Object> result = new HashMap<>();
 								leftValues.forEach((key, value) -> result.put(leftIdentifierColumnMapping.get(key), value));
 								rightValues.forEach((key, value) -> result.put(rightIdentifierColumnMapping.get(key), value));
 								return result;

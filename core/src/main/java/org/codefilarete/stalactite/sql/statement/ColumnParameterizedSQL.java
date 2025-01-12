@@ -13,9 +13,9 @@ import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriterI
  * 
  * @author Guillaume Mary
  */
-public class ColumnParameterizedSQL<T extends Table<T>> extends ExpandableStatement<Column<T, Object>> {
+public class ColumnParameterizedSQL<T extends Table<T>> extends ExpandableStatement<Column<T, ?>> {
 	
-	private final Map<Column<T, Object>, int[]> columnIndexes;
+	private final Map<Column<T, ?>, int[]> columnIndexes;
 	
 	/**
 	 * Detailed constructor
@@ -24,12 +24,12 @@ public class ColumnParameterizedSQL<T extends Table<T>> extends ExpandableStatem
 	 * @param columnIndexes mapping between {@link Column}s (used on {@link #setValue(Object, Object)} and their indexes in the SQL statement
 	 * @param parameterBinders mapping between {@link Column}s and their 
 	 */
-	public ColumnParameterizedSQL(String sql, Map<Column<T, Object>, int[]> columnIndexes, Map<Column<T, Object>, ? extends PreparedStatementWriter<?>> parameterBinders) {
+	public ColumnParameterizedSQL(String sql, Map<Column<T, ?>, int[]> columnIndexes, Map<Column<T, ?>, ? extends PreparedStatementWriter<?>> parameterBinders) {
 		super(sql, parameterBinders);
 		this.columnIndexes = columnIndexes;
 	}
 	
-	public ColumnParameterizedSQL(String sql, Map<Column<T, Object>, int[]> columnIndexes, PreparedStatementWriterIndex<Column<T, Object>, ParameterBinder<?>> parameterBinderProvider) {
+	public ColumnParameterizedSQL(String sql, Map<Column<T, ?>, int[]> columnIndexes, PreparedStatementWriterIndex<Column<T, ?>, ParameterBinder<?>> parameterBinderProvider) {
 		super(sql, parameterBinderProvider);
 		this.columnIndexes = columnIndexes;
 	}
@@ -38,17 +38,17 @@ public class ColumnParameterizedSQL<T extends Table<T>> extends ExpandableStatem
 	 * Gives available columns in the statement and their positions in it as placeholder marks 
 	 * @return available columns in the statement and their positions in it as placeholder marks
 	 */
-	public Map<Column<T, Object>, int[]> getColumnIndexes() {
+	public Map<Column<T, ?>, int[]> getColumnIndexes() {
 		return columnIndexes;
 	}
 	
 	@Override
-	protected String getParameterName(Column<T, Object> column) {
+	protected String getParameterName(Column<T, ?> column) {
 		return column.getAbsoluteName();
 	}
 	
 	@Override
-	public int[] getIndexes(Column<T, Object> column) {
+	public int[] getIndexes(Column<T, ?> column) {
 		return columnIndexes.get(column);
 	}
 }

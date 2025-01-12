@@ -23,7 +23,7 @@ public interface ForeignKeyNamingStrategy {
 	
 	String DEFAULT_FOREIGNKEY_PREFIX = "FK_";
 	
-	Comparator<JoinLink<?, Object>> COLUMN_COMPARATOR = Comparator.comparing(JoinLink::getExpression);
+	Comparator<JoinLink<?, ?>> COLUMN_COMPARATOR = Comparator.comparing(JoinLink::getExpression);
 	
 	<SOURCETABLE extends Table<SOURCETABLE>, TARGETTABLE extends Table<TARGETTABLE>, ID> String giveName(Key<SOURCETABLE, ID> src, Key<TARGETTABLE, ID> target);
 	

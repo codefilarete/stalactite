@@ -76,12 +76,12 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 	private final ConnectionProvider connectionProvider;
 	private final IdentifierAssembler<I, T> identifierAssembler;
 	
-	protected SQLOperationListener<Column<T, Object>> operationListener;
+	protected SQLOperationListener<Column<T, ?>> operationListener;
 	
 	private final DMLGenerator dmlGenerator;
 	private String rawQuery;
 	private EntityTreeQuery<C> entityTreeQuery;
-	private final ParameterBinderIndexFromMap<Column<T, Object>, ParameterBinder<?>> parameterBinderForPKInSelect;
+	private final ParameterBinderIndexFromMap<Column<T, ?>, ParameterBinder<?>> parameterBinderForPKInSelect;
 	
 	public EntityMappingTreeSelectExecutor(EntityMapping<C, I, T> entityMapping,
 										   Dialect dialect,
@@ -127,7 +127,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 		return entityJoinTree;
 	}
 	
-	public void setOperationListener(SQLOperationListener<Column<T, Object>> operationListener) {
+	public void setOperationListener(SQLOperationListener<Column<T, ?>> operationListener) {
 		this.operationListener = operationListener;
 	}
 	
@@ -154,8 +154,8 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 			Key<T2, ID> rightJoinColumn) {
 		// we outer join nullable columns
 		boolean isOuterJoin = true;
-		for (JoinLink<T2, Object> joinLink : rightJoinColumn.getColumns()) {
-			isOuterJoin &= joinLink instanceof Column && ((Column<T2, Object>) joinLink).isNullable();
+		for (JoinLink<T2, ?> joinLink : rightJoinColumn.getColumns()) {
+			isOuterJoin &= joinLink instanceof Column && ((Column<T2, ?>) joinLink).isNullable();
 		}
 		return addRelation(leftStrategyName, strategy, beanRelationFixer, leftJoinColumn, rightJoinColumn, isOuterJoin);
 	}
@@ -279,7 +279,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 		}
 		
 		@VisibleForTesting
-		List<C> execute(String sql, Collection<? extends List<I>> idsParcels, Map<Column<T, Object>, int[]> inOperatorValueIndexes) {
+		List<C> execute(String sql, Collection<? extends List<I>> idsParcels, Map<Column<T, ?>, int[]> inOperatorValueIndexes) {
 			// binders must be exactly the ones necessary to the request, else an IllegalArgumentException is thrown at execution time
 			// so we have to extract them from what is in the request : only primary key columns are parameterized 
 			ColumnParameterizedSelect<T> preparedSelect = new ColumnParameterizedSelect<T>(
@@ -288,7 +288,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 					parameterBinderForPKInSelect,
 					selectParameterBinders);
 			List<C> result = new ArrayList<>(idsParcels.size() * blockSize);
-			try (ReadOperation<Column<T, Object>> columnReadOperation = new ReadOperation<>(preparedSelect, connectionProvider)) {
+			try (ReadOperation<Column<T, ?>> columnReadOperation = new ReadOperation<>(preparedSelect, connectionProvider)) {
 				columnReadOperation.setListener(EntityMappingTreeSelectExecutor.this.operationListener);
 				for (List<I> parcel : idsParcels) {
 					result.addAll(executor.execute(columnReadOperation, parcel));

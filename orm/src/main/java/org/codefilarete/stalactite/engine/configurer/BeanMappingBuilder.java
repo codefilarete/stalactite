@@ -315,7 +315,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		
 		protected <O> void ensureColumnBindingInRegistry(Linkage<C, O> linkage, Column<?, O> column) {
 			if (linkage.getParameterBinder() != null) {
-				columnBinderRegistry.register(column, linkage.getParameterBinder());
+				columnBinderRegistry.register(column, (ParameterBinder<O>) linkage.getParameterBinder());
 			} else {
 				try {
 					// assertion to check that column binder is registered : it will throw en exception if the binder is not found

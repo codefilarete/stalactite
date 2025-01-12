@@ -49,9 +49,9 @@ public class AssociationTable<
 	 */
 	private final PrimaryKey<RIGHTTABLE, RIGHTID> manySideKey;
 	
-	private final Map<Column<LEFTTABLE, Object>, Column<SELF, Object>> leftIdentifierColumnMapping = new HashMap<>();
+	private final Map<Column<LEFTTABLE, ?>, Column<SELF, ?>> leftIdentifierColumnMapping = new HashMap<>();
 	
-	private final Map<Column<RIGHTTABLE, Object>, Column<SELF, Object>> rightIdentifierColumnMapping = new HashMap<>();
+	private final Map<Column<RIGHTTABLE, ?>, Column<SELF, ?>> rightIdentifierColumnMapping = new HashMap<>();
 	
 	public AssociationTable(Schema schema,
 							String name,
@@ -68,7 +68,7 @@ public class AssociationTable<
 		ReferencedColumnNames<LEFTTABLE, RIGHTTABLE> columnNames = namingStrategy.giveColumnNames(accessorDefinition, oneSideKey, manySideKey);
 		KeyBuilder<SELF, LEFTID> leftForeignKeyBuilder = Key.from((SELF) this);
 		oneSideKey.getColumns().forEach(oneSideKeyColumn -> {
-			Column<SELF, Object> column = addColumn(columnNames.getLeftColumnName(oneSideKeyColumn), oneSideKeyColumn.getJavaType());
+			Column<SELF, ?> column = addColumn(columnNames.getLeftColumnName(oneSideKeyColumn), oneSideKeyColumn.getJavaType());
 			column.primaryKey();
 			leftForeignKeyBuilder.addColumn(column);
 			leftIdentifierColumnMapping.put(oneSideKeyColumn, column);
@@ -83,7 +83,7 @@ public class AssociationTable<
 		// building many side key (eventually foreign key) 
 		KeyBuilder<SELF, RIGHTID> rightForeignKeyBuilder = Key.from((SELF) this);
 		manySideKey.getColumns().forEach(manySideKeyColumn -> {
-			Column<SELF, Object> column = addColumn(columnNames.getRightColumnName(manySideKeyColumn), manySideKeyColumn.getJavaType());
+			Column<SELF, ?> column = addColumn(columnNames.getRightColumnName(manySideKeyColumn), manySideKeyColumn.getJavaType());
 			column.primaryKey();
 			rightForeignKeyBuilder.addColumn(column);
 			rightIdentifierColumnMapping.put(manySideKeyColumn, column);
@@ -138,11 +138,11 @@ public class AssociationTable<
 		return manySideKey;
 	}
 	
-	public Map<Column<LEFTTABLE, Object>, Column<SELF, Object>> getLeftIdentifierColumnMapping() {
+	public Map<Column<LEFTTABLE, ?>, Column<SELF, ?>> getLeftIdentifierColumnMapping() {
 		return leftIdentifierColumnMapping;
 	}
 	
-	public Map<Column<RIGHTTABLE, Object>, Column<SELF, Object>> getRightIdentifierColumnMapping() {
+	public Map<Column<RIGHTTABLE, ?>, Column<SELF, ?>> getRightIdentifierColumnMapping() {
 		return rightIdentifierColumnMapping;
 	}
 }

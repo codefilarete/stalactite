@@ -86,7 +86,7 @@ public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 	 */
 	@Override
 	public void updateById(Iterable<? extends C> entities) {
-		Set<Column<T, Object>> columnsToUpdate = getMapping().getUpdatableColumns();
+		Set<Column<T, ?>> columnsToUpdate = getMapping().getUpdatableColumns();
 		if (!columnsToUpdate.isEmpty()) {
 			PreparedUpdate<T> updateOperation = getDmlGenerator().buildUpdate(columnsToUpdate, getMapping().getVersionedKeys());
 			List<C> entitiesCopy = Iterables.copy(entities);
@@ -161,7 +161,7 @@ public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 	 */
 	public void updateMappedColumns(Iterable<UpdatePayload<C, T>> updatePayloads) {
 		// we ask the strategy to lookup for updatable columns (not taken directly on mapping strategy target table)
-		Set<Column<T, Object>> columnsToUpdate = getMapping().getUpdatableColumns();
+		Set<Column<T, ?>> columnsToUpdate = getMapping().getUpdatableColumns();
 		if (!columnsToUpdate.isEmpty()) {	// we don't execute code below with empty columns to avoid a NPE in buildUpdate(..) due to lack of any element
 			// we update only entities that have values to be modified
 			List<UpdatePayload<C, T>> toUpdate = collectAndAssertNonNullValues(ReadOnlyIterator.wrap(updatePayloads));

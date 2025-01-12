@@ -121,14 +121,14 @@ class EmbeddedClassMappingTest {
 		Toto unmodified = new Toto(1, 2, 3);
 		testInstance.addShadowColumnUpdate(new Mapping.ShadowColumnValueProvider<Toto, T>() {
 			@Override
-			public Set<Column<T, Object>> getColumns() {
-				return Arrays.asSet((Column) myShadowColumn);
+			public Set<Column<T, ?>> getColumns() {
+				return Arrays.asSet(myShadowColumn);
 			}
 			
 			@Override
-			public Map<Column<T, Object>, Object> giveValue(Toto bean) {
+			public Map<Column<T, ?>, Object> giveValue(Toto bean) {
 				// no modification on shadow column : whatever bean (modified or not), value is the same
-				return (Map) Maps.asMap(myShadowColumn, "a");
+				return Maps.asMap(myShadowColumn, "a");
 			}
 		});
 		
@@ -149,18 +149,18 @@ class EmbeddedClassMappingTest {
 		Toto unmodified = new Toto(1, 2, 3);
 		testInstance.addShadowColumnUpdate(new Mapping.ShadowColumnValueProvider<Toto, T>() {
 			@Override
-			public Set<Column<T, Object>> getColumns() {
-				return Arrays.asSet((Column) myShadowColumn);
+			public Set<Column<T, ?>> getColumns() {
+				return Arrays.asSet(myShadowColumn);
 			}
 			
 			@Override
-			public Map<Column<T, Object>, Object> giveValue(Toto bean) {
+			public Map<Column<T, ?>, Object> giveValue(Toto bean) {
 				// modification on shadow column
 				if (bean == modified) {
-					return (Map) Maps.asMap(myShadowColumn, "b");
+					return Maps.asMap(myShadowColumn, "b");
 				}
 				if (bean == unmodified) {
-					return (Map) Maps.asMap(myShadowColumn, "a");
+					return Maps.asMap(myShadowColumn, "a");
 				}
 				return null;
 			}
@@ -183,18 +183,18 @@ class EmbeddedClassMappingTest {
 		Toto unmodified = new Toto(1, 2, 3);
 		testInstance.addShadowColumnUpdate(new Mapping.ShadowColumnValueProvider<Toto, T>() {
 			@Override
-			public Set<Column<T, Object>> getColumns() {
-				return Arrays.asSet((Column) myShadowColumn);
+			public Set<Column<T, ?>> getColumns() {
+				return Arrays.asSet(myShadowColumn);
 			}
 			
 			@Override
-			public Map<Column<T, Object>, Object> giveValue(Toto bean) {
+			public Map<Column<T, ?>, Object> giveValue(Toto bean) {
 				// modification on shadow column
 				if (bean == modified) {
-					return (Map) Maps.asMap(myShadowColumn, "b");
+					return Maps.asMap(myShadowColumn, "b");
 				}
 				if (bean == unmodified) {
-					return (Map) Maps.asMap(myShadowColumn, "a");
+					return Maps.asMap(myShadowColumn, "a");
 				}
 				return null;
 			}
@@ -217,14 +217,14 @@ class EmbeddedClassMappingTest {
 		Toto unmodified = new Toto(1, 2, 3);
 		testInstance.addShadowColumnUpdate(new Mapping.ShadowColumnValueProvider<Toto, T>() {
 			@Override
-			public Set<Column<T, Object>> getColumns() {
-				return Arrays.asSet((Column) myShadowColumn);
+			public Set<Column<T, ?>> getColumns() {
+				return Arrays.asSet(myShadowColumn);
 			}
 			
 			@Override
-			public Map<Column<T, Object>, Object> giveValue(Toto bean) {
+			public Map<Column<T, ?>, Object> giveValue(Toto bean) {
 				// no modification on shadow column : whatever bean (modified or not), value is the same
-				return (Map) Maps.asMap(myShadowColumn, "a");
+				return Maps.asMap(myShadowColumn, "a");
 			}
 		});
 		

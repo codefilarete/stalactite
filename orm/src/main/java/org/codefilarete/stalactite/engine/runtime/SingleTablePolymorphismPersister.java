@@ -94,14 +94,14 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 		ShadowColumnValueProvider<C, T> discriminatorValueProvider = new ShadowColumnValueProvider<C, T>() {
 			
 			@Override
-			public Set<Column<T, Object>> getColumns() {
-				return Arrays.asHashSet((Column<T, Object>) discriminatorColumn);
+			public Set<Column<T, ?>> getColumns() {
+				return Arrays.asHashSet(discriminatorColumn);
 			}
 			
 			@Override
-			public Map<Column<T, Object>, Object> giveValue(C bean) {
-				Map<Column<T, Object>, Object> result = new HashMap<>();
-				result.put((Column<T, Object>) discriminatorColumn, polymorphismPolicy.getDiscriminatorValue((Class<? extends C>) bean.getClass()));
+			public Map<Column<T, ?>, Object> giveValue(C bean) {
+				Map<Column<T, ?>, Object> result = new HashMap<>();
+				result.put(discriminatorColumn, polymorphismPolicy.getDiscriminatorValue((Class<? extends C>) bean.getClass()));
 				return result;
 			}
 		};
@@ -375,7 +375,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 		EntityMapping<? extends C, I, SUBTABLE> subTypeMapping = subPersister.getMapping();
 		KeyBuilder<SUBTABLE, Object> reverseKey = Key.from(subTypeMapping.getTargetTable());
 		rightColumn.getColumns().forEach(col -> {
-			Column<SUBTABLE, Object> column = subTypeMapping.getTargetTable().addColumn(col.getExpression(), col.getJavaType());
+			Column<SUBTABLE, ?> column = subTypeMapping.getTargetTable().addColumn(col.getExpression(), col.getJavaType());
 			subTypeMapping.addShadowColumnSelect(column);
 			reverseKey.addColumn(column);
 		});
@@ -464,8 +464,8 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 		}
 		
 		@Override
-		public Set<Selectable<Object>> getSelectableColumns() {
-			Set<Selectable<Object>> result = new HashSet<>(idMapping.getIdentifierAssembler().getColumns());
+		public Set<Selectable<?>> getSelectableColumns() {
+			Set<Selectable<?>> result = new HashSet<>(idMapping.getIdentifierAssembler().getColumns());
 			result.add((Selectable) discriminatorColumn);
 			return result;
 		}

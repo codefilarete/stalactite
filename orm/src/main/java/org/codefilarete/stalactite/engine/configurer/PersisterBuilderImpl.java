@@ -939,8 +939,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			ComposedIdentifierAssembler<I, T> composedIdentifierAssembler = new ComposedIdentifierAssembler<I, T>(targetTable) {
 				
 				@Override
-				public Map<Column<T, Object>, Object> getColumnValues(I id) {
-					Map<Column<T, Object>, Object> result = new HashMap<>();
+				public Map<Column<T, ?>, Object> getColumnValues(I id) {
+					Map<Column<T, ?>, Object> result = new HashMap<>();
 					composedKeyMapping.forEach((propertyAccessor, column) -> {
 						column = targetTable.getColumn(column.getName());
 						result.put(column, id == null ? null : propertyAccessor.get(id));

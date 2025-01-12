@@ -34,13 +34,13 @@ public class IndexedAssociationRecordMapping<
 	public IndexedAssociationRecordMapping(ASSOCIATIONTABLE targetTable,
 										   IdentifierAssembler<LEFTID, LEFTTABLE> leftIdentifierAssembler,
 										   IdentifierAssembler<RIGHTID, RIGHTTABLE> rightIdentifierAssembler,
-										   Map<Column<LEFTTABLE, Object>, Column<ASSOCIATIONTABLE, Object>> leftIdentifierColumnMapping,
-										   Map<Column<RIGHTTABLE, Object>, Column<ASSOCIATIONTABLE, Object>> rightIdentifierColumnMapping) {
+										   Map<Column<LEFTTABLE, ?>, Column<ASSOCIATIONTABLE, ?>> leftIdentifierColumnMapping,
+										   Map<Column<RIGHTTABLE, ?>, Column<ASSOCIATIONTABLE, ?>> rightIdentifierColumnMapping) {
 		super(IndexedAssociationRecord.class,
 				targetTable,
 				Maps.forHashMap((Class<ReversibleAccessor<IndexedAssociationRecord, Object>>) (Class) ReversibleAccessor.class,
-								(Class<Column<ASSOCIATIONTABLE, Object>>) (Class) Column.class)
-						.add((ReversibleAccessor) IndexedAssociationRecord.INDEX_ACCESSOR, (Column) targetTable.getIndexColumn()),
+								(Class<Column<ASSOCIATIONTABLE, ?>>) (Class) Column.class)
+						.add((ReversibleAccessor) IndexedAssociationRecord.INDEX_ACCESSOR, targetTable.getIndexColumn()),
 				new ComposedIdMapping<IndexedAssociationRecord, IndexedAssociationRecord>(
 						new IdAccessor<IndexedAssociationRecord, IndexedAssociationRecord>() {
 							@Override
@@ -70,17 +70,15 @@ public class IndexedAssociationRecordMapping<
 							}
 							
 							@Override
-							public Map<Column<ASSOCIATIONTABLE, Object>, Object> getColumnValues(IndexedAssociationRecord id) {
-								Map<Column<LEFTTABLE, Object>, Object> leftValues = leftIdentifierAssembler.getColumnValues((LEFTID) id.getLeft());
-								Map<Column<RIGHTTABLE, Object>, Object> rightValues = rightIdentifierAssembler.getColumnValues((RIGHTID) id.getRight());
-								Map<Column<ASSOCIATIONTABLE, Object>, Object> result = new HashMap<>();
-								Map<Column<LEFTTABLE, Object>, Column<ASSOCIATIONTABLE, Object>> leftIdentifierColumnMapping1 = leftIdentifierColumnMapping;
-								Map<Column<RIGHTTABLE, Object>, Column<ASSOCIATIONTABLE, Object>> rightIdentifierColumnMapping1 = rightIdentifierColumnMapping;
-								leftValues.forEach((key, value) -> result.put(leftIdentifierColumnMapping1.get(key), value));
-								rightValues.forEach((key, value) -> result.put(rightIdentifierColumnMapping1.get(key), value));
+							public Map<Column<ASSOCIATIONTABLE, ?>, Object> getColumnValues(IndexedAssociationRecord id) {
+								Map<Column<LEFTTABLE, ?>, Object> leftValues = leftIdentifierAssembler.getColumnValues((LEFTID) id.getLeft());
+								Map<Column<RIGHTTABLE, ?>, Object> rightValues = rightIdentifierAssembler.getColumnValues((RIGHTID) id.getRight());
+								Map<Column<ASSOCIATIONTABLE, ?>, Object> result = new HashMap<>();
+								leftValues.forEach((key, value) -> result.put(leftIdentifierColumnMapping.get(key), value));
+								rightValues.forEach((key, value) -> result.put(rightIdentifierColumnMapping.get(key), value));
 								// because main mapping forbids to update primary key (see EmbeddedClassMapping), but index is part of it and will be updated,
 								// we need to add it to the mapping
-								result.put((Column) targetTable.getIndexColumn(), id.getIndex());
+								result.put(targetTable.getIndexColumn(), id.getIndex());
 								
 								return result;
 							}
@@ -93,7 +91,7 @@ public class IndexedAssociationRecordMapping<
 	}
 	
 	@Override
-	public Set<Column<ASSOCIATIONTABLE, Object>> getUpdatableColumns() {
-		return Arrays.asHashSet((Column) getTargetTable().getIndexColumn());
+	public Set<Column<ASSOCIATIONTABLE, ?>> getUpdatableColumns() {
+		return Arrays.asHashSet(getTargetTable().getIndexColumn());
 	}
 }

@@ -143,7 +143,7 @@ public class EntityMappingTreeSelectExecutorTest {
 				}
 				
 				@Override
-				public Map<Column<T, Object>, Object> getColumnValues(Object id) {
+				public Map<Column<T, ?>, Object> getColumnValues(Object id) {
 					// for simplicity we give the same value to all columns
 					return Iterables.map(primaryKey.getColumns(), Function.identity(), c -> id);
 				}
@@ -241,7 +241,7 @@ public class EntityMappingTreeSelectExecutorTest {
 				return new InternalExecutor(entityTreeQuery, connectionProvider) {
 					@Override
 					List<Object> execute(String sql, Collection<? extends List<Object>> idsParcels,
-										 Map<Column<T, Object>, int[]> inOperatorValueIndexes) {
+										 Map<Column<T, ?>, int[]> inOperatorValueIndexes) {
 						capturedSQL.add(sql);
 						return Collections.emptyList();
 					}
@@ -299,8 +299,8 @@ public class EntityMappingTreeSelectExecutorTest {
 					}
 					
 					@Override
-					public Map<Column<T, Object>, Object> getColumnValues(Toto id) {
-						return (Map) Maps.forHashMap((Class<Column<T, ?>>) null, Object.class).add(id1, id.id1).add(id2, id.id2);
+					public Map<Column<T, ?>, Object> getColumnValues(Toto id) {
+						return Maps.forHashMap((Class<Column<T, ?>>) null, Object.class).add(id1, id.id1).add(id2, id.id2);
 					}
 				})
 		);

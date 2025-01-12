@@ -78,8 +78,8 @@ abstract class DMLExecutorTest {
 			}
 
 			@Override
-			public Map<Column<T, Object>, Object> getColumnValues(Toto id) {
-				return Maps.forHashMap((Class<Column<Table, Object>>) (Class) Column.class, Object.class)
+			public Map<Column<T, ?>, Object> getColumnValues(Toto id) {
+				return Maps.forHashMap((Class<Column<Table, ?>>) (Class) Column.class, Object.class)
 						.add(colA, id.a).add(colB, id.b);
 			}
 		};
@@ -131,8 +131,8 @@ abstract class DMLExecutorTest {
 			}
 
 			@Override
-			public Map<Column<T, Object>, Object> getColumnValues(ComposedId id) {
-				return Maps.forHashMap((Class<Column<Table, Object>>) (Class) Column.class, Object.class)
+			public Map<Column<T, ?>, Object> getColumnValues(ComposedId id) {
+				return Maps.forHashMap((Class<Column<Table, ?>>) (Class) Column.class, Object.class)
 						.add(colA, id.a).add(colB, id.b);
 			}
 		};

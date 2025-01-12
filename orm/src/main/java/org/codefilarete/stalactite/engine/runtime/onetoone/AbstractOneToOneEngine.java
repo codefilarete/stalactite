@@ -14,14 +14,14 @@ public class AbstractOneToOneEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends 
 	
 	protected final ConfiguredPersister<TRGT, TRGTID> targetPersister;
 	
-	protected final Map<Column<LEFTTABLE, Object>, Column<RIGHTTABLE, Object>> keyColumnsMapping;
+	protected final Map<Column<LEFTTABLE, ?>, Column<RIGHTTABLE, ?>> keyColumnsMapping;
 	
 	protected final Accessor<SRC, TRGT> targetAccessor;
 	
 	public AbstractOneToOneEngine(ConfiguredPersister<SRC, SRCID> sourcePersister,
 								  ConfiguredPersister<TRGT, TRGTID> targetPersister,
 								  Accessor<SRC, TRGT> targetAccessor,
-								  Map<Column<LEFTTABLE, Object>, Column<RIGHTTABLE, Object>> keyColumnsMapping) {
+								  Map<Column<LEFTTABLE, ?>, Column<RIGHTTABLE, ?>> keyColumnsMapping) {
 		this.sourcePersister = sourcePersister;
 		this.targetPersister = targetPersister;
 		this.keyColumnsMapping = keyColumnsMapping;

@@ -40,7 +40,7 @@ public class InsertExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 	
 	private final IdentifierInsertionManager<C, I> identifierInsertionManager;
 	
-	private SQLOperationListener<Column<T, Object>> operationListener;
+	private SQLOperationListener<Column<T, ?>> operationListener;
 	
 	public InsertExecutor(EntityMapping<C, I, T> mappingStrategy, ConnectionConfiguration connectionConfiguration,
 						  DMLGenerator dmlGenerator, WriteOperationFactory writeOperationFactory,
@@ -60,18 +60,18 @@ public class InsertExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 		this.optimisticLockManager = optimisticLockManager;
 	}
 	
-	public void setOperationListener(SQLOperationListener<Column<T, Object>> listener) {
+	public void setOperationListener(SQLOperationListener<Column<T, ?>> listener) {
 		this.operationListener = listener;
 	}
 	
 	@Override
 	public void insert(Iterable<? extends C> entities) {
-		Set<Column<T, Object>> columns = getMapping().getInsertableColumns();
+		Set<Column<T, ?>> columns = getMapping().getInsertableColumns();
 		ColumnParameterizedSQL<T> insertStatement = getDmlGenerator().buildInsert(columns);
 		List<? extends C> entitiesCopy = Iterables.copy(entities);
 		ExpectedBatchedRowCountsSupplier expectedBatchedRowCountsSupplier = new ExpectedBatchedRowCountsSupplier(entitiesCopy.size(), getBatchSize());
 		
-		WriteOperation<Column<T, Object>> writeOperation = getWriteOperationFactory()
+		WriteOperation<Column<T, ?>> writeOperation = getWriteOperationFactory()
 				.createInstanceForInsertion(insertStatement, getConnectionProvider(), expectedBatchedRowCountsSupplier);
 		writeOperation.setListener(this.operationListener);
 		JDBCBatchingIterator<C> jdbcBatchingIterator = identifierInsertionManager.buildJDBCBatchingIterator(entitiesCopy, writeOperation, getBatchSize());
@@ -85,14 +85,14 @@ public class InsertExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 		});
 	}
 	
-	private void addToBatch(C entity, WriteOperation<Column<T, Object>> writeOperation) {
-		Map<Column<T, Object>, Object> insertValues = getMapping().getInsertValues(entity);
+	private void addToBatch(C entity, WriteOperation<Column<T, ?>> writeOperation) {
+		Map<Column<T, ?>, Object> insertValues = getMapping().getInsertValues(entity);
 		assertMandatoryColumnsHaveNonNullValues(insertValues);
 		optimisticLockManager.manageLock(entity, insertValues);
 		writeOperation.addBatch(insertValues);
 	}
 	
-	private void assertMandatoryColumnsHaveNonNullValues(Map<Column<T, Object>, Object> insertValues) {
+	private void assertMandatoryColumnsHaveNonNullValues(Map<Column<T, ?>, Object> insertValues) {
 		Set<Column> nonNullColumnsWithNullValues = Iterables.collect(insertValues.entrySet(),
 				e -> !e.getKey().isNullable() && e.getValue() == null, Entry::getKey, HashSet::new);
 		if (!nonNullColumnsWithNullValues.isEmpty()) {

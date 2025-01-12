@@ -28,15 +28,15 @@ public interface EntityMapping<C, I, T extends Table<T>> extends Mapping<C, T>, 
 	
 	IdMapping<C, I> getIdMapping();
 	
-	Set<Column<T, Object>> getInsertableColumns();
+	Set<Column<T, ?>> getInsertableColumns();
 	
-	Set<Column<T, Object>> getSelectableColumns();
+	Set<Column<T, ?>> getSelectableColumns();
 	
-	Set<Column<T, Object>> getUpdatableColumns();
+	Set<Column<T, ?>> getUpdatableColumns();
 	
-	Iterable<Column<T, Object>> getVersionedKeys();
+	Iterable<Column<T, ?>> getVersionedKeys();
 	
-	Map<Column<T, Object>, Object> getVersionedKeyValues(C c);
+	Map<Column<T, ?>, Object> getVersionedKeyValues(C c);
 	
 	Map<ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> getEmbeddedBeanStrategies();
 }

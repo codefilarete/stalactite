@@ -148,7 +148,7 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 	ClassMapping<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>, TARGETTABLE>
 	buildKeyValueRecordMapping(TARGETTABLE targetTable,
 							   IdentifierAssembler<SRCID, TT> sourceIdentifierAssembler,
-							   Map<Column<TT, Object>, Column<TARGETTABLE, Object>> primaryKeyForeignColumnMapping,
+							   Map<Column<TT, ?>, Column<TARGETTABLE, ?>> primaryKeyForeignColumnMapping,
 							   EmbeddableMappingConfiguration<KID> keyEmbeddableConfiguration,
 							   EmbeddableMappingConfiguration<V> valueEmbeddableConfiguration) {
 		KeyValueRecordMappingBuilder<KID, V, SRCID, TARGETTABLE, TT> builder

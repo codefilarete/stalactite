@@ -64,9 +64,9 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 		public <LEFTTABLE extends Table<LEFTTABLE>> KeyValueRecordIdMapping(
 				T targetTable,
 				BiFunction<Row, ColumnedRow, K> entryKeyAssembler,
-				Function<K, Map<Column<T, Object>, Object>> entryKeyColumnValueProvider,
+				Function<K, Map<Column<T, ?>, Object>> entryKeyColumnValueProvider,
 				IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
-				Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKey2ForeignKeyMapping) {
+				Map<Column<LEFTTABLE, ?>, Column<T, ?>> primaryKey2ForeignKeyMapping) {
 			this(new RecordIdAssembler<>(targetTable, entryKeyAssembler, entryKeyColumnValueProvider, sourceIdentifierAssembler, primaryKey2ForeignKeyMapping));
 		}
 		
@@ -74,7 +74,7 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 				T targetTable,
 				EmbeddedBeanMapping<K, T> entryKeyMapping,
 				IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
-				Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKey2ForeignKeyMapping) {
+				Map<Column<LEFTTABLE, ?>, Column<T, ?>> primaryKey2ForeignKeyMapping) {
 			this(new RecordIdAssembler<>(targetTable, entryKeyMapping, sourceIdentifierAssembler, primaryKey2ForeignKeyMapping));
 		}
 		
@@ -114,9 +114,9 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 		static class RecordIdAssembler<K, ID, T extends Table<T>> extends ComposedIdentifierAssembler<RecordId<K, ID>, T> {
 			
 			private final BiFunction<Row, ColumnedRow, K> entryKeyAssembler;
-			private final Function<K, Map<Column<T, Object>, Object>> entryKeyColumnValueProvider;
+			private final Function<K, Map<Column<T, ?>, Object>> entryKeyColumnValueProvider;
 			private final IdentifierAssembler<ID, ?> sourceIdentifierAssembler;
-			private final Map<Column<?, Object>, Column<T, Object>> primaryKey2ForeignKeyMapping;
+			private final Map<Column<?, ?>, Column<T, ?>> primaryKey2ForeignKeyMapping;
 			
 			/**
 			 * Constructor mapping given values to fields
@@ -132,9 +132,9 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 			<LEFTTABLE extends Table<LEFTTABLE>> RecordIdAssembler(
 					T targetTable,
 					BiFunction<Row, ColumnedRow, K> entryKeyAssembler,
-					Function<K, Map<Column<T, Object>, Object>> entryKeyColumnValueProvider,
+					Function<K, Map<Column<T, ?>, Object>> entryKeyColumnValueProvider,
 					IdentifierAssembler<ID, LEFTTABLE> sourceIdentifierAssembler,
-					Map<? extends Column<LEFTTABLE, Object>, ? extends Column<T, Object>> primaryKey2ForeignKeyMapping
+					Map<? extends Column<LEFTTABLE, ?>, ? extends Column<T, ?>> primaryKey2ForeignKeyMapping
 			) {
 				super(targetTable);
 				this.entryKeyAssembler = entryKeyAssembler;
@@ -157,7 +157,7 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 					T targetTable,
 					EmbeddedBeanMapping<K, T> entryKeyMapping,
 					IdentifierAssembler<ID, LEFTTABLE> sourceIdentifierAssembler,
-					Map<? extends Column<LEFTTABLE, Object>, ? extends Column<T, Object>> primaryKey2ForeignKeyMapping
+					Map<? extends Column<LEFTTABLE, ?>, ? extends Column<T, ?>> primaryKey2ForeignKeyMapping
 					) {
 				this(targetTable, (row, columnedRow) -> entryKeyMapping.copyTransformerWithAliases(columnedRow).transform(row), entryKeyMapping::getInsertValues, sourceIdentifierAssembler, primaryKey2ForeignKeyMapping);
 			}
@@ -176,11 +176,11 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 					T targetTable,
 					IdentifierAssembler<K, RIGHTTABLE> rightTableIdentifierAssembler,
 					IdentifierAssembler<ID, LEFTTABLE> sourceIdentifierAssembler,
-					Map<? extends Column<LEFTTABLE, Object>, ? extends Column<T, Object>> primaryKey2ForeignKeyMapping,
-					Map<Column<RIGHTTABLE, Object>, Column<T, Object>> rightTable2EntryKeyMapping
+					Map<? extends Column<LEFTTABLE, ?>, ? extends Column<T, ?>> primaryKey2ForeignKeyMapping,
+					Map<Column<RIGHTTABLE, ?>, Column<T, ?>> rightTable2EntryKeyMapping
 					) {
 				this(targetTable, rightTableIdentifierAssembler::assemble, k -> {
-					Map<Column<RIGHTTABLE, Object>, Object> keyColumnValues = rightTableIdentifierAssembler.getColumnValues(k);
+					Map<Column<RIGHTTABLE, ?>, Object> keyColumnValues = rightTableIdentifierAssembler.getColumnValues(k);
 					return Maps.innerJoin(rightTable2EntryKeyMapping, keyColumnValues);
 					
 				}, sourceIdentifierAssembler, primaryKey2ForeignKeyMapping);
@@ -201,11 +201,11 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 			}
 			
 			@Override
-			public Map<Column<T, Object>, Object> getColumnValues(RecordId<K, ID> record) {
-				Map<Column<?, Object>, Object> sourceColumnValues = (Map) sourceIdentifierAssembler.getColumnValues(record.getId());
-				Map<Column<T, Object>, Object> idColumnValues = Maps.innerJoin(primaryKey2ForeignKeyMapping, sourceColumnValues);
-				Map<Column<T, Object>, Object> entryKeyColumnValues = entryKeyColumnValueProvider.apply(record.getKey());
-				Map<Column<T, Object>, Object> result = new HashMap<>();
+			public Map<Column<T, ?>, Object> getColumnValues(RecordId<K, ID> record) {
+				Map<Column<?, ?>, Object> sourceColumnValues = (Map) sourceIdentifierAssembler.getColumnValues(record.getId());
+				Map<Column<T, ?>, Object> idColumnValues = Maps.innerJoin(primaryKey2ForeignKeyMapping, sourceColumnValues);
+				Map<Column<T, ?>, Object> entryKeyColumnValues = entryKeyColumnValueProvider.apply(record.getKey());
+				Map<Column<T, ?>, Object> result = new HashMap<>();
 				result.putAll(idColumnValues);
 				result.putAll(entryKeyColumnValues);
 				return result;

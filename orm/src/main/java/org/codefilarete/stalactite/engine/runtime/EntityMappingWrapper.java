@@ -52,27 +52,27 @@ public class EntityMappingWrapper<C, I, T extends Table<T>> implements EntityMap
 	}
 	
 	@Override
-	public Set<Column<T, Object>> getInsertableColumns() {
+	public Set<Column<T, ?>> getInsertableColumns() {
 		return surrogate.getInsertableColumns();
 	}
 	
 	@Override
-	public Set<Column<T, Object>> getSelectableColumns() {
+	public Set<Column<T, ?>> getSelectableColumns() {
 		return surrogate.getSelectableColumns();
 	}
 	
 	@Override
-	public Set<Column<T, Object>> getUpdatableColumns() {
+	public Set<Column<T, ?>> getUpdatableColumns() {
 		return surrogate.getUpdatableColumns();
 	}
 	
 	@Override
-	public Iterable<Column<T, Object>> getVersionedKeys() {
+	public Iterable<Column<T, ?>> getVersionedKeys() {
 		return surrogate.getVersionedKeys();
 	}
 	
 	@Override
-	public Map<Column<T, Object>, Object> getVersionedKeyValues(C c) {
+	public Map<Column<T, ?>, Object> getVersionedKeyValues(C c) {
 		return surrogate.getVersionedKeyValues(c);
 	}
 	
@@ -82,7 +82,7 @@ public class EntityMappingWrapper<C, I, T extends Table<T>> implements EntityMap
 	}
 	
 	@Override
-	public Map<Column<T, Object>, Object> getInsertValues(C c) {
+	public Map<Column<T, ?>, Object> getInsertValues(C c) {
 		return surrogate.getInsertValues(c);
 	}
 	

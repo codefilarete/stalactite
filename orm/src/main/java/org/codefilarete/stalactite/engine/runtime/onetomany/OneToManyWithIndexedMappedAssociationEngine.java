@@ -58,8 +58,8 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	public OneToManyWithIndexedMappedAssociationEngine(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 													   IndexedMappedManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDefinition,
 													   ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-													   Set<Column<RIGHTTABLE, Object>> mappedReverseColumns,
-													   Function<SRCID, Map<Column<RIGHTTABLE, Object>, Object>> reverseColumnsValueProvider) {
+													   Set<Column<RIGHTTABLE, ?>> mappedReverseColumns,
+													   Function<SRCID, Map<Column<RIGHTTABLE, ?>, Object>> reverseColumnsValueProvider) {
 		super(targetPersister, manyRelationDefinition, sourcePersister, mappedReverseColumns, reverseColumnsValueProvider);
 	}
 	
@@ -221,12 +221,12 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			}
 			
 			@Override
-			public Set<Column<TARGETTABLE, Object>> getColumns() {
+			public Set<Column<TARGETTABLE, ?>> getColumns() {
 				return Collections.singleton((Column) getManyRelationDescriptor().getIndexingColumn());
 			}
 			
 			@Override
-			public Map<Column<TARGETTABLE, Object>, Object> giveValue(TRGT target) {
+			public Map<Column<TARGETTABLE, ?>, Object> giveValue(TRGT target) {
 				SRC source = giveRelationStorageContext().get(target);
 				Integer targetEntityIndex;
 				if (source == null) {
@@ -236,7 +236,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				} else {
 					targetEntityIndex = computeTargetIndex(source, target);
 				}
-				Map<Column<TARGETTABLE, Object>, Object> result = new HashMap<>();
+				Map<Column<TARGETTABLE, ?>, Object> result = new HashMap<>();
 				result.put((Column) getManyRelationDescriptor().getIndexingColumn(), targetEntityIndex);
 				return result;
 			}
@@ -286,7 +286,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		sourcePersister.getPersisterListener().addUpdateListener(new AfterUpdateTrigger<>(collectionUpdater));
 	}
 	
-	private static class ListCollectionUpdater<SRC, TRGT, ID, C extends Collection<TRGT>> extends CollectionUpdater<SRC, TRGT, C> {
+	private static class ListCollectionUpdater<SRC, TRGT, ID, C extends Collection<TRGT>, TARGETTABLE extends Table<TARGETTABLE>> extends CollectionUpdater<SRC, TRGT, C> {
 		
 		/**
 		 * Context for indexed mapped List. Will keep bean index during insert between "unrelated" methods/phases :
@@ -305,14 +305,14 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		 */
 		@SuppressWarnings("java:S5164" /* remove() is called by ThreadLocals.AutoRemoveThreadLocal */)
 		private final ThreadLocal<Map<TRGT, Integer>> currentInsertableListIndex = new ThreadLocal<>();
-		private final Column<Table, Integer> indexingColumn;
+		private final Column<TARGETTABLE, Integer> indexingColumn;
 		
 		private ListCollectionUpdater(Function<SRC, C> collectionGetter,
 									  ConfiguredRelationalPersister<TRGT, ID> targetPersister,
 									  @Nullable BiConsumer<TRGT, SRC> reverseSetter,
 									  boolean shouldDeleteRemoved,
 									  Function<TRGT, ?> idProvider,
-									  Column indexingColumn) {
+									  Column<TARGETTABLE, Integer> indexingColumn) {
 			super(collectionGetter, targetPersister, reverseSetter, shouldDeleteRemoved, idProvider);
 			this.indexingColumn = indexingColumn;
 			addShadowIndexInsert(targetPersister);
@@ -320,7 +320,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			
 		}
 		
-		private <TARGETTABLE extends Table<TARGETTABLE>> void addShadowIndexUpdate(ConfiguredRelationalPersister<TRGT, ID> targetPersister) {
+		private void addShadowIndexUpdate(ConfiguredRelationalPersister<TRGT, ID> targetPersister) {
 			targetPersister.<TARGETTABLE>getMapping().addShadowColumnInsert(new ShadowColumnValueProvider<TRGT, TARGETTABLE>() {
 				
 				@Override
@@ -329,20 +329,20 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				}
 				
 				@Override
-				public Set<Column<TARGETTABLE, Object>> getColumns() {
-					return Arrays.asHashSet((Column<TARGETTABLE, Object>) (Column) indexingColumn);
+				public Set<Column<TARGETTABLE, ?>> getColumns() {
+					return Arrays.asHashSet(indexingColumn);
 				}
 				
 				@Override
-				public Map<Column<TARGETTABLE, Object>, Object> giveValue(TRGT bean) {
-					Map<Column<TARGETTABLE, Object>, Object> result = new HashMap<>();
-					result.put((Column<TARGETTABLE, Object>) (Column) indexingColumn, currentUpdatableListIndex.get().get(bean));
+				public Map<Column<TARGETTABLE, ?>, Object> giveValue(TRGT bean) {
+					Map<Column<TARGETTABLE, ?>, Object> result = new HashMap<>();
+					result.put(indexingColumn, currentUpdatableListIndex.get().get(bean));
 					return result;
 				}
 			});
 		}
 		
-		private <TARGETTABLE extends Table<TARGETTABLE>> void addShadowIndexInsert(ConfiguredRelationalPersister<TRGT, ID> targetPersister) {
+		private void addShadowIndexInsert(ConfiguredRelationalPersister<TRGT, ID> targetPersister) {
 			// adding index insert/update to strategy
 			targetPersister.<TARGETTABLE>getMapping().addShadowColumnInsert(new ShadowColumnValueProvider<TRGT, TARGETTABLE>() {
 				
@@ -352,14 +352,14 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				}
 				
 				@Override
-				public Set<Column<TARGETTABLE, Object>> getColumns() {
-					return Arrays.asHashSet((Column<TARGETTABLE, Object>) (Column) indexingColumn);
+				public Set<Column<TARGETTABLE, ?>> getColumns() {
+					return Arrays.asHashSet(indexingColumn);
 				}
 				
 				@Override
-				public Map<Column<TARGETTABLE, Object>, Object> giveValue(TRGT bean) {
-					Map<Column<TARGETTABLE, Object>, Object> result = new HashMap<>();
-					result.put((Column<TARGETTABLE, Object>) (Column) indexingColumn, currentInsertableListIndex.get().get(bean));
+				public Map<Column<TARGETTABLE, ?>, Object> giveValue(TRGT bean) {
+					Map<Column<TARGETTABLE, ?>, Object> result = new HashMap<>();
+					result.put(indexingColumn, currentInsertableListIndex.get().get(bean));
 					return result;
 				}
 			});

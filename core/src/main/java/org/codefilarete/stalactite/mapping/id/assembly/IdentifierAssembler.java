@@ -34,7 +34,7 @@ public interface IdentifierAssembler<I, T extends Table<T>> {
 	
 	I assemble(Function<Column<?, ?>, Object> columnValueProvider);
 	
-	Set<Column<T, Object>> getColumns();
+	Set<Column<T, ?>> getColumns();
 	
 	/**
 	 * Gives identifier values for each primary key column
@@ -42,7 +42,7 @@ public interface IdentifierAssembler<I, T extends Table<T>> {
 	 * @param id an identifier
 	 * @return a {@link Map} which keys are primary key columns and values are column-values of the identifier
 	 */
-	Map<Column<T, Object>, Object> getColumnValues(I id);
+	Map<Column<T, ?>, Object> getColumnValues(I id);
 	
 	/**
 	 * A Collection-form of {@link #getColumnValues(Object)}.
@@ -53,6 +53,6 @@ public interface IdentifierAssembler<I, T extends Table<T>> {
 	 * @param ids identifiers
 	 * @return a {@link Map} which keys are primary key columns and values are column-values of all identifiers 
 	 */
-	Map<Column<T, Object>, Object> getColumnValues(List<I> ids);
+	Map<Column<T, ?>, Object> getColumnValues(List<I> ids);
 	
 }

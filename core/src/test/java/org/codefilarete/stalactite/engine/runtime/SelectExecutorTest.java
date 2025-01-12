@@ -78,11 +78,11 @@ class SelectExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 		ResultSet resultSetMock = mock(ResultSet.class);
 		when(jdbcMock.preparedStatement.executeQuery()).thenReturn(resultSetMock);
 		
-		SQLOperationListener<Column<T, Object>> listenerMock = mock(SQLOperationListener.class);
+		SQLOperationListener<Column<T, ?>> listenerMock = mock(SQLOperationListener.class);
 		testInstance.setOperationListener(listenerMock);
 		
-		ArgumentCaptor<Map<Column<T, Object>, ?>> statementArgCaptor = ArgumentCaptor.forClass(Map.class);
-		ArgumentCaptor<SQLStatement<Column<T, Object>>> sqlArgCaptor = ArgumentCaptor.forClass(SQLStatement.class);
+		ArgumentCaptor<Map<Column<T, ?>, ?>> statementArgCaptor = ArgumentCaptor.forClass(Map.class);
+		ArgumentCaptor<SQLStatement<Column<T, ?>>> sqlArgCaptor = ArgumentCaptor.forClass(SQLStatement.class);
 		
 		testInstance.select(Arrays.asList(1, 2));
 		

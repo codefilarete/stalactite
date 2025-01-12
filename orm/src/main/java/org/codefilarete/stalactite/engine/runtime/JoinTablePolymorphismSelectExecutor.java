@@ -90,7 +90,7 @@ public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table<T>> imple
 			from.where((Column<T, I>) Iterables.first(primaryKey.getColumns()), Operators.in(ids));
 		} else {
 			List<I> idsAsList = Collections.asList(ids);
-			Map<Column<T, Object>, Object> columnValues = mainPersister.getMapping().getIdMapping().<T>getIdentifierAssembler().getColumnValues(idsAsList);
+			Map<Column<T, ?>, Object> columnValues = mainPersister.getMapping().getIdMapping().<T>getIdentifierAssembler().getColumnValues(idsAsList);
 			from.where(transformCompositeIdentifierColumnValuesToTupleInValues(idsAsList.size(), columnValues));
 		}
 		Query query = from.getQuery();
@@ -131,7 +131,7 @@ public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table<T>> imple
 	}
 	
 	@VisibleForTesting
-	TupleIn transformCompositeIdentifierColumnValuesToTupleInValues(int idsCount, Map<? extends Column<T, Object>, Object> values) {
+	TupleIn transformCompositeIdentifierColumnValuesToTupleInValues(int idsCount, Map<? extends Column<T, ?>, Object> values) {
 		List<Object[]> resultValues = new ArrayList<>(idsCount);
 		
 		Column<?, ?>[] columns = new ArrayList<>(values.keySet()).toArray(new Column[0]);

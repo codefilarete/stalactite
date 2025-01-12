@@ -147,7 +147,7 @@ public class ValueAsKeyMapRelationConfigurer<SRC, SRCID, K, V, VID, M extends Ma
 	ClassMapping<KeyValueRecord<K, VID, SRCID>, RecordId<K, SRCID>, TARGETTABLE>
 	buildKeyValueRecordMapping(TARGETTABLE targetTable,
 							   IdentifierAssembler<SRCID, TT> sourceIdentifierAssembler,
-							   Map<Column<TT, Object>, Column<TARGETTABLE, Object>> primaryKeyForeignColumnMapping,
+							   Map<Column<TT, ?>, Column<TARGETTABLE, ?>> primaryKeyForeignColumnMapping,
 							   EmbeddableMappingConfiguration<K> keyEmbeddableConfiguration,
 							   EmbeddableMappingConfiguration<VID> valueEmbeddableConfiguration) {
 		KeyValueRecordMappingBuilder<K, VID, SRCID, TARGETTABLE, TT> builder

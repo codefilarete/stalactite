@@ -74,7 +74,7 @@ class ColumnedCollectionMappingTest {
 	@ParameterizedTest
 	@MethodSource("getInsertValues")
 	void getInsertValues(List<String> toInsert, ChainingMap<Column, String> expected) {
-		Map<? extends Column<?, Object>, Object> insertValues = testInstance.getInsertValues(toInsert);
+		Map<? extends Column<?, ?>, Object> insertValues = testInstance.getInsertValues(toInsert);
 		assertThat(expected).isEqualTo(insertValues);
 	}
 	

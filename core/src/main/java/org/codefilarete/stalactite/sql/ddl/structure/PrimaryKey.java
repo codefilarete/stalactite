@@ -13,7 +13,7 @@ import org.codefilarete.tool.collection.KeepOrderSet;
 public class PrimaryKey<T extends Table<T>, ID> implements Key<T, ID> {
 	
 	private final T table;
-	private final KeepOrderSet<Column<T, Object>> columns = new KeepOrderSet<>();
+	private final KeepOrderSet<Column<T, ?>> columns = new KeepOrderSet<>();
 	
 	public PrimaryKey(Collection<Column<T, Object>> columns) {
 		this.table = Iterables.first(columns).getTable();
@@ -42,7 +42,7 @@ public class PrimaryKey<T extends Table<T>, ID> implements Key<T, ID> {
 	}
 	
 	@Override
-	public KeepOrderSet<Column<T, Object>> getColumns() {
+	public KeepOrderSet<Column<T, ?>> getColumns() {
 		return new KeepOrderSet<>(columns);
 	}
 	

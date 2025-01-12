@@ -36,17 +36,17 @@ import org.codefilarete.tool.Duo;
 public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C, I, T> {
 	
 	private final Set<? extends ConfiguredRelationalPersister<C, I>> subPersisters;
-	private final Set<Column<T, Object>> selectableColumns;
+	private final Set<Column<T, ?>> selectableColumns;
 	private JoinTablePolymorphicJoinRootRowConsumer<C, I> rootConsumer;
 	
 	public JoinTableRootJoinNode(EntityJoinTree<C, I> tree,
 								 ConfiguredRelationalPersister<C, I> mainPersister,
 								 Set<? extends ConfiguredRelationalPersister<C, I>> subPersisters,
-								 Set<? extends Column<T, Object>> selectableColumns,
+								 Set<? extends Column<T, ?>> selectableColumns,
 								 T mainTable) {
 		super(tree, new EntityMappingAdapter<>(mainPersister.<T>getMapping()), mainTable);
 		this.subPersisters = subPersisters;
-		this.selectableColumns = (Set<Column<T, Object>>) selectableColumns;
+		this.selectableColumns = (Set<Column<T, ?>>) selectableColumns;
 	}
 	
 	@Override

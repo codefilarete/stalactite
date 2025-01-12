@@ -62,7 +62,7 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 	}
 	
 	@Override
-	public Map<Column<T, Object>, Object> getInsertValues(C c) {
+	public Map<Column<T, ?>, Object> getInsertValues(C c) {
 		Map<Column<T, ?>, Object> toReturn = new HashMap<>();
 		Map<K, V> toIterate = c;
 		if (Collections.isEmpty(c)) {
@@ -75,7 +75,7 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 				toReturn.put(column, null);
 			}
 		}
-		return (Map<Column<T, Object>, Object>) (Map) toReturn;
+		return toReturn;
 	}
 	
 	@Override

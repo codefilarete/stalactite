@@ -96,14 +96,14 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 		String tableName = nullable(mapRelation.getTargetTableName()).getOr(() -> tableNamingStrategy.giveTableName(mapProviderDefinition, mapRelation.getKeyType(), mapRelation.getValueType()));
 		// Note that table will participate to DDL while cascading selection thanks to its join on foreignKey
 		TARGETTABLE targetTable = (TARGETTABLE) nullable(mapRelation.getTargetTable()).getOr(() -> new Table(tableName));
-		Map<Column<T, Object>, Column<TARGETTABLE, Object>> primaryKeyForeignColumnMapping = new HashMap<>();
+		Map<Column<T, ?>, Column<TARGETTABLE, ?>> primaryKeyForeignColumnMapping = new HashMap<>();
 		Key<TARGETTABLE, ID> reverseKey = nullable((Column<TARGETTABLE, ID>) (Column) mapRelation.getReverseColumn()).map(Key::ofSingleColumn)
 				.getOr(() -> {
 					KeyBuilder<TARGETTABLE, ID> result = Key.from(targetTable);
 					sourcePK.getColumns().forEach(col -> {
 						String reverseColumnName = nullable(mapRelation.getReverseColumnName()).getOr(() ->
 								columnNamingStrategy.giveName(KEY_VALUE_RECORD_ID_ACCESSOR_DEFINITION));
-						Column<TARGETTABLE, Object> reverseCol = targetTable.addColumn(reverseColumnName, col.getJavaType())
+						Column<TARGETTABLE, ?> reverseCol = targetTable.addColumn(reverseColumnName, col.getJavaType())
 								.primaryKey();
 						primaryKeyForeignColumnMapping.put(col, reverseCol);
 						result.addColumn(reverseCol);
@@ -147,7 +147,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 	ClassMapping<KeyValueRecord<K, V, ID>, RecordId<K, ID>, TARGETTABLE>
 	buildKeyValueRecordMapping(TARGETTABLE targetTable,
 							   IdentifierAssembler<ID, T> sourceIdentifierAssembler,
-							   Map<Column<T, Object>, Column<TARGETTABLE, Object>> primaryKeyForeignColumnMapping,
+							   Map<Column<T, ?>, Column<TARGETTABLE, ?>> primaryKeyForeignColumnMapping,
 							   EmbeddableMappingConfiguration<K> keyEmbeddableConfiguration,
 							   EmbeddableMappingConfiguration<V> valueEmbeddableConfiguration) {
 		KeyValueRecordMappingBuilder<K, V, ID, TARGETTABLE, T> builder = new KeyValueRecordMappingBuilder<>(targetTable, sourceIdentifierAssembler, primaryKeyForeignColumnMapping);
@@ -208,7 +208,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 	}
 	
 	private void registerColumnBinder(ForeignKey<?, ?, ID> reverseColumn, PrimaryKey<?, ID> sourcePK) {
-		PairIterator<? extends Column<?, Object>, ? extends Column<?, Object>> pairIterator = new PairIterator<>(reverseColumn.getColumns(), sourcePK.getColumns());
+		PairIterator<? extends Column<?, ?>, ? extends Column<?, ?>> pairIterator = new PairIterator<>(reverseColumn.getColumns(), sourcePK.getColumns());
 		pairIterator.forEachRemaining(col -> {
 			dialect.getColumnBinderRegistry().register(col.getLeft(), dialect.getColumnBinderRegistry().getBinder(col.getRight()));
 			dialect.getSqlTypeRegistry().put(col.getLeft(), dialect.getSqlTypeRegistry().getTypeName(col.getRight()));

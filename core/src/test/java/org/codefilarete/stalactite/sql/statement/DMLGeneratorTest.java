@@ -164,7 +164,7 @@ class DMLGeneratorTest {
 		Column<Table, String> colA = toto.addColumn("A", String.class);
 		toto.addColumn("B", String.class);
 		
-		Collection<Column<Table, Object>> keys = (Collection<Column<Table, Object>>) (Collection) Collections.singleton(colA);
+		Collection<Column<Table, ?>> keys = (Collection<Column<Table, ?>>) (Collection) Collections.singleton(colA);
 		ColumnParameterizedSQL builtDelete = testInstance.buildDeleteByKey(toto, keys, 2);
 		assertThat(builtDelete.getSQL()).isEqualTo("delete from Toto where A in (?, ?)");
 		
@@ -179,7 +179,7 @@ class DMLGeneratorTest {
 		Column<Table, String> colB = toto.addColumn("B", String.class);
 		toto.addColumn("C", String.class);
 		
-		Collection<Column<Table, Object>> keys = (Collection<Column<Table, Object>>) (Collection) Arrays.asList(colA, colB);
+		Collection<Column<Table, ?>> keys = (Collection<Column<Table, ?>>) (Collection) Arrays.asList(colA, colB);
 		ColumnParameterizedSQL builtDelete = testInstance.buildDeleteByKey(toto, keys, 3);
 		assertThat(builtDelete.getSQL()).isEqualTo("delete from Toto where (A, B) in ((?, ?), (?, ?), (?, ?))");
 		
@@ -204,7 +204,7 @@ class DMLGeneratorTest {
 		};
 		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, k -> dmlNameProvider);
 		
-		Set<Column<Table, Object>> singleton = (Set) Collections.singleton(colA);
+		Set<Column<Table, ?>> singleton = Collections.singleton(colA);
 		ColumnParameterizedSQL builtDelete = testInstance.buildDeleteByKey(toto, singleton, 1);
 		assertThat(builtDelete.getSQL()).isEqualTo("delete from Toto where 'key' in (?)");
 		
@@ -215,8 +215,8 @@ class DMLGeneratorTest {
 	@Test
 	public void buildSelect() {
 		Table toto = new Table(null, "Toto");
-		Column<Table, Object> colA = toto.addColumn("A", String.class);
-		Column<Table, Object> colB = toto.addColumn("B", String.class);
+		Column<Table, String> colA = toto.addColumn("A", String.class);
+		Column<Table, String> colB = toto.addColumn("B", String.class);
 		
 		ColumnParameterizedSQL builtSelect = testInstance.buildSelect(toto, Arrays.asList(colA, colB), Arrays.asList(colA, colB));
 		assertThat(builtSelect.getSQL()).isEqualTo("select A, B from Toto where A = ? and B = ?");
@@ -228,8 +228,8 @@ class DMLGeneratorTest {
 	@Test
 	public void buildSelect_dmlNameProviderUsed() {
 		Table toto = new Table(null, "Toto");
-		Column<Table, Object> colA = toto.addColumn("key", String.class);
-		Column<Table, Object> colB = toto.addColumn("B", String.class);
+		Column<Table, String> colA = toto.addColumn("key", String.class);
+		Column<Table, String> colB = toto.addColumn("B", String.class);
 		
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
@@ -252,11 +252,11 @@ class DMLGeneratorTest {
 	@Test
 	public void buildMassiveSelect() {
 		Table toto = new Table(null, "Toto");
-		Column<Table, Object> colA = toto.addColumn("A", String.class);
-		Column<Table, Object> colB = toto.addColumn("B", String.class);
+		Column<Table, String> colA = toto.addColumn("A", String.class);
+		Column<Table, String> colB = toto.addColumn("B", String.class);
 		
-		Iterable<Column<Table, Object>> selection = Arrays.asList(colA, colB);
-		Set<Column<Table, Object>> keys = Collections.singleton(colA);
+		Iterable<Column<Table, ?>> selection = Arrays.asList(colA, colB);
+		Set<Column<Table, ?>> keys = Collections.singleton(colA);
 		ColumnParameterizedSQL builtSelect = testInstance.buildSelectByKey(toto, selection, keys, 5);
 		assertThat(builtSelect.getSQL()).isEqualTo("select A, B from Toto where A in (?, ?, ?, ?, ?)");
 		
@@ -268,11 +268,11 @@ class DMLGeneratorTest {
 	@Test
 	public void buildMassiveSelect_multipleKeys() {
 		Table toto = new Table(null, "Toto");
-		Column<Table, Object> colA = toto.addColumn("A", String.class);
-		Column<Table, Object> colB = toto.addColumn("B", String.class);
+		Column<Table, String> colA = toto.addColumn("A", String.class);
+		Column<Table, String> colB = toto.addColumn("B", String.class);
 		
-		Iterable<Column<Table, Object>> selection = Arrays.asList(colA, colB);
-		Set<Column<Table, Object>> keys = Arrays.asSet(colA, colB);
+		Iterable<Column<Table, ?>> selection = Arrays.asList(colA, colB);
+		Set<Column<Table, ?>> keys = Arrays.asSet(colA, colB);
 		ColumnParameterizedSQL builtSelect = testInstance.buildSelectByKey(toto, selection, keys, 3);
 		assertThat(builtSelect.getSQL()).isEqualTo("select A, B from Toto where (A, B) in ((?, ?), (?, ?), (?, ?))");
 		
@@ -283,8 +283,8 @@ class DMLGeneratorTest {
 	@Test
 	public void buildMassiveSelect_dmlNameProviderUsed() {
 		Table toto = new Table(null, "Toto");
-		Column<Table, Object> colA = toto.addColumn("A", String.class);
-		Column<Table, Object> colB = toto.addColumn("B", String.class);
+		Column<Table, String> colA = toto.addColumn("A", String.class);
+		Column<Table, String> colB = toto.addColumn("B", String.class);
 		
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
@@ -297,7 +297,7 @@ class DMLGeneratorTest {
 		};
 		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, k -> dmlNameProvider);
 		
-		Set<Column<Table, Object>> keys = Collections.singleton(colA);
+		Set<Column<Table, ?>> keys = Collections.singleton(colA);
 		ColumnParameterizedSQL builtSelect = testInstance.buildSelectByKey(toto, Arrays.asList(colA, colB), keys, 5);
 		assertThat(builtSelect.getSQL()).isEqualTo("select 'key', B from Toto where 'key' in (?, ?, ?, ?, ?)");
 		

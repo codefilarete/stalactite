@@ -249,7 +249,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 						Set<Column> columns = new HashSet<>();
 						List<Object[]> values = new ArrayList<>(identifiers.size());
 						identifiers.forEach(srcid -> {
-							Map<Column<T, Object>, Object> idValues = idMapping.getIdMapping().<T>getIdentifierAssembler().getColumnValues(srcid);
+							Map<Column<T, ?>, Object> idValues = idMapping.getIdMapping().<T>getIdentifierAssembler().getColumnValues(srcid);
 							if (columns.isEmpty()) {	// first time case
 								columns.addAll(idValues.keySet());
 							}
@@ -303,7 +303,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 					// FK-PK columns mapping
 					Function<Column<?, ?>, Object> manySideColumnValueProvider = columnFromRightTablePK -> {
 						// getting column present in query through association table FK-PK mapping
-						Column<T, Object> columnFromAssociationTableFK = associationPersister.getMainTable().getRightIdentifierColumnMapping().get(columnFromRightTablePK);
+						Column<T, ?> columnFromAssociationTableFK = associationPersister.getMainTable().getRightIdentifierColumnMapping().get(columnFromRightTablePK);
 						if (columnFromAssociationTableFK == null) {
 							throw new IllegalStateException("No matching column in foreign key of association table " + associationPersister.getMainTable() + " found for primary key " + columnFromRightTablePK);
 						}

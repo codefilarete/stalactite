@@ -177,7 +177,7 @@ class ClassMappingTest {
 	@ParameterizedTest
 	@MethodSource("getInsertValues")
 	void testGetInsertValues(Toto modified, Map<Column<?, Object>, Object> expectedResult) {
-		Map<? extends Column<?, Object>, Object> valuesToInsert = testInstance.getInsertValues(modified);
+		Map<? extends Column<?, ?>, Object> valuesToInsert = testInstance.getInsertValues(modified);
 		assertThat(valuesToInsert).isEqualTo(expectedResult);
 	}
 	

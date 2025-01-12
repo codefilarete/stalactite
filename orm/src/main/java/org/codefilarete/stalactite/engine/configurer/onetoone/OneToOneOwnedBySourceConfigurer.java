@@ -42,7 +42,7 @@ class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extend
 	
 	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	
-	private final Map<Column<LEFTTABLE, Object>, Column<RIGHTTABLE, Object>> keyColumnsMapping = new HashMap<>();
+	private final Map<Column<LEFTTABLE, ?>, Column<RIGHTTABLE, ?>> keyColumnsMapping = new HashMap<>();
 	
 	private OneToOneOwnedBySourceEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> engine;
 	
@@ -70,7 +70,7 @@ class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extend
 		AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(oneToOneRelation.getTargetProvider());
 		targetMappingStrategy.getTargetTable().getPrimaryKey().getColumns().forEach(column -> {
 			String leftColumnName = joinColumnNamingStrategy.giveName(accessorDefinition, column);
-			Column<LEFTTABLE, Object> foreignKeyColumn = mappingStrategy.getTargetTable().addColumn(leftColumnName, column.getJavaType());
+			Column<LEFTTABLE, ?> foreignKeyColumn = mappingStrategy.getTargetTable().addColumn(leftColumnName, column.getJavaType());
 			leftKeyBuilder.addColumn(foreignKeyColumn);
 			keyColumnsMapping.put(foreignKeyColumn, column);
 		});

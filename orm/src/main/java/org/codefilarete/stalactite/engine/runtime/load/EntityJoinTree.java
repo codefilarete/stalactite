@@ -313,7 +313,7 @@ public class EntityJoinTree<C, I> {
 																						Key<T1, JOINTYPE> leftJoinColumn,
 																						Key<T2, JOINTYPE> rightJoinColumn,
 																						JoinType joinType,
-																						Set<? extends JoinLink<T2, Object>> columnsToSelect) {
+																						Set<? extends JoinLink<T2, ?>> columnsToSelect) {
 		return this.addJoin(leftStrategyName, parent -> new PassiveJoinNode<C, T1, T2, JOINTYPE>((JoinNode<T1>) (JoinNode) parent,
 				leftJoinColumn, rightJoinColumn, joinType,
 				columnsToSelect, null));

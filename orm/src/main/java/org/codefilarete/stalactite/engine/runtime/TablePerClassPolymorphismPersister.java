@@ -306,24 +306,24 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			ShadowColumnValueProvider<D, SUBENTITYTABLE>
 			projectShadowColumnProvider(ShadowColumnValueProvider<C, T> provider, ConfiguredRelationalPersister<D, I> subEntityPersister) {
 				
-				Map<Column<T, Object>, Column<SUBENTITYTABLE, Object>> projectedColumnMap = new HashMap<>(provider.getColumns().size());
+				Map<Column<T, ?>, Column<SUBENTITYTABLE, ?>> projectedColumnMap = new HashMap<>(provider.getColumns().size());
 				provider.getColumns().forEach(c -> {
-					Column<SUBENTITYTABLE, Object> projectedColumn = subEntityPersister.<SUBENTITYTABLE>getMapping().getTargetTable().addColumn(c.getName(), c.getJavaType(), c.getSize());
+					Column<SUBENTITYTABLE, ?> projectedColumn = subEntityPersister.<SUBENTITYTABLE>getMapping().getTargetTable().addColumn(c.getName(), c.getJavaType(), c.getSize());
 					projectedColumn.nullable(c.isNullable());
 					projectedColumnMap.put(c, projectedColumn);
 				});
 				return new ShadowColumnValueProvider<D, SUBENTITYTABLE>() {
 					
-					private final Set<Column<SUBENTITYTABLE, Object>> values = new HashSet<>(projectedColumnMap.values());
+					private final Set<Column<SUBENTITYTABLE, ?>> values = new HashSet<>(projectedColumnMap.values());
 					
 					@Override
-					public Set<Column<SUBENTITYTABLE, Object>> getColumns() {
+					public Set<Column<SUBENTITYTABLE, ?>> getColumns() {
 						return values;
 					}
 					
 					@Override
-					public Map<Column<SUBENTITYTABLE, Object>, Object> giveValue(D bean) {
-						Map<Column<T, Object>, Object> columnObjectMap = provider.giveValue(bean);
+					public Map<Column<SUBENTITYTABLE, ?>, Object> giveValue(D bean) {
+						Map<Column<T, ?>, Object> columnObjectMap = provider.giveValue(bean);
 						return Maps.innerJoin(projectedColumnMap, columnObjectMap);
 					}
 				};
@@ -416,7 +416,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		EntityMapping<? extends C, I, SUBTABLE> subTypeMapping = subPersister.getMapping();
 		KeyBuilder<SUBTABLE, Object> reverseKey = Key.from(subTypeMapping.getTargetTable());
 		rightColumn.getColumns().forEach(col -> {
-			Column<SUBTABLE, Object> column = subTypeMapping.getTargetTable().addColumn(col.getExpression(), col.getJavaType());
+			Column<SUBTABLE, ?> column = subTypeMapping.getTargetTable().addColumn(col.getExpression(), col.getJavaType());
 			subTypeMapping.addShadowColumnSelect(column);
 			reverseKey.addColumn(column);
 		});
@@ -629,9 +629,9 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		}
 		
 		@Override
-		public Set<Selectable<Object>> getSelectableColumns() {
-			Set<Selectable<Object>> result = new HashSet<>(idMapping.getIdentifierAssembler().getColumns());
-			result.add((Selectable) discriminatorColumn);
+		public Set<Selectable<?>> getSelectableColumns() {
+			Set<Selectable<?>> result = new HashSet<>(idMapping.getIdentifierAssembler().getColumns());
+			result.add(discriminatorColumn);
 			return result;
 		}
 	}

@@ -33,7 +33,7 @@ import org.codefilarete.stalactite.sql.statement.WriteOperation;
  */
 public class DeleteExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I, T> implements org.codefilarete.stalactite.engine.DeleteExecutor<C, I> {
 	
-	private SQLOperationListener<Column<T, Object>> operationListener;
+	private SQLOperationListener<Column<T, ?>> operationListener;
 	
 	public DeleteExecutor(EntityMapping<C, I, T> mappingStrategy, ConnectionConfiguration connectionConfiguration,
 						  DMLGenerator dmlGenerator, WriteOperationFactory writeOperationFactory,
@@ -41,7 +41,7 @@ public class DeleteExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 		super(mappingStrategy, connectionConfiguration, dmlGenerator, writeOperationFactory, inOperatorMaxSize);
 	}
 	
-	public void setOperationListener(SQLOperationListener<Column<T, Object>> listener) {
+	public void setOperationListener(SQLOperationListener<Column<T, ?>> listener) {
 		this.operationListener = listener;
 	}
 	
@@ -57,19 +57,19 @@ public class DeleteExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 		ColumnParameterizedSQL<T> deleteStatement = getDmlGenerator().buildDelete(getMapping().getTargetTable(), getMapping().getVersionedKeys());
 		List<? extends C> entitiesCopy = Iterables.copy(entities);
 		ExpectedBatchedRowCountsSupplier expectedBatchedRowCountsSupplier = new ExpectedBatchedRowCountsSupplier(entitiesCopy.size(), getBatchSize());
-		WriteOperation<Column<T, Object>> writeOperation = newWriteOperation(deleteStatement, getConnectionProvider(), expectedBatchedRowCountsSupplier);
+		WriteOperation<Column<T, ?>> writeOperation = newWriteOperation(deleteStatement, getConnectionProvider(), expectedBatchedRowCountsSupplier);
 		JDBCBatchingIterator<C> jdbcBatchingIterator = new JDBCBatchingIterator<>(entitiesCopy, writeOperation, getBatchSize());
 		jdbcBatchingIterator.forEachRemaining(c -> writeOperation.addBatch(getMapping().getVersionedKeyValues(c)));
 	}
 	
-	private WriteOperation<Column<T, Object>> newWriteOperation(SQLStatement<Column<T, Object>> statement, ConnectionProvider currentConnectionProvider, LongSupplier expectedRowCount) {
-		WriteOperation<Column<T, Object>> writeOperation = getWriteOperationFactory().createInstance(statement, currentConnectionProvider, expectedRowCount);
+	private WriteOperation<Column<T, ?>> newWriteOperation(SQLStatement<Column<T, ?>> statement, ConnectionProvider currentConnectionProvider, LongSupplier expectedRowCount) {
+		WriteOperation<Column<T, ?>> writeOperation = getWriteOperationFactory().createInstance(statement, currentConnectionProvider, expectedRowCount);
 		writeOperation.setListener(operationListener);
 		return writeOperation;
 	}
 	
-	private WriteOperation<Column<T, Object>> newWriteOperation(SQLStatement<Column<T, Object>> statement, ConnectionProvider currentConnectionProvider, long expectedRowCount) {
-		WriteOperation<Column<T, Object>> writeOperation = getWriteOperationFactory().createInstance(statement, currentConnectionProvider, expectedRowCount);
+	private WriteOperation<Column<T, ?>> newWriteOperation(SQLStatement<Column<T, ?>> statement, ConnectionProvider currentConnectionProvider, long expectedRowCount) {
+		WriteOperation<Column<T, ?>> writeOperation = getWriteOperationFactory().createInstance(statement, currentConnectionProvider, expectedRowCount);
 		writeOperation.setListener(operationListener);
 		return writeOperation;
 	}
@@ -112,15 +112,15 @@ public class DeleteExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 		ColumnParameterizedSQL<T> deleteStatement;
 		T targetTable = getMapping().getTargetTable();
 		
-		Set<Column<T, Object>> pkColumns = targetTable.getPrimaryKey().getColumns();
+		Set<Column<T, ?>> pkColumns = targetTable.getPrimaryKey().getColumns();
 		IdentifierAssembler<I, T> identifierAssembler = getMapping().getIdMapping().getIdentifierAssembler();
 		if (!parcels.isEmpty()) {
 			// creating the eventually tupled order "where (?, ?) in (?, ?)"  
 			deleteStatement = getDmlGenerator().buildDeleteByKey(targetTable, pkColumns, blockSize);
-			WriteOperation<Column<T, Object>> writeOperation = newWriteOperation(deleteStatement, currentConnectionProvider, blockSize);
+			WriteOperation<Column<T, ?>> writeOperation = newWriteOperation(deleteStatement, currentConnectionProvider, blockSize);
 			JDBCBatchingIterator<List<I>> jdbcBatchingIterator = new JDBCBatchingIterator<>(parcels, writeOperation, getBatchSize());
 			// This should stay a List to maintain order between column values and then keep tuple homogeneous for composed id cases
-			Map<Column<T, Object>, List<Object>> pkValues = new HashMap<>();
+			Map<Column<T, ?>, List<Object>> pkValues = new HashMap<>();
 			pkColumns.forEach(c -> pkValues.put(c, new ArrayList<>()));
 			// merging all entity ids in a single Map<Column, List> which is given to delete order
 			jdbcBatchingIterator.forEachRemaining(deleteKeys -> {
@@ -132,18 +132,18 @@ public class DeleteExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 		// remaining block treatment
 		if (!lastBlock.isEmpty()) {
 			deleteStatement = getDmlGenerator().buildDeleteByKey(targetTable, pkColumns, lastBlock.size());
-			try (WriteOperation<Column<T, Object>> writeOperation = newWriteOperation(deleteStatement, currentConnectionProvider, lastBlock.size())) {
+			try (WriteOperation<Column<T, ?>> writeOperation = newWriteOperation(deleteStatement, currentConnectionProvider, lastBlock.size())) {
 				// we must pass a single value when expected, else ExpandableStatement may be confused when applying them
 				Object updateValues = lastBlock.size() == 1 ? lastBlock.get(0) : lastBlock;
 				if (updateValues instanceof List) {
-					Map<Column<T, Object>, List<Object>> pkValues = new HashMap<>();
+					Map<Column<T, ?>, List<Object>> pkValues = new HashMap<>();
 					((List<I>) updateValues).forEach(id -> {
-						Map<Column<T, Object>, Object> localPkValues = identifierAssembler.getColumnValues(id);
+						Map<Column<T, ?>, Object> localPkValues = identifierAssembler.getColumnValues(id);
 						pkColumns.forEach(pkColumn -> pkValues.computeIfAbsent(pkColumn, k -> new ArrayList<>()).add(localPkValues.get(pkColumn)));
 					});
 					writeOperation.setValues(pkValues);
 				} else {
-					Map<Column<T, Object>, Object> pkValues = identifierAssembler.getColumnValues((I) updateValues);
+					Map<Column<T, ?>, Object> pkValues = identifierAssembler.getColumnValues((I) updateValues);
 					writeOperation.setValues(pkValues);
 				}
 				writeOperation.execute();

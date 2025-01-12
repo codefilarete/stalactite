@@ -73,7 +73,7 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 	}
 	
 	@Override
-	public Map<Column<T, Object>, Object> getInsertValues(C c) {
+	public Map<Column<T, ?>, Object> getInsertValues(C c) {
 		Collection<O> toIterate = c;
 		if (Collections.isEmpty(c)) {
 			toIterate = new ArrayList<>();

@@ -57,7 +57,7 @@ class KeyValueRecordMappingBuilder<K, V, I, T extends Table<T>, LEFTTABLE extend
 	
 	private final T associationTable;
 	private final IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler;
-	private final Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKeyForeignColumnMapping;
+	private final Map<Column<LEFTTABLE, ?>, Column<T, ?>> primaryKeyForeignColumnMapping;
 	private Column<T, K> keyColumn;
 	private Column<T, V> valueColumn;
 	private EmbeddedClassMapping<K, T> entryKeyMapping;
@@ -66,7 +66,7 @@ class KeyValueRecordMappingBuilder<K, V, I, T extends Table<T>, LEFTTABLE extend
 	KeyValueRecordMappingBuilder(
 			T associationTable,
 			IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
-			Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKeyForeignColumnMapping) {
+			Map<Column<LEFTTABLE, ?>, Column<T, ?>> primaryKeyForeignColumnMapping) {
 		this.associationTable = associationTable;
 		this.sourceIdentifierAssembler = sourceIdentifierAssembler;
 		this.primaryKeyForeignColumnMapping = primaryKeyForeignColumnMapping;
@@ -96,7 +96,7 @@ class KeyValueRecordMappingBuilder<K, V, I, T extends Table<T>, LEFTTABLE extend
 			idMapping = new KeyValueRecordIdMapping<>(
 					associationTable,
 					(row, columnedRow) -> columnedRow.getValue(keyColumn, row),
-					(Function<K, Map<Column<T, Object>, Object>>) k -> (Map) Maps.forHashMap(Column.class, Object.class).add(keyColumn, k),
+					(Function<K, Map<Column<T, ?>, Object>>) k -> (Map) Maps.forHashMap(Column.class, Object.class).add(keyColumn, k),
 					sourceIdentifierAssembler,
 					primaryKeyForeignColumnMapping);
 		} else if (entryKeyMapping != null) {

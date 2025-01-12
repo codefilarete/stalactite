@@ -92,20 +92,20 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	public OneToManyWithMappedAssociationEngine(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 												MappedManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDescriptor,
 												ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-												Set<Column<RIGHTTABLE, Object>> mappedReverseColumns,
-												Function<SRCID, Map<Column<RIGHTTABLE, Object>, Object>> reverseColumnsValueProvider) {
+												Set<Column<RIGHTTABLE, ?>> mappedReverseColumns,
+												Function<SRCID, Map<Column<RIGHTTABLE, ?>, Object>> reverseColumnsValueProvider) {
 		this.targetPersister = targetPersister;
 		this.manyRelationDescriptor = manyRelationDescriptor;
 		this.sourcePersister = sourcePersister;
 		this.foreignKeyValueProvider = new ShadowColumnValueProvider<TRGT, RIGHTTABLE>() {
 			@Override
-			public Set<Column<RIGHTTABLE, Object>> getColumns() {
+			public Set<Column<RIGHTTABLE, ?>> getColumns() {
 				return mappedReverseColumns;
 			}
 			
 			@Override
-			public Map<Column<RIGHTTABLE, Object>, Object> giveValue(TRGT trgt) {
-				Map<Column<RIGHTTABLE, Object>, Object> result;
+			public Map<Column<RIGHTTABLE, ?>, Object> giveValue(TRGT trgt) {
+				Map<Column<RIGHTTABLE, ?>, Object> result;
 				if (giveRelationStorageContext() == null) {
 					// case of TRGT is also root (SRC) in a cycling parent -> parent relation : when some root entities are
 					// inserted/updated the insert listener that initializes currentForeignKeyValueProvider on afterInsert is not yet called

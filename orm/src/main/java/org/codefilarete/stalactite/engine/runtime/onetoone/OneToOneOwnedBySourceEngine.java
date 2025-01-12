@@ -35,7 +35,7 @@ public class OneToOneOwnedBySourceEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 	public OneToOneOwnedBySourceEngine(ConfiguredPersister<SRC, SRCID> sourcePersister,
 									   ConfiguredPersister<TRGT, TRGTID> targetPersister,
 									   Accessor<SRC, TRGT> targetAccessor,
-									   Map<Column<LEFTTABLE, Object>, Column<RIGHTTABLE, Object>> keyColumnsMapping) {
+									   Map<Column<LEFTTABLE, ?>, Column<RIGHTTABLE, ?>> keyColumnsMapping) {
 		super(sourcePersister, targetPersister, targetAccessor, keyColumnsMapping);
 		// whatever kind of relation maintenance mode asked, we have to insert and update source-to-target link, because we are in relation-owned-by-source
 		Function<SRC, TRGTID> targetIdProvider = src -> {
@@ -44,14 +44,14 @@ public class OneToOneOwnedBySourceEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 		};
 		foreignKeyValueProvider = new ShadowColumnValueProvider<SRC, LEFTTABLE>() {
 			@Override
-			public Set<Column<LEFTTABLE, Object>> getColumns() {
+			public Set<Column<LEFTTABLE, ?>> getColumns() {
 				return new HashSet<>(keyColumnsMapping.keySet());
 			}
 			
 			@Override
-			public Map<Column<LEFTTABLE, Object>, Object> giveValue(SRC bean) {
+			public Map<Column<LEFTTABLE, ?>, Object> giveValue(SRC bean) {
 				TRGTID trgtid = targetIdProvider.apply(bean);
-				Map<Column<RIGHTTABLE, Object>, Object> columnValues = targetPersister.getMapping().getIdMapping().<RIGHTTABLE>getIdentifierAssembler().getColumnValues(trgtid);
+				Map<Column<RIGHTTABLE, ?>, Object> columnValues = targetPersister.getMapping().getIdMapping().<RIGHTTABLE>getIdentifierAssembler().getColumnValues(trgtid);
 				return Maps.innerJoinOnValuesAndKeys(keyColumnsMapping, columnValues);
 			}
 		};

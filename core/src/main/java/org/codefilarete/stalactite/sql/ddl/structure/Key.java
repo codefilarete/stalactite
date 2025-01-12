@@ -29,7 +29,7 @@ public interface Key<T extends Fromable, ID /* unused in this class, left for cl
 	
 	T getTable();
 	
-	KeepOrderSet<? extends JoinLink<T, Object>> getColumns();
+	KeepOrderSet<? extends JoinLink<T, ?>> getColumns();
 	
 	boolean isComposed();
 	

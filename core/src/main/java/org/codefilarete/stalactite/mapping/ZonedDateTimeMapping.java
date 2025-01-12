@@ -78,11 +78,11 @@ public class ZonedDateTimeMapping<T extends Table<T>> implements EmbeddedBeanMap
 	}
 	
 	@Override
-	public Map<Column<T, Object>, Object> getInsertValues(ZonedDateTime zonedDateTime) {
+	public Map<Column<T, ?>, Object> getInsertValues(ZonedDateTime zonedDateTime) {
 		Map<Column<T, ?>, Object> result = new HashMap<>();
 		result.put(dateTimeColumn, zonedDateTime.toLocalDateTime());
 		result.put(zoneColumn, zonedDateTime.getZone());
-		return (Map<Column<T, Object>, Object>) (Map) result;
+		return result;
 	}
 	
 	@Override

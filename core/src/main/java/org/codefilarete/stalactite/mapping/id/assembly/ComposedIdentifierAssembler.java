@@ -41,7 +41,7 @@ public abstract class ComposedIdentifierAssembler<I, T extends Table<T>> impleme
 	}
 	
 	@Override
-	public Set<Column<T, Object>> getColumns() {
+	public Set<Column<T, ?>> getColumns() {
 		return primaryKey.getColumns();
 	}
 	
@@ -50,15 +50,15 @@ public abstract class ComposedIdentifierAssembler<I, T extends Table<T>> impleme
 	public abstract I assemble(Function<Column<?, ?>, Object> columnValueProvider);
 	
 	@Override
-	public Map<Column<T, Object>, Object> getColumnValues(List<I> ids) {
-		Map<Column<T, Object>, Object> pkValues = new HashMap<>();
+	public Map<Column<T, ?>, Object> getColumnValues(List<I> ids) {
+		Map<Column<T, ?>, Object> pkValues = new HashMap<>();
 		// we must pass a single value when expected, else ExpandableStatement may be confused when applying them
 		if (ids.size() == 1) {
-			Map<Column<T, Object>, Object> localPkValues = getColumnValues(Iterables.first(ids));
+			Map<Column<T, ?>, Object> localPkValues = getColumnValues(Iterables.first(ids));
 			primaryKey.getColumns().forEach(pkColumn -> pkValues.put(pkColumn, localPkValues.get(pkColumn)));
 		} else {
 			ids.forEach(id -> {
-				Map<Column<T, Object>, Object> localPkValues = getColumnValues(id);
+				Map<Column<T, ?>, Object> localPkValues = getColumnValues(id);
 				primaryKey.getColumns().forEach(pkColumn -> ((List<Object>) pkValues.computeIfAbsent(pkColumn, k -> new ArrayList<>())).add(localPkValues.get(pkColumn)));
 			});
 		}

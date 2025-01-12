@@ -15,7 +15,7 @@ public interface EntityMerger<C> {
 	
 	RowTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow);
 	
-	Set<Selectable<Object>> getSelectableColumns();
+	Set<Selectable<?>> getSelectableColumns();
 	
 	/**
 	 * Adapter of a {@link EntityMapping} as a {@link EntityMerger}.
@@ -38,7 +38,7 @@ public interface EntityMerger<C> {
 		}
 		
 		@Override
-		public Set<Selectable<Object>> getSelectableColumns() {
+		public Set<Selectable<?>> getSelectableColumns() {
 			return (Set) delegate.getSelectableColumns();
 		}
 	}

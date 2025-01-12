@@ -73,7 +73,7 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 	public OneToOneOwnedByTargetEngine(ConfiguredPersister<SRC, SRCID> sourcePersister,
 									   ConfiguredPersister<TRGT, TRGTID> targetPersister,
 									   Accessor<SRC, TRGT> targetAccessor,
-									   Map<Column<LEFTTABLE, Object>, Column<RIGHTTABLE, Object>> keyColumnsMapping) {
+									   Map<Column<LEFTTABLE, ?>, Column<RIGHTTABLE, ?>> keyColumnsMapping) {
 		super(sourcePersister, targetPersister, targetAccessor, keyColumnsMapping);
 	}
 	
@@ -129,18 +129,18 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 		
 		targetPersister.<RIGHTTABLE>getMapping().addShadowColumnInsert(new ShadowColumnValueProvider<TRGT, RIGHTTABLE>() {
 			@Override
-			public Set<Column<RIGHTTABLE, Object>> getColumns() {
+			public Set<Column<RIGHTTABLE, ?>> getColumns() {
 				return new HashSet<>(keyColumnsMapping.values());
 			}
 			
 			@Override
-			public Map<Column<RIGHTTABLE, Object>, Object> giveValue(TRGT bean) {
+			public Map<Column<RIGHTTABLE, ?>, Object> giveValue(TRGT bean) {
 				// in many cases currentTargetToSourceRelationStorage is already present through source persister listener (insert or update)
 				// but in the corner case of source and target persist same type (in a parent -> child case) then at very first insert of root
 				// instance, currentTargetToSourceRelationStorage is not present, so we prevent this by initializing it 
 				ensureRelationStorageContext();
-				SRCID srcid = (SRCID) giveRelationStorageContext().giveSourceId(bean);
-				Map<Column<LEFTTABLE, Object>, Object> columnValues = sourcePersister.getMapping().getIdMapping().<LEFTTABLE>getIdentifierAssembler().getColumnValues(srcid);
+				SRCID srcid = giveRelationStorageContext().giveSourceId(bean);
+				Map<Column<LEFTTABLE, ?>, Object> columnValues = sourcePersister.getMapping().getIdMapping().<LEFTTABLE>getIdentifierAssembler().getColumnValues(srcid);
 				return Maps.innerJoin(keyColumnsMapping, columnValues);
 			}
 		});
@@ -152,18 +152,18 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 		// adding cascade treatment, please note that this will also be used by insert cascade if target is already persisted
 		targetPersister.<RIGHTTABLE>getMapping().addShadowColumnUpdate(new ShadowColumnValueProvider<TRGT, RIGHTTABLE>() {
 			@Override
-			public Set<Column<RIGHTTABLE, Object>> getColumns() {
+			public Set<Column<RIGHTTABLE, ?>> getColumns() {
 				return new HashSet<>(keyColumnsMapping.values());
 			}
 			
 			@Override
-			public Map<Column<RIGHTTABLE, Object>, Object> giveValue(TRGT bean) {
+			public Map<Column<RIGHTTABLE, ?>, Object> giveValue(TRGT bean) {
 				// in many cases currentTargetToSourceRelationStorage is already present through source persister listener (insert or update)
 				// but in the corner case of source and target persist same type (in a parent -> child case) then at very first insert of root
 				// instance, currentTargetToSourceRelationStorage is not present, so we prevent this by initializing it 
 				ensureRelationStorageContext();
 				SRCID srcid = giveRelationStorageContext().giveSourceId(bean);
-				Map<Column<LEFTTABLE, Object>, Object> columnValues = sourcePersister.getMapping().getIdMapping().<LEFTTABLE>getIdentifierAssembler().getColumnValues(srcid);
+				Map<Column<LEFTTABLE, ?>, Object> columnValues = sourcePersister.getMapping().getIdMapping().<LEFTTABLE>getIdentifierAssembler().getColumnValues(srcid);
 				return Maps.innerJoin(keyColumnsMapping, columnValues);
 			}
 		});
@@ -369,7 +369,7 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 												WriteOperation<UpwhereColumn<RIGHTTABLE>> updateOrder) {
 			Map<UpwhereColumn<RIGHTTABLE>, Object> values = new HashMap<>();
 			entities.forEach(e -> {
-				Map<Column<RIGHTTABLE, Object>, Object> columnValues = Maps.innerJoin(keyColumnsMapping, identifierAssembler.getColumnValues(idProvider.apply(e)));
+				Map<Column<RIGHTTABLE, ?>, Object> columnValues = Maps.innerJoin(keyColumnsMapping, identifierAssembler.getColumnValues(idProvider.apply(e)));
 				columnValues.forEach((key, value) -> values.put(new UpwhereColumn<>(key, true), value));
 				targetPersister.<RIGHTTABLE>getMapping().getVersionedKeyValues(targetAccessor.get(sourceProvider.apply(e)))
 						.forEach((c, o) -> values.put(new UpwhereColumn<>(c, false), o));

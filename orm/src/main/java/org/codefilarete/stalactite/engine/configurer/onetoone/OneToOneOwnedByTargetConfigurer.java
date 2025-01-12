@@ -43,7 +43,7 @@ import org.codefilarete.tool.Duo;
 class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
 		extends OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE, SRCID> {
 	
-	private final Map<Column<LEFTTABLE, Object>, Column<RIGHTTABLE, Object>> keyColumnsMapping = new HashMap<>();
+	private final Map<Column<LEFTTABLE, ?>, Column<RIGHTTABLE, ?>> keyColumnsMapping = new HashMap<>();
 	
 	private final JoinColumnNamingStrategy joinColumnNamingStrategy;
 	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
@@ -120,7 +120,7 @@ class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extend
 				PrimaryKey<LEFTTABLE, SRCID> sourcePrimaryKey = sourcePersister.getMainTable().getPrimaryKey();
 				KeyBuilder<RIGHTTABLE, SRCID> result = Key.from(targetMappingStrategy.getTargetTable());
 				sourcePrimaryKey.getColumns().forEach(pkColumn -> {
-					Column<RIGHTTABLE, Object> column = targetMappingStrategy.getTargetTable().addColumn(
+					Column<RIGHTTABLE, ?> column = targetMappingStrategy.getTargetTable().addColumn(
 							joinColumnNamingStrategy.giveName(accessorDefinition, pkColumn),
 							pkColumn.getJavaType());
 					keyColumnsMapping.put(pkColumn, column);

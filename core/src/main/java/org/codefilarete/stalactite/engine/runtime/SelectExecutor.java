@@ -35,14 +35,14 @@ public class SelectExecutor<C, I, T extends Table<T>> extends DMLExecutor<C, I, 
 	
 	private final InternalExecutor<C, I, T> internalExecutor;
 	
-	protected SQLOperationListener<Column<T, Object>> operationListener;
+	protected SQLOperationListener<Column<T, ?>> operationListener;
 	
 	public SelectExecutor(EntityMapping<C, I, T> mappingStrategy, ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, int inOperatorMaxSize) {
 		super(mappingStrategy, connectionProvider, dmlGenerator, inOperatorMaxSize);
 		this.internalExecutor = new InternalExecutor<>(mappingStrategy);
 	}
 	
-	public void setOperationListener(SQLOperationListener<Column<T, Object>> operationListener) {
+	public void setOperationListener(SQLOperationListener<Column<T, ?>> operationListener) {
 		this.operationListener = operationListener;
 	}
 	
@@ -64,15 +64,15 @@ public class SelectExecutor<C, I, T extends Table<T>> extends DMLExecutor<C, I, 
 			// We distinguish the default case where packets are of the same size from the (last) case where it's different
 			// So we can apply the same read operation to all the firsts packets
 			T targetTable = getMapping().getTargetTable();
-			Set<Column<T, Object>> columnsToRead = getMapping().getSelectableColumns();
+			Set<Column<T, ?>> columnsToRead = getMapping().getSelectableColumns();
 			if (!parcels.isEmpty()) {
-				ReadOperation<Column<T, Object>> defaultReadOperation = newReadOperation(targetTable, columnsToRead, blockSize, localConnectionProvider);
+				ReadOperation<Column<T, ?>> defaultReadOperation = newReadOperation(targetTable, columnsToRead, blockSize, localConnectionProvider);
 				parcels.forEach(parcel -> result.addAll(internalExecutor.execute(defaultReadOperation, parcel)));
 			}
 			
 			// last packet treatment (packet size may be different)
 			if (!lastParcel.isEmpty()) {
-				ReadOperation<Column<T, Object>> lastReadOperation = newReadOperation(targetTable, columnsToRead, lastBlockSize, localConnectionProvider);
+				ReadOperation<Column<T, ?>> lastReadOperation = newReadOperation(targetTable, columnsToRead, lastBlockSize, localConnectionProvider);
 				result.addAll(internalExecutor.execute(lastReadOperation, lastParcel));
 			}
 		}
@@ -80,11 +80,11 @@ public class SelectExecutor<C, I, T extends Table<T>> extends DMLExecutor<C, I, 
 	}
 	
 	@SuppressWarnings("java:S2095")	// ReadOperation is close at execution time and is not used in this method
-	private ReadOperation<Column<T, Object>> newReadOperation(T targetTable, Set<Column<T, Object>> columnsToRead, int blockSize,
+	private ReadOperation<Column<T, ?>> newReadOperation(T targetTable, Set<Column<T, ?>> columnsToRead, int blockSize,
 												   ConnectionProvider connectionProvider) {
 		PrimaryKey<T, ?> primaryKey = targetTable.getPrimaryKey();
 		ColumnParameterizedSelect<T> selectStatement = getDmlGenerator().buildSelectByKey(targetTable, columnsToRead, primaryKey.getColumns(), blockSize);
-		ReadOperation<Column<T, Object>> readOperation = new ReadOperation<>(selectStatement, connectionProvider);
+		ReadOperation<Column<T, ?>> readOperation = new ReadOperation<>(selectStatement, connectionProvider);
 		readOperation.setListener(this.operationListener);
 		return readOperation;
 	}
@@ -112,9 +112,9 @@ public class SelectExecutor<C, I, T extends Table<T>> extends DMLExecutor<C, I, 
 		}
 		
 		@VisibleForTesting
-		Set<C> execute(ReadOperation<Column<T, Object>> operation, List<I> ids) {
-			Map<Column<T, Object>, Object> primaryKeyValues = primaryKeyProvider.getColumnValues(ids);
-			try (ReadOperation<Column<T, Object>> closeableOperation = operation) {
+		Set<C> execute(ReadOperation<Column<T, ?>> operation, List<I> ids) {
+			Map<Column<T, ?>, Object> primaryKeyValues = primaryKeyProvider.getColumnValues(ids);
+			try (ReadOperation<Column<T, ?>> closeableOperation = operation) {
 				closeableOperation.setValues(primaryKeyValues);
 				return transform(closeableOperation, primaryKeyValues.size());
 			} catch (RuntimeException e) {
@@ -122,7 +122,7 @@ public class SelectExecutor<C, I, T extends Table<T>> extends DMLExecutor<C, I, 
 			}
 		}
 		
-		protected Set<C> transform(ReadOperation<Column<T, Object>> closeableOperation, int size) {
+		protected Set<C> transform(ReadOperation<Column<T, ?>> closeableOperation, int size) {
 			ResultSet resultSet = closeableOperation.execute();
 			// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
 			RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParameterizedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());

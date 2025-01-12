@@ -102,7 +102,7 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table<T>> im
 			PrimaryKey<T, I> subClassPrimaryKey = (PrimaryKey<T, I>) subEntityTable.getPrimaryKey();
 			String discriminatorValue = discriminatorValuePerSubType.get(subEntityType);
 			// columns must be in same orders in each select clause of the union else a database type mismatch may occur, so we sort them
-			SortedMap<Column<T, Object>, String> aliases = new TreeMap<>(Comparator.comparing(Column::getName));
+			SortedMap<Column<T, ?>, String> aliases = new TreeMap<>(Comparator.comparing(Column::getName));
 			subClassPrimaryKey.getColumns().forEach(column -> aliases.put(column, columnedRow.getAlias(column)));
 			Query.FluentFromClause from = QueryEase
 					.select(aliases)
@@ -115,7 +115,7 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table<T>> im
 				from.where((Column<T, I>) Iterables.first(subClassPrimaryKey.getColumns()), Operators.in(ids));
 			} else {
 				List<I> idsAsList = org.codefilarete.tool.collection.Collections.asList(ids);
-				Map<Column<T, Object>, Object> columnValues = subEntitiesPersisters.get(subEntityType).getMapping().getIdMapping().<T>getIdentifierAssembler().getColumnValues(idsAsList);
+				Map<Column<T, ?>, Object> columnValues = subEntitiesPersisters.get(subEntityType).getMapping().getIdMapping().<T>getIdentifierAssembler().getColumnValues(idsAsList);
 				from.where(transformCompositeIdentifierColumnValuesToTupleInValues(idsAsList.size(), columnValues));
 			}
 			
@@ -178,7 +178,7 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table<T>> im
 	}
 	
 	@VisibleForTesting
-	TupleIn transformCompositeIdentifierColumnValuesToTupleInValues(int idsCount, Map<? extends Column<T, Object>, Object> values) {
+	TupleIn transformCompositeIdentifierColumnValuesToTupleInValues(int idsCount, Map<? extends Column<T, ?>, Object> values) {
 		List<Object[]> resultValues = new ArrayList<>(idsCount);
 		
 		Column<?, ?>[] columns = new ArrayList<>(values.keySet()).toArray(new Column[0]);

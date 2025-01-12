@@ -34,8 +34,8 @@ public class SimpleIdentifierAssembler<I, T extends Table<T>> implements Identif
 	}
 	
 	@Override
-	public Set<Column<T, Object>> getColumns() {
-		return Arrays.asHashSet((Column<T, Object>) primaryKey);
+	public Set<Column<T, ?>> getColumns() {
+		return Arrays.asHashSet(primaryKey);
 	}
 	
 	@Override
@@ -45,20 +45,20 @@ public class SimpleIdentifierAssembler<I, T extends Table<T>> implements Identif
 	}
 	
 	@Override
-	public Map<Column<T, Object>, Object> getColumnValues(I id) {
-		return Collections.singletonMap((Column<T, Object>) primaryKey, id);
+	public Map<Column<T, ?>, Object> getColumnValues(I id) {
+		return Collections.singletonMap(primaryKey, id);
 	}
 	
 	@Override
-	public Map<Column<T, Object>, Object> getColumnValues(List<I> ids) {
+	public Map<Column<T, ?>, Object> getColumnValues(List<I> ids) {
 		Map<Column<T, I>, Object> pkValues = new HashMap<>();
 		// we must pass a single value when expected, else ExpandableStatement may be confused when applying them
 		if (ids.size() == 1) {
-			Map<Column<T, Object>, Object> localPkValues = getColumnValues(Iterables.first(ids));
+			Map<Column<T, ?>, Object> localPkValues = getColumnValues(Iterables.first(ids));
 			pkValues.put(primaryKey, localPkValues.get(primaryKey));
 		} else {
 			ids.forEach(id -> {
-				Map<Column<T, Object>, Object> localPkValues = getColumnValues(id);
+				Map<Column<T, ?>, Object> localPkValues = getColumnValues(id);
 				((List<Object>) pkValues.computeIfAbsent(primaryKey, k -> new ArrayList<>())).add(localPkValues.get(primaryKey));
 			});
 		}

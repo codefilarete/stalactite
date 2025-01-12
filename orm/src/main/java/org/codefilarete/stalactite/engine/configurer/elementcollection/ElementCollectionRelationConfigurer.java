@@ -101,14 +101,15 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 		String tableName = nullable(linkage.getTargetTableName()).getOr(() -> tableNamingStrategy.giveName(collectionProviderDefinition));
 		// Note that table will participate to DDL while cascading selection thanks to its join on foreignKey 
 		TARGETTABLE targetTable = (TARGETTABLE) nullable(linkage.getTargetTable()).getOr(() -> new Table(tableName));
-		Map<Column<T, Object>, Column<TARGETTABLE, Object>> primaryKeyForeignColumnMapping = new HashMap<>();
-		Key<TARGETTABLE, ID> reverseKey = nullable((Column<TARGETTABLE, ID>) (Column) linkage.getReverseColumn()).map(Key::ofSingleColumn)
+		Map<Column<T, ?>, Column<TARGETTABLE, ?>> primaryKeyForeignColumnMapping = new HashMap<>();
+		Column<TARGETTABLE, ID> reverseColumn = (Column) linkage.getReverseColumn();
+		Key<TARGETTABLE, ID> reverseKey = nullable(reverseColumn).map(Key::ofSingleColumn)
 				.getOr(() -> {
 					KeyBuilder<TARGETTABLE, ID> result = Key.from(targetTable);
 					sourcePK.getColumns().forEach(col -> {
 						String reverseColumnName = nullable(linkage.getReverseColumnName()).getOr(() ->
 								columnNamingStrategy.giveName(ELEMENT_RECORD_ID_ACCESSOR_DEFINITION));
-						Column<TARGETTABLE, Object> reverseCol = targetTable.addColumn(reverseColumnName, col.getJavaType())
+						Column<TARGETTABLE, ?> reverseCol = targetTable.addColumn(reverseColumnName, col.getJavaType())
 								.primaryKey();
 						primaryKeyForeignColumnMapping.put(col, reverseCol);
 						result.addColumn(reverseCol);
@@ -191,7 +192,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 	}
 	
 	private void registerColumnBinder(ForeignKey<?, ?, ID> reverseColumn, PrimaryKey<?, ID> sourcePK) {
-		PairIterator<? extends Column<?, Object>, ? extends Column<?, Object>> pairIterator = new PairIterator<>(reverseColumn.getColumns(), sourcePK.getColumns());
+		PairIterator<? extends Column<?, ?>, ? extends Column<?, ?>> pairIterator = new PairIterator<>(reverseColumn.getColumns(), sourcePK.getColumns());
 		pairIterator.forEachRemaining(col -> {
 			dialect.getColumnBinderRegistry().register(col.getLeft(), dialect.getColumnBinderRegistry().getBinder(col.getRight()));
 			dialect.getSqlTypeRegistry().put(col.getLeft(), dialect.getSqlTypeRegistry().getTypeName(col.getRight()));

@@ -223,8 +223,8 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	}
 	
 	@Override
-	public Map<Column<T, Object>, Object> getInsertValues(C c) {
-		Map<Column<T, Object>, Object> result = new KeepOrderMap<>();
+	public Map<Column<T, ?>, Object> getInsertValues(C c) {
+		Map<Column<T, ?>, Object> result = new KeepOrderMap<>();
 		insertableProperties.forEach((accessor, column) -> {
 			Object value = accessor.get(c);
 			// applying data converter if specified
@@ -270,16 +270,16 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 		shadowColumnsForUpdate.forEach(shadowColumnValueProvider -> {
 			if (shadowColumnValueProvider.accept(modified)) {
 				if (modified != null && unmodified == null) {
-					Map<Column<T, Object>, Object> modifiedValues = shadowColumnValueProvider.giveValue(modified);
+					Map<Column<T, ?>, Object> modifiedValues = shadowColumnValueProvider.giveValue(modified);
 					modifiedValues.forEach((col, value) -> modifiedFields.put(new UpwhereColumn<>(col, true), value));
 				} else if (modified == null && unmodified != null) {
-					Set<Column<T, Object>> shadowColumns = shadowColumnValueProvider.getColumns();
+					Set<Column<T, ?>> shadowColumns = shadowColumnValueProvider.getColumns();
 					shadowColumns.forEach(col -> modifiedFields.put(new UpwhereColumn<>(col, true), null));
 				} else if (modified != null && unmodified != null) {
-					Map<Column<T, Object>, Object> modifiedValues = shadowColumnValueProvider.giveValue(modified);
-					Map<Column<T, Object>, Object> unmodifiedValues = shadowColumnValueProvider.giveValue(unmodified);
+					Map<Column<T, ?>, Object> modifiedValues = shadowColumnValueProvider.giveValue(modified);
+					Map<Column<T, ?>, Object> unmodifiedValues = shadowColumnValueProvider.giveValue(unmodified);
 					
-					Set<Column<T, Object>> shadowColumns = shadowColumnValueProvider.getColumns();
+					Set<Column<T, ?>> shadowColumns = shadowColumnValueProvider.getColumns();
 					shadowColumns.forEach(col -> {
 						Object modifiedValue = modifiedValues.get(col);
 						if (!Predicates.equalOrNull(modifiedValue, unmodifiedValues.get(col))) {

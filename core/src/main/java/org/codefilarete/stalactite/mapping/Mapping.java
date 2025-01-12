@@ -30,7 +30,7 @@ public interface Mapping<C, T extends Table<T>> {
 	 * 					may be null when this method is called to manage relationship
 	 * @return a mapping between columns that must be put in the SQL insert order and there values
 	 */
-	Map<Column<T, Object>, Object> getInsertValues(C c);
+	Map<Column<T, ?>, Object> getInsertValues(C c);
 	
 	/**
 	 * Returns columns that must be updated because of change between 2 instances.
@@ -272,13 +272,13 @@ public interface Mapping<C, T extends Table<T>> {
 		 * 
 		 * @return columns to be appended to the insert or update SQL statement.
 		 */
-		Set<Column<T, Object>> getColumns();
+		Set<Column<T, ?>> getColumns();
 		
 		/**
 		 * Expected to give values to be set in insert or update SQL Statement for given entity
 		 * @param bean the entity that is being persisted
 		 * @return values per {@link Column} (must be same column instances that were given to {@link #getColumns()})
 		 */
-		Map<Column<T, Object>, Object> giveValue(C bean);
+		Map<Column<T, ?>, Object> giveValue(C bean);
 	}
 }
