@@ -4,7 +4,7 @@ import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.MariaDBDDLTableGenerator;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.sql.statement.binder.MariaDBParameterBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.MariaDBTypeMapping;
 
 /**
@@ -18,7 +18,7 @@ import org.codefilarete.stalactite.sql.statement.binder.MariaDBTypeMapping;
 public class MariaDBDialect extends DefaultDialect {
 	
 	public MariaDBDialect() {
-		super(new MariaDBTypeMapping(), new ColumnBinderRegistry());
+		super(new MariaDBTypeMapping(), new MariaDBParameterBinderRegistry());
 	}
 	
 	/**

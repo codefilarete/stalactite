@@ -17,6 +17,7 @@ import org.codefilarete.stalactite.sql.statement.SQLStatement;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.stalactite.sql.statement.WriteOperation.RowCountListener;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
+import org.codefilarete.stalactite.sql.statement.binder.DerbyParameterBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.DerbyTypeMapping;
 import org.codefilarete.tool.function.ThrowingBiFunction;
 
@@ -26,7 +27,7 @@ import org.codefilarete.tool.function.ThrowingBiFunction;
 public class DerbyDialect extends DefaultDialect {
 
 	public DerbyDialect() {
-		super(new DerbyTypeMapping());
+		super(new DerbyTypeMapping(), new DerbyParameterBinderRegistry());
 	}
 
 	/**

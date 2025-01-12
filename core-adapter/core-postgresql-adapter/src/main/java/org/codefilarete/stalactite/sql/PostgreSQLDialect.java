@@ -11,6 +11,7 @@ import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.statement.binder.PostgreSQLParameterBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.PostgreSQLTypeMapping;
 import org.codefilarete.tool.collection.Arrays;
 
@@ -20,7 +21,7 @@ import org.codefilarete.tool.collection.Arrays;
 public class PostgreSQLDialect extends DefaultDialect {
 	
 	public PostgreSQLDialect() {
-		super(new PostgreSQLTypeMapping());
+		super(new PostgreSQLTypeMapping(), new PostgreSQLParameterBinderRegistry());
 	}
 	
 	@Override

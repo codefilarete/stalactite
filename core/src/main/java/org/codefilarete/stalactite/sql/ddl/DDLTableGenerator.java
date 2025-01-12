@@ -26,10 +26,6 @@ public class DDLTableGenerator {
 		this.dmlNameProvider = dmlNameProvider;
 	}
 
-	public DDLTableGenerator(SqlTypeRegistry typeMapping) {
-		this(typeMapping, DMLNameProvider::new);
-	}
-	
 	public DDLTableGenerator(SqlTypeRegistry typeMapping, DMLNameProviderFactory dmlNameProviderFactory) {
 		this(typeMapping, dmlNameProviderFactory.build(new HashMap<>()));
 	}

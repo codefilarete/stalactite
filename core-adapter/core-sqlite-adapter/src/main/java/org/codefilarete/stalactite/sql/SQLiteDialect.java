@@ -15,6 +15,7 @@ import org.codefilarete.stalactite.sql.statement.SQLStatement;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.stalactite.sql.statement.WriteOperation.RowCountListener;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
+import org.codefilarete.stalactite.sql.statement.binder.SQLiteParameterBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.SQLiteTypeMapping;
 import org.codefilarete.tool.function.ThrowingBiFunction;
 
@@ -24,7 +25,7 @@ import org.codefilarete.tool.function.ThrowingBiFunction;
 public class SQLiteDialect extends DefaultDialect {
 
 	public SQLiteDialect() {
-		super(new SQLiteTypeMapping());
+		super(new SQLiteTypeMapping(), new SQLiteParameterBinderRegistry());
 	}
 
 	/**

@@ -4,7 +4,7 @@ import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.MySQLDDLTableGenerator;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.sql.statement.binder.MySQLParameterBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.MySQLTypeMapping;
 
 /**
@@ -18,7 +18,7 @@ import org.codefilarete.stalactite.sql.statement.binder.MySQLTypeMapping;
 public class MySQLDialect extends DefaultDialect {
 	
 	public MySQLDialect() {
-		super(new MySQLTypeMapping(), new ColumnBinderRegistry());
+		super(new MySQLTypeMapping(), new MySQLParameterBinderRegistry());
 	}
 
 	/**

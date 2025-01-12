@@ -27,7 +27,7 @@ class ColumnBinderRegistryTest {
 		// registering the same binder has no consequence
 		testInstance.register(nameColumn, DefaultParameterBinders.STRING_BINDER);
 		// but doing it with a different binder throws an exception
-		assertThatThrownBy(() -> testInstance.register(nameColumn, DefaultParameterBinders.INTEGER_BINDER))
+		assertThatThrownBy(() -> testInstance.register(nameColumn, (ParameterBinder<? extends Object>) DefaultParameterBinders.INTEGER_BINDER))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, BindingException.class), InstanceOfAssertFactories.THROWABLE)
 				.hasMessage("Binder for column toto.name already exists");
 	}

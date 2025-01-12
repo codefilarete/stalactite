@@ -38,7 +38,11 @@ public interface Dialect {
 	
 	int getInOperatorMaxSize();
 	
-	<I> GeneratedKeysReader<I> buildGeneratedKeysReader(String keyName, Class<I> columnType);
+	default <I> GeneratedKeysReader<I> buildGeneratedKeysReader(String keyName, Class<I> columnType) {
+		return getGeneratedKeysReaderFactory().build(keyName, columnType);
+	}
+	
+	GeneratedKeysReaderFactory getGeneratedKeysReaderFactory();
 	
 	/**
 	 * Indicates if this dialect supports what ANSI-SQL terms "row value constructor" syntax, also called tuple syntax.
@@ -47,4 +51,108 @@ public interface Dialect {
 	 * @return true if this SQL dialect supports "row value constructor" syntax, false otherwise.
 	 */
 	boolean supportsTupleCondition();
+	
+	class DialectSupport implements Dialect {
+		
+		private final DDLTableGenerator ddlTableGenerator;
+		
+		private final DMLGenerator dmlGenerator;
+		
+		private final WriteOperationFactory writeOperationFactory;
+		
+		private final ReadOperationFactory readOperationFactory;
+		
+		private final QuerySQLBuilderFactory querySQLBuilderFactory;
+		
+		private final SqlTypeRegistry sqlTypeRegistry;
+		
+		private final ColumnBinderRegistry columnBinderRegistry;
+		
+		private final DMLNameProviderFactory dmlNameProviderFactory;
+		
+		private final int inOperatorMaxSize;
+		
+		private final GeneratedKeysReaderFactory generatedKeysReaderFactory;
+		
+		private final boolean supportsTupleCondition;
+		
+		public DialectSupport(DDLTableGenerator ddlTableGenerator,
+							  DMLGenerator dmlGenerator,
+							  WriteOperationFactory writeOperationFactory,
+							  ReadOperationFactory readOperationFactory,
+							  QuerySQLBuilderFactory querySQLBuilderFactory,
+							  SqlTypeRegistry sqlTypeRegistry,
+							  ColumnBinderRegistry columnBinderRegistry,
+							  DMLNameProviderFactory dmlNameProviderFactory,
+							  int inOperatorMaxSize,
+							  GeneratedKeysReaderFactory generatedKeysReaderFactory,
+							  boolean supportsTupleCondition) {
+			this.ddlTableGenerator = ddlTableGenerator;
+			this.dmlGenerator = dmlGenerator;
+			this.writeOperationFactory = writeOperationFactory;
+			this.readOperationFactory = readOperationFactory;
+			this.querySQLBuilderFactory = querySQLBuilderFactory;
+			this.sqlTypeRegistry = sqlTypeRegistry;
+			this.columnBinderRegistry = columnBinderRegistry;
+			this.dmlNameProviderFactory = dmlNameProviderFactory;
+			this.inOperatorMaxSize = inOperatorMaxSize;
+			this.generatedKeysReaderFactory = generatedKeysReaderFactory;
+			this.supportsTupleCondition = supportsTupleCondition;
+		}
+		
+		@Override
+		public DDLTableGenerator getDdlTableGenerator() {
+			return ddlTableGenerator;
+		}
+		
+		@Override
+		public DMLGenerator getDmlGenerator() {
+			return dmlGenerator;
+		}
+		
+		@Override
+		public WriteOperationFactory getWriteOperationFactory() {
+			return writeOperationFactory;
+		}
+		
+		@Override
+		public ReadOperationFactory getReadOperationFactory() {
+			return readOperationFactory;
+		}
+		
+		@Override
+		public QuerySQLBuilderFactory getQuerySQLBuilderFactory() {
+			return querySQLBuilderFactory;
+		}
+		
+		@Override
+		public SqlTypeRegistry getSqlTypeRegistry() {
+			return sqlTypeRegistry;
+		}
+		
+		@Override
+		public ColumnBinderRegistry getColumnBinderRegistry() {
+			return columnBinderRegistry;
+		}
+		
+		@Override
+		public DMLNameProviderFactory getDmlNameProviderFactory() {
+			return dmlNameProviderFactory;
+		}
+		
+		@Override
+		public int getInOperatorMaxSize() {
+			return inOperatorMaxSize;
+		}
+		
+		@Override
+		public GeneratedKeysReaderFactory getGeneratedKeysReaderFactory() {
+			return generatedKeysReaderFactory;
+		}
+		
+		@Override
+		public boolean supportsTupleCondition() {
+			return supportsTupleCondition;
+		}
+	}
 }

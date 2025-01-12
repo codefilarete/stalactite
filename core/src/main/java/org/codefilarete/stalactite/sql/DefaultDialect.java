@@ -13,6 +13,7 @@ import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.ReadOperationFactory;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry;
 
 /**
  * Class that keeps objects necessary to "communicate" with a Database at the SQL language level:
@@ -54,15 +55,15 @@ public class DefaultDialect implements Dialect {
 	 * Creates a default dialect, with a default {@link ColumnBinderRegistry}
 	 */
 	public DefaultDialect(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping) {
-		this(javaTypeToSqlTypeMapping, new ColumnBinderRegistry());
+		this(javaTypeToSqlTypeMapping, new ParameterBinderRegistry());
 	}
 	
 	/**
 	 * Creates a dialect with given {@link JavaTypeToSqlTypeMapping} and {@link ColumnBinderRegistry}
 	 */
-	public DefaultDialect(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping, ColumnBinderRegistry columnBinderRegistry) {
+	public DefaultDialect(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping, ParameterBinderRegistry parameterBinderRegistry) {
 		this.sqlTypeRegistry = new SqlTypeRegistry(javaTypeToSqlTypeMapping);
-		this.columnBinderRegistry = columnBinderRegistry;
+		this.columnBinderRegistry = new ColumnBinderRegistry(parameterBinderRegistry);
 		this.dmlNameProviderFactory = newDMLNameProviderFactory();
 		this.dmlGenerator = newDmlGenerator();
 		this.ddlTableGenerator = newDdlTableGenerator();
@@ -171,6 +172,11 @@ public class DefaultDialect implements Dialect {
 	
 	public <I> GeneratedKeysReader<I> buildGeneratedKeysReader(String keyName, Class<I> columnType) {
 		return new GeneratedKeysReader<>(keyName, getColumnBinderRegistry().getBinder(columnType));
+	}
+	
+	@Override
+	public GeneratedKeysReaderFactory getGeneratedKeysReaderFactory() {
+		return this::buildGeneratedKeysReader;
 	}
 	
 	/**

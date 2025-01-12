@@ -18,6 +18,7 @@ import org.codefilarete.stalactite.sql.statement.SQLStatement;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.stalactite.sql.statement.WriteOperation.RowCountListener;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
+import org.codefilarete.stalactite.sql.statement.binder.HSQLDBParameterBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.HSQLDBTypeMapping;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.function.ThrowingBiFunction;
@@ -28,7 +29,7 @@ import org.codefilarete.tool.function.ThrowingBiFunction;
 public class HSQLDBDialect extends DefaultDialect { 
 	
 	public HSQLDBDialect() {
-		super(new HSQLDBTypeMapping());
+		super(new HSQLDBTypeMapping(), new HSQLDBParameterBinderRegistry());
 	}
 	
 	@Override

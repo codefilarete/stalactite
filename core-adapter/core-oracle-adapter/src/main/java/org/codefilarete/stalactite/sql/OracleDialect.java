@@ -16,6 +16,7 @@ import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSQL;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
+import org.codefilarete.stalactite.sql.statement.binder.OracleParameterBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.OracleTypeMapping;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
@@ -26,7 +27,7 @@ import org.codefilarete.tool.collection.Iterables;
 public class OracleDialect extends DefaultDialect { 
 	
 	public OracleDialect() {
-		super(new OracleTypeMapping());
+		super(new OracleTypeMapping(), new OracleParameterBinderRegistry());
 	}
 	
 	@Override

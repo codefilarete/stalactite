@@ -670,7 +670,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		private final TransactionAwareConnectionConfiguration connectionConfiguration;
 		private final Dialect dialect;
 		
-		private PersistenceContextConfiguration(ConnectionConfiguration connectionConfiguration, Dialect dialect) {
+		public PersistenceContextConfiguration(ConnectionConfiguration connectionConfiguration, Dialect dialect) {
 			this.connectionConfiguration = new TransactionAwareConnectionConfiguration(connectionConfiguration);
 			this.dialect = dialect;
 		}

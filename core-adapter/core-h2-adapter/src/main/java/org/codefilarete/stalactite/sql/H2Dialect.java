@@ -10,6 +10,7 @@ import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.H2DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.statement.binder.H2ParameterBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.H2TypeMapping;
 import org.codefilarete.tool.collection.Arrays;
 
@@ -19,7 +20,7 @@ import org.codefilarete.tool.collection.Arrays;
 public class H2Dialect extends DefaultDialect { 
 	
 	public H2Dialect() {
-		super(new H2TypeMapping());
+		super(new H2TypeMapping(), new H2ParameterBinderRegistry());
 	}
 	
 	@Override

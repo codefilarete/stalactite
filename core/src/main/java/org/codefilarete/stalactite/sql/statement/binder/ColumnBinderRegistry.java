@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
  *
  * @author Guillaume Mary
  */
-public class ColumnBinderRegistry extends ParameterBinderRegistry
+public class ColumnBinderRegistry
 		implements ParameterBinderIndex<Column, ParameterBinder>,
 		ResultSetReaderRegistry,
 		PreparedStatementWriterRegistry {
@@ -24,8 +24,18 @@ public class ColumnBinderRegistry extends ParameterBinderRegistry
 	 */
 	private final Map<Column, ParameterBinder> bindersPerColumn = new HashMap<>();
 	
+	private final ParameterBinderRegistry parameterBinderRegistry;
+	
 	public ColumnBinderRegistry() {
-		// default constructor, properties are already assigned
+		this(new ParameterBinderRegistry());
+	}
+	
+	public ColumnBinderRegistry(ParameterBinderRegistry parameterBinderRegistry) {
+		this.parameterBinderRegistry = parameterBinderRegistry;
+	}
+	
+	public <T> void register(Class<T> clazz, ParameterBinder<T> parameterBinder) {
+		this.parameterBinderRegistry.register(clazz, parameterBinder);
 	}
 	
 	public <T> void register(Column column, ParameterBinder<T> parameterBinder) {
@@ -34,6 +44,17 @@ public class ColumnBinderRegistry extends ParameterBinderRegistry
 			throw new BindingException("Binder for column " + column + " already exists");
 		}
 		this.bindersPerColumn.put(column, parameterBinder);
+	}
+	
+	/**
+	 * Gives the registered {@link ParameterBinder} for the given type.
+	 *
+	 * @param clazz a class
+	 * @return the registered {@link ParameterBinder} for the given type
+	 * @throws BindingException if the binder doesn't exist
+	 */
+	public <T> ParameterBinder<T> getBinder(Class<T> clazz) {
+		return parameterBinderRegistry.getBinder(clazz);
 	}
 	
 	/**
@@ -62,12 +83,12 @@ public class ColumnBinderRegistry extends ParameterBinderRegistry
 	@Override
 	public <T> ResultSetReader<T> doGetReader(Class<T> key) {
 		// since ParameterBinder is also a ResultSetReader we just return it
-		return super.getBinder(key);
+		return getBinder(key);
 	}
 	
 	@Override
 	public <T> PreparedStatementWriter<T> doGetWriter(Class<T> key) {
 		// since ParameterBinder is also a PreparedStatementWriter we just return it
-		return super.getBinder(key);
+		return getBinder(key);
 	}
 }
