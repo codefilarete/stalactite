@@ -154,16 +154,12 @@ public class FromSQLBuilderFactory {
 					cat(((RawTableJoin) join).getJoinClause());
 				} else if (join instanceof ColumnJoin) {
 					ColumnJoin columnJoin = (ColumnJoin) join;
-					CharSequence leftPrefix = getAliasOrDefault(columnJoin.getLeftColumn().getOwner());
-					CharSequence rightPrefix = getAliasOrDefault(columnJoin.getRightColumn().getOwner());
-					sql.cat(leftPrefix.toString(), ".", columnJoin.getLeftColumn().getExpression(), " = ", rightPrefix.toString(), ".", columnJoin.getRightColumn().getExpression());
+					sql.cat(dmlNameProvider.getName(columnJoin.getLeftColumn()), " = ", dmlNameProvider.getName(columnJoin.getRightColumn()));
 				} else if (join instanceof KeyJoin) {
 					KeyJoin keyJoin = (KeyJoin) join;
 					PairIterator<JoinLink<?, ?>, JoinLink<?, ?>> joinColumnsPairs = new PairIterator<>(keyJoin.getLeftKey().getColumns(), keyJoin.getRightKey().getColumns());
 					joinColumnsPairs.forEachRemaining(duo -> {
-						CharSequence leftPrefix = getAliasOrDefault(duo.getLeft().getOwner());
-						CharSequence rightPrefix = getAliasOrDefault(duo.getRight().getOwner());
-						sql.cat(leftPrefix.toString(), ".", duo.getLeft().getExpression(), " = ", rightPrefix.toString(), ".", duo.getRight().getExpression(), " and ");
+						sql.cat(dmlNameProvider.getName(duo.getLeft()), " = ", dmlNameProvider.getName(duo.getRight()), " and ");
 					});
 					sql.removeLastChars(" and ".length());
 				} else {

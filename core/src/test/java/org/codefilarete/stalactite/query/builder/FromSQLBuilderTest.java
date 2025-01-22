@@ -181,4 +181,40 @@ public class FromSQLBuilderTest {
 				+ " inner join Toto as toChanged on tuChanged.b = toChanged.b");
 		
 	}
+	
+	@Test
+	void toSQL_withJoinAndQuotingDMLNameProvider() {
+		Table tableToto1 = new Table(null, "Toto");
+		Column colToto1A = tableToto1.addColumn("a", String.class);
+		Column colToto1B = tableToto1.addColumn("b", String.class);
+		// making a clone to test table of same name several time in From (goal of the test) 
+		Table tableToto2 = new Table(null, tableToto1.getName());
+		Column colToto2A = tableToto2.addColumn(colToto1A.getName(), colToto1A.getJavaType());
+		Column colToto2B = tableToto2.addColumn(colToto1B.getName(), colToto1B.getJavaType());
+		
+		Table tableTata = new Table(null, "Tata");
+		Column colTataA = tableTata.addColumn("a", String.class);
+		Column colTataB = tableTata.addColumn("b", String.class);
+		Table tableTutu = new Table(null, "Tutu");
+		Column colTutuA = tableTutu.addColumn("a", String.class);
+		Column colTutuB = tableTutu.addColumn("b", String.class);
+		
+		From from = new From(tableToto1)
+				.innerJoin(colToto1A, colTataA)
+				.innerJoin(colToto1B, colTutuB)
+				.innerJoin(colTutuB, colToto2B)
+				.setAlias(tableToto1, "to")
+				.setAlias(tableTata, "ta")
+				.setAlias(tableTutu, "tu");
+		FromSQLBuilder testInstance = new FromSQLBuilder(from,
+				new QuotingDMLNameProvider(from.getTableAliases()::get),
+				new QuerySQLBuilderFactory(new DefaultTypeMapping(), QuotingDMLNameProvider::new, new ColumnBinderRegistry())
+		);
+		from.getTableAliases().put(tableToto2, "toChanged");
+		from.getTableAliases().put(tableTutu, "tuChanged");
+		assertThat(testInstance.toSQL()).isEqualTo("`Toto` as to inner join `Tata` as ta on to.`a` = ta.`a`"
+				+ " inner join `Tutu` as tuChanged on to.`b` = tuChanged.`b`"
+				+ " inner join `Toto` as toChanged on tuChanged.`b` = toChanged.`b`");
+		
+	}
 }
