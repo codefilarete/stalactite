@@ -21,7 +21,7 @@ public class DDLTableGenerator {
 	
 	protected final DMLNameProvider dmlNameProvider;
 	
-	public DDLTableGenerator(SqlTypeRegistry typeMapping, DMLNameProvider dmlNameProvider) {
+	private DDLTableGenerator(SqlTypeRegistry typeMapping, DMLNameProvider dmlNameProvider) {
 		this.typeMapping = typeMapping;
 		this.dmlNameProvider = dmlNameProvider;
 	}

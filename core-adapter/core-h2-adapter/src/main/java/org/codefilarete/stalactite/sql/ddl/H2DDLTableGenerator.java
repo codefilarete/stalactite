@@ -1,15 +1,13 @@
 package org.codefilarete.stalactite.sql.ddl;
 
-import java.util.Collections;
-
-import org.codefilarete.stalactite.sql.H2Dialect.H2DMLNameProvider;
+import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 
 public class H2DDLTableGenerator extends DDLTableGenerator {
 	
-	public H2DDLTableGenerator(SqlTypeRegistry typeMapping) {
-		super(typeMapping, new H2DMLNameProvider(Collections.emptyMap()));
+	public H2DDLTableGenerator(SqlTypeRegistry typeMapping, DMLNameProviderFactory dmlNameProviderFactory) {
+		super(typeMapping, dmlNameProviderFactory);
 	}
 	
 	@Override

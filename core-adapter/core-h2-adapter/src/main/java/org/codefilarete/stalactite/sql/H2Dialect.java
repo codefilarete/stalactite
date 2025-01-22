@@ -30,7 +30,7 @@ public class H2Dialect extends DefaultDialect {
 	
 	@Override
 	protected H2DDLTableGenerator newDdlTableGenerator() {
-		return new H2DDLTableGenerator(getSqlTypeRegistry());
+		return new H2DDLTableGenerator(getSqlTypeRegistry(), H2DMLNameProvider::new);
 	}
 	
 	

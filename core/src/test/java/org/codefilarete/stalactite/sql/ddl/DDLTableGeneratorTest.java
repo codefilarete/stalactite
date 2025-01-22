@@ -1,11 +1,11 @@
 package org.codefilarete.stalactite.sql.ddl;
 
 import java.sql.Connection;
-import java.util.Collections;
 
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
@@ -48,7 +48,7 @@ public class DDLTableGeneratorTest {
 		assertThat(generatedCreateTable).isEqualTo("create table Toto(A type, B type, C type, D type not null, primary key (C))");
 		
 		// test with a non default DMLNameProvider
-		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
+		DMLNameProviderFactory dmlNameProvider = tableAliaser -> new DMLNameProvider(tableAliaser) {
 			@Override
 			public String getSimpleName(Selectable<?> column) {
 				if (column == primaryKey) {
@@ -79,7 +79,7 @@ public class DDLTableGeneratorTest {
 		assertThat(generateDropTable).isEqualTo("drop table Toto");
 		
 		// test with a non default DMLNameProvider
-		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
+		DMLNameProviderFactory dmlNameProvider = tableAliaser -> new DMLNameProvider(tableAliaser) {
 			@Override
 			public String getName(Fromable table) {
 				if (table == toto) {
@@ -104,7 +104,7 @@ public class DDLTableGeneratorTest {
 		assertThat(generateDropTable).isEqualTo("drop table if exists Toto");
 		
 		// test with a non default DMLNameProvider
-		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
+		DMLNameProviderFactory dmlNameProvider = tableAliaser -> new DMLNameProvider(tableAliaser) {
 			@Override
 			public String getName(Fromable table) {
 				if (table == toto) {
@@ -135,7 +135,7 @@ public class DDLTableGeneratorTest {
 		assertThat(generateAddColumn).isEqualTo("alter table Toto add column A type");
 		
 		// test with a non default DMLNameProvider
-		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
+		DMLNameProviderFactory dmlNameProvider = tableAliaser -> new DMLNameProvider(tableAliaser) {
 			@Override
 			public String getSimpleName(Selectable<?> column) {
 				if (column == newColumn) {
@@ -171,7 +171,7 @@ public class DDLTableGeneratorTest {
 		assertThat(generateDropColumn).isEqualTo("alter table Toto drop column A");
 		
 		// test with a non default DMLNameProvider
-		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
+		DMLNameProviderFactory dmlNameProvider = tableAliaser -> new DMLNameProvider(tableAliaser) {
 			@Override
 			public String getSimpleName(Selectable<?> column) {
 				if (column == newColumn) {
@@ -208,7 +208,7 @@ public class DDLTableGeneratorTest {
 		assertThat(generatedCreateIndex).isEqualTo("create index Idx2 on Toto(A, B)");
 
 		// test with a non default DMLNameProvider
-		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
+		DMLNameProviderFactory dmlNameProvider = tableAliaser -> new DMLNameProvider(tableAliaser) {
 			@Override
 			public String getSimpleName(Selectable<?> column) {
 				if (column == colA) {
@@ -236,7 +236,7 @@ public class DDLTableGeneratorTest {
 		assertThat(generateDropIndex).isEqualTo("drop index idx1");
 		
 		// test with a non default DMLNameProvider
-		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
+		DMLNameProviderFactory dmlNameProvider = tableAliaser -> new DMLNameProvider(tableAliaser) {
 			@Override
 			public String getSimpleName(Selectable<?> column) {
 				if (column == colA) {
@@ -277,7 +277,7 @@ public class DDLTableGeneratorTest {
 		assertThat(generatedCreateIndex).isEqualTo("alter table Toto add constraint FK2 foreign key(A, B) references Titi(A, B)");
 
 		// test with a non default DMLNameProvider
-		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
+		DMLNameProviderFactory dmlNameProvider = tableAliaser -> new DMLNameProvider(tableAliaser) {
 			@Override
 			public String getSimpleName(Selectable<?> column) {
 				if (column == colA || column == colA2) {
@@ -307,7 +307,7 @@ public class DDLTableGeneratorTest {
 		assertThat(generateDropForeignKey).isEqualTo("alter table Toto drop constraint FK1");
 		
 		// test with a non default DMLNameProvider
-		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
+		DMLNameProviderFactory dmlNameProvider = tableAliaser -> new DMLNameProvider(tableAliaser) {
 			@Override
 			public String getSimpleName(Selectable<?> column) {
 				if (column == colA) {

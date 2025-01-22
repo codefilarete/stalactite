@@ -39,7 +39,7 @@ public class HSQLDBDialect extends DefaultDialect {
 	
 	@Override
 	protected HSQLDBDDLTableGenerator newDdlTableGenerator() {
-		return new HSQLDBDDLTableGenerator(getSqlTypeRegistry());
+		return new HSQLDBDDLTableGenerator(getSqlTypeRegistry(), HSQLDBDMLNameProvider::new);
 	}
 	
 	@Override

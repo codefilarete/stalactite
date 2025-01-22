@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import org.codefilarete.stalactite.engine.DatabaseVendorSettings;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.Strings;
 import org.codefilarete.tool.VisibleForTesting;
@@ -48,6 +49,25 @@ public class ServiceLoaderDialectResolver implements DialectResolver {
 		return matchingDialect.map(DialectResolverEntry::getDialect).getOrThrow(
 				() -> new IllegalStateException(
 						"Unable to determine dialect to use for database \""
+								+ databaseSignet.getProductName()
+								+ " " + databaseSignet.getMajorVersion()
+								+ "." + databaseSignet.getMinorVersion()
+								+ "\" among " + Iterables.collectToList(dialects, o -> "{" + Strings.footPrint(o.getCompatibility(),
+																DatabaseSignet::toString) + "}")));
+	}
+	
+	@Override
+	public DatabaseVendorSettings determineVendorSettings(Connection conn) {
+		DatabaseSignet databaseSignet = DatabaseSignet.fromMetadata(conn);
+		ServiceLoader<DialectResolverEntry> dialects = ServiceLoader.load(DialectResolverEntry.class);
+		return determineVendorSettings(dialects, databaseSignet);
+	}
+	
+	DatabaseVendorSettings determineVendorSettings(Iterable<? extends DialectResolverEntry> dialects, DatabaseSignet databaseSignet) {
+		Nullable<DialectResolverEntry> matchingDialect = Nullable.nullable(giveMatchingEntry(dialects, databaseSignet));
+		return matchingDialect.map(DialectResolverEntry::getVendorSettings).getOrThrow(
+				() -> new IllegalStateException(
+						"Unable to determine vendor settings to use for database \""
 								+ databaseSignet.getProductName()
 								+ " " + databaseSignet.getMajorVersion()
 								+ "." + databaseSignet.getMinorVersion()

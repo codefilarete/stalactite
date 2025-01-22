@@ -33,9 +33,9 @@ import org.codefilarete.tool.collection.Arrays;
  */
 public class PersistenceContextConfigurationBuilder {
 	
-	private final DatabaseVendorSettings vendorSettings;
-	private final ConnectionSettings connectionSettings;
-	private boolean quoteAllSQLIdentifiers = false;
+	protected final DatabaseVendorSettings vendorSettings;
+	protected final ConnectionSettings connectionSettings;
+	protected boolean quoteAllSQLIdentifiers = false;
 	
 	public PersistenceContextConfigurationBuilder(DatabaseVendorSettings vendorSettings, ConnectionSettings connectionSettings) {
 		this.vendorSettings = vendorSettings;
@@ -51,14 +51,55 @@ public class PersistenceContextConfigurationBuilder {
 	}
 	
 	public PersistenceContextConfiguration build() {
-		ConnectionConfiguration connectionConfiguration = new ConnectionConfigurationSupport(
-				new CurrentThreadConnectionProvider(connectionSettings.getDataSource(), connectionSettings.getConnectionOpeningRetryMaxCount()),
-				connectionSettings.getBatchSize());
+		SqlTypeRegistry sqlTypeRegistry = buildSqlTypeRegistry();
 		
-		SqlTypeRegistry sqlTypeRegistry = new SqlTypeRegistry(vendorSettings.getJavaTypeToSqlTypes());
+		ColumnBinderRegistry columnBinderRegistry = buildColumnBinderRegistry();
 		
-		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry(vendorSettings.getParameterBinderRegistry());
+		DMLNameProviderFactory dmlNameProviderFactory = buildDmlNameProviderFactory();
 		
+		SQLOperationsFactories sqlOperationsFactories = vendorSettings.getSqlOperationsFactoriesBuilder().build(columnBinderRegistry, dmlNameProviderFactory, sqlTypeRegistry);
+		
+		DDLTableGenerator ddlTableGenerator = sqlOperationsFactories.getDdlTableGenerator();
+		DMLGenerator dmlGenerator = sqlOperationsFactories.getDmlGenerator();
+		WriteOperationFactory writeOperationFactory = sqlOperationsFactories.getWriteOperationFactory();
+		ReadOperationFactory readOperationFactory = sqlOperationsFactories.getReadOperationFactory();
+		
+		QuerySQLBuilderFactory querySQLBuilderFactory = new QuerySQLBuilderFactoryBuilder(
+				dmlNameProviderFactory,
+				columnBinderRegistry,
+				vendorSettings.getJavaTypeToSqlTypes())
+				.build();
+		
+		GeneratedKeysReaderFactory generatedKeysReaderFactory = vendorSettings.getGeneratedKeysReaderFactory();
+		
+		Dialect dialect = new DialectSupport(
+				ddlTableGenerator,
+				dmlGenerator,
+				writeOperationFactory,
+				readOperationFactory,
+				querySQLBuilderFactory,
+				sqlTypeRegistry,
+				columnBinderRegistry,
+				dmlNameProviderFactory,
+				Objects.preventNull(connectionSettings.getInOperatorMaxSize(), vendorSettings.getInOperatorMaxSize()),
+				generatedKeysReaderFactory,
+				vendorSettings.supportsTupleCondition()
+		);
+		
+		ConnectionConfiguration connectionConfiguration = buildConnectionConfiguration();
+		
+		return new PersistenceContextConfiguration(connectionConfiguration, dialect);
+	}
+	
+	protected ColumnBinderRegistry buildColumnBinderRegistry() {
+		return new ColumnBinderRegistry(vendorSettings.getParameterBinderRegistry());
+	}
+	
+	protected SqlTypeRegistry buildSqlTypeRegistry() {
+		return new SqlTypeRegistry(vendorSettings.getJavaTypeToSqlTypes());
+	}
+	
+	protected DMLNameProviderFactory buildDmlNameProviderFactory() {
 		DMLNameProviderFactory dmlNameProviderFactory;
 		if (quoteAllSQLIdentifiers) {
 			dmlNameProviderFactory = tableAliaser -> new QuotingDMLNameProvider(tableAliaser, vendorSettings.getQuotingCharacter());
@@ -94,39 +135,12 @@ public class PersistenceContextConfigurationBuilder {
 				}
 			};
 		}
-		
-		SQLOperationsFactories sqlOperationsFactories = vendorSettings.getSqlOperationsFactoriesBuilder().build(columnBinderRegistry, dmlNameProviderFactory, sqlTypeRegistry);
-		
-		DDLTableGenerator ddlTableGenerator = sqlOperationsFactories.getDdlTableGenerator();
-		DMLGenerator dmlGenerator = sqlOperationsFactories.getDmlGenerator();
-		WriteOperationFactory writeOperationFactory = sqlOperationsFactories.getWriteOperationFactory();
-		ReadOperationFactory readOperationFactory = sqlOperationsFactories.getReadOperationFactory();
-		
-		QuerySQLBuilderFactory querySQLBuilderFactory = new QuerySQLBuilderFactoryBuilder(
-				dmlNameProviderFactory,
-				columnBinderRegistry,
-				vendorSettings.getJavaTypeToSqlTypes())
-				.build();
-		
-		int inOperatorMaxSize = Objects.preventNull(connectionSettings.getInOperatorMaxSize(), vendorSettings.getInOperatorMaxSize());
-		
-		GeneratedKeysReaderFactory generatedKeysReaderFactory = vendorSettings.getGeneratedKeysReaderFactory();
-		
-		boolean supportsTupleCondition = vendorSettings.supportsTupleCondition();
-		
-		Dialect dialect = new DialectSupport(
-				ddlTableGenerator,
-				dmlGenerator,
-				writeOperationFactory,
-				readOperationFactory,
-				querySQLBuilderFactory,
-				sqlTypeRegistry,
-				columnBinderRegistry,
-				dmlNameProviderFactory,
-				inOperatorMaxSize,
-				generatedKeysReaderFactory,
-				supportsTupleCondition
-		);
-		return new PersistenceContextConfiguration(connectionConfiguration, dialect);
+		return dmlNameProviderFactory;
+	}
+	
+	protected ConnectionConfiguration buildConnectionConfiguration() {
+		return new ConnectionConfigurationSupport(
+				new CurrentThreadConnectionProvider(connectionSettings.getDataSource(), connectionSettings.getConnectionOpeningRetryMaxCount()),
+				connectionSettings.getBatchSize());
 	}
 }

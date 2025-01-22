@@ -3,12 +3,7 @@ package org.codefilarete.stalactite.engine;
 import java.util.Set;
 
 import org.codefilarete.stalactite.sql.GeneratedKeysReaderFactory;
-import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
-import org.codefilarete.stalactite.sql.statement.ReadOperationFactory;
-import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry;
 
 /**

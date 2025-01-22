@@ -1,8 +1,6 @@
 package org.codefilarete.stalactite.sql.ddl;
 
-import java.util.Collections;
-
-import org.codefilarete.stalactite.sql.HSQLDBDialect.HSQLDBDMLNameProvider;
+import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 
@@ -12,8 +10,8 @@ import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
  */
 public class HSQLDBDDLTableGenerator extends DDLTableGenerator {
 	
-	public HSQLDBDDLTableGenerator(SqlTypeRegistry typeMapping) {
-		super(typeMapping, new HSQLDBDMLNameProvider(Collections.emptyMap()));
+	public HSQLDBDDLTableGenerator(SqlTypeRegistry typeMapping, DMLNameProviderFactory dmlNameProviderFactory) {
+		super(typeMapping, dmlNameProviderFactory);
 	}
 	
 	@Override

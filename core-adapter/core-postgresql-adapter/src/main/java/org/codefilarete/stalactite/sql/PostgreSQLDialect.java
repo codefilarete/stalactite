@@ -31,7 +31,7 @@ public class PostgreSQLDialect extends DefaultDialect {
 	
 	@Override
 	public DDLTableGenerator newDdlTableGenerator() {
-		return new PostgreSQLDDLTableGenerator(getSqlTypeRegistry());
+		return new PostgreSQLDDLTableGenerator(getSqlTypeRegistry(), PostgreSQLDMLNameProvider::new);
 	}
 	
 	public static class PostgreSQLDMLNameProvider extends DMLNameProvider {
@@ -66,8 +66,8 @@ public class PostgreSQLDialect extends DefaultDialect {
 
 	public static class PostgreSQLDDLTableGenerator extends DDLTableGenerator {
 
-		public PostgreSQLDDLTableGenerator(SqlTypeRegistry typeMapping) {
-			super(typeMapping, new PostgreSQLDMLNameProvider(Collections.emptyMap()));
+		public PostgreSQLDDLTableGenerator(SqlTypeRegistry typeMapping, DMLNameProviderFactory dmlNameProviderFactory) {
+			super(typeMapping, dmlNameProviderFactory);
 		}
 
 		@Override

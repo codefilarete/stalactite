@@ -37,7 +37,7 @@ public class MariaDBDialect extends DefaultDialect {
 	
 	@Override
 	public DDLTableGenerator newDdlTableGenerator() {
-		return new MariaDBDDLTableGenerator(getSqlTypeRegistry());
+		return new MariaDBDDLTableGenerator(getSqlTypeRegistry(), MariaDBDMLNameProvider::new);
 	}
 	
 	@Override

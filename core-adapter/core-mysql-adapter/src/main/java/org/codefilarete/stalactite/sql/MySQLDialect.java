@@ -37,7 +37,7 @@ public class MySQLDialect extends DefaultDialect {
 	
 	@Override
 	public DDLTableGenerator newDdlTableGenerator() {
-		return new MySQLDDLTableGenerator(getSqlTypeRegistry());
+		return new MySQLDDLTableGenerator(getSqlTypeRegistry(), MySQLDMLNameProvider::new);
 	}
 	
 	@Override

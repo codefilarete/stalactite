@@ -1,14 +1,12 @@
 package org.codefilarete.stalactite.sql.ddl;
 
-import java.util.Collections;
-
-import org.codefilarete.stalactite.sql.OracleDialect.OracleDMLNameProvider;
+import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 public class OracleDDLTableGenerator extends DDLTableGenerator {
 	
-	public OracleDDLTableGenerator(SqlTypeRegistry typeMapping) {
-		super(typeMapping, new OracleDMLNameProvider(Collections.emptyMap()));
+	public OracleDDLTableGenerator(SqlTypeRegistry typeMapping, DMLNameProviderFactory dmlNameProviderFactory) {
+		super(typeMapping, dmlNameProviderFactory);
 	}
 	
 	/**

@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.sql;
 
 import java.sql.Connection;
 
+import org.codefilarete.stalactite.engine.DatabaseVendorSettings;
 import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver.DatabaseSignet;
 
 /**
@@ -19,6 +20,8 @@ public interface DialectResolver {
 	 */
 	Dialect determineDialect(Connection conn);
 	
+	DatabaseVendorSettings determineVendorSettings(Connection conn);
+	
 	/**
 	 * @author Guillaume Mary
 	 */
@@ -27,5 +30,9 @@ public interface DialectResolver {
 		DatabaseSignet getCompatibility();
 		
 		Dialect getDialect();
+		
+		default DatabaseVendorSettings getVendorSettings() {
+			return null;
+		}
 	}
 }

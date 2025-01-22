@@ -1,8 +1,6 @@
 package org.codefilarete.stalactite.sql.ddl;
 
-import java.util.Collections;
-
-import org.codefilarete.stalactite.sql.MariaDBDMLNameProvider;
+import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Index;
@@ -13,8 +11,8 @@ import org.codefilarete.tool.StringAppender;
  */
 public class MariaDBDDLTableGenerator extends DDLTableGenerator {
 	
-	public MariaDBDDLTableGenerator(SqlTypeRegistry typeMapping) {
-		super(typeMapping, function -> new MariaDBDMLNameProvider(Collections.emptyMap()));
+	public MariaDBDDLTableGenerator(SqlTypeRegistry typeMapping, DMLNameProviderFactory dmlNameProviderFactory) {
+		super(typeMapping, dmlNameProviderFactory);
 	}
 	
 	/**

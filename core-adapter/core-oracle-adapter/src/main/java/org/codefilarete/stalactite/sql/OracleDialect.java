@@ -32,7 +32,7 @@ public class OracleDialect extends DefaultDialect {
 	
 	@Override
 	protected OracleDDLTableGenerator newDdlTableGenerator() {
-		return new OracleDDLTableGenerator(getSqlTypeRegistry());
+		return new OracleDDLTableGenerator(getSqlTypeRegistry(), OracleDMLNameProvider::new);
 	}
 	
 	@Override
