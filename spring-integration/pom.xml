@@ -11,7 +11,7 @@
 	<packaging>pom</packaging>
 	
 	<properties>
-		<spring.version>5.3.28</spring.version>
+		<spring.version>6.1.14</spring.version>
 		<spring-data.version>2.7.13</spring-data.version>
 		<!-- if upgrade to 3.x.y, please fix the TODO in SqlNativeRepositoryQuery about the Limit parameter -->
 		<spring-data-relational.version>2.4.18</spring-data-relational.version>
