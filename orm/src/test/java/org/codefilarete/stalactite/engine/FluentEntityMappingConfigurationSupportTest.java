@@ -1128,7 +1128,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 						.map(Timestamp::getCreationDate)
 						.map(Timestamp::getModificationDate))
-				.build(new PersistenceContext((ConnectionProvider) null, dialect));
+				.build(new PersistenceContext(mock(ConnectionProvider.class), dialect));
 		
 		Column columnForProperty = (Column) toto.mapColumnsOnName().get("creationDate");
 		assertThat(columnForProperty).isNotNull();
@@ -1143,7 +1143,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.embed(Toto::setTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 						.map(Timestamp::getCreationDate)
 						.map(Timestamp::getModificationDate))
-				.build(new PersistenceContext((ConnectionProvider) null, dialect));
+				.build(new PersistenceContext(mock(ConnectionProvider.class), dialect));
 		
 		Column columnForProperty = (Column) toto.mapColumnsOnName().get("creationDate");
 		assertThat(columnForProperty).isNotNull();
@@ -1192,7 +1192,7 @@ class FluentEntityMappingConfigurationSupportTest {
 						.map(Timestamp::getModificationDate))
 					.overrideName(Timestamp::getCreationDate, "createdAt")
 					.overrideName(Timestamp::getModificationDate, "modifiedAt")
-				.build(new PersistenceContext((ConnectionProvider) null, dialect));
+				.build(new PersistenceContext(mock(ConnectionProvider.class), dialect));
 		
 		Map<String, Column> columnsByName = toto.mapColumnsOnName();
 		

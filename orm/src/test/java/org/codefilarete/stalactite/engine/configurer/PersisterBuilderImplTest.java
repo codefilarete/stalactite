@@ -539,7 +539,7 @@ public class PersisterBuilderImplTest {
 			ConnectionConfigurationSupport connectionConfiguration = new ConnectionConfigurationSupport(new CurrentThreadConnectionProvider(dataSource), 10);
 			assertThatThrownBy(() -> testInstance.build(DIALECT, connectionConfiguration, null))
 				.isInstanceOf(UnsupportedOperationException.class)
-				.hasMessage("Version control is only supported with o.c.s.s.ConnectionProvider that also implements o.c.s.s.RollbackObserver");
+				.hasMessage("Version control is only supported for o.c.s.s.ConnectionProvider that implements o.c.s.s.RollbackObserver");
 		}
 		
 		@Test

@@ -24,6 +24,7 @@ import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory.ExpectedBatchedRowCountsSupplier;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
@@ -31,12 +32,15 @@ import org.codefilarete.tool.collection.Iterables;
 /**
  * Dedicated class to insert statement execution
  *
+ * @param <C> entity type
+ * @param <I> identifier type
+ * @param <T> table type
  * @author Guillaume Mary
  */
 public class InsertExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I, T> implements org.codefilarete.stalactite.engine.InsertExecutor<C> {
 	
 	/** Entity lock manager, default is no operation as soon as a {@link VersioningStrategy} is given */
-	private OptimisticLockManager optimisticLockManager = OptimisticLockManager.NOOP_OPTIMISTIC_LOCK_MANAGER;
+	private OptimisticLockManager<C, T> optimisticLockManager = (OptimisticLockManager<C, T>) OptimisticLockManager.NOOP_OPTIMISTIC_LOCK_MANAGER;
 	
 	private final IdentifierInsertionManager<C, I> identifierInsertionManager;
 	
@@ -49,14 +53,18 @@ public class InsertExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 		this.identifierInsertionManager = mappingStrategy.getIdMapping().getIdentifierInsertionManager();
 	}
 	
-	public void setVersioningStrategy(VersioningStrategy versioningStrategy) {
+	public <V> void setVersioningStrategy(VersioningStrategy<C, V> versioningStrategy) {
+		if (!(getConnectionProvider() instanceof RollbackObserver)) {
+			throw new UnsupportedOperationException("Version control is only supported for " + Reflections.toString(ConnectionProvider.class)
+					+ " that implements " + Reflections.toString(RollbackObserver.class));
+		}
 		// we could have put the column as an attribute of the VersioningStrategy but, by making the column more dynamic, the strategy can be
 		// shared as long as PropertyAccessor is reusable over entities (wraps a common method)
-		Column versionColumn = getMapping().getPropertyToColumn().get(versioningStrategy.getVersionAccessor());
-		setOptimisticLockManager(new RevertOnRollbackMVCC(versioningStrategy, versionColumn, getConnectionProvider()));
+		Column<T, V> versionColumn = (Column<T, V>) getMapping().getPropertyToColumn().get(versioningStrategy.getVersionAccessor());
+		setOptimisticLockManager(new RevertOnRollbackMVCC<>(versioningStrategy, versionColumn, (RollbackObserver) getConnectionProvider()));
 	}
 	
-	public void setOptimisticLockManager(OptimisticLockManager optimisticLockManager) {
+	public void setOptimisticLockManager(OptimisticLockManager<C, T> optimisticLockManager) {
 		this.optimisticLockManager = optimisticLockManager;
 	}
 	
@@ -86,13 +94,13 @@ public class InsertExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 	}
 	
 	private void addToBatch(C entity, WriteOperation<Column<T, ?>> writeOperation) {
-		Map<Column<T, ?>, Object> insertValues = getMapping().getInsertValues(entity);
+		Map<Column<T, ?>, ? super Object> insertValues = getMapping().getInsertValues(entity);
 		assertMandatoryColumnsHaveNonNullValues(insertValues);
-		optimisticLockManager.manageLock(entity, insertValues);
+		optimisticLockManager.manageLock(entity, (Map) insertValues);
 		writeOperation.addBatch(insertValues);
 	}
 	
-	private void assertMandatoryColumnsHaveNonNullValues(Map<Column<T, ?>, Object> insertValues) {
+	private void assertMandatoryColumnsHaveNonNullValues(Map<Column<T, ?>, ?> insertValues) {
 		Set<Column> nonNullColumnsWithNullValues = Iterables.collect(insertValues.entrySet(),
 				e -> !e.getKey().isNullable() && e.getValue() == null, Entry::getKey, HashSet::new);
 		if (!nonNullColumnsWithNullValues.isEmpty()) {
@@ -104,10 +112,12 @@ public class InsertExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 	
 	/**
 	 * The contract for managing Optimistic Lock on insert.
+	 * @param <E> entity type
+	 * @param <T> table type
 	 */
-	interface OptimisticLockManager<T> {
+	public interface OptimisticLockManager<E, T extends Table<T>> {
 		
-		OptimisticLockManager NOOP_OPTIMISTIC_LOCK_MANAGER = (o, m) -> {};
+		OptimisticLockManager<?, ?> NOOP_OPTIMISTIC_LOCK_MANAGER = (OptimisticLockManager) (o, m) -> {};
 		
 		/**
 		 * Expected to "manage" the optimistic lock:
@@ -117,10 +127,16 @@ public class InsertExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 		 * @param instance
 		 * @param updateValues
 		 */
-		void manageLock(T instance, Map<Column, Object> updateValues);
+		// Note that generics syntax is made for write-only into the Map
+		void manageLock(E instance, Map<? super Column<T, ?>, ? super Object> updateValues);
 	}
 	
-	private class RevertOnRollbackMVCC extends AbstractRevertOnRollbackMVCC implements OptimisticLockManager<C> {
+	/**
+	 * {@link OptimisticLockManager} that sets version value on entity and SQL order
+	 * @param <V> version value type
+	 * @author Guillaume Mary
+	 */
+	private class RevertOnRollbackMVCC<V> extends AbstractRevertOnRollbackMVCC<C, V, T> implements OptimisticLockManager<C, T> {
 		
 		/**
 		 * Main constructor.
@@ -128,23 +144,9 @@ public class InsertExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 		 * @param versioningStrategy the entities upgrader
 		 * @param versionColumn the column that stores the version
 		 * @param rollbackObserver the {@link RollbackObserver} to revert upgrade when rollback happens
-		 * @param <C> a {@link ConnectionProvider} that notifies rollback.
 		 * {@link ConnectionProvider#giveConnection()} is not used here, simple mark to help understanding
 		 */
-		private <C extends RollbackObserver & ConnectionProvider> RevertOnRollbackMVCC(VersioningStrategy versioningStrategy, Column versionColumn, C rollbackObserver) {
-			super(versioningStrategy, versionColumn, rollbackObserver);
-		}
-		
-		/**
-		 * Constructor that will check that the given {@link ConnectionProvider} is also a {@link RollbackObserver}, as the other constructor
-		 * expects it. Will throw an {@link UnsupportedOperationException} if it is not the case
-		 *
-		 * @param versioningStrategy the entities upgrader
-		 * @param versionColumn the column that stores the version
-		 * @param rollbackObserver a {@link ConnectionProvider} that implements {@link RollbackObserver} to revert upgrade when rollback happens
-		 * @throws UnsupportedOperationException if the given {@link ConnectionProvider} doesn't implements {@link RollbackObserver}
-		 */
-		private RevertOnRollbackMVCC(VersioningStrategy versioningStrategy, Column versionColumn, ConnectionProvider rollbackObserver) {
+		private RevertOnRollbackMVCC(VersioningStrategy<C, V> versioningStrategy, Column<T, V> versionColumn, RollbackObserver rollbackObserver) {
 			super(versioningStrategy, versionColumn, rollbackObserver);
 		}
 		
@@ -152,25 +154,26 @@ public class InsertExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 		 * Upgrade inserted instance
 		 */
 		@Override
-		public void manageLock(C instance, Map<Column, Object> updateValues) {
-			Object previousVersion = versioningStrategy.getVersion(instance);
+		public void manageLock(C instance, Map<? super Column<T, ?>, ? super Object> updateValues) {
+			V previousVersion = versioningStrategy.getVersion(instance);
 			this.versioningStrategy.upgrade(instance);
-			Object newVersion = versioningStrategy.getVersion(instance);
+			V newVersion = versioningStrategy.getVersion(instance);
 			updateValues.put(versionColumn, newVersion);
 			rollbackObserver.addRollbackListener(new VersioningStrategyRollbackListener<>(versioningStrategy, instance, previousVersion));
 		}
 	}
 	
 	/**
-	 * 
-	 * @param <C>
+	 * {@link RollbackListener} that reverts version upgrade on transaction rollback
+	 * @param <C> entity type
+	 * @param <V> version value type
 	 */
-	static class VersioningStrategyRollbackListener<C> implements RollbackListener {
-		private final VersioningStrategy<C, Object> versioningStrategy;
+	static class VersioningStrategyRollbackListener<C, V> implements RollbackListener {
+		private final VersioningStrategy<C, V> versioningStrategy;
 		private final C instance;
-		private final Object previousVersion;
+		private final V previousVersion;
 		
-		public VersioningStrategyRollbackListener(VersioningStrategy<C, Object> versioningStrategy, C instance, Object previousVersion) {
+		public VersioningStrategyRollbackListener(VersioningStrategy<C, V> versioningStrategy, C instance, V previousVersion) {
 			this.versioningStrategy = versioningStrategy;
 			this.instance = instance;
 			this.previousVersion = previousVersion;
@@ -178,7 +181,7 @@ public class InsertExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 		
 		@Override
 		public void beforeRollback() {
-			// no pre rollabck treatment to do
+			// no pre rollback treatment to do
 		}
 		
 		@Override

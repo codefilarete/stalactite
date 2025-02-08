@@ -3,12 +3,13 @@ package org.codefilarete.stalactite.sql;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Savepoint;
+import java.util.Set;
 
 import org.codefilarete.tool.sql.ConnectionWrapper;
 
 /**
- * A {@link ConnectionWrapper} that aims at notifying {@link TransactionListener}, {@link CommitListener} or {@link RollbackListener}
- * of transaction-related methods invocations.
+ * A {@link ConnectionWrapper} that aims at notifying some {@link TransactionListener}s ({@link CommitListener} or {@link RollbackListener})
+ * of transaction-related methods invocations of the underlying {@link Connection}.
  * 
  * @author Guillaume Mary
  * @see CommitListener
@@ -20,12 +21,42 @@ public class TransactionAwareConnexionWrapper extends ConnectionWrapper implemen
 	
 	private final TransactionStatusNotifier transactionStatusNotifier = new TransactionStatusNotifierSupport();
 	
+	/**
+	 * Default constructor without a delegate {@link Connection}.
+	 * Though, caller must invoke #setDelegate(Connection) to set a real connection.
+	 */
 	public TransactionAwareConnexionWrapper() {
 		this(null);
 	}
 	
-	public TransactionAwareConnexionWrapper(Connection surrogate) {
-		super(surrogate);
+	/**
+	 * Default constructor with a delegate {@link Connection}.
+	 * @param delegate the delegate {@link Connection}
+	 */
+	public TransactionAwareConnexionWrapper(Connection delegate) {
+		super(delegate);
+	}
+	
+	/**
+	 * Constructor with a set of listeners but without a delegate {@link Connection}
+	 * @param commitListeners a set of {@link CommitListener}
+	 * @param rollbackListeners a set of {@link RollbackListener}
+	 */
+	public TransactionAwareConnexionWrapper(Set<CommitListener> commitListeners, Set<RollbackListener> rollbackListeners) {
+		commitListeners.forEach(this::addCommitListener);
+		rollbackListeners.forEach(this::addRollbackListener);
+	}
+	
+	/**
+	 * Complete constructor with a delegate {@link Connection} and a set of listeners.
+	 * @param delegate the delegate {@link Connection}
+	 * @param commitListeners a set of {@link CommitListener}
+	 * @param rollbackListeners a set of {@link RollbackListener}
+	 */
+	public TransactionAwareConnexionWrapper(Connection delegate, Set<CommitListener> commitListeners, Set<RollbackListener> rollbackListeners) {
+		this(delegate);
+		commitListeners.forEach(this::addCommitListener);
+		rollbackListeners.forEach(this::addRollbackListener);
 	}
 	
 	public TransactionStatusNotifier getTransactionStatusNotifier() {

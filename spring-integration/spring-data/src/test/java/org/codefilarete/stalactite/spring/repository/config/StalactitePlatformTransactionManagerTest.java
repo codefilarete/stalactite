@@ -7,7 +7,7 @@ import org.codefilarete.stalactite.engine.ColumnOptions;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.MappingEase;
 import org.codefilarete.stalactite.engine.PersistenceContext;
-import org.codefilarete.stalactite.engine.TransactionalConnectionProvider;
+import org.codefilarete.stalactite.engine.CurrentThreadTransactionalConnectionProvider;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
@@ -155,7 +155,7 @@ class StalactitePlatformTransactionManagerTest {
 			PersistenceContext persistenceContext = event.getApplicationContext().getBean(PersistenceContext.class);
 			DataSource dataSource = event.getApplicationContext().getBean(DataSource.class);
 			Dialect dialect = persistenceContext.getDialect();
-			DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), new TransactionalConnectionProvider(dataSource));
+			DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), new CurrentThreadTransactionalConnectionProvider(dataSource));
 			ddlDeployer.getDdlGenerator().addTables(DDLDeployer.collectTables(persistenceContext));
 			ddlDeployer.deployDDL();
 		}

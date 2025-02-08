@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.codefilarete.stalactite.engine.PersistenceContext.PersistenceContextConfiguration;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
 import org.codefilarete.stalactite.query.builder.QuotingDMLNameProvider;
@@ -12,7 +11,6 @@ import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
-import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.Dialect.DialectSupport;
@@ -140,7 +138,30 @@ public class PersistenceContextConfigurationBuilder {
 	
 	protected ConnectionConfiguration buildConnectionConfiguration() {
 		return new ConnectionConfigurationSupport(
-				new CurrentThreadConnectionProvider(connectionSettings.getDataSource(), connectionSettings.getConnectionOpeningRetryMaxCount()),
+				new CurrentThreadTransactionalConnectionProvider(connectionSettings.getDataSource(), connectionSettings.getConnectionOpeningRetryMaxCount()),
 				connectionSettings.getBatchSize());
+	}
+	
+	/**
+	 * Small class to store result of {@link PersistenceContextConfigurationBuilder#build()}.
+	 * @author Guillaume Mary
+	 */
+	public static class PersistenceContextConfiguration {
+		
+		private final ConnectionConfiguration connectionConfiguration;
+		private final Dialect dialect;
+		
+		public PersistenceContextConfiguration(ConnectionConfiguration connectionConfiguration, Dialect dialect) {
+			this.connectionConfiguration = connectionConfiguration;
+			this.dialect = dialect;
+		}
+		
+		public Dialect getDialect() {
+			return dialect;
+		}
+		
+		public ConnectionConfiguration getConnectionConfiguration() {
+			return connectionConfiguration;
+		}
 	}
 }

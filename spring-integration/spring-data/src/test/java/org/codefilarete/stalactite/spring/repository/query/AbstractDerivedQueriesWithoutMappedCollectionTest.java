@@ -4,7 +4,7 @@ import javax.sql.DataSource;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.PersistenceContext;
-import org.codefilarete.stalactite.engine.TransactionalConnectionProvider;
+import org.codefilarete.stalactite.engine.CurrentThreadTransactionalConnectionProvider;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.Republic;
@@ -310,7 +310,7 @@ abstract class AbstractDerivedQueriesWithoutMappedCollectionTest {
 			PersistenceContext persistenceContext = event.getApplicationContext().getBean(PersistenceContext.class);
 			DataSource dataSource = event.getApplicationContext().getBean(DataSource.class);
 			Dialect dialect = persistenceContext.getDialect();
-			DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), new TransactionalConnectionProvider(dataSource));
+			DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), new CurrentThreadTransactionalConnectionProvider(dataSource));
 			ddlDeployer.getDdlGenerator().addTables(DDLDeployer.collectTables(persistenceContext));
 			ddlDeployer.deployDDL();
 		}

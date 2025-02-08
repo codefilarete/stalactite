@@ -28,7 +28,6 @@ import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.DialectResolver;
 import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver;
-import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.order.Delete;
@@ -48,7 +47,6 @@ import org.codefilarete.stalactite.sql.result.WholeResultSetTransformer.Assembly
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.tool.Nullable;
-import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Converter;
@@ -68,7 +66,8 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	
 	private static final int DEFAULT_BATCH_SIZE = 100;
 	
-	private final PersistenceContextConfiguration configuration;
+	private final ConnectionConfiguration configuration;
+	private final Dialect dialect;
 	private final DefaultPersisterRegistry persisterRegistry = new DefaultPersisterRegistry();
 	
 	/**
@@ -82,7 +81,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	 * @see CurrentThreadConnectionProvider
 	 */
 	public PersistenceContext(DataSource dataSource) {
-		this(new CurrentThreadConnectionProvider(dataSource));
+		this(new CurrentThreadTransactionalConnectionProvider(dataSource));
 	}
 	
 	/**
@@ -95,7 +94,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	 * @param dialect dialect to be used with {@link Connection} given by dataSource
 	 */
 	public PersistenceContext(DataSource dataSource, Dialect dialect) {
-		this(new CurrentThreadConnectionProvider(dataSource), dialect);
+		this(new CurrentThreadTransactionalConnectionProvider(dataSource), dialect);
 	}
 	
 	/**
@@ -158,11 +157,12 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	 * @param dialect dialect to be used with {@link Connection}
 	 */
 	public PersistenceContext(ConnectionConfiguration connectionConfiguration, Dialect dialect) {
-		this.configuration = new PersistenceContextConfiguration(connectionConfiguration, dialect);
+		this.configuration = connectionConfiguration;
+		this.dialect =dialect;
 	}
 	
 	public ConnectionProvider getConnectionProvider() {
-		return configuration.connectionConfiguration.getConnectionProvider();
+		return configuration.getConnectionProvider();
 	}
 	
 	public int getJDBCBatchSize() {
@@ -170,7 +170,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	}
 	
 	public Dialect getDialect() {
-		return configuration.dialect;
+		return dialect;
 	}
 	
 	/**
@@ -204,7 +204,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	}
 	
 	public ConnectionConfiguration getConnectionConfiguration() {
-		return this.configuration.getConnectionConfiguration();
+		return this.configuration;
 	}
 	
 	@Override
@@ -214,7 +214,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	
 	@Override
 	public <C> ExecutableBeanPropertyKeyQueryMapper<C> newQuery(Query query, Class<C> beanType) {
-		return newQuery(this.configuration.getDialect().getQuerySQLBuilderFactory().queryBuilder(query), beanType);
+		return newQuery(this.dialect.getQuerySQLBuilderFactory().queryBuilder(query), beanType);
 	}
 	
 	@Override
@@ -336,7 +336,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		}
 		Query query = QueryEase.select(selectableKeys).from(table).getQuery();
 		where.accept(query.getWhere());
-		QueryMapper<C> queryMapper = newTransformableQuery(configuration.getDialect().getQuerySQLBuilderFactory().queryBuilder(query), beanType);
+		QueryMapper<C> queryMapper = newTransformableQuery(dialect.getQuerySQLBuilderFactory().queryBuilder(query), beanType);
 		keyMapper.accept(queryMapper);
 		selectMappingSupport.appendTo(query, queryMapper);
 		return execute(queryMapper);
@@ -442,8 +442,8 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		 */
 		@Override
 		public void execute() {
-			UpdateStatement<?> updateStatement = new UpdateCommandBuilder<>(this, configuration.getDialect()).toStatement();
-			try (WriteOperation<Integer> writeOperation = configuration.getDialect().getWriteOperationFactory().createInstance(updateStatement, getConnectionProvider())) {
+			UpdateStatement<?> updateStatement = new UpdateCommandBuilder<>(this, dialect).toStatement();
+			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(updateStatement, getConnectionProvider())) {
 				writeOperation.setValues(updateStatement.getValues());
 				writeOperation.execute();
 			}
@@ -482,8 +482,8 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		
 		@Override
 		public void execute() {
-			InsertStatement<T> insertStatement = new InsertCommandBuilder<>(this, configuration.getDialect().getDmlNameProviderFactory()).toStatement(configuration.getDialect().getColumnBinderRegistry());
-			try (WriteOperation<Integer> writeOperation = configuration.getDialect().getWriteOperationFactory().createInstance(insertStatement, getConnectionProvider())) {
+			InsertStatement<T> insertStatement = new InsertCommandBuilder<>(this, dialect.getDmlNameProviderFactory()).toStatement(dialect.getColumnBinderRegistry());
+			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(insertStatement, getConnectionProvider())) {
 				writeOperation.setValues(insertStatement.getValues());
 				writeOperation.execute();
 			}
@@ -498,8 +498,8 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		
 		@Override
 		public void execute() {
-			PreparedSQL deleteStatement = new DeleteCommandBuilder<>(this, configuration.getDialect()).toPreparableSQL().toPreparedSQL(new HashMap<>());
-			try (WriteOperation<Integer> writeOperation = configuration.getDialect().getWriteOperationFactory().createInstance(deleteStatement, getConnectionProvider())) {
+			PreparedSQL deleteStatement = new DeleteCommandBuilder<>(this, dialect).toPreparableSQL().toPreparedSQL(new HashMap<>());
+			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(deleteStatement, getConnectionProvider())) {
 				writeOperation.setValues(deleteStatement.getValues());
 				writeOperation.execute();
 			}
@@ -612,75 +612,5 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		
 		@Override
 		<O> ExecutableBeanPropertyQueryMapper<C> set(String paramName, Iterable<O> value, Class<? super O> valueType);
-	}
-	
-	/**
-	 * Bridge between {@link ConnectionProvider}, {@link ConnectionConfiguration}, {@link org.codefilarete.stalactite.sql.TransactionObserver}
-	 * and {@link SeparateTransactionExecutor} so one can notify {@link PersistenceContext} from commit and rollback as well as maintain internal
-	 * mechanisms such as :
-	 * - creating a separate transaction to manage HiLo Sequence
-	 * - revert entity version on transaction rollback (when versioning is active)
-	 */
-	private static class TransactionAwareConnectionConfiguration extends TransactionAwareConnectionProvider
-			implements ConnectionConfiguration,
-			SeparateTransactionExecutor	// for PooledHiLoSequence
-	{
-		
-		private final ConnectionConfiguration connectionConfiguration;
-		
-		private final Nullable<SeparateTransactionExecutor> separateTransactionExecutor;
-		
-		private TransactionAwareConnectionConfiguration(ConnectionConfiguration connectionConfiguration) {
-			super(connectionConfiguration.getConnectionProvider());
-			this.connectionConfiguration = connectionConfiguration;
-			// We'll be a real SeparateTransactionExecutor if given ConnectionProvider is one, else an exception will be thrown
-			// at runtime when requiring-feature is invoked 
-			if (connectionConfiguration.getConnectionProvider() instanceof SeparateTransactionExecutor) {
-				this.separateTransactionExecutor = Nullable.nullable((SeparateTransactionExecutor) connectionConfiguration.getConnectionProvider());
-			} else {
-				this.separateTransactionExecutor = Nullable.empty();
-			}
-		}
-		
-		@Override
-		public ConnectionProvider getConnectionProvider() {
-			// because we gave delegate instance at construction time we return ourselves, hence returning instance we'll benefit from transaction
-			// management through TransactionObserver
-			return this;
-		}
-		
-		@Override
-		public int getBatchSize() {
-			// we simply delegate information to ConnectionConfiguration instance
-			return connectionConfiguration.getBatchSize();
-		}
-		
-		@Override
-		public void executeInNewTransaction(JdbcOperation jdbcOperation) {
-			separateTransactionExecutor
-					.invoke(executor -> executor.executeInNewTransaction(jdbcOperation))
-					// in fact we're not really a SeparateTransactionExecutor because given ConnectionProvider is not one
-					.elseThrow(new RuntimeException("Can't execute operation in separate transaction"
-							+ " because connection provider doesn't implement " + Reflections.toString(SeparateTransactionExecutor.class)));
-		}
-	}
-	
-	public static class PersistenceContextConfiguration {
-		
-		private final TransactionAwareConnectionConfiguration connectionConfiguration;
-		private final Dialect dialect;
-		
-		public PersistenceContextConfiguration(ConnectionConfiguration connectionConfiguration, Dialect dialect) {
-			this.connectionConfiguration = new TransactionAwareConnectionConfiguration(connectionConfiguration);
-			this.dialect = dialect;
-		}
-		
-		public Dialect getDialect() {
-			return dialect;
-		}
-		
-		public ConnectionConfiguration getConnectionConfiguration() {
-			return connectionConfiguration;
-		}
 	}
 }

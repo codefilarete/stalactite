@@ -8,40 +8,44 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.LongSupplier;
 
-import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.collection.ArrayIterator;
-import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.collection.ReadOnlyIterator;
-import org.codefilarete.tool.function.Predicates;
 import org.codefilarete.stalactite.engine.VersioningStrategy;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener.UpdatePayload;
 import org.codefilarete.stalactite.engine.runtime.InsertExecutor.VersioningStrategyRollbackListener;
 import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator;
-import org.codefilarete.stalactite.sql.statement.PreparedUpdate;
-import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
-import org.codefilarete.stalactite.sql.statement.WriteOperationFactory.ExpectedBatchedRowCountsSupplier;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.RollbackObserver;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator;
+import org.codefilarete.stalactite.sql.statement.PreparedUpdate;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
 import org.codefilarete.stalactite.sql.statement.SQLStatement;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
+import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
+import org.codefilarete.stalactite.sql.statement.WriteOperationFactory.ExpectedBatchedRowCountsSupplier;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.collection.ArrayIterator;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.ReadOnlyIterator;
+import org.codefilarete.tool.function.Predicates;
 
 /**
  * Class dedicated to update statement execution
  * 
+ * @param <C> entity type
+ * @param <I> identifier type
+ * @param <T> table type
  * @author Guillaume Mary
  */
 public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I, T> implements org.codefilarete.stalactite.engine.UpdateExecutor<C> {
 	
 	/** Entity lock manager, default is no operation as soon as a {@link VersioningStrategy} is given */
-	private OptimisticLockManager<T> optimisticLockManager = OptimisticLockManager.NOOP_OPTIMISTIC_LOCK_MANAGER;
+	private OptimisticLockManager<C, T> optimisticLockManager = (OptimisticLockManager<C, T>) OptimisticLockManager.NOOP_OPTIMISTIC_LOCK_MANAGER;
 	
 	private SQLOperationListener<UpwhereColumn<T>> operationListener;
 	
@@ -51,14 +55,18 @@ public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 		super(mappingStrategy, connectionConfiguration, dmlGenerator, writeOperationFactory, inOperatorMaxSize);
 	}
 	
-	public void setVersioningStrategy(VersioningStrategy versioningStrategy) {
+	public <V> void setVersioningStrategy(VersioningStrategy<C, V> versioningStrategy) {
+		if (!(getConnectionProvider() instanceof RollbackObserver)) {
+			throw new UnsupportedOperationException("Version control is only supported for " + Reflections.toString(ConnectionProvider.class)
+					+ " that implements " + Reflections.toString(RollbackObserver.class));
+		}
 		// we could have put the column as an attribute of the VersioningStrategy but, by making the column more dynamic, the strategy can be
 		// shared as long as PropertyAccessor is reusable over entities (wraps a common method)
-		Column<T, Object> versionColumn = getMapping().getPropertyToColumn().get(versioningStrategy.getVersionAccessor());
-		setOptimisticLockManager(new RevertOnRollbackMVCC(versioningStrategy, versionColumn, getConnectionProvider()));
+		Column<T, V> versionColumn = (Column<T, V>) getMapping().getPropertyToColumn().get(versioningStrategy.getVersionAccessor());
+		setOptimisticLockManager(new RevertOnRollbackMVCC<>(versioningStrategy, versionColumn, (RollbackObserver) getConnectionProvider()));
 	}
 	
-	public void setOptimisticLockManager(OptimisticLockManager<T> optimisticLockManager) {
+	public void setOptimisticLockManager(OptimisticLockManager<C, T> optimisticLockManager) {
 		this.optimisticLockManager = optimisticLockManager;
 	}
 	
@@ -307,7 +315,7 @@ public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 	
 	
 	/**
-	 * Little class to mutualize code of {@link #updateVariousColumns(Iterable)} and {@link #updateMappedColumns(Iterable)}.
+	 * Little class to share code of {@link #updateVariousColumns(Iterable)} and {@link #updateMappedColumns(Iterable)}.
 	 */
 	private class DifferenceUpdater {
 		
@@ -321,7 +329,7 @@ public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 			// building UpdateOperations and update values
 			toUpdate.forEach(p -> {
 				Map<UpwhereColumn<T>, Object> updateValues = p.getValues();
-				optimisticLockManager.manageLock(p.getEntities().getLeft(), p.getEntities().getRight(), updateValues);
+				optimisticLockManager.manageLock(p.getEntities().getLeft(), p.getEntities().getRight(), (Map) updateValues);
 				JDBCBatchingOperation<T> writeOperation = batchingOperationProvider.getJdbcBatchingOperation(updateValues.keySet());
 				writeOperation.setValues(updateValues);
 			});
@@ -336,10 +344,12 @@ public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 	
 	/**
 	 * The contract for managing Optimistic Lock on update.
+	 * @param <E> entity type
+	 * @param <T> table type
 	 */
-	interface OptimisticLockManager<T extends Table<T>> {
+	public interface OptimisticLockManager<E, T extends Table<T>> {
 		
-		OptimisticLockManager NOOP_OPTIMISTIC_LOCK_MANAGER = (o1, o2, m) -> {};
+		OptimisticLockManager<?, ?> NOOP_OPTIMISTIC_LOCK_MANAGER = (OptimisticLockManager) (o1, o2, m) -> {};
 		
 		/**
 		 * Expected to "manage" the optimistic lock:
@@ -350,10 +360,11 @@ public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 		 * @param unmodified
 		 * @param updateValues
 		 */
-		void manageLock(Object modified, Object unmodified, Map<UpwhereColumn<T>, Object> updateValues);
+		// Note that generics syntax is made for write-only into the Map
+		void manageLock(E modified, E unmodified, Map<? super UpwhereColumn<T>, ? super Object> updateValues);
 	}
 	
-	private class RevertOnRollbackMVCC extends AbstractRevertOnRollbackMVCC implements OptimisticLockManager<T> {
+	private class RevertOnRollbackMVCC<E, V> extends AbstractRevertOnRollbackMVCC<E, V, T> implements OptimisticLockManager<E, T> {
 		
 		/**
 		 * Main constructor.
@@ -361,23 +372,9 @@ public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 		 * @param versioningStrategy the entities upgrader
 		 * @param versionColumn the column that stores the version
 		 * @param rollbackObserver the {@link RollbackObserver} to revert upgrade when rollback happens
-		 * @param <C> a {@link ConnectionProvider} that notifies rollback.
 		 * {@link ConnectionProvider#giveConnection()} is not used here, simple mark to help understanding
 		 */
-		private <C extends RollbackObserver & ConnectionProvider> RevertOnRollbackMVCC(VersioningStrategy versioningStrategy, Column<T, Object> versionColumn, C rollbackObserver) {
-			super(versioningStrategy, versionColumn, rollbackObserver);
-		}
-		
-		/**
-		 * Constructor that will check that the given {@link ConnectionProvider} is also a {@link RollbackObserver}, as the other constructor
-		 * expects it. Will throw an {@link UnsupportedOperationException} if it is not the case
-		 *
-		 * @param versioningStrategy the entities upgrader
-		 * @param versionColumn the column that stores the version
-		 * @param rollbackObserver a {@link ConnectionProvider} that implements {@link RollbackObserver} to revert upgrade when rollback happens
-		 * @throws UnsupportedOperationException if the given {@link ConnectionProvider} doesn't implements {@link RollbackObserver}
-		 */
-		private RevertOnRollbackMVCC(VersioningStrategy versioningStrategy, Column versionColumn, ConnectionProvider rollbackObserver) {
+		private RevertOnRollbackMVCC(VersioningStrategy<E, V> versioningStrategy, Column<T, V> versionColumn, RollbackObserver rollbackObserver) {
 			super(versioningStrategy, versionColumn, rollbackObserver);
 		}
 		
@@ -385,17 +382,16 @@ public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 		 * Upgrades modified instance and adds version column to the update statement through {@link UpwhereColumn}s
 		 */
 		@Override
-		public void manageLock(Object modified, Object unmodified, Map<UpwhereColumn<T>, Object> updateValues) {
-			Object modifiedVersion = versioningStrategy.getVersion(modified);
-			Object unmodifiedVersion = versioningStrategy.getVersion(unmodified);
+		public void manageLock(E modified, E unmodified, Map<? super UpwhereColumn<T>, ? super Object> updateValues) {
+			V modifiedVersion = versioningStrategy.getVersion(modified);
+			V unmodifiedVersion = versioningStrategy.getVersion(unmodified);
 			if (!Predicates.equalOrNull(modifiedVersion, modifiedVersion)) {
 				throw new IllegalStateException();
 			}
 			versioningStrategy.upgrade(modified);
-			updateValues.put(new UpwhereColumn<T>(versionColumn, true), versioningStrategy.getVersion(modified));
-			updateValues.put(new UpwhereColumn<T>(versionColumn, false), unmodifiedVersion);
+			updateValues.put(new UpwhereColumn<>(versionColumn, true), versioningStrategy.getVersion(modified));
+			updateValues.put(new UpwhereColumn<>(versionColumn, false), unmodifiedVersion);
 			rollbackObserver.addRollbackListener(new VersioningStrategyRollbackListener<>(versioningStrategy, modified, modifiedVersion));
 		}
-		
 	}
 }

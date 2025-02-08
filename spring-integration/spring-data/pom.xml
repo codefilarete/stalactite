@@ -37,6 +37,13 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jdbc</artifactId>
+			<version>${spring.version}</version>
+			<!-- we don't force our version of Spring since this module needs little from it, so it's let to the "caller" to provided it -->
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.data</groupId>
 			<artifactId>spring-data-jpa</artifactId>
 			<version>${spring-data.version}</version>

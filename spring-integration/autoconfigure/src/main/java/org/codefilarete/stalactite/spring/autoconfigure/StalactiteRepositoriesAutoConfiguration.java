@@ -4,11 +4,14 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+import org.codefilarete.stalactite.engine.ConnectionSettings;
+import org.codefilarete.stalactite.engine.DatabaseVendorSettings;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.spring.autoconfigure.StalactiteRepositoriesAutoConfiguration.StalactiteRepositoriesImportSelector;
 import org.codefilarete.stalactite.spring.repository.StalactiteRepository;
 import org.codefilarete.stalactite.spring.repository.StalactiteRepositoryFactoryBean;
 import org.codefilarete.stalactite.spring.repository.config.EnableStalactiteRepositories;
+import org.codefilarete.stalactite.spring.repository.config.SpringDataPersistenceContextConfigurationBuilder;
 import org.codefilarete.stalactite.spring.transaction.StalactitePlatformTransactionManager;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.DialectResolver;
@@ -26,6 +29,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.ImportSelector;
 import org.springframework.core.type.AnnotationMetadata;
 
+import static org.codefilarete.stalactite.engine.PersistenceContextConfigurationBuilder.PersistenceContextConfiguration;
 import static org.codefilarete.tool.Nullable.nullable;
 
 /**
@@ -46,26 +50,59 @@ import static org.codefilarete.tool.Nullable.nullable;
 @ConditionalOnBean(value = { DataSource.class })
 @ConditionalOnClass(StalactiteRepository.class)
 @ConditionalOnMissingBean({ StalactiteRepositoryFactoryBean.class })
-@ConditionalOnProperty(prefix = "spring.data.stalactite.repositories", name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+@ConditionalOnProperty(prefix = "spring.data.stalactite.repositories", name = "enabled", havingValue = "true", matchIfMissing = true)
 @Import(StalactiteRepositoriesImportSelector.class)
 public class StalactiteRepositoriesAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public PersistenceContext persistenceContext(DataSource dataSource, Dialect dialect) {
-		return new PersistenceContext(dataSource, dialect);
+	public PersistenceContext persistenceContext(PersistenceContextConfiguration persistenceContextConfiguration, Dialect dialect) {
+		return new PersistenceContext(persistenceContextConfiguration.getConnectionConfiguration(), dialect);
+	}
+	
+	/**
+	 * Creates a {@link SpringDataPersistenceContextConfigurationBuilder} and returns its {@link PersistenceContextConfiguration}, hence making
+	 * available a {@link StalactitePlatformTransactionManager} through <code>persistenceContextConfiguration.getConnectionConfiguration().getConnectionProvider()</code>
+	 * 
+	 * @param databaseVendorSettings
+	 * @param connectionSettings
+	 * @return
+	 */
+	@Bean
+	@ConditionalOnMissingBean
+	public PersistenceContextConfiguration persistenceContextConfigurationBuilder(DatabaseVendorSettings databaseVendorSettings, ConnectionSettings connectionSettings) {
+		SpringDataPersistenceContextConfigurationBuilder persistenceContextConfigurationBuilder = new SpringDataPersistenceContextConfigurationBuilder(databaseVendorSettings, connectionSettings);
+		return persistenceContextConfigurationBuilder.build();
 	}
 	
 	@Bean
 	@ConditionalOnMissingBean
-	public Dialect dialect(DialectResolver dialectResolver, DataSource dataSource, ObjectProvider<DialectCustomizer> dialectCustomizer) throws SQLException {
-		Dialect dialect;
-		try (Connection connection = dataSource.getConnection()) {
-			dialect = dialectResolver.determineDialect(connection);
-		}
+	public StalactitePlatformTransactionManager platformTransactionManager(PersistenceContextConfiguration persistenceContextConfiguration) {
+		return (StalactitePlatformTransactionManager) persistenceContextConfiguration.getConnectionConfiguration().getConnectionProvider();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public Dialect dialect(PersistenceContextConfiguration persistenceContextConfiguration, ObjectProvider<DialectCustomizer> dialectCustomizer) {
+		Dialect dialect = persistenceContextConfiguration.getDialect();
 		nullable(dialectCustomizer.getIfAvailable()).invoke(customizer -> customizer.customize(dialect));
 		return dialect;
+	}
+	
+	@Bean
+	@ConditionalOnMissingBean
+	public ConnectionSettings connectionSettings(DataSource dataSource) {
+		return new ConnectionSettings(dataSource, 10, 100, 3);
+	}
+	
+	@Bean
+	@ConditionalOnMissingBean
+	public DatabaseVendorSettings databaseVendorSettings(DialectResolver dialectResolver, DataSource dataSource) throws SQLException {
+		DatabaseVendorSettings databaseVendorSettings;
+		try (Connection connection = dataSource.getConnection()) {
+			databaseVendorSettings = dialectResolver.determineVendorSettings(connection);
+		}
+		return databaseVendorSettings;
 	}
 	
 	@Bean

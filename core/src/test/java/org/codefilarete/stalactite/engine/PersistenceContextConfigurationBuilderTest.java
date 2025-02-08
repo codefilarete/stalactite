@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.engine;
 
 import javax.sql.DataSource;
 
-import org.codefilarete.stalactite.engine.PersistenceContext.PersistenceContextConfiguration;
+import org.codefilarete.stalactite.engine.PersistenceContextConfigurationBuilder.PersistenceContextConfiguration;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.sql.GeneratedKeysReaderFactory;
