@@ -82,7 +82,7 @@ class PooledHiLoSequenceTest {
         PooledHiLoSequence testInstance = new PooledHiLoSequence(totoSequenceOptions, dialect, mock(SeparateTransactionExecutor.class), 50);
 
         // Generating sequence table schema
-        DDLGenerator ddlGenerator = new DDLGenerator(dialect.getDdlTableGenerator());
+        DDLGenerator ddlGenerator = new DDLGenerator(dialect.getDdlTableGenerator(), dialect.getDdlSequenceGenerator());
         ddlGenerator.setTables(testInstance.getPersister().giveImpliedTables());
         assertThat(ddlGenerator.getCreationScripts()).containsExactly("create table sequence_table(sequence_name VARCHAR(255), next_val int not null, primary key (sequence_name))");
     }

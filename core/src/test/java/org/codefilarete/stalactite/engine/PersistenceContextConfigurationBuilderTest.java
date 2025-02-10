@@ -3,9 +3,11 @@ package org.codefilarete.stalactite.engine;
 import javax.sql.DataSource;
 
 import org.codefilarete.stalactite.engine.PersistenceContextConfigurationBuilder.PersistenceContextConfiguration;
+import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelectBuilder;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.sql.GeneratedKeysReaderFactory;
+import org.codefilarete.stalactite.sql.ddl.DDLSequenceGenerator;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -28,6 +30,8 @@ import static org.mockito.Mockito.mock;
  */
 class PersistenceContextConfigurationBuilderTest {
 	
+	private final DatabaseSequenceSelectBuilder SEQUENCE_SELECT_BUILDER = sequenceName -> "SELECT NEXT VALUE FOR " + sequenceName;
+	
 	@Test
 	void inOperatorMaxSize() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
@@ -43,7 +47,8 @@ class PersistenceContextConfigurationBuilderTest {
 						(parameterBinders, dmlNameProviderFactory, sqlTypeRegistry) -> {
 							DMLGenerator dmlGenerator = new DMLGenerator(parameterBinders, NoopSorter.INSTANCE, dmlNameProviderFactory);
 							DDLTableGenerator ddlTableGenerator = new DDLTableGenerator(sqlTypeRegistry, dmlNameProviderFactory);
-							return new SQLOperationsFactories(new WriteOperationFactory(), new ReadOperationFactory(), dmlGenerator, ddlTableGenerator);
+							DDLSequenceGenerator ddlSequenceGenerator = new DDLSequenceGenerator(dmlNameProviderFactory);
+							return new SQLOperationsFactories(new WriteOperationFactory(), new ReadOperationFactory(), dmlGenerator, ddlTableGenerator, ddlSequenceGenerator);
 						},
 						new GeneratedKeysReaderFactory() {
 							@Override
@@ -51,6 +56,7 @@ class PersistenceContextConfigurationBuilderTest {
 								return new GeneratedKeysReader<>(keyName, columnBinderRegistry.getBinder(columnType));
 							}
 						},
+						SEQUENCE_SELECT_BUILDER,
 						100,
 						false
 				),
@@ -77,7 +83,8 @@ class PersistenceContextConfigurationBuilderTest {
 						(parameterBinders, dmlNameProviderFactory, sqlTypeRegistry) -> {
 							DMLGenerator dmlGenerator = new DMLGenerator(parameterBinders, NoopSorter.INSTANCE, dmlNameProviderFactory);
 							DDLTableGenerator ddlTableGenerator = new DDLTableGenerator(sqlTypeRegistry, dmlNameProviderFactory);
-							return new SQLOperationsFactories(new WriteOperationFactory(), new ReadOperationFactory(), dmlGenerator, ddlTableGenerator);
+							DDLSequenceGenerator ddlSequenceGenerator = new DDLSequenceGenerator(dmlNameProviderFactory);
+							return new SQLOperationsFactories(new WriteOperationFactory(), new ReadOperationFactory(), dmlGenerator, ddlTableGenerator, ddlSequenceGenerator);
 						},
 						new GeneratedKeysReaderFactory() {
 							@Override
@@ -85,6 +92,7 @@ class PersistenceContextConfigurationBuilderTest {
 								return new GeneratedKeysReader<>(keyName, columnBinderRegistry.getBinder(columnType));
 							}
 						},
+						SEQUENCE_SELECT_BUILDER,
 						100,
 						false
 				),
@@ -124,7 +132,8 @@ class PersistenceContextConfigurationBuilderTest {
 						(parameterBinders, dmlNameProviderFactory, sqlTypeRegistry) -> {
 							DMLGenerator dmlGenerator = new DMLGenerator(parameterBinders, NoopSorter.INSTANCE, dmlNameProviderFactory);
 							DDLTableGenerator ddlTableGenerator = new DDLTableGenerator(sqlTypeRegistry, dmlNameProviderFactory);
-							return new SQLOperationsFactories(new WriteOperationFactory(), new ReadOperationFactory(), dmlGenerator, ddlTableGenerator);
+							DDLSequenceGenerator ddlSequenceGenerator = new DDLSequenceGenerator(dmlNameProviderFactory);
+							return new SQLOperationsFactories(new WriteOperationFactory(), new ReadOperationFactory(), dmlGenerator, ddlTableGenerator, ddlSequenceGenerator);
 						},
 						new GeneratedKeysReaderFactory() {
 							@Override
@@ -132,6 +141,7 @@ class PersistenceContextConfigurationBuilderTest {
 								return new GeneratedKeysReader<>(keyName, columnBinderRegistry.getBinder(columnType));
 							}
 						},
+						SEQUENCE_SELECT_BUILDER,
 						100,
 						false
 				),

@@ -186,7 +186,7 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 	 * 
 	 * @return a {@link Set} of implied tables, not expected to be writable
 	 */
-	public Set<Table> giveImpliedTables() {
+	public Set<Table<?>> giveImpliedTables() {
 		return Collections.singleton(getMainTable());
 	}
 	

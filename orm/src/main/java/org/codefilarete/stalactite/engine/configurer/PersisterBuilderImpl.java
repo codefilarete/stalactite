@@ -20,6 +20,7 @@ import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
+import org.codefilarete.stalactite.engine.ColumnOptions;
 import org.codefilarete.stalactite.engine.ColumnOptions.AfterInsertIdentifierPolicy;
 import org.codefilarete.stalactite.engine.ColumnOptions.AlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.engine.ColumnOptions.BeforeInsertIdentifierPolicy;
@@ -45,6 +46,7 @@ import org.codefilarete.stalactite.engine.PersisterBuilder;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.PersisterRegistry.DefaultPersisterRegistry;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
+import org.codefilarete.stalactite.engine.SeparateTransactionExecutor;
 import org.codefilarete.stalactite.engine.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.VersioningStrategy;
 import org.codefilarete.stalactite.engine.cascade.AfterDeleteByIdSupport;
@@ -77,9 +79,15 @@ import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierMana
 import org.codefilarete.stalactite.mapping.id.manager.CompositeKeyAlreadyAssignedIdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.id.manager.JDBCGeneratedKeysIdentifierManager;
+import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelector;
+import org.codefilarete.stalactite.mapping.id.sequence.PooledHiLoSequence;
+import org.codefilarete.stalactite.mapping.id.sequence.PooledHiLoSequenceOptions;
+import org.codefilarete.stalactite.mapping.id.sequence.SequencePersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Database;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
@@ -859,7 +867,38 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 						primaryKey.getJavaType()
 				);
 			} else if (identifierPolicy instanceof BeforeInsertIdentifierPolicy) {
-				Sequence<I> sequence = ((BeforeInsertIdentifierPolicy<I>) identifierPolicy).getIdentifierProvider(identification.getIdentificationDefiner().getEntityType(), connectionConfiguration, dialect);
+				Sequence<I> sequence;
+				if (identifierPolicy instanceof ColumnOptions.PooledHiLoSequenceIdentifierPolicySupport) {
+					Class<E> entityType = identification.getIdentificationDefiner().getEntityType();
+					PooledHiLoSequenceOptions options = new PooledHiLoSequenceOptions(50, entityType.getSimpleName());
+					ConnectionProvider connectionProvider = connectionConfiguration.getConnectionProvider();
+					if (!(connectionProvider instanceof SeparateTransactionExecutor)) {
+						throw new MappingConfigurationException("Before-insert identifier policy configured with connection that doesn't support separate transaction,"
+								+ " please provide a " + Reflections.toString(SeparateTransactionExecutor.class) + " as connection provider or change identifier policy");
+					}
+					sequence = (Sequence<I>) new PooledHiLoSequence(options,
+							new SequencePersister(((ColumnOptions.PooledHiLoSequenceIdentifierPolicySupport) identifierPolicy).getStorageOptions(), dialect, (SeparateTransactionExecutor) connectionProvider, connectionConfiguration.getBatchSize()));
+				} else if (identifierPolicy instanceof ColumnOptions.DatabaseSequenceIdentifierPolicySupport) {
+					Class<E> entityType = identification.getIdentificationDefiner().getEntityType();
+					ColumnOptions.DatabaseSequenceIdentifierPolicySupport databaseSequenceSupport = (ColumnOptions.DatabaseSequenceIdentifierPolicySupport) identifierPolicy;
+					String sequenceName = databaseSequenceSupport.getDatabaseSequenceNamingStrategy().giveName(entityType);
+					Database database = new Database();
+					Database.Schema sequenceSchema = nullable(databaseSequenceSupport.getDatabaseSequenceSettings().getSchemaName())
+							.map(s -> database.new Schema(s))
+							.elseSet(table.getSchema())
+							.get();
+					org.codefilarete.stalactite.sql.ddl.structure.Sequence databaseSequence
+							= new org.codefilarete.stalactite.sql.ddl.structure.Sequence(sequenceSchema, sequenceName)
+								.withBatchSize(databaseSequenceSupport.getDatabaseSequenceSettings().getBatchSize())
+								.withInitialValue(databaseSequenceSupport.getDatabaseSequenceSettings().getInitialValue())
+							;
+					sequence = (Sequence<I>) new DatabaseSequenceSelector(databaseSequence, dialect.getDatabaseSequenceSelectBuilder().buildSelect(sequenceName),
+							connectionConfiguration.getConnectionProvider());
+				} else if (identifierPolicy instanceof ColumnOptions.BeforeInsertIdentifierPolicySupport) {
+					sequence = ((ColumnOptions.BeforeInsertIdentifierPolicySupport<I>) identifierPolicy).getSequence();
+				} else {
+					throw new MappingConfigurationException("Before-insert identifier policy " + Reflections.toString(identifierPolicy.getClass()) + " is not supported");
+				}
 				identifierInsertionManager = new BeforeInsertIdentifierManager<>(new AccessorWrapperIdAccessor<>(idAccessor), sequence, identifierType);
 			} else if (identifierPolicy instanceof AlreadyAssignedIdentifierPolicy) {
 				AlreadyAssignedIdentifierPolicy<E, I> alreadyAssignedPolicy = (AlreadyAssignedIdentifierPolicy<E, I>) identifierPolicy;

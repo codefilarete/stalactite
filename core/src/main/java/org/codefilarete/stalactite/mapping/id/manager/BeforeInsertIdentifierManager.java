@@ -35,6 +35,10 @@ public class BeforeInsertIdentifierManager<T, I> implements IdentifierInsertionM
 		return identifierType;
 	}
 	
+	public BeforeInsertIdentifierFixer<T, I> getIdentifierFixer() {
+		return identifierFixer;
+	}
+	
 	@Override
 	public JDBCBatchingIterator<T> buildJDBCBatchingIterator(Iterable<? extends T> entities, WriteOperation<? extends Column<? extends Table, ?>> writeOperation, int batchSize) {
 		return new JDBCBatchingIteratorIdAware<>(entities, writeOperation, batchSize, identifierFixer);
@@ -56,14 +60,18 @@ public class BeforeInsertIdentifierManager<T, I> implements IdentifierInsertionM
 	 * @param <T> the entity type
 	 * @param <I> the identifier type
 	 */
-	private static class BeforeInsertIdentifierFixer<T, I> implements Consumer<T> {
+	public static class BeforeInsertIdentifierFixer<T, I> implements Consumer<T> {
 		
 		private final IdAccessor<T, I> idAccessor;
 		private final Sequence<I> sequence;
 		
-		BeforeInsertIdentifierFixer(IdAccessor<T, I> idAccessor, Sequence<I> sequence) {
+		public BeforeInsertIdentifierFixer(IdAccessor<T, I> idAccessor, Sequence<I> sequence) {
 			this.idAccessor = idAccessor;
 			this.sequence = sequence;
+		}
+		
+		public Sequence<I> getSequence() {
+			return sequence;
 		}
 		
 		@Override

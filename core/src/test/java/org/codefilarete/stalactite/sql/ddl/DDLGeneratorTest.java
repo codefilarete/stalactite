@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Sequence;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
@@ -112,7 +113,29 @@ class DDLGeneratorTest {
 	}
 	
 	@Test
-	void addedDDLGeneratorsAreInFinalScript() {
+	void sequencesAreInFinalScript() {
+		JavaTypeToSqlTypeMapping typeMapping = new JavaTypeToSqlTypeMapping();
+		typeMapping.put(String.class, "VARCHAR");
+		DDLGenerator testInstance = new DDLGenerator(new SqlTypeRegistry(typeMapping), DMLNameProvider::new);
+		Sequence totoSequence = new Sequence("toto");
+		Sequence titiSequence = new Sequence("titi")
+				.withInitialValue(4)
+				.withBatchSize(50);
+		testInstance.addSequences(totoSequence, titiSequence);
+
+		assertThat(testInstance.getCreationScripts()).isEqualTo(Arrays.asList(
+				"create sequence toto",
+				"create sequence titi start with 4 increment by 50"
+		));
+		// by default foreignKeys are not in final script because they are expected to be dropped with table
+		assertThat(testInstance.getDropScripts()).isEqualTo(Arrays.asList(
+				"drop sequence toto",
+				"drop sequence titi"
+		));
+	}
+	
+	@Test
+	void addedDDLProvidersAreInFinalScript() {
 		JavaTypeToSqlTypeMapping typeMapping = new JavaTypeToSqlTypeMapping();
 		typeMapping.put(String.class, "VARCHAR");
 		DDLGenerator testInstance = new DDLGenerator(new SqlTypeRegistry(typeMapping), DMLNameProvider::new);
@@ -120,7 +143,7 @@ class DDLGeneratorTest {
 		totoTable.addColumn("id", String.class);
 		testInstance.addTables(totoTable);
 		
-		testInstance.addDDLGenerators(new DDLProvider() {
+		testInstance.addDDLProviders(new DDLProvider() {
 			@Override
 			public List<String> getCreationScripts() {
 				return Arrays.asList("my wonderful first SQL creation script", "my wonderful second SQL creation script");

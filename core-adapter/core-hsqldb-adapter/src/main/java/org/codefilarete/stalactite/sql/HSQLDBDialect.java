@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelectBuilder;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
@@ -45,6 +46,11 @@ public class HSQLDBDialect extends DefaultDialect {
 	@Override
 	protected WriteOperationFactory newWriteOperationFactory() {
 		return new HSQLDBWriteOperationFactory();
+	}
+	
+	@Override
+	public DatabaseSequenceSelectBuilder getDatabaseSequenceSelectBuilder() {
+		return sequenceName -> "CALL NEXT VALUE FOR " + sequenceName;
 	}
 	
 	@Override

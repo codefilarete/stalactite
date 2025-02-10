@@ -1,5 +1,7 @@
 package org.codefilarete.stalactite.engine;
 
+import java.sql.Connection;
+
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 
 /**
@@ -15,7 +17,7 @@ public interface SeparateTransactionExecutor extends ConnectionProvider {
 	/**
 	 * Execute the given {@link JdbcOperation} in a separate transaction: the transaction given by {@link #giveConnection()} must be different
 	 * when it is called inside (by) the {@link JdbcOperation} than this given outside the call to {@link #executeInNewTransaction(JdbcOperation)}.
-	 * The implementation must call {@link JdbcOperation#execute()}, so a commit should appear nearly after.
+	 * The implementation must call {@link JdbcOperation#execute(Connection)}, so a commit should appear nearly after.
 	 * 
 	 * @param jdbcOperation a sql operation that will call {@link #giveConnection()} to execute its statements.
 	 */
@@ -26,6 +28,6 @@ public interface SeparateTransactionExecutor extends ConnectionProvider {
 	 */
 	interface JdbcOperation {
 		
-		void execute();
+		void execute(Connection currentSeparateConnection);
 	}
 }

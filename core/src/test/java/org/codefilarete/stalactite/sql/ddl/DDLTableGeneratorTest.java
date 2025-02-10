@@ -362,7 +362,7 @@ public class DDLTableGeneratorTest {
 		}
 		
 		void assertGeneratedSQL_runOnAliveDatabase_doesNotThrowException(DDLTableGenerator testInstance, Connection connection) {
-			DDLDeployer ddlDeployer = new DDLDeployer(testInstance, new SimpleConnectionProvider(connection));
+			DDLDeployer ddlDeployer = new DDLDeployer(testInstance, new DDLSequenceGenerator(testInstance.dmlNameProvider), new SimpleConnectionProvider(connection));
 			ddlDeployer.getDdlGenerator().addTables(table1, table2);
 			assertThatCode(ddlDeployer::deployDDL).doesNotThrowAnyException();
 		}

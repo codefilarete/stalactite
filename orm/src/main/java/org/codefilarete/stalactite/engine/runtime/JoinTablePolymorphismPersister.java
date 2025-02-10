@@ -140,11 +140,11 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 	}
 	
 	@Override
-	public Collection<Table> giveImpliedTables() {
+	public Collection<Table<?>> giveImpliedTables() {
 		// Implied tables are those of sub entities.
 		// Note that doing this lately (not in constructor) guaranties that it is up-to-date because sub entities may have relations which are
 		// configured out of constructor by caller
-		List<Table> subTables = subEntitiesPersisters.values().stream().flatMap(p -> p.giveImpliedTables().stream()).collect(Collectors.toList());
+		List<Table<?>> subTables = subEntitiesPersisters.values().stream().flatMap(p -> p.giveImpliedTables().stream()).collect(Collectors.toList());
 		return Collections.cat(mainPersister.giveImpliedTables(), subTables);
 	}
 	

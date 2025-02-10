@@ -25,7 +25,7 @@ import org.springframework.util.StringUtils;
 
 /**
  * Stalactite specific configuration extension parsing custom attributes from the XML namespace and
- * {@link org.springframework.data.jpa.repository.config.EnableJpaRepositories} annotation.
+ * {@link EnableStalactiteRepositories} annotation.
  * Implementation is inspired by {@link org.springframework.data.jpa.repository.config.JpaRepositoryConfigExtension}
  * which was taken as an example.
  * 

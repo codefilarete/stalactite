@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 
+import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelectBuilder;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
@@ -57,6 +58,11 @@ public class OracleDialect extends DefaultDialect {
 	@Override
 	protected DMLNameProviderFactory newDMLNameProviderFactory() {
 		return OracleDMLNameProvider::new;
+	}
+	
+	@Override
+	public DatabaseSequenceSelectBuilder getDatabaseSequenceSelectBuilder() {
+		return sequenceName -> "select " + sequenceName + " from dual";
 	}
 	
 	public static class OracleDMLNameProvider extends DMLNameProvider {

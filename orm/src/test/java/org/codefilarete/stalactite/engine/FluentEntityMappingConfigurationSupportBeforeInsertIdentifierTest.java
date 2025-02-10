@@ -11,6 +11,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -35,7 +36,7 @@ import static org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetR
  */
 public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 	
-	private HSQLDBDialect dialect = new HSQLDBDialect();
+	private Dialect dialect = new HSQLDBDialect();
 	private DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private PersistenceContext persistenceContext;
 	private Sequence<Long> longSequence;
@@ -57,7 +58,35 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 	@Test
 	void insert_basic() {
 		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
-				.mapKey(Car::getId, IdentifierPolicy.beforeInsert(longSequence))
+				.mapKey(Car::getId, IdentifierPolicy.pooledHiLoSequence(longSequence))
+				.map(Car::getModel)
+				.build(persistenceContext);
+		
+		// DML tests
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Car dummyCar = new Car();
+		dummyCar.setModel("Renault");
+		
+		// insert test
+		carPersister.insert(dummyCar);
+		
+		Set<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
+				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
+				.map("model", Car::setModel)
+				.execute(Accumulators.toSet());
+		assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
+		
+		// select test
+		Car loadedCar = carPersister.select(1L);
+		assertThat(loadedCar).isEqualTo(dummyCar);
+	}
+	
+	@Test
+	void insert_basic_withDatabaseSequence() {
+		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
+				.mapKey(Car::getId, IdentifierPolicy.databaseSequence("CAR_SEQUENCE"))
 				.map(Car::getModel)
 				.build(persistenceContext);
 		
@@ -85,10 +114,10 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 	@Test
 	void insert_oneToOne() {
 		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
-				.mapKey(Car::getId, IdentifierPolicy.beforeInsert(longSequence))
+				.mapKey(Car::getId, IdentifierPolicy.pooledHiLoSequence(longSequence))
 				.map(Car::getModel)
 				.mapOneToOne(Car::getEngine, entityBuilder(Engine.class, long.class)
-						.mapKey(Engine::getId, IdentifierPolicy.beforeInsert(longSequence))
+						.mapKey(Engine::getId, IdentifierPolicy.pooledHiLoSequence(longSequence))
 						.map(Engine::getModel))
 				.build(persistenceContext);
 		
@@ -123,10 +152,10 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 	@Test
 	void insert_oneToOne_ownedByReverseSide() {
 		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
-				.mapKey(Car::getId, IdentifierPolicy.beforeInsert(longSequence))
+				.mapKey(Car::getId, IdentifierPolicy.pooledHiLoSequence(longSequence))
 				.map(Car::getModel)
 				.mapOneToOne(Car::getEngine, entityBuilder(Engine.class, long.class)
-						.mapKey(Engine::getId, IdentifierPolicy.beforeInsert(longSequence))
+						.mapKey(Engine::getId, IdentifierPolicy.pooledHiLoSequence(longSequence))
 						.map(Engine::getModel))
 				.mappedBy(Engine::getCar)
 				.build(persistenceContext);
@@ -164,7 +193,7 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 	@Test
 	void multipleInheritance() {
 		EntityMappingConfiguration<AbstractVehicle, Long> inheritanceConfiguration = entityBuilder(AbstractVehicle.class, long.class)
-				.mapKey(AbstractVehicle::getId, IdentifierPolicy.beforeInsert(longSequence))
+				.mapKey(AbstractVehicle::getId, IdentifierPolicy.pooledHiLoSequence(longSequence))
 				.getConfiguration();
 		
 		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = entityBuilder(Vehicle.class, long.class)
@@ -207,7 +236,7 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 	@Test
 	void multipleInheritance_joinedTables() {
 		EntityMappingConfiguration<AbstractVehicle, Long> inheritanceConfiguration = entityBuilder(AbstractVehicle.class, long.class)
-				.mapKey(AbstractVehicle::getId, IdentifierPolicy.beforeInsert(longSequence))
+				.mapKey(AbstractVehicle::getId, IdentifierPolicy.pooledHiLoSequence(longSequence))
 				.getConfiguration();
 		
 		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = entityBuilder(Vehicle.class, long.class)

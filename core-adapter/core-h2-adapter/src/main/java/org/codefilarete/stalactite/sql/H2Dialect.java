@@ -1,10 +1,12 @@
 package org.codefilarete.stalactite.sql;
 
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelectBuilder;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
@@ -33,6 +35,10 @@ public class H2Dialect extends DefaultDialect {
 		return new H2DDLTableGenerator(getSqlTypeRegistry(), H2DMLNameProvider::new);
 	}
 	
+	@Override
+	public DatabaseSequenceSelectBuilder getDatabaseSequenceSelectBuilder() {
+		return sequenceName -> "SELECT NEXT VALUE FOR " + sequenceName;
+	}
 	
 	public static class H2DMLNameProvider extends DMLNameProvider {
 		

@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.sql.ddl;
 import java.util.*;
 
 import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
+import org.codefilarete.stalactite.sql.ddl.structure.Sequence;
 import org.codefilarete.stalactite.sql.ddl.structure.UniqueConstraint;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -19,11 +20,15 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  */
 public class DDLGenerator implements DDLProvider {
 	
-	private Set<Table> tables = new KeepOrderSet<>();
+	private Set<Table<?>> tables = new KeepOrderSet<>();
+	
+	private Set<Sequence> sequences = new KeepOrderSet<>();
 	
 	private Set<DDLProvider> ddlProviders = new KeepOrderSet<>();
 	
-	private DDLTableGenerator ddlTableGenerator;
+	private final DDLTableGenerator ddlTableGenerator;
+	
+	private final DDLSequenceGenerator ddlSequenceGenerator;
 	
 	/**
 	 * Simple generator where column SQL types are took from given Java-SQL type mapping.
@@ -33,49 +38,64 @@ public class DDLGenerator implements DDLProvider {
 	 */
 	public DDLGenerator(SqlTypeRegistry sqlTypeRegistry, DMLNameProviderFactory dmlNameProviderFactory) {
 		this.ddlTableGenerator = new DDLTableGenerator(sqlTypeRegistry, dmlNameProviderFactory);
+		this.ddlSequenceGenerator = new DDLSequenceGenerator(dmlNameProviderFactory);
 	}
 	
-	public DDLGenerator(DDLTableGenerator ddlTableGenerator) {
+	public DDLGenerator(DDLTableGenerator ddlTableGenerator, DDLSequenceGenerator ddlSequenceGenerator) {
 		this.ddlTableGenerator = ddlTableGenerator;
+		this.ddlSequenceGenerator = ddlSequenceGenerator;
 	}
 	
 	public DDLTableGenerator getDdlTableGenerator() {
 		return ddlTableGenerator;
 	}
 	
-	public void setDdlTableGenerator(DDLTableGenerator ddlTableGenerator) {
-		this.ddlTableGenerator = ddlTableGenerator;
+	public void setTables(Set<? extends Table<?>> tables) {
+		this.tables = (Set<Table<?>>) tables;
 	}
 	
-	public void setTables(Set<Table> tables) {
-		this.tables = tables;
-	}
-	
-	public void addTables(Collection<Table> tables) {
+	public void addTables(Collection<? extends Table<?>> tables) {
 		this.tables.addAll(tables);
 	}
 	
-	public void addTables(Table table, Table ... tables) {
+	public void addTables(Table<?> table, Table<?>... tables) {
 		this.tables.add(table);
 		this.tables.addAll(Arrays.asList(tables));
 	}
 	
-	public void setDDLGenerators(Set<DDLProvider> ddlParticipants) {
+	public void setSequences(Set<Sequence> sequences) {
+		this.sequences = sequences;
+	}
+	
+	public void addSequences(Sequence sequence, Sequence... sequences) {
+		this.sequences.add(sequence);
+		this.sequences.addAll(Arrays.asList(sequences));
+	}
+	
+	public void addSequences(Collection<? extends Sequence> sequences) {
+		this.sequences.addAll(sequences);
+	}
+	
+	public void setDDLProviders(Set<DDLProvider> ddlParticipants) {
 		this.ddlProviders = ddlParticipants;
 	}
 	
-	public void addDDLGenerators(DDLProvider ddlGenerator, DDLProvider... ddlGenerators) {
-		this.ddlProviders.add(ddlGenerator);
-		this.ddlProviders.addAll(Arrays.asList(ddlGenerators));
+	public void addDDLProviders(DDLProvider ddlParticipant, DDLProvider... ddlParticipants) {
+		this.ddlProviders.add(ddlParticipant);
+		this.ddlProviders.addAll(Arrays.asList(ddlParticipants));
+	}
+	
+	public void addDDLProviders(Collection<? extends DDLProvider> ddlParticipants) {
+		this.ddlProviders.addAll(ddlParticipants);
 	}
 	
 	@Override
 	public List<String> getCreationScripts() {
 		// DDLParticipants is supposed to be post treatments (creation of sequences, triggers, ...)
-		return Collections.cat(generateTableCreationScripts(), generateDDLParticipantsCreationScripts());
+		return Collections.cat(generateTableCreationScripts(), generateSequencesCreationScripts(), generateDDLProvidersCreationScripts());
 	}
 	
-	protected List<String> generateDDLParticipantsCreationScripts() {
+	protected List<String> generateDDLProvidersCreationScripts() {
 		List<String> participantsScripts = new ArrayList<>();
 		for (DDLProvider ddlProvider : ddlProviders) {
 			participantsScripts.addAll(ddlProvider.getCreationScripts());
@@ -141,10 +161,18 @@ public class DDLGenerator implements DDLProvider {
 		return this.ddlTableGenerator.generateCreateForeignKey(foreignKey);
 	}
 	
+	protected List<String> generateSequencesCreationScripts() {
+		List<String> sequenceCreationScripts = new ArrayList<>();
+		for (Sequence sequence : sequences) {
+			sequenceCreationScripts.add(ddlSequenceGenerator.generateCreateSequence(sequence));
+		}
+		return sequenceCreationScripts;
+	}
+	
 	@Override
 	public List<String> getDropScripts() {
 		// DDLParticipants is supposed to be post treatments (creation of sequences, triggers, ...)
-		return Collections.cat(generateTableDropScripts(), generateDDLParticipantsDropScripts());
+		return Collections.cat(generateTableDropScripts(), generateSequencesDropScripts(), generateDDLParticipantsDropScripts());
 	}
 	
 	protected List<String> generateTableDropScripts() {
@@ -167,5 +195,13 @@ public class DDLGenerator implements DDLProvider {
 			}
 		}
 		return participantsScripts;
+	}
+	
+	protected List<String> generateSequencesDropScripts() {
+		List<String> sequenceCreationScripts = new ArrayList<>();
+		for (Sequence sequence : sequences) {
+			sequenceCreationScripts.add(ddlSequenceGenerator.generateDropSequence(sequence));
+		}
+		return sequenceCreationScripts;
 	}
 }

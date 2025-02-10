@@ -138,7 +138,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 	}
 	
 	@Override
-	public Collection<Table> giveImpliedTables() {
+	public Collection<Table<?>> giveImpliedTables() {
 		// in table-per-class main persister table does not participate in database schema : only sub entities persisters do
 		return subEntitiesPersisters.values().stream().flatMap(p -> p.giveImpliedTables().stream()).collect(Collectors.toList());
 	}

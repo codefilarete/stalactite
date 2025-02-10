@@ -163,7 +163,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	}
 	
 	@Override
-	public Set<Table> giveImpliedTables() {
+	public Set<Table<?>> giveImpliedTables() {
 		return getEntityJoinTree().giveTables();
 	}
 	

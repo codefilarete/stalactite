@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.configurer.manytomany;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
 import java.util.function.Supplier;
 
@@ -40,7 +41,6 @@ import org.codefilarete.tool.bean.FieldIterator;
 import org.codefilarete.tool.bean.InstanceFieldIterator;
 import org.codefilarete.tool.collection.Iterables;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
 import static org.codefilarete.tool.Nullable.nullable;
 
@@ -213,7 +213,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 					FieldIterator targetFields = new InstanceFieldIterator(targetClass);
 					Class<SRC> sourceEntityType = associationConfiguration.getSrcPersister().getClassToPersist();
 					Field reverseField = Iterables.find(targetFields, field -> Collection.class.isAssignableFrom(field.getType())
-							&& ((ParameterizedTypeImpl) field.getGenericType()).getActualTypeArguments()[0].equals(sourceEntityType));
+							&& ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0].equals(sourceEntityType));
 					if (reverseField != null) {
 						Nullable<AccessorByMethod<TRGT, C2>> reverseGetterMethod = nullable(Accessors.accessorByMethod(reverseField));
 						if (reverseGetterMethod.isPresent()) {

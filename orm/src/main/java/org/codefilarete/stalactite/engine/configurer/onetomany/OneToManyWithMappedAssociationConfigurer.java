@@ -7,7 +7,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.codefilarete.reflection.Accessor;
@@ -15,6 +14,7 @@ import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleMutator;
+import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
@@ -165,16 +165,20 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 		} else {
 			// table-per-class case : we add a foreign key between each table of subentity and source primary key
 			targetPersister.giveImpliedTables().forEach(table -> {
-				KeyBuilder<Table, SRCID> projectedKeyBuilder = Key.from(table);
-				((Set<Column<RIGHTTABLE, Object>>) foreignKey.getColumns()).forEach(column -> {
-					projectedKeyBuilder.addColumn(table.addColumn(column.getName(), column.getJavaType(), column.getSize()));
-				});
-				// necessary cast due to projectedKey unknown exact Table type
-				Key<Table, SRCID> projectedKey = projectedKeyBuilder.build();
-				table.addForeignKey((BiFunction<Key<Table, SRCID>, PrimaryKey<LEFTTABLE, SRCID>, String>) associationConfiguration.getForeignKeyNamingStrategy()::giveName,
-						projectedKey, associationConfiguration.getLeftPrimaryKey());
+				extracted((Table) table);
 			});
 		}
+	}
+	
+	private <IMPLIEDTABLE extends Table<IMPLIEDTABLE>> void extracted(IMPLIEDTABLE table) {
+		KeyBuilder<IMPLIEDTABLE, SRCID> projectedKeyBuilder = Key.from(table);
+		((Set<Column<RIGHTTABLE, ?>>) foreignKey.getColumns()).forEach(column -> {
+			projectedKeyBuilder.addColumn(table.addColumn(column.getName(), column.getJavaType(), column.getSize()));
+		});
+		// necessary cast due to projectedKey unknown exact Table type
+		Key<IMPLIEDTABLE, SRCID> projectedKey = projectedKeyBuilder.build();
+		ForeignKeyNamingStrategy foreignKeyNamingStrategy = associationConfiguration.getForeignKeyNamingStrategy();
+		table.addForeignKey(foreignKeyNamingStrategy::giveName, projectedKey, associationConfiguration.getLeftPrimaryKey());
 	}
 	
 	void assignAssociationEngine() {

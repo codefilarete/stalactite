@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.sql.ddl.structure;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,15 +20,16 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Predicates;
 
+import static org.codefilarete.tool.Nullable.nullable;
+
 /**
  * Representation of a database Table, not exhaustive but sufficient for our need.
- * Primary key is design to concern only one Column, but not foreign keys ... not really logical for now !
- * Primary key as a only-one-column design is primarly intend to simplify query and persistence conception.
  *
  * @author Guillaume Mary
  */
 public class Table<SELF extends Table<SELF>> implements Fromable {
 	
+	@Nullable
 	private final Schema schema;
 	
 	private final String name;
@@ -53,13 +55,17 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 		this(null, name);
 	}
 	
-	public Table(Schema schema, String name) {
+	public Table(@Nullable Schema schema, String name) {
 		this.schema = schema;
+		if (this.schema != null) {
+			this.schema.addTable(this);
+		}
 		this.name = name;
-		this.absoluteName = (schema == null ? "" : (schema.getName() + ".")) + name;
+		this.absoluteName = nullable(schema).map(Schema::getName).map(s -> s + "." + name).getOr(name);
 		this.hashCode = name.toUpperCase().hashCode();
 	}
 	
+	@Nullable
 	public Schema getSchema() {
 		return schema;
 	}
@@ -90,7 +96,7 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	
 	public Set<Column<SELF, Object>> getColumnsNoPrimaryKey() {
 		LinkedHashSet<Column<SELF, Object>> result = new LinkedHashSet<>(this.columns);
-		result.removeAll(org.codefilarete.tool.Nullable.nullable(getPrimaryKey()).map(PrimaryKey::getColumns).getOr(new KeepOrderSet<>()));
+		result.removeAll(nullable(getPrimaryKey()).map(PrimaryKey::getColumns).getOr(new KeepOrderSet<>()));
 		return result;
 	}
 	
@@ -171,7 +177,7 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	
 	/**
 	 * Returns the {@link PrimaryKey} of this table if any {@link Column} was marked as primary key, else will return null.
-	 * Lazyly initialize an attribute, hence multiple calls to this method may return the very first attempt even if another {@link Column} was
+	 * Lazily initializes an attribute, hence multiple calls to this method may return the very first attempt even if another {@link Column} was
 	 * marked as primary key between calls.
 	 * 
 	 * @return the {@link PrimaryKey} of this table if any {@link Column} was marked as primary key, else null

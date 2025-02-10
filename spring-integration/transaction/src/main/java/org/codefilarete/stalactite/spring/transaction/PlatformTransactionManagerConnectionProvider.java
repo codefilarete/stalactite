@@ -20,9 +20,6 @@ import org.springframework.transaction.support.TransactionTemplate;
  * This class is left public to let one handle an unexpected case.
  * 
  * @author Guillaume Mary
- * @see DataSourceConnectionProvider
- * @see Hibernate5ConnectionProvider
- * @see JpaConnectionProvider
  */
 public class PlatformTransactionManagerConnectionProvider implements SeparateTransactionExecutor {
 	
@@ -54,7 +51,7 @@ public class PlatformTransactionManagerConnectionProvider implements SeparateTra
 		transactionTemplate.execute(new TransactionCallbackWithoutResult() {
 			@Override
 			protected void doInTransactionWithoutResult(TransactionStatus status) {
-				jdbcOperation.execute();
+				jdbcOperation.execute(giveConnection());
 			}
 		});
 	}

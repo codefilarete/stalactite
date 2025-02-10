@@ -394,13 +394,13 @@ public class EntityJoinTree<C, I> {
 	 *
 	 * @return all joins tables of this tree
 	 */
-	public Set<Table> giveTables() {
+	public Set<Table<?>> giveTables() {
 		// because Table implements an hashCode on their name, we can use an HashSet to avoid duplicates
-		Set<Table> result = new HashSet<>();
-		result.add((Table) root.getTable());
+		Set<Table<?>> result = new HashSet<>();
+		result.add((Table<?>) root.getTable());
 		foreachJoin(node -> {
 			if (node.getTable() instanceof Table && !tablesToBeExcludedFromDDL.contains(node.getTable())) {
-				result.add((Table) node.getTable());
+				result.add((Table<?>) node.getTable());
 			} else if (node.getTable() instanceof PseudoTable) {
 				result.addAll(lookupTable((PseudoTable) node.getTable()));
 			}
@@ -409,8 +409,8 @@ public class EntityJoinTree<C, I> {
 	}
 	
 	@VisibleForTesting
-	Set<Table> lookupTable(PseudoTable pseudoTable) {
-		Set<Table> result = new HashSet<>();
+	Set<Table<?>> lookupTable(PseudoTable pseudoTable) {
+		Set<Table<?>> result = new HashSet<>();
 		Set<Query> queries;
 		if (pseudoTable.getQueryStatement() instanceof Query) {
 			queries = Arrays.asSet((Query) pseudoTable.getQueryStatement());

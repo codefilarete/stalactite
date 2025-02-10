@@ -1,8 +1,12 @@
 package org.codefilarete.stalactite.sql;
 
+import java.util.Locale;
+
+import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelectBuilder;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
 import org.codefilarete.stalactite.sql.ddl.DDLGenerator;
+import org.codefilarete.stalactite.sql.ddl.DDLSequenceGenerator;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -33,6 +37,8 @@ public class DefaultDialect implements Dialect {
 	private int inOperatorMaxSize = 1000;
 	
 	private final DDLTableGenerator ddlTableGenerator;
+	
+	private final DDLSequenceGenerator ddlSequenceGenerator;
 	
 	private final DMLGenerator dmlGenerator;
 	
@@ -67,6 +73,7 @@ public class DefaultDialect implements Dialect {
 		this.dmlNameProviderFactory = newDMLNameProviderFactory();
 		this.dmlGenerator = newDmlGenerator();
 		this.ddlTableGenerator = newDdlTableGenerator();
+		this.ddlSequenceGenerator = newDdlSequenceGenerator();
 		this.writeOperationFactory = newWriteOperationFactory();
 		this.readOperationFactory = newReadOperationFactory();
 		this.querySQLBuilderFactory = new QuerySQLBuilderFactoryBuilder(dmlNameProviderFactory, columnBinderRegistry, javaTypeToSqlTypeMapping).build();
@@ -75,6 +82,7 @@ public class DefaultDialect implements Dialect {
 	public DefaultDialect(SqlTypeRegistry sqlTypeRegistry,
 						  ColumnBinderRegistry columnBinderRegistry,
 						  DDLTableGenerator ddlTableGenerator,
+						  DDLSequenceGenerator ddlSequenceGenerator,
 						  DMLGenerator dmlGenerator,
 						  WriteOperationFactory writeOperationFactory,
 						  ReadOperationFactory readOperationFactory,
@@ -82,6 +90,7 @@ public class DefaultDialect implements Dialect {
 		this.sqlTypeRegistry = sqlTypeRegistry;
 		this.columnBinderRegistry = columnBinderRegistry;
 		this.ddlTableGenerator = ddlTableGenerator;
+		this.ddlSequenceGenerator = ddlSequenceGenerator;
 		this.dmlGenerator = dmlGenerator;
 		this.writeOperationFactory = writeOperationFactory;
 		this.readOperationFactory = readOperationFactory;
@@ -100,9 +109,18 @@ public class DefaultDialect implements Dialect {
 		return new DDLTableGenerator(getSqlTypeRegistry(), dmlNameProviderFactory);
 	}
 	
+	private DDLSequenceGenerator newDdlSequenceGenerator() {
+		return new DDLSequenceGenerator(dmlNameProviderFactory);
+	}
+	
 	@Override
 	public DDLTableGenerator getDdlTableGenerator() {
 		return ddlTableGenerator;
+	}
+	
+	@Override
+	public DDLSequenceGenerator getDdlSequenceGenerator() {
+		return ddlSequenceGenerator;
 	}
 	
 	@Override
@@ -177,6 +195,11 @@ public class DefaultDialect implements Dialect {
 	@Override
 	public GeneratedKeysReaderFactory getGeneratedKeysReaderFactory() {
 		return this::buildGeneratedKeysReader;
+	}
+	
+	@Override
+	public DatabaseSequenceSelectBuilder getDatabaseSequenceSelectBuilder() {
+		return sequenceName -> "select next value for " + sequenceName;
 	}
 	
 	/**

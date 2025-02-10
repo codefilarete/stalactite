@@ -10,8 +10,12 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
+import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
+import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
+import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelector;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.structure.Sequence;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.slf4j.Logger;
@@ -34,9 +38,22 @@ public class DDLDeployer {
 	 * @param persistenceContext a {@link PersistenceContext} to scan for tables
 	 * @return a {@link Collection} of found tables
 	 */
-	public static Collection<Table> collectTables(PersistenceContext persistenceContext) {
-		Set<Table> result = new LinkedHashSet<>(20);
-		persistenceContext.getPersisters().forEach(p -> result.addAll(((ConfiguredPersister) p).giveImpliedTables()));
+	public static Collection<Table<?>> collectTables(PersistenceContext persistenceContext) {
+		Set<Table<?>> result = new LinkedHashSet<>(20);
+		persistenceContext.getPersisters().forEach(p -> result.addAll(((ConfiguredPersister<?, ?>) p).giveImpliedTables()));
+		return result;
+	}
+	
+	public static Collection<Sequence> collectSequences(PersistenceContext persistenceContext) {
+		Set<Sequence> result = new LinkedHashSet<>(20);
+		persistenceContext.getPersisters().forEach(p -> {
+			IdentifierInsertionManager<?, ?> identifierInsertionManager = ((ConfiguredPersister<?, ?>) p).getMapping().getIdMapping().getIdentifierInsertionManager();
+			if (identifierInsertionManager instanceof BeforeInsertIdentifierManager
+					&& ((BeforeInsertIdentifierManager<?, ?>) identifierInsertionManager).getIdentifierFixer().getSequence() instanceof DatabaseSequenceSelector) {
+				DatabaseSequenceSelector databaseSequenceSelector = (DatabaseSequenceSelector) ((BeforeInsertIdentifierManager<?, ?>) identifierInsertionManager).getIdentifierFixer().getSequence();
+				result.add(databaseSequenceSelector.getDatabaseSequence());
+			}
+		});
 		return result;
 	}
 	
@@ -48,12 +65,13 @@ public class DDLDeployer {
 	 * Simple constructor that gets its information from the given {@link PersistenceContext}: {@link DDLGenerator} from its
 	 * {@link Dialect} and {@link ConnectionProvider}
 	 * 
-	 * @param persistenceContext a {@link PersistenceContext}, source of arguments for {@link #DDLDeployer(DDLTableGenerator, ConnectionProvider)}
-	 * @see #DDLDeployer(DDLTableGenerator, ConnectionProvider) 
+	 * @param persistenceContext a {@link PersistenceContext}, source of arguments for {@link #DDLDeployer(DDLTableGenerator, DDLSequenceGenerator, ConnectionProvider)}
+	 * @see #DDLDeployer(DDLTableGenerator, DDLSequenceGenerator, ConnectionProvider) 
 	 */
 	public DDLDeployer(PersistenceContext persistenceContext) {
-		this(persistenceContext.getDialect().getDdlTableGenerator(), persistenceContext.getConnectionProvider());
+		this(persistenceContext.getDialect().getDdlTableGenerator(), persistenceContext.getDialect().getDdlSequenceGenerator(), persistenceContext.getConnectionProvider());
 		ddlGenerator.addTables(collectTables(persistenceContext));
+		ddlGenerator.addSequences(collectSequences(persistenceContext));
 	}
 	
 	/**
@@ -63,9 +81,9 @@ public class DDLDeployer {
 	 * @param ddlTableGenerator the SQL scripts provider
 	 * @param connectionProvider the {@link Connection} provider for executing SQL scripts
 	 */
-	public DDLDeployer(DDLTableGenerator ddlTableGenerator, ConnectionProvider connectionProvider) {
+	public DDLDeployer(DDLTableGenerator ddlTableGenerator, DDLSequenceGenerator ddlSequenceGenerator, ConnectionProvider connectionProvider) {
 		this.connectionProvider = connectionProvider;
-		this.ddlGenerator = new DDLGenerator(ddlTableGenerator);
+		this.ddlGenerator = new DDLGenerator(ddlTableGenerator, ddlSequenceGenerator);
 	}
 	
 	public DDLGenerator getDdlGenerator() {
@@ -103,5 +121,4 @@ public class DDLDeployer {
 	protected Connection getCurrentConnection() {
 		return connectionProvider.giveConnection();
 	}
-	
 }

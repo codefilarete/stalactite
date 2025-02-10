@@ -86,7 +86,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.build(persistenceContext);
 			
 			// as a mapped super class, the table shouldn't be in the context, nor its persister exists
-			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
+			Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
 			assertThat(tables.contains(mappedSuperClassData.vehicleTable)).isFalse();
 			assertThat(persistenceContext.getPersister(Vehicle.class)).isNull();
 			
@@ -124,7 +124,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.build(persistenceContext);
 			
 			// as a mapped super class, the table shouldn't be in the context, nor its persister exists
-			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
+			Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
 			assertThat(tables.contains(mappedSuperClassData.vehicleTable)).isFalse();
 			assertThat(persistenceContext.getPersister(Vehicle.class)).isNull();
 			
@@ -330,7 +330,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.build(persistenceContext);
 			
 			// as an inherited entity of non joined_tables policy, the table should not be in the context
-			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
+			Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
 			assertThat(tables.contains(mappedSuperClassData.vehicleTable)).isFalse();
 			
 			// DML tests
@@ -407,7 +407,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.build(persistenceContext);
 			
 			// as an inherited entity, the table should not be in the context
-			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
+			Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
 			assertThat(tables.contains(mappedSuperClassData.vehicleTable)).isFalse();
 			assertThat(tables.contains(mappedSuperClassData.carTable)).isTrue();
 			
@@ -510,7 +510,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.build(persistenceContext);
 			
 			// as an inherited entity, the table should be in the context
-			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
+			Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
 			assertThat(Iterables.collectToList(tables, Table::getName).contains(Vehicle.class.getSimpleName())).isTrue();
 			
 			// DML tests

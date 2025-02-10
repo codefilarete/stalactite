@@ -1,7 +1,11 @@
 package org.codefilarete.stalactite.sql;
 
+import java.util.Locale;
+
+import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelectBuilder;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
 import org.codefilarete.stalactite.sql.ddl.DDLGenerator;
+import org.codefilarete.stalactite.sql.ddl.DDLSequenceGenerator;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
@@ -21,6 +25,8 @@ import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 public interface Dialect {
 	
 	DDLTableGenerator getDdlTableGenerator();
+	
+	DDLSequenceGenerator getDdlSequenceGenerator();
 	
 	DMLGenerator getDmlGenerator();
 	
@@ -44,6 +50,8 @@ public interface Dialect {
 	
 	GeneratedKeysReaderFactory getGeneratedKeysReaderFactory();
 	
+	DatabaseSequenceSelectBuilder getDatabaseSequenceSelectBuilder();
+	
 	/**
 	 * Indicates if this dialect supports what ANSI-SQL terms "row value constructor" syntax, also called tuple syntax.
 	 * Basically, does it support syntax like <pre>"... where (FIRST_NAME, LAST_NAME) = ('John', 'Doe')"</pre>.
@@ -55,6 +63,8 @@ public interface Dialect {
 	class DialectSupport implements Dialect {
 		
 		private final DDLTableGenerator ddlTableGenerator;
+		
+		private final DDLSequenceGenerator ddlSequenceGenerator;
 		
 		private final DMLGenerator dmlGenerator;
 		
@@ -74,9 +84,12 @@ public interface Dialect {
 		
 		private final GeneratedKeysReaderFactory generatedKeysReaderFactory;
 		
+		private final DatabaseSequenceSelectBuilder databaseSequenceSelectBuilder;
+		
 		private final boolean supportsTupleCondition;
 		
 		public DialectSupport(DDLTableGenerator ddlTableGenerator,
+							  DDLSequenceGenerator ddlSequenceGenerator,
 							  DMLGenerator dmlGenerator,
 							  WriteOperationFactory writeOperationFactory,
 							  ReadOperationFactory readOperationFactory,
@@ -86,8 +99,10 @@ public interface Dialect {
 							  DMLNameProviderFactory dmlNameProviderFactory,
 							  int inOperatorMaxSize,
 							  GeneratedKeysReaderFactory generatedKeysReaderFactory,
+							  DatabaseSequenceSelectBuilder databaseSequenceSelectBuilder,
 							  boolean supportsTupleCondition) {
 			this.ddlTableGenerator = ddlTableGenerator;
+			this.ddlSequenceGenerator = ddlSequenceGenerator;
 			this.dmlGenerator = dmlGenerator;
 			this.writeOperationFactory = writeOperationFactory;
 			this.readOperationFactory = readOperationFactory;
@@ -97,12 +112,18 @@ public interface Dialect {
 			this.dmlNameProviderFactory = dmlNameProviderFactory;
 			this.inOperatorMaxSize = inOperatorMaxSize;
 			this.generatedKeysReaderFactory = generatedKeysReaderFactory;
+			this.databaseSequenceSelectBuilder = databaseSequenceSelectBuilder;
 			this.supportsTupleCondition = supportsTupleCondition;
 		}
 		
 		@Override
 		public DDLTableGenerator getDdlTableGenerator() {
 			return ddlTableGenerator;
+		}
+		
+		@Override
+		public DDLSequenceGenerator getDdlSequenceGenerator() {
+			return ddlSequenceGenerator;
 		}
 		
 		@Override
@@ -148,6 +169,11 @@ public interface Dialect {
 		@Override
 		public GeneratedKeysReaderFactory getGeneratedKeysReaderFactory() {
 			return generatedKeysReaderFactory;
+		}
+		
+		@Override
+		public DatabaseSequenceSelectBuilder getDatabaseSequenceSelectBuilder() {
+			return databaseSequenceSelectBuilder;
 		}
 		
 		@Override

@@ -147,11 +147,11 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 	}
 	
 	@Override
-	public Collection<Table> giveImpliedTables() {
+	public Collection<Table<?>> giveImpliedTables() {
 		// Implied tables are those of sub entities.
 		// Note that doing this lately (not in constructor) guaranties that it is uptodate because sub entities may have relations which are configured
 		// out of constructor by caller
-		Set<Table> subTables = subEntitiesPersisters.values().stream().flatMap(p -> p.giveImpliedTables().stream()).collect(Collectors.toSet());
+		Set<Table<?>> subTables = subEntitiesPersisters.values().stream().flatMap(p -> p.giveImpliedTables().stream()).collect(Collectors.toSet());
 		return Collections.cat(mainPersister.giveImpliedTables(), subTables);
 	}
 	

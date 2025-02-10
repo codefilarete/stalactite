@@ -941,7 +941,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			ddlDeployer.deployDDL();
 			
 			// column should be correctly created
-			Map<String, Table> tablePerName = map(persister.getEntityJoinTree().giveTables(), Table::getName);
+			Map<String, Table<?>> tablePerName = map(persister.getEntityJoinTree().giveTables(), Table::getName);
 			assertThat(tablePerName.keySet()).containsExactlyInAnyOrder("Toto", "Tata");
 			Table<?> totoTable = tablePerName.get("Toto");
 			Table<?> tataTable = tablePerName.get("Tata");
@@ -1104,9 +1104,6 @@ class FluentEntityMappingConfigurationSupportTest {
 			Set<String> identifiers = stringExecutableQuery.execute(Accumulators.toSet());
 			assertThat(identifiers).isEmpty();
 		}
-//		Set<Toto> dummy = persister.selectWhere(Toto::getName, Operators.like("%dummy%")).execute();
-//		assertThat(dummy).isEmpty();
-		
 		// TODO: check that no value on column does not insert row on secondary table
 	}
 	

@@ -148,7 +148,7 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	}
 	
 	@Override
-	public Collection<Table> giveImpliedTables() {
+	public Collection<Table<?>> giveImpliedTables() {
 		return this.surrogate.giveImpliedTables();
 	}
 	

@@ -16,6 +16,7 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.Dialect.DialectSupport;
 import org.codefilarete.stalactite.sql.GeneratedKeysReaderFactory;
 import org.codefilarete.stalactite.sql.QuerySQLBuilderFactoryBuilder;
+import org.codefilarete.stalactite.sql.ddl.DDLSequenceGenerator;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
@@ -58,6 +59,7 @@ public class PersistenceContextConfigurationBuilder {
 		SQLOperationsFactories sqlOperationsFactories = vendorSettings.getSqlOperationsFactoriesBuilder().build(columnBinderRegistry, dmlNameProviderFactory, sqlTypeRegistry);
 		
 		DDLTableGenerator ddlTableGenerator = sqlOperationsFactories.getDdlTableGenerator();
+		DDLSequenceGenerator ddlSequenceGenerator = sqlOperationsFactories.getDdlSequenceGenerator();
 		DMLGenerator dmlGenerator = sqlOperationsFactories.getDmlGenerator();
 		WriteOperationFactory writeOperationFactory = sqlOperationsFactories.getWriteOperationFactory();
 		ReadOperationFactory readOperationFactory = sqlOperationsFactories.getReadOperationFactory();
@@ -72,6 +74,7 @@ public class PersistenceContextConfigurationBuilder {
 		
 		Dialect dialect = new DialectSupport(
 				ddlTableGenerator,
+				ddlSequenceGenerator,
 				dmlGenerator,
 				writeOperationFactory,
 				readOperationFactory,
@@ -81,6 +84,7 @@ public class PersistenceContextConfigurationBuilder {
 				dmlNameProviderFactory,
 				Objects.preventNull(connectionSettings.getInOperatorMaxSize(), vendorSettings.getInOperatorMaxSize()),
 				generatedKeysReaderFactory,
+				vendorSettings.getDatabaseSequenceSelectBuilder(),
 				vendorSettings.supportsTupleCondition()
 		);
 		

@@ -206,10 +206,10 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 				.mapCollection(Person::getNicknames, String.class)
 				.build(persistenceContext);
 		
-		Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
-		Map<String, Table> tablePerName = map(tables, Table::getName);
-		Table personTable = tablePerName.get("Person");
-		Table nickNamesTable = tablePerName.get("Person_nicknames");
+		Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
+		Map<String, Table<?>> tablePerName = map(tables, Table::getName);
+		Table<?> personTable = tablePerName.get("Person");
+		Table<?> nickNamesTable = tablePerName.get("Person_nicknames");
 		
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 				Column::getAbsoluteName,
@@ -234,10 +234,10 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 				.withReverseJoinColumn("identifier")
 				.build(persistenceContext);
 		
-		Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
-		Map<String, Table> tablePerName = map(tables, Table::getName);
-		Table personTable = tablePerName.get("Person");
-		Table nickNamesTable = tablePerName.get("Person_nicknames");
+		Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
+		Map<String, Table<?>> tablePerName = map(tables, Table::getName);
+		Table<?> personTable = tablePerName.get("Person");
+		Table<?> nickNamesTable = tablePerName.get("Person_nicknames");
 		assertThat(nickNamesTable).isNotNull();
 		
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
@@ -262,10 +262,10 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 				.mapCollection(Person::getNicknames, String.class)
 				.build(persistenceContext);
 		
-		Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
-		Map<String, Table> tablePerName = map(tables, Table::getName);
-		Table personTable = tablePerName.get("Person");
-		Table nickNamesTable = tablePerName.get("Toto");
+		Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
+		Map<String, Table<?>> tablePerName = map(tables, Table::getName);
+		Table<?> personTable = tablePerName.get("Person");
+		Table<?> nickNamesTable = tablePerName.get("Toto");
 		assertThat(nickNamesTable).isNotNull();
 		
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
@@ -292,9 +292,9 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 				.withTable(nickNamesTable)
 				.build(persistenceContext);
 		
-		Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
-		Map<String, Table> tablePerName = map(tables, Table::getName);
-		Table personTable = tablePerName.get("Person");
+		Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
+		Map<String, Table<?>> tablePerName = map(tables, Table::getName);
+		Table<?> personTable = tablePerName.get("Person");
 		
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 				Column::getAbsoluteName,
@@ -318,10 +318,10 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 				.withTable("Toto")
 				.build(persistenceContext);
 		
-		Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
-		Map<String, Table> tablePerName = map(tables, Table::getName);
-		Table personTable = tablePerName.get("Person");
-		Table nickNamesTable = tablePerName.get("Toto");
+		Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
+		Map<String, Table<?>> tablePerName = map(tables, Table::getName);
+		Table<?> personTable = tablePerName.get("Person");
+		Table<?> nickNamesTable = tablePerName.get("Toto");
 		assertThat(nickNamesTable).isNotNull();
 		
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
@@ -346,10 +346,10 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 				.override("toto")
 				.build(persistenceContext);
 		
-		Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
-		Map<String, Table> tablePerName = map(tables, Table::getName);
-		Table personTable = tablePerName.get("Person");
-		Table nickNamesTable = tablePerName.get("Person_nicknames");
+		Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
+		Map<String, Table<?>> tablePerName = map(tables, Table::getName);
+		Table<?> personTable = tablePerName.get("Person");
+		Table<?> nickNamesTable = tablePerName.get("Person_nicknames");
 		
 		assertThat(nickNamesTable.mapColumnsOnName().keySet()).containsExactlyInAnyOrder("id", "toto");
 	}
@@ -468,10 +468,10 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
 		
-		Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
-		Map<String, Table> tablePerName = map(tables, Table::getName);
-		Table totoTimesTable = tablePerName.get("Toto_times");
-		Map<String, Column> timesTableColumn = totoTimesTable.mapColumnsOnName();
+		Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
+		Map<String, Table<?>> tablePerName = map(tables, Table::getName);
+		Table<?> totoTimesTable = tablePerName.get("Toto_times");
+		Map<String, ? extends Column<?, ?>> timesTableColumn = totoTimesTable.mapColumnsOnName();
 		assertThat(timesTableColumn.get("createdAt")).isNotNull();
 		
 		Toto person = new Toto();

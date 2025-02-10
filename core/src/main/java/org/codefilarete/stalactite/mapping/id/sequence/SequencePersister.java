@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.mapping.id.sequence;
 
+import java.sql.Connection;
 import java.util.Map;
 
 import org.codefilarete.stalactite.engine.runtime.BeanPersister;
@@ -130,7 +131,7 @@ public class SequencePersister extends BeanPersister<Sequence, String, SequenceT
 		}
 		
 		@Override
-		public void execute() {
+		public void execute(Connection currentSeparateConnection) {
 			sequence = readStep(sequenceName);
 			if (sequence != null) {
 				sequence.setStep(sequence.getStep() + stepSize);

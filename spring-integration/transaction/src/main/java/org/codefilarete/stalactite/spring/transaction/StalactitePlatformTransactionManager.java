@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.spring.transaction;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
-import java.util.List;
 import java.util.Set;
 
 import org.codefilarete.stalactite.sql.CommitListener;
@@ -57,42 +56,47 @@ public class StalactitePlatformTransactionManager extends JdbcTransactionManager
 	 */
 	@Override
 	public Connection giveConnection() {
-		ConnectionHolder resource = (ConnectionHolder) TransactionSynchronizationManager.getResource(getDataSource());
-		if (resource == null) {
-			throw new IllegalStateException("No connection available");
+		if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+			throw new IllegalStateException("No active transaction");
 		} else {
-			return resource.getConnection();
+			ConnectionHolder resource = (ConnectionHolder) TransactionSynchronizationManager.getResource(getDataSource());
+			if (resource == null) {
+				throw new IllegalStateException("No connection available");
+			} else {
+				return resource.getConnection();
+			}
 		}
 	}
 	
 	@Override
 	protected void prepareSynchronization(DefaultTransactionStatus status, TransactionDefinition definition) {
 		super.prepareSynchronization(status, definition);
-		List<TransactionSynchronization> synchronizations = TransactionSynchronizationManager.getSynchronizations();
-		this.commitListeners.forEach(commitListener -> synchronizations.add(new TransactionSynchronization() {
-			@Override
-			public void beforeCommit(boolean readOnly) {
-				commitListener.beforeCommit();
-			}
-			
-			@Override
-			public void afterCommit() {
-				commitListener.afterCommit();
-			}
-		}));
-		this.rollbackListeners.forEach(rollbackListener -> synchronizations.add(new TransactionSynchronization() {
-			
-			@Override
-			public void afterCompletion(int status) {
-				if (status == STATUS_ROLLED_BACK) {
-					rollbackListener.afterRollback();
+		if (status.isNewSynchronization()) {
+			this.commitListeners.forEach(commitListener -> TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+				@Override
+				public void beforeCommit(boolean readOnly) {
+					commitListener.beforeCommit();
 				}
-			}
-			
-			// Note that we can't implement a call to beforeRollback() because TransactionSynchronization doesn't propose it
-			// The closest method would be beforeCompletion() but it is also invoked on beforeCommit()
-			
-		}));
+				
+				@Override
+				public void afterCommit() {
+					commitListener.afterCommit();
+				}
+			}));
+			this.rollbackListeners.forEach(rollbackListener -> TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+				
+				@Override
+				public void afterCompletion(int status) {
+					if (status == STATUS_ROLLED_BACK) {
+						rollbackListener.afterRollback();
+					}
+				}
+				
+				// Note that we can't implement a call to beforeRollback() because TransactionSynchronization doesn't propose it
+				// The closest method would be beforeCompletion() but it is also invoked on beforeCommit()
+				
+			}));
+		}
 	}
 	
 	/**
@@ -107,7 +111,7 @@ public class StalactitePlatformTransactionManager extends JdbcTransactionManager
 		transactionTemplate.execute(new TransactionCallbackWithoutResult() {
 			@Override
 			protected void doInTransactionWithoutResult(TransactionStatus status) {
-				jdbcOperation.execute();
+				jdbcOperation.execute(giveConnection());
 			}
 		});
 	}

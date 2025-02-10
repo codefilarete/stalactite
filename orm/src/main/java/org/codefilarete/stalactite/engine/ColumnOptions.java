@@ -5,17 +5,13 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
+import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSettings;
 import org.codefilarete.stalactite.mapping.id.sequence.PooledHiLoSequence;
-import org.codefilarete.stalactite.mapping.id.sequence.PooledHiLoSequenceOptions;
-import org.codefilarete.stalactite.mapping.id.sequence.SequencePersister;
 import org.codefilarete.stalactite.mapping.id.sequence.SequenceStorageOptions;
-import org.codefilarete.stalactite.sql.ConnectionConfiguration;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.Strings;
 import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.Sequence;
 
@@ -77,10 +73,10 @@ public interface ColumnOptions<O> extends PropertyOptions<O> {
 		 * Sequence data will be stored as specified through {@link SequenceStorageOptions#DEFAULT}
 		 * 
 		 * @return a new policy that will be used to get the identifier value
-		 * @see #beforeInsert(SequenceStorageOptions) 
+		 * @see #pooledHiLoSequence(SequenceStorageOptions)
 		 */
-		static BeforeInsertIdentifierPolicy<Long> beforeInsert() {
-			return new DefaultBeforeInsertIdentifierPolicySupport();
+		static BeforeInsertIdentifierPolicy<Long> pooledHiLoSequence() {
+			return new PooledHiLoSequenceIdentifierPolicySupport();
 		}
 		
 		/**
@@ -92,21 +88,37 @@ public interface ColumnOptions<O> extends PropertyOptions<O> {
 		 * @see SequenceStorageOptions#DEFAULT
 		 * @see SequenceStorageOptions#HIBERNATE_DEFAULT
 		 */
-		static BeforeInsertIdentifierPolicy<Long> beforeInsert(SequenceStorageOptions sequenceStorageOptions) {
-			return new DefaultBeforeInsertIdentifierPolicySupport(sequenceStorageOptions);
+		static BeforeInsertIdentifierPolicy<Long> pooledHiLoSequence(SequenceStorageOptions sequenceStorageOptions) {
+			return new PooledHiLoSequenceIdentifierPolicySupport(sequenceStorageOptions);
+		}
+		
+		static BeforeInsertIdentifierPolicy<Long> databaseSequence(DatabaseSequenceNamingStrategy namingStrategy) {
+			return new DatabaseSequenceIdentifierPolicySupport(namingStrategy);
+		}
+		
+		static BeforeInsertIdentifierPolicy<Long> databaseSequence(String name) {
+			return new DatabaseSequenceIdentifierPolicySupport(entityType -> name);
+		}
+		
+		static BeforeInsertIdentifierPolicy<Long> databaseSequence(DatabaseSequenceNamingStrategy namingStrategy, DatabaseSequenceSettings databaseSequenceSettings) {
+			return new DatabaseSequenceIdentifierPolicySupport(namingStrategy, databaseSequenceSettings);
+		}
+		
+		static BeforeInsertIdentifierPolicy<Long> databaseSequence(String name, DatabaseSequenceSettings databaseSequenceSettings) {
+			return new DatabaseSequenceIdentifierPolicySupport(entityType -> name, databaseSequenceSettings);
 		}
 		
 		/**
 		 * Policy for entities that want their id fixed just before insert which value is given by a {@link Sequence}.
 		 * Be aware that given sequence will be shared across all managed entities, meaning that, for instance,
 		 * if it is a long sequence, an integer value can't be found twice in whole entities.   
-		 * Reader may be interested in other {@link #beforeInsert()} methods to avoid such sharing behavior.
+		 * Reader may be interested in other {@link #pooledHiLoSequence()} methods to avoid such sharing behavior.
 		 *
 		 * @param sequence the {@link Sequence} to ask for identifier value
 		 * @param <I> identifier type
 		 * @return a new policy that will be used to get the identifier value
 		 */
-		static <I> BeforeInsertIdentifierPolicy<I> beforeInsert(Sequence<I> sequence) {
+		static <I> BeforeInsertIdentifierPolicy<I> pooledHiLoSequence(Sequence<I> sequence) {
 			return new BeforeInsertIdentifierPolicySupport<>(sequence);
 		}
 		
@@ -145,15 +157,6 @@ public interface ColumnOptions<O> extends PropertyOptions<O> {
 	 */
 	interface BeforeInsertIdentifierPolicy<I> extends IdentifierPolicy<I> {
 		
-		/**
-		 * Expected to return a {@link Sequence} for given arguments
-		 *
-		 * @param entityType entity to get a sequence for
-		 * @param connectionConfiguration elements to get access to database, its {@link ConnectionProvider} is a {@link SeparateTransactionExecutor}
-		 * @param dialect useful to build DML statements that manage sequence value persistence
-		 * @return
-		 */
-		Sequence<I> getIdentifierProvider(Class<?> entityType, ConnectionConfiguration connectionConfiguration, Dialect dialect);
 	}
 	
 	/**
@@ -164,16 +167,14 @@ public interface ColumnOptions<O> extends PropertyOptions<O> {
 	 */
 	class BeforeInsertIdentifierPolicySupport<I> implements BeforeInsertIdentifierPolicy<I> {
 		
-		private final Sequence<I> identifierProvider;
+		private final Sequence<I> sequence;
 		
-		public BeforeInsertIdentifierPolicySupport(Sequence<I> identifierProvider) {
-			this.identifierProvider = identifierProvider;
+		public BeforeInsertIdentifierPolicySupport(Sequence<I> sequence) {
+			this.sequence = sequence;
 		}
 		
-		@Override
-		public Sequence<I> getIdentifierProvider(Class<?> entityType, ConnectionConfiguration connectionConfiguration, Dialect dialect) {
-			// we return sequence given at construction time 
-			return identifierProvider;
+		public Sequence<I> getSequence() {
+			return sequence;
 		}
 	}
 	
@@ -182,33 +183,60 @@ public interface ColumnOptions<O> extends PropertyOptions<O> {
 	 * 
 	 * @author Guillaume Mary
 	 */
-	class DefaultBeforeInsertIdentifierPolicySupport implements BeforeInsertIdentifierPolicy<Long> {
+	class PooledHiLoSequenceIdentifierPolicySupport implements BeforeInsertIdentifierPolicy<Long> {
 		
 		private final SequenceStorageOptions storageOptions;
 		
-		public DefaultBeforeInsertIdentifierPolicySupport() {
+		public PooledHiLoSequenceIdentifierPolicySupport() {
 			this.storageOptions = SequenceStorageOptions.DEFAULT;
 		}
 		
-		public DefaultBeforeInsertIdentifierPolicySupport(SequenceStorageOptions sequenceStorageOptions) {
+		public PooledHiLoSequenceIdentifierPolicySupport(SequenceStorageOptions sequenceStorageOptions) {
 			this.storageOptions = sequenceStorageOptions;
 		}
 		
-		/**
-		 * Overridden to dynamically build a {@link Sequence} for given arguments while using storage options given at
-		 * construction time
-		 */
-		@Override
-		public Sequence<Long> getIdentifierProvider(Class<?> entityType, ConnectionConfiguration connectionConfiguration, Dialect dialect) {
-			PooledHiLoSequenceOptions options = new PooledHiLoSequenceOptions(50, entityType.getSimpleName());
-			ConnectionProvider connectionProvider = connectionConfiguration.getConnectionProvider();
-			if (!(connectionProvider instanceof SeparateTransactionExecutor)) {
-				throw new MappingConfigurationException("Before-insert identifier policy configured with connection that doesn't support separate transaction,"
-						+ " please provide a " + Reflections.toString(SeparateTransactionExecutor.class) + " as connection provider or change identifier policy");
-			}
-			return new PooledHiLoSequence(options,
-					new SequencePersister(storageOptions, dialect, (SeparateTransactionExecutor) connectionProvider, connectionConfiguration.getBatchSize()));
+		public SequenceStorageOptions getStorageOptions() {
+			return storageOptions;
 		}
+	}
+
+	/**
+	 * Identifier pôlicy support for Database sequence (per entity)
+	 */
+	class DatabaseSequenceIdentifierPolicySupport implements BeforeInsertIdentifierPolicy<Long> {
+		
+		private final DatabaseSequenceNamingStrategy databaseSequenceNamingStrategy;
+		private final DatabaseSequenceSettings databaseSequenceSettings;
+		
+		public DatabaseSequenceIdentifierPolicySupport() {
+			this(DatabaseSequenceNamingStrategy.DEFAULT);
+		}
+		
+		public DatabaseSequenceIdentifierPolicySupport(DatabaseSequenceNamingStrategy databaseSequenceNamingStrategy) {
+			this(databaseSequenceNamingStrategy, new DatabaseSequenceSettings(1, 1));
+		}
+		
+		public DatabaseSequenceIdentifierPolicySupport(DatabaseSequenceNamingStrategy databaseSequenceNamingStrategy, DatabaseSequenceSettings databaseSequenceSettings) {
+			this.databaseSequenceNamingStrategy = databaseSequenceNamingStrategy;
+			this.databaseSequenceSettings = databaseSequenceSettings;
+		}
+		
+		public DatabaseSequenceNamingStrategy getDatabaseSequenceNamingStrategy() {
+			return databaseSequenceNamingStrategy;
+		}
+		
+		public DatabaseSequenceSettings getDatabaseSequenceSettings() {
+			return databaseSequenceSettings;
+		}
+	}
+	
+	interface DatabaseSequenceNamingStrategy {
+		
+		String giveName(Class<?> entityType);
+		
+		DatabaseSequenceNamingStrategy HIBERNATE_DEFAULT = entityType -> Strings.capitalize(entityType.getSimpleName()) + "_seq";
+		
+		DatabaseSequenceNamingStrategy DEFAULT = HIBERNATE_DEFAULT; 
 	}
 	
 	/**

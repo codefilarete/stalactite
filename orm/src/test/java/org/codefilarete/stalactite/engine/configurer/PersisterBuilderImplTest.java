@@ -392,7 +392,7 @@ public class PersisterBuilderImplTest {
 	@Test
 	void addIdentifyingPrimarykey_beforeInsertPolicy() {
 		EntityMappingConfiguration<AbstractVehicle, Identifier<Long>> identifyingConfiguration = entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
-				.mapKey(AbstractVehicle::getId, IdentifierPolicy.beforeInsert(new Sequence<Identifier<Long>>() {
+				.mapKey(AbstractVehicle::getId, IdentifierPolicy.pooledHiLoSequence(new Sequence<Identifier<Long>>() {
 					
 					private long identifier = 0;
 					

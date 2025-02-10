@@ -4,20 +4,18 @@ import javax.sql.DataSource;
 import java.util.Optional;
 
 import org.codefilarete.stalactite.engine.ColumnOptions;
+import org.codefilarete.stalactite.engine.CurrentThreadTransactionalConnectionProvider;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.MappingEase;
 import org.codefilarete.stalactite.engine.PersistenceContext;
-import org.codefilarete.stalactite.engine.CurrentThreadTransactionalConnectionProvider;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
+import org.codefilarete.stalactite.spring.repository.config.StalactitePlatformTransactionManagerTest.StalactiteTransactionalContextConfiguration;
+import org.codefilarete.stalactite.spring.transaction.StalactitePlatformTransactionManager;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.spring.repository.config.StalactitePlatformTransactionManagerTest.StalactiteTransactionalContextConfiguration;
-import org.codefilarete.stalactite.spring.transaction.StalactitePlatformTransactionManager;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
@@ -30,7 +28,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -46,9 +43,6 @@ class StalactitePlatformTransactionManagerTest {
     
 	@Autowired
 	private DummyStalactiteRepository dummyStalactiteRepository;
-	
-	@Autowired
-	private PersistenceContext persistenceContext;
 	
 	@Nested
 	@TestMethodOrder(OrderAnnotation.class)
@@ -79,48 +73,6 @@ class StalactitePlatformTransactionManagerTest {
 		}
 	}
 	
-	@Nested
-	@TestMethodOrder(OrderAnnotation.class)
-	class WithPersistenceContext {
-		
-		// Adding @Transactional marks the methods to be transactional with rollback after their execution,
-		// without it StalactitePlatformTransactionManager won't find any running transaction nor pending connection in
-		// TransactionSynchronizationManager, making it throw a NullPointerException
-		// This is required because PersistenceContext.insert(..) is not marked as @Transactional
-		// as SimpleStalactiteRepository.save(..) is.
-		@Transactional
-		@Test
-		@Order(1)
-		void createData() {
-			Table personTable = new Table("Person");
-			Column<Table, Long> idColumn = personTable.addColumn("id", long.class);
-			Column<Table, String> nameColumn = personTable.addColumn("name", String.class);
-			persistenceContext.insert(personTable)
-					.set(idColumn, 42L)
-					.set(nameColumn, "Toto")
-					.execute();
-		}
-		
-		// Adding @Transactional marks the methods to be transactional with rollback after their execution,
-		// without it StalactitePlatformTransactionManager won't find any running transaction nor pending connection in
-		// TransactionSynchronizationManager, making it throw a NullPointerException
-		// This is required because PersistenceContext.insert(..) is not marked as @Transactional
-		// as SimpleStalactiteRepository.save(..) is.
-		@Transactional
-		@Test
-		@Order(2)
-		void createSameDataAgain() {
-			Table personTable = new Table("Person");
-			Column<Table, Long> idColumn = personTable.addColumn("id", long.class);
-			Column<Table, String> nameColumn = personTable.addColumn("name", String.class);
-			// trying to insert : this will throw an exception if data already exists due to primary key conflict
-			persistenceContext.insert(personTable)
-					.set(idColumn, 42L)
-					.set(nameColumn, "Toto")
-					.execute();
-		}
-	}
-	
 	public static class StalactiteTransactionalContextConfiguration {
 		
 		@Bean
@@ -134,12 +86,12 @@ class StalactitePlatformTransactionManagerTest {
 		}
 		
 		@Bean
-		public PersistenceContext persistenceContext(StalactitePlatformTransactionManager dataSource) {
+		public PersistenceContext persistenceContext(StalactitePlatformTransactionManager transactionManager) {
 			HSQLDBDialect dialect = new HSQLDBDialect();
 			dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 			dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 			
-			return new PersistenceContext(dataSource, dialect);
+			return new PersistenceContext(transactionManager, dialect);
 		}
 		
 		@Bean
@@ -155,7 +107,9 @@ class StalactitePlatformTransactionManagerTest {
 			PersistenceContext persistenceContext = event.getApplicationContext().getBean(PersistenceContext.class);
 			DataSource dataSource = event.getApplicationContext().getBean(DataSource.class);
 			Dialect dialect = persistenceContext.getDialect();
-			DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), new CurrentThreadTransactionalConnectionProvider(dataSource));
+			// Note that we use a CurrentThreadTransactionalConnectionProvider instead of existing StalactitePlatformTransactionManager
+			// because Transaction doesn't exist yet, even by marking @Transactional current method 
+			DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), dialect.getDdlSequenceGenerator(), new CurrentThreadTransactionalConnectionProvider(dataSource));
 			ddlDeployer.getDdlGenerator().addTables(DDLDeployer.collectTables(persistenceContext));
 			ddlDeployer.deployDDL();
 		}

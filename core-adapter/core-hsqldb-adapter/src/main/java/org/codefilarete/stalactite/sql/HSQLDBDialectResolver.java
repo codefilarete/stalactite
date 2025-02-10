@@ -7,6 +7,7 @@ import org.codefilarete.stalactite.engine.SQLOperationsFactories;
 import org.codefilarete.stalactite.sql.GeneratedKeysReaderFactory.DefaultGeneratedKeysReaderFactory;
 import org.codefilarete.stalactite.sql.HSQLDBDialect.HSQLDBWriteOperationFactory;
 import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver.DatabaseSignet;
+import org.codefilarete.stalactite.sql.ddl.DDLSequenceGenerator;
 import org.codefilarete.stalactite.sql.ddl.HSQLDBDDLTableGenerator;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
@@ -36,9 +37,11 @@ public class HSQLDBDialectResolver {
 				(parameterBinders, dmlNameProviderFactory, sqlTypeRegistry) -> {
 					DMLGenerator dmlGenerator = new DMLGenerator(parameterBinders, NoopSorter.INSTANCE, dmlNameProviderFactory);
 					HSQLDBDDLTableGenerator ddlTableGenerator = new HSQLDBDDLTableGenerator(sqlTypeRegistry, dmlNameProviderFactory);
-					return new SQLOperationsFactories(new HSQLDBWriteOperationFactory(), new ReadOperationFactory(), dmlGenerator, ddlTableGenerator);
+					DDLSequenceGenerator ddlSequenceGenerator = new DDLSequenceGenerator(dmlNameProviderFactory);
+					return new SQLOperationsFactories(new HSQLDBWriteOperationFactory(), new ReadOperationFactory(), dmlGenerator, ddlTableGenerator, ddlSequenceGenerator);
 				},
 				new DefaultGeneratedKeysReaderFactory(PARAMETER_BINDER_REGISTRY),
+				sequenceName -> "call next value for " + sequenceName,
 				100,
 				false
 		);

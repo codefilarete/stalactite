@@ -40,7 +40,7 @@ abstract class SelectExecutorITTest<T extends Table<T>> extends DatabaseIntegrat
 		
 		Connection connection = connectionProvider.giveConnection();
 		ConnectionProvider connectionProvider = new SimpleConnectionProvider(connection);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), connectionProvider);
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), dialect.getDdlSequenceGenerator(), connectionProvider);
 		ddlDeployer.getDdlGenerator().addTables(persistenceConfiguration.classMappingStrategy.getTargetTable());
 		ddlDeployer.deployDDL();
 		connection.prepareStatement("insert into Toto(a, b, c) values (1, 10, 100)").execute();
@@ -74,7 +74,7 @@ abstract class SelectExecutorITTest<T extends Table<T>> extends DatabaseIntegrat
 		
 		Connection connection = connectionProvider.giveConnection();
 		ConnectionProvider connectionProvider = new SimpleConnectionProvider(connection);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), connectionProvider);
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), dialect.getDdlSequenceGenerator(), connectionProvider);
 		ddlDeployer.getDdlGenerator().addTables(persistenceConfiguration.classMappingStrategy.getTargetTable());
 		ddlDeployer.deployDDL();
 		connection.prepareStatement("insert into Toto(a, b, c) values (1, 10, 100)").execute();
@@ -100,7 +100,7 @@ abstract class SelectExecutorITTest<T extends Table<T>> extends DatabaseIntegrat
 		
 		Connection connection = connectionProvider.giveConnection();
 		ConnectionProvider connectionProvider = new SimpleConnectionProvider(connection);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), connectionProvider);
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), dialect.getDdlSequenceGenerator(), connectionProvider);
 		ddlDeployer.getDdlGenerator().addTables(persistenceConfiguration.classMappingStrategy.getTargetTable());
 		ddlDeployer.deployDDL();
 		connection.prepareStatement("insert into Tata(a, b, c) values (1, 10, 100)").execute();

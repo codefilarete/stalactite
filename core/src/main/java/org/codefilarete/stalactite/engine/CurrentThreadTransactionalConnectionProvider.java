@@ -52,7 +52,7 @@ public class CurrentThreadTransactionalConnectionProvider implements ConnectionC
 		Savepoint savepoint = null;
 		try {
 			savepoint = currentConnection.setSavepoint();
-			jdbcOperation.execute();
+			jdbcOperation.execute(currentConnection);
 		} catch (Exception e) {
 			if (savepoint != null) {
 				try {

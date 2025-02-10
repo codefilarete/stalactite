@@ -108,7 +108,7 @@ class TablePerClassPolymorphismBuilderTest {
 			}
 		};
 		EntityPersister<Element, Long> configuration = entityBuilder(Element.class, long.class)
-				.mapKey(Element::getId, IdentifierPolicy.beforeInsert(identifierGenerator))
+				.mapKey(Element::getId, IdentifierPolicy.pooledHiLoSequence(identifierGenerator))
 				.mapPolymorphism(POLYMORPHISM_POLICY)
 				.build(persistenceContext);
 		

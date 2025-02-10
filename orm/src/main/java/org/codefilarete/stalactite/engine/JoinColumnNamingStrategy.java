@@ -21,4 +21,6 @@ public interface JoinColumnNamingStrategy {
 	 */
 	JoinColumnNamingStrategy JOIN_DEFAULT = (accessor, targetColumn) -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + Strings.capitalize(targetColumn.getName());
 	
+	JoinColumnNamingStrategy HIBERNATE_DEFAULT = (accessor, targetColumn) -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + '_' + targetColumn.getName();
+	
 }

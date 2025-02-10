@@ -66,7 +66,7 @@ public class SequencePersisterTest {
 		List<SequencePersister.Sequence> updatedSequence = new ArrayList<>();
 		SeparateTransactionExecutor separateTransactionExecutorMock = mock(SeparateTransactionExecutor.class);
 		doAnswer((Answer<Void>) invocationOnMock -> {
-			((JdbcOperation) invocationOnMock.getArgument(0)).execute();
+			((JdbcOperation) invocationOnMock.getArgument(0)).execute(null);
 			return null;
 		}).when(separateTransactionExecutorMock).executeInNewTransaction(any());
 		SequencePersister testInstance = new SequencePersister(new DefaultDialect(), separateTransactionExecutorMock, 42) {
@@ -102,7 +102,7 @@ public class SequencePersisterTest {
 		List<SequencePersister.Sequence> updatedSequence = new ArrayList<>();
 		SeparateTransactionExecutor separateTransactionExecutorMock = mock(SeparateTransactionExecutor.class);
 		doAnswer((Answer<Void>) invocationOnMock -> {
-			((JdbcOperation) invocationOnMock.getArgument(0)).execute();
+			((JdbcOperation) invocationOnMock.getArgument(0)).execute(null);
 			return null;
 		}).when(separateTransactionExecutorMock).executeInNewTransaction(any());
 		SequencePersister testInstance = new SequencePersister(new DefaultDialect(), separateTransactionExecutorMock, 42) {

@@ -262,7 +262,7 @@ public class EntityMappingTreeSelectExecutorTest {
 		Column<T, String> name = targetTable.addColumn("name", String.class);
 		
 		ConnectionProvider connectionProvider = new CurrentThreadConnectionProvider(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(new HSQLDBDialect().getDdlTableGenerator(), connectionProvider);
+		DDLDeployer ddlDeployer = new DDLDeployer(new HSQLDBDialect().getDdlTableGenerator(), new HSQLDBDialect().getDdlSequenceGenerator(), connectionProvider);
 		ddlDeployer.getDdlGenerator().addTables(targetTable);
 		ddlDeployer.deployDDL();
 		

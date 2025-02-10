@@ -317,7 +317,7 @@ class EntityJoinTreeTest {
 		String tataAddKey2 = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingAdapter(tataCloneMappingMock), totoPrimaryKey, tataClonePrimaryKey, null, INNER, null, Collections.emptySet());
 		String tutuAddKey2 = entityJoinTree.addRelationJoin(tataAddKey2, new EntityMappingAdapter(tutuCloneMappingMock), tataClonePrimaryKey, tutuClonePrimaryKey, null, INNER, null, Collections.emptySet());
 		
-		Set<Table> actualTables = entityJoinTree.giveTables();
+		Set<Table<?>> actualTables = entityJoinTree.giveTables();
 		
 		org.assertj.core.api.Assertions.assertThat(actualTables).isEqualTo(
 				Arrays.asHashSet(totoTable, tataTable, tataTableClone, titiTable, tutuTable, tutuTableClone));
@@ -346,7 +346,7 @@ class EntityJoinTreeTest {
 						.leftOuterJoin(table5.asPseudoTable("a sub pseudo table"), "whatever join 2")
 						.getQuery()
 		);
-		Set<Table> foundTables = testInstance.lookupTable(union.asPseudoTable("a pseudo table"));
+		Set<Table<?>> foundTables = testInstance.lookupTable(union.asPseudoTable("a pseudo table"));
 		assertThat(foundTables).containsExactlyInAnyOrder(table1, table2, table3, table4);
 	}
 	

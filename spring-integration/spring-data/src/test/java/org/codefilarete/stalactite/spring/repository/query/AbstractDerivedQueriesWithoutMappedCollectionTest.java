@@ -310,7 +310,7 @@ abstract class AbstractDerivedQueriesWithoutMappedCollectionTest {
 			PersistenceContext persistenceContext = event.getApplicationContext().getBean(PersistenceContext.class);
 			DataSource dataSource = event.getApplicationContext().getBean(DataSource.class);
 			Dialect dialect = persistenceContext.getDialect();
-			DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), new CurrentThreadTransactionalConnectionProvider(dataSource));
+			DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), dialect.getDdlSequenceGenerator(), new CurrentThreadTransactionalConnectionProvider(dataSource));
 			ddlDeployer.getDdlGenerator().addTables(DDLDeployer.collectTables(persistenceContext));
 			ddlDeployer.deployDDL();
 		}
