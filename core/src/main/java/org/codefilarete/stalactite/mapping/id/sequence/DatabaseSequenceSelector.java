@@ -1,12 +1,14 @@
 package org.codefilarete.stalactite.mapping.id.sequence;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collections;
 
 import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Sequence;
+import org.codefilarete.stalactite.sql.statement.ReadOperation;
+import org.codefilarete.stalactite.sql.statement.StringParamedSQL;
 import org.codefilarete.tool.VisibleForTesting;
 
 import static org.codefilarete.tool.bean.Objects.preventNull;
@@ -19,18 +21,15 @@ import static org.codefilarete.tool.bean.Objects.preventNull;
 public class DatabaseSequenceSelector implements org.codefilarete.tool.function.Sequence<Long> {
 	
 	private final Sequence databaseSequence;
-	private final String selectStatement;
 	private final int poolSize;
-	private final ConnectionProvider connectionProvider;
-	private long currentValue;
+	private final ReadOperation<String> readOperation;
+	private final InternalState internalState = new InternalState();
 	
-	private boolean initialized = false;
-	
-	public DatabaseSequenceSelector(Sequence databaseSequence, String selectStatement, ConnectionProvider connectionProvider) {
+	public DatabaseSequenceSelector(Sequence databaseSequence, Dialect dialect, ConnectionProvider connectionProvider) {
 		this.databaseSequence = databaseSequence;
-		this.selectStatement = selectStatement;
 		this.poolSize = preventNull(databaseSequence.getBatchSize(), 1);
-		this.connectionProvider = connectionProvider;
+		String selectStatement = dialect.getDatabaseSequenceSelectBuilder().buildSelect(databaseSequence.getAbsoluteName());
+		this.readOperation = dialect.getReadOperationFactory().createInstance(new StringParamedSQL(selectStatement, Collections.EMPTY_MAP), connectionProvider);
 	}
 	
 	public Sequence getDatabaseSequence() {
@@ -39,27 +38,22 @@ public class DatabaseSequenceSelector implements org.codefilarete.tool.function.
 	
 	@Override
 	public synchronized Long next() {
-		if (!initialized) {
-			currentValue = callDatabase();
-			initialized = true;
-			return currentValue;
-		} else if (currentValue % poolSize == 0) {
-			currentValue = callDatabase();
-			return currentValue;
+		if (!internalState.initialized) {
+			internalState.currentValue = callDatabase();
+			internalState.initialized = true;
+			return internalState.currentValue;
+		} else if (internalState.currentValue % poolSize == 0) {
+			internalState.currentValue = callDatabase();
+			return internalState.currentValue;
 		} else {
-			return ++currentValue;
+			return ++internalState.currentValue;
 		}
 	}
 	
 	@VisibleForTesting
 	long callDatabase() {
-		// Connection Management :
-		// - sequence are independent of transactions, though no need to invoke executeInSeparateTransaction(..)
-		// - we don't close it (through try-with-resource) because it will impact caller
-		//   and giveConnection() is expected to return the one "already in use"
-		Connection currentConnection = connectionProvider.giveConnection();
-		try (PreparedStatement ps = currentConnection.prepareStatement(selectStatement)) {
-			ResultSet rs = ps.executeQuery();
+		try {
+			ResultSet rs = readOperation.execute();
 			rs.next();
 			// we use index access to read next value column to avoid keeping the column name in this class
 			// moreover, it has no interest here since we only retrieve one column
@@ -67,5 +61,10 @@ public class DatabaseSequenceSelector implements org.codefilarete.tool.function.
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
+	}
+	
+	private static class InternalState {
+		private long currentValue;
+		private boolean initialized = false;
 	}
 }

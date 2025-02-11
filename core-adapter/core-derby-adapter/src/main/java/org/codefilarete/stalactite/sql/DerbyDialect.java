@@ -7,6 +7,7 @@ import java.util.stream.LongStream;
 
 import org.apache.derby.impl.jdbc.EmbedConnection;
 import org.apache.derby.impl.jdbc.EmbedStatement;
+import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.DerbyDDLTableGenerator;
 import org.codefilarete.stalactite.sql.statement.DerbyReadOperation;
@@ -52,6 +53,11 @@ public class DerbyDialect extends DefaultDialect {
 	@Override
 	protected WriteOperationFactory newWriteOperationFactory() {
 		return new DerbyWriteOperationFactory();
+	}
+	
+	@Override
+	public DatabaseSequenceSelectBuilder getDatabaseSequenceSelectBuilder() {
+		return sequenceName -> "values next value for " + sequenceName;
 	}
 	
 	public static class DerbyReadOperationFactory extends ReadOperationFactory {

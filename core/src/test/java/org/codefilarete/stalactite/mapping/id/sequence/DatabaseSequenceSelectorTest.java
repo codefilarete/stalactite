@@ -7,6 +7,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Sequence;
 import org.codefilarete.tool.trace.ModifiableLong;
 import org.junit.jupiter.api.Test;
@@ -19,7 +20,7 @@ class DatabaseSequenceSelectorTest {
 	void next_basic() {
 		List<Long> databaseCalls = new ArrayList<>();
 		ModifiableLong counter = new ModifiableLong();
-		DatabaseSequenceSelector testInstance = new DatabaseSequenceSelector(new Sequence("whatever sequence name"), "whatever SQL, it won't be called", null) {
+		DatabaseSequenceSelector testInstance = new DatabaseSequenceSelector(new Sequence("whatever sequence name"), new DefaultDialect(), null) {
 			@Override
 			long callDatabase() {
 				long value = counter.increment();
@@ -40,7 +41,7 @@ class DatabaseSequenceSelectorTest {
 		int poolSize = 3;
 		ModifiableLong counter = new ModifiableLong(-poolSize + 1);
 		DatabaseSequenceSelector testInstance = new DatabaseSequenceSelector(new Sequence("whatever sequence name")
-				.withBatchSize(poolSize), "whatever SQL, it won't be called", null) {
+				.withBatchSize(poolSize), new DefaultDialect(), null) {
 			@Override
 			long callDatabase() {
 				long value = counter.increment(poolSize);
@@ -62,7 +63,7 @@ class DatabaseSequenceSelectorTest {
 		int poolSize = 3;
 		AtomicLong counter = new AtomicLong(1);
 		DatabaseSequenceSelector testInstance = new DatabaseSequenceSelector(new Sequence("whatever sequence name")
-				.withBatchSize(poolSize), "whatever SQL, it won't be called", null) {
+				.withBatchSize(poolSize), new DefaultDialect(), null) {
 			@Override
 			long callDatabase() {
 				long value = counter.getAndAdd(poolSize);

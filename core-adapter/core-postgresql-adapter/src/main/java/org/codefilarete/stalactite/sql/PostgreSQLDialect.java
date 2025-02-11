@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelectBuilder;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
@@ -20,6 +21,8 @@ import org.codefilarete.tool.collection.Arrays;
  */
 public class PostgreSQLDialect extends DefaultDialect {
 	
+	private final PostgreSQLSequenceSelectBuilder postgreSQLSequenceSelectBuilder = new PostgreSQLSequenceSelectBuilder();
+	
 	public PostgreSQLDialect() {
 		super(new PostgreSQLTypeMapping(), new PostgreSQLParameterBinderRegistry());
 	}
@@ -32,6 +35,11 @@ public class PostgreSQLDialect extends DefaultDialect {
 	@Override
 	public DDLTableGenerator newDdlTableGenerator() {
 		return new PostgreSQLDDLTableGenerator(getSqlTypeRegistry(), PostgreSQLDMLNameProvider::new);
+	}
+	
+	@Override
+	public DatabaseSequenceSelectBuilder getDatabaseSequenceSelectBuilder() {
+		return postgreSQLSequenceSelectBuilder;
 	}
 	
 	public static class PostgreSQLDMLNameProvider extends DMLNameProvider {

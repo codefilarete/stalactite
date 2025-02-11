@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.sql;
 
+import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.MariaDBDDLTableGenerator;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
@@ -16,6 +17,8 @@ import org.codefilarete.stalactite.sql.statement.binder.MariaDBTypeMapping;
  * @author Guillaume Mary
  */
 public class MariaDBDialect extends DefaultDialect {
+	
+	private final MariaDBSequenceSelectBuilder mariaDBSequenceSelectBuilder = new MariaDBSequenceSelectBuilder();
 	
 	public MariaDBDialect() {
 		super(new MariaDBTypeMapping(), new MariaDBParameterBinderRegistry());
@@ -43,6 +46,11 @@ public class MariaDBDialect extends DefaultDialect {
 	@Override
 	protected WriteOperationFactory newWriteOperationFactory() {
 		return new MariaDBWriteOperationFactory();
+	}
+	
+	@Override
+	public DatabaseSequenceSelectBuilder getDatabaseSequenceSelectBuilder() {
+		return mariaDBSequenceSelectBuilder;
 	}
 	
 	@Override

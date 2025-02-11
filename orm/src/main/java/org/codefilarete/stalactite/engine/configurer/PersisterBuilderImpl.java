@@ -892,8 +892,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 								.withBatchSize(databaseSequenceSupport.getDatabaseSequenceSettings().getBatchSize())
 								.withInitialValue(databaseSequenceSupport.getDatabaseSequenceSettings().getInitialValue())
 							;
-					sequence = (Sequence<I>) new DatabaseSequenceSelector(databaseSequence, dialect.getDatabaseSequenceSelectBuilder().buildSelect(sequenceName),
-							connectionConfiguration.getConnectionProvider());
+					sequence = (Sequence<I>) new DatabaseSequenceSelector(databaseSequence, dialect, connectionConfiguration.getConnectionProvider());
 				} else if (identifierPolicy instanceof ColumnOptions.BeforeInsertIdentifierPolicySupport) {
 					sequence = ((ColumnOptions.BeforeInsertIdentifierPolicySupport<I>) identifierPolicy).getSequence();
 				} else {

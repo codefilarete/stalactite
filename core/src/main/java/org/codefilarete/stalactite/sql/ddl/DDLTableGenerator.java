@@ -44,7 +44,7 @@ public class DDLTableGenerator {
 		return sqlCreateTable.toString();
 	}
 	
-	protected void generateCreatePrimaryKey(PrimaryKey primaryKey, DDLAppender sqlCreateTable) {
+	protected void generateCreatePrimaryKey(PrimaryKey<?, ?> primaryKey, DDLAppender sqlCreateTable) {
 		sqlCreateTable.cat(", primary key (")
 			.ccat(primaryKey.getColumns(), ", ")
 			.cat(")");

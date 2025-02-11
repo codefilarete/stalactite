@@ -27,7 +27,9 @@ import org.codefilarete.tool.function.ThrowingBiFunction;
 /**
  * @author Guillaume Mary
  */
-public class HSQLDBDialect extends DefaultDialect { 
+public class HSQLDBDialect extends DefaultDialect {
+	
+	private final HSQLDBSequenceSelectBuilder hsqldbSequenceSelectBuilder = new HSQLDBSequenceSelectBuilder();
 	
 	public HSQLDBDialect() {
 		super(new HSQLDBTypeMapping(), new HSQLDBParameterBinderRegistry());
@@ -50,7 +52,7 @@ public class HSQLDBDialect extends DefaultDialect {
 	
 	@Override
 	public DatabaseSequenceSelectBuilder getDatabaseSequenceSelectBuilder() {
-		return sequenceName -> "CALL NEXT VALUE FOR " + sequenceName;
+		return hsqldbSequenceSelectBuilder;
 	}
 	
 	@Override
@@ -104,5 +106,4 @@ public class HSQLDBDialect extends DefaultDialect {
 			return super.getName(table);
 		}
 	}
-	
 }

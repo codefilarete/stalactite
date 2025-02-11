@@ -1,7 +1,6 @@
 package org.codefilarete.stalactite.sql;
 
 import java.util.Collections;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -19,7 +18,9 @@ import org.codefilarete.tool.collection.Arrays;
 /**
  * @author Guillaume Mary
  */
-public class H2Dialect extends DefaultDialect { 
+public class H2Dialect extends DefaultDialect {
+	
+	private final H2SequenceSelectBuilder h2SequenceSelectBuilder = new H2SequenceSelectBuilder();
 	
 	public H2Dialect() {
 		super(new H2TypeMapping(), new H2ParameterBinderRegistry());
@@ -37,7 +38,7 @@ public class H2Dialect extends DefaultDialect {
 	
 	@Override
 	public DatabaseSequenceSelectBuilder getDatabaseSequenceSelectBuilder() {
-		return sequenceName -> "SELECT NEXT VALUE FOR " + sequenceName;
+		return h2SequenceSelectBuilder;
 	}
 	
 	public static class H2DMLNameProvider extends DMLNameProvider {
@@ -69,5 +70,4 @@ public class H2Dialect extends DefaultDialect {
 			return super.getName(table);
 		}
 	}
-	
 }

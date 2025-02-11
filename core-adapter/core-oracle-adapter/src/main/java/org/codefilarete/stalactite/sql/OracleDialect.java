@@ -25,7 +25,9 @@ import org.codefilarete.tool.collection.Iterables;
 /**
  * @author Guillaume Mary
  */
-public class OracleDialect extends DefaultDialect { 
+public class OracleDialect extends DefaultDialect {
+	
+	private final OracleSequenceSelectBuilder oracleSequenceSelectBuilder = new OracleSequenceSelectBuilder();
 	
 	public OracleDialect() {
 		super(new OracleTypeMapping(), new OracleParameterBinderRegistry());
@@ -62,7 +64,7 @@ public class OracleDialect extends DefaultDialect {
 	
 	@Override
 	public DatabaseSequenceSelectBuilder getDatabaseSequenceSelectBuilder() {
-		return sequenceName -> "select " + sequenceName + " from dual";
+		return oracleSequenceSelectBuilder;
 	}
 	
 	public static class OracleDMLNameProvider extends DMLNameProvider {

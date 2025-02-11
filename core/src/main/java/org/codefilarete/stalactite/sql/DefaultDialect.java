@@ -1,7 +1,5 @@
 package org.codefilarete.stalactite.sql;
 
-import java.util.Locale;
-
 import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelectBuilder;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
@@ -109,7 +107,7 @@ public class DefaultDialect implements Dialect {
 		return new DDLTableGenerator(getSqlTypeRegistry(), dmlNameProviderFactory);
 	}
 	
-	private DDLSequenceGenerator newDdlSequenceGenerator() {
+	protected DDLSequenceGenerator newDdlSequenceGenerator() {
 		return new DDLSequenceGenerator(dmlNameProviderFactory);
 	}
 	
