@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.sql;
 
 import java.sql.SQLException;
 
-import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelector;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Sequence;
 import org.codefilarete.stalactite.sql.test.MariaDBEmbeddableDataSource;
@@ -28,8 +27,8 @@ class MariaDBSequenceSelectBuilderTest {
 		ddlDeployer.deployDDL();
 		
 		// testing SQL is valid through Dialect
-		DatabaseSequenceSelector sequenceSelector = new DatabaseSequenceSelector(sequence, dialect, connectionProvider);
-		// by default HSQLDB sequence starts at 1
+		org.codefilarete.tool.function.Sequence<Long> sequenceSelector = dialect.getDatabaseSequenceSelectorFactory().create(sequence, connectionProvider);
+		// by default MariaDB sequence starts at 1
 		assertThat(sequenceSelector.next()).isEqualTo(1);
 	}
 }

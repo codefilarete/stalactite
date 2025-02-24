@@ -5,8 +5,10 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.stream.LongStream;
 
+import org.codefilarete.stalactite.mapping.id.sequence.SequenceStoredAsTableSelector;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.SQLiteDDLTableGenerator;
+import org.codefilarete.stalactite.sql.ddl.structure.Sequence;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
@@ -17,13 +19,18 @@ import org.codefilarete.stalactite.sql.statement.WriteOperation.RowCountListener
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.sql.statement.binder.SQLiteParameterBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.SQLiteTypeMapping;
+import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.function.ThrowingBiFunction;
+
+import static org.codefilarete.tool.bean.Objects.preventNull;
 
 /**
  * @author Guillaume Mary
  */
 public class SQLiteDialect extends DefaultDialect {
-
+	
+	private final SQLiteSequenceSelectorFactory sequenceSelectorFactory = new SQLiteSequenceSelectorFactory();
+	
 	public SQLiteDialect() {
 		super(new SQLiteTypeMapping(), new SQLiteParameterBinderRegistry());
 	}
@@ -55,6 +62,11 @@ public class SQLiteDialect extends DefaultDialect {
 	@Override
 	protected WriteOperationFactory newWriteOperationFactory() {
 		return new SQLiteWriteOperationFactory();
+	}
+	
+	@Override
+	public DatabaseSequenceSelectorFactory getDatabaseSequenceSelectorFactory() {
+		return sequenceSelectorFactory;
 	}
 	
 	public static class SQLiteReadOperationFactory extends ReadOperationFactory {
@@ -98,6 +110,23 @@ public class SQLiteDialect extends DefaultDialect {
 			long[] rowCounts = super.doExecuteBatch();
 			this.updatedRowCount = LongStream.of(rowCounts).sum();
 			return rowCounts;
+		}
+	}
+	
+	@VisibleForTesting
+	class SQLiteSequenceSelectorFactory implements DatabaseSequenceSelectorFactory {
+
+		@Override
+		public org.codefilarete.tool.function.Sequence<Long> create(Sequence databaseSequence, ConnectionProvider connectionProvider) {
+			return new SequenceStoredAsTableSelector(
+					databaseSequence.getSchema(),
+					databaseSequence.getName(),
+					preventNull(databaseSequence.getInitialValue(), 1),
+					preventNull(databaseSequence.getBatchSize(), 1),
+					getDmlGenerator(),
+					getReadOperationFactory(),
+					getWriteOperationFactory(),
+					connectionProvider);
 		}
 	}
 }

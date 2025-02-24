@@ -79,7 +79,6 @@ import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierMana
 import org.codefilarete.stalactite.mapping.id.manager.CompositeKeyAlreadyAssignedIdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.id.manager.JDBCGeneratedKeysIdentifierManager;
-import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelector;
 import org.codefilarete.stalactite.mapping.id.sequence.PooledHiLoSequence;
 import org.codefilarete.stalactite.mapping.id.sequence.PooledHiLoSequenceOptions;
 import org.codefilarete.stalactite.mapping.id.sequence.SequencePersister;
@@ -892,7 +891,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 								.withBatchSize(databaseSequenceSupport.getDatabaseSequenceSettings().getBatchSize())
 								.withInitialValue(databaseSequenceSupport.getDatabaseSequenceSettings().getInitialValue())
 							;
-					sequence = (Sequence<I>) new DatabaseSequenceSelector(databaseSequence, dialect, connectionConfiguration.getConnectionProvider());
+					sequence = (Sequence<I>) dialect.getDatabaseSequenceSelectorFactory().create(databaseSequence, connectionConfiguration.getConnectionProvider());
 				} else if (identifierPolicy instanceof ColumnOptions.BeforeInsertIdentifierPolicySupport) {
 					sequence = ((ColumnOptions.BeforeInsertIdentifierPolicySupport<I>) identifierPolicy).getSequence();
 				} else {

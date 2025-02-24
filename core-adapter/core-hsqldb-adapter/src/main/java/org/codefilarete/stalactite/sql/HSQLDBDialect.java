@@ -8,11 +8,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelectBuilder;
+import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelector;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.HSQLDBDDLTableGenerator;
+import org.codefilarete.stalactite.sql.ddl.structure.Sequence;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.HSQLDBWriteOperation;
 import org.codefilarete.stalactite.sql.statement.SQLStatement;
@@ -29,7 +30,7 @@ import org.codefilarete.tool.function.ThrowingBiFunction;
  */
 public class HSQLDBDialect extends DefaultDialect {
 	
-	private final HSQLDBSequenceSelectBuilder hsqldbSequenceSelectBuilder = new HSQLDBSequenceSelectBuilder();
+	private final HSQLDBSequenceSelectorFactory sequenceSelectorFactory = new HSQLDBSequenceSelectorFactory();
 	
 	public HSQLDBDialect() {
 		super(new HSQLDBTypeMapping(), new HSQLDBParameterBinderRegistry());
@@ -51,8 +52,8 @@ public class HSQLDBDialect extends DefaultDialect {
 	}
 	
 	@Override
-	public DatabaseSequenceSelectBuilder getDatabaseSequenceSelectBuilder() {
-		return hsqldbSequenceSelectBuilder;
+	public DatabaseSequenceSelectorFactory getDatabaseSequenceSelectorFactory() {
+		return sequenceSelectorFactory;
 	}
 	
 	@Override
@@ -104,6 +105,14 @@ public class HSQLDBDialect extends DefaultDialect {
 				return "`" + super.getName(table) + "`";
 			}
 			return super.getName(table);
+		}
+	}
+	
+	private class HSQLDBSequenceSelectorFactory implements DatabaseSequenceSelectorFactory {
+		
+		@Override
+		public DatabaseSequenceSelector create(Sequence databaseSequence, ConnectionProvider connectionProvider) {
+			return new DatabaseSequenceSelector(databaseSequence, "CALL NEXT VALUE FOR " + databaseSequence.getAbsoluteName(), getReadOperationFactory(), connectionProvider);
 		}
 	}
 }

@@ -3,14 +3,17 @@ package org.codefilarete.stalactite.engine;
 import javax.sql.DataSource;
 
 import org.codefilarete.stalactite.engine.PersistenceContextConfigurationBuilder.PersistenceContextConfiguration;
-import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelectBuilder;
+import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelector;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.DatabaseSequenceSelectorFactory;
 import org.codefilarete.stalactite.sql.GeneratedKeysReaderFactory;
 import org.codefilarete.stalactite.sql.ddl.DDLSequenceGenerator;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Sequence;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
@@ -30,7 +33,12 @@ import static org.mockito.Mockito.mock;
  */
 class PersistenceContextConfigurationBuilderTest {
 	
-	private final DatabaseSequenceSelectBuilder SEQUENCE_SELECT_BUILDER = sequenceName -> "SELECT NEXT VALUE FOR " + sequenceName;
+	private final DatabaseSequenceSelectorFactory SEQUENCE_SELECT_BUILDER = new DatabaseSequenceSelectorFactory() {
+		@Override
+		public DatabaseSequenceSelector create(Sequence databaseSequence, ConnectionProvider connectionProvider) {
+			return new DatabaseSequenceSelector(databaseSequence, "SELECT NEXT VALUE FOR " + databaseSequence.getAbsoluteName(), new ReadOperationFactory(), connectionProvider);
+		}
+	};
 	
 	@Test
 	void inOperatorMaxSize() {

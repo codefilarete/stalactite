@@ -5,11 +5,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelectBuilder;
+import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelector;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.H2DDLTableGenerator;
+import org.codefilarete.stalactite.sql.ddl.structure.Sequence;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.H2ParameterBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.H2TypeMapping;
@@ -20,7 +21,7 @@ import org.codefilarete.tool.collection.Arrays;
  */
 public class H2Dialect extends DefaultDialect {
 	
-	private final H2SequenceSelectBuilder h2SequenceSelectBuilder = new H2SequenceSelectBuilder();
+	private final H2SequenceSelectorFactory sequenceSelectorFactory = new H2SequenceSelectorFactory();
 	
 	public H2Dialect() {
 		super(new H2TypeMapping(), new H2ParameterBinderRegistry());
@@ -37,8 +38,8 @@ public class H2Dialect extends DefaultDialect {
 	}
 	
 	@Override
-	public DatabaseSequenceSelectBuilder getDatabaseSequenceSelectBuilder() {
-		return h2SequenceSelectBuilder;
+	public DatabaseSequenceSelectorFactory getDatabaseSequenceSelectorFactory() {
+		return sequenceSelectorFactory;
 	}
 	
 	public static class H2DMLNameProvider extends DMLNameProvider {
@@ -68,6 +69,14 @@ public class H2Dialect extends DefaultDialect {
 				return "`" + super.getName(table) + "`";
 			}
 			return super.getName(table);
+		}
+	}
+	
+	private class H2SequenceSelectorFactory implements DatabaseSequenceSelectorFactory {
+		
+		@Override
+		public DatabaseSequenceSelector create(Sequence databaseSequence, ConnectionProvider connectionProvider) {
+			return new DatabaseSequenceSelector(databaseSequence, "select next value for " + databaseSequence.getAbsoluteName(), getReadOperationFactory(), connectionProvider);
 		}
 	}
 }

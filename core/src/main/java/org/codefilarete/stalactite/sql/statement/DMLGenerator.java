@@ -35,7 +35,9 @@ import static org.codefilarete.stalactite.sql.statement.ExpandableSQL.Expandable
  */
 public class DMLGenerator {
 	
-	private static final String EQUAL_SQL_PARAMETER_MARK_AND = " = " + SQL_PARAMETER_MARK + " and ";
+	private static final String AND = " and ";
+	
+	private static final String EQUAL_SQL_PARAMETER_MARK_AND = " = " + SQL_PARAMETER_MARK + AND;
 	
 	protected final ParameterBinderIndex<Column, ParameterBinder> columnBinderRegistry;
 	
@@ -128,14 +130,18 @@ public class DMLGenerator {
 			upsertIndexes.put(upwhereColumn, positionCounter++);
 			parameterBinders.put(upwhereColumn, columnBinderRegistry.getBinder(column));
 		}
-		sqlUpdate.cutTail(2).cat(" where ");
-		for (Column<T, ?> column : where) {
-			sqlUpdate.cat(column, EQUAL_SQL_PARAMETER_MARK_AND);
-			UpwhereColumn<T> upwhereColumn = new UpwhereColumn<>(column, false);
-			upsertIndexes.put(upwhereColumn, positionCounter++);
-			parameterBinders.put(upwhereColumn, columnBinderRegistry.getBinder(column));
+		sqlUpdate.cutTail(2);
+		if (where.iterator().hasNext()) {
+			sqlUpdate.cat(" where ");
+			for (Column<T, ?> column : where) {
+				sqlUpdate.cat(column, EQUAL_SQL_PARAMETER_MARK_AND);
+				UpwhereColumn<T> upwhereColumn = new UpwhereColumn<>(column, false);
+				upsertIndexes.put(upwhereColumn, positionCounter++);
+				parameterBinders.put(upwhereColumn, columnBinderRegistry.getBinder(column));
+			}
+			sqlUpdate.cutTail(AND.length());
 		}
-		return new PreparedUpdate<>(sqlUpdate.cutTail(5).toString(), upsertIndexes, parameterBinders);
+		return new PreparedUpdate<>(sqlUpdate.toString(), upsertIndexes, parameterBinders);
 	}
 	
 	/**
@@ -187,9 +193,15 @@ public class DMLGenerator {
 		Iterable<Column> sortedColumns = sort(columns);
 		DDLAppender sqlSelect = new DDLAppender(dmlNameProviderFactory.build(Fromable::getAbsoluteName), "select ");
 		sqlSelect.ccat(sortedColumns, ", ");
-		sqlSelect.cat(" from ", table, " where ");
-		ParameterizedWhere<T> parameterizedWhere = appendWhere(sqlSelect, where);
-		sqlSelect.cutTail(5);
+		sqlSelect.cat(" from ", table);
+		ParameterizedWhere<T> parameterizedWhere;
+		if (where.iterator().hasNext()) {
+			sqlSelect.cat(" where ");
+			parameterizedWhere = appendWhere(sqlSelect, where);
+			sqlSelect.cutTail(5);
+		} else {
+			parameterizedWhere = new ParameterizedWhere<>();
+		}
 		return new ColumnParameterizedSQL<>(sqlSelect.toString(), parameterizedWhere.indexesPerColumn, parameterizedWhere.parameterBinders);
 	}
 	

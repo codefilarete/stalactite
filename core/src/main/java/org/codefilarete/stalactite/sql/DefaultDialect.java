@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.sql;
 
-import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelectBuilder;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
 import org.codefilarete.stalactite.sql.ddl.DDLGenerator;
@@ -196,8 +195,8 @@ public class DefaultDialect implements Dialect {
 	}
 	
 	@Override
-	public DatabaseSequenceSelectBuilder getDatabaseSequenceSelectBuilder() {
-		return sequenceName -> "select next value for " + sequenceName;
+	public DatabaseSequenceSelectorFactory getDatabaseSequenceSelectorFactory() {
+		return null;
 	}
 	
 	/**

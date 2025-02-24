@@ -32,6 +32,9 @@ public class SQLiteGeneratedKeysReader extends GeneratedKeysReader<Integer> {
 	@Override
 	public List<Integer> convert(WriteOperation writeOperation) {
 		// SQLite uses a function to retrieve the last inserted identifier, we have to call it and then deduce the generated values
+		// SQLite doesn't require the primary key to be an auto-increment one, as stated in the doc
+		// "On an INSERT, if the ROWID or INTEGER PRIMARY KEY column is not explicitly given a value, then it will be filled automatically with an unused integer"
+		// https://www.sqlite.org/autoinc.html
 		ReadOperation<Integer> lastInsertRowIdReader = new ReadOperation<>(new SQLStatement<Integer>(Collections.emptyMap()) {
 			@Override
 			public String getSQL() {

@@ -1,8 +1,5 @@
 package org.codefilarete.stalactite.sql;
 
-import java.util.Locale;
-
-import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelectBuilder;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
 import org.codefilarete.stalactite.sql.ddl.DDLGenerator;
 import org.codefilarete.stalactite.sql.ddl.DDLSequenceGenerator;
@@ -50,7 +47,7 @@ public interface Dialect {
 	
 	GeneratedKeysReaderFactory getGeneratedKeysReaderFactory();
 	
-	DatabaseSequenceSelectBuilder getDatabaseSequenceSelectBuilder();
+	DatabaseSequenceSelectorFactory getDatabaseSequenceSelectorFactory();
 	
 	/**
 	 * Indicates if this dialect supports what ANSI-SQL terms "row value constructor" syntax, also called tuple syntax.
@@ -84,9 +81,9 @@ public interface Dialect {
 		
 		private final GeneratedKeysReaderFactory generatedKeysReaderFactory;
 		
-		private final DatabaseSequenceSelectBuilder databaseSequenceSelectBuilder;
-		
 		private final boolean supportsTupleCondition;
+		
+		private final DatabaseSequenceSelectorFactory databaseSequenceSelectorFactory;
 		
 		public DialectSupport(DDLTableGenerator ddlTableGenerator,
 							  DDLSequenceGenerator ddlSequenceGenerator,
@@ -99,7 +96,7 @@ public interface Dialect {
 							  DMLNameProviderFactory dmlNameProviderFactory,
 							  int inOperatorMaxSize,
 							  GeneratedKeysReaderFactory generatedKeysReaderFactory,
-							  DatabaseSequenceSelectBuilder databaseSequenceSelectBuilder,
+							  DatabaseSequenceSelectorFactory databaseSequenceSelectorFactory,
 							  boolean supportsTupleCondition) {
 			this.ddlTableGenerator = ddlTableGenerator;
 			this.ddlSequenceGenerator = ddlSequenceGenerator;
@@ -112,7 +109,7 @@ public interface Dialect {
 			this.dmlNameProviderFactory = dmlNameProviderFactory;
 			this.inOperatorMaxSize = inOperatorMaxSize;
 			this.generatedKeysReaderFactory = generatedKeysReaderFactory;
-			this.databaseSequenceSelectBuilder = databaseSequenceSelectBuilder;
+			this.databaseSequenceSelectorFactory = databaseSequenceSelectorFactory;
 			this.supportsTupleCondition = supportsTupleCondition;
 		}
 		
@@ -172,13 +169,13 @@ public interface Dialect {
 		}
 		
 		@Override
-		public DatabaseSequenceSelectBuilder getDatabaseSequenceSelectBuilder() {
-			return databaseSequenceSelectBuilder;
+		public boolean supportsTupleCondition() {
+			return supportsTupleCondition;
 		}
 		
 		@Override
-		public boolean supportsTupleCondition() {
-			return supportsTupleCondition;
+		public DatabaseSequenceSelectorFactory getDatabaseSequenceSelectorFactory() {
+			return databaseSequenceSelectorFactory;
 		}
 	}
 }

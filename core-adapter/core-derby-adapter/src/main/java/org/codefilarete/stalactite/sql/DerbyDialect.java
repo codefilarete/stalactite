@@ -7,9 +7,10 @@ import java.util.stream.LongStream;
 
 import org.apache.derby.impl.jdbc.EmbedConnection;
 import org.apache.derby.impl.jdbc.EmbedStatement;
-import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelectBuilder;
+import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelector;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.DerbyDDLTableGenerator;
+import org.codefilarete.stalactite.sql.ddl.structure.Sequence;
 import org.codefilarete.stalactite.sql.statement.DerbyReadOperation;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
@@ -26,7 +27,9 @@ import org.codefilarete.tool.function.ThrowingBiFunction;
  * @author Guillaume Mary
  */
 public class DerbyDialect extends DefaultDialect {
-
+	
+	private DerbySequenceSelectorFactory sequenceSelectorFactory = new DerbySequenceSelectorFactory();
+	
 	public DerbyDialect() {
 		super(new DerbyTypeMapping(), new DerbyParameterBinderRegistry());
 	}
@@ -56,8 +59,8 @@ public class DerbyDialect extends DefaultDialect {
 	}
 	
 	@Override
-	public DatabaseSequenceSelectBuilder getDatabaseSequenceSelectBuilder() {
-		return sequenceName -> "values next value for " + sequenceName;
+	public DatabaseSequenceSelectorFactory getDatabaseSequenceSelectorFactory() {
+		return sequenceSelectorFactory;
 	}
 	
 	public static class DerbyReadOperationFactory extends ReadOperationFactory {
@@ -117,6 +120,14 @@ public class DerbyDialect extends DefaultDialect {
 		public void cancel() throws SQLException {
 			EmbedConnection conn = preparedStatement.getConnection().unwrap(EmbedConnection.class);
 			conn.cancelRunningStatement();
+		}
+	}
+	
+	private class DerbySequenceSelectorFactory implements DatabaseSequenceSelectorFactory {
+		
+		@Override
+		public DatabaseSequenceSelector create(Sequence databaseSequence, ConnectionProvider connectionProvider) {
+			return new DatabaseSequenceSelector(databaseSequence, "values next value for " + databaseSequence.getAbsoluteName(), getReadOperationFactory(), connectionProvider);
 		}
 	}
 }

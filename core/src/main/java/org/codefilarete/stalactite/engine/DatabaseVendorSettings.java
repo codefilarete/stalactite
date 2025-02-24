@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.engine;
 
 import java.util.Set;
 
-import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelectBuilder;
+import org.codefilarete.stalactite.sql.DatabaseSequenceSelectorFactory;
 import org.codefilarete.stalactite.sql.GeneratedKeysReaderFactory;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry;
@@ -28,7 +28,7 @@ public class DatabaseVendorSettings {
 	
 	private final GeneratedKeysReaderFactory generatedKeysReaderFactory;
 	
-	private final DatabaseSequenceSelectBuilder databaseSequenceSelectBuilder;
+	private final DatabaseSequenceSelectorFactory databaseSequenceSelectorFactory;
 	
 	/**
 	 * Maximum number of values for an "in" operator
@@ -43,7 +43,7 @@ public class DatabaseVendorSettings {
 								  ParameterBinderRegistry parameterBinderRegistry,
 								  SQLOperationsFactoriesBuilder sqlOperationsFactoriesBuilder,
 								  GeneratedKeysReaderFactory generatedKeysReaderFactory,
-								  DatabaseSequenceSelectBuilder databaseSequenceSelectBuilder,
+								  DatabaseSequenceSelectorFactory databaseSequenceSelectorFactory,
 								  int inOperatorMaxSize,
 								  boolean supportsTupleCondition) {
 		this.keyWords = keyWords;
@@ -52,7 +52,7 @@ public class DatabaseVendorSettings {
 		this.parameterBinderRegistry = parameterBinderRegistry;
 		this.sqlOperationsFactoriesBuilder = sqlOperationsFactoriesBuilder;
 		this.generatedKeysReaderFactory = generatedKeysReaderFactory;
-		this.databaseSequenceSelectBuilder = databaseSequenceSelectBuilder;
+		this.databaseSequenceSelectorFactory = databaseSequenceSelectorFactory;
 		this.inOperatorMaxSize = inOperatorMaxSize;
 		this.supportsTupleCondition = supportsTupleCondition;
 	}
@@ -81,8 +81,8 @@ public class DatabaseVendorSettings {
 		return generatedKeysReaderFactory;
 	}
 	
-	public DatabaseSequenceSelectBuilder getDatabaseSequenceSelectBuilder() {
-		return databaseSequenceSelectBuilder;
+	public DatabaseSequenceSelectorFactory getDatabaseSequenceSelectorFactory() {
+		return databaseSequenceSelectorFactory;
 	}
 	
 	public int getInOperatorMaxSize() {

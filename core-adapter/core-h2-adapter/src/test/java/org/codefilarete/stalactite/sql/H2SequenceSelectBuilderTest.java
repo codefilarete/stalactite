@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.sql;
 
 import java.sql.SQLException;
 
-import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelector;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Sequence;
 import org.codefilarete.stalactite.sql.test.H2InMemoryDataSource;
@@ -28,7 +27,7 @@ class H2SequenceSelectBuilderTest {
 		ddlDeployer.deployDDL();
 		
 		// testing SQL is valid through Dialect
-		DatabaseSequenceSelector sequenceSelector = new DatabaseSequenceSelector(sequence, dialect, connectionProvider);
+		org.codefilarete.tool.function.Sequence<Long> sequenceSelector = dialect.getDatabaseSequenceSelectorFactory().create(sequence, connectionProvider);
 		// by default H2 sequence starts at 1
 		assertThat(sequenceSelector.next()).isEqualTo(1);
 	}

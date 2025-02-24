@@ -5,13 +5,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelectBuilder;
+import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelector;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Sequence;
 import org.codefilarete.stalactite.sql.statement.binder.PostgreSQLParameterBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.PostgreSQLTypeMapping;
 import org.codefilarete.tool.collection.Arrays;
@@ -21,7 +22,7 @@ import org.codefilarete.tool.collection.Arrays;
  */
 public class PostgreSQLDialect extends DefaultDialect {
 	
-	private final PostgreSQLSequenceSelectBuilder postgreSQLSequenceSelectBuilder = new PostgreSQLSequenceSelectBuilder();
+	private final PostgreSQLSequenceSelectorFactory postgreSQLSequenceSelectorFactory = new PostgreSQLSequenceSelectorFactory();
 	
 	public PostgreSQLDialect() {
 		super(new PostgreSQLTypeMapping(), new PostgreSQLParameterBinderRegistry());
@@ -38,8 +39,8 @@ public class PostgreSQLDialect extends DefaultDialect {
 	}
 	
 	@Override
-	public DatabaseSequenceSelectBuilder getDatabaseSequenceSelectBuilder() {
-		return postgreSQLSequenceSelectBuilder;
+	public DatabaseSequenceSelectorFactory getDatabaseSequenceSelectorFactory() {
+		return postgreSQLSequenceSelectorFactory;
 	}
 	
 	public static class PostgreSQLDMLNameProvider extends DMLNameProvider {
@@ -93,5 +94,13 @@ public class PostgreSQLDialect extends DefaultDialect {
 	@Override
 	public boolean supportsTupleCondition() {
 		return true;
+	}
+	
+	private class PostgreSQLSequenceSelectorFactory implements DatabaseSequenceSelectorFactory {
+		
+		@Override
+		public DatabaseSequenceSelector create(Sequence databaseSequence, ConnectionProvider connectionProvider) {
+			return new DatabaseSequenceSelector(databaseSequence, "select nextval('" + databaseSequence.getAbsoluteName() + "')", getReadOperationFactory(), connectionProvider);
+		}
 	}
 }

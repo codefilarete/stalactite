@@ -1,8 +1,9 @@
 package org.codefilarete.stalactite.sql;
 
-import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelectBuilder;
+import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelector;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.MariaDBDDLTableGenerator;
+import org.codefilarete.stalactite.sql.ddl.structure.Sequence;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.sql.statement.binder.MariaDBParameterBinderRegistry;
@@ -18,7 +19,7 @@ import org.codefilarete.stalactite.sql.statement.binder.MariaDBTypeMapping;
  */
 public class MariaDBDialect extends DefaultDialect {
 	
-	private final MariaDBSequenceSelectBuilder mariaDBSequenceSelectBuilder = new MariaDBSequenceSelectBuilder();
+	private final MariaDBSequenceSelectorFactory sequenceSelectorFactory = new MariaDBSequenceSelectorFactory();
 	
 	public MariaDBDialect() {
 		super(new MariaDBTypeMapping(), new MariaDBParameterBinderRegistry());
@@ -49,12 +50,20 @@ public class MariaDBDialect extends DefaultDialect {
 	}
 	
 	@Override
-	public DatabaseSequenceSelectBuilder getDatabaseSequenceSelectBuilder() {
-		return mariaDBSequenceSelectBuilder;
+	public DatabaseSequenceSelectorFactory getDatabaseSequenceSelectorFactory() {
+		return sequenceSelectorFactory;
 	}
 	
 	@Override
 	public boolean supportsTupleCondition() {
 		return true;
+	}
+	
+	private class MariaDBSequenceSelectorFactory implements DatabaseSequenceSelectorFactory {
+		
+		@Override
+		public DatabaseSequenceSelector create(Sequence databaseSequence, ConnectionProvider connectionProvider) {
+			return new DatabaseSequenceSelector(databaseSequence, "select next value for " + databaseSequence.getAbsoluteName(), getReadOperationFactory(), connectionProvider);
+		}
 	}
 }

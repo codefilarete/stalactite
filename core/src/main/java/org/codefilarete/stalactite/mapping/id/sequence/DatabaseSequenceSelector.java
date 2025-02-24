@@ -5,9 +5,9 @@ import java.sql.SQLException;
 import java.util.Collections;
 
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Sequence;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
+import org.codefilarete.stalactite.sql.statement.ReadOperationFactory;
 import org.codefilarete.stalactite.sql.statement.StringParamedSQL;
 import org.codefilarete.tool.VisibleForTesting;
 
@@ -22,14 +22,17 @@ public class DatabaseSequenceSelector implements org.codefilarete.tool.function.
 	
 	private final Sequence databaseSequence;
 	private final int poolSize;
-	private final ReadOperation<String> readOperation;
+	private final ReadOperationFactory readOperationFactory;
+	private final ConnectionProvider connectionProvider;
 	private final InternalState internalState = new InternalState();
+	private final StringParamedSQL sqlOrder;
 	
-	public DatabaseSequenceSelector(Sequence databaseSequence, Dialect dialect, ConnectionProvider connectionProvider) {
+	public DatabaseSequenceSelector(Sequence databaseSequence, String selectStatement, ReadOperationFactory readOperationFactory, ConnectionProvider connectionProvider) {
 		this.databaseSequence = databaseSequence;
 		this.poolSize = preventNull(databaseSequence.getBatchSize(), 1);
-		String selectStatement = dialect.getDatabaseSequenceSelectBuilder().buildSelect(databaseSequence.getAbsoluteName());
-		this.readOperation = dialect.getReadOperationFactory().createInstance(new StringParamedSQL(selectStatement, Collections.EMPTY_MAP), connectionProvider);
+		this.readOperationFactory = readOperationFactory;
+		this.connectionProvider = connectionProvider;
+		this.sqlOrder = new StringParamedSQL(selectStatement, Collections.EMPTY_MAP);
 	}
 	
 	public Sequence getDatabaseSequence() {
@@ -52,7 +55,7 @@ public class DatabaseSequenceSelector implements org.codefilarete.tool.function.
 	
 	@VisibleForTesting
 	long callDatabase() {
-		try {
+		try (ReadOperation<String> readOperation = readOperationFactory.createInstance(sqlOrder, connectionProvider)) {
 			ResultSet rs = readOperation.execute();
 			rs.next();
 			// we use index access to read next value column to avoid keeping the column name in this class

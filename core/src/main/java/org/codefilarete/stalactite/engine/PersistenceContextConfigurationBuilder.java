@@ -84,7 +84,7 @@ public class PersistenceContextConfigurationBuilder {
 				dmlNameProviderFactory,
 				Objects.preventNull(connectionSettings.getInOperatorMaxSize(), vendorSettings.getInOperatorMaxSize()),
 				generatedKeysReaderFactory,
-				vendorSettings.getDatabaseSequenceSelectBuilder(),
+				vendorSettings.getDatabaseSequenceSelectorFactory(),
 				vendorSettings.supportsTupleCondition()
 		);
 		
