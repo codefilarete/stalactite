@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.mapping.id.sequence;
+package org.codefilarete.stalactite.mapping.id.sequence.hilo;
 
 import java.sql.Connection;
 import java.util.Map;
@@ -9,8 +9,8 @@ import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierM
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.engine.SeparateTransactionExecutor;
-import org.codefilarete.stalactite.mapping.id.sequence.SequencePersister.Sequence;
-import org.codefilarete.stalactite.mapping.id.sequence.SequencePersister.SequenceTable;
+import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequencePersister.Sequence;
+import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequencePersister.SequenceTable;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -25,20 +25,20 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  * 
  * @author Guillaume Mary
  */
-public class SequencePersister extends BeanPersister<Sequence, String, SequenceTable> {
+public class PooledHiLoSequencePersister extends BeanPersister<Sequence, String, SequenceTable> {
 	
 	/**
 	 * Constructor with default table and column names.
 	 * @param dialect the {@link Dialect} to use for database dialog
 	 * @param separateTransactionExecutor a transaction provider that must give a new and separate transaction
 	 * @param jdbcBatchSize the JDBC batch size, not really useful for this class since it doesn't do massive insert
-	 * @see SequenceStorageOptions#DEFAULT
+	 * @see PooledHiLoSequenceStorageOptions#DEFAULT
 	 */
-	public SequencePersister(Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
-		this(SequenceStorageOptions.DEFAULT, dialect, separateTransactionExecutor, jdbcBatchSize);
+	public PooledHiLoSequencePersister(Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
+		this(PooledHiLoSequenceStorageOptions.DEFAULT, dialect, separateTransactionExecutor, jdbcBatchSize);
 	}
 	
-	public SequencePersister(SequenceStorageOptions storageOptions, Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
+	public PooledHiLoSequencePersister(PooledHiLoSequenceStorageOptions storageOptions, Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
 		// we reuse default PersistentContext
 		super(new SequencePersisterConfigurer().buildConfiguration(storageOptions),
 				dialect, new ConnectionConfigurationSupport(separateTransactionExecutor, jdbcBatchSize));
@@ -154,7 +154,7 @@ public class SequencePersister extends BeanPersister<Sequence, String, SequenceT
 	
 	private static class SequencePersisterConfigurer {
 		
-		private ClassMapping<Sequence, String, SequenceTable> buildConfiguration(SequenceStorageOptions storageOptions) {
+		private ClassMapping<Sequence, String, SequenceTable> buildConfiguration(PooledHiLoSequenceStorageOptions storageOptions) {
 			// Sequence table creation
 			SequenceTable sequenceTable = new SequenceTable(null, storageOptions.getTable(), storageOptions.getSequenceNameColumn(), storageOptions.getValueColumn());
 			// Strategy building

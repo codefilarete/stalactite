@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.mapping.id.sequence;
+package org.codefilarete.stalactite.mapping.id.sequence.hilo;
 
 import javax.annotation.Nullable;
 import java.util.Map;
@@ -23,14 +23,14 @@ public class PooledHiLoSequenceOptions {
 	
 	private final int poolSize;
 	private final String sequenceName;
-	private final SequenceStorageOptions storageOptions;
+	private final PooledHiLoSequenceStorageOptions storageOptions;
 	private final long initialValue;
 	
 	/**
 	 * Simple constructor.
-	 * Pool size will be set to default, and storage options will be those of {@link SequenceStorageOptions#DEFAULT}
+	 * Pool size will be set to default, and storage options will be those of {@link PooledHiLoSequenceStorageOptions#DEFAULT}
 	 *
-	 * @param sequenceName the name of the sequence, most likely unique for the given {@link SequenceStorageOptions}
+	 * @param sequenceName the name of the sequence, most likely unique for the given {@link PooledHiLoSequenceStorageOptions}
 	 */
 	public PooledHiLoSequenceOptions(String sequenceName) {
 		this(50, sequenceName);
@@ -38,23 +38,23 @@ public class PooledHiLoSequenceOptions {
 	
 	/**
 	 * Simple constructor.
-	 * Storage options will be those of {@link SequenceStorageOptions#DEFAULT}
+	 * Storage options will be those of {@link PooledHiLoSequenceStorageOptions#DEFAULT}
 	 *
 	 * @param poolSize the size of the pool
-	 * @param sequenceName the name of the sequence, most likely unique for the given {@link SequenceStorageOptions}
+	 * @param sequenceName the name of the sequence, most likely unique for the given {@link PooledHiLoSequenceStorageOptions}
 	 */
 	public PooledHiLoSequenceOptions(int poolSize, String sequenceName) {
-		this(poolSize, sequenceName, SequenceStorageOptions.DEFAULT, 1);
+		this(poolSize, sequenceName, PooledHiLoSequenceStorageOptions.DEFAULT, 1);
 	}
 	
 	/**
 	 * Simple constructor.
 	 *
 	 * @param poolSize the size of the pool
-	 * @param sequenceName the name of the sequence, most likely unique for the given {@link SequenceStorageOptions}
+	 * @param sequenceName the name of the sequence, most likely unique for the given {@link PooledHiLoSequenceStorageOptions}
 	 * @param storageOptions options for storing the sequence in the database
 	 */
-	public PooledHiLoSequenceOptions(int poolSize, String sequenceName, SequenceStorageOptions storageOptions) {
+	public PooledHiLoSequenceOptions(int poolSize, String sequenceName, PooledHiLoSequenceStorageOptions storageOptions) {
 		this(poolSize, sequenceName, storageOptions, 1);
 	}
 	
@@ -62,21 +62,21 @@ public class PooledHiLoSequenceOptions {
 	 * Detailed constructor.
 	 * 
 	 * @param poolSize the size of the pool
-	 * @param sequenceName the name of the sequence, most likely unique for the given {@link SequenceStorageOptions}
-	 * @param storageOptions options for storing the sequence in the database, if null {@link SequenceStorageOptions#DEFAULT} will be used
+	 * @param sequenceName the name of the sequence, most likely unique for the given {@link PooledHiLoSequenceStorageOptions}
+	 * @param storageOptions options for storing the sequence in the database, if null {@link PooledHiLoSequenceStorageOptions#DEFAULT} will be used
 	 * @param initialValue the initial value for the very first insertion, never used again
 	 */
-	public PooledHiLoSequenceOptions(int poolSize, String sequenceName, @Nullable SequenceStorageOptions storageOptions, long initialValue) {
+	public PooledHiLoSequenceOptions(int poolSize, String sequenceName, @Nullable PooledHiLoSequenceStorageOptions storageOptions, long initialValue) {
 		this.poolSize = poolSize;
 		this.sequenceName = sequenceName;
-		this.storageOptions = Objects.preventNull(storageOptions, SequenceStorageOptions.DEFAULT);
+		this.storageOptions = Objects.preventNull(storageOptions, PooledHiLoSequenceStorageOptions.DEFAULT);
 		this.initialValue = initialValue;
 	}
 	
 	public PooledHiLoSequenceOptions(Map<String, Object> configuration) {
 		this(CONVERTER_REGISTRY.asInteger(configuration.get(POOL_SIZE_PARAM)),
 				CONVERTER_REGISTRY.asString(configuration.get(SEQUENCE_NAME_PARAM)),
-				new SequenceStorageOptions(CONVERTER_REGISTRY.asString(configuration.get(TABLE_PARAM)),
+				new PooledHiLoSequenceStorageOptions(CONVERTER_REGISTRY.asString(configuration.get(TABLE_PARAM)),
 						CONVERTER_REGISTRY.asString(configuration.get(SEQUENCE_COLUMN_PARAM)),
 						CONVERTER_REGISTRY.asString(configuration.get(VALUE_COLUMN_PARAM))
 				)
@@ -91,7 +91,7 @@ public class PooledHiLoSequenceOptions {
 		return sequenceName;
 	}
 	
-	public SequenceStorageOptions getStorageOptions() {
+	public PooledHiLoSequenceStorageOptions getStorageOptions() {
 		return storageOptions;
 	}
 	

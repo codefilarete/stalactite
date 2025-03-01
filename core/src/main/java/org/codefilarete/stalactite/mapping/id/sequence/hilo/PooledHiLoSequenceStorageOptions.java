@@ -1,15 +1,15 @@
-package org.codefilarete.stalactite.mapping.id.sequence;
+package org.codefilarete.stalactite.mapping.id.sequence.hilo;
 
 /**
  * Options for storing a sequence in the database.
  * 
  * @author Guillame Mary
  */
-public class SequenceStorageOptions {
+public class PooledHiLoSequenceStorageOptions {
 	
-	public static final SequenceStorageOptions DEFAULT = new SequenceStorageOptions("sequence_table", "sequence_name", "next_val");
+	public static final PooledHiLoSequenceStorageOptions DEFAULT = new PooledHiLoSequenceStorageOptions("sequence_table", "sequence_name", "next_val");
 	
-	public static final SequenceStorageOptions HIBERNATE_DEFAULT = new SequenceStorageOptions("hibernate_sequences", "sequence_name", "next_val");
+	public static final PooledHiLoSequenceStorageOptions HIBERNATE_DEFAULT = new PooledHiLoSequenceStorageOptions("hibernate_sequences", "sequence_name", "next_val");
 	
 	private final String table;
 	private final String sequenceNameColumn;
@@ -22,7 +22,7 @@ public class SequenceStorageOptions {
 	 * @param sequenceNameColumn the column name for the sequence name
 	 * @param valueColumn the column name for the value
 	 */
-	public SequenceStorageOptions(String table, String sequenceNameColumn, String valueColumn) {
+	public PooledHiLoSequenceStorageOptions(String table, String sequenceNameColumn, String valueColumn) {
 		this.table = table;
 		this.sequenceNameColumn = sequenceNameColumn;
 		this.valueColumn = valueColumn;

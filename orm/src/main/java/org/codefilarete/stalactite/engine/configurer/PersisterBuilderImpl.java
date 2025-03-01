@@ -79,9 +79,9 @@ import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierMana
 import org.codefilarete.stalactite.mapping.id.manager.CompositeKeyAlreadyAssignedIdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.id.manager.JDBCGeneratedKeysIdentifierManager;
-import org.codefilarete.stalactite.mapping.id.sequence.PooledHiLoSequence;
-import org.codefilarete.stalactite.mapping.id.sequence.PooledHiLoSequenceOptions;
-import org.codefilarete.stalactite.mapping.id.sequence.SequencePersister;
+import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequence;
+import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequenceOptions;
+import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequencePersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -876,7 +876,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 								+ " please provide a " + Reflections.toString(SeparateTransactionExecutor.class) + " as connection provider or change identifier policy");
 					}
 					sequence = (Sequence<I>) new PooledHiLoSequence(options,
-							new SequencePersister(((ColumnOptions.PooledHiLoSequenceIdentifierPolicySupport) identifierPolicy).getStorageOptions(), dialect, (SeparateTransactionExecutor) connectionProvider, connectionConfiguration.getBatchSize()));
+							new PooledHiLoSequencePersister(((ColumnOptions.PooledHiLoSequenceIdentifierPolicySupport) identifierPolicy).getStorageOptions(), dialect, (SeparateTransactionExecutor) connectionProvider, connectionConfiguration.getBatchSize()));
 				} else if (identifierPolicy instanceof ColumnOptions.DatabaseSequenceIdentifierPolicySupport) {
 					Class<E> entityType = identification.getIdentificationDefiner().getEntityType();
 					ColumnOptions.DatabaseSequenceIdentifierPolicySupport databaseSequenceSupport = (ColumnOptions.DatabaseSequenceIdentifierPolicySupport) identifierPolicy;

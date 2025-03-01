@@ -1,7 +1,7 @@
-package org.codefilarete.stalactite.mapping.id.sequence;
+package org.codefilarete.stalactite.mapping.id.sequence.hilo;
 
 import org.codefilarete.stalactite.engine.SeparateTransactionExecutor;
-import org.codefilarete.stalactite.mapping.id.sequence.SequencePersister.Sequence;
+import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequencePersister.Sequence;
 import org.codefilarete.stalactite.sql.Dialect;
 
 /**
@@ -10,7 +10,7 @@ import org.codefilarete.stalactite.sql.Dialect;
  * memory. Each time its pool is empty it goes back to the database to ask for another set of identifiers. Though if
  * JVM is shutdown while pool is not totally consumed, then a bunch of identifiers are definitively lost for the system.
  * 
- * It stores the state of its sequence in a table (which can be shared between sequences, see {@link SequencePersister}).
+ * It stores the state of its sequence in a table (which can be shared between sequences, see {@link PooledHiLoSequencePersister}).
  * Stored state is the highest value reserved by current instance. Then external systems may use upper values without
  * constraint but to write their own highest reserved value. 
  * 
@@ -22,20 +22,20 @@ public class PooledHiLoSequence implements org.codefilarete.tool.function.Sequen
 	
 	private LongPool sequenceState;
 	
-	private final SequencePersister persister;
+	private final PooledHiLoSequencePersister persister;
 	
 	private final PooledHiLoSequenceOptions options;
 	
 	public PooledHiLoSequence(PooledHiLoSequenceOptions options, Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
-		this(options, new SequencePersister(options.getStorageOptions(), dialect, separateTransactionExecutor, jdbcBatchSize));
+		this(options, new PooledHiLoSequencePersister(options.getStorageOptions(), dialect, separateTransactionExecutor, jdbcBatchSize));
 	}
 
-	public PooledHiLoSequence(PooledHiLoSequenceOptions options, SequencePersister persister) {
+	public PooledHiLoSequence(PooledHiLoSequenceOptions options, PooledHiLoSequencePersister persister) {
 		this.options = options;
 		this.persister = persister;
 	}
 	
-	public SequencePersister getPersister() {
+	public PooledHiLoSequencePersister getPersister() {
 		return persister;
 	}
 	

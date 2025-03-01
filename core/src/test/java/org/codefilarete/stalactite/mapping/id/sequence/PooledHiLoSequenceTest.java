@@ -1,6 +1,10 @@
 package org.codefilarete.stalactite.mapping.id.sequence;
 
 import org.codefilarete.stalactite.engine.SeparateTransactionExecutor;
+import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequence;
+import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequenceOptions;
+import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequencePersister;
+import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequenceStorageOptions;
 import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.DDLGenerator;
@@ -21,8 +25,8 @@ class PooledHiLoSequenceTest {
     
     @Test
     void next_noExistingValueInDatabase() {
-        PooledHiLoSequenceOptions totoSequenceOptions = new PooledHiLoSequenceOptions(10, "Toto", SequenceStorageOptions.DEFAULT);
-        SequencePersister sequencePersisterMock = Mockito.mock(SequencePersister.class);
+        PooledHiLoSequenceOptions totoSequenceOptions = new PooledHiLoSequenceOptions(10, "Toto", PooledHiLoSequenceStorageOptions.DEFAULT);
+        PooledHiLoSequencePersister sequencePersisterMock = Mockito.mock(PooledHiLoSequencePersister.class);
         ModifiableInt sequenceValue = new ModifiableInt();
         when(sequencePersisterMock.select("Toto")).thenReturn(null);
         when(sequencePersisterMock.reservePool("Toto", 10)).thenReturn((long) sequenceValue.increment() * totoSequenceOptions.getPoolSize());
@@ -39,10 +43,10 @@ class PooledHiLoSequenceTest {
     
     @Test
     void next_existingValueInDatabase() {
-        PooledHiLoSequenceOptions totoSequenceOptions = new PooledHiLoSequenceOptions(10, "Toto", SequenceStorageOptions.DEFAULT);
-        SequencePersister sequencePersisterMock = Mockito.mock(SequencePersister.class);
+        PooledHiLoSequenceOptions totoSequenceOptions = new PooledHiLoSequenceOptions(10, "Toto", PooledHiLoSequenceStorageOptions.DEFAULT);
+        PooledHiLoSequencePersister sequencePersisterMock = Mockito.mock(PooledHiLoSequencePersister.class);
         ModifiableInt sequenceValue = new ModifiableInt(50);
-        when(sequencePersisterMock.select("Toto")).thenReturn(new SequencePersister.Sequence("Toto", sequenceValue.getValue()));
+        when(sequencePersisterMock.select("Toto")).thenReturn(new PooledHiLoSequencePersister.Sequence("Toto", sequenceValue.getValue()));
         when(sequencePersisterMock.reservePool("Toto", 10)).thenReturn((long) sequenceValue.increment() * totoSequenceOptions.getPoolSize());
         
         PooledHiLoSequence testInstance = new PooledHiLoSequence(totoSequenceOptions, sequencePersisterMock);
@@ -59,8 +63,8 @@ class PooledHiLoSequenceTest {
     @Test
     void next_withInitialValue() {
         // we check that we can increment a sequence from a different initial value
-        PooledHiLoSequenceOptions totoSequenceOptions = new PooledHiLoSequenceOptions(10, "Toto", SequenceStorageOptions.DEFAULT, -42);
-        SequencePersister sequencePersisterMock = Mockito.mock(SequencePersister.class);
+        PooledHiLoSequenceOptions totoSequenceOptions = new PooledHiLoSequenceOptions(10, "Toto", PooledHiLoSequenceStorageOptions.DEFAULT, -42);
+        PooledHiLoSequencePersister sequencePersisterMock = Mockito.mock(PooledHiLoSequencePersister.class);
         ModifiableInt sequenceValue = new ModifiableInt(50);
         when(sequencePersisterMock.select("Toto")).thenReturn(null);
         when(sequencePersisterMock.reservePool("Toto", 10)).thenReturn((long) sequenceValue.increment() * totoSequenceOptions.getPoolSize());
@@ -77,7 +81,7 @@ class PooledHiLoSequenceTest {
         simpleTypeMapping.put(long.class, "int");
         simpleTypeMapping.put(String.class, "VARCHAR(255)");
 
-        PooledHiLoSequenceOptions totoSequenceOptions = new PooledHiLoSequenceOptions(10, "Toto", SequenceStorageOptions.DEFAULT);
+        PooledHiLoSequenceOptions totoSequenceOptions = new PooledHiLoSequenceOptions(10, "Toto", PooledHiLoSequenceStorageOptions.DEFAULT);
         Dialect dialect = new DefaultDialect(simpleTypeMapping);
         PooledHiLoSequence testInstance = new PooledHiLoSequence(totoSequenceOptions, dialect, mock(SeparateTransactionExecutor.class), 50);
 

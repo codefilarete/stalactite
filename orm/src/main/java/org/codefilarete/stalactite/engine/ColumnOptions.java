@@ -6,8 +6,8 @@ import java.util.function.Function;
 
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSettings;
-import org.codefilarete.stalactite.mapping.id.sequence.PooledHiLoSequence;
-import org.codefilarete.stalactite.mapping.id.sequence.SequenceStorageOptions;
+import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequence;
+import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequenceStorageOptions;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
@@ -70,10 +70,10 @@ public interface ColumnOptions<O> extends PropertyOptions<O> {
 		/**
 		 * Policy for entities that want their id fixed just before insert which value is given by a {@link Sequence}.
 		 * Reader may be interested in {@link PooledHiLoSequence}.
-		 * Sequence data will be stored as specified through {@link SequenceStorageOptions#DEFAULT}
+		 * Sequence data will be stored as specified through {@link PooledHiLoSequenceStorageOptions#DEFAULT}
 		 * 
 		 * @return a new policy that will be used to get the identifier value
-		 * @see #pooledHiLoSequence(SequenceStorageOptions)
+		 * @see #pooledHiLoSequence(PooledHiLoSequenceStorageOptions)
 		 */
 		static BeforeInsertIdentifierPolicy<Long> pooledHiLoSequence() {
 			return new PooledHiLoSequenceIdentifierPolicySupport();
@@ -85,10 +85,10 @@ public interface ColumnOptions<O> extends PropertyOptions<O> {
 		 *
 		 * @param sequenceStorageOptions the options about table to store sequence data
 		 * @return a new policy that will be used to get the identifier value
-		 * @see SequenceStorageOptions#DEFAULT
-		 * @see SequenceStorageOptions#HIBERNATE_DEFAULT
+		 * @see PooledHiLoSequenceStorageOptions#DEFAULT
+		 * @see PooledHiLoSequenceStorageOptions#HIBERNATE_DEFAULT
 		 */
-		static BeforeInsertIdentifierPolicy<Long> pooledHiLoSequence(SequenceStorageOptions sequenceStorageOptions) {
+		static BeforeInsertIdentifierPolicy<Long> pooledHiLoSequence(PooledHiLoSequenceStorageOptions sequenceStorageOptions) {
 			return new PooledHiLoSequenceIdentifierPolicySupport(sequenceStorageOptions);
 		}
 		
@@ -185,17 +185,17 @@ public interface ColumnOptions<O> extends PropertyOptions<O> {
 	 */
 	class PooledHiLoSequenceIdentifierPolicySupport implements BeforeInsertIdentifierPolicy<Long> {
 		
-		private final SequenceStorageOptions storageOptions;
+		private final PooledHiLoSequenceStorageOptions storageOptions;
 		
 		public PooledHiLoSequenceIdentifierPolicySupport() {
-			this.storageOptions = SequenceStorageOptions.DEFAULT;
+			this.storageOptions = PooledHiLoSequenceStorageOptions.DEFAULT;
 		}
 		
-		public PooledHiLoSequenceIdentifierPolicySupport(SequenceStorageOptions sequenceStorageOptions) {
+		public PooledHiLoSequenceIdentifierPolicySupport(PooledHiLoSequenceStorageOptions sequenceStorageOptions) {
 			this.storageOptions = sequenceStorageOptions;
 		}
 		
-		public SequenceStorageOptions getStorageOptions() {
+		public PooledHiLoSequenceStorageOptions getStorageOptions() {
 			return storageOptions;
 		}
 	}

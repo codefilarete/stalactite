@@ -9,9 +9,9 @@ import java.util.concurrent.Executors;
 import org.codefilarete.stalactite.engine.CurrentThreadTransactionalConnectionProvider;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.SeparateTransactionExecutor;
-import org.codefilarete.stalactite.mapping.id.sequence.PooledHiLoSequence;
-import org.codefilarete.stalactite.mapping.id.sequence.PooledHiLoSequenceOptions;
-import org.codefilarete.stalactite.mapping.id.sequence.SequenceStorageOptions;
+import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequence;
+import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequenceOptions;
+import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequenceStorageOptions;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
@@ -36,7 +36,7 @@ public class PooledSequenceIdentifierProviderTest {
 	@Test
 	public void giveNewIdentifier() {
 		// Creation of an in-memory database pooled sequence generator
-		PooledHiLoSequence sequenceIdentifierGenerator = new PooledHiLoSequence(new PooledHiLoSequenceOptions(10, "Toto", SequenceStorageOptions.DEFAULT),
+		PooledHiLoSequence sequenceIdentifierGenerator = new PooledHiLoSequence(new PooledHiLoSequenceOptions(10, "Toto", PooledHiLoSequenceStorageOptions.DEFAULT),
 				persistenceContext.getDialect(), (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(sequenceIdentifierGenerator.getPersister().getMapping().getTargetTable()));
