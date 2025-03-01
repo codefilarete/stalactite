@@ -4,8 +4,6 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import org.codefilarete.tool.Retryer;
-import org.codefilarete.tool.Retryer.RetryException;
 import org.codefilarete.tool.sql.ConnectionWrapper;
 
 /**
@@ -18,23 +16,16 @@ import org.codefilarete.tool.sql.ConnectionWrapper;
  */
 public class CurrentThreadConnectionProvider implements ConnectionProvider {
 	
-	private final DataSource dataSource;
+	private final ConnectionProvider dataSource;
 	
 	private final ThreadLocal<Connection> currentConnection = new ThreadLocal<>();
-	private final ClosedConnectionRetryer closedConnectionRetryer;
 	
 	public CurrentThreadConnectionProvider(DataSource dataSource) {
-		this(dataSource, 5);
+		this(new DataSourceConnectionProvider(dataSource));
 	}
 	
-	public CurrentThreadConnectionProvider(DataSource dataSource, int connectionOpeningRetryMaxCount) {
+	public CurrentThreadConnectionProvider(ConnectionProvider dataSource) {
 		this.dataSource = dataSource;
-		// Since Retryer is expected to be Thread-safe we instantiate is once
-		this.closedConnectionRetryer = new ClosedConnectionRetryer(connectionOpeningRetryMaxCount);
-	}
-	
-	public DataSource getDataSource() {
-		return dataSource;
 	}
 	
 	/**
@@ -69,7 +60,7 @@ public class CurrentThreadConnectionProvider implements ConnectionProvider {
 	 */
 	public Connection fillCurrentConnection() {
 		try {
-			Connection connection = new CurrentThreadDetacherConnection(lookupForConnection());
+			Connection connection = new CurrentThreadDetacherConnection(this.dataSource.giveConnection());
 			// Connection is set in transactional mode because it better suits ORM usage even if it doesn't manage transactions itself
 			connection.setAutoCommit(false);
 			this.currentConnection.set(connection);
@@ -79,45 +70,11 @@ public class CurrentThreadConnectionProvider implements ConnectionProvider {
 		}
 	}
 	
-	private Connection lookupForConnection() throws SQLException {
-		Connection connection;
-		// Ensuring that connection is not already closed, hence trying until one is found
-		try {
-			connection = closedConnectionRetryer.execute(this.dataSource::getConnection, "getting a connection");
-		} catch (RetryException e) {
-			this.currentConnection.remove();	// just for cleanup and avoid a roundtrip on next attempt
-			throw new IllegalStateException("Maximum attempt to open a connection reached : all are closed", e);
-		}
-		return connection;
-	}
-	
 	/**
 	 * Detaches current {@link Thread} from its {@link Connection}
 	 */
 	public void releaseConnection() {
 		this.currentConnection.remove();
-	}
-	
-	/**
-	 * Class that asks for retry on closed {@link Connection} while opening them.
-	 */
-	private static class ClosedConnectionRetryer extends Retryer {
-		
-		public ClosedConnectionRetryer(int retryCount) {
-			super(retryCount, 10);
-		}
-		
-		@Override
-		protected boolean shouldRetry(Result result) {
-			if (result instanceof Failure) {
-				return false;	// An exception will be thrown in case of failure while getting a connection
-			}
-			try {
-				return ((Success<Connection>) result).getValue().isClosed();
-			} catch (SQLException e) {
-				throw new IllegalStateException("Impossible to know if connection is closed or not", e);
-			}
-		}
 	}
 	
 	/**

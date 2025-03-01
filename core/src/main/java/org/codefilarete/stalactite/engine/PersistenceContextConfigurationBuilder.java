@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine;
 
+import javax.sql.DataSource;
 import java.util.Collections;
 import java.util.Set;
 import java.util.function.Function;
@@ -34,11 +35,13 @@ public class PersistenceContextConfigurationBuilder {
 	
 	protected final DatabaseVendorSettings vendorSettings;
 	protected final ConnectionSettings connectionSettings;
+	protected final DataSource dataSource;
 	protected boolean quoteAllSQLIdentifiers = false;
 	
-	public PersistenceContextConfigurationBuilder(DatabaseVendorSettings vendorSettings, ConnectionSettings connectionSettings) {
+	public PersistenceContextConfigurationBuilder(DatabaseVendorSettings vendorSettings, ConnectionSettings connectionSettings, DataSource dataSource) {
 		this.vendorSettings = vendorSettings;
 		this.connectionSettings = connectionSettings;
+		this.dataSource = dataSource;
 	}
 	
 	public void quoteAllSQLIdentifiers() {
@@ -142,7 +145,7 @@ public class PersistenceContextConfigurationBuilder {
 	
 	protected ConnectionConfiguration buildConnectionConfiguration() {
 		return new ConnectionConfigurationSupport(
-				new CurrentThreadTransactionalConnectionProvider(connectionSettings.getDataSource(), connectionSettings.getConnectionOpeningRetryMaxCount()),
+				new CurrentThreadTransactionalConnectionProvider(dataSource),
 				connectionSettings.getBatchSize());
 	}
 	

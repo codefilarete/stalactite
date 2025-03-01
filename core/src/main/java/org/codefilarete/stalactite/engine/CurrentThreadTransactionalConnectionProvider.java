@@ -31,10 +31,6 @@ public class CurrentThreadTransactionalConnectionProvider implements ConnectionC
 		this.jdbcConnectionProvider = new CurrentThreadConnectionProvider(dataSource);
 	}
 	
-	public CurrentThreadTransactionalConnectionProvider(DataSource dataSource, int connectionOpeningRetryMaxCount) {
-		this.jdbcConnectionProvider = new CurrentThreadConnectionProvider(dataSource, connectionOpeningRetryMaxCount);
-	}
-	
 	@Override
 	public Connection giveConnection() {
 		return new TransactionAwareConnexionWrapper(this.jdbcConnectionProvider.giveConnection(), commitListeners, rollbackListeners);

@@ -70,8 +70,8 @@ public class StalactiteRepositoriesAutoConfiguration {
 	 */
 	@Bean
 	@ConditionalOnMissingBean
-	public PersistenceContextConfiguration persistenceContextConfigurationBuilder(DatabaseVendorSettings databaseVendorSettings, ConnectionSettings connectionSettings) {
-		SpringDataPersistenceContextConfigurationBuilder persistenceContextConfigurationBuilder = new SpringDataPersistenceContextConfigurationBuilder(databaseVendorSettings, connectionSettings);
+	public PersistenceContextConfiguration persistenceContextConfigurationBuilder(DatabaseVendorSettings databaseVendorSettings, ConnectionSettings connectionSettings, DataSource dataSource) {
+		SpringDataPersistenceContextConfigurationBuilder persistenceContextConfigurationBuilder = new SpringDataPersistenceContextConfigurationBuilder(databaseVendorSettings, connectionSettings, dataSource);
 		return persistenceContextConfigurationBuilder.build();
 	}
 	
@@ -91,8 +91,8 @@ public class StalactiteRepositoriesAutoConfiguration {
 	
 	@Bean
 	@ConditionalOnMissingBean
-	public ConnectionSettings connectionSettings(DataSource dataSource) {
-		return new ConnectionSettings(dataSource, 10, 100, 3);
+	public ConnectionSettings connectionSettings() {
+		return new ConnectionSettings(10, 100);
 	}
 	
 	@Bean

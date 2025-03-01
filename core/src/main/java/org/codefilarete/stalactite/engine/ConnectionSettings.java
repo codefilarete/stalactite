@@ -1,13 +1,9 @@
 package org.codefilarete.stalactite.engine;
 
-import javax.sql.DataSource;
-
 /**
  * @author Guillaume Mary
  */
 public class ConnectionSettings {
-	
-	private final DataSource dataSource;
 	
 	private final int batchSize;
 	
@@ -17,17 +13,9 @@ public class ConnectionSettings {
 	 */
 	private final Integer inOperatorMaxSize;
 	
-	private final int connectionOpeningRetryMaxCount;
-	
-	public ConnectionSettings(DataSource dataSource, int batchSize, int inOperatorMaxSize, int connectionOpeningRetryMaxCount) {
-		this.dataSource = dataSource;
+	public ConnectionSettings(int batchSize, int inOperatorMaxSize) {
 		this.batchSize = batchSize;
 		this.inOperatorMaxSize = inOperatorMaxSize;
-		this.connectionOpeningRetryMaxCount = connectionOpeningRetryMaxCount;
-	}
-	
-	public DataSource getDataSource() {
-		return dataSource;
 	}
 	
 	public int getBatchSize() {
@@ -38,7 +26,4 @@ public class ConnectionSettings {
 		return inOperatorMaxSize;
 	}
 	
-	public int getConnectionOpeningRetryMaxCount() {
-		return connectionOpeningRetryMaxCount;
-	}
 }

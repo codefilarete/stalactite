@@ -68,7 +68,8 @@ class PersistenceContextConfigurationBuilderTest {
 						100,
 						false
 				),
-				new ConnectionSettings(mock(DataSource.class), 10, 150, 3)
+				new ConnectionSettings(10, 150),
+				mock(DataSource.class)
 		);
 		
 		PersistenceContextConfiguration builtConfiguration = testInstance.build();
@@ -104,7 +105,8 @@ class PersistenceContextConfigurationBuilderTest {
 						100,
 						false
 				),
-				new ConnectionSettings(mock(DataSource.class), 10, 150, 3)
+				new ConnectionSettings(10, 150),
+				mock(DataSource.class)
 		);
 		
 		PersistenceContextConfiguration builtConfiguration = testInstance.build();
@@ -153,7 +155,8 @@ class PersistenceContextConfigurationBuilderTest {
 						100,
 						false
 				),
-				new ConnectionSettings(mock(DataSource.class), 10, 150, 3)
+				new ConnectionSettings(10, 150),
+				mock(DataSource.class)
 		);
 		
 		testInstance.quoteAllSQLIdentifiers();

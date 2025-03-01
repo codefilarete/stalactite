@@ -1,5 +1,7 @@
 package org.codefilarete.stalactite.spring.repository.config;
 
+import javax.sql.DataSource;
+
 import org.codefilarete.stalactite.engine.ConnectionSettings;
 import org.codefilarete.stalactite.engine.DatabaseVendorSettings;
 import org.codefilarete.stalactite.engine.PersistenceContextConfigurationBuilder;
@@ -16,8 +18,8 @@ import org.springframework.transaction.PlatformTransactionManager;
  */
 public class SpringDataPersistenceContextConfigurationBuilder extends PersistenceContextConfigurationBuilder {
 	
-	public SpringDataPersistenceContextConfigurationBuilder(DatabaseVendorSettings vendorSettings, ConnectionSettings connectionSettings) {
-		super(vendorSettings, connectionSettings);
+	public SpringDataPersistenceContextConfigurationBuilder(DatabaseVendorSettings vendorSettings, ConnectionSettings connectionSettings, DataSource dataSource) {
+		super(vendorSettings, connectionSettings, dataSource);
 	}
 	
 	/**
@@ -27,7 +29,7 @@ public class SpringDataPersistenceContextConfigurationBuilder extends Persistenc
 	 */
 	@Override
 	protected ConnectionConfiguration buildConnectionConfiguration() {
-		return new PlatformTransactionManagerConnectionConfigurationSupport(new StalactitePlatformTransactionManager(super.connectionSettings.getDataSource()), super.connectionSettings.getBatchSize());
+		return new PlatformTransactionManagerConnectionConfigurationSupport(new StalactitePlatformTransactionManager(super.dataSource), super.connectionSettings.getBatchSize());
 	}
 	
 	static class PlatformTransactionManagerConnectionConfigurationSupport extends ConnectionConfigurationSupport {
