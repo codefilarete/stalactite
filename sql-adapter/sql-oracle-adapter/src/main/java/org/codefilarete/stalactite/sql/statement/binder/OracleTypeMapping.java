@@ -4,6 +4,8 @@ import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.file.Path;
+import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 
 import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 
@@ -26,5 +28,8 @@ public class OracleTypeMapping extends DefaultTypeMapping {
 		put(Path.class, "varchar($l)", 255);
 		put(File.class, "varchar(255)");
 		put(File.class, "varchar($l)", 255);
+		// Oracle supports natively ZonedDateTime and OffsetDateTime storage through type "timestamp with time zone"
+		put(ZonedDateTime.class, "timestamp with time zone");
+		put(OffsetDateTime.class, "timestamp with time zone");
 	}
 }

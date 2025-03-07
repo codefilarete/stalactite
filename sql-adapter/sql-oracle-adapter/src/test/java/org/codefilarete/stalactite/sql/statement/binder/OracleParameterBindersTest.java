@@ -1,11 +1,13 @@
 package org.codefilarete.stalactite.sql.statement.binder;
 
 import javax.sql.DataSource;
-
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Month;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Set;
 
 import org.codefilarete.stalactite.sql.test.DatabaseHelper;
@@ -67,6 +69,23 @@ public class OracleParameterBindersTest extends AbstractParameterBindersITTest {
 		// Oracle rounds nanos to upper one when necessary, so it must be compared to 123457000, not 123456000
 		LocalTime comparisonTime = LocalTime.of(4, 23, 35, 123457000);
 		Set<LocalTime> databaseContent = insertAndSelect(LocalTime.class, Arrays.asSet(null, initialTime));
+		assertThat(databaseContent).isEqualTo(Arrays.asSet(null, comparisonTime));
+	}
+	
+	@Test
+	void zonedDateTimeBinder() throws SQLException {
+		ZonedDateTime initialTime = ZonedDateTime.of(2024, 6, 18, 11, 22, 33, 123456789, ZoneOffset.ofHours(5));
+		// Oracle rounds nanos to upper one when necessary, so it must be compared to 123457000, not 123456000
+		ZonedDateTime comparisonTime = ZonedDateTime.of(2024, 6, 18, 11, 22, 33, 123457000, ZoneOffset.ofHours(5));
+		Set<ZonedDateTime> databaseContent = insertAndSelect(ZonedDateTime.class, Arrays.asSet(null, initialTime));
+		assertThat(databaseContent).isEqualTo(Arrays.asSet(null, comparisonTime));
+	}
+	@Test
+	void offsetDateTimeBinder() throws SQLException {
+		OffsetDateTime initialTime = OffsetDateTime.of(2024, 6, 18, 11, 22, 33, 123456789, ZoneOffset.ofHours(5));
+		// Oracle rounds nanos to upper one when necessary, so it must be compared to 123457000, not 123456000
+		OffsetDateTime comparisonTime = OffsetDateTime.of(2024, 6, 18, 11, 22, 33, 123457000, ZoneOffset.ofHours(5));
+		Set<OffsetDateTime> databaseContent = insertAndSelect(OffsetDateTime.class, Arrays.asSet(null, initialTime));
 		assertThat(databaseContent).isEqualTo(Arrays.asSet(null, comparisonTime));
 	}
 }
