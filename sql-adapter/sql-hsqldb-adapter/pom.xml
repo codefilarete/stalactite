@@ -10,15 +10,7 @@
     <artifactId>sql-hsqldb-adapter</artifactId>
 
     <properties>
-        <!--
-         - From HSQLDB 2.6.1, SQLOperationHSQLDBTest fails due to synchronized methods of HSQLDB
-         JDBCPreparedStatement implementation : the cancel() test waits endlessly because it is synchronized which
-         violates cancel() support because as Javadoc says "This method can be used by one thread to cancel a statement
-          that is being executed by another thread."
-         - Starting from 2.6.1 <classifier>jdk8</classifier> must be added to the dependency because by default 2.6.1
-         is no more compatible with JDK8.
-           -->
-        <hsqldb.version>2.3.2</hsqldb.version>
+        <hsqldb.version>2.7.4</hsqldb.version>
     </properties>
 
     <dependencies>
@@ -26,6 +18,7 @@
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
             <version>${hsqldb.version}</version>
+            <classifier>jdk8</classifier>
         </dependency>
     </dependencies>
 

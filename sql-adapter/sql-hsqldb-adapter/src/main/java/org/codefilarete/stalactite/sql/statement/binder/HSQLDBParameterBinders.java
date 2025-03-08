@@ -1,8 +1,11 @@
 package org.codefilarete.stalactite.sql.statement.binder;
 
 import java.io.InputStream;
+import java.sql.JDBCType;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders.BINARYSTREAM_READER;
 
@@ -33,6 +36,20 @@ public final class HSQLDBParameterBinders {
 			return InputStream.class;
 		}
 	});
+	
+	/**
+	 * HSQLDB native support for {@link ZonedDateTime}
+	 */
+	public static final ParameterBinder<ZonedDateTime> ZONED_DATE_TIME_BINDER = new NullAwareParameterBinder<>(
+			new ZonedDateTimeResultSetReader(),
+			new ZonedDateTimePreparedStatementWriter());
+	
+	/**
+	 * HSQLDB native support for {@link OffsetDateTime}
+	 */
+	public static final ParameterBinder<OffsetDateTime> OFFSET_DATE_TIME_BINDER = new NullAwareParameterBinder<>(
+			new JdbcTypeResultSetReader<>(OffsetDateTime.class),
+			new JdbcTypePreparedStatementWriter<>(OffsetDateTime.class, JDBCType.TIMESTAMP_WITH_TIMEZONE));
 	
 	private HSQLDBParameterBinders() {}
 }

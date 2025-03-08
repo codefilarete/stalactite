@@ -161,7 +161,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			// insert throws integrity constraint because it doesn't save target entity
 			assertThatThrownBy(() -> countryPersister.insert(dummyCountry))
 					.extracting(t -> Exceptions.findExceptionInCauses(t, BatchUpdateException.class), InstanceOfAssertFactories.THROWABLE)
-					.hasMessage("integrity constraint violation: foreign key no parent; FK_COUNTRY_PRESIDENTID_PERSON_ID table: COUNTRY");
+					.hasMessage("integrity constraint violation: foreign key no parent ; FK_COUNTRY_PRESIDENTID_PERSON_ID table: COUNTRY value: 1");
 			
 			persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into Person(id, name) values (1, 'French president')").execute();
 			persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into Country(id, name, presidentId) values (42, 'France', 1)").execute();

@@ -69,7 +69,7 @@ class StalactitePlatformTransactionManagerTest {
 			
 			// trying to insert : this will throw an exception if data already exists due to primary key conflict
 			assertThatCode(() -> dummyStalactiteRepository.save(person))
-					.hasRootCauseMessage("integrity constraint violation: unique constraint or index violation; SYS_CT_10093 table: PERSON");
+					.hasRootCauseMessage("integrity constraint violation: unique constraint or index violation ; SYS_CT_10092 table: PERSON");
 		}
 	}
 	
