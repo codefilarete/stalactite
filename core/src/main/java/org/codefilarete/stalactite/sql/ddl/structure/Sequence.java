@@ -2,6 +2,12 @@ package org.codefilarete.stalactite.sql.ddl.structure;
 
 import javax.annotation.Nullable;
 
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+
+import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Database.Schema;
 
 import static org.codefilarete.tool.Nullable.nullable;
@@ -11,7 +17,7 @@ import static org.codefilarete.tool.Nullable.nullable;
  *
  * @author Guillaume Mary
  */
-public class Sequence {
+public class Sequence implements Fromable {
 	
 	@Nullable
 	private final Schema schema;
@@ -44,12 +50,31 @@ public class Sequence {
 		return schema;
 	}
 	
+	@Override
 	public String getName() {
 		return name;
 	}
 	
+	@Override
 	public String getAbsoluteName() {
 		return absoluteName;
+	}
+	
+	/**
+	 * Returns an empty {@link Set} because sequences are quite erratic across database vendors and some have columns, others have some functions.
+	 * @return an empty {@link Set}
+	 */
+	@Override
+	public Set<? extends Selectable<?>> getColumns() {
+		return Collections.emptySet();
+	}
+	
+	/**
+	 * @return an empty {@link Map}
+	 */
+	@Override
+	public Map<Selectable<?>, String> getAliases() {
+		return Collections.emptyMap();
 	}
 	
 	@Nullable

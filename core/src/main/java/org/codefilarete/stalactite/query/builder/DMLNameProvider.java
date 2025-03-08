@@ -6,7 +6,6 @@ import java.util.function.Function;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Strings;
 
 /**
@@ -68,10 +67,6 @@ public class DMLNameProvider {
 	 * @return the table name (eventually escaped)
 	 */
 	public String getName(Fromable table) {
-		if (table instanceof Table) {
-			return table.getAbsoluteName();
-		} else {
-			return table.getName();
-		}
+		return table.getAbsoluteName();
 	}
 }

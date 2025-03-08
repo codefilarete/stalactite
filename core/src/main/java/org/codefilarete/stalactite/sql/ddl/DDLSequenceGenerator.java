@@ -23,13 +23,13 @@ public class DDLSequenceGenerator {
 	}
 	
 	public String generateCreateSequence(Sequence sequence) {
-		StringAppender sqlCreateTable = new StringAppender("create sequence ", sequence.getAbsoluteName());
+		StringAppender sqlCreateTable = new StringAppender("create sequence ", dmlNameProvider.getName(sequence));
 		sqlCreateTable.catIf(sequence.getInitialValue() != null, " start with ", sequence.getInitialValue());
 		sqlCreateTable.catIf(sequence.getBatchSize() != null, " increment by ", sequence.getBatchSize());
 		return sqlCreateTable.toString();
 	}
 	
 	public String generateDropSequence(Sequence sequence) {
-		return "drop sequence " + sequence.getAbsoluteName();
+		return "drop sequence " + dmlNameProvider.getName(sequence);
 	}
 }

@@ -1,8 +1,11 @@
 package org.codefilarete.stalactite.sql.ddl;
 
+import java.util.Collections;
 import java.util.HashMap;
 
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.query.builder.QuotingDMLNameProvider;
+import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.sql.ddl.structure.Database;
 import org.codefilarete.stalactite.sql.ddl.structure.Sequence;
 import org.junit.jupiter.api.Test;
@@ -54,5 +57,18 @@ class DDLSequenceGeneratorTest {
 		String result = testInstance.generateCreateSequence(sequence);
 		
 		assertThat(result).isEqualTo("create sequence any_schema.my_sequence start with 10");
+	}	
+	@Test
+	public void sequenceScript_nameIsEscapedIfKeyword() {
+		DDLSequenceGenerator testInstance = new DDLSequenceGenerator(new QuotingDMLNameProvider(Collections.<Fromable, String>emptyMap()::get, '\''));
+		Sequence sequence = new Sequence(new Database().new Schema("any_schema"), "my_sequence");
+		
+		String result;
+		
+		result = testInstance.generateCreateSequence(sequence);
+		assertThat(result).isEqualTo("create sequence 'any_schema.my_sequence'");
+		
+		result = testInstance.generateDropSequence(sequence);
+		assertThat(result).isEqualTo("drop sequence 'any_schema.my_sequence'");
 	}
 }
