@@ -38,7 +38,7 @@ class HSQLDBDialectResolverTest {
 		
 		DatabaseVendorSettings vendorSettings = dialectResolver.determineVendorSettings(hsqldbDataSource.getConnection());
 		assertThat(vendorSettings.getKeyWords()).containsExactlyInAnyOrder();
-		assertThat(vendorSettings.getQuotingCharacter()).isEqualTo('"');
+		assertThat(vendorSettings.getQuoteCharacter()).isEqualTo('"');
 		assertThat(vendorSettings.getJavaTypeToSqlTypes()).isExactlyInstanceOf(HSQLDBTypeMapping.class);
 		assertThat(vendorSettings.getParameterBinderRegistry()).isExactlyInstanceOf(HSQLDBParameterBinderRegistry.class);
 		assertThat(vendorSettings.getInOperatorMaxSize()).isEqualTo(100);

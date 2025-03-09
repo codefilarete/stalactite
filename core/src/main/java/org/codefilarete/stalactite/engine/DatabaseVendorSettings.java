@@ -8,6 +8,10 @@ import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry;
 
 /**
+ * Generic configuration of a vendor database.
+ * This class gives the SQL factories which are necessary to a build a {@link org.codefilarete.stalactite.sql.Dialect}.
+ * The class is generic and can be used with any database, user may override it to creates an appropriate one for a particular vendor, and put it
+ * close to the  {@link org.codefilarete.stalactite.sql.DialectResolver}.
  * 
  * @author Guillaume Mary
  */
@@ -61,7 +65,7 @@ public class DatabaseVendorSettings {
 		return keyWords;
 	}
 	
-	public char getQuotingCharacter() {
+	public char getQuoteCharacter() {
 		return quotingCharacter;
 	}
 	

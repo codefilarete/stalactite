@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.codefilarete.stalactite.engine.DialectBuilder;
 import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelector;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.model.Fromable;
@@ -30,6 +31,14 @@ import org.codefilarete.tool.function.ThrowingBiFunction;
  */
 public class HSQLDBDialect extends DefaultDialect {
 	
+	public static Dialect createDialect() {
+		return new DialectBuilder(new HSQLDBVendorSettings()).build();
+	} 
+	
+	public static Dialect createDialect(DialectOptions options) {
+		return new DialectBuilder(new HSQLDBVendorSettings(), options).build();
+	} 
+	
 	private final HSQLDBSequenceSelectorFactory sequenceSelectorFactory = new HSQLDBSequenceSelectorFactory();
 	
 	public HSQLDBDialect() {
@@ -43,7 +52,7 @@ public class HSQLDBDialect extends DefaultDialect {
 	
 	@Override
 	protected HSQLDBDDLTableGenerator newDdlTableGenerator() {
-		return new HSQLDBDDLTableGenerator(getSqlTypeRegistry(), HSQLDBDMLNameProvider::new);
+		return new HSQLDBDDLTableGenerator(getSqlTypeRegistry(), getDmlNameProviderFactory());
 	}
 	
 	@Override

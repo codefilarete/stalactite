@@ -31,8 +31,6 @@ public interface DialectResolver {
 		
 		Dialect getDialect();
 		
-		default DatabaseVendorSettings getVendorSettings() {
-			return null;
-		}
+		DatabaseVendorSettings getVendorSettings();
 	}
 }

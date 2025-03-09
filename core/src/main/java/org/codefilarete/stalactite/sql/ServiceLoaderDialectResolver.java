@@ -64,15 +64,18 @@ public class ServiceLoaderDialectResolver implements DialectResolver {
 	}
 	
 	DatabaseVendorSettings determineVendorSettings(Iterable<? extends DialectResolverEntry> dialects, DatabaseSignet databaseSignet) {
-		Nullable<DialectResolverEntry> matchingDialect = Nullable.nullable(giveMatchingEntry(dialects, databaseSignet));
-		return matchingDialect.map(DialectResolverEntry::getVendorSettings).getOrThrow(
-				() -> new IllegalStateException(
-						"Unable to determine vendor settings to use for database \""
-								+ databaseSignet.getProductName()
-								+ " " + databaseSignet.getMajorVersion()
-								+ "." + databaseSignet.getMinorVersion()
-								+ "\" among " + Iterables.collectToList(dialects, o -> "{" + Strings.footPrint(o.getCompatibility(),
-																DatabaseSignet::toString) + "}")));
+		DialectResolverEntry matchingDialect = giveMatchingEntry(dialects, databaseSignet);
+		if (matchingDialect == null) {
+			throw new IllegalStateException(
+					"Unable to determine vendor settings to use for database \""
+							+ databaseSignet.getProductName()
+							+ " " + databaseSignet.getMajorVersion()
+							+ "." + databaseSignet.getMinorVersion()
+							+ "\" among " + Iterables.collectToList(dialects, o -> "{" + Strings.footPrint(o.getCompatibility(),
+							DatabaseSignet::toString) + "}"));
+		} else {
+			return matchingDialect.getVendorSettings();
+		}
 	}
 	
 	@VisibleForTesting

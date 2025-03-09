@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.query.builder;
 
+import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -50,10 +51,16 @@ public class DMLNameProvider {
 		return column.getExpression();
 	}
 	
+	@Nullable
 	public String getAlias(Fromable table) {
 		return tableAliaser.apply(table);
 	}
 	
+	/**
+	 * Returns table alias if not empty or table name.
+ 	 * @param table a table, or by extension everything that can be put in a From clause
+	 * @return the table alias or table name
+	 */
 	public String getTablePrefix(Fromable table) {
 		String tableAlias = getAlias(table);
 		return Strings.isEmpty(tableAlias) ? getName(table) : tableAlias;

@@ -54,6 +54,10 @@ public class DefaultDialect implements Dialect {
 		this(new DefaultTypeMapping());
 	}
 	
+	public DefaultDialect(DialectOptions dialectOptions) {
+		this(new DefaultTypeMapping());
+	}
+	
 	/**
 	 * Creates a default dialect, with a default {@link ColumnBinderRegistry}
 	 */
