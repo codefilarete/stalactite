@@ -108,7 +108,7 @@ public class ServiceLoaderDialectResolver implements DialectResolver {
 	/**
 	 * Storage for database product and version.
 	 */
-	static class DatabaseSignet {
+	public static class DatabaseSignet {
 		
 		/**
 		 * Builds a {@link DatabaseSignet} from a connection to create the database signature from its metadata.
@@ -118,7 +118,7 @@ public class ServiceLoaderDialectResolver implements DialectResolver {
 		 * @param connection the connection from which a database signature must be created
 		 * @return a new {@link DatabaseSignet}
 		 */
-		static DatabaseSignet fromMetadata(Connection connection) {
+		public static DatabaseSignet fromMetadata(Connection connection) {
 			try {
 				DatabaseMetaData databaseMetaData = connection.getMetaData();
 				return new DatabaseSignet(databaseMetaData.getDatabaseProductName(), databaseMetaData.getDatabaseMajorVersion(), databaseMetaData.getDatabaseMinorVersion());
@@ -147,7 +147,7 @@ public class ServiceLoaderDialectResolver implements DialectResolver {
 		 * @param minorVersion database product minor version, as the one given by database metadata
 		 * @see #fromMetadata(Connection) 
 		 */
-		DatabaseSignet(String productName, int majorVersion, int minorVersion) {
+		public DatabaseSignet(String productName, int majorVersion, int minorVersion) {
 			this.productName = productName;
 			this.majorVersion = majorVersion;
 			this.minorVersion = minorVersion;

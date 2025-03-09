@@ -7,7 +7,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
- * Some code mutualisation around optimistic lock manager.
+ * Some code sharing around optimistic lock manager.
  * Needs that the {@link ConnectionProvider} is also a {@link RollbackObserver} (see constructors).
  * MVCC stands for MultiVersion Concurrency Control.
  */
