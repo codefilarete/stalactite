@@ -26,10 +26,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 class HSQLDBDialectResolverTest {
 	
 	/**
-	 * Integration test to ensure that an entry is registered to handle HSQLDB 2.0
+	 * Integration test to ensure that an entry is registered to handle HSQLDB 2.7
 	 */
 	@Test
-	void resolve_2_0() throws SQLException {
+	void resolve_2_7() throws SQLException {
 		DataSource hsqldbDataSource = new HSQLDBInMemoryDataSource();
 
 		ServiceLoaderDialectResolver dialectResolver = new ServiceLoaderDialectResolver();

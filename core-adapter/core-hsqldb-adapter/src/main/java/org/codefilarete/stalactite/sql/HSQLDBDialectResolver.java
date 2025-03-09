@@ -25,11 +25,11 @@ public class HSQLDBDialectResolver {
 	
 	private static final ReadOperationFactory READ_OPERATION_FACTORY = new ReadOperationFactory();
 	
-	public static class HSQLDB_2_0_Entry implements DialectResolver.DialectResolverEntry {
+	public static class HSQLDB_2_7_Entry implements DialectResolver.DialectResolverEntry {
 		
 		private static final HSQLDBDialect HSQLDB_DIALECT = new HSQLDBDialect();
 		
-		private static final DatabaseSignet HSQL_2_0_SIGNET = new DatabaseSignet("HSQL Database Engine", 2, 0);
+		private static final DatabaseSignet HSQL_2_7_SIGNET = new DatabaseSignet("HSQL Database Engine", 2, 7);
 		
 		private static final HSQLDBParameterBinderRegistry PARAMETER_BINDER_REGISTRY = new HSQLDBParameterBinderRegistry();
 		
@@ -52,7 +52,7 @@ public class HSQLDBDialectResolver {
 		
 		@Override
 		public DatabaseSignet getCompatibility() {
-			return HSQL_2_0_SIGNET;
+			return HSQL_2_7_SIGNET;
 		}
 		
 		@Override
