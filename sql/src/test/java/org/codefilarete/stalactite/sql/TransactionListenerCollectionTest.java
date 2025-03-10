@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.sql;
 
 import java.sql.Savepoint;
 
-import org.codefilarete.tool.trace.ModifiableInt;
+import org.codefilarete.tool.trace.MutableInt;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -16,7 +16,7 @@ public class TransactionListenerCollectionTest {
 	public void testAfterCommit_temporaryListenersShouldNotBeCalledTwice() {
 		TransactionListenerCollection testInstance = new TransactionListenerCollection();
 		MutableBoolean isTemporary = new MutableBoolean();
-		ModifiableInt modifiableInt = new ModifiableInt();
+		MutableInt modifiableInt = new MutableInt();
 		CommitListener temporaryCommitListener = new CommitListener() {
 			@Override
 			public void beforeCommit() {
@@ -55,7 +55,7 @@ public class TransactionListenerCollectionTest {
 	public void testAfterRolback_temporaryListenersShouldNotBeCalledTwice() {
 		TransactionListenerCollection testInstance = new TransactionListenerCollection();
 		MutableBoolean isTemporary = new MutableBoolean();
-		ModifiableInt modifiableInt = new ModifiableInt();
+		MutableInt modifiableInt = new MutableInt();
 		RollbackListener temporaryRollbackListener = new RollbackListener() {
 			
 			@Override

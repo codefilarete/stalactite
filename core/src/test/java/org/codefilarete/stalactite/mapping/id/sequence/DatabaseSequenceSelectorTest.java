@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.codefilarete.stalactite.sql.ddl.structure.Sequence;
 import org.codefilarete.stalactite.sql.statement.ReadOperationFactory;
-import org.codefilarete.tool.trace.ModifiableLong;
+import org.codefilarete.tool.trace.MutableLong;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,7 +19,7 @@ class DatabaseSequenceSelectorTest {
 	@Test
 	void next_basic() {
 		List<Long> databaseCalls = new ArrayList<>();
-		ModifiableLong counter = new ModifiableLong();
+		MutableLong counter = new MutableLong();
 		DatabaseSequenceSelector testInstance = new DatabaseSequenceSelector(new Sequence("whatever sequence name"), "whatever SQL", new ReadOperationFactory(), null) {
 			@Override
 			long callDatabase() {
@@ -39,7 +39,7 @@ class DatabaseSequenceSelectorTest {
 	void next_withPoolSize() {
 		List<Long> databaseCalls = new ArrayList<>();
 		int poolSize = 3;
-		ModifiableLong counter = new ModifiableLong(-poolSize + 1);
+		MutableLong counter = new MutableLong(-poolSize + 1);
 		DatabaseSequenceSelector testInstance = new DatabaseSequenceSelector(new Sequence("whatever sequence name")
 				.withBatchSize(poolSize), "whatever SQL", new ReadOperationFactory(), null) {
 			@Override

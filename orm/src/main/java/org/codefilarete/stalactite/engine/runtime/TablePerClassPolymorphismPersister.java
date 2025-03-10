@@ -65,7 +65,7 @@ import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.function.Hanger.Holder;
-import org.codefilarete.tool.trace.ModifiableInt;
+import org.codefilarete.tool.trace.MutableInt;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
 import static org.codefilarete.stalactite.query.model.Operators.cast;
@@ -451,7 +451,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		Union subPersistersUnion = new Union();
 		String entityTypeDiscriminatorName = "clazz_";
 		PseudoColumn<Integer> discriminatorPseudoColumn = subPersistersUnion.registerColumn(entityTypeDiscriminatorName, Integer.class);
-		ModifiableInt discriminatorComputer = new ModifiableInt();
+		MutableInt discriminatorComputer = new MutableInt();
 		
 		subPersisters.forEach(subPersister -> {
 			Query subEntityQuery = new Query(subPersister.getMapping().getTargetTable());
@@ -505,7 +505,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			TablePerClassPolymorphicRelationJoinNode<C, T1, ?, I> mainPersisterJoin,
 			Set<ConfiguredRelationalPersister<? extends C, I>> subPersisters) {
 		
-		ModifiableInt discriminatorComputer = new ModifiableInt();
+		MutableInt discriminatorComputer = new MutableInt();
 		subPersisters.forEach(subPersister -> {
 			ConfiguredRelationalPersister<V, I> localSubPersister = (ConfiguredRelationalPersister<V, I>) subPersister;
 			entityJoinTree.<V, T1, T2, I>addMergeJoin(mainPolymorphicJoinNodeName,
@@ -548,7 +548,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			PseudoColumn<I> primaryKeyPseudoColumn = subPersistersUnion.registerColumn(col.getName(), mainPersister.getMapping().getIdMapping().getIdentifierInsertionManager().getIdentifierType());
 		});
 		
-		ModifiableInt discriminatorComputer = new ModifiableInt();
+		MutableInt discriminatorComputer = new MutableInt();
 		Map<Integer, SelectExecutor<? extends C, I>> subtypeSelectorPerDiscriminatorValue = new HashMap<>();
 		
 		subPersisters.forEach(subPersister -> {

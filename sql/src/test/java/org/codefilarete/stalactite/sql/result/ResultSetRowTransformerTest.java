@@ -10,7 +10,7 @@ import org.danekja.java.util.function.serializable.SerializableSupplier;
 import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.tool.trace.ModifiableInt;
+import org.codefilarete.tool.trace.MutableInt;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -92,7 +92,7 @@ class ResultSetRowTransformerTest {
 	@Test
 	void transform_basicUseCase_complexConsumer() throws SQLException {
 		// The default ModifiableInt that takes its value from "a". Reinstantiated on each row.
-		ResultSetRowTransformer<ModifiableInt, Integer> testInstance = new ResultSetRowTransformer<>(ModifiableInt.class, "a", INTEGER_READER, ModifiableInt::new);
+		ResultSetRowTransformer<MutableInt, Integer> testInstance = new ResultSetRowTransformer<>(MutableInt.class, "a", INTEGER_READER, MutableInt::new);
 		// The secondary that will increment the same ModifiableInt by column "b" value
 		testInstance.add(new ColumnConsumer<>("b", INTEGER_READER, (t, i) -> t.increment(Objects.preventNull(i, 0))));
 		
@@ -109,13 +109,13 @@ class ResultSetRowTransformerTest {
 	}
 	
 	/**
-	 * A test based on an {@link ModifiableInt} that would take its value from a {@link java.sql.ResultSet}
+	 * A test based on an {@link MutableInt} that would take its value from a {@link java.sql.ResultSet}
 	 */
 	@Test
 	void transform_shareInstanceOverRows() throws SQLException {
 		// The default ModifiableInt that takes its value from "a". Shared over rows (class attribute)
-		ModifiableInt sharedInstance = new ModifiableInt(0);
-		ResultSetRowTransformer<ModifiableInt, Integer> testInstance = new ResultSetRowTransformer<>(ModifiableInt.class, "a", INTEGER_READER, i -> {
+		MutableInt sharedInstance = new MutableInt(0);
+		ResultSetRowTransformer<MutableInt, Integer> testInstance = new ResultSetRowTransformer<>(MutableInt.class, "a", INTEGER_READER, i -> {
 			sharedInstance.increment(i);
 			return sharedInstance;
 		});
@@ -137,11 +137,11 @@ class ResultSetRowTransformerTest {
 	
 	@Test
 	void copyWithAliases() throws SQLException {
-		ResultSetRowTransformer<ModifiableInt, Integer> sourceInstance = new ResultSetRowTransformer<>(ModifiableInt.class, "a", INTEGER_READER, ModifiableInt::new);
+		ResultSetRowTransformer<MutableInt, Integer> sourceInstance = new ResultSetRowTransformer<>(MutableInt.class, "a", INTEGER_READER, MutableInt::new);
 		sourceInstance.add(new ColumnConsumer<>("b", INTEGER_READER, (t, i) -> t.increment(Objects.preventNull(i, 0))));
 		
 		// we're making our copy with column "a" is now "x", and column "b" is now "y"
-		ResultSetRowTransformer<ModifiableInt, Integer> testInstance = sourceInstance.copyWithAliases(Maps.asHashMap("a", "x").add("b", "y"));
+		ResultSetRowTransformer<MutableInt, Integer> testInstance = sourceInstance.copyWithAliases(Maps.asHashMap("a", "x").add("b", "y"));
 		
 		// of course ....
 		assertThat(testInstance).isNotSameAs(sourceInstance);

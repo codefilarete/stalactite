@@ -13,7 +13,7 @@ import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.PairIterator.UntilBothIterator;
 import org.codefilarete.tool.function.Predicates;
-import org.codefilarete.tool.trace.ModifiableInt;
+import org.codefilarete.tool.trace.MutableInt;
 
 import static org.codefilarete.stalactite.engine.diff.State.ADDED;
 import static org.codefilarete.stalactite.engine.diff.State.HELD;
@@ -78,9 +78,9 @@ public class CollectionDiffer<C> {
 		// building Map of indexes per object
 		Map<C, Set<Integer>> beforeIndexes = new KeepOrderMap<>();
 		Map<C, Set<Integer>> afterIndexes = new KeepOrderMap<>();
-		ModifiableInt beforeIndex = new ModifiableInt(INDEXED_COLLECTION_FIRST_INDEX_VALUE - 1);	// -1 because ModifiableInt.increment(..) increments value before giving value
+		MutableInt beforeIndex = new MutableInt(INDEXED_COLLECTION_FIRST_INDEX_VALUE - 1);	// -1 because ModifiableInt.increment(..) increments value before giving value
 		before.forEach(o -> beforeIndexes.computeIfAbsent(o, k -> new HashSet<>()).add(beforeIndex.increment()));
-		ModifiableInt afterIndex = new ModifiableInt(INDEXED_COLLECTION_FIRST_INDEX_VALUE - 1);	// -1 because ModifiableInt.increment(..) increments value before giving value
+		MutableInt afterIndex = new MutableInt(INDEXED_COLLECTION_FIRST_INDEX_VALUE - 1);	// -1 because ModifiableInt.increment(..) increments value before giving value
 		after.forEach(o -> afterIndexes.computeIfAbsent(o, k -> new HashSet<>()).add(afterIndex.increment()));
 		
 		KeepOrderSet<IndexedDiff<C>> result = new KeepOrderSet<>();

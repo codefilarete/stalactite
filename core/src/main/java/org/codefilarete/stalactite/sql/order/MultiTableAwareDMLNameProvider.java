@@ -7,7 +7,7 @@ import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
-import org.codefilarete.tool.trace.ModifiableBoolean;
+import org.codefilarete.tool.trace.MutableBoolean;
 
 /**
  * A name provider that add table prefix to columns in case of multi table o avoid column name conflict.
@@ -21,7 +21,7 @@ import org.codefilarete.tool.trace.ModifiableBoolean;
 public class MultiTableAwareDMLNameProvider extends DMLNameProvider {
 	
 	/** State defining if this name provider should add table prefix to column */
-	private final ModifiableBoolean multiTable = new ModifiableBoolean(false);
+	private final MutableBoolean multiTable = new MutableBoolean(false);
 	
 	private final DMLNameProvider delegate;
 	

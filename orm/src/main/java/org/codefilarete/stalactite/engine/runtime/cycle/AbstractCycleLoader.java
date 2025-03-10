@@ -13,7 +13,7 @@ import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.trace.ModifiableInt;
+import org.codefilarete.tool.trace.MutableInt;
 
 /**
  * Abstraction to handle graph loading while it contains a cycle in mapping definition.
@@ -48,7 +48,7 @@ public abstract class AbstractCycleLoader<SRC, TRGT, TRGTID> implements SelectLi
 	 * Helper to detect end of beforeSelect / select / afterSelect loop. Made to clear other ThreadLocal fields.
 	 */
 	@VisibleForTesting
-	final ThreadContext<ModifiableInt> currentCycleCount = new ThreadContext<>(ModifiableInt::new);
+	final ThreadContext<MutableInt> currentCycleCount = new ThreadContext<>(MutableInt::new);
 	
 	protected AbstractCycleLoader(EntityPersister<TRGT, TRGTID> targetPersister) {
 		this.targetPersister = targetPersister;

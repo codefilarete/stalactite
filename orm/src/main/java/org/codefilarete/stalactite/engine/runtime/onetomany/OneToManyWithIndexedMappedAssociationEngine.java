@@ -36,7 +36,7 @@ import org.codefilarete.tool.ThreadLocals;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.IdentityMap;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.trace.ModifiableInt;
+import org.codefilarete.tool.trace.MutableInt;
 
 import static org.codefilarete.stalactite.engine.runtime.onetomany.AbstractOneToManyWithAssociationTableEngine.INDEXED_COLLECTION_FIRST_INDEX_VALUE;
 import static org.codefilarete.tool.Nullable.nullable;
@@ -255,7 +255,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				if (apply instanceof List) {
 					result = ((List<?>) apply).indexOf(target) + INDEXED_COLLECTION_FIRST_INDEX_VALUE;
 				} else if (apply instanceof LinkedHashSet) {
-					ModifiableInt counter = new ModifiableInt(INDEXED_COLLECTION_FIRST_INDEX_VALUE - 1);
+					MutableInt counter = new MutableInt(INDEXED_COLLECTION_FIRST_INDEX_VALUE - 1);
 					for (Object o : apply) {
 						counter.increment();
 						if (o == target) {

@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.tool.trace.ModifiableInt;
+import org.codefilarete.tool.trace.MutableInt;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
@@ -76,7 +76,7 @@ class ReadOperationTest {
 		parameterBinders.put("id", DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		parameterBinders.put("name", DefaultParameterBinders.STRING_BINDER);
 		
-		ModifiableInt beforeValuesSetInvokationCount = new ModifiableInt();
+		MutableInt beforeValuesSetInvokationCount = new MutableInt();
 		Map<String, Object> capturedValues = new HashMap<>();
 		ReadOperation<String> testInstance = new ReadOperation<>(
 				new StringParamedSQL("select count(*) from Toto where id = :id and name = :name", parameterBinders),

@@ -18,7 +18,7 @@ import org.apache.log4j.spi.LoggingEvent;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.tool.trace.ModifiableInt;
+import org.codefilarete.tool.trace.MutableInt;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
@@ -392,7 +392,7 @@ class WriteOperationTest {
 		parameterBinders.put(1, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		parameterBinders.put(2, DefaultParameterBinders.STRING_BINDER);
 		
-		ModifiableInt beforeValuesSetInvokationCount = new ModifiableInt();
+		MutableInt beforeValuesSetInvokationCount = new MutableInt();
 		Map<Integer, Object> capturedValues = new HashMap<>(); 
 		WriteOperation<Integer> testInstance = new WriteOperation<>(
 				new PreparedSQL("insert into Toto(id, name) values(?, ?)", parameterBinders),

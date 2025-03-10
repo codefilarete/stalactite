@@ -9,7 +9,7 @@ import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.DDLGenerator;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.codefilarete.tool.trace.ModifiableInt;
+import org.codefilarete.tool.trace.MutableInt;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -27,7 +27,7 @@ class PooledHiLoSequenceTest {
     void next_noExistingValueInDatabase() {
         PooledHiLoSequenceOptions totoSequenceOptions = new PooledHiLoSequenceOptions(10, "Toto", PooledHiLoSequenceStorageOptions.DEFAULT);
         PooledHiLoSequencePersister sequencePersisterMock = Mockito.mock(PooledHiLoSequencePersister.class);
-        ModifiableInt sequenceValue = new ModifiableInt();
+        MutableInt sequenceValue = new MutableInt();
         when(sequencePersisterMock.select("Toto")).thenReturn(null);
         when(sequencePersisterMock.reservePool("Toto", 10)).thenReturn((long) sequenceValue.increment() * totoSequenceOptions.getPoolSize());
         
@@ -45,7 +45,7 @@ class PooledHiLoSequenceTest {
     void next_existingValueInDatabase() {
         PooledHiLoSequenceOptions totoSequenceOptions = new PooledHiLoSequenceOptions(10, "Toto", PooledHiLoSequenceStorageOptions.DEFAULT);
         PooledHiLoSequencePersister sequencePersisterMock = Mockito.mock(PooledHiLoSequencePersister.class);
-        ModifiableInt sequenceValue = new ModifiableInt(50);
+        MutableInt sequenceValue = new MutableInt(50);
         when(sequencePersisterMock.select("Toto")).thenReturn(new PooledHiLoSequencePersister.Sequence("Toto", sequenceValue.getValue()));
         when(sequencePersisterMock.reservePool("Toto", 10)).thenReturn((long) sequenceValue.increment() * totoSequenceOptions.getPoolSize());
         
@@ -65,7 +65,7 @@ class PooledHiLoSequenceTest {
         // we check that we can increment a sequence from a different initial value
         PooledHiLoSequenceOptions totoSequenceOptions = new PooledHiLoSequenceOptions(10, "Toto", PooledHiLoSequenceStorageOptions.DEFAULT, -42);
         PooledHiLoSequencePersister sequencePersisterMock = Mockito.mock(PooledHiLoSequencePersister.class);
-        ModifiableInt sequenceValue = new ModifiableInt(50);
+        MutableInt sequenceValue = new MutableInt(50);
         when(sequencePersisterMock.select("Toto")).thenReturn(null);
         when(sequencePersisterMock.reservePool("Toto", 10)).thenReturn((long) sequenceValue.increment() * totoSequenceOptions.getPoolSize());
 

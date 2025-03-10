@@ -73,8 +73,8 @@ import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.PairIterator.EmptyIterator;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.function.Sequence;
-import org.codefilarete.tool.trace.ModifiableInt;
-import org.codefilarete.tool.trace.ModifiableLong;
+import org.codefilarete.tool.trace.MutableInt;
+import org.codefilarete.tool.trace.MutableLong;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.hsqldb.jdbc.JDBCArrayBasic;
 import org.hsqldb.types.Type;
@@ -597,7 +597,7 @@ class SimpleRelationalEntityPersisterTest {
 			ResultSet resultSetForFinalResult = new InMemoryResultSet(Arrays.asList(
 					Maps.asMap(totoIdAlias, (Object) 7).add(totoAAlias, 1).add(totoBAlias, 2)
 			));
-			ModifiableInt queryCounter = new ModifiableInt();
+			MutableInt queryCounter = new MutableInt();
 			when(preparedStatement.executeQuery()).thenAnswer((Answer<ResultSet>) invocation -> {
 				queryCounter.increment();
 				switch (queryCounter.getValue()) {
@@ -707,14 +707,14 @@ class SimpleRelationalEntityPersisterTest {
 				select.clear();
 				select.add(count, "count");
 			}, Toto::getA, Operators.eq(77));
-			long countValue = totoRelationalExecutableEntityQuery.execute(new Accumulator<Function<Selectable<Long>, Long>, ModifiableLong, Long>() {
+			long countValue = totoRelationalExecutableEntityQuery.execute(new Accumulator<Function<Selectable<Long>, Long>, MutableLong, Long>() {
 				@Override
-				public Supplier<ModifiableLong> supplier() {
-					return ModifiableLong::new;
+				public Supplier<MutableLong> supplier() {
+					return MutableLong::new;
 				}
 				
 				@Override
-				public BiConsumer<ModifiableLong, Function<Selectable<Long>, Long>> aggregator() {
+				public BiConsumer<MutableLong, Function<Selectable<Long>, Long>> aggregator() {
 					return (modifiableInt, selectableObjectFunction) -> {
 						Long apply = selectableObjectFunction.apply(count);
 						modifiableInt.reset(apply);
@@ -722,8 +722,8 @@ class SimpleRelationalEntityPersisterTest {
 				}
 				
 				@Override
-				public Function<ModifiableLong, Long> finisher() {
-					return ModifiableLong::getValue;
+				public Function<MutableLong, Long> finisher() {
+					return MutableLong::getValue;
 				}
 			});
 			

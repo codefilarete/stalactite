@@ -26,7 +26,7 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.Maps.ChainingHashMap;
 import org.codefilarete.tool.exception.Exceptions;
-import org.codefilarete.tool.trace.ModifiableInt;
+import org.codefilarete.tool.trace.MutableInt;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -299,7 +299,7 @@ class QueryMapperTest {
 	@Test
 	void execute_instanceHasAssembler() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
-		ModifiableInt assemblerCounter = new ModifiableInt();
+		MutableInt assemblerCounter = new MutableInt();
 		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry)
 				.mapKey(Toto::new, "id", long.class)
 				.map((rootBean, resultSet) -> rootBean.setName(resultSet.getString("name") + assemblerCounter.increment()));
@@ -325,7 +325,7 @@ class QueryMapperTest {
 	@Test
 	void execute_instanceHasAssembler_thatRunOnce() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
-		ModifiableInt assemblerCounter = new ModifiableInt();
+		MutableInt assemblerCounter = new MutableInt();
 		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry)
 				.mapKey(Toto::new, "id", long.class)
 				.map((rootBean, resultSet) -> rootBean.setName(resultSet.getString("name") + assemblerCounter.increment()), AssemblyPolicy.ONCE_PER_BEAN);

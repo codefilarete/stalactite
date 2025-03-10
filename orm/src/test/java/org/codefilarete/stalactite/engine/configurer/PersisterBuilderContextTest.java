@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.engine.configurer;
 
 import org.codefilarete.stalactite.engine.PersisterRegistry;
-import org.codefilarete.tool.trace.ModifiableInt;
+import org.codefilarete.tool.trace.MutableInt;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
 import org.junit.jupiter.api.Test;
 
@@ -20,7 +20,7 @@ class PersisterBuilderContextTest {
 
 		EntityMappingConfiguration entityMappingConfigurationMock = mock(EntityMappingConfiguration.class);
 		when(entityMappingConfigurationMock.getEntityType()).thenReturn(Integer.class);
-		ModifiableInt invocationSafeGuard = new ModifiableInt();
+		MutableInt invocationSafeGuard = new MutableInt();
 		testInstance.runInContext(entityMappingConfigurationMock, () -> {
 			invocationSafeGuard.increment();
 			assertThat(testInstance.isCycling(entityMappingConfigurationMock)).isTrue();

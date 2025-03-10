@@ -23,7 +23,7 @@ import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.trace.ModifiableInt;
+import org.codefilarete.tool.trace.MutableInt;
 
 /**
  * {@link SQLAppender} that can handle not-yet-set values from {@link ConditionalOperator}s as well as
@@ -61,14 +61,14 @@ public class ExpandableSQLAppender implements SQLAppender {
 	 * Counter for unnamed variables : each time a raw value is appended to the {@link ExpandableSQLAppender} instance, this counter is incremented
 	 * and a variable name is created for it, simply made of the Integer as a String
 	 */
-	private final ModifiableInt paramCounter;
+	private final MutableInt paramCounter;
 	
 	public ExpandableSQLAppender(ColumnBinderRegistry parameterBinderRegistry, DMLNameProvider dmlNameProvider) {
 		this.dmlNameProvider = dmlNameProvider;
 		this.parameterBinderRegistry = parameterBinderRegistry;
 		this.parameterBinders = new HashMap<>();
 		this.values = new HashMap<>();
-		this.paramCounter = new ModifiableInt();
+		this.paramCounter = new MutableInt();
 		initCurrentSqlSnippet();
 	}
 	
@@ -85,7 +85,7 @@ public class ExpandableSQLAppender implements SQLAppender {
 			ColumnBinderRegistry parameterBinderRegistry,
 			Map<String, ParameterBinder> parameterBinders,
 			Map<String, Object> values,
-			ModifiableInt paramCounter) {
+			MutableInt paramCounter) {
 		this.dmlNameProvider = dmlNameProvider;
 		this.parameterBinderRegistry = parameterBinderRegistry;
 		this.parameterBinders = parameterBinders;

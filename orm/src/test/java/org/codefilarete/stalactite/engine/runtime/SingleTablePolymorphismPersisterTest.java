@@ -57,7 +57,7 @@ import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.function.Sequence;
-import org.codefilarete.tool.trace.ModifiableLong;
+import org.codefilarete.tool.trace.MutableLong;
 import org.hsqldb.jdbc.JDBCArrayBasic;
 import org.hsqldb.types.Type;
 import org.junit.jupiter.api.AfterEach;
@@ -722,14 +722,14 @@ class SingleTablePolymorphismPersisterTest {
 				select.clear();
 				select.add(count, "count");
 			}, AbstractToto::getX, Operators.eq(77));
-			long countValue = totoRelationalExecutableEntityQuery.execute(new Accumulator<Function<Selectable<Long>, Long>, ModifiableLong, Long>() {
+			long countValue = totoRelationalExecutableEntityQuery.execute(new Accumulator<Function<Selectable<Long>, Long>, MutableLong, Long>() {
 				@Override
-				public Supplier<ModifiableLong> supplier() {
-					return ModifiableLong::new;
+				public Supplier<MutableLong> supplier() {
+					return MutableLong::new;
 				}
 				
 				@Override
-				public BiConsumer<ModifiableLong, Function<Selectable<Long>, Long>> aggregator() {
+				public BiConsumer<MutableLong, Function<Selectable<Long>, Long>> aggregator() {
 					return (modifiableInt, selectableObjectFunction) -> {
 						Long apply = selectableObjectFunction.apply(count);
 						modifiableInt.reset(apply);
@@ -737,8 +737,8 @@ class SingleTablePolymorphismPersisterTest {
 				}
 				
 				@Override
-				public Function<ModifiableLong, Long> finisher() {
-					return ModifiableLong::getValue;
+				public Function<MutableLong, Long> finisher() {
+					return MutableLong::getValue;
 				}
 			});
 			

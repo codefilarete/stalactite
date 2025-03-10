@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.tool.trace.ModifiableInt;
+import org.codefilarete.tool.trace.MutableInt;
 
 /**
  * An appender to a {@link PreparedSQL}
@@ -25,17 +25,17 @@ public class PreparedSQLAppender implements SQLAppender {
 	private final ColumnBinderRegistry parameterBinderRegistry;
 	private final Map<Integer, ParameterBinder> parameterBinders;
 	private final Map<Integer, Object> values;
-	private final ModifiableInt paramCounter;
+	private final MutableInt paramCounter;
 	
 	public PreparedSQLAppender(SQLAppender sqlAppender, ColumnBinderRegistry parameterBinderRegistry) {
-		this(sqlAppender, parameterBinderRegistry, new HashMap<>(), new HashMap<>(), new ModifiableInt(1));
+		this(sqlAppender, parameterBinderRegistry, new HashMap<>(), new HashMap<>(), new MutableInt(1));
 	}
 	
 	private PreparedSQLAppender(SQLAppender surrogate,
 								ColumnBinderRegistry parameterBinderRegistry,
 								Map<Integer, ParameterBinder> parameterBinders,
 								Map<Integer, Object> values,
-								ModifiableInt paramCounter) {
+								MutableInt paramCounter) {
 		this.surrogate = surrogate;
 		this.parameterBinderRegistry = parameterBinderRegistry;
 		this.parameterBinders = parameterBinders;

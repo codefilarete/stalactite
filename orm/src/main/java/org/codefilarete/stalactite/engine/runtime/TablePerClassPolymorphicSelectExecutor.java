@@ -35,7 +35,7 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Functions;
-import org.codefilarete.tool.trace.ModifiableInt;
+import org.codefilarete.tool.trace.MutableInt;
 
 /**
  * @author Guillaume Mary
@@ -128,8 +128,8 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table<T>> im
 		Map<Integer, PreparedStatementWriter> parameterBinders = new HashMap<>();
 		Map<Integer, Object> values = new HashMap<>();
 		StringAppender unionSql = new StringAppender();
-		ModifiableInt parameterIndex = new ModifiableInt(1);
-		ModifiableInt queriesCount = new ModifiableInt(1);
+		MutableInt parameterIndex = new MutableInt(1);
+		MutableInt queriesCount = new MutableInt(1);
 		queries.forEach(preparedSQL -> {
 			unionSql.cat(preparedSQL.getSQL(), UNION_ALL_SEPARATOR);
 			preparedSQL.getValues().values().forEach(value -> {

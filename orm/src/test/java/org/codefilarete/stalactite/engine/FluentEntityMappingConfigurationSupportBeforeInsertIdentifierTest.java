@@ -22,7 +22,7 @@ import org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.function.Sequence;
-import org.codefilarete.tool.trace.ModifiableInt;
+import org.codefilarete.tool.trace.MutableInt;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +46,7 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 		persistenceContext = new PersistenceContext(dataSource, dialect);
 		longSequence = new Sequence<Long>() {
 			
-			private final ModifiableInt counter = new ModifiableInt(0);
+			private final MutableInt counter = new MutableInt(0);
 			
 			@Override
 			public Long next() {

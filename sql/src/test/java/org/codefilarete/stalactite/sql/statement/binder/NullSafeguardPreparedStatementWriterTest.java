@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.sql.statement.binder;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-import org.codefilarete.tool.trace.ModifiableBoolean;
+import org.codefilarete.tool.trace.MutableBoolean;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,7 +22,7 @@ class NullSafeguardPreparedStatementWriterTest {
 	
 	@Test
 	public void testSet_nonNullValueIsPassedAsArgument_surrogateIsInvoked() throws SQLException {
-		ModifiableBoolean isSurrogateInvoked = new ModifiableBoolean(false);
+		MutableBoolean isSurrogateInvoked = new MutableBoolean(false);
 		NullSafeguardPreparedStatementWriter<Object> testInstance =
 				new NullSafeguardPreparedStatementWriter<>((preparedStatement, valueIndex, value) -> isSurrogateInvoked.setTrue());
 		testInstance.set(mock(PreparedStatement.class), 42, 666);
@@ -31,7 +31,7 @@ class NullSafeguardPreparedStatementWriterTest {
 	
 	@Test
 	public void testSet_nullIsPassedAsArgument_nonNPEIsThrown() {
-		ModifiableBoolean isSurrogateInvoked = new ModifiableBoolean(false);
+		MutableBoolean isSurrogateInvoked = new MutableBoolean(false);
 		NullSafeguardPreparedStatementWriter<Object> testInstance =
 				new NullSafeguardPreparedStatementWriter<>((preparedStatement, valueIndex, value) -> {
 			isSurrogateInvoked.setTrue();

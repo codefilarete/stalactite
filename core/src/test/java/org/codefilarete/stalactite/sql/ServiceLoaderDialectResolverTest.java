@@ -8,7 +8,7 @@ import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver.DatabaseSign
 import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry;
 import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.trace.ModifiableLong;
+import org.codefilarete.tool.trace.MutableLong;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -29,7 +29,7 @@ class ServiceLoaderDialectResolverTest {
 			(parameterBinders, dmlNameProviderFactory, sqlTypeRegistry) -> null,
 			new DefaultGeneratedKeysReaderFactory(new ParameterBinderRegistry()),
 			(databaseSequence, connectionProvider) -> {
-				ModifiableLong counter = new ModifiableLong();
+				MutableLong counter = new MutableLong();
 				return counter::increment;
 			},
 			100,

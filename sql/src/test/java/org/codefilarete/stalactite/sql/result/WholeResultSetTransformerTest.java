@@ -17,7 +17,7 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.function.Functions;
 import org.codefilarete.tool.function.ThrowingRunnable;
-import org.codefilarete.tool.trace.ModifiableInt;
+import org.codefilarete.tool.trace.MutableInt;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -446,7 +446,7 @@ class WholeResultSetTransformerTest {
 		testInstance.add((rootBean, resultSet) -> rootBean.addLeftFeather(new FeatherColor("pink")), AssemblyPolicy.ON_EACH_ROW);
 		testInstance.add((rootBean, resultSet) -> rootBean.addLeftFeather(new FeatherColor("yellow")), AssemblyPolicy.ONCE_PER_BEAN);
 		
-		ModifiableInt headCreationCounter = new ModifiableInt();
+		MutableInt headCreationCounter = new MutableInt();
 		testInstance.add(Chicken::setHead, new ResultSetRowTransformer<>(Head.class, chickenInstantiationColumnName, STRING_READER, s -> {
 			headCreationCounter.increment();	// this will be done once because of cache put by WholeResultSetTransformer
 			return new Head();
@@ -502,7 +502,7 @@ class WholeResultSetTransformerTest {
 		testInstance.add((rootBean, resultSet) -> rootBean.addLeftFeather(new FeatherColor("pink")), AssemblyPolicy.ON_EACH_ROW);
 		testInstance.add((rootBean, resultSet) -> rootBean.addLeftFeather(new FeatherColor("yellow")), AssemblyPolicy.ONCE_PER_BEAN);
 		
-		ModifiableInt headCreationCounter = new ModifiableInt();
+		MutableInt headCreationCounter = new MutableInt();
 		testInstance.add(Chicken::setHead, new ResultSetRowTransformer<>(Head.class, chickenInstantiationColumnName, STRING_READER, s -> {
 			headCreationCounter.increment();
 			return new Head();

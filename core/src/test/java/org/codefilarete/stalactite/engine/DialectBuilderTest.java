@@ -19,7 +19,7 @@ import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry;
 import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.trace.ModifiableLong;
+import org.codefilarete.tool.trace.MutableLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -48,7 +48,7 @@ class DialectBuilderTest {
 				},
 				new DefaultGeneratedKeysReaderFactory(parameterBinderRegistry),
 				(databaseSequence, connectionProvider) -> {
-					ModifiableLong counter = new ModifiableLong();
+					MutableLong counter = new MutableLong();
 					return counter::increment;
 				},
 				100,

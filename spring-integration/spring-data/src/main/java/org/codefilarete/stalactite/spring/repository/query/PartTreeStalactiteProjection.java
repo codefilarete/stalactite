@@ -15,8 +15,8 @@ import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.result.Accumulator;
-import org.codefilarete.tool.trace.ModifiableBoolean;
-import org.codefilarete.tool.trace.ModifiableLong;
+import org.codefilarete.tool.trace.MutableBoolean;
+import org.codefilarete.tool.trace.MutableLong;
 import org.springframework.data.repository.query.ParameterAccessor;
 import org.springframework.data.repository.query.Parameters;
 import org.springframework.data.repository.query.ParametersParameterAccessor;
@@ -54,14 +54,14 @@ class PartTreeStalactiteProjection<C, R> implements RepositoryQuery {
 		return new PartTreeStalactiteProjection<>(method, entityPersister, tree, select -> {
 			select.clear();
 			select.add(count, "row_count");
-		}, new Accumulator<Function<Selectable<Long>, Long>, ModifiableLong, Long>() {
+		}, new Accumulator<Function<Selectable<Long>, Long>, MutableLong, Long>() {
 			@Override
-			public Supplier<ModifiableLong> supplier() {
-				return ModifiableLong::new;
+			public Supplier<MutableLong> supplier() {
+				return MutableLong::new;
 			}
 			
 			@Override
-			public BiConsumer<ModifiableLong, Function<Selectable<Long>, Long>> aggregator() {
+			public BiConsumer<MutableLong, Function<Selectable<Long>, Long>> aggregator() {
 				return (modifiableLong, selectableObjectFunction) -> {
 					Long countValue = selectableObjectFunction.apply(count);
 					modifiableLong.reset(countValue);
@@ -69,8 +69,8 @@ class PartTreeStalactiteProjection<C, R> implements RepositoryQuery {
 			}
 			
 			@Override
-			public Function<ModifiableLong, Long> finisher() {
-				return ModifiableLong::getValue;
+			public Function<MutableLong, Long> finisher() {
+				return MutableLong::getValue;
 			}
 		});
 	}
@@ -93,21 +93,22 @@ class PartTreeStalactiteProjection<C, R> implements RepositoryQuery {
 			pkColumns.forEach(column -> {
 				selectables.add(column, column.getAlias());
 			});
-		}, new Accumulator<Function<Selectable<Object>, Object>, ModifiableBoolean, Boolean>() {
+		}, new Accumulator<Function<Selectable<Object>, Object>, MutableBoolean, Boolean>() {
 			@Override
-			public Supplier<ModifiableBoolean> supplier() {
-				return () -> new ModifiableBoolean(false);
+			public Supplier<MutableBoolean> supplier() {
+				return () -> new MutableBoolean(false);
 			}
 			
 			@Override
-			public BiConsumer<ModifiableBoolean, Function<Selectable<Object>, Object>> aggregator() {
-				return (modifiableBoolean, selectableObjectFunction) -> {modifiableBoolean.setTrue();
+			public BiConsumer<MutableBoolean, Function<Selectable<Object>, Object>> aggregator() {
+				return (mutableBoolean, selectableObjectFunction) -> {
+					mutableBoolean.setTrue();
 				};
 			}
 			
 			@Override
-			public Function<ModifiableBoolean, Boolean> finisher() {
-				return ModifiableBoolean::getValue;
+			public Function<MutableBoolean, Boolean> finisher() {
+				return MutableBoolean::getValue;
 			}
 		});
 		// since exists can be done directly in SQL we reduce the amount of retrieved data with limit

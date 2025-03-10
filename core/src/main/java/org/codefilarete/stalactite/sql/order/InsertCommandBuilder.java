@@ -19,7 +19,7 @@ import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.tool.trace.ModifiableInt;
+import org.codefilarete.tool.trace.MutableInt;
 
 /**
  * A SQL builder for {@link Insert} objects
@@ -113,7 +113,7 @@ public class InsertCommandBuilder<T extends Table<T>> implements SQLBuilder {
 		// (ParameterBinders are correctly filled by PreparedSQLWrapper)
 		// Moreover we have to build indexes of Columns to allow usage of UpdateStatement.setValue(..)
 		// So we iterate of set Columns to remove unnecessary columns and compute column indexes
-		ModifiableInt placeholderColumnCount = new ModifiableInt();
+		MutableInt placeholderColumnCount = new MutableInt();
 		insert.getColumns().forEach(c -> {
 			// only non column value must be adapted (see catUpdateObject(..))
 			if (!(c.getValue() instanceof Column)) {

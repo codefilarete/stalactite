@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.sql.result;
 
 import java.util.function.Function;
 
-import org.codefilarete.tool.trace.ModifiableInt;
+import org.codefilarete.tool.trace.MutableInt;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -15,7 +15,7 @@ class SimpleBeanCacheTest {
 	@Test
 	void testComputeIfAbsent() {
 		SimpleBeanCache testInstance = new SimpleBeanCache();
-		ModifiableInt factoryCallCounter = new ModifiableInt();
+		MutableInt factoryCallCounter = new MutableInt();
 		Function<Integer, String> capturingFactory = key -> {
 			factoryCallCounter.increment();
 			return "hello " + key;
@@ -36,7 +36,7 @@ class SimpleBeanCacheTest {
 	@Test
 	void testComputeIfAbsent_ArrayAsKeySafety() {
 		SimpleBeanCache testInstance = new SimpleBeanCache();
-		ModifiableInt factoryCallCounter = new ModifiableInt();
+		MutableInt factoryCallCounter = new MutableInt();
 		Function<Object[], String> capturingFactory = key -> {
 			factoryCallCounter.increment();
 			return "hello";
