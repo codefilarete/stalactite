@@ -17,7 +17,8 @@ import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
-import org.codefilarete.stalactite.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
@@ -38,7 +39,7 @@ import static org.codefilarete.tool.collection.Iterables.first;
  */
 public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	
-	private final HSQLDBDialect dialect = new HSQLDBDialect();
+	private final Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private PersistenceContext persistenceContext;
 	private FluentEntityMappingBuilder<City, Identifier<Long>> cityMappingConfiguration;

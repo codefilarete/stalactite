@@ -10,7 +10,6 @@ import org.codefilarete.stalactite.query.model.Placeholder;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.order.UpdateCommandBuilder.UpdateStatement;
 
 /**
  * A fluent way of writing a SQL update clause by leveraging {@link Column} : update and where clauses are only made of it.
@@ -38,22 +37,8 @@ public class Update<T extends Table<T>> {
 		return targetTable;
 	}
 	
-	public Criteria getCriteria() {
+	public Criteria<?> getCriteria() {
 		return criteriaSurrogate;
-	}
-	
-	/**
-	 * Adds a column to update without predefined value. Then value can be set through {@link UpdateStatement#setValue(Column, Object)} if
-	 * {@link UpdateCommandBuilder#toStatement()} is used to build the SQL order.
-	 * 
-	 * Overwrites any previous value put for that column.
-	 * 
-	 * @param column any column
-	 * @return this
-	 */
-	public Update<T> set(Column<T, ?> column) {
-		this.columns.add(new UpdateColumn<>(column));
-		return this;
 	}
 	
 	/**
@@ -118,19 +103,15 @@ public class Update<T extends Table<T>> {
 		
 		public static final Placeholder<Object, Object> PLACEHOLDER = new Placeholder<>("?", Object.class);
 		
-		private final Column<T, Object> column;
+		private final Column<T, ?> column;
 		private final Object value;
 		
-		public UpdateColumn(Column<T, ?> column) {
-			this((Column<T, Object>) column, PLACEHOLDER);
-		}
-		
 		public <C> UpdateColumn(Column<T, C> column, Object value) {
-			this.column = (Column<T, Object>) column;
+			this.column = column;
 			this.value = value;
 		}
 		
-		public Column<T, Object> getColumn() {
+		public Column<T, ?> getColumn() {
 			return column;
 		}
 		

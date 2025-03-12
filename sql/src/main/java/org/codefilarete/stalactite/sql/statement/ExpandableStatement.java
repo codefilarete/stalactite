@@ -16,12 +16,12 @@ public abstract class ExpandableStatement<ParamType> extends SQLStatement<ParamT
 	
 	private final String sql;
 	
-	public ExpandableStatement(String sql, Map<? extends ParamType, ? extends PreparedStatementWriter> parameterBinders) {
+	public ExpandableStatement(String sql, Map<? extends ParamType, ? extends PreparedStatementWriter<?>> parameterBinders) {
 		super(parameterBinders);
 		this.sql = sql;
 	}
 	
-	public ExpandableStatement(String sql, PreparedStatementWriterIndex<? extends ParamType, ? extends PreparedStatementWriter> parameterBinderProvider) {
+	public ExpandableStatement(String sql, PreparedStatementWriterIndex<ParamType, ? extends PreparedStatementWriter<?>> parameterBinderProvider) {
 		super(parameterBinderProvider);
 		this.sql = sql;
 	}

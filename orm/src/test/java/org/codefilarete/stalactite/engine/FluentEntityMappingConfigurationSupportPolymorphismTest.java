@@ -23,7 +23,8 @@ import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifie
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
-import org.codefilarete.stalactite.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
@@ -49,14 +50,17 @@ import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterB
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 /**
  * @author Guillaume Mary
  */
 class FluentEntityMappingConfigurationSupportPolymorphismTest {
 	
-	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
+	private static final Dialect DIALECT = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private final ConnectionProvider connectionProvider = new CurrentThreadConnectionProvider(dataSource);
 	private PersistenceContext persistenceContext;
@@ -326,7 +330,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 		@Test
 		void twoSubClasses_withSqlBinder() {
 			// we create a local dialect to avoid conflict with sqlBinder(..) usage and ensure the test has the good context
-			HSQLDBDialect dialect = new HSQLDBDialect();
+			Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 			dialect.getColumnBinderRegistry().register((Class) Identifier.class, identifierBinder(LONG_PRIMITIVE_BINDER));
 			dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 			PersistenceContext persistenceContext = new PersistenceContext(connectionProvider, dialect);

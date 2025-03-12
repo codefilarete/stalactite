@@ -8,12 +8,13 @@ import java.util.List;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
-import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.id.Identifier;
+import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
-import org.codefilarete.stalactite.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
@@ -35,7 +36,7 @@ import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
  */
 public class FluentEntityMappingConfigurationSupportVersioningTest {
 	
-	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
+	private static final Dialect DIALECT = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private PersistenceContext persistenceContext;
 	

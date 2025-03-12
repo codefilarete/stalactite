@@ -93,13 +93,13 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 		// update of the single-table-marker
 		dmlNameProvider.setMultiTable(!additionalTables.isEmpty());
 		
-		result.cat(this.update.getTargetTable().getAbsoluteName())    // main table is always referenced with name (not alias)
+		result.cat(dmlNameProvider.getName(this.update.getTargetTable()))
 				.catIf(dmlNameProvider.isMultiTable(), ", ");
 		// additional tables (with optional alias)
 		Iterator<Table> iterator = additionalTables.iterator();
 		while (iterator.hasNext()) {
 			Table next = iterator.next();
-			result.cat(next.getAbsoluteName()).catIf(iterator.hasNext(), ", ");
+			result.cat(dmlNameProvider.getName(next)).catIf(iterator.hasNext(), ", ");
 		}
 		
 		// append updated columns part
@@ -146,8 +146,8 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 		String sql = toSQL(preparedSQLAppender, dmlNameProvider);
 		
 		Map<Integer, Object> values = new HashMap<>(preparedSQLAppender.getValues());
-		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>(preparedSQLAppender.getParameterBinders());
-		Map<Column<T, Object>, Integer> columnIndexes = new HashMap<>();
+		Map<Integer, ParameterBinder<?>> parameterBinders = new HashMap<>(preparedSQLAppender.getParameterBinders());
+		Map<Column<T, ?>, Integer> columnIndexes = new HashMap<>();
 		
 		// PreparedSQLWrapper has filled values (see catUpdateObject(..)) but PLACEHOLDERs must be removed from them.
 		// (ParameterBinders are correctly filled by PreparedSQLWrapper)
@@ -174,7 +174,7 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 	
 	/**
 	 * A specialized version of {@link PreparedSQL} dedicated to {@link Update} so one can set column values of the update clause
-	 * through {@link #setValue(Column, Object)} and make its {@link Update} "reusable".
+	 * through {@link #setValue(Column, Object)} and make it {@link Update} "reusable".
 	 * Here is a usage example:
 	 * <pre>{@code
 	 * UpdateStatement updateStatement = new UpdateCommandBuilder(this).toStatement(dialect.getColumnBinderRegistry());
@@ -197,7 +197,7 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 		 * @param parameterBinders binder for prepared statement values
 		 * @param columnIndexes indexes of the updated columns
 		 */
-		private UpdateStatement(String sql, Map<Integer, ParameterBinder> parameterBinders, Map<? extends Column<T, Object>, Integer> columnIndexes) {
+		private UpdateStatement(String sql, Map<Integer, ? extends ParameterBinder<?>> parameterBinders, Map<? extends Column<T, ?>, Integer> columnIndexes) {
 			super(sql, parameterBinders);
 			this.columnIndexes = (Map<Column<T, Object>, Integer>) columnIndexes;
 		}

@@ -35,7 +35,7 @@ public abstract class SQLStatement<ParamType> {
 	 * @param parameterBinders expected to be the exact necessary binders of every parameter in the SQL order (no more, no less).
 	 * Checked by {@link #assertValuesAreApplyable()}
 	 */
-	protected SQLStatement(Map<? extends ParamType, ? extends PreparedStatementWriter> parameterBinders) {
+	protected SQLStatement(Map<? extends ParamType, ? extends PreparedStatementWriter<?>> parameterBinders) {
 		this(PreparedStatementWriterIndex.fromMap(parameterBinders));
 	}
 	
@@ -44,9 +44,13 @@ public abstract class SQLStatement<ParamType> {
 	 * @param parameterBinderProvider expected to be the exact necessary binders of every parameter in the SQL order (no more, no less).
 	 * Checked by {@link #assertValuesAreApplyable()}
 	 */
-	protected SQLStatement(PreparedStatementWriterIndex<? extends ParamType, ? extends PreparedStatementWriter> parameterBinderProvider) {
+	protected SQLStatement(PreparedStatementWriterIndex<? extends ParamType, ? extends PreparedStatementWriter<?>> parameterBinderProvider) {
 		this.parameterBinderProvider = (PreparedStatementWriterProvider<ParamType>) parameterBinderProvider;
 		this.expectedParameters = (Set<ParamType>) parameterBinderProvider.keys();
+	}
+	
+	public PreparedStatementWriterIndex<ParamType, PreparedStatementWriter<?>> getParameterBinderProvider() {
+		return (PreparedStatementWriterIndex<ParamType, PreparedStatementWriter<?>>) parameterBinderProvider;
 	}
 	
 	/**

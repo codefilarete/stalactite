@@ -33,7 +33,7 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -262,7 +262,7 @@ public class EntityMappingTreeSelectExecutorTest {
 		Column<T, String> name = targetTable.addColumn("name", String.class);
 		
 		ConnectionProvider connectionProvider = new CurrentThreadConnectionProvider(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(new HSQLDBDialect().getDdlTableGenerator(), new HSQLDBDialect().getDdlSequenceGenerator(), connectionProvider);
+		DDLDeployer ddlDeployer = new DDLDeployer(HSQLDBDialectBuilder.defaultHSQLDBDialect().getDdlTableGenerator(), HSQLDBDialectBuilder.defaultHSQLDBDialect().getDdlSequenceGenerator(), connectionProvider);
 		ddlDeployer.getDdlGenerator().addTables(targetTable);
 		ddlDeployer.deployDDL();
 		
@@ -306,7 +306,7 @@ public class EntityMappingTreeSelectExecutorTest {
 		);
 		
 		// Checking that selected entities by their id are those expected
-		EntityMappingTreeSelectExecutor<Toto, Toto, ?> testInstance = new EntityMappingTreeSelectExecutor<>(classMappingStrategy, new HSQLDBDialect(), connectionProvider);
+		EntityMappingTreeSelectExecutor<Toto, Toto, ?> testInstance = new EntityMappingTreeSelectExecutor<>(classMappingStrategy, HSQLDBDialectBuilder.defaultHSQLDBDialect(), connectionProvider);
 		testInstance.prepareQuery();
 		Set<Toto> select = testInstance.select(Arrays.asList(new Toto(100, 1)));
 		assertThat(select.toString()).isEqualTo(Arrays.asList(entity1).toString());

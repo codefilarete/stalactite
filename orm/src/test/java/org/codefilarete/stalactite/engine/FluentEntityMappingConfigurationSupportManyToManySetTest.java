@@ -24,7 +24,8 @@ import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
-import org.codefilarete.stalactite.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
@@ -53,7 +54,7 @@ import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedId
  */
 class FluentEntityMappingConfigurationSupportManyToManySetTest {
 	
-	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
+	private static final Dialect DIALECT = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 	private static FluentEntityMappingBuilder<Choice, Identifier<Long>> CHOICE_MAPPING_CONFIGURATION;
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private final ConnectionProvider connectionProvider = new CurrentThreadConnectionProvider(dataSource);

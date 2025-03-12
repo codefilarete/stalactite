@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.engine;
 import javax.sql.DataSource;
 
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.test.DatabaseHelper;
 import org.codefilarete.stalactite.sql.test.HSQLDBDatabaseHelper;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
@@ -25,6 +25,6 @@ public class PersisterHSQLDBTest extends PersisterITTest {
 	
 	@Override
 	Dialect createDialect() {
-		return new HSQLDBDialect();
+		return HSQLDBDialectBuilder.defaultHSQLDBDialect();
 	}
 }

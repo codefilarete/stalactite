@@ -296,7 +296,7 @@ public class ExpandableSQLAppender implements SQLAppender {
 		String placeholderSql = expandableSQL.getPreparedSQL();
 		
 		// Computing parameter binders for each "?" index
-		Map<Integer, PreparedStatementWriter> placeholderBinders = new HashMap<>();
+		Map<Integer, PreparedStatementWriter<?>> placeholderBinders = new HashMap<>();
 		Map<Integer, Object> placeholderValues = new HashMap<>();
 		mergedValues.forEach((paramName, value) -> {
 			ExpandableParameter expandableParameter = expandableSQL.getExpandableParameters().get(paramName);

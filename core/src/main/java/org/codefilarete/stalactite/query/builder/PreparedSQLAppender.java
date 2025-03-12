@@ -23,7 +23,7 @@ public class PreparedSQLAppender implements SQLAppender {
 	
 	private final SQLAppender surrogate;
 	private final ColumnBinderRegistry parameterBinderRegistry;
-	private final Map<Integer, ParameterBinder> parameterBinders;
+	private final Map<Integer, ParameterBinder<?>> parameterBinders;
 	private final Map<Integer, Object> values;
 	private final MutableInt paramCounter;
 	
@@ -33,12 +33,12 @@ public class PreparedSQLAppender implements SQLAppender {
 	
 	private PreparedSQLAppender(SQLAppender surrogate,
 								ColumnBinderRegistry parameterBinderRegistry,
-								Map<Integer, ParameterBinder> parameterBinders,
+								Map<Integer, ? extends ParameterBinder<?>> parameterBinders,
 								Map<Integer, Object> values,
 								MutableInt paramCounter) {
 		this.surrogate = surrogate;
 		this.parameterBinderRegistry = parameterBinderRegistry;
-		this.parameterBinders = parameterBinders;
+		this.parameterBinders = (Map<Integer, ParameterBinder<?>>) parameterBinders;
 		this.values = values;
 		this.paramCounter = paramCounter;
 	}
@@ -47,7 +47,7 @@ public class PreparedSQLAppender implements SQLAppender {
 		return values;
 	}
 	
-	public Map<Integer, ParameterBinder> getParameterBinders() {
+	public Map<Integer, ParameterBinder<?>> getParameterBinders() {
 		return parameterBinders;
 	}
 	

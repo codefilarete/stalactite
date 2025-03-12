@@ -5,6 +5,7 @@ import javax.sql.DataSource;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.DialectOptions;
 
 /**
  * 
@@ -23,7 +24,11 @@ public class PersistenceContextConfigurationBuilder {
 	}
 	
 	public PersistenceContextConfiguration build() {
-		Dialect dialect = new DialectBuilder(vendorSettings).build();
+		return build(DialectOptions.noOptions());
+	}
+	
+	public PersistenceContextConfiguration build(DialectOptions dialectOptions) {
+		Dialect dialect = new DialectBuilder(vendorSettings, dialectOptions).build();
 		ConnectionConfiguration connectionConfiguration = buildConnectionConfiguration();
 		return new PersistenceContextConfiguration(connectionConfiguration, dialect);
 	}

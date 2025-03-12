@@ -25,7 +25,7 @@ public interface PreparedStatementWriterIndex<K, BINDER extends PreparedStatemen
 	 * @param parameterBinders the source of {@link PreparedStatementWriter}
 	 * @return a {@link PreparedStatementWriterProvider} backed by the Map
 	 */
-	static <K, BINDER extends PreparedStatementWriter> PreparedStatementWriterIndex<K, BINDER> fromMap(Map<K, BINDER> parameterBinders) {
+	static <K, BINDER extends PreparedStatementWriter<?>> PreparedStatementWriterIndex<K, BINDER> fromMap(Map<K, BINDER> parameterBinders) {
 		return new PreparedStatementWriterIndexFromMap<>(parameterBinders);
 	}
 	
@@ -34,7 +34,7 @@ public interface PreparedStatementWriterIndex<K, BINDER extends PreparedStatemen
 	 *
 	 * @author Guillaume Mary
 	 */
-	class PreparedStatementWriterIndexFromMap<ParamType, BINDER extends PreparedStatementWriter> extends PreparedStatementWriterProviderFromMap<ParamType, BINDER> implements PreparedStatementWriterIndex<ParamType, BINDER> {
+	class PreparedStatementWriterIndexFromMap<ParamType, BINDER extends PreparedStatementWriter<?>> extends PreparedStatementWriterProviderFromMap<ParamType, BINDER> implements PreparedStatementWriterIndex<ParamType, BINDER> {
 		
 		public PreparedStatementWriterIndexFromMap(Map<ParamType, BINDER> parameterBinders) {
 			super(parameterBinders);

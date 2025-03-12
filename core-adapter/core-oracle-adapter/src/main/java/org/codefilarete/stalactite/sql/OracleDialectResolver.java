@@ -1,6 +1,9 @@
 package org.codefilarete.stalactite.sql;
 
+import org.codefilarete.stalactite.engine.DatabaseVendorSettings;
 import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver.DatabaseSignet;
+
+import static org.codefilarete.stalactite.sql.OracleDatabaseSettings.ORACLE_23_0;
 
 /**
  * @author Guillaume Mary
@@ -11,16 +14,26 @@ public class OracleDialectResolver {
 		
 		private static final OracleDialect ORACLE_DIALECT = new OracleDialect();
 		
-		private static final DatabaseSignet ORACLE_23_SIGNET = new DatabaseSignet("Oracle", 23, 0);
-		
 		@Override
 		public DatabaseSignet getCompatibility() {
-			return ORACLE_23_SIGNET;
+			return ORACLE_23_0.getCompatibility();
 		}
 		
 		@Override
 		public Dialect getDialect() {
 			return ORACLE_DIALECT;
+		}
+		
+		@Override
+		public DatabaseVendorSettings getVendorSettings() {
+			return ORACLE_23_0;
+		}
+	}
+	
+	public static class OracleDatabaseSignet extends DatabaseSignet {
+		
+		public OracleDatabaseSignet(int majorVersion, int minorVersion) {
+			super("Oracle", majorVersion, minorVersion);
 		}
 	}
 }

@@ -60,7 +60,7 @@ public class ExpandableStatementTest {
 	
 	@ParameterizedTest
 	@MethodSource("testDoApplyValue_data")
-	public void testDoApplyValue(String sql, Map<String, Object> paramValues, Map<String, PreparedStatementWriter> binders, Map<Integer, Integer> expectedIndexes) {
+	public void testDoApplyValue(String sql, Map<String, Object> paramValues, Map<String, PreparedStatementWriter<?>> binders, Map<Integer, Integer> expectedIndexes) {
 		Map<Integer, Object> appliedIndexedValues = new HashMap<>();
 		StringParamedSQL testInstance = new StringParamedSQL(sql, binders) {
 			@Override

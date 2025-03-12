@@ -39,7 +39,7 @@
 			<version>${project.version}</version>
 			<scope>test</scope>
 		</dependency>
-		<!-- for HSQLDBDialect to do IT tests -->
+		<!-- for HSQLDB Dialect to do IT tests -->
 		<dependency>
 			<groupId>org.codefilarete.stalactite</groupId>
 			<artifactId>core-hsqldb-adapter</artifactId>

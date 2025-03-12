@@ -1,7 +1,10 @@
 package org.codefilarete.stalactite.sql;
 
 
+import org.codefilarete.stalactite.engine.DatabaseVendorSettings;
 import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver.DatabaseSignet;
+
+import static org.codefilarete.stalactite.sql.PostgreSQLDatabaseSettings.POSTGRESQL_9_6;
 
 /**
  * @author Guillaume Mary
@@ -12,16 +15,26 @@ public class PostgreSQLDialectResolver {
 		
 		private static final PostgreSQLDialect POSTGRESQL_DIALECT = new PostgreSQLDialect();
 		
-		private static final DatabaseSignet POSTGRESQL_9_6_SIGNET = new DatabaseSignet("PostgreSQL", 9, 6);
-		
 		@Override
 		public DatabaseSignet getCompatibility() {
-			return POSTGRESQL_9_6_SIGNET;
+			return POSTGRESQL_9_6.getCompatibility();
 		}
 		
 		@Override
 		public Dialect getDialect() {
 			return POSTGRESQL_DIALECT;
+		}
+		
+		@Override
+		public DatabaseVendorSettings getVendorSettings() {
+			return POSTGRESQL_9_6;
+		}
+	}
+	
+	public static class PostgreSQLDatabaseSignet extends DatabaseSignet {
+		
+		public PostgreSQLDatabaseSignet(int majorVersion, int minorVersion) {
+			super("PostgreSQL", majorVersion, minorVersion);
 		}
 	}
 }

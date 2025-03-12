@@ -9,15 +9,11 @@ public class HSQLDBDialectResolver {
 	
 	public static class HSQLDB_2_7_Entry implements DialectResolver.DialectResolverEntry {
 		
-		private static final HSQLDBDialect HSQLDB_DIALECT = new HSQLDBDialect();
-		
-		private static final DatabaseSignet HSQL_2_7_SIGNET = new DatabaseSignet("HSQL Database Engine", 2, 7);
-		
-		private static final HSQLDBVendorSettings HSQLDB_VENDOR_SETTINGS = new HSQLDBVendorSettings();
+		private static final Dialect HSQLDB_DIALECT = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 		
 		@Override
 		public DatabaseSignet getCompatibility() {
-			return HSQL_2_7_SIGNET;
+			return HSQLDBDatabaseSettings.HSQLDB_2_7.getCompatibility();
 		}
 		
 		@Override
@@ -26,8 +22,15 @@ public class HSQLDBDialectResolver {
 		}
 		
 		@Override
-		public HSQLDBVendorSettings getVendorSettings() {
-			return HSQLDB_VENDOR_SETTINGS;
+		public HSQLDBDatabaseSettings getVendorSettings() {
+			return HSQLDBDatabaseSettings.HSQLDB_2_7;
+		}
+	}
+	
+	static final class HSQLDBDatabaseSignet extends ServiceLoaderDialectResolver.DatabaseSignet {
+		
+		public HSQLDBDatabaseSignet(int majorVersion, int minorVersion) {
+			super("HSQL Database Engine", majorVersion, minorVersion);
 		}
 	}
 }

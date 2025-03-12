@@ -10,7 +10,7 @@ import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.sql.CommitListener;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.RollbackListener;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -213,7 +213,7 @@ class StalactitePlatformTransactionManagerTest {
 		
 		@Bean
 		public PersistenceContext persistenceContext(StalactitePlatformTransactionManager transactionManager) {
-			HSQLDBDialect dialect = new HSQLDBDialect();
+			Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 			dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 			dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 			
@@ -237,7 +237,7 @@ class StalactitePlatformTransactionManagerTest {
 		public void onApplicationEvent(ContextRefreshedEvent event) {
 			DataSource dataSource = event.getApplicationContext().getBean(DataSource.class);
 			Schema schema = event.getApplicationContext().getBean(Schema.class);
-			Dialect dialect = new HSQLDBDialect();
+			Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 			// Note that we use a CurrentThreadTransactionalConnectionProvider instead of existing StalactitePlatformTransactionManager
 			// because Transaction doesn't exist yet, even by marking @Transactional current method 
 			DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), dialect.getDdlSequenceGenerator(), new CurrentThreadTransactionalConnectionProvider(dataSource));

@@ -3,11 +3,12 @@ package org.codefilarete.stalactite.sql.order;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.query.builder.QuotingDMLNameProvider;
+import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
+import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.order.InsertCommandBuilder.InsertStatement;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.Test;
@@ -22,41 +23,56 @@ import static org.mockito.Mockito.verify;
 class InsertCommandBuilderTest {
 	
 	@Test
-	<T extends Table<T>> void testToSQL() {
+	<T extends Table<T>> void toSQL() {
 		T totoTable = (T) new Table("Toto");
 		Column<T, Long> columnA = totoTable.addColumn("a", Long.class);
 		Column<T, String> columnB = totoTable.addColumn("b", String.class);
 		Insert<T> insert = new Insert<>(totoTable)
-				.set(columnA)
 				.set(columnB, "tata");
 		
-		InsertCommandBuilder<T> testInstance = new InsertCommandBuilder<>(insert, DMLNameProvider::new);
+		InsertCommandBuilder<T> testInstance = new InsertCommandBuilder<>(insert, new DefaultDialect());
 		
-		assertThat(testInstance.toSQL()).isEqualTo("insert into Toto(a, b) values (?, 'tata')");
+		assertThat(testInstance.toSQL()).isEqualTo("insert into Toto(a, b) values (?, ?)");
 	}
 	
 	@Test
-	<T extends Table<T>> void testToStatement() throws SQLException {
+	<T extends Table<T>> void toSQL_keywordsAreEscaped() {
+		T totoTable = (T) new Table("Toto");
+		Column<T, Long> columnA = totoTable.addColumn("a", Long.class);
+		Column<T, String> columnB = totoTable.addColumn("b", String.class);
+		Insert<T> insert = new Insert<>(totoTable)
+				.set(columnB, "tata");
+		
+		DefaultDialect dialect = new DefaultDialect() {
+			@Override
+			protected DMLNameProviderFactory newDMLNameProviderFactory() {
+				return QuotingDMLNameProvider::new;
+			}
+		};
+		InsertCommandBuilder<T> testInstance = new InsertCommandBuilder<>(insert, dialect);
+		
+		assertThat(testInstance.toSQL()).isEqualTo("insert into `Toto`(`a`, `b`) values (?, ?)");
+	}
+	
+	@Test
+	<T extends Table<T>> void toStatement() throws SQLException {
 		T totoTable = (T) new Table("Toto");
 		Column<T, Long> columnA = totoTable.addColumn("a", Long.class);
 		Column<T, String> columnB = totoTable.addColumn("b", String.class);
 		Column<T, String> columnC = totoTable.addColumn("c", String.class);
 		Insert<T> insert = new Insert<>(totoTable)
-				.set(columnA)
-				.set(columnB, "tata")
-				.set(columnC);
+				.set(columnB, "tata");
 		
-		InsertCommandBuilder<T> testInstance = new InsertCommandBuilder<>(insert, DMLNameProvider::new);
+		DefaultDialect dialect = new DefaultDialect();
+		InsertCommandBuilder<T> testInstance = new InsertCommandBuilder<>(insert, dialect);
 		
-		ColumnBinderRegistry binderRegistry = new ColumnBinderRegistry();
-		
-		InsertStatement<T> result = testInstance.toStatement(binderRegistry);
+		InsertStatement<T> result = testInstance.toStatement();
 		assertThat(result.getSQL()).isEqualTo("insert into Toto(a, b, c) values (?, ?, ?)");
 		
-		assertThat(result.getValues()).isEqualTo(Maps.asMap(2, (Object) "tata"));
-		assertThat(result.getParameterBinder(1)).isEqualTo(DefaultParameterBinders.LONG_BINDER);
-		assertThat(result.getParameterBinder(2)).isEqualTo(DefaultParameterBinders.STRING_BINDER);
-		assertThat(result.getParameterBinder(3)).isEqualTo(DefaultParameterBinders.STRING_BINDER);
+		assertThat(result.getValues()).isEqualTo(Maps.asMap(columnB, "tata"));
+		assertThat(result.getParameterBinder(columnA)).isEqualTo(DefaultParameterBinders.LONG_BINDER);
+		assertThat(result.getParameterBinder(columnB)).isEqualTo(DefaultParameterBinders.STRING_BINDER);
+		assertThat(result.getParameterBinder(columnC)).isEqualTo(DefaultParameterBinders.STRING_BINDER);
 		
 		result.setValue(columnA, 42L);
 		result.setValue(columnC, "toto");
@@ -68,9 +84,9 @@ class InsertCommandBuilderTest {
 		verify(mock).setString(3, "toto");
 		
 		// ensuring that column type override in registry is taken into account
-		binderRegistry.register(columnA, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
-		result = testInstance.toStatement(binderRegistry);
-		assertThat(result.getParameterBinder(1)).isEqualTo(DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
+		dialect.getColumnBinderRegistry().register(columnA, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
+		result = testInstance.toStatement();
+		assertThat(result.getParameterBinder(columnA)).isEqualTo(DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		result.setValue(columnA, -42l);
 		result.setValue(columnC, "toto");
 		result.applyValues(mock);

@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ServiceLoaderDialectResolverTest {
 	
 	static DatabaseVendorSettings defaultDatabaseVendorSettings = new DatabaseVendorSettings(
+			new DatabaseSignet("my_vendor", 1, 0), 
 			Arrays.asSet("a_keyword"),
 			'\'',
 			new DefaultTypeMapping(),

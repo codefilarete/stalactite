@@ -12,7 +12,7 @@ import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
@@ -36,7 +36,7 @@ import static org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetR
  */
 public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 	
-	private Dialect dialect = new HSQLDBDialect();
+	private Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 	private DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private PersistenceContext persistenceContext;
 	private Sequence<Long> longSequence;

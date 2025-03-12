@@ -19,15 +19,15 @@ public class ColumnParameterizedSelect<T extends Table<T>> extends ColumnParamet
 	
 	public ColumnParameterizedSelect(String sql,
 									 Map<Column<T, ?>, int[]> columnIndexes,
-									 Map<Column<T, ?>, ParameterBinder<?>> parameterBinders,
-									 Map<String, ParameterBinder<?>> selectParameterBinders) {
+									 Map<Column<T, ?>, ? extends ParameterBinder<?>> parameterBinders,
+									 Map<String, ? extends ParameterBinder<?>> selectParameterBinders) {
 		super(sql, columnIndexes, parameterBinders);
-		this.selectParameterBinders = ParameterBinderIndex.fromMap(selectParameterBinders);
+		this.selectParameterBinders = (ParameterBinderIndex<String, ParameterBinder<?>>) ParameterBinderIndex.fromMap(selectParameterBinders);
 	}
 	
 	public ColumnParameterizedSelect(String sql,
 									 Map<Column<T, ?>, int[]> columnIndexes,
-									 PreparedStatementWriterIndex<Column<T, ?>, ParameterBinder<?>> parameterBinderProvider,
+									 PreparedStatementWriterIndex<Column<T, ?>, ? extends ParameterBinder<?>> parameterBinderProvider,
 									 Map<String, ParameterBinder<?>> selectParameterBinders) {
 		super(sql, columnIndexes, parameterBinderProvider);
 		this.selectParameterBinders = ParameterBinderIndex.fromMap(selectParameterBinders);
@@ -35,7 +35,7 @@ public class ColumnParameterizedSelect<T extends Table<T>> extends ColumnParamet
 	
 	public ColumnParameterizedSelect(String sql,
 									 Map<Column<T, ?>, int[]> columnIndexes,
-									 PreparedStatementWriterIndex<Column<T, ?>, ParameterBinder<?>> parameterBinderProvider,
+									 PreparedStatementWriterIndex<Column<T, ?>, ? extends ParameterBinder<?>> parameterBinderProvider,
 									 ParameterBinderIndex<String, ParameterBinder<?>> selectParameterBinders) {
 		super(sql, columnIndexes, parameterBinderProvider);
 		this.selectParameterBinders = selectParameterBinders;

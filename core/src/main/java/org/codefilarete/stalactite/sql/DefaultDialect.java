@@ -1,7 +1,9 @@
 package org.codefilarete.stalactite.sql;
 
+import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelector;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
+import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver.DatabaseSignet;
 import org.codefilarete.stalactite.sql.ddl.DDLGenerator;
 import org.codefilarete.stalactite.sql.ddl.DDLSequenceGenerator;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
@@ -51,10 +53,6 @@ public class DefaultDialect implements Dialect {
 	 * Creates a default dialect, with a {@link DefaultTypeMapping} and a default {@link ColumnBinderRegistry}
 	 */
 	public DefaultDialect() {
-		this(new DefaultTypeMapping());
-	}
-	
-	public DefaultDialect(DialectOptions dialectOptions) {
 		this(new DefaultTypeMapping());
 	}
 	
@@ -200,6 +198,12 @@ public class DefaultDialect implements Dialect {
 	
 	@Override
 	public DatabaseSequenceSelectorFactory getDatabaseSequenceSelectorFactory() {
+		return (databaseSequence, connectionProvider) ->
+				new DatabaseSequenceSelector(databaseSequence, "select next_val from " + databaseSequence.getAbsoluteName(), getReadOperationFactory(), connectionProvider);
+	}
+	
+	@Override
+	public DatabaseSignet getCompatibility() {
 		return null;
 	}
 	

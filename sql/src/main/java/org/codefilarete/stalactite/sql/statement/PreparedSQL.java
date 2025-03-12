@@ -17,12 +17,12 @@ public class PreparedSQL extends SQLStatement<Integer> {
 	
 	private final String sql;
 	
-	public PreparedSQL(String sql, Map<Integer, ? extends PreparedStatementWriter> parameterBinders) {
+	public PreparedSQL(String sql, Map<Integer, ? extends PreparedStatementWriter<?>> parameterBinders) {
 		super(parameterBinders);
 		this.sql = sql;
 	}
 	
-	public PreparedSQL(String sql, PreparedStatementWriterIndex<Integer, ? extends PreparedStatementWriter> parameterBinderProvider) {
+	public PreparedSQL(String sql, PreparedStatementWriterIndex<Integer, ? extends PreparedStatementWriter<?>> parameterBinderProvider) {
 		super(parameterBinderProvider);
 		this.sql = sql;
 	}

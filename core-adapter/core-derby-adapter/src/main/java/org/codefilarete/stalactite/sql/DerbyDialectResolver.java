@@ -1,7 +1,10 @@
 package org.codefilarete.stalactite.sql;
 
 
+import org.codefilarete.stalactite.engine.DatabaseVendorSettings;
 import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver.DatabaseSignet;
+
+import static org.codefilarete.stalactite.sql.DerbyDatabaseSettings.DERBY_10_14;
 
 /**
  * @author Guillaume Mary
@@ -12,16 +15,26 @@ public class DerbyDialectResolver {
 		
 		private static final DerbyDialect DERBY_DIALECT = new DerbyDialect();
 		
-		private static final DatabaseSignet DERBY_10_14_SIGNET = new DatabaseSignet("Apache Derby", 10, 14);
-		
 		@Override
 		public DatabaseSignet getCompatibility() {
-			return DERBY_10_14_SIGNET;
+			return DERBY_10_14.getCompatibility();
 		}
 		
 		@Override
 		public Dialect getDialect() {
 			return DERBY_DIALECT;
+		}
+		
+		@Override
+		public DatabaseVendorSettings getVendorSettings() {
+			return DERBY_10_14;
+		}
+	}
+	
+	static final class DerbyDatabaseSignet extends ServiceLoaderDialectResolver.DatabaseSignet {
+		
+		public DerbyDatabaseSignet(int majorVersion, int minorVersion) {
+			super("Apache Derby", majorVersion, minorVersion);
 		}
 	}
 }

@@ -7,7 +7,9 @@ import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelector;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.sql.DatabaseSequenceSelectorFactory;
+import org.codefilarete.stalactite.sql.DialectOptions;
 import org.codefilarete.stalactite.sql.GeneratedKeysReaderFactory;
+import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver.DatabaseSignet;
 import org.codefilarete.stalactite.sql.ddl.DDLSequenceGenerator;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
@@ -42,6 +44,7 @@ class PersistenceContextConfigurationBuilderTest {
 		
 		PersistenceContextConfigurationBuilder testInstance = new PersistenceContextConfigurationBuilder(
 				new DatabaseVendorSettings(
+						new DatabaseSignet("my_vendor", 1, 0),
 						Arrays.asSet("aKeyWord"),
 						'`',
 						javaTypeToSqlTypes,
@@ -59,16 +62,16 @@ class PersistenceContextConfigurationBuilderTest {
 							}
 						},
 						SEQUENCE_SELECT_BUILDER,
-						100,
+						1000,
 						false
 				),
 				new ConnectionSettings(10, 150),
 				mock(DataSource.class)
 		);
 		
-		PersistenceContextConfiguration builtConfiguration = testInstance.build();
+		PersistenceContextConfiguration builtConfiguration = testInstance.build(DialectOptions.noOptions().setInOperatorMaxSize(1500));
 		// "In" operator size is taken on ConnectionSettings to make it more easily changed by user. Database vendor's one is considered a default value.
-		assertThat(builtConfiguration.getDialect().getInOperatorMaxSize()).isEqualTo(150);
+		assertThat(builtConfiguration.getDialect().getInOperatorMaxSize()).isEqualTo(1500);
 	}
 	
 	@Test
@@ -79,6 +82,7 @@ class PersistenceContextConfigurationBuilderTest {
 		
 		PersistenceContextConfigurationBuilder testInstance = new PersistenceContextConfigurationBuilder(
 				new DatabaseVendorSettings(
+						new DatabaseSignet("my_vendor", 1, 0),
 						Arrays.asSet("aKeyWord"),
 						'`',
 						javaTypeToSqlTypes,

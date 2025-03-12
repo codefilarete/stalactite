@@ -4,6 +4,7 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.sql.DatabaseSequenceSelectorFactory;
 import org.codefilarete.stalactite.sql.GeneratedKeysReaderFactory;
+import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver.DatabaseSignet;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry;
 
@@ -16,6 +17,8 @@ import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry;
  * @author Guillaume Mary
  */
 public class DatabaseVendorSettings {
+	
+	private final DatabaseSignet compatibility;
 	
 	/**
 	 * Keywords to be escaped in generated SQL 
@@ -41,7 +44,8 @@ public class DatabaseVendorSettings {
 	
 	private final boolean supportsTupleCondition;
 	
-	public DatabaseVendorSettings(Set<String> keyWords,
+	public DatabaseVendorSettings(DatabaseSignet compatibility,
+								  Set<String> keyWords,
 								  char quotingCharacter,
 								  JavaTypeToSqlTypeMapping javaTypeToSqlTypes,
 								  ParameterBinderRegistry parameterBinderRegistry,
@@ -50,6 +54,7 @@ public class DatabaseVendorSettings {
 								  DatabaseSequenceSelectorFactory databaseSequenceSelectorFactory,
 								  int inOperatorMaxSize,
 								  boolean supportsTupleCondition) {
+		this.compatibility = compatibility;
 		this.keyWords = keyWords;
 		this.quotingCharacter = quotingCharacter;
 		this.javaTypeToSqlTypes = javaTypeToSqlTypes;
@@ -59,6 +64,10 @@ public class DatabaseVendorSettings {
 		this.databaseSequenceSelectorFactory = databaseSequenceSelectorFactory;
 		this.inOperatorMaxSize = inOperatorMaxSize;
 		this.supportsTupleCondition = supportsTupleCondition;
+	}
+	
+	public DatabaseSignet getCompatibility() {
+		return compatibility;
 	}
 	
 	public Set<String> getKeyWords() {

@@ -3,6 +3,8 @@ package org.codefilarete.stalactite.engine;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
@@ -10,6 +12,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
+import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.Test;
@@ -42,8 +45,8 @@ public class PersistenceContextTest {
 		ArgumentCaptor<String> sqlStatementCaptor = ArgumentCaptor.forClass(String.class);
 		when(connectionMock.prepareStatement(sqlStatementCaptor.capture())).thenReturn(preparedStatementMock);
 		CapturingMatcher<Object> valuesStatementCaptor = new CapturingMatcher<>();
-		doNothing().when(preparedStatementMock).setLong(anyInt(), capture(long.class, valuesStatementCaptor));
-		doNothing().when(preparedStatementMock).setString(anyInt(), capture(String.class, valuesStatementCaptor));
+		doNothing().when(preparedStatementMock).setLong(capture(int.class, valuesStatementCaptor), capture(long.class, valuesStatementCaptor));
+		doNothing().when(preparedStatementMock).setString(capture(int.class, valuesStatementCaptor), capture(String.class, valuesStatementCaptor));
 		
 		PersistenceContext testInstance = new PersistenceContext(new SimpleConnectionProvider(connectionMock), new DefaultDialect());
 		Table totoTable = new Table("toto");
@@ -54,7 +57,14 @@ public class PersistenceContextTest {
 		testInstance.insert(totoTable).set(id, 1L).set(name, "Hello world !").execute();
 		
 		assertThat(sqlStatementCaptor.getValue()).isEqualTo("insert into toto(id, name) values (?, ?)");
-		assertThat(valuesStatementCaptor.getAllValues()).containsExactly(1L, "Hello world !");
+		List<Duo<Integer, Object>> statementArgsPairs = new ArrayList<>();
+		List<Object> capturedStatementArgs = valuesStatementCaptor.getAllValues();
+		for (int i = 0, allValuesSize = capturedStatementArgs.size(); i < allValuesSize; i+=2) {
+			int index = (int) capturedStatementArgs.get(i);
+			Object value = capturedStatementArgs.get(i + 1);
+			statementArgsPairs.add(new Duo<>(index, value));
+		}
+		assertThat(statementArgsPairs).containsExactlyInAnyOrder(new Duo<>(1, 1L), new Duo<>(2, "Hello world !"));
 	}
 	
 	@Test

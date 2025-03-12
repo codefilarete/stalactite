@@ -125,7 +125,7 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table<T>> im
 			queries.add(preparedSQL);
 		});
 		
-		Map<Integer, PreparedStatementWriter> parameterBinders = new HashMap<>();
+		Map<Integer, PreparedStatementWriter<?>> parameterBinders = new HashMap<>();
 		Map<Integer, Object> values = new HashMap<>();
 		StringAppender unionSql = new StringAppender();
 		MutableInt parameterIndex = new MutableInt(1);

@@ -66,7 +66,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	private final ColumnBinderRegistry columnBinderRegistry;
 	
 	/** {@link ParameterBinder}s per ({@link java.sql.PreparedStatement}) parameter */
-	private final Map<String, ParameterBinder> sqlParameterBinders = new HashMap<>();
+	private final Map<String, ParameterBinder<?>> sqlParameterBinders = new HashMap<>();
 	
 	/** SQL argument values (for where clause, or anywhere else) */
 	private final Map<String, Object> sqlArguments = new HashMap<>();

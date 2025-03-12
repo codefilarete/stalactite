@@ -13,6 +13,10 @@ import org.codefilarete.tool.function.Hanger.Holder;
  */
 public class DialectOptions {
 	
+	public static DialectOptions noOptions() {
+		return new DialectOptions();
+	}
+	
 	private final OptionalSetting<Integer> inOperatorMaxSize = new OptionalSetting<>();
 	private final OptionalSetting<Character> quoteCharacter = new OptionalSetting<>();
 	private final OptionalSetting<Boolean> quoteSQLIdentifiers = new OptionalSetting<>();

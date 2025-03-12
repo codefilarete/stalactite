@@ -1,7 +1,10 @@
 package org.codefilarete.stalactite.sql;
 
 
+import org.codefilarete.stalactite.engine.DatabaseVendorSettings;
 import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver.DatabaseSignet;
+
+import static org.codefilarete.stalactite.sql.SQLiteDatabaseSettings.SQLITE_3_45;
 
 /**
  * @author Guillaume Mary
@@ -12,16 +15,26 @@ public class SQLiteDialectResolver {
 		
 		private static final SQLiteDialect SQLite_DIALECT = new SQLiteDialect();
 		
-		private static final DatabaseSignet SQLite_3_45_SIGNET = new DatabaseSignet("SQLite", 3, 45);
-		
 		@Override
 		public DatabaseSignet getCompatibility() {
-			return SQLite_3_45_SIGNET;
+			return SQLITE_3_45.getCompatibility();
 		}
 		
 		@Override
 		public Dialect getDialect() {
 			return SQLite_DIALECT;
+		}
+		
+		@Override
+		public DatabaseVendorSettings getVendorSettings() {
+			return SQLITE_3_45;
+		}
+	}
+	
+	public static class SQLiteDatabaseSignet extends DatabaseSignet {
+		
+		public SQLiteDatabaseSignet(int majorVersion, int minorVersion) {
+			super("SQLite", majorVersion, minorVersion);
 		}
 	}
 }

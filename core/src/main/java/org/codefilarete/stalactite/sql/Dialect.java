@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.sql;
 
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
+import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver.DatabaseSignet;
 import org.codefilarete.stalactite.sql.ddl.DDLGenerator;
 import org.codefilarete.stalactite.sql.ddl.DDLSequenceGenerator;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
@@ -49,6 +50,8 @@ public interface Dialect {
 	
 	DatabaseSequenceSelectorFactory getDatabaseSequenceSelectorFactory();
 	
+	DatabaseSignet getCompatibility();
+	
 	/**
 	 * Indicates if this dialect supports what ANSI-SQL terms "row value constructor" syntax, also called tuple syntax.
 	 * Basically, does it support syntax like <pre>"... where (FIRST_NAME, LAST_NAME) = ('John', 'Doe')"</pre>.
@@ -85,7 +88,9 @@ public interface Dialect {
 		
 		private final DatabaseSequenceSelectorFactory databaseSequenceSelectorFactory;
 		
-		public DialectSupport(DDLTableGenerator ddlTableGenerator,
+		private final DatabaseSignet compatibility;
+		
+		public DialectSupport(DatabaseSignet compatibility, DDLTableGenerator ddlTableGenerator,
 							  DDLSequenceGenerator ddlSequenceGenerator,
 							  DMLGenerator dmlGenerator,
 							  WriteOperationFactory writeOperationFactory,
@@ -111,6 +116,7 @@ public interface Dialect {
 			this.generatedKeysReaderFactory = generatedKeysReaderFactory;
 			this.databaseSequenceSelectorFactory = databaseSequenceSelectorFactory;
 			this.supportsTupleCondition = supportsTupleCondition;
+			this.compatibility = compatibility;
 		}
 		
 		@Override
@@ -176,6 +182,11 @@ public interface Dialect {
 		@Override
 		public DatabaseSequenceSelectorFactory getDatabaseSequenceSelectorFactory() {
 			return databaseSequenceSelectorFactory;
+		}
+		
+		@Override
+		public DatabaseSignet getCompatibility() {
+			return compatibility;
 		}
 	}
 }

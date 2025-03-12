@@ -122,7 +122,7 @@ public class DMLGenerator {
 		Table table = Iterables.first(sortedColumns).getTable();
 		DDLAppender sqlUpdate = new DDLAppender(dmlNameProviderFactory.build(Fromable::getAbsoluteName), "update ", table, " set ");
 		Map<UpwhereColumn<T>, Integer> upsertIndexes = new HashMap<>(10);
-		Map<UpwhereColumn<T>, ParameterBinder> parameterBinders = new HashMap<>();
+		Map<UpwhereColumn<T>, ParameterBinder<?>> parameterBinders = new HashMap<>();
 		int positionCounter = 1;
 		for (Column<T, Object> column : sortedColumns) {
 			sqlUpdate.cat(column, " = " + SQL_PARAMETER_MARK_1);

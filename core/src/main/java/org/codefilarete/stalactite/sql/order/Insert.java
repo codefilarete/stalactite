@@ -3,12 +3,9 @@ package org.codefilarete.stalactite.sql.order;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.codefilarete.stalactite.query.model.ValuedVariable;
-import org.codefilarete.stalactite.sql.order.InsertCommandBuilder.InsertStatement;
-import org.codefilarete.stalactite.sql.order.Update.UpdateColumn;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.order.Update.UpdateColumn;
 
 /**
  * A fluent way of writing a SQL insert clause by leveraging {@link Column} : values can only be set through it.
@@ -32,20 +29,6 @@ public class Insert<T extends Table<T>> {
 	}
 	
 	/**
-	 * Adds a column to set a value for, without predefined value. Then value can be set through {@link InsertStatement#setValue(Column, Object)} if
-	 * {@link InsertCommandBuilder#toStatement(ColumnBinderRegistry)} is used to build the SQL order.
-	 *
-	 * Overwrites any previous value put for that column.
-	 * 
-	 * @param column any column
-	 * @return this
-	 */
-	public Insert<T> set(Column<T, ?> column) {
-		this.columns.add(new UpdateColumn<>(column));
-		return this;
-	}
-	
-	/**
 	 * Adds a column to set and its value. Overwrites any previous value put for that column.
 	 * 
 	 * @param column any column
@@ -54,7 +37,7 @@ public class Insert<T extends Table<T>> {
 	 * @return this
 	 */
 	public <C> Insert<T> set(Column<T, C> column, C value) {
-		this.columns.add(new UpdateColumn<>(column, new ValuedVariable<>(value)));
+		this.columns.add(new UpdateColumn<>(column, value));
 		return this;
 	}
 	

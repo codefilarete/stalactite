@@ -54,6 +54,11 @@ public class MultiTableAwareDMLNameProvider extends DMLNameProvider {
 	}
 	
 	@Override
+	public String getName(Fromable table) {
+		return delegate.getName(table);
+	}
+	
+	@Override
 	public String getSimpleName(Selectable<?> column) {
 		return delegate.getSimpleName(column);
 	}

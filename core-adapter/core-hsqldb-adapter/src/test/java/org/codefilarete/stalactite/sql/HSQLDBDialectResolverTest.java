@@ -7,7 +7,8 @@ import org.codefilarete.stalactite.engine.DatabaseVendorSettings;
 import org.codefilarete.stalactite.engine.SQLOperationsFactories;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.sql.GeneratedKeysReaderFactory.DefaultGeneratedKeysReaderFactory;
-import org.codefilarete.stalactite.sql.HSQLDBDialect.HSQLDBWriteOperationFactory;
+import org.codefilarete.stalactite.sql.HSQLDBDialectResolver.HSQLDBDatabaseSignet;
+import org.codefilarete.stalactite.sql.HSQLDBDatabaseSettings.HSQLDBWriteOperationFactory;
 import org.codefilarete.stalactite.sql.ddl.HSQLDBDDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
@@ -19,6 +20,7 @@ import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.codefilarete.stalactite.sql.HSQLDBDatabaseSettings.KEYWORDS;
 
 /**
  * @author Guillaume Mary
@@ -34,10 +36,10 @@ class HSQLDBDialectResolverTest {
 
 		ServiceLoaderDialectResolver dialectResolver = new ServiceLoaderDialectResolver();
 		Dialect dialect = dialectResolver.determineDialect(hsqldbDataSource.getConnection());
-		assertThat(dialect).isExactlyInstanceOf(HSQLDBDialect.class);
+		assertThat(dialect.getCompatibility()).usingRecursiveComparison().isEqualTo(new HSQLDBDatabaseSignet(2, 7));
 		
 		DatabaseVendorSettings vendorSettings = dialectResolver.determineVendorSettings(hsqldbDataSource.getConnection());
-		assertThat(vendorSettings.getKeyWords()).containsExactlyInAnyOrder();
+		assertThat(vendorSettings.getKeyWords()).containsExactlyInAnyOrder(KEYWORDS);
 		assertThat(vendorSettings.getQuoteCharacter()).isEqualTo('"');
 		assertThat(vendorSettings.getJavaTypeToSqlTypes()).isExactlyInstanceOf(HSQLDBTypeMapping.class);
 		assertThat(vendorSettings.getParameterBinderRegistry()).isExactlyInstanceOf(HSQLDBParameterBinderRegistry.class);

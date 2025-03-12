@@ -21,7 +21,7 @@ class HSQLDBSequenceSelectBuilderTest {
 		
 		// Creating schema
 		Sequence sequence = new Sequence("my_sequence");
-		HSQLDBDialect dialect = new HSQLDBDialect();
+		Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), dialect.getDdlSequenceGenerator(), connectionProvider);
 		ddlDeployer.getDdlGenerator().addSequences(sequence);
 		ddlDeployer.deployDDL();

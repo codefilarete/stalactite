@@ -3,18 +3,18 @@ package org.codefilarete.stalactite.spring.repository.query;
 import javax.sql.DataSource;
 import java.util.Set;
 
-import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.CurrentThreadTransactionalConnectionProvider;
+import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.Republic;
 import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.id.Identifier;
-import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.HSQLDBDialect;
-import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.spring.repository.config.EnableStalactiteRepositories;
 import org.codefilarete.stalactite.spring.transaction.StalactitePlatformTransactionManager;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
+import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
@@ -295,7 +295,7 @@ abstract class AbstractDerivedQueriesWithoutMappedCollectionTest {
 		
 		@Bean
 		public PersistenceContext persistenceContext(StalactitePlatformTransactionManager dataSource) {
-			HSQLDBDialect dialect = new HSQLDBDialect();
+			Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 			dialect.getColumnBinderRegistry().register((Class) Identifier.class, identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 			dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 			

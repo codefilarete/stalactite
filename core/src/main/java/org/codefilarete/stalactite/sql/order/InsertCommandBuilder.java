@@ -1,25 +1,18 @@
 package org.codefilarete.stalactite.sql.order;
 
-import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.sql.PreparedStatement;
 
-import org.codefilarete.stalactite.query.builder.DMLNameProvider;
-import org.codefilarete.stalactite.query.builder.PreparedSQLAppender;
-import org.codefilarete.stalactite.query.builder.SQLAppender;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
-import org.codefilarete.stalactite.query.builder.StringSQLAppender;
-import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.order.Update.UpdateColumn;
+import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSQL;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.sql.statement.SQLStatement;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.tool.trace.MutableInt;
+import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
+import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriterIndex;
 
 /**
  * A SQL builder for {@link Insert} objects
@@ -31,104 +24,24 @@ import org.codefilarete.tool.trace.MutableInt;
 public class InsertCommandBuilder<T extends Table<T>> implements SQLBuilder {
 	
 	private final Insert<T> insert;
+	private final Dialect dialect;
 	
-	private final DMLNameProviderFactory dmlNameProviderFactory;
-	
-	public InsertCommandBuilder(Insert<T> insert, DMLNameProviderFactory dmlNameProviderFactory) {
+	public InsertCommandBuilder(Insert<T> insert, Dialect dialect) {
 		this.insert = insert;
-		this.dmlNameProviderFactory = dmlNameProviderFactory;
+		this.dialect = dialect;
 	}
 	
 	@Override
 	public String toSQL() {
-		return toSQL(new StringSQLAppender(dmlNameProviderFactory.build(new HashMap<>())) {
-			@Override
-			public <V> StringSQLAppender catValue(@Nullable Selectable<V> column, Object value) {
-				if (value == UpdateColumn.PLACEHOLDER) {
-					return cat("?");
-				} else {
-					return super.catValue(column, value);
-				}
-			}
-			
-			@Override
-			public StringSQLAppender catValue(Object value) {
-				if (value == UpdateColumn.PLACEHOLDER) {
-					return cat("?");
-				} else {
-					return super.catValue(value);
-				}
-			}
-		});
+		ColumnParameterizedSQL<T> columnParameterizedSQL = dialect.getDmlGenerator().buildInsert(insert.getTargetTable().getColumns());
+		return columnParameterizedSQL.getSQL();
 	}
 	
-	private String toSQL(SQLAppender result) {
-		result.cat("insert into ").cat(insert.getTargetTable().getAbsoluteName())
-		.cat("(");
-		
-		Iterator<UpdateColumn<T>> columnIterator = insert.getColumns().iterator();
-		while (columnIterator.hasNext()) {
-			UpdateColumn c = columnIterator.next();
-			result.cat(c.getColumn().getName());
-			result.catIf(columnIterator.hasNext(), ", ");
-		}
-		
-		result.cat(") values (");
-		
-		Iterator<UpdateColumn<T>> columnIterator2 = insert.getColumns().iterator();
-		while (columnIterator2.hasNext()) {
-			UpdateColumn c = columnIterator2.next();
-			catUpdateObject(c, result);
-			result.catIf(columnIterator2.hasNext(), ", ");
-		}
-		
-		result.cat(")");
-		
-		return result.getSQL();
-	}
-	
-	/**
-	 * Method that must append the given value coming from the "set" clause to the given SQLAppender.
-	 * Left protected to cover unexpected cases (because {@link UpdateColumn} handle Objects as value)
-	 *
-	 * @param value the value to append as a String in the {@link SQLAppender}
-	 * @param result the final SQL appender
-	 */
-	protected void catUpdateObject(UpdateColumn value, SQLAppender result) {
-		result.catValue(value.getColumn(), value.getValue());
-	}
-	
-	public InsertStatement<T> toStatement(ColumnBinderRegistry columnBinderRegistry) {
-		DMLNameProvider dmlNameProvider = dmlNameProviderFactory.build(new HashMap<>());
-		
-		// We ask for SQL generation through a PreparedSQLWrapper because we need SQL placeholders for where + update clause
-		PreparedSQLAppender preparedSQLAppender = new PreparedSQLAppender(new StringSQLAppender(dmlNameProvider), columnBinderRegistry);
-		String sql = toSQL(preparedSQLAppender);
-		
-		Map<Integer, Object> values = new HashMap<>(preparedSQLAppender.getValues());
-		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>(preparedSQLAppender.getParameterBinders());
-		Map<Column<T, Object>, Integer> columnIndexes = new HashMap<>();
-		
-		// PreparedSQLWrapper has filled values (see catUpdateObject(..)) but PLACEHOLDERs must be removed from them.
-		// (ParameterBinders are correctly filled by PreparedSQLWrapper)
-		// Moreover we have to build indexes of Columns to allow usage of UpdateStatement.setValue(..)
-		// So we iterate of set Columns to remove unnecessary columns and compute column indexes
-		MutableInt placeholderColumnCount = new MutableInt();
-		insert.getColumns().forEach(c -> {
-			// only non column value must be adapted (see catUpdateObject(..))
-			if (!(c.getValue() instanceof Column)) {
-				// NB: prepared statement indexes start at 1 which will be given at first increment
-				int index = placeholderColumnCount.increment();
-				if (values.get(index).equals(UpdateColumn.PLACEHOLDER)) {
-					values.remove(index);
-				}
-				columnIndexes.put(c.getColumn(), index);
-			}
-		});
-		
-		// final assembly
-		InsertStatement<T> result = new InsertStatement<>(sql, parameterBinders, columnIndexes);
-		result.setValues(values);
+	public InsertStatement<T> toStatement() {
+		ColumnParameterizedSQL<T> columnParameterizedSQL = dialect.getDmlGenerator().buildInsert(insert.getTargetTable().getColumns());
+		PreparedStatementWriterIndex<Column<T, ?>, PreparedStatementWriter<?>> parameterBinderProvider = columnParameterizedSQL.getParameterBinderProvider();
+		InsertStatement<T> result = new InsertStatement<>(parameterBinderProvider, columnParameterizedSQL);
+		insert.getColumns().forEach(c -> result.setValue(c.getColumn(), c.getValue()));
 		return result;
 	}
 	
@@ -146,33 +59,34 @@ public class InsertCommandBuilder<T extends Table<T>> implements SQLBuilder {
 	 * insertStatement.setValue(..);
 	 * }</pre>
 	 */
-	public static class InsertStatement<T extends Table<T>> extends PreparedSQL {
+	public static class InsertStatement<T extends Table<T>> extends SQLStatement<Column<T, ?>> {
 		
-		private final Map<? extends Column<T, Object>, Integer> columnIndexes;
+		private final ColumnParameterizedSQL<T> columnParameterizedSQL;
 		
 		/**
 		 * Single constructor, not expected to be used elsewhere than {@link UpdateCommandBuilder}.
 		 *
-		 * @param sql the insert sql order as a prepared statement
-		 * @param parameterBinders binder for prepared statement values
-		 * @param columnIndexes indexes of the updated columns
+		 * @param parameterBinderProvider binder for prepared statement values
+		 * @param columnParameterizedSQL
 		 */
-		private InsertStatement(String sql, Map<Integer, ParameterBinder> parameterBinders, Map<? extends Column<T, Object>, Integer> columnIndexes) {
-			super(sql, parameterBinders);
-			this.columnIndexes = columnIndexes;
+		private InsertStatement(PreparedStatementWriterIndex<Column<T, ?>, PreparedStatementWriter<?>> parameterBinderProvider, ColumnParameterizedSQL<T> columnParameterizedSQL) {
+			super(parameterBinderProvider);
+			this.columnParameterizedSQL = columnParameterizedSQL;
 		}
 		
-		/**
-		 * Dedicated method to set values of inserted {@link Column}s.
-		 *
-		 * @param column {@link Column} to be set
-		 * @param value value applied on Column
-		 */
-		public <C> void setValue(Column<T, C> column, C value) {
-			if (columnIndexes.get(column) == null) {
-				throw new IllegalArgumentException("Column " + column.getAbsoluteName() + " is not insertable with fixed value in the insert clause");
+		@Override
+		public String getSQL() {
+			return columnParameterizedSQL.getSQL();
+		}
+		
+		@Override
+		protected void doApplyValue(Column<T, ?> key, Object value, PreparedStatement statement) {
+			PreparedStatementWriter<Object> paramBinder = getParameterBinder(key);
+			if (paramBinder == null) {
+				throw new BindingException("Can't find a " + ParameterBinder.class.getName() + " for column " + key.getAbsoluteName() + " of value " + value
+						+ " on sql : " + getSQL());
 			}
-			setValue(columnIndexes.get(column), value);
+			doApplyValue(columnParameterizedSQL.getColumnIndexes().get(key)[0], value, paramBinder, statement);
 		}
 	}
 }

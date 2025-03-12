@@ -49,7 +49,7 @@ import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -98,7 +98,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	
 	// NB: dialect is made non static because we register binder for the same column several times in these tests
 	// and this is not supported : the very first one takes priority  
-	private final HSQLDBDialect dialect = new HSQLDBDialect();
+	private final Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private PersistenceContext persistenceContext;
 	
@@ -577,7 +577,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	void map_readonly_columnIsNotWrittenToDatabase_CRUD() {
-		HSQLDBDialect dialect = new HSQLDBDialect();
+		Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "varchar(36)");
 		
@@ -631,7 +631,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	void map_withReadConverter_converterIsUsed() {
-		HSQLDBDialect dialect = new HSQLDBDialect();
+		Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
 		
 		Table totoTable = new Table("Toto");
@@ -662,7 +662,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	void map_withReadConverter_converterIsUsed_readOnlyProperty() {
-		HSQLDBDialect dialect = new HSQLDBDialect();
+		Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
 		
 		Table totoTable = new Table("Toto");
@@ -692,7 +692,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	void map_withWriteConverter_converterIsUsed() {
-		HSQLDBDialect dialect = new HSQLDBDialect();
+		Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
 		
 		Table totoTable = new Table("Toto");
@@ -730,7 +730,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	void map_withSqlBinder_binderIsUsed_readCase() {
-		HSQLDBDialect dialect = new HSQLDBDialect();
+		Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
 		
 		Table totoTable = new Table("Toto");
@@ -761,7 +761,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	void map_withSqlBinder_binderIsUsed_writeCase() {
-		HSQLDBDialect dialect = new HSQLDBDialect();
+		Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
 		dialect.getSqlTypeRegistry().getJavaTypeToSqlTypeMapping().put(Set.class, "varchar(255)");
 		
@@ -800,7 +800,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	void map_withSqlBinderOnEmbeddedProperty_binderIsUsed_writeCase() {
-		HSQLDBDialect dialect = new HSQLDBDialect();
+		Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
 		dialect.getSqlTypeRegistry().getJavaTypeToSqlTypeMapping().put(Set.class, "varchar(255)");
 		
@@ -846,7 +846,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	void map_definedAsIdentifier_identifierIsStoredAsString() {
-		HSQLDBDialect dialect = new HSQLDBDialect();
+		Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
 		
 		Table totoTable = new Table("Toto");
@@ -1149,7 +1149,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	void embed_withReadonlyProperty() {
-		HSQLDBDialect dialect = new HSQLDBDialect();
+		Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "varchar(36)");
 		

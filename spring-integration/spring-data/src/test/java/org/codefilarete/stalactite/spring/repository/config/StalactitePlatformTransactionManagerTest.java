@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.spring.repository.config.StalactitePlatformTransactionManagerTest.StalactiteTransactionalContextConfiguration;
 import org.codefilarete.stalactite.spring.transaction.StalactitePlatformTransactionManager;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
@@ -87,7 +87,7 @@ class StalactitePlatformTransactionManagerTest {
 		
 		@Bean
 		public PersistenceContext persistenceContext(StalactitePlatformTransactionManager transactionManager) {
-			HSQLDBDialect dialect = new HSQLDBDialect();
+			Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 			dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 			dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 			

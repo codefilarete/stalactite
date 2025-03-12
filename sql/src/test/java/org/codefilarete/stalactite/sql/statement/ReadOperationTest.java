@@ -31,7 +31,7 @@ class ReadOperationTest {
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		when(connectionMock.prepareStatement(anyString())).thenReturn(preparedStatementMock);
 
-		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>();
+		Map<Integer, ParameterBinder<?>> parameterBinders = new HashMap<>();
 		parameterBinders.put(1, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		parameterBinders.put(2, DefaultParameterBinders.STRING_BINDER);
 		
@@ -52,7 +52,7 @@ class ReadOperationTest {
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		when(connectionMock.prepareStatement(anyString())).thenReturn(preparedStatementMock);
 
-		Map<String, ParameterBinder> parameterBinders = new HashMap<>();
+		Map<String, ParameterBinder<?>> parameterBinders = new HashMap<>();
 		parameterBinders.put("id", DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		parameterBinders.put("name", DefaultParameterBinders.STRING_BINDER);
 		
@@ -72,7 +72,7 @@ class ReadOperationTest {
 		Connection connectionMock = mock(Connection.class);
 		when(connectionMock.prepareStatement(anyString())).thenReturn(mock(PreparedStatement.class));
 
-		Map<String, ParameterBinder> parameterBinders = new HashMap<>();
+		Map<String, ParameterBinder<?>> parameterBinders = new HashMap<>();
 		parameterBinders.put("id", DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		parameterBinders.put("name", DefaultParameterBinders.STRING_BINDER);
 		

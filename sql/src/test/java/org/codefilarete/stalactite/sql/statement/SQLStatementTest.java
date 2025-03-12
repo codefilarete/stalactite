@@ -36,7 +36,7 @@ public class SQLStatementTest {
 	@Test
 	public void testApplyValue_allBindersPresent_doApplyValueIsCalled() {
 		Map<String, Object> appliedValues = new HashMap<>();
-		SQLStatement<String> testInstance = new SQLStatementStub(Maps.asMap("a", (PreparedStatementWriter) INTEGER_BINDER).add("b", INTEGER_BINDER)) {
+		SQLStatement<String> testInstance = new SQLStatementStub(Maps.asMap("a", (PreparedStatementWriter<?>) INTEGER_BINDER).add("b", (PreparedStatementWriter) INTEGER_BINDER)) {
 			@Override
 			protected void doApplyValue(String key, Object value, PreparedStatement statement) {
 				appliedValues.put(key, value);
@@ -50,7 +50,7 @@ public class SQLStatementTest {
 	
 	private static class SQLStatementStub extends SQLStatement<String> {
 		
-		public SQLStatementStub(Map<String, PreparedStatementWriter> paramBinders) {
+		public SQLStatementStub(Map<String, ? extends PreparedStatementWriter<?>> paramBinders) {
 			super(paramBinders);
 		}
 		

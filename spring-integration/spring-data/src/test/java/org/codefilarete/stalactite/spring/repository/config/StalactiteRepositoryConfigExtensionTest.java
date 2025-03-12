@@ -11,7 +11,8 @@ import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.spring.repository.SimpleStalactiteRepository;
-import org.codefilarete.stalactite.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -103,7 +104,7 @@ class StalactiteRepositoryConfigExtensionTest {
 		
 		@Bean
 		public PersistenceContext persistenceContext(DataSource dataSource) {
-			HSQLDBDialect dialect = new HSQLDBDialect();
+			Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 			dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 			dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 			

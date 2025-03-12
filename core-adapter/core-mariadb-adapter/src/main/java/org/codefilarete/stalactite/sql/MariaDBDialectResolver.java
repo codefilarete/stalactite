@@ -1,7 +1,10 @@
 package org.codefilarete.stalactite.sql;
 
 
+import org.codefilarete.stalactite.engine.DatabaseVendorSettings;
 import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver.DatabaseSignet;
+
+import static org.codefilarete.stalactite.sql.MariaDBDatabaseSettings.MARIADB_10_0;
 
 /**
  * @author Guillaume Mary
@@ -12,7 +15,7 @@ public class MariaDBDialectResolver {
 		
 		private static final MariaDBDialect MARIADB_DIALECT = new MariaDBDialect();
 		
-		private static final DatabaseSignet MARIADB_10_0_SIGNET = new DatabaseSignet("MariaDB", 10, 0);
+		private static final DatabaseSignet MARIADB_10_0_SIGNET = MARIADB_10_0.getCompatibility();
 		
 		@Override
 		public DatabaseSignet getCompatibility() {
@@ -22,6 +25,18 @@ public class MariaDBDialectResolver {
 		@Override
 		public Dialect getDialect() {
 			return MARIADB_DIALECT;
+		}
+		
+		@Override
+		public DatabaseVendorSettings getVendorSettings() {
+			return MARIADB_10_0;
+		}
+	}
+	
+	public static class MariaDBDatabaseSignet extends DatabaseSignet {
+		
+		public MariaDBDatabaseSignet(int majorVersion, int minorVersion) {
+			super("MariaDB", majorVersion, minorVersion);
 		}
 	}
 }

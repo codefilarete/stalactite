@@ -22,7 +22,8 @@ import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
-import org.codefilarete.stalactite.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
@@ -52,7 +53,7 @@ import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.REA
  */
 public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
-	private final HSQLDBDialect dialect = new HSQLDBDialect();
+	private final Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private FluentEntityMappingBuilder<Person, Identifier<Long>> personConfiguration;
 	private FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration;
@@ -305,7 +306,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	@Test
 	public void lightOneToOne_relationIsPersisted() throws SQLException {
 		// we redefine the Dialect to avoid polluting the instance one with some more mapping that is only the purpose of this test (avoid side effect)
-		HSQLDBDialect dialect = new HSQLDBDialect();
+		Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		dialect.getColumnBinderRegistry().register((Class) Person.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));

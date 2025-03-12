@@ -2,13 +2,24 @@ package org.codefilarete.stalactite.engine.configurer;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
-import org.codefilarete.stalactite.engine.*;
+import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder;
+import org.codefilarete.stalactite.engine.MappingConfigurationException;
+import org.codefilarete.stalactite.engine.PersistenceContext;
+import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.JoinTablePolymorphism;
-import org.codefilarete.stalactite.engine.model.*;
+import org.codefilarete.stalactite.engine.model.AbstractVehicle;
+import org.codefilarete.stalactite.engine.model.Car;
+import org.codefilarete.stalactite.engine.model.Color;
+import org.codefilarete.stalactite.engine.model.Element;
+import org.codefilarete.stalactite.engine.model.Part;
+import org.codefilarete.stalactite.engine.model.Question;
+import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -21,7 +32,9 @@ import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.codefilarete.stalactite.engine.MappingEase.*;
+import static org.codefilarete.stalactite.engine.MappingEase.embeddableBuilder;
+import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.engine.MappingEase.subentityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
@@ -40,7 +53,7 @@ class JoinTablePolymorphismBuilderTest {
 	
 	@Test
 	void build_targetTableAndOverridingColumnsAreDifferent_throwsException() {
-		HSQLDBDialect dialect = new HSQLDBDialect();
+		Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, identifierBinder(LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		PersistenceContext persistenceContext = new PersistenceContext(Mockito.mock(ConnectionProvider.class), dialect);
@@ -65,7 +78,7 @@ class JoinTablePolymorphismBuilderTest {
 	
 	@Test
 	void build_withAlreadyAssignedIdentifierPolicy_entitiesMustHaveTheirIdSet() {
-		HSQLDBDialect dialect = new HSQLDBDialect();
+		Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 		
 		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
 		EntityPersister<Element, Long> configuration = entityBuilder(Element.class, long.class)
@@ -84,7 +97,7 @@ class JoinTablePolymorphismBuilderTest {
 	
 	@Test
 	void build_withAfterInsertIdentifierPolicy_entitiesMustHaveTheirIdSet() {
-		HSQLDBDialect dialect = new HSQLDBDialect();
+		Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 		
 		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
 		EntityPersister<Element, Long> configuration = entityBuilder(Element.class, long.class)
@@ -103,7 +116,7 @@ class JoinTablePolymorphismBuilderTest {
 	
 	@Test
 	void build_withBeforeInsertIdentifierPolicy_entitiesMustHaveTheirIdSet() {
-		HSQLDBDialect dialect = new HSQLDBDialect();
+		Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 		
 		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
 		Sequence<Long> identifierGenerator = new Sequence<Long>() {

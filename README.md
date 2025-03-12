@@ -18,7 +18,7 @@ The project is layered in 3 main modules to fulfill this goal:
 Here's an example of one can achieve with the ORM module :
 ```java
 DataSource dataSource = ... // use whatever JDBC DataSource you want
-PersistenceContext persistenceContext = new PersistenceContext(dataSource, new HSQLDBDialect());
+PersistenceContext persistenceContext = new PersistenceContext(dataSource, HSQLDBDialectBuilder.defaultHSQLDBDialect());
 
 EntityPersister<Country, Long> countryPersister = MappingEase.entityBuilder(Country.class, long.class)
     .mapKey(Country::getId, IdentifierPolicy.afterInsert())

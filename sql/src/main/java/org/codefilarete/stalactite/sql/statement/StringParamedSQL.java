@@ -20,20 +20,20 @@ public class StringParamedSQL extends ExpandableStatement<String> {
 	private ExpandableSQL expandableSQL;
 	private boolean expandableSQLExpired = false;
 	
-	public StringParamedSQL(String originalSQL, Map<String, ? extends PreparedStatementWriter> parameterBinders) {
+	public StringParamedSQL(String originalSQL, Map<String, ? extends PreparedStatementWriter<?>> parameterBinders) {
 		this(new SQLParameterParser(originalSQL).parse(), parameterBinders);
 	}
 	
-	public StringParamedSQL(ParsedSQL parsedSQL, Map<String, ? extends PreparedStatementWriter> parameterBinders) {
+	public StringParamedSQL(ParsedSQL parsedSQL, Map<String, ? extends PreparedStatementWriter<?>> parameterBinders) {
 		super(null, parameterBinders);
 		this.parsedSQL = parsedSQL;
 	}
 	
-	public StringParamedSQL(String originalSQL, PreparedStatementWriterIndex<String, ? extends PreparedStatementWriter> parameterBinderProvider) {
+	public StringParamedSQL(String originalSQL, PreparedStatementWriterIndex<String, ? extends PreparedStatementWriter<?>> parameterBinderProvider) {
 		this(new SQLParameterParser(originalSQL).parse(), parameterBinderProvider);
 	}
 	
-	public StringParamedSQL(ParsedSQL parsedSQL, PreparedStatementWriterIndex<String, ? extends PreparedStatementWriter> parameterBinderProvider) {
+	public StringParamedSQL(ParsedSQL parsedSQL, PreparedStatementWriterIndex<String, ? extends PreparedStatementWriter<?>> parameterBinderProvider) {
 		super(null, parameterBinderProvider);
 		this.parsedSQL = parsedSQL;
 	}

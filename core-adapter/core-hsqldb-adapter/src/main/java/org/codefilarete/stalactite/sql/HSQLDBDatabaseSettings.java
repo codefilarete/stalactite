@@ -1,5 +1,8 @@
 package org.codefilarete.stalactite.sql;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Collections;
 
 import org.codefilarete.stalactite.engine.DatabaseVendorSettings;
@@ -7,7 +10,7 @@ import org.codefilarete.stalactite.engine.SQLOperationsFactories;
 import org.codefilarete.stalactite.engine.SQLOperationsFactoriesBuilder;
 import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelector;
 import org.codefilarete.stalactite.sql.GeneratedKeysReaderFactory.DefaultGeneratedKeysReaderFactory;
-import org.codefilarete.stalactite.sql.HSQLDBDialect.HSQLDBWriteOperationFactory;
+import org.codefilarete.stalactite.sql.HSQLDBDialectResolver.HSQLDBDatabaseSignet;
 import org.codefilarete.stalactite.sql.ddl.DDLSequenceGenerator;
 import org.codefilarete.stalactite.sql.ddl.HSQLDBDDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
@@ -15,26 +18,34 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Sequence;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
+import org.codefilarete.stalactite.sql.statement.HSQLDBWriteOperation;
 import org.codefilarete.stalactite.sql.statement.ReadOperationFactory;
+import org.codefilarete.stalactite.sql.statement.SQLStatement;
+import org.codefilarete.stalactite.sql.statement.WriteOperation;
+import org.codefilarete.stalactite.sql.statement.WriteOperation.RowCountListener;
+import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.sql.statement.binder.HSQLDBParameterBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.HSQLDBTypeMapping;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderIndex;
+import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.CaseInsensitiveSet;
+import org.codefilarete.tool.function.ThrowingBiFunction;
 
 /**
  * Database vendor settings for HSQLDB.
  * 
  * @author Guillaume Mary
  */
-public class HSQLDBVendorSettings extends DatabaseVendorSettings {
+public class HSQLDBDatabaseSettings extends DatabaseVendorSettings {
 	
 	/**
 	 * HSQLDB keywords, took at <a href="https://hsqldb.org/doc/guide/lists-app.html">HSQLDB keywords</a>
 	 * Programmatically available {@link org.hsqldb.Tokens#isKeyword(String)} but not through {@link java.sql.DatabaseMetaData#getSQLKeywords()}
 	 * which returns "" (see {@link org.hsqldb.jdbc.JDBCDatabaseMetaData#getSQLKeywords()}).
 	 */
-	private static final String[] KEYWORDS = new String[] {
+	@VisibleForTesting
+	static final String[] KEYWORDS = new String[] {
 			"ABS", "ABSENT", "ACOS", "ALL", "ALLOCATE", "ALTER", "AND", "ANY", "ANY_VALUE", "ARE", "ARRAY", "ARRAY_AGG", "ARRAY_MAX_CARDINALITY", "AS", "ASENSITIVE", "ASIN", "ASYMMETRIC", "AT", "ATAN", "ATOMIC", "AUTHORIZATION", "AVG",
 			"BEGIN", "BEGIN_FRAME", "BEGIN_PARTITION", "BETWEEN", "BIGINT", "BINARY", "BIT_LENGTH", "BLOB", "BOOLEAN", "BOTH", "BY",
 			"CALL", "CALLED", "CARDINALITY", "CASCADED", "CASE", "CAST", "CEIL", "CEILING", "CHAR", "CHARACTER", "CHARACTER_LENGTH", "CHAR_LENGTH", "CHECK", "CLOB", "CLOSE", "COALESCE", "COLLATE", "COLLECT", "COLUMN", "COMMIT", "COMPARABLE", "CONDIITON", "CONNECT", "CONSTRAINT", "CONTAINS", "CONVERT", "CORR", "CORRESPONDING", "COS", "COSH", "COUNT", "COVAR_POP", "COVAR_SAMP", "CREATE", "CROSS", "CUBE", "CUME_DIST", "CURRENT", "CURRENT_CATALOG", "CURRENT_DATE", "CURRENT_DEFAULT_TRANSFORM_GROUP", "CURRENT_PATH", "CURRENT_ROLE", "CURRENT_ROW", "CURRENT_SCHEMA", "CURRENT_TIME", "CURRENT_TIMESTAMP", "CURRENT_TRANSFORM_GROUP_FOR_TYPE", "CURRENT_USER", "CURSOR", "CYCLE",
@@ -59,12 +70,16 @@ public class HSQLDBVendorSettings extends DatabaseVendorSettings {
 			"YEAR"
 	};
 	
-	public HSQLDBVendorSettings() {
+	// Technical note: DO NOT declare settings BEFORE KEYWORDS field because it requires it and the JVM makes KEYWORDS null at this early stage (strange)
+	public static final HSQLDBDatabaseSettings HSQLDB_2_7 = new HSQLDBDatabaseSettings();
+	
+	private HSQLDBDatabaseSettings() {
 		this(new ReadOperationFactory(), new HSQLDBParameterBinderRegistry());
 	}
 	
-	private HSQLDBVendorSettings(ReadOperationFactory readOperationFactory, HSQLDBParameterBinderRegistry parameterBinderRegistry) {
-		super(Collections.unmodifiableSet(new CaseInsensitiveSet(KEYWORDS)),
+	private HSQLDBDatabaseSettings(ReadOperationFactory readOperationFactory, HSQLDBParameterBinderRegistry parameterBinderRegistry) {
+		super(new HSQLDBDatabaseSignet(2, 7),
+				Collections.unmodifiableSet(new CaseInsensitiveSet(KEYWORDS)),
 				'"',
 				new HSQLDBTypeMapping(),
 				parameterBinderRegistry,
@@ -97,6 +112,23 @@ public class HSQLDBVendorSettings extends DatabaseVendorSettings {
 			HSQLDBDDLTableGenerator ddlTableGenerator = new HSQLDBDDLTableGenerator(sqlTypeRegistry, dmlNameProviderFactory);
 			DDLSequenceGenerator ddlSequenceGenerator = new DDLSequenceGenerator(dmlNameProviderFactory);
 			return new SQLOperationsFactories(new HSQLDBWriteOperationFactory(), new ReadOperationFactory(), dmlGenerator, ddlTableGenerator, ddlSequenceGenerator);
+		}
+	}
+	
+	@VisibleForTesting
+	static class HSQLDBWriteOperationFactory extends WriteOperationFactory {
+		
+		@Override
+		protected <ParamType> WriteOperation<ParamType> createInstance(SQLStatement<ParamType> sqlGenerator,
+																	   ConnectionProvider connectionProvider,
+																	   ThrowingBiFunction<Connection, String, PreparedStatement, SQLException> statementProvider,
+																	   RowCountListener rowCountListener) {
+			return new HSQLDBWriteOperation<ParamType>(sqlGenerator, connectionProvider, rowCountListener) {
+				@Override
+				protected void prepareStatement(Connection connection) throws SQLException {
+					this.preparedStatement = statementProvider.apply(connection, getSQL());
+				}
+			};
 		}
 	}
 }

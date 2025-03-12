@@ -4,7 +4,6 @@ import java.util.Map;
 
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriterIndex;
 
@@ -29,7 +28,7 @@ public class ColumnParameterizedSQL<T extends Table<T>> extends ExpandableStatem
 		this.columnIndexes = columnIndexes;
 	}
 	
-	public ColumnParameterizedSQL(String sql, Map<Column<T, ?>, int[]> columnIndexes, PreparedStatementWriterIndex<Column<T, ?>, ParameterBinder<?>> parameterBinderProvider) {
+	public ColumnParameterizedSQL(String sql, Map<Column<T, ?>, int[]> columnIndexes, PreparedStatementWriterIndex<Column<T, ?>, ? extends PreparedStatementWriter<?>> parameterBinderProvider) {
 		super(sql, parameterBinderProvider);
 		this.columnIndexes = columnIndexes;
 	}

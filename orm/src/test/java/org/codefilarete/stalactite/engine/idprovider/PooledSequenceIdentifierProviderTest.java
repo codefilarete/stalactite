@@ -12,7 +12,7 @@ import org.codefilarete.stalactite.engine.SeparateTransactionExecutor;
 import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequence;
 import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequenceOptions;
 import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequenceStorageOptions;
-import org.codefilarete.stalactite.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.collection.Arrays;
@@ -30,7 +30,7 @@ public class PooledSequenceIdentifierProviderTest {
 	
 	@BeforeEach
 	public void setUp() {
-		persistenceContext = new PersistenceContext(new CurrentThreadTransactionalConnectionProvider(new HSQLDBInMemoryDataSource()), new HSQLDBDialect());
+		persistenceContext = new PersistenceContext(new CurrentThreadTransactionalConnectionProvider(new HSQLDBInMemoryDataSource()), HSQLDBDialectBuilder.defaultHSQLDBDialect());
 	}
 	
 	@Test

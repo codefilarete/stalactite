@@ -17,7 +17,8 @@ import org.codefilarete.stalactite.engine.model.compositekey.Person.PersonId;
 import org.codefilarete.stalactite.engine.model.compositekey.Pet;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.id.Identifier;
-import org.codefilarete.stalactite.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -36,7 +37,7 @@ import static org.codefilarete.stalactite.engine.MappingEase.subentityBuilder;
 
 public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	
-	private final HSQLDBDialect dialect = new HSQLDBDialect();
+	private final Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	
 	private PersistenceContext persistenceContext;

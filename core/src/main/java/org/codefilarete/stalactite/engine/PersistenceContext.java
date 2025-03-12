@@ -418,13 +418,6 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		
 		/** Overridden to adapt return type */
 		@Override
-		public DefaultExecutableUpdate<T> set(Column<T, ?> column) {
-			super.set(column);
-			return this;
-		}
-		
-		/** Overridden to adapt return type */
-		@Override
 		public <C> DefaultExecutableUpdate<T> set(Column<T, C> column, C value) {
 			super.set(column, value);
 			return this;
@@ -442,7 +435,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		 */
 		@Override
 		public void execute() {
-			UpdateStatement<?> updateStatement = new UpdateCommandBuilder<>(this, dialect).toStatement();
+			UpdateStatement<T> updateStatement = new UpdateCommandBuilder<>(this, dialect).toStatement();
 			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(updateStatement, getConnectionProvider())) {
 				writeOperation.setValues(updateStatement.getValues());
 				writeOperation.execute();
@@ -482,8 +475,8 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		
 		@Override
 		public void execute() {
-			InsertStatement<T> insertStatement = new InsertCommandBuilder<>(this, dialect.getDmlNameProviderFactory()).toStatement(dialect.getColumnBinderRegistry());
-			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(insertStatement, getConnectionProvider())) {
+			InsertStatement<T> insertStatement = new InsertCommandBuilder<>(this, dialect).toStatement();
+			try (WriteOperation<Column<T, ?>> writeOperation = dialect.getWriteOperationFactory().createInstance(insertStatement, getConnectionProvider())) {
 				writeOperation.setValues(insertStatement.getValues());
 				writeOperation.execute();
 			}

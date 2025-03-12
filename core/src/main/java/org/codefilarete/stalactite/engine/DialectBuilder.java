@@ -27,7 +27,7 @@ public class DialectBuilder {
 	private final DialectOptions dialectOptions;
 	
 	public DialectBuilder(DatabaseVendorSettings vendorSettings) {
-		this(vendorSettings, new DialectOptions());
+		this(vendorSettings, DialectOptions.noOptions());
 	}
 	
 	public DialectBuilder(DatabaseVendorSettings vendorSettings, DialectOptions dialectOptions) {
@@ -59,6 +59,7 @@ public class DialectBuilder {
 		GeneratedKeysReaderFactory generatedKeysReaderFactory = vendorSettings.getGeneratedKeysReaderFactory();
 		
 		return new DialectSupport(
+				vendorSettings.getCompatibility(),
 				ddlTableGenerator,
 				ddlSequenceGenerator,
 				dmlGenerator,

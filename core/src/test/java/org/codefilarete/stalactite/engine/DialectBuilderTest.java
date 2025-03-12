@@ -5,6 +5,7 @@ import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.DialectOptions;
 import org.codefilarete.stalactite.sql.GeneratedKeysReaderFactory.DefaultGeneratedKeysReaderFactory;
+import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver.DatabaseSignet;
 import org.codefilarete.stalactite.sql.ddl.DDLSequenceGenerator;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
@@ -36,6 +37,7 @@ class DialectBuilderTest {
 		ParameterBinderRegistry parameterBinderRegistry = new ParameterBinderRegistry();
 		DefaultTypeMapping defaultTypeMapping = new DefaultTypeMapping();
 		defaultDatabaseVendorSettings = new DatabaseVendorSettings(
+				new DatabaseSignet("my_vendor", 1, 0), 
 				Arrays.asSet("a_keyword"),
 				'\'',
 				defaultTypeMapping,

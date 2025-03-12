@@ -55,7 +55,7 @@ import org.codefilarete.stalactite.query.model.operator.Equals;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.DefaultDialect;
-import org.codefilarete.stalactite.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
@@ -653,7 +653,7 @@ class SimpleRelationalEntityPersisterTest {
 			when(preparedStatement.executeQuery()).thenReturn(new InMemoryResultSet(new EmptyIterator<>()));
 			
 			
-			PersistenceContext persistenceContext = new PersistenceContext(dataSource, new HSQLDBDialect());
+			PersistenceContext persistenceContext = new PersistenceContext(dataSource, HSQLDBDialectBuilder.defaultHSQLDBDialect());
 			FluentEntityMappingBuilder<Tata, Integer> mappingConfiguration = entityBuilder(Tata.class, Integer.class)
 					.mapKey(Tata::getId, alreadyAssigned(tata -> {}, tata -> false))	// identifier policy doesn't matter
 					.map(Tata::getProp1);

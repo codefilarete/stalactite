@@ -20,13 +20,13 @@ public class PreparedUpdate<T extends Table<T>> extends SQLStatement<UpwhereColu
 	private final String sql;
 	private final Map<UpwhereColumn<T>, Integer> columnIndexes;
 	
-	public PreparedUpdate(String sql, Map<UpwhereColumn<T>, Integer> columnIndexes, Map<UpwhereColumn<T>, ParameterBinder> parameterBinders) {
+	public PreparedUpdate(String sql, Map<UpwhereColumn<T>, Integer> columnIndexes, Map<UpwhereColumn<T>, ? extends ParameterBinder<?>> parameterBinders) {
 		super(parameterBinders);
 		this.sql = sql;
 		this.columnIndexes = columnIndexes;
 	}
 	
-	public PreparedUpdate(String sql, Map<UpwhereColumn<T>, Integer> columnIndexes, PreparedStatementWriterIndex<UpwhereColumn<T>, ? extends PreparedStatementWriter> parameterBinderProvider) {
+	public PreparedUpdate(String sql, Map<UpwhereColumn<T>, Integer> columnIndexes, PreparedStatementWriterIndex<UpwhereColumn<T>, ? extends PreparedStatementWriter<?>> parameterBinderProvider) {
 		super(parameterBinderProvider);
 		this.sql = sql;
 		this.columnIndexes = columnIndexes;
