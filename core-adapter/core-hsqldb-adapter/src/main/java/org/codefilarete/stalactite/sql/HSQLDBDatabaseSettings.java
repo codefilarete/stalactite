@@ -41,7 +41,7 @@ public class HSQLDBDatabaseSettings extends DatabaseVendorSettings {
 	
 	/**
 	 * HSQLDB keywords, took at <a href="https://hsqldb.org/doc/guide/lists-app.html">HSQLDB keywords</a>
-	 * Programmatically available {@link org.hsqldb.Tokens#isKeyword(String)} but not through {@link java.sql.DatabaseMetaData#getSQLKeywords()}
+	 * Source available at {@link org.hsqldb.Tokens#isKeyword(String)} but not through {@link java.sql.DatabaseMetaData#getSQLKeywords()}
 	 * which returns "" (see {@link org.hsqldb.jdbc.JDBCDatabaseMetaData#getSQLKeywords()}).
 	 */
 	@VisibleForTesting
@@ -74,47 +74,49 @@ public class HSQLDBDatabaseSettings extends DatabaseVendorSettings {
 	public static final HSQLDBDatabaseSettings HSQLDB_2_7 = new HSQLDBDatabaseSettings();
 	
 	private HSQLDBDatabaseSettings() {
-		this(new ReadOperationFactory(), new HSQLDBParameterBinderRegistry());
+		this(new HSQLDBSQLOperationsFactoriesBuilder(), new HSQLDBParameterBinderRegistry());
 	}
 	
-	private HSQLDBDatabaseSettings(ReadOperationFactory readOperationFactory, HSQLDBParameterBinderRegistry parameterBinderRegistry) {
+	private HSQLDBDatabaseSettings(HSQLDBSQLOperationsFactoriesBuilder sqlOperationsFactoriesBuilder, HSQLDBParameterBinderRegistry parameterBinderRegistry) {
 		super(new HSQLDBDatabaseSignet(2, 7),
 				Collections.unmodifiableSet(new CaseInsensitiveSet(KEYWORDS)),
 				'"',
 				new HSQLDBTypeMapping(),
 				parameterBinderRegistry,
-				new HSQLDBSQLOperationsFactoriesBuilder(),
+				sqlOperationsFactoriesBuilder,
 				new DefaultGeneratedKeysReaderFactory(parameterBinderRegistry),
-				new HSQLDBDatabaseSequenceSelectorFactory(readOperationFactory),
-				100,
+				new HSQLDBDatabaseSequenceSelectorFactory(sqlOperationsFactoriesBuilder.getReadOperationFactory()),
+				1000,
 				true);
 	}
 	
-	private static class HSQLDBDatabaseSequenceSelectorFactory implements DatabaseSequenceSelectorFactory {
+	private static class HSQLDBSQLOperationsFactoriesBuilder implements SQLOperationsFactoriesBuilder {
 		
 		private final ReadOperationFactory readOperationFactory;
+		private final HSQLDBWriteOperationFactory writeOperationFactory;
 		
-		private HSQLDBDatabaseSequenceSelectorFactory(ReadOperationFactory readOperationFactory) {
-			this.readOperationFactory = readOperationFactory;
+		private HSQLDBSQLOperationsFactoriesBuilder() {
+			this.readOperationFactory = new ReadOperationFactory();
+			this.writeOperationFactory = new HSQLDBWriteOperationFactory();
 		}
-		@Override
-		public DatabaseSequenceSelector create(Sequence databaseSequence, ConnectionProvider connectionProvider) {
-			return new DatabaseSequenceSelector(databaseSequence, "CALL NEXT VALUE FOR " + databaseSequence.getName(), readOperationFactory, connectionProvider);
+		
+		private ReadOperationFactory getReadOperationFactory() {
+			return readOperationFactory;
 		}
-	
-	}
-	
-	private static class HSQLDBSQLOperationsFactoriesBuilder implements SQLOperationsFactoriesBuilder {
+		
+		private HSQLDBWriteOperationFactory getWriteOperationFactory() {
+			return writeOperationFactory;
+		}
 		
 		@Override
 		public SQLOperationsFactories build(ParameterBinderIndex<Column, ParameterBinder> parameterBinders, DMLNameProviderFactory dmlNameProviderFactory, SqlTypeRegistry sqlTypeRegistry) {
 			DMLGenerator dmlGenerator = new DMLGenerator(parameterBinders, NoopSorter.INSTANCE, dmlNameProviderFactory);
 			HSQLDBDDLTableGenerator ddlTableGenerator = new HSQLDBDDLTableGenerator(sqlTypeRegistry, dmlNameProviderFactory);
 			DDLSequenceGenerator ddlSequenceGenerator = new DDLSequenceGenerator(dmlNameProviderFactory);
-			return new SQLOperationsFactories(new HSQLDBWriteOperationFactory(), new ReadOperationFactory(), dmlGenerator, ddlTableGenerator, ddlSequenceGenerator);
+			return new SQLOperationsFactories(writeOperationFactory, readOperationFactory, dmlGenerator, ddlTableGenerator, ddlSequenceGenerator);
 		}
 	}
-	
+
 	@VisibleForTesting
 	static class HSQLDBWriteOperationFactory extends WriteOperationFactory {
 		
@@ -129,6 +131,20 @@ public class HSQLDBDatabaseSettings extends DatabaseVendorSettings {
 					this.preparedStatement = statementProvider.apply(connection, getSQL());
 				}
 			};
+		}
+	}
+	
+	private static class HSQLDBDatabaseSequenceSelectorFactory implements DatabaseSequenceSelectorFactory {
+		
+		private final ReadOperationFactory readOperationFactory;
+		
+		private HSQLDBDatabaseSequenceSelectorFactory(ReadOperationFactory readOperationFactory) {
+			this.readOperationFactory = readOperationFactory;
+		}
+		
+		@Override
+		public DatabaseSequenceSelector create(Sequence databaseSequence, ConnectionProvider connectionProvider) {
+			return new DatabaseSequenceSelector(databaseSequence, "CALL NEXT VALUE FOR " + databaseSequence.getName(), readOperationFactory, connectionProvider);
 		}
 	}
 }
