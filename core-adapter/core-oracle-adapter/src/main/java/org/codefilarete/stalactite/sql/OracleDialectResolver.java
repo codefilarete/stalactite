@@ -12,7 +12,7 @@ public class OracleDialectResolver {
 	
 	public static class Oracle_23_Entry implements DialectResolver.DialectResolverEntry {
 		
-		private static final OracleDialect ORACLE_DIALECT = new OracleDialect();
+		private static final Dialect ORACLE_DIALECT = OracleDialectBuilder.defaultOracleDialect();
 		
 		@Override
 		public DatabaseSignet getCompatibility() {

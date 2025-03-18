@@ -4,7 +4,8 @@ import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.Arrays;
 
-import org.codefilarete.stalactite.sql.OracleDialect;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.OracleDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.test.OracleDatabaseHelper;
 import org.codefilarete.stalactite.sql.test.OracleEmbeddableDataSource;
@@ -37,7 +38,7 @@ class OracleDDLTableGeneratorTest extends DDLTableGeneratorTest.IntegrationTest 
 	@Test
 	void generatedSQL_runOnAliveDatabase_doesNotThrowException() throws SQLException {
 		DataSource OracleDataSource = new OracleEmbeddableDataSource();
-		OracleDialect OracleDialect = new OracleDialect();
+		Dialect OracleDialect = OracleDialectBuilder.defaultOracleDialect();
 		OracleDDLTableGenerator testInstance = (OracleDDLTableGenerator) OracleDialect.getDdlTableGenerator();
 		assertGeneratedSQL_runOnAliveDatabase_doesNotThrowException(testInstance, OracleDataSource.getConnection());
 		

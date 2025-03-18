@@ -27,7 +27,7 @@ public class OracleGeneratedKeysReader extends GeneratedKeysReader<Integer> {
 	@Override
 	protected Integer readKey(ResultSet rs) throws SQLException {
 		// Even if Oracle requires that we give it the Column name to retrieve in the PreparedStatement, it doesn't
-		// support to read it by name (see OracleDialect.OracleWriteOperationFactory)
+		// support to read it by name (see OracleDatabaseSettings.OracleWriteOperationFactory)
 		return rs.getInt(1);
 	}
 }
