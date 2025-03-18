@@ -85,7 +85,6 @@ public class HSQLDBDatabaseSettings extends DatabaseVendorSettings {
 				parameterBinderRegistry,
 				sqlOperationsFactoriesBuilder,
 				new DefaultGeneratedKeysReaderFactory(parameterBinderRegistry),
-				new HSQLDBDatabaseSequenceSelectorFactory(sqlOperationsFactoriesBuilder.getReadOperationFactory()),
 				1000,
 				true);
 	}
@@ -113,7 +112,7 @@ public class HSQLDBDatabaseSettings extends DatabaseVendorSettings {
 			DMLGenerator dmlGenerator = new DMLGenerator(parameterBinders, NoopSorter.INSTANCE, dmlNameProviderFactory);
 			HSQLDBDDLTableGenerator ddlTableGenerator = new HSQLDBDDLTableGenerator(sqlTypeRegistry, dmlNameProviderFactory);
 			DDLSequenceGenerator ddlSequenceGenerator = new DDLSequenceGenerator(dmlNameProviderFactory);
-			return new SQLOperationsFactories(writeOperationFactory, readOperationFactory, dmlGenerator, ddlTableGenerator, ddlSequenceGenerator);
+			return new SQLOperationsFactories(writeOperationFactory, readOperationFactory, dmlGenerator, ddlTableGenerator, ddlSequenceGenerator, new HSQLDBDatabaseSequenceSelectorFactory(readOperationFactory));
 		}
 	}
 

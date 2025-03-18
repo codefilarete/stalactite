@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine;
 
+import org.codefilarete.stalactite.sql.DatabaseSequenceSelectorFactory;
 import org.codefilarete.stalactite.sql.ddl.DDLSequenceGenerator;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
@@ -21,16 +22,20 @@ public class SQLOperationsFactories {
 	
 	private final DDLSequenceGenerator ddlSequenceGenerator;
 	
+	private final DatabaseSequenceSelectorFactory sequenceSelectorFactory;
+	
 	public SQLOperationsFactories(WriteOperationFactory writeOperationFactory,
 								  ReadOperationFactory readOperationFactory,
 								  DMLGenerator dmlGenerator,
 								  DDLTableGenerator ddlTableGenerator,
-								  DDLSequenceGenerator ddlSequenceGenerator) {
+								  DDLSequenceGenerator ddlSequenceGenerator,
+								  DatabaseSequenceSelectorFactory sequenceSelectorFactory) {
 		this.writeOperationFactory = writeOperationFactory;
 		this.readOperationFactory = readOperationFactory;
 		this.dmlGenerator = dmlGenerator;
 		this.ddlTableGenerator = ddlTableGenerator;
 		this.ddlSequenceGenerator = ddlSequenceGenerator;
+		this.sequenceSelectorFactory = sequenceSelectorFactory;
 	}
 	
 	public WriteOperationFactory getWriteOperationFactory() {
@@ -51,5 +56,9 @@ public class SQLOperationsFactories {
 	
 	public DDLSequenceGenerator getDdlSequenceGenerator() {
 		return ddlSequenceGenerator;
+	}
+	
+	public DatabaseSequenceSelectorFactory getSequenceSelectorFactory() {
+		return sequenceSelectorFactory;
 	}
 }

@@ -53,7 +53,7 @@ class PersistenceContextConfigurationBuilderTest {
 							DMLGenerator dmlGenerator = new DMLGenerator(parameterBinders, NoopSorter.INSTANCE, dmlNameProviderFactory);
 							DDLTableGenerator ddlTableGenerator = new DDLTableGenerator(sqlTypeRegistry, dmlNameProviderFactory);
 							DDLSequenceGenerator ddlSequenceGenerator = new DDLSequenceGenerator(dmlNameProviderFactory);
-							return new SQLOperationsFactories(new WriteOperationFactory(), new ReadOperationFactory(), dmlGenerator, ddlTableGenerator, ddlSequenceGenerator);
+							return new SQLOperationsFactories(new WriteOperationFactory(), new ReadOperationFactory(), dmlGenerator, ddlTableGenerator, ddlSequenceGenerator, SEQUENCE_SELECT_BUILDER);
 						},
 						new GeneratedKeysReaderFactory() {
 							@Override
@@ -61,7 +61,6 @@ class PersistenceContextConfigurationBuilderTest {
 								return new GeneratedKeysReader<>(keyName, columnBinderRegistry.getBinder(columnType));
 							}
 						},
-						SEQUENCE_SELECT_BUILDER,
 						1000,
 						false
 				),
@@ -91,7 +90,7 @@ class PersistenceContextConfigurationBuilderTest {
 							DMLGenerator dmlGenerator = new DMLGenerator(parameterBinders, NoopSorter.INSTANCE, dmlNameProviderFactory);
 							DDLTableGenerator ddlTableGenerator = new DDLTableGenerator(sqlTypeRegistry, dmlNameProviderFactory);
 							DDLSequenceGenerator ddlSequenceGenerator = new DDLSequenceGenerator(dmlNameProviderFactory);
-							return new SQLOperationsFactories(new WriteOperationFactory(), new ReadOperationFactory(), dmlGenerator, ddlTableGenerator, ddlSequenceGenerator);
+							return new SQLOperationsFactories(new WriteOperationFactory(), new ReadOperationFactory(), dmlGenerator, ddlTableGenerator, ddlSequenceGenerator, SEQUENCE_SELECT_BUILDER);
 						},
 						new GeneratedKeysReaderFactory() {
 							@Override
@@ -99,7 +98,6 @@ class PersistenceContextConfigurationBuilderTest {
 								return new GeneratedKeysReader<>(keyName, columnBinderRegistry.getBinder(columnType));
 							}
 						},
-						SEQUENCE_SELECT_BUILDER,
 						100,
 						false
 				),

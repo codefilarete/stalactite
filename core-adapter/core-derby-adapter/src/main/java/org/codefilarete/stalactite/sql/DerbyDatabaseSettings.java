@@ -116,7 +116,7 @@ public class DerbyDatabaseSettings extends DatabaseVendorSettings {
 			DMLGenerator dmlGenerator = new DMLGenerator(parameterBinders, DMLGenerator.NoopSorter.INSTANCE, dmlNameProviderFactory);
 			DerbyDDLTableGenerator ddlTableGenerator = new DerbyDDLTableGenerator(sqlTypeRegistry, dmlNameProviderFactory);
 			DDLSequenceGenerator ddlSequenceGenerator = new DDLSequenceGenerator(dmlNameProviderFactory);
-			return new SQLOperationsFactories(writeOperationFactory, readOperationFactory, dmlGenerator, ddlTableGenerator, ddlSequenceGenerator);
+			return new SQLOperationsFactories(writeOperationFactory, readOperationFactory, dmlGenerator, ddlTableGenerator, ddlSequenceGenerator, new DerbySequenceSelectorFactory(readOperationFactory));
 		}
 	}
 	

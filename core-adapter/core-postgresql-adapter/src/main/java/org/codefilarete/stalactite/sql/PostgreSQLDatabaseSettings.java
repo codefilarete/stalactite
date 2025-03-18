@@ -15,7 +15,6 @@ import org.codefilarete.stalactite.sql.statement.binder.PostgreSQLTypeMapping;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderIndex;
 import org.codefilarete.tool.collection.CaseInsensitiveSet;
-import org.codefilarete.tool.function.Sequence;
 
 /**
  * 
@@ -42,12 +41,6 @@ public class PostgreSQLDatabaseSettings extends DatabaseVendorSettings {
 					}
 				},
 				new DefaultGeneratedKeysReaderFactory(parameterBinderRegistry),
-				new DatabaseSequenceSelectorFactory() {
-					@Override
-					public Sequence<Long> create(org.codefilarete.stalactite.sql.ddl.structure.Sequence databaseSequence, ConnectionProvider connectionProvider) {
-						return null;
-					}
-				}, 
 				100,
 				true);
 	}

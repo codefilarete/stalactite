@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.engine;
 
 import java.util.Set;
 
-import org.codefilarete.stalactite.sql.DatabaseSequenceSelectorFactory;
 import org.codefilarete.stalactite.sql.GeneratedKeysReaderFactory;
 import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver.DatabaseSignet;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -35,8 +34,6 @@ public class DatabaseVendorSettings {
 	
 	private final GeneratedKeysReaderFactory generatedKeysReaderFactory;
 	
-	private final DatabaseSequenceSelectorFactory databaseSequenceSelectorFactory;
-	
 	/**
 	 * Maximum number of values for an "in" operator
 	 */
@@ -51,7 +48,6 @@ public class DatabaseVendorSettings {
 								  ParameterBinderRegistry parameterBinderRegistry,
 								  SQLOperationsFactoriesBuilder sqlOperationsFactoriesBuilder,
 								  GeneratedKeysReaderFactory generatedKeysReaderFactory,
-								  DatabaseSequenceSelectorFactory databaseSequenceSelectorFactory,
 								  int inOperatorMaxSize,
 								  boolean supportsTupleCondition) {
 		this.compatibility = compatibility;
@@ -61,7 +57,6 @@ public class DatabaseVendorSettings {
 		this.parameterBinderRegistry = parameterBinderRegistry;
 		this.sqlOperationsFactoriesBuilder = sqlOperationsFactoriesBuilder;
 		this.generatedKeysReaderFactory = generatedKeysReaderFactory;
-		this.databaseSequenceSelectorFactory = databaseSequenceSelectorFactory;
 		this.inOperatorMaxSize = inOperatorMaxSize;
 		this.supportsTupleCondition = supportsTupleCondition;
 	}
@@ -92,10 +87,6 @@ public class DatabaseVendorSettings {
 	
 	public GeneratedKeysReaderFactory getGeneratedKeysReaderFactory() {
 		return generatedKeysReaderFactory;
-	}
-	
-	public DatabaseSequenceSelectorFactory getDatabaseSequenceSelectorFactory() {
-		return databaseSequenceSelectorFactory;
 	}
 	
 	public int getInOperatorMaxSize() {

@@ -7,6 +7,7 @@ import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
+import org.codefilarete.stalactite.sql.DatabaseSequenceSelectorFactory;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.Dialect.DialectSupport;
 import org.codefilarete.stalactite.sql.DialectOptions;
@@ -49,6 +50,7 @@ public class DialectBuilder {
 		DMLGenerator dmlGenerator = sqlOperationsFactories.getDmlGenerator();
 		WriteOperationFactory writeOperationFactory = sqlOperationsFactories.getWriteOperationFactory();
 		ReadOperationFactory readOperationFactory = sqlOperationsFactories.getReadOperationFactory();
+		DatabaseSequenceSelectorFactory databaseSequenceSelectorFactory = sqlOperationsFactories.getSequenceSelectorFactory();
 		
 		QuerySQLBuilderFactory querySQLBuilderFactory = new QuerySQLBuilderFactoryBuilder(
 				dmlNameProviderFactory,
@@ -71,7 +73,7 @@ public class DialectBuilder {
 				dmlNameProviderFactory,
 				dialectOptions.getInOperatorMaxSize().getOrDefault(vendorSettings.getInOperatorMaxSize()),
 				generatedKeysReaderFactory,
-				vendorSettings.getDatabaseSequenceSelectorFactory(),
+				databaseSequenceSelectorFactory,
 				vendorSettings.supportsTupleCondition()
 		);
 	}

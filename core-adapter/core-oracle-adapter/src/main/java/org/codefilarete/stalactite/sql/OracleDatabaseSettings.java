@@ -160,7 +160,7 @@ public class OracleDatabaseSettings extends DatabaseVendorSettings {
 			DMLGenerator dmlGenerator = new DMLGenerator(parameterBinders, DMLGenerator.NoopSorter.INSTANCE, dmlNameProviderFactory);
 			OracleDDLTableGenerator ddlTableGenerator = new OracleDDLTableGenerator(sqlTypeRegistry, dmlNameProviderFactory);
 			DDLSequenceGenerator ddlSequenceGenerator = new DDLSequenceGenerator(dmlNameProviderFactory);
-			return new SQLOperationsFactories(writeOperationFactory, readOperationFactory, dmlGenerator, ddlTableGenerator, ddlSequenceGenerator);
+			return new SQLOperationsFactories(writeOperationFactory, readOperationFactory, dmlGenerator, ddlTableGenerator, ddlSequenceGenerator, new OracleSequenceSelectorFactory(readOperationFactory));
 		}
 	}
 

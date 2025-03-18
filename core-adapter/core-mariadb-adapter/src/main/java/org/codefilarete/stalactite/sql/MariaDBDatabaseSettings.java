@@ -110,7 +110,7 @@ public class MariaDBDatabaseSettings extends DatabaseVendorSettings {
 			DMLGenerator dmlGenerator = new DMLGenerator(parameterBinders, DMLGenerator.NoopSorter.INSTANCE, dmlNameProviderFactory);
 			MariaDBDDLTableGenerator ddlTableGenerator = new MariaDBDDLTableGenerator(sqlTypeRegistry, dmlNameProviderFactory);
 			DDLSequenceGenerator ddlSequenceGenerator = new DDLSequenceGenerator(dmlNameProviderFactory);
-			return new SQLOperationsFactories(writeOperationFactory, readOperationFactory, dmlGenerator, ddlTableGenerator, ddlSequenceGenerator);
+			return new SQLOperationsFactories(writeOperationFactory, readOperationFactory, dmlGenerator, ddlTableGenerator, ddlSequenceGenerator, new MariaDBSequenceSelectorFactory(readOperationFactory));
 		}
 	}
 	

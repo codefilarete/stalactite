@@ -4,7 +4,7 @@ import javax.sql.DataSource;
 
 import org.codefilarete.stalactite.engine.PersistenceContextITTest;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.MySQLDialect;
+import org.codefilarete.stalactite.sql.MySQLDialectBuilder;
 import org.codefilarete.stalactite.sql.test.DatabaseHelper;
 import org.codefilarete.stalactite.sql.test.MySQLDatabaseHelper;
 import org.codefilarete.stalactite.sql.test.MySQLTestDataSourceSelector;
@@ -28,6 +28,6 @@ public class PersistenceContextMySQLTest extends PersistenceContextITTest {
 	
 	@Override
 	protected Dialect createDialect() {
-		return new MySQLDialect();
+		return MySQLDialectBuilder.defaultMySQLDialect();
 	}
 }

@@ -23,7 +23,7 @@ class MySQLSequenceSelectBuilderTest {
 		
 		// Creating schema
 		Sequence sequence = new Sequence("my_sequence");
-		MySQLDialect dialect = new MySQLDialect();
+		Dialect dialect = MySQLDialectBuilder.defaultMySQLDialect();
 		
 		// testing SQL is valid through Dialect
 		org.codefilarete.tool.function.Sequence<Long> sequenceSelector = dialect.getDatabaseSequenceSelectorFactory().create(sequence, connectionProvider);

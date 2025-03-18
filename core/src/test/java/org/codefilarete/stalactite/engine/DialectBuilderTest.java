@@ -46,13 +46,12 @@ class DialectBuilderTest {
 					DMLGenerator dmlGenerator = new DMLGenerator(parameterBinders, NoopSorter.INSTANCE, dmlNameProviderFactory);
 					DDLTableGenerator ddlTableGenerator = new DDLTableGenerator(sqlTypeRegistry, dmlNameProviderFactory);
 					DDLSequenceGenerator ddlSequenceGenerator = new DDLSequenceGenerator(dmlNameProviderFactory);
-					return new SQLOperationsFactories(new WriteOperationFactory(), new ReadOperationFactory(), dmlGenerator, ddlTableGenerator, ddlSequenceGenerator);
+					return new SQLOperationsFactories(new WriteOperationFactory(), new ReadOperationFactory(), dmlGenerator, ddlTableGenerator, ddlSequenceGenerator, (databaseSequence, connectionProvider) -> {
+						MutableLong counter = new MutableLong();
+						return counter::increment;
+					});
 				},
 				new DefaultGeneratedKeysReaderFactory(parameterBinderRegistry),
-				(databaseSequence, connectionProvider) -> {
-					MutableLong counter = new MutableLong();
-					return counter::increment;
-				},
 				100,
 				false
 		);

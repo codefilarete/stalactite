@@ -13,7 +13,7 @@ public class MySQLDialectResolver {
 	
 	public static class MySQL_5_6_Entry implements DialectResolver.DialectResolverEntry {
 		
-		private static final MySQLDialect MYSQL_DIALECT = new MySQLDialect();
+		private static final Dialect MYSQL_DIALECT = MySQLDialectBuilder.defaultMySQLDialect();
 		
 		@Override
 		public DatabaseSignet getCompatibility() {
