@@ -21,7 +21,7 @@ class PostgreSQLSequenceSelectBuilderTest {
 		
 		// Creating schema
 		Sequence sequence = new Sequence("my_sequence");
-		PostgreSQLDialect dialect = new PostgreSQLDialect();
+		Dialect dialect = PostgreSQLDialectBuilder.defaultPostgreSQLDialect();
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), dialect.getDdlSequenceGenerator(), connectionProvider);
 		ddlDeployer.getDdlGenerator().addSequences(sequence);
 		ddlDeployer.deployDDL();

@@ -13,7 +13,7 @@ public class PostgreSQLDialectResolver {
 	
 	public static class PostgreSQL_9_6_Entry implements DialectResolver.DialectResolverEntry {
 		
-		private static final PostgreSQLDialect POSTGRESQL_DIALECT = new PostgreSQLDialect();
+		private static final Dialect POSTGRESQL_DIALECT = PostgreSQLDialectBuilder.defaultPostgreSQLDialect();
 		
 		@Override
 		public DatabaseSignet getCompatibility() {

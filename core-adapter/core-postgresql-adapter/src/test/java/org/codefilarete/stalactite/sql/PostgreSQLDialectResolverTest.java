@@ -3,10 +3,25 @@ package org.codefilarete.stalactite.sql;
 import javax.sql.DataSource;
 import java.sql.SQLException;
 
-import org.assertj.core.api.Assertions;
-import org.codefilarete.stalactite.sql.PostgreSQLDialect;
+import org.codefilarete.stalactite.engine.DatabaseVendorSettings;
+import org.codefilarete.stalactite.engine.SQLOperationsFactories;
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.sql.GeneratedKeysReaderFactory.DefaultGeneratedKeysReaderFactory;
+import org.codefilarete.stalactite.sql.PostgreSQLDatabaseSettings.PostgreSQLDDLTableGenerator;
+import org.codefilarete.stalactite.sql.PostgreSQLDatabaseSettings.PostgreSQLSequenceSelectorFactory;
+import org.codefilarete.stalactite.sql.PostgreSQLDialectResolver.PostgreSQLDatabaseSignet;
+import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator;
+import org.codefilarete.stalactite.sql.statement.ReadOperationFactory;
+import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.sql.statement.binder.PostgreSQLParameterBinderRegistry;
+import org.codefilarete.stalactite.sql.statement.binder.PostgreSQLTypeMapping;
 import org.codefilarete.stalactite.sql.test.PostgreSQLTestDataSourceSelector;
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.codefilarete.stalactite.sql.PostgreSQLDatabaseSettings.KEYWORDS;
 
 /**
  * @author Guillaume Mary
@@ -22,6 +37,21 @@ class PostgreSQLDialectResolverTest {
 		
 		ServiceLoaderDialectResolver dialectResolver = new ServiceLoaderDialectResolver();
 		Dialect dialect = dialectResolver.determineDialect(postgresqlDataSource.getConnection());
-		Assertions.assertThat(dialect).isExactlyInstanceOf(PostgreSQLDialect.class);
+		assertThat(dialect.getCompatibility()).usingRecursiveComparison().isEqualTo(new PostgreSQLDatabaseSignet(9, 6));
+		
+		DatabaseVendorSettings vendorSettings = dialectResolver.determineVendorSettings(postgresqlDataSource.getConnection());
+		assertThat(vendorSettings.getKeyWords()).containsExactlyInAnyOrder(KEYWORDS);
+		assertThat(vendorSettings.getQuoteCharacter()).isEqualTo('`');
+		assertThat(vendorSettings.getJavaTypeToSqlTypes()).isExactlyInstanceOf(PostgreSQLTypeMapping.class);
+		assertThat(vendorSettings.getParameterBinderRegistry()).isExactlyInstanceOf(PostgreSQLParameterBinderRegistry.class);
+		assertThat(vendorSettings.getInOperatorMaxSize()).isEqualTo(1000);
+		
+		SQLOperationsFactories sqlOperationsFactories = vendorSettings.getSqlOperationsFactoriesBuilder().build(new ColumnBinderRegistry(), DMLNameProvider::new, new SqlTypeRegistry());
+		assertThat(sqlOperationsFactories.getReadOperationFactory()).isExactlyInstanceOf(ReadOperationFactory.class);
+		assertThat(sqlOperationsFactories.getWriteOperationFactory()).isExactlyInstanceOf(WriteOperationFactory.class);
+		assertThat(sqlOperationsFactories.getDdlTableGenerator()).isExactlyInstanceOf(PostgreSQLDDLTableGenerator.class);
+		assertThat(sqlOperationsFactories.getDmlGenerator()).isExactlyInstanceOf(DMLGenerator.class);
+		assertThat(sqlOperationsFactories.getSequenceSelectorFactory()).isExactlyInstanceOf(PostgreSQLSequenceSelectorFactory.class);
+		assertThat(vendorSettings.getGeneratedKeysReaderFactory()).isExactlyInstanceOf(DefaultGeneratedKeysReaderFactory.class);
 	}
 }

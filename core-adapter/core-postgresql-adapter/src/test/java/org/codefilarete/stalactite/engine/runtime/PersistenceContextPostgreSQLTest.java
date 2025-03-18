@@ -4,7 +4,7 @@ import javax.sql.DataSource;
 
 import org.codefilarete.stalactite.engine.PersistenceContextITTest;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.PostgreSQLDialect;
+import org.codefilarete.stalactite.sql.PostgreSQLDialectBuilder;
 import org.codefilarete.stalactite.sql.test.DatabaseHelper;
 import org.codefilarete.stalactite.sql.test.PostgreSQLDatabaseHelper;
 import org.codefilarete.stalactite.sql.test.PostgreSQLTestDataSourceSelector;
@@ -28,6 +28,6 @@ public class PersistenceContextPostgreSQLTest extends PersistenceContextITTest {
 	
 	@Override
 	protected Dialect createDialect() {
-		return new PostgreSQLDialect();
+		return PostgreSQLDialectBuilder.defaultPostgreSQLDialect();
 	}
 }
