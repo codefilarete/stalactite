@@ -21,7 +21,7 @@ class H2SequenceSelectBuilderTest {
 		
 		// Creating schema
 		Sequence sequence = new Sequence("my_sequence");
-		H2Dialect dialect = new H2Dialect();
+		Dialect dialect = H2DialectBuilder.defaultH2Dialect();
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), dialect.getDdlSequenceGenerator(), connectionProvider);
 		ddlDeployer.getDdlGenerator().addSequences(sequence);
 		ddlDeployer.deployDDL();

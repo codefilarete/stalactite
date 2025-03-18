@@ -14,7 +14,7 @@ public class H2DialectResolver {
 	
 	public static class H2_1_4_Entry implements DialectResolverEntry {
 		
-		private static final H2Dialect H2_DIALECT = new H2Dialect();
+		private static final Dialect H2_DIALECT = H2DialectBuilder.defaultH2Dialect();
 		
 		@Override
 		public DatabaseSignet getCompatibility() {

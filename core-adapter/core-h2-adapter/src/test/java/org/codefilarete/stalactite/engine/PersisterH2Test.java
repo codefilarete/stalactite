@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.engine;
 import javax.sql.DataSource;
 
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.H2Dialect;
+import org.codefilarete.stalactite.sql.H2DialectBuilder;
 import org.codefilarete.stalactite.sql.test.DatabaseHelper;
 import org.codefilarete.stalactite.sql.test.H2DatabaseHelper;
 import org.codefilarete.stalactite.sql.test.H2InMemoryDataSource;
@@ -25,6 +25,6 @@ public class PersisterH2Test extends PersisterITTest {
 	
 	@Override
 	Dialect createDialect() {
-		return new H2Dialect();
+		return H2DialectBuilder.defaultH2Dialect();
 	}
 }
