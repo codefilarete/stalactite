@@ -3,11 +3,11 @@ package org.codefilarete.stalactite.sql;
 import java.sql.SQLException;
 import java.util.List;
 
-import org.codefilarete.stalactite.sql.DerbyDialect.DerbyWriteOperation;
-import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
+import org.codefilarete.stalactite.sql.DerbyDatabaseSettings.DerbyWriteOperation;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
+import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
+import org.codefilarete.tool.collection.Iterables;
 
 /**
  * @author Guillaume Mary

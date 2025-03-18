@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.engine.runtime;
 import javax.sql.DataSource;
 
 import org.codefilarete.stalactite.engine.PersistenceContextITTest;
-import org.codefilarete.stalactite.sql.DerbyDialect;
+import org.codefilarete.stalactite.sql.DerbyDialectBuilder;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.test.DatabaseHelper;
 import org.codefilarete.stalactite.sql.test.DerbyDatabaseHelper;
@@ -26,6 +26,6 @@ public class PersistenceContextDerbyTest extends PersistenceContextITTest {
 	
 	@Override
 	protected Dialect createDialect() {
-		return new DerbyDialect();
+		return DerbyDialectBuilder.defaultDerbyDialect();
 	}
 }

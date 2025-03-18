@@ -21,7 +21,7 @@ class DerbySequenceSelectBuilderTest {
 		
 		// Creating schema
 		Sequence sequence = new Sequence("my_sequence");
-		DerbyDialect dialect = new DerbyDialect();
+		Dialect dialect = DerbyDialectBuilder.defaultDerbyDialect();
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), dialect.getDdlSequenceGenerator(), connectionProvider);
 		ddlDeployer.getDdlGenerator().addSequences(sequence);
 		ddlDeployer.deployDDL();
