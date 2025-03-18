@@ -23,7 +23,7 @@ class SQLiteSequenceSelectBuilderTest {
 		
 		// Creating schema
 		Sequence sequence = new Sequence("my_sequence");
-		SQLiteDialect dialect = new SQLiteDialect();
+		Dialect dialect = SQLiteDialectBuilder.defaultSQLiteDialect();
 		
 		// testing SQL is valid through Dialect
 		org.codefilarete.tool.function.Sequence sequenceSelector = dialect.getDatabaseSequenceSelectorFactory().create(sequence, connectionProvider);

@@ -5,7 +5,7 @@ import java.sql.ResultSet;
 import java.util.Collections;
 import java.util.List;
 
-import org.codefilarete.stalactite.sql.SQLiteDialect.SQLiteWriteOperation;
+import org.codefilarete.stalactite.sql.SQLiteDatabaseSettings.SQLiteWriteOperation;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLStatement;

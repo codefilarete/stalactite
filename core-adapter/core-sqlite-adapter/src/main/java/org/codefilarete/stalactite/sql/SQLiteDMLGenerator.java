@@ -12,6 +12,10 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Sorter;
 import org.codefilarete.tool.function.Predicates;
 
+/**
+ * 
+ * @author Guillaume Mary
+ */
 public class SQLiteDMLGenerator extends DMLGenerator {
 	
 	public SQLiteDMLGenerator(ParameterBinderIndex<Column, ParameterBinder> columnBinderRegistry, Sorter<Column> columnSorter, DMLNameProviderFactory dmlNameProvider) {

@@ -4,7 +4,7 @@ import javax.sql.DataSource;
 
 import org.codefilarete.stalactite.engine.PersistenceContextITTest;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.SQLiteDialect;
+import org.codefilarete.stalactite.sql.SQLiteDialectBuilder;
 import org.codefilarete.stalactite.sql.test.SQLiteInMemoryDataSource;
 
 /**
@@ -19,6 +19,6 @@ public class PersistenceContextSQLiteTest extends PersistenceContextITTest {
 	
 	@Override
 	protected Dialect createDialect() {
-		return new SQLiteDialect();
+		return SQLiteDialectBuilder.defaultSQLiteDialect();
 	}
 }

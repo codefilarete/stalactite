@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.engine;
 import javax.sql.DataSource;
 
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.SQLiteDialect;
+import org.codefilarete.stalactite.sql.SQLiteDialectBuilder;
 import org.codefilarete.stalactite.sql.test.SQLiteInMemoryDataSource;
 
 /**
@@ -18,6 +18,6 @@ public class PersisterSQLiteTest extends PersisterITTest {
 	
 	@Override
 	Dialect createDialect() {
-		return new SQLiteDialect();
+		return SQLiteDialectBuilder.defaultSQLiteDialect();
 	}
 }

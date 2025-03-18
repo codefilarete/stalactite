@@ -13,7 +13,7 @@ public class SQLiteDialectResolver {
 	
 	public static class SQLite_3_45_Entry implements DialectResolver.DialectResolverEntry {
 		
-		private static final SQLiteDialect SQLite_DIALECT = new SQLiteDialect();
+		private static final Dialect SQLite_DIALECT = SQLiteDialectBuilder.defaultSQLiteDialect();
 		
 		@Override
 		public DatabaseSignet getCompatibility() {
