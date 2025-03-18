@@ -13,7 +13,7 @@ public class MariaDBDialectResolver {
 	
 	public static class MariaDB_10_0_Entry implements DialectResolver.DialectResolverEntry {
 		
-		private static final MariaDBDialect MARIADB_DIALECT = new MariaDBDialect();
+		private static final Dialect MARIADB_DIALECT = MariaDBDialectBuilder.defaultMariaDBDialect();
 		
 		private static final DatabaseSignet MARIADB_10_0_SIGNET = MARIADB_10_0.getCompatibility();
 		

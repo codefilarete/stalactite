@@ -21,7 +21,7 @@ class MariaDBSequenceSelectBuilderTest {
 		
 		// Creating schema
 		Sequence sequence = new Sequence("my_sequence");
-		MariaDBDialect dialect = new MariaDBDialect();
+		Dialect dialect = MariaDBDialectBuilder.defaultMariaDBDialect();
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), dialect.getDdlSequenceGenerator(), connectionProvider);
 		ddlDeployer.getDdlGenerator().addSequences(sequence);
 		ddlDeployer.deployDDL();

@@ -4,7 +4,7 @@ import javax.sql.DataSource;
 
 import org.codefilarete.stalactite.engine.PersistenceContextITTest;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.MariaDBDialect;
+import org.codefilarete.stalactite.sql.MariaDBDialectBuilder;
 import org.codefilarete.stalactite.sql.test.DatabaseHelper;
 import org.codefilarete.stalactite.sql.test.MariaDBDatabaseHelper;
 import org.codefilarete.stalactite.sql.test.MariaDBTestDataSourceSelector;
@@ -28,6 +28,6 @@ public class PersistenceContextMariaDBTest extends PersistenceContextITTest {
 	
 	@Override
 	protected Dialect createDialect() {
-		return new MariaDBDialect();
+		return MariaDBDialectBuilder.defaultMariaDBDialect();
 	}
 }
