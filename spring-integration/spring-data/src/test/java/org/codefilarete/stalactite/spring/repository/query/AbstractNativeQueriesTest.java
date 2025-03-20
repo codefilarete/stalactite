@@ -302,4 +302,19 @@ abstract class AbstractNativeQueriesTest {
 		loadedCountries = derivedQueriesRepository.loadByNameIn("Titi");
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
 	}
+	
+	@Test
+	void severalNativeQueries_theOneMatchingDatabaseIsChosen() {
+		Republic country1 = new Republic(42);
+		country1.setName("Toto");
+		Republic country2 = new Republic(43);
+		country2.setName("Titi");
+		Republic country3 = new Republic(44);
+		country3.setName("Tata");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3));
+
+		Set<Republic> loadedCountries;
+		loadedCountries = derivedQueriesRepository.loadByNameIn("Titi");
+		assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
+	}
 }

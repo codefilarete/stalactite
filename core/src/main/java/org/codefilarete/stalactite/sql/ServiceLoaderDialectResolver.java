@@ -127,7 +127,7 @@ public class ServiceLoaderDialectResolver implements DialectResolver {
 			}
 		}
 		
-		static Comparator<DatabaseSignet> COMPARATOR = Comparator
+		public static Comparator<DatabaseSignet> COMPARATOR = Comparator
 				.comparing(DatabaseSignet::getProductName)
 				.thenComparingInt(DatabaseSignet::getMajorVersion)
 				.thenComparingInt(DatabaseSignet::getMinorVersion);

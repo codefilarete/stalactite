@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.spring.repository.query;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -17,10 +18,21 @@ import org.springframework.data.annotation.QueryAnnotation;
 @Target({ ElementType.METHOD, ElementType.ANNOTATION_TYPE })
 @QueryAnnotation
 @Documented
+@Repeatable(Queries.class)
 public @interface Query {
 	
 	/**
 	 * Defines the SQL query to be executed when the annotated method is called.
 	 */
 	String value() default "";
+
+	/**
+	 * Database vendor compatibility of current query. Default is empty which means that it will be applied to all
+	 * databases
+	 */
+	String vendor() default "";
+
+	int major() default 0;
+
+	int minor() default 0;
 }
