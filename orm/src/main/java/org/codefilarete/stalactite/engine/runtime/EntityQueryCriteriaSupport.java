@@ -123,7 +123,13 @@ public class EntityQueryCriteriaSupport<C, I> {
 		return methodDispatcher
 				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, Collection<C>, Object>, Object>) ExecutableQuery::execute,
 						wrapGraphLoad(values))
-				.redirect((SerializableTriFunction<ExecutableEntityQuery<?, ?>, String, Object, Object>) ExecutableEntityQuery::set, values::put)
+				.redirect((SerializableTriFunction<ExecutableEntityQuery<?, ?>, String, Object, Object>) ExecutableEntityQuery::set,
+						// Don't use "values::put" because its signature returns previous value, which means it is a Function
+						// and dispatch to redirect(..) that takes a Function as argument, which, at runtime,
+						// will create some ClassCastException due to incompatible type between ExecutableEntityQuery
+						// and values contained in the Map (because ExecutableEntityQuery::set returns ExecutableEntityQuery)
+						(s, object) -> { values.put(s, object); }
+				)
 				.redirect(OrderByChain.class, queryPageSupport, true)
 				.redirect(LimitAware.class, queryPageSupport, true)
 				.redirect(RelationalEntityCriteria.class, entityCriteriaSupport, true)
