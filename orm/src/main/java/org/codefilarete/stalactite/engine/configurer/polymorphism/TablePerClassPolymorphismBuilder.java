@@ -85,7 +85,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 	
 	@Override
 	public ConfiguredRelationalPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
-		if (this.identification instanceof Identification && ((Identification<C, I>) this.identification).getIdentifierPolicy() instanceof ColumnOptions.AfterInsertIdentifierPolicy) {
+		if (this.identification instanceof Identification && ((Identification<C, I>) this.identification).getIdentifierPolicy() instanceof ColumnOptions.GeneratedKeysPolicy) {
 			throw new UnsupportedOperationException("Table-per-class polymorphism is not compatible with auto-incremented primary key");
 		}
 		Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass = collectSubClassPersister(dialect, connectionConfiguration);

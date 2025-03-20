@@ -99,7 +99,7 @@ class SingleTablePolymorphismBuilderTest {
 		
 		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
 		EntityPersister<Element, Long> configuration = entityBuilder(Element.class, long.class)
-				.mapKey(Element::getId, IdentifierPolicy.afterInsert())
+				.mapKey(Element::getId, IdentifierPolicy.databaseAutoIncrement())
 				.mapPolymorphism(POLYMORPHISM_POLICY)
 				.build(persistenceContext);
 		

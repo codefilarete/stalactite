@@ -49,7 +49,7 @@ class EntityCriteriaSupportTest {
 		dialect.getSqlTypeRegistry().put(Identifier.class, "bigint");
 		
 		ConfiguredPersister<Country, Identifier<Long>> persister = (ConfiguredPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
-				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
+				.mapKey(Country::getId, IdentifierPolicy.databaseAutoIncrement())
 				.map(Country::getName)
 				.mapOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
 						.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -89,7 +89,7 @@ class EntityCriteriaSupportTest {
 		Column nameColumn = countryTable.addColumn("name", String.class);
 		EntityMapping<Country, Identifier<Long>, ?> mappingStrategy =
 				((ConfiguredPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE, countryTable)
-				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
+				.mapKey(Country::getId, IdentifierPolicy.databaseAutoIncrement())
 				.map(Country::getName)
 				.build(dummyPersistenceContext))
 				.getMapping();
@@ -115,7 +115,7 @@ class EntityCriteriaSupportTest {
 		
 		EntityMapping<Country, Identifier<Long>, ?> mappingStrategy =
 				((ConfiguredPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE, countryTable)
-				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
+				.mapKey(Country::getId, IdentifierPolicy.databaseAutoIncrement())
 				.map(Country::getName)
 				.mapOneToOne(Country::getCapital, cityPersisterConfiguration)
 				.build(dummyPersistenceContext))
@@ -145,7 +145,7 @@ class EntityCriteriaSupportTest {
 				.map(City::getName);
 		EntityMapping<Country, Identifier<Long>, ?> mappingStrategy =
 				((ConfiguredPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE, countryTable)
-				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
+				.mapKey(Country::getId, IdentifierPolicy.databaseAutoIncrement())
 				.map(Country::getName)
 				.mapOneToMany(Country::getCities, cityPersisterConfiguration)
 				.build(dummyPersistenceContext))
@@ -173,7 +173,7 @@ class EntityCriteriaSupportTest {
 		Table countryTable = new Table("Country");
 		EntityMapping<Country, Identifier<Long>, ?> mappingStrategy =
 				((ConfiguredPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE, countryTable)
-				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
+				.mapKey(Country::getId, IdentifierPolicy.databaseAutoIncrement())
 				.build(dummyPersistenceContext))
 				.getMapping();
 		
@@ -192,7 +192,7 @@ class EntityCriteriaSupportTest {
 		Table countryTable = new Table("Country");
 		EntityMapping<Country, Identifier<Long>, ?> mappingStrategy =
 				((ConfiguredPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE, countryTable)
-				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
+				.mapKey(Country::getId, IdentifierPolicy.databaseAutoIncrement())
 				.build(dummyPersistenceContext))
 				.getMapping();
 		

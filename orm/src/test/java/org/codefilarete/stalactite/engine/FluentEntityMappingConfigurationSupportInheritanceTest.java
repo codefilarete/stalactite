@@ -362,7 +362,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 		void withIdDefinedInSuperClass_severalTimes() {
 			FluentEntityMappingBuilder<AbstractEntity, Long> inheritanceConfiguration = entityBuilder(AbstractEntity.class, long.class)
 					// mapped super class defines id
-					.mapKey(AbstractEntity::getId, IdentifierPolicy.afterInsert());
+					.mapKey(AbstractEntity::getId, IdentifierPolicy.databaseAutoIncrement());
 			
 			FluentEntityMappingBuilder<Author, Long> authorConfiguration = entityBuilder(Author.class, long.class)
 					.map(Author::getName)

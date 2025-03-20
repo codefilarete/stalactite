@@ -14,7 +14,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.Accessor;
-import org.codefilarete.stalactite.engine.ColumnOptions.AfterInsertIdentifierPolicy;
+import org.codefilarete.stalactite.engine.ColumnOptions.GeneratedKeysPolicy;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteByIdSupport;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteSupport;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
@@ -109,7 +109,7 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 			/**
 			 * Implemented to store target-to-source relation, made to help relation maintenance (because foreign key
 			 * maintainer will refer to it) and avoid to depend on "mapped by" properties which is optional
-			 * Made AFTER insert to benefit from id when set by database with IdentifierPolicy is {@link AfterInsertIdentifierPolicy}
+			 * Made AFTER insert to benefit from id when set by database with IdentifierPolicy is {@link GeneratedKeysPolicy}
 			 */
 			@Override
 			public void afterInsert(Iterable<? extends SRC> entities) {
@@ -261,7 +261,7 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 			
 			/**
 			 * Implemented to update target owning column after insert. Made AFTER insert to benefit from id when set by database with
-			 * IdentifierPolicy is {@link AfterInsertIdentifierPolicy}
+			 * IdentifierPolicy is {@link GeneratedKeysPolicy}
 			 */
 			@Override
 			public void afterInsert(Iterable<? extends SRC> entities) {

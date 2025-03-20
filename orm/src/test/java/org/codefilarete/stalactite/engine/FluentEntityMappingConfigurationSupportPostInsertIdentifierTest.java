@@ -38,7 +38,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 	@Test
 	void insert_basic() {
 		EntityPersister<Car, Long> carPersister = MappingEase.entityBuilder(Car.class, long.class)
-				.mapKey(Car::getId, IdentifierPolicy.afterInsert())
+				.mapKey(Car::getId, IdentifierPolicy.databaseAutoIncrement())
 				.map(Car::getModel)
 				.build(persistenceContext);
 		
@@ -66,10 +66,10 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 	@Test
 	void insert_oneToOne() {
 		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
-				.mapKey(Car::getId, IdentifierPolicy.afterInsert())
+				.mapKey(Car::getId, IdentifierPolicy.databaseAutoIncrement())
 				.map(Car::getModel)
 				.mapOneToOne(Car::getEngine, entityBuilder(Engine.class, long.class)
-						.mapKey(Engine::getId, IdentifierPolicy.afterInsert())
+						.mapKey(Engine::getId, IdentifierPolicy.databaseAutoIncrement())
 						.map(Engine::getModel))
 				.build(persistenceContext);
 		
@@ -101,7 +101,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 	void multipleInheritance() {
 		EntityMappingConfiguration<AbstractVehicle, Long> inheritanceConfiguration = MappingEase
 				.entityBuilder(AbstractVehicle.class, long.class)
-				.mapKey(AbstractVehicle::getId, IdentifierPolicy.afterInsert())
+				.mapKey(AbstractVehicle::getId, IdentifierPolicy.databaseAutoIncrement())
 				.getConfiguration();
 		
 		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = MappingEase
@@ -143,7 +143,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 	void multipleInheritance_joinedTables() {
 		EntityMappingConfiguration<AbstractVehicle, Long> inheritanceConfiguration = MappingEase
 				.entityBuilder(AbstractVehicle.class, long.class)
-				.mapKey(AbstractVehicle::getId, IdentifierPolicy.afterInsert())
+				.mapKey(AbstractVehicle::getId, IdentifierPolicy.databaseAutoIncrement())
 				.getConfiguration();
 		
 		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = MappingEase

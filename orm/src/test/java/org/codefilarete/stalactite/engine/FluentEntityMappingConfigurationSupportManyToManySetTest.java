@@ -898,10 +898,10 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		EntityMappingConfigurationProviderHolder<Author, Long> authorMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
 		EntityMappingConfigurationProviderHolder<Book, Long> bookMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
 		authorMappingConfiguration.setProvider(MappingEase.entityBuilder(Author.class, Long.class)
-				.mapKey(Author::getId, IdentifierPolicy.afterInsert())
+				.mapKey(Author::getId, IdentifierPolicy.databaseAutoIncrement())
 				.map(Author::getName));
 		bookMappingConfiguration.setProvider(MappingEase.entityBuilder(Book.class, Long.class)
-				.mapKey(Book::getId, IdentifierPolicy.afterInsert())
+				.mapKey(Book::getId, IdentifierPolicy.databaseAutoIncrement())
 				.mapManyToMany(Book::getAuthors, authorMappingConfiguration)
 					.reverselySetBy(Author::addBook)
 					.reverselyInitializeWith(LinkedHashSet::new)
@@ -953,10 +953,10 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		EntityMappingConfigurationProviderHolder<Author, Long> authorMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
 		EntityMappingConfigurationProviderHolder<Book, Long> bookMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
 		authorMappingConfiguration.setProvider(MappingEase.entityBuilder(Author.class, Long.class)
-				.mapKey(Author::getId, IdentifierPolicy.afterInsert())
+				.mapKey(Author::getId, IdentifierPolicy.databaseAutoIncrement())
 				.map(Author::getName));
 		bookMappingConfiguration.setProvider(MappingEase.entityBuilder(Book.class, Long.class)
-				.mapKey(Book::getId, IdentifierPolicy.afterInsert())
+				.mapKey(Book::getId, IdentifierPolicy.databaseAutoIncrement())
 				.mapManyToMany(Book::getAuthors, authorMappingConfiguration)
 						.reverselyInitializeWith(LinkedHashSet::new)
 				.map(Book::getIsbn).columnName("isbn")
@@ -994,10 +994,10 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		EntityMappingConfigurationProviderHolder<Author, Long> authorMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
 		EntityMappingConfigurationProviderHolder<Book, Long> bookMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
 		authorMappingConfiguration.setProvider(MappingEase.entityBuilder(Author.class, Long.class)
-				.mapKey(Author::getId, IdentifierPolicy.afterInsert())
+				.mapKey(Author::getId, IdentifierPolicy.databaseAutoIncrement())
 				.map(Author::getName));
 		bookMappingConfiguration.setProvider(MappingEase.entityBuilder(Book.class, Long.class)
-				.mapKey(Book::getId, IdentifierPolicy.afterInsert())
+				.mapKey(Book::getId, IdentifierPolicy.databaseAutoIncrement())
 				.mapManyToMany(Book::getAuthors, authorMappingConfiguration)
 						.reverseCollection(Author::getBooks)
 				.map(Book::getIsbn).columnName("isbn")

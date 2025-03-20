@@ -1547,11 +1547,11 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			EntityMappingConfigurationProviderHolder<Author, Long> authorMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
 			EntityMappingConfigurationProviderHolder<Book, Long> bookMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
 			authorMappingConfiguration.setProvider(MappingEase.entityBuilder(Author.class, Long.class)
-					.mapKey(Author::getId, IdentifierPolicy.afterInsert())
+					.mapKey(Author::getId, IdentifierPolicy.databaseAutoIncrement())
 					// no relation to Book here
 					.map(Author::getName));
 			bookMappingConfiguration.setProvider(MappingEase.entityBuilder(Book.class, Long.class)
-					.mapKey(Book::getId, IdentifierPolicy.afterInsert())
+					.mapKey(Book::getId, IdentifierPolicy.databaseAutoIncrement())
 					// this is sufficient to mimic the many-to-many relation for the feature "persisting a book"
 					.mapOneToMany(Book::getAuthors, authorMappingConfiguration)
 					.map(Book::getIsbn).columnName("isbn")

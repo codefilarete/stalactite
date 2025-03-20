@@ -99,7 +99,7 @@ class TablePerClassPolymorphismBuilderTest {
 		
 		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
 		FluentEntityMappingBuilder<Element, Long> mappingBuilder = entityBuilder(Element.class, long.class)
-				.mapKey(Element::getId, IdentifierPolicy.afterInsert())
+				.mapKey(Element::getId, IdentifierPolicy.databaseAutoIncrement())
 				.mapPolymorphism(POLYMORPHISM_POLICY);
 		
 		assertThatCode(() -> mappingBuilder.build(persistenceContext))

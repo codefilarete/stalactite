@@ -58,13 +58,13 @@ public interface ColumnOptions<O> extends PropertyOptions<O> {
 	@SuppressWarnings("java:S2326" /* Unused generics is necessary to caller signature (mapKey) to make policy identifier type match entity identifier one */)
 	interface IdentifierPolicy<ID> {
 		/**
-		 * Policy for entities that have their id given by database after insert, such as increment column.
-		 * This implies that generated values can be read through {@link PreparedStatement#getGeneratedKeys()}
+		 * Policy for entities that have their id given by database after insert, such as increment column, implying that generated values can be
+		 * read through {@link PreparedStatement#getGeneratedKeys()}
 		 * 
 		 * @return a new policy that will be used to get the identifier value
 		 */
-		static <I> AfterInsertIdentifierPolicy<I> afterInsert() {
-			return new AfterInsertIdentifierPolicySupport<>();
+		static <I> GeneratedKeysPolicy<I> databaseAutoIncrement() {
+			return new GeneratedKeysPolicySupport<>();
 		}
 		
 		/**
@@ -143,11 +143,11 @@ public interface ColumnOptions<O> extends PropertyOptions<O> {
 	 * Contract for after-insert identifier generation policy. Since nothing needs to be configured for it, not method is added.
 	 * @param <I> identifier type
 	 */
-	interface AfterInsertIdentifierPolicy<I> extends IdentifierPolicy<I> {
+	interface GeneratedKeysPolicy<I> extends IdentifierPolicy<I> {
 		
 	}
 	
-	class AfterInsertIdentifierPolicySupport<I> implements AfterInsertIdentifierPolicy<I> {
+	class GeneratedKeysPolicySupport<I> implements GeneratedKeysPolicy<I> {
 		
 	}
 	

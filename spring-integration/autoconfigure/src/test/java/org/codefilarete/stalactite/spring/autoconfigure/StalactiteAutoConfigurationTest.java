@@ -99,7 +99,7 @@ class StalactiteAutoConfigurationTest {
 		@Bean
 		public EntityPersister<DummyData, Long> dummyDataPersister(PersistenceContext persistenceContext) {
 			return entityBuilder(DummyData.class, long.class)
-					.mapKey(DummyData::getId, IdentifierPolicy.afterInsert())
+					.mapKey(DummyData::getId, IdentifierPolicy.databaseAutoIncrement())
 					.map(DummyData::getName)
 					.build(persistenceContext);
 		}

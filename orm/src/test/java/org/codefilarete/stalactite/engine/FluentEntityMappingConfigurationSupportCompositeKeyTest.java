@@ -62,7 +62,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 							.map(PersonId::getLastName)
 							.map(PersonId::getAddress))
 					.mapOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Long.class)
-							.mapKey(House::getId, IdentifierPolicy.afterInsert()))
+							.mapKey(House::getId, IdentifierPolicy.databaseAutoIncrement()))
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -86,7 +86,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 							.map(PersonId::getLastName)
 							.map(PersonId::getAddress))
 					.mapOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Long.class)
-							.mapKey(House::getId, IdentifierPolicy.afterInsert()))
+							.mapKey(House::getId, IdentifierPolicy.databaseAutoIncrement()))
 					.mappedBy(House::getOwner)
 					.build(persistenceContext);
 			
@@ -350,7 +350,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 						.map(PersonId::getAddress))
 				.map(Person::getAge)
 				.mapOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Long.class)
-						.mapKey(House::getId, IdentifierPolicy.afterInsert()))
+						.mapKey(House::getId, IdentifierPolicy.databaseAutoIncrement()))
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -386,7 +386,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 						.map(PersonId::getAddress))
 				.map(Person::getAge)
 				.mapOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Long.class)
-						.mapKey(House::getId, IdentifierPolicy.afterInsert()))
+						.mapKey(House::getId, IdentifierPolicy.databaseAutoIncrement()))
 				.mappedBy(House::getOwner)
 				.build(persistenceContext);
 		

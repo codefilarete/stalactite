@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.engine.ColumnOptions.AfterInsertIdentifierPolicy;
+import org.codefilarete.stalactite.engine.ColumnOptions.GeneratedKeysPolicy;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteByIdCollectionCascader;
@@ -108,7 +108,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 				Map<Column<RIGHTTABLE, ?>, Object> result;
 				if (giveRelationStorageContext() == null) {
 					// case of TRGT is also root (SRC) in a cycling parent -> parent relation : when some root entities are
-					// inserted/updated the insert listener that initializes currentForeignKeyValueProvider on afterInsert is not yet called
+					// inserted/updated the insert listener that initializes currentForeignKeyValueProvider on databaseAutoIncrement is not yet called
 					result = new HashMap<>();
 					getColumns().forEach(col -> result.put(col, null));
 				} else {
@@ -184,7 +184,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 			/**
 			 * Implemented to store target-to-source relation, made to help relation maintenance (because foreign key
 			 * maintainer will refer to it) and avoid to depend on "mapped by" properties which is optional
-			 * Made AFTER insert to benefit from id when set by database with IdentifierPolicy is {@link AfterInsertIdentifierPolicy}
+			 * Made AFTER insert to benefit from id when set by database with IdentifierPolicy is {@link GeneratedKeysPolicy}
 			 */
 			@Override
 			public void afterUpdate(Iterable<? extends Duo<SRC, SRC>> entities, boolean allColumnsStatement) {
