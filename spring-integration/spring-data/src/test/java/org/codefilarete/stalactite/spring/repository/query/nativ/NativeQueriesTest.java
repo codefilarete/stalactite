@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.spring.repository.query;
+package org.codefilarete.stalactite.spring.repository.query.nativ;
 
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.EntityPersister;
@@ -12,7 +12,8 @@ import org.codefilarete.stalactite.engine.model.State;
 import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.id.Identifier;
-import org.codefilarete.stalactite.spring.repository.query.NativeQueriesTest.StalactiteRepositoryContextConfiguration;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteRepositoryContextConfigurationBase;
+import org.codefilarete.stalactite.spring.repository.query.nativ.NativeQueriesTest.StalactiteRepositoryContextConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 

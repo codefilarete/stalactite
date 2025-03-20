@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.spring.repository.query;
+package org.codefilarete.stalactite.spring.repository.query.nativ;
 
 import java.util.Collection;
 import java.util.Set;
@@ -7,6 +7,8 @@ import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Republic;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.spring.repository.StalactiteRepository;
+import org.codefilarete.stalactite.spring.repository.query.DerivedQueriesRepository;
+import org.codefilarete.stalactite.spring.repository.query.NativeQuery;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -17,7 +19,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface NativeQueriesRepository extends StalactiteRepository<Republic, Identifier<Long>> {
 	
-	@Query(value = "select Republic.modificationDate as Republic_modificationDate, Republic.name as Republic_name,"
+	@NativeQuery(value = "select Republic.modificationDate as Republic_modificationDate, Republic.name as Republic_name,"
 			+ " Republic.creationDate as Republic_creationDate, Republic.description as Republic_description, Republic.euMember as Republic_euMember,"
 			+ " Republic.id as Republic_id, president.name as president_name, president.id as president_id, president_vehicle.color as president_vehicle_color,"
 			+ " president_vehicle.id as president_vehicle_id, president_Person_nicknames.nicknames as president_Person_nicknames_nicknames,"
@@ -35,7 +37,7 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 			+ " where Republic.id in (:ids)")
 	Set<Republic> loadByIdIn(@Param("ids") Identifier<Long>... ids);
 	
-	@Query(value = "select Republic.modificationDate as Republic_modificationDate, Republic.name as Republic_name,"
+	@NativeQuery(value = "select Republic.modificationDate as Republic_modificationDate, Republic.name as Republic_name,"
 			+ " Republic.creationDate as Republic_creationDate, Republic.description as Republic_description, Republic.euMember as Republic_euMember,"
 			+ " Republic.id as Republic_id, president.name as president_name, president.id as president_id, president_vehicle.color as president_vehicle_color,"
 			+ " president_vehicle.id as president_vehicle_id, president_Person_nicknames.nicknames as president_Person_nicknames_nicknames,"
@@ -53,7 +55,7 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 			+ " where Republic.name in (:names)")
 	Set<Republic> loadByNameIn(@Param("names") String... name);
 	
-	@Query(value = "select Republic.modificationDate as Republic_modificationDate, Republic.name as Republic_name,"
+	@NativeQuery(value = "select Republic.modificationDate as Republic_modificationDate, Republic.name as Republic_name,"
 			+ " Republic.creationDate as Republic_creationDate, Republic.description as Republic_description, Republic.euMember as Republic_euMember,"
 			+ " Republic.id as Republic_id, president.name as president_name, president.id as president_id, president_vehicle.color as president_vehicle_color,"
 			+ " president_vehicle.id as president_vehicle_id, president_Person_nicknames.nicknames as president_Person_nicknames_nicknames,"
@@ -71,7 +73,7 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 			+ " where Republic.id in (:ids)")
 	Set<Republic> loadByIdIn(@Param("ids") Iterable<Identifier<Long>> ids);
 	
-	@Query(value = "select Republic.modificationDate as Republic_modificationDate, Republic.name as Republic_name,"
+	@NativeQuery(value = "select Republic.modificationDate as Republic_modificationDate, Republic.name as Republic_name,"
 			+ " Republic.creationDate as Republic_creationDate, Republic.description as Republic_description, Republic.euMember as Republic_euMember,"
 			+ " Republic.id as Republic_id, president.name as president_name, president.id as president_id, president_vehicle.color as president_vehicle_color,"
 			+ " president_vehicle.id as president_vehicle_id, president_Person_nicknames.nicknames as president_Person_nicknames_nicknames,"
@@ -89,7 +91,7 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 			+ " where Republic.name = :name")
 	Republic loadByName(@Param("name") String name);
 	
-	@Query(value = "select Republic.modificationDate as Republic_modificationDate, Republic.name as Republic_name,"
+	@NativeQuery(value = "select Republic.modificationDate as Republic_modificationDate, Republic.name as Republic_name,"
 			+ " Republic.creationDate as Republic_creationDate, Republic.description as Republic_description, Republic.euMember as Republic_euMember,"
 			+ " Republic.id as Republic_id, president.name as president_name, president.id as president_id, president_vehicle.color as president_vehicle_color,"
 			+ " president_vehicle.id as president_vehicle_id, president_Person_nicknames.nicknames as president_Person_nicknames_nicknames,"
@@ -107,7 +109,7 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 			+ " where Republic.euMember = true")
 	Republic loadByEuMemberIsTrue();
 	
-	@Query(value = "select Republic.modificationDate as Republic_modificationDate, Republic.name as Republic_name,"
+	@NativeQuery(value = "select Republic.modificationDate as Republic_modificationDate, Republic.name as Republic_name,"
 			+ " Republic.creationDate as Republic_creationDate, Republic.description as Republic_description, Republic.euMember as Republic_euMember,"
 			+ " Republic.id as Republic_id, president.name as president_name, president.id as president_id, president_vehicle.color as president_vehicle_color,"
 			+ " president_vehicle.id as president_vehicle_id, president_Person_nicknames.nicknames as president_Person_nicknames_nicknames,"
@@ -125,7 +127,7 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 			+ " where Republic.id = :id and Republic.name = :name")
 	Republic loadByIdAndName(@Param("id") Identifier<Long> id, @Param("name") String name);
 	
-	@Query(value = "select Republic.modificationDate as Republic_modificationDate, Republic.name as Republic_name,"
+	@NativeQuery(value = "select Republic.modificationDate as Republic_modificationDate, Republic.name as Republic_name,"
 			+ " Republic.creationDate as Republic_creationDate, Republic.description as Republic_description, Republic.euMember as Republic_euMember,"
 			+ " Republic.id as Republic_id, president.name as president_name, president.id as president_id, president_vehicle.color as president_vehicle_color,"
 			+ " president_vehicle.id as president_vehicle_id, president_Person_nicknames.nicknames as president_Person_nicknames_nicknames,"

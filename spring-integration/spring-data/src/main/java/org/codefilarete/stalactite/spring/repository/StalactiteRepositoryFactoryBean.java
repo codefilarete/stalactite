@@ -85,11 +85,4 @@ public class StalactiteRepositoryFactoryBean<R extends Repository<C, I>, C, I>
 		
 		return new StalactiteRepositoryFactory(this.entityPersister, persistenceContext.getDialect(), persistenceContext.getConnectionProvider());
 	}
-	
-	@Override
-	public void afterPropertiesSet() {
-		
-		
-		super.afterPropertiesSet();
-	}
 }

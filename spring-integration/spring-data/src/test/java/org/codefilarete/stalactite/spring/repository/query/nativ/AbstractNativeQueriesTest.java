@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.spring.repository.query;
+package org.codefilarete.stalactite.spring.repository.query.nativ;
 
 import java.util.Collection;
 import java.util.Set;
@@ -54,7 +54,7 @@ abstract class AbstractNativeQueriesTest {
 		country2.setName("Tata");
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		DerivedQueriesRepository.NamesOnly loadedCountry = derivedQueriesRepository.getByName("Toto");
+		NamesOnly loadedCountry = derivedQueriesRepository.getByName("Toto");
 		assertThat(loadedCountry.getName()).isEqualTo(country1.getName());
 		assertThat(loadedCountry.getPresidentName()).isEqualTo(country1.getPresident().getName());
 		assertThat(loadedCountry.getPresident().getName()).isEqualTo(country1.getPresident().getName());

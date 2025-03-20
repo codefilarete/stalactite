@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.spring.repository.query;
+package org.codefilarete.stalactite.spring.repository.query.nativ;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -7,13 +7,14 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
-import org.codefilarete.stalactite.spring.repository.query.nativ.NativeQueryMethod;
-import org.codefilarete.stalactite.spring.repository.query.nativ.SqlNativeRepositoryQuery;
+import org.codefilarete.stalactite.spring.repository.query.NativeQueries;
+import org.codefilarete.stalactite.spring.repository.query.NativeQuery;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.tool.Nullable;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.Strings;
 import org.codefilarete.tool.VisibleForTesting;
 import org.springframework.data.projection.ProjectionFactory;
@@ -25,30 +26,30 @@ import org.springframework.data.repository.query.RepositoryQuery;
 import static org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver.DatabaseSignet;
 
 /**
- * {@link QueryLookupStrategy} that tries to detect a declared query declared via {@link Query} annotation.
+ * {@link QueryLookupStrategy} that tries to detect a query declared via {@link NativeQuery} annotation.
  *
  * @author Guillaume Mary
  */
-public class DeclaredQueryLookupStrategy<C> implements QueryLookupStrategy {
+public class NativeQueryLookupStrategy<C> implements QueryLookupStrategy {
 	
 	private final Dialect dialect;
 	private final ConnectionProvider connectionProvider;
 	private final AdvancedEntityPersister<C, ?> entityPersister;
 	
 	/**
-	 * Creates a new {@link DeclaredQueryLookupStrategy}.
+	 * Creates a new {@link NativeQueryLookupStrategy}.
 	 *
 	 */
-	public DeclaredQueryLookupStrategy(AdvancedEntityPersister<C, ?> entityPersister,
-									   Dialect dialect,
-									   ConnectionProvider connectionProvider) {
+	public NativeQueryLookupStrategy(AdvancedEntityPersister<C, ?> entityPersister,
+									 Dialect dialect,
+									 ConnectionProvider connectionProvider) {
 		this.entityPersister = entityPersister;
 		this.dialect = dialect;
 		this.connectionProvider = connectionProvider;
 	}
 	
 	/**
-	 * @return null if no declared query is found on the method through the {@link Query} annotation
+	 * @return null if no declared query is found on the method through the {@link NativeQuery} annotation
 	 */
 	@Override
 	public RepositoryQuery resolveQuery(Method method, RepositoryMetadata metadata, ProjectionFactory factory, NamedQueries namedQueries) {
@@ -67,28 +68,28 @@ public class DeclaredQueryLookupStrategy<C> implements QueryLookupStrategy {
 	@VisibleForTesting
 	@javax.annotation.Nullable
 	String findSQL(Method method) {
-		Nullable<List<Query>> queries = Nullable.nullable(method.getAnnotation(Queries.class)).map(Queries::value).map(Arrays::asList);
+		Nullable<List<NativeQuery>> queries = Nullable.nullable(method.getAnnotation(NativeQueries.class)).map(NativeQueries::value).map(Arrays::asList);
 		if (queries.isPresent()) {
-			// Several @Query found, we lookup for the best that suits Dialect compatibility
-			TreeMap<DatabaseSignet, Query> dialectPerSortedCompatibility = new TreeMap<>(DatabaseSignet.COMPARATOR);
+			// Several @NativeQuery found, we lookup for the best that suits Dialect compatibility
+			TreeMap<DatabaseSignet, NativeQuery> dialectPerSortedCompatibility = new TreeMap<>(DatabaseSignet.COMPARATOR);
 			queries.get().forEach(query -> dialectPerSortedCompatibility.merge(new DatabaseSignet(query.vendor(), query.major(), query.minor()), query, (c1, c2) -> {
 				// we use same properties as DatabaseSignet comparator ones since we use a TreeMap based on it 
 				String printableSignet = Strings.footPrint(new DatabaseSignet(c1.vendor(), c1.major(), c1.minor()), DatabaseSignet::toString);
-				throw new IllegalStateException("Multiple queries with same database compatibility found : " + printableSignet);
+				throw new IllegalStateException("Multiple queries with same database compatibility found on method " + Reflections.toString(method) + " : " + printableSignet);
 			}));
 
 			DatabaseSignet currentSignet = dialect.getCompatibility();
 			// we select the highest query among the smaller than database version
-			Map.Entry<DatabaseSignet, Query> foundEntry = dialectPerSortedCompatibility.floorEntry(currentSignet);
+			Map.Entry<DatabaseSignet, NativeQuery> foundEntry = dialectPerSortedCompatibility.floorEntry(currentSignet);
 			return Nullable.nullable(foundEntry).map(e -> e.getValue().value()).get();
 		} else {
-			Nullable<Query> queryAnnotation = Nullable.nullable(method.getAnnotation(Query.class));
+			Nullable<NativeQuery> queryAnnotation = Nullable.nullable(method.getAnnotation(NativeQuery.class));
 			if (queryAnnotation.isPresent()) {
 				// we check a Dialect compatibility to let user override one particular database
-				Query query = queryAnnotation.get();
-				int comparison = DatabaseSignet.COMPARATOR.compare(dialect.getCompatibility(), new DatabaseSignet(query.vendor(), query.major(), query.minor()));
+				NativeQuery nativeQuery = queryAnnotation.get();
+				int comparison = DatabaseSignet.COMPARATOR.compare(dialect.getCompatibility(), new DatabaseSignet(nativeQuery.vendor(), nativeQuery.major(), nativeQuery.minor()));
 				if (comparison >= 0) {
-					return query.value();
+					return nativeQuery.value();
 				}
 			}
 		}

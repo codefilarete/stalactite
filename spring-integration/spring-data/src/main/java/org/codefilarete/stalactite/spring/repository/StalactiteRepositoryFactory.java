@@ -6,8 +6,8 @@ import java.util.Optional;
 
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.spring.repository.query.CreateQueryLookupStrategy;
-import org.codefilarete.stalactite.spring.repository.query.DeclaredQueryLookupStrategy;
 import org.codefilarete.stalactite.spring.repository.query.bean.BeanQueryLookupStrategy;
+import org.codefilarete.stalactite.spring.repository.query.nativ.NativeQueryLookupStrategy;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.tool.bean.Objects;
@@ -15,6 +15,7 @@ import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.exception.NotImplementedException;
 import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.repository.core.EntityInformation;
 import org.springframework.data.repository.core.NamedQueries;
@@ -37,7 +38,7 @@ public class StalactiteRepositoryFactory extends RepositoryFactorySupport {
 	private final Dialect dialect;
 	private final ConnectionProvider connectionProvider;
 	
-	private BeanFactory beanFactory;
+	private ListableBeanFactory beanFactory;
 	
 	public StalactiteRepositoryFactory(AdvancedEntityPersister<?, ?> entityPersister,
 									   Dialect dialect,
@@ -69,7 +70,7 @@ public class StalactiteRepositoryFactory extends RepositoryFactorySupport {
 	 */
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
-		this.beanFactory = beanFactory;
+		this.beanFactory = (ListableBeanFactory) beanFactory;
 	}
 	
 	@Override
@@ -80,11 +81,11 @@ public class StalactiteRepositoryFactory extends RepositoryFactorySupport {
 			case CREATE:
 				return Optional.of(new CreateQueryLookupStrategy<>(entityPersister));
 			case USE_DECLARED_QUERY:
-				return Optional.of(new DeclaredQueryLookupStrategy<>(entityPersister, dialect, connectionProvider));
+				return Optional.of(new NativeQueryLookupStrategy<>(entityPersister, dialect, connectionProvider));
 			case CREATE_IF_NOT_FOUND:
 				return Optional.of(new CreateIfNotFoundQueryLookupStrategy(
-						new BeanQueryLookupStrategy<>(entityPersister, dialect, connectionProvider, beanFactory),
-						new DeclaredQueryLookupStrategy<>(entityPersister, dialect, connectionProvider),
+						new BeanQueryLookupStrategy<>(beanFactory),
+						new NativeQueryLookupStrategy<>(entityPersister, dialect, connectionProvider),
 						new CreateQueryLookupStrategy<>(entityPersister)));
 			default:
 				throw new IllegalArgumentException(String.format("Unsupported query lookup strategy %s!", key));

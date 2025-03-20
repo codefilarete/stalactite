@@ -17,6 +17,7 @@ import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.spring.repository.config.EnableStalactiteRepositories;
+import org.codefilarete.stalactite.spring.repository.query.BeanQuery;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteRepositoryContextConfigurationBase;
 import org.codefilarete.stalactite.spring.repository.query.bean.BeanQueriesTest.StalactiteRepositoryContextConfiguration;
 import org.codefilarete.tool.collection.Arrays;
@@ -48,12 +49,31 @@ import static org.codefilarete.stalactite.query.model.Operators.equalsArgNamed;
 		// because we have another repository in the same package, we filter them to keep only the appropriate one (it also checks that filtering works !)
 		includeFilters = @Filter(
 				type = FilterType.ASSIGNABLE_TYPE,
-				classes = BeanQueriesRepository.class)
+				classes = { BeanQueriesRepository.class, AnotherBeanQueriesRepository.class})
 )
 public class BeanQueriesTest {
 	
 	@Autowired
 	private BeanQueriesRepository beanQueriesRepository;
+	
+	@Autowired
+	private AnotherBeanQueriesRepository anotherBeanQueriesRepository;
+	
+	@Test
+	void methodHasAMatchingBeanName_beanQueryIsExecuted() {
+		Republic country1 = new Republic(42);
+		country1.setName("Toto");
+		country1.setEuMember(true);
+		Person president1 = new Person(666);
+		president1.setName("me");
+		country1.setPresident(president1);
+		Republic country2 = new Republic(43);
+		country2.setName("Tata");
+		beanQueriesRepository.saveAll(Arrays.asList(country1, country2));
+
+		Set<Republic> loadedCountry = anotherBeanQueriesRepository.findEuropeanMember("me");
+		assertThat(loadedCountry).containsExactly(country1);
+	}
 	
 	@Test
 	void methodHasAMatchingBeanQuery_beanQueryIsExecuted() {
@@ -71,14 +91,57 @@ public class BeanQueriesTest {
 		assertThat(loadedCountry).containsExactly(country1);
 	}
 	
-	public static class StalactiteRepositoryContextConfiguration {
+	@Test
+	void methodHasAMatchingBeanQueryWithAnExplicitRepositoryClass_beanQueryIsExecuted() {
+		Republic country1 = new Republic(42);
+		country1.setName("Toto");
+		country1.setEuMember(true);
+		Person president1 = new Person(666);
+		president1.setName("me");
+		country1.setPresident(president1);
+		Republic country2 = new Republic(43);
+		country2.setName("Tata");
+		Person president2 = new Person(777);
+		president2.setName("me");
+		country2.setPresident(president2);
+		beanQueriesRepository.saveAll(Arrays.asList(country1, country2));
+
+		Set<Republic> loadedCountries;
+		loadedCountries = beanQueriesRepository.findEuropeanCountryForPresident("me");
+		assertThat(loadedCountries).containsExactly(country1);
 		
-		@Bean
-		public ExecutableEntityQuery<Republic, ?> findEuropeanMemberWithPresidentName(EntityPersister<Republic, Identifier<Long>> countryPersister) {
+		// overridden by anotherOverrideOfFindEuropeanMemberWithPresidentName => retrieves non-EU members
+		loadedCountries = anotherBeanQueriesRepository.findEuropeanCountryForPresident("me");
+		assertThat(loadedCountries).containsExactly(country2);
+	}
+	
+	public static class StalactiteRepositoryContextConfiguration {
+
+		@BeanQuery
+		public ExecutableEntityQuery<Republic, ?> findEuropeanMember(EntityPersister<Republic, Identifier<Long>> countryPersister) {
 			return countryPersister.selectWhere(Republic::isEuMember, eq(true))
 					.and(AccessorChain.chain(Republic::getPresident, Person::getName), equalsArgNamed("presidentName", String.class));
 		}
 		
+		@BeanQuery(method = "findEuropeanCountryForPresident")
+		public ExecutableEntityQuery<Republic, ?> anOverrideOfFindEuropeanMemberWithPresidentName(EntityPersister<Republic, Identifier<Long>> countryPersister) {
+			return countryPersister.selectWhere(Republic::isEuMember, eq(true))
+					.and(AccessorChain.chain(Republic::getPresident, Person::getName), equalsArgNamed("presidentName", String.class));
+		}
+
+		@BeanQuery(method = "findEuropeanCountryForPresident", repositoryClass = AnotherBeanQueriesRepository.class)
+		public ExecutableEntityQuery<Republic, ?> anotherOverrideOfFindEuropeanMemberWithPresidentName(EntityPersister<Republic, Identifier<Long>> countryPersister) {
+			// this one retrieves non-EU members to help checking it is really invoked
+			return countryPersister.selectWhere(Republic::isEuMember, eq(false))
+					.and(AccessorChain.chain(Republic::getPresident, Person::getName), equalsArgNamed("presidentName", String.class));
+		}
+
+		@BeanQuery(method = "findEuropeanMemberWithPresidentName")
+		public ExecutableEntityQuery<Republic, ?> aMethodThatDoesntMatchAnyRepositoryMethodName(EntityPersister<Republic, Identifier<Long>> countryPersister) {
+			return countryPersister.selectWhere(Republic::isEuMember, eq(true))
+					.and(AccessorChain.chain(Republic::getPresident, Person::getName), equalsArgNamed("presidentName", String.class));
+		}
+
 		@Bean
 		public EntityPersister<Republic, Identifier<Long>> countryPersister(PersistenceContext persistenceContext) {
 			// Because this test class inherits from an abstract one that instantiates Republic entities (because it is shared with other

@@ -18,8 +18,8 @@ import org.springframework.data.annotation.QueryAnnotation;
 @Target({ ElementType.METHOD, ElementType.ANNOTATION_TYPE })
 @QueryAnnotation
 @Documented
-@Repeatable(Queries.class)
-public @interface Query {
+@Repeatable(NativeQueries.class)
+public @interface NativeQuery {
 	
 	/**
 	 * Defines the SQL query to be executed when the annotated method is called.

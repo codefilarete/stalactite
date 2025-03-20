@@ -13,6 +13,13 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface BeanQueriesRepository extends StalactiteRepository<Republic, Identifier<Long>> {
-	
+
+	// overridden by StalactiteRepositoryContextConfiguration.aMethodThatDoesntMatchAnyRepositoryMethodName
+	// because it is marked by @BeanQuery(method = "findEuropeanMemberWithPresidentName")
 	Set<Republic> findEuropeanMemberWithPresidentName(@Param("presidentName") String presidentName);
+
+	// overridden by StalactiteRepositoryContextConfiguration.anOverrideOfFindEuropeanMemberWithPresidentName
+	// because it is marked by @BeanQuery(method = "findEuropeanCountryForPresident")
+	Set<Republic> findEuropeanCountryForPresident(@Param("presidentName") String presidentName);
+
 }

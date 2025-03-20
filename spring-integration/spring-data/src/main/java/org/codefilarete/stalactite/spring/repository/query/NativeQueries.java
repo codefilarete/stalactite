@@ -12,10 +12,10 @@ import org.springframework.data.annotation.QueryAnnotation;
 @Target({ ElementType.METHOD, ElementType.ANNOTATION_TYPE })
 @QueryAnnotation
 @Documented
-public @interface Queries {
+public @interface NativeQueries {
 	
 	/**
 	 * Defines the queries to be executed when the annotated method is called.
 	 */
-	Query[] value();
+	NativeQuery[] value();
 }
