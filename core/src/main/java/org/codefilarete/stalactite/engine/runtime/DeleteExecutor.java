@@ -26,6 +26,9 @@ import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListen
 import org.codefilarete.stalactite.sql.statement.SQLStatement;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
 
+import static java.util.Collections.*;
+import static org.codefilarete.tool.collection.Iterables.cutTail;
+
 /**
  * Class dedicated to delete statement execution
  * 
@@ -95,59 +98,86 @@ public class DeleteExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 	 * 
 	 * @param ids entities identifiers
 	 */
-//	@Override
+	//@Override
 	public void deleteFromId(Iterable<I> ids) {
 		int blockSize = getInOperatorMaxSize();
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
-		List<I> lastBlock = Iterables.last(parcels, java.util.Collections.emptyList());
-		// Adjusting parcels and last block to group parcels by blockSize
-		if (lastBlock.size() != blockSize) {
-			parcels = parcels.subList(0, parcels.size() - 1);
+		
+		if (parcels.isEmpty()) {
+			return;
+		}
+		
+		// Extract last block and adjust parcels if needed
+		List<I> lastBlock = Iterables.last(parcels, emptyList());
+		if (lastBlock.size() == blockSize) {
+			// Last block is full-sized, process it with the others
+			lastBlock = emptyList();
 		} else {
-			lastBlock = java.util.Collections.emptyList();
+			// Last block is partial, remove it from parcels to process separately
+			parcels = cutTail(parcels);
 		}
 		
 		// NB: ConnectionProvider must provide the same connection over all blocks
 		ConnectionProvider currentConnectionProvider = getConnectionProvider();
-		ColumnParameterizedSQL<T> deleteStatement;
 		T targetTable = getMapping().getTargetTable();
-		
 		Set<Column<T, ?>> pkColumns = targetTable.getPrimaryKey().getColumns();
 		IdentifierAssembler<I, T> identifierAssembler = getMapping().getIdMapping().getIdentifierAssembler();
+		
+		// Process full-sized blocks
 		if (!parcels.isEmpty()) {
-			// creating the eventually tupled order "where (?, ?) in (?, ?)"  
-			deleteStatement = getDmlGenerator().buildDeleteByKey(targetTable, pkColumns, blockSize);
-			WriteOperation<Column<T, ?>> writeOperation = newWriteOperation(deleteStatement, currentConnectionProvider, blockSize);
+			processFullSizedBlocks(parcels, currentConnectionProvider, targetTable, pkColumns, identifierAssembler, blockSize);
+		}
+		
+		// Process remaining partial block if any
+		if (!lastBlock.isEmpty()) {
+			processPartialBlock(lastBlock, currentConnectionProvider, targetTable, pkColumns, identifierAssembler);
+		}
+	}
+	
+	private void processFullSizedBlocks(List<List<I>> parcels,
+										ConnectionProvider connectionProvider,
+										T targetTable,
+										Set<Column<T, ?>> pkColumns,
+										IdentifierAssembler<I, T> identifierAssembler, int blockSize) {
+		// Creating the eventually tupled order "where (?, ?) in (?, ?)"
+		ColumnParameterizedSQL<T> deleteStatement = getDmlGenerator().buildDeleteByKey(targetTable, pkColumns, blockSize);
+		try (WriteOperation<Column<T, ?>> writeOperation = newWriteOperation(deleteStatement, connectionProvider, blockSize)) {
 			JDBCBatchingIterator<List<I>> jdbcBatchingIterator = new JDBCBatchingIterator<>(parcels, writeOperation, getBatchSize());
+			
 			// This should stay a List to maintain order between column values and then keep tuple homogeneous for composed id cases
 			Map<Column<T, ?>, List<Object>> pkValues = new HashMap<>();
 			pkColumns.forEach(c -> pkValues.put(c, new ArrayList<>()));
-			// merging all entity ids in a single Map<Column, List> which is given to delete order
+			
+			// Merging all entity ids in a single Map<Column, List> which is given to delete order
 			jdbcBatchingIterator.forEachRemaining(deleteKeys -> {
 				pkValues.values().forEach(Collection::clear);
 				deleteKeys.forEach(id -> identifierAssembler.getColumnValues(id).forEach((c, v) -> pkValues.get(c).add(v)));
 				writeOperation.addBatch(pkValues);
 			});
 		}
-		// remaining block treatment
-		if (!lastBlock.isEmpty()) {
-			deleteStatement = getDmlGenerator().buildDeleteByKey(targetTable, pkColumns, lastBlock.size());
-			try (WriteOperation<Column<T, ?>> writeOperation = newWriteOperation(deleteStatement, currentConnectionProvider, lastBlock.size())) {
-				// we must pass a single value when expected, else ExpandableStatement may be confused when applying them
-				Object updateValues = lastBlock.size() == 1 ? lastBlock.get(0) : lastBlock;
-				if (updateValues instanceof List) {
-					Map<Column<T, ?>, List<Object>> pkValues = new HashMap<>();
-					((List<I>) updateValues).forEach(id -> {
-						Map<Column<T, ?>, Object> localPkValues = identifierAssembler.getColumnValues(id);
-						pkColumns.forEach(pkColumn -> pkValues.computeIfAbsent(pkColumn, k -> new ArrayList<>()).add(localPkValues.get(pkColumn)));
-					});
-					writeOperation.setValues(pkValues);
-				} else {
-					Map<Column<T, ?>, Object> pkValues = identifierAssembler.getColumnValues((I) updateValues);
-					writeOperation.setValues(pkValues);
-				}
-				writeOperation.execute();
+	}
+	
+	private void processPartialBlock(List<I> lastBlock,
+									 ConnectionProvider connectionProvider,
+									 T targetTable,
+									 Set<Column<T, ?>> pkColumns,
+									 IdentifierAssembler<I, T> identifierAssembler) {
+		ColumnParameterizedSQL<T> deleteStatement = getDmlGenerator().buildDeleteByKey(targetTable, pkColumns, lastBlock.size());
+		try (WriteOperation<Column<T, ?>> writeOperation = newWriteOperation(deleteStatement, connectionProvider, lastBlock.size())) {
+			// we must pass a single value when expected, else ExpandableStatement will be confused when applying them and an error will be thrown
+			// see ExpandableStatement.adaptIterablePlaceholders(..)
+			if (lastBlock.size() == 1) {
+				writeOperation.setValues(identifierAssembler.getColumnValues(lastBlock.get(0)));
+			} else {
+				Map<Column<T, ?>, List<Object>> pkValues = new HashMap<>();
+				lastBlock.forEach(id -> {
+					Map<Column<T, ?>, Object> localPkValues = identifierAssembler.getColumnValues(id);
+					pkColumns.forEach(pkColumn ->
+							pkValues.computeIfAbsent(pkColumn, k -> new ArrayList<>()).add(localPkValues.get(pkColumn)));
+				});
+				writeOperation.setValues(pkValues);
 			}
+			writeOperation.execute();
 		}
 	}
 }

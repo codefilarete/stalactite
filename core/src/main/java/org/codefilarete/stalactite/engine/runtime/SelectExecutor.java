@@ -55,7 +55,7 @@ public class SelectExecutor<C, I, T extends Table<T>> extends DMLExecutor<C, I, 
 			List<I> lastParcel = Iterables.last(parcels, java.util.Collections.emptyList());
 			int lastBlockSize = lastParcel.size();
 			if (lastBlockSize != blockSize) {
-				parcels = Collections.cutTail(parcels);
+				parcels = Iterables.cutTail(parcels);
 			} else {
 				lastParcel = java.util.Collections.emptyList();
 			}

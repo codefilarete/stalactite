@@ -223,7 +223,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 			// keep only full blocks to run them on the fully filled "in" operator
 			int lastBlockSize = lastBlock.size();
 			if (lastBlockSize != blockSize) {
-				parcels = Collections.cutTail(parcels);
+				parcels = Iterables.cutTail(parcels);
 			}
 			
 			// Be aware that this executor is made to use same Connection to execute next SQL orders in same transaction
