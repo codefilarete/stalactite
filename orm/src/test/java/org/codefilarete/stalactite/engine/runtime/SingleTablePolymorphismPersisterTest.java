@@ -41,7 +41,7 @@ import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
 import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
-import org.codefilarete.stalactite.sql.DefaultDialect;
+import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;

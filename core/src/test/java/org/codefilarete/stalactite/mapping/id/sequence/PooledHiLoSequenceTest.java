@@ -5,7 +5,7 @@ import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequence;
 import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequenceOptions;
 import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequencePersister;
 import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequenceStorageOptions;
-import org.codefilarete.stalactite.sql.DefaultDialect;
+import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.DDLGenerator;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;

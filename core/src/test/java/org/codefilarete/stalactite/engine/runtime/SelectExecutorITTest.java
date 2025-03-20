@@ -11,7 +11,7 @@ import org.codefilarete.stalactite.engine.runtime.DMLExecutorTest.Tata;
 import org.codefilarete.stalactite.engine.runtime.DMLExecutorTest.Toto;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.DefaultDialect;
+import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;

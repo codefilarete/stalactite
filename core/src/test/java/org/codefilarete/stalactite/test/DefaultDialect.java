@@ -1,8 +1,13 @@
-package org.codefilarete.stalactite.sql;
+package org.codefilarete.stalactite.test;
 
 import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelector;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
+import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
+import org.codefilarete.stalactite.sql.DatabaseSequenceSelectorFactory;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.GeneratedKeysReaderFactory;
+import org.codefilarete.stalactite.sql.QuerySQLBuilderFactoryBuilder;
 import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver.DatabaseSignet;
 import org.codefilarete.stalactite.sql.ddl.DDLGenerator;
 import org.codefilarete.stalactite.sql.ddl.DDLSequenceGenerator;
@@ -19,6 +24,7 @@ import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry;
 
 /**
+ * A {@link Dialect} for testing purpose which create default factories and generators.
  * Class that keeps objects necessary to "communicate" with a Database at the SQL language level:
  * - column types for their creation: {@link SqlTypeRegistry} 
  * - column types for their read and write in {@link java.sql.PreparedStatement} and {@link java.sql.ResultSet}: {@link ColumnBinderRegistry}

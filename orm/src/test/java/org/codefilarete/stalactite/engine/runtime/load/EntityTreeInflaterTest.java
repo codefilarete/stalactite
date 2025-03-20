@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.En
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.RowTransformer;
-import org.codefilarete.stalactite.sql.DefaultDialect;
+import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;

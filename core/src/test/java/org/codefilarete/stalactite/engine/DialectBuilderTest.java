@@ -1,22 +1,40 @@
 package org.codefilarete.stalactite.engine;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Collections;
+
+import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.FunctionSQLBuilder;
+import org.codefilarete.stalactite.query.builder.OperatorSQLBuilderFactory;
+import org.codefilarete.stalactite.query.builder.SQLAppender;
+import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.QueryEase;
+import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.UnitaryOperator;
+import org.codefilarete.stalactite.query.model.operator.Like;
+import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.DialectOptions;
 import org.codefilarete.stalactite.sql.GeneratedKeysReaderFactory.DefaultGeneratedKeysReaderFactory;
+import org.codefilarete.stalactite.sql.QuerySQLBuilderFactoryBuilder;
 import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver.DatabaseSignet;
 import org.codefilarete.stalactite.sql.ddl.DDLSequenceGenerator;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulators;
+import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSQL;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
 import org.codefilarete.stalactite.sql.statement.PreparedUpdate;
 import org.codefilarete.stalactite.sql.statement.ReadOperationFactory;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry;
 import org.codefilarete.tool.collection.Arrays;
@@ -24,9 +42,13 @@ import org.codefilarete.tool.trace.MutableLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.codefilarete.stalactite.query.model.Operators.like;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class DialectBuilderTest {
 	
@@ -135,7 +157,7 @@ class DialectBuilderTest {
 		}
 		
 		@Test
-		<T extends Table<T>> void withNewTypeBinding_bindingISApplied() {
+		<T extends Table<T>> void withNewTypeBinding_bindingIsApplied() {
 			class DummyType {
 				
 			}
@@ -153,6 +175,111 @@ class DialectBuilderTest {
 			T dummyTable = (T) new Table("Dummy");
 			Column<T, DummyType> dummyColumn = dummyTable.addColumn("id", DummyType.class);
 			assertThat(dialect.getSqlTypeRegistry().getTypeName(dummyColumn)).isEqualTo("a SQL type");
+		}
+		
+		@Test
+		void operatorPrintIsOverridden_itIsTakenIntoAccountInDeleteAndQuery() throws SQLException {
+			DialectBuilder testInstance = new DialectBuilder(defaultDatabaseVendorSettings) {
+				@Override
+				protected QuerySQLBuilderFactoryBuilder createQuerySQLBuilderFactoryBuilder(DMLNameProviderFactory dmlNameProviderFactory, ColumnBinderRegistry columnBinderRegistry) {
+					QuerySQLBuilderFactoryBuilder querySQLBuilderFactoryBuilder = super.createQuerySQLBuilderFactoryBuilder(dmlNameProviderFactory, columnBinderRegistry);
+					querySQLBuilderFactoryBuilder.withOperatorSQLBuilderFactory(
+							new OperatorSQLBuilderFactory() {
+								@Override
+								public OperatorSQLBuilder operatorSQLBuilder(FunctionSQLBuilder functionSQLBuilder) {
+									return new OperatorSQLBuilder(functionSQLBuilder) {
+										
+										/** Overridden to write "like" in upper case, just to check and demonstrate how to branch some behavior on operator print */
+										@Override
+										public <V> void cat(Selectable<V> column, ConditionalOperator<?, V> operator, SQLAppender sql) {
+											if (operator instanceof Like) {
+												sql.cat("LIKE ").catValue(((Like) operator).getValue());
+											} else {
+												super.cat(column, operator, sql);
+											}
+										}
+									};
+								}
+							});
+					return querySQLBuilderFactoryBuilder;
+				}
+			};
+			
+			Dialect dialect = testInstance.build();
+			
+			Connection connectionMock = Mockito.mock(Connection.class);
+			ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+			PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
+			when(preparedStatementMock.executeQuery()).thenReturn(new InMemoryResultSet(Collections.emptySet()));
+			when(connectionMock.prepareStatement(sqlCaptor.capture())).thenReturn(preparedStatementMock);
+			PersistenceContext persistenceContext = new PersistenceContext(() -> connectionMock, dialect);
+			Table dummyTable = new Table("dummyTable");
+			Column dummyColumn = dummyTable.addColumn("dummyColumn", String.class);
+			
+			// Checking that operator override is taken into Query rendering
+			persistenceContext.newQuery(QueryEase.select(dummyColumn).from(dummyTable).where(dummyColumn, like("x")), String.class)
+					.execute(Accumulators.getFirst());
+			assertThat(sqlCaptor.getValue()).isEqualTo("select dummyTable.dummyColumn from dummyTable where dummyTable.dummyColumn LIKE 'x'");
+			
+			// Checking that operator override is taken into Delete rendering
+			persistenceContext.delete(dummyTable).where(dummyColumn, like("x")).execute();
+			assertThat(sqlCaptor.getValue()).isEqualTo("delete from dummyTable where dummyColumn LIKE ?");
+		}
+		
+		@Test
+		void userDefinedOperatorCanBeTakenIntoAccountByOperatorSQLBuilderOverride() throws SQLException {
+			class MyOperator extends UnitaryOperator<String> {
+				
+				public MyOperator(String value) {
+					super(value);
+				}
+			}
+			
+			DialectBuilder testInstance = new DialectBuilder(defaultDatabaseVendorSettings) {
+				@Override
+				protected QuerySQLBuilderFactoryBuilder createQuerySQLBuilderFactoryBuilder(DMLNameProviderFactory dmlNameProviderFactory, ColumnBinderRegistry columnBinderRegistry) {
+					QuerySQLBuilderFactoryBuilder querySQLBuilderFactoryBuilder = super.createQuerySQLBuilderFactoryBuilder(dmlNameProviderFactory, columnBinderRegistry);
+					querySQLBuilderFactoryBuilder.withOperatorSQLBuilderFactory(
+							new OperatorSQLBuilderFactory() {
+								@Override
+								public OperatorSQLBuilder operatorSQLBuilder(FunctionSQLBuilder functionSQLBuilder) {
+									return new OperatorSQLBuilder(functionSQLBuilder) {
+										
+										/** Overridden to write "like" in upper case, just to check and demonstrate how to branch some behavior on operator print */
+										@Override
+										public <V> void cat(Selectable<V> column, ConditionalOperator<?, V> operator, SQLAppender sql) {
+											if (operator instanceof MyOperator) {
+												sql.cat("myOperator ").catValue(((MyOperator) operator).getValue());
+											} else {
+												super.cat(column, operator, sql);
+											}
+										}
+									};
+								}
+							});
+					return querySQLBuilderFactoryBuilder;
+				}
+			};
+			
+			Dialect dialect = testInstance.build();
+			
+			Connection connectionMock = Mockito.mock(Connection.class);
+			ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+			PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
+			when(preparedStatementMock.executeQuery()).thenReturn(new InMemoryResultSet(Collections.emptySet()));
+			when(connectionMock.prepareStatement(sqlCaptor.capture())).thenReturn(preparedStatementMock);
+			PersistenceContext persistenceContext = new PersistenceContext(() -> connectionMock, dialect);
+			Table dummyTable = new Table("dummyTable");
+			Column dummyColumn = dummyTable.addColumn("dummyColumn", String.class);
+			
+			// Checking that operator override is taken into Query rendering
+			persistenceContext.newQuery(QueryEase.select(dummyColumn).from(dummyTable).where(dummyColumn, new MyOperator("42")), String.class)
+					.execute(Accumulators.getFirst());
+			assertThat(sqlCaptor.getValue()).isEqualTo("select dummyTable.dummyColumn from dummyTable where dummyTable.dummyColumn myOperator '42'");
+			
+			// Checking that operator override is taken into Delete rendering
+			persistenceContext.delete(dummyTable).where(dummyColumn, new MyOperator("42")).execute();
+			assertThat(sqlCaptor.getValue()).isEqualTo("delete from dummyTable where dummyColumn myOperator ?");
 		}
 	}
 }

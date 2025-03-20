@@ -5,7 +5,7 @@ import java.sql.SQLException;
 
 import org.codefilarete.stalactite.query.builder.QuotingDMLNameProvider;
 import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
-import org.codefilarete.stalactite.sql.DefaultDialect;
+import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.order.InsertCommandBuilder.InsertStatement;

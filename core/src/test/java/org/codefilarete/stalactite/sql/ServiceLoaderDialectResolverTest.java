@@ -7,6 +7,7 @@ import org.codefilarete.stalactite.sql.GeneratedKeysReaderFactory.DefaultGenerat
 import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver.DatabaseSignet;
 import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry;
+import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

@@ -31,7 +31,7 @@ import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
-import org.codefilarete.stalactite.sql.DefaultDialect;
+import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;

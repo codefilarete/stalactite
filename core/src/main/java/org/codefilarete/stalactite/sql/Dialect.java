@@ -22,6 +22,8 @@ import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
  */
 public interface Dialect {
 	
+	DatabaseSignet getCompatibility();
+	
 	DDLTableGenerator getDdlTableGenerator();
 	
 	DDLSequenceGenerator getDdlSequenceGenerator();
@@ -50,8 +52,6 @@ public interface Dialect {
 	
 	DatabaseSequenceSelectorFactory getDatabaseSequenceSelectorFactory();
 	
-	DatabaseSignet getCompatibility();
-	
 	/**
 	 * Indicates if this dialect supports what ANSI-SQL terms "row value constructor" syntax, also called tuple syntax.
 	 * Basically, does it support syntax like <pre>"... where (FIRST_NAME, LAST_NAME) = ('John', 'Doe')"</pre>.
@@ -60,7 +60,14 @@ public interface Dialect {
 	 */
 	boolean supportsTupleCondition();
 	
+	/**
+	 * {@link Dialect} implementation based on fields to store instances required by {@link Dialect} methods. 
+	 * 
+	 * @author Guillaume Mary
+	 */
 	class DialectSupport implements Dialect {
+		
+		private final DatabaseSignet compatibility;
 		
 		private final DDLTableGenerator ddlTableGenerator;
 		
@@ -88,9 +95,8 @@ public interface Dialect {
 		
 		private final DatabaseSequenceSelectorFactory databaseSequenceSelectorFactory;
 		
-		private final DatabaseSignet compatibility;
-		
-		public DialectSupport(DatabaseSignet compatibility, DDLTableGenerator ddlTableGenerator,
+		public DialectSupport(DatabaseSignet compatibility,
+							  DDLTableGenerator ddlTableGenerator,
 							  DDLSequenceGenerator ddlSequenceGenerator,
 							  DMLGenerator dmlGenerator,
 							  WriteOperationFactory writeOperationFactory,
@@ -103,6 +109,7 @@ public interface Dialect {
 							  GeneratedKeysReaderFactory generatedKeysReaderFactory,
 							  DatabaseSequenceSelectorFactory databaseSequenceSelectorFactory,
 							  boolean supportsTupleCondition) {
+			this.compatibility = compatibility;
 			this.ddlTableGenerator = ddlTableGenerator;
 			this.ddlSequenceGenerator = ddlSequenceGenerator;
 			this.dmlGenerator = dmlGenerator;
@@ -116,7 +123,11 @@ public interface Dialect {
 			this.generatedKeysReaderFactory = generatedKeysReaderFactory;
 			this.databaseSequenceSelectorFactory = databaseSequenceSelectorFactory;
 			this.supportsTupleCondition = supportsTupleCondition;
-			this.compatibility = compatibility;
+		}
+		
+		@Override
+		public DatabaseSignet getCompatibility() {
+			return compatibility;
 		}
 		
 		@Override
@@ -182,11 +193,6 @@ public interface Dialect {
 		@Override
 		public DatabaseSequenceSelectorFactory getDatabaseSequenceSelectorFactory() {
 			return databaseSequenceSelectorFactory;
-		}
-		
-		@Override
-		public DatabaseSignet getCompatibility() {
-			return compatibility;
 		}
 	}
 }

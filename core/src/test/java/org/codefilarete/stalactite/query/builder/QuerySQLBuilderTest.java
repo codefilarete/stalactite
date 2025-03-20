@@ -10,7 +10,7 @@ import org.codefilarete.stalactite.query.model.QueryProvider;
 import org.codefilarete.stalactite.query.model.QueryStatement;
 import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
-import org.codefilarete.stalactite.sql.DefaultDialect;
+import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;

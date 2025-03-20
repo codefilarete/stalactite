@@ -52,10 +52,7 @@ public class DialectBuilder {
 		ReadOperationFactory readOperationFactory = sqlOperationsFactories.getReadOperationFactory();
 		DatabaseSequenceSelectorFactory databaseSequenceSelectorFactory = sqlOperationsFactories.getSequenceSelectorFactory();
 		
-		QuerySQLBuilderFactory querySQLBuilderFactory = new QuerySQLBuilderFactoryBuilder(
-				dmlNameProviderFactory,
-				columnBinderRegistry,
-				vendorSettings.getJavaTypeToSqlTypes())
+		QuerySQLBuilderFactory querySQLBuilderFactory = createQuerySQLBuilderFactoryBuilder(dmlNameProviderFactory, columnBinderRegistry)
 				.build();
 		
 		GeneratedKeysReaderFactory generatedKeysReaderFactory = vendorSettings.getGeneratedKeysReaderFactory();
@@ -76,6 +73,13 @@ public class DialectBuilder {
 				databaseSequenceSelectorFactory,
 				vendorSettings.supportsTupleCondition()
 		);
+	}
+	
+	protected QuerySQLBuilderFactoryBuilder createQuerySQLBuilderFactoryBuilder(DMLNameProviderFactory dmlNameProviderFactory, ColumnBinderRegistry columnBinderRegistry) {
+		return new QuerySQLBuilderFactoryBuilder(
+				dmlNameProviderFactory,
+				columnBinderRegistry,
+				vendorSettings.getJavaTypeToSqlTypes());
 	}
 	
 	protected ColumnBinderRegistry buildColumnBinderRegistry() {
