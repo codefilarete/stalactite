@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
@@ -31,10 +30,9 @@ import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListen
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.function.Predicates;
 
 /**
- * Persister for bean whose key is a composite one.
+ * Persister for bean which key is a composite one.
  * 
  * @param <C> entity type
  * @param <I> identifier type (complex / composite one)
@@ -75,8 +73,7 @@ public class CompositeKeyedBeanPersister<C, I, T extends Table<T>> extends BeanP
 	private Set<? extends C> excludePersistedEntities(Iterable<? extends C> entities) {
 		Map<I, ? extends C> entitiesPerId = Iterables.map(entities, getMapping()::getId);
 		List<I> existingEntities = selectIds(entitiesPerId.keySet());
-		Predicate<Object> doesExist = Predicates.predicate(existingEntities::contains);
-		entitiesPerId.keySet().removeIf(doesExist);
+		entitiesPerId.keySet().removeIf(existingEntities::contains);
 		return new HashSet<>(entitiesPerId.values());
 	}
 	
@@ -105,14 +102,16 @@ public class CompositeKeyedBeanPersister<C, I, T extends Table<T>> extends BeanP
 			T targetTable = getMapping().getTargetTable();
 			Set<Column<T, ?>> columnsToRead = getMapping().getSelectableColumns();
 			if (!parcels.isEmpty()) {
-				ReadOperation<Column<T, ?>> defaultReadOperation = newReadOperation(targetTable, columnsToRead, blockSize, localConnectionProvider);
-				parcels.forEach(parcel -> result.addAll(selectCompositeKeyExecutor.execute(defaultReadOperation, parcel)));
+				try (ReadOperation<Column<T, ?>> defaultReadOperation = newReadOperation(targetTable, columnsToRead, blockSize, localConnectionProvider)) {
+					parcels.forEach(parcel -> result.addAll(selectCompositeKeyExecutor.execute(defaultReadOperation, parcel)));
+				}
 			}
 			
 			// last packet treatment (packet size may be different)
 			if (!lastParcel.isEmpty()) {
-				ReadOperation<Column<T, ?>> lastReadOperation = newReadOperation(targetTable, columnsToRead, lastBlockSize, localConnectionProvider);
-				result.addAll(selectCompositeKeyExecutor.execute(lastReadOperation, lastParcel));
+				try (ReadOperation<Column<T, ?>> lastReadOperation = newReadOperation(targetTable, columnsToRead, lastBlockSize, localConnectionProvider)) {
+					result.addAll(selectCompositeKeyExecutor.execute(lastReadOperation, lastParcel));
+				}
 			}
 		}
 		return result;
