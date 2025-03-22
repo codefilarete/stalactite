@@ -1,10 +1,11 @@
 package org.codefilarete.stalactite.engine;
 
+import javax.annotation.Nullable;
+
 import org.codefilarete.stalactite.engine.configurer.FluentCompositeKeyMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.configurer.FluentEntityMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.configurer.FluentSubEntityMappingConfigurationSupport;
-import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.mapping.EmbeddedClassMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.danekja.java.util.function.serializable.SerializableFunction;
@@ -19,8 +20,7 @@ public final class MappingEase {
 	/**
 	 * Starts a {@link FluentEntityMappingBuilder} for a given class.
 	 *
-	 * @param classToPersist the class to be persisted by the {@link SimpleRelationalEntityPersister}
-	 * 						 that will be created by {@link FluentEntityMappingBuilder#build(PersistenceContext)}
+	 * @param classToPersist the class to be persisted
 	 * @param identifierType entity identifier type
 	 * @param <T> any type to be persisted
 	 * @param <I> the type of the identifier
@@ -28,18 +28,68 @@ public final class MappingEase {
 	 */
 	@SuppressWarnings("squid:S1172")	// identifierType is used to sign result
 	public static <T, I> FluentEntityMappingBuilder<T, I> entityBuilder(Class<T> classToPersist, Class<I> identifierType) {
-		return entityBuilder(classToPersist, identifierType, null);
+		return entityBuilder(classToPersist, identifierType, (Table) null);
 	}
 	
-	public static <T, I> FluentEntityMappingBuilder<T, I> entityBuilder(Class<T> classToPersist, Class<I> identifierType, Table<?> targetTable) {
+	/**
+	 * Starts a {@link FluentEntityMappingBuilder} for a given class.
+	 *
+	 * @param classToPersist the class to be persisted
+	 * @param identifierType entity identifier type
+	 * @param targetTableName table name to store the entity in
+	 * @param <T> any type to be persisted
+	 * @param <I> the type of the identifier
+	 * @return a new {@link FluentEntityMappingBuilder}
+	 */
+	public static <T, I> FluentEntityMappingBuilder<T, I> entityBuilder(Class<T> classToPersist, Class<I> identifierType, @Nullable String targetTableName) {
+		// Note that we don't use identifierType, but it's necessary to generic type of returned instance
+		return new FluentEntityMappingConfigurationSupport<>(classToPersist, targetTableName);
+	}
+	
+	/**
+	 * Starts a {@link FluentEntityMappingBuilder} for a given class.
+	 *
+	 * @param classToPersist the class to be persisted
+	 * @param identifierType entity identifier type
+	 * @param targetTable table name to store the entity in, mapped property will be added to it as columns
+	 * @param <T> any type to be persisted
+	 * @param <I> the type of the identifier
+	 * @return a new {@link FluentEntityMappingBuilder}
+	 */
+	public static <T, I> FluentEntityMappingBuilder<T, I> entityBuilder(Class<T> classToPersist, Class<I> identifierType, @Nullable Table<?> targetTable) {
+		// Note that we don't use identifierType, but it's necessary to generic type of returned instance
 		return new FluentEntityMappingConfigurationSupport<>(classToPersist, targetTable);
 	}
 	
+	/**
+	 * Starts a {@link FluentSubEntityMappingBuilder} for a given class.
+	 *
+	 * @param classToPersist the class to be persisted
+	 * @param <T> any type to be persisted
+	 * @param <I> the type of the identifier
+	 * @return a new {@link FluentSubEntityMappingBuilder}
+	 * @see org.codefilarete.stalactite.engine.PolymorphismPolicy.TablePerClassPolymorphism#addSubClass(SubEntityMappingConfigurationProvider)
+	 * @see org.codefilarete.stalactite.engine.PolymorphismPolicy.JoinTablePolymorphism#addSubClass(SubEntityMappingConfigurationProvider)
+	 * @see org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism#addSubClass(SubEntityMappingConfiguration, Object) 
+	 */
 	public static <T, I> FluentSubEntityMappingBuilder<T, Object> subentityBuilder(Class<T> classToPersist) {
 		return new FluentSubEntityMappingConfigurationSupport<>(classToPersist);
 	}
 	
+	/**
+	 * Starts a {@link FluentSubEntityMappingBuilder} for a given class.
+	 *
+	 * @param classToPersist the class to be persisted
+	 * @param identifierType entity identifier type
+	 * @param <T> any type to be persisted
+	 * @param <I> the type of the identifier
+	 * @return a new {@link FluentSubEntityMappingBuilder}
+	 * @see org.codefilarete.stalactite.engine.PolymorphismPolicy.TablePerClassPolymorphism#addSubClass(SubEntityMappingConfigurationProvider)
+	 * @see org.codefilarete.stalactite.engine.PolymorphismPolicy.JoinTablePolymorphism#addSubClass(SubEntityMappingConfigurationProvider)
+	 * @see org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism#addSubClass(SubEntityMappingConfiguration, Object)
+	 */
 	public static <T, I> FluentSubEntityMappingBuilder<T, I> subentityBuilder(Class<T> classToPersist, Class<I> identifierType) {
+		// Note that we don't use identifierType, but it's necessary to generic type of returned instance
 		return new FluentSubEntityMappingConfigurationSupport<>(classToPersist);
 	}
 	

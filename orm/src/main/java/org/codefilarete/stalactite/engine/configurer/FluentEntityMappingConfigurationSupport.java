@@ -141,10 +141,14 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	 * @param classToPersist the class to create a mapping for
 	 */
 	public FluentEntityMappingConfigurationSupport(Class<C> classToPersist) {
-		this(classToPersist, null);
+		this(classToPersist, (Table<?>) null);
 	}
 	
-	public FluentEntityMappingConfigurationSupport(Class<C> classToPersist, Table<?> targetTable) {
+	public FluentEntityMappingConfigurationSupport(Class<C> classToPersist, String targetTableName) {
+		this(classToPersist, new Table<>(targetTableName));
+	}
+	
+	public FluentEntityMappingConfigurationSupport(Class<C> classToPersist, @javax.annotation.Nullable Table<?> targetTable) {
 		this.classToPersist = classToPersist;
 		this.targetTable = targetTable;
 		

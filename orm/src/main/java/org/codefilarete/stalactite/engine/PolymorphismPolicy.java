@@ -10,6 +10,8 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
 
+import static org.codefilarete.tool.Nullable.nullable;
+
 /**
  * @author Guillaume Mary
  */
@@ -124,21 +126,77 @@ public interface PolymorphismPolicy<C> {
 		// we use a KeepOrderSet for stability order (overall for test assertions), not a strong expectation
 		private final Set<Duo<SubEntityMappingConfiguration<? extends C>, Table /* Nullable */>> subClasses = new KeepOrderSet<>();
 		
+		/**
+		 * Registers a sub-entity type mapping to current polymorphic type
+		 * 
+		 * @param entityMappingConfigurationProvider the sub-entity type mapping to register
+		 * @return this
+		 * @see MappingEase#subentityBuilder(Class)
+		 */
 		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfigurationProvider) {
-			addSubClass(entityMappingConfigurationProvider, null);
+			addSubClass(entityMappingConfigurationProvider, (Table) null);
 			return this;
 		}
 		
+		/**
+		 * Registers a sub-entity type mapping to current polymorphic type
+		 *
+		 * @param entityMappingConfiguration the sub-entity type mapping to register
+		 * @return this
+		 * @see MappingEase#subentityBuilder(Class)
+		 */
 		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfiguration) {
-			addSubClass(entityMappingConfiguration, null);
+			addSubClass(entityMappingConfiguration, (Table) null);
 			return this;
 		}
 		
+		/**
+		 * Registers a sub-entity type mapping to current polymorphic type
+		 *
+		 * @param entityMappingConfigurationProvider the sub-entity type mapping to register
+		 * @param tableName the table name to store the sub-entity type
+		 * @return this
+		 * @see MappingEase#subentityBuilder(Class)
+		 */
+		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfigurationProvider, @Nullable String tableName) {
+			addSubClass(entityMappingConfigurationProvider.getConfiguration(), tableName);
+			return this;
+		}
+		
+		/**
+		 * Registers a sub-entity type mapping to current polymorphic type
+		 *
+		 * @param entityMappingConfiguration the sub-entity type mapping to register
+		 * @param tableName the table name to store the sub-entity type
+		 * @return this
+		 * @see MappingEase#subentityBuilder(Class)
+		 */
+		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfiguration, @Nullable String tableName) {
+			addSubClass(entityMappingConfiguration, nullable(tableName).map(Table::new).get());
+			return this;
+		}
+		
+		/**
+		 * Registers a sub-entity type mapping to current polymorphic type
+		 *
+		 * @param entityMappingConfigurationProvider the sub-entity type mapping to register
+		 * @param table the table to store the sub-entity type
+		 * @return this
+		 * @see MappingEase#subentityBuilder(Class)
+		 */
 		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfigurationProvider, @Nullable Table table) {
-			subClasses.add(new Duo<>(entityMappingConfigurationProvider.getConfiguration(), table));
+			addSubClass(entityMappingConfigurationProvider.getConfiguration(), table);
 			return this;
 		}
 		
+		/**
+		 * Registers a sub-entity type mapping to current polymorphic type
+		 *
+		 * @param entityMappingConfiguration the sub-entity type mapping to register
+		 * @param table the table to store the sub-entity type
+		 * @return this
+		 * @see MappingEase#subentityBuilder(Class)
+		 */
 		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfiguration, @Nullable Table table) {
 			subClasses.add(new Duo<>(entityMappingConfiguration, table));
 			return this;
@@ -161,15 +219,75 @@ public interface PolymorphismPolicy<C> {
 		// we use a KeepOrderSet for stability order (overall for test assertions), not a strong expectation
 		private final Set<Duo<SubEntityMappingConfiguration<? extends C>, Table /* Nullable */>> subClasses = new KeepOrderSet<>();
 		
+		/**
+		 * Registers a sub-entity type mapping to current polymorphic type
+		 *
+		 * @param entityMappingConfigurationProvider the sub-entity type mapping to register
+		 * @return this
+		 * @see MappingEase#subentityBuilder(Class)
+		 */
 		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfigurationProvider) {
-			addSubClass(entityMappingConfigurationProvider, null);
+			addSubClass(entityMappingConfigurationProvider, (Table) null);
+			return this;
+		}		
+		
+		/**
+		 * Registers a sub-entity type mapping to current polymorphic type
+		 *
+		 * @param entityMappingConfiguration the sub-entity type mapping to register
+		 * @return this
+		 * @see MappingEase#subentityBuilder(Class)
+		 */
+		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfiguration) {
+			addSubClass(entityMappingConfiguration, (Table) null);
 			return this;
 		}
 		
+		/**
+		 * Registers a sub-entity type mapping to current polymorphic type
+		 *
+		 * @param entityMappingConfigurationProvider the sub-entity type mapping to register
+		 * @param tableName the table to store the sub-entity type
+		 * @return this
+		 * @see MappingEase#subentityBuilder(Class)
+		 */
+		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfigurationProvider, @Nullable String tableName) {
+			return addSubClass(entityMappingConfigurationProvider.getConfiguration(), tableName);
+		}
+		
+		/**
+		 * Registers a sub-entity type mapping to current polymorphic type
+		 *
+		 * @param entityMappingConfiguration the sub-entity type mapping to register
+		 * @param tableName the table to store the sub-entity type
+		 * @return this
+		 * @see MappingEase#subentityBuilder(Class)
+		 */
+		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfiguration, @Nullable String tableName) {
+			addSubClass(entityMappingConfiguration, nullable(tableName).map(Table::new).get());
+			return this;
+		}
+		
+		/**
+		 * Registers a sub-entity type mapping to current polymorphic type
+		 *
+		 * @param entityMappingConfigurationProvider the sub-entity type mapping to register
+		 * @param table the table to store the sub-entity type
+		 * @return this
+		 * @see MappingEase#subentityBuilder(Class)
+		 */
 		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfigurationProvider, @Nullable Table table) {
 			return addSubClass(entityMappingConfigurationProvider.getConfiguration(), table);
 		}
 		
+		/**
+		 * Registers a sub-entity type mapping to current polymorphic type
+		 *
+		 * @param entityMappingConfiguration the sub-entity type mapping to register
+		 * @param table the table to store the sub-entity type
+		 * @return this
+		 * @see MappingEase#subentityBuilder(Class)
+		 */
 		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfiguration, @Nullable Table table) {
 			subClasses.add(new Duo<>(entityMappingConfiguration, table));
 			return this;
@@ -209,10 +327,26 @@ public interface PolymorphismPolicy<C> {
 			return discriminatorType;
 		}
 		
+		/**
+		 * Registers a sub-entity type mapping to current polymorphic type
+		 *
+		 * @param entityMappingConfiguration the sub-entity type mapping to register
+		 * @param discriminatorValue sub-entity discriminator value (will be used to distinguish entity type in while loading them from database)
+		 * @return this
+		 * @see MappingEase#subentityBuilder(Class)
+		 */
 		public SingleTablePolymorphism<C, D> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfiguration, D discriminatorValue) {
 			return addSubClass(entityMappingConfiguration.getConfiguration(), discriminatorValue);
 		}
 		
+		/**
+		 * Registers a sub-entity type mapping to current polymorphic type
+		 *
+		 * @param entityMappingConfiguration the sub-entity type mapping to register
+		 * @param discriminatorValue sub-entity discriminator value (will be used to distinguish entity type in while loading them from database)
+		 * @return this
+		 * @see MappingEase#subentityBuilder(Class)
+		 */
 		public SingleTablePolymorphism<C, D> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfiguration, D discriminatorValue) {
 			subClasses.put(discriminatorValue, entityMappingConfiguration);
 			return this;
