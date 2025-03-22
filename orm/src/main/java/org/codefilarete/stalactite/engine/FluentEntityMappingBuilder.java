@@ -563,13 +563,8 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * This method is dedicated to {@link Set} because generic types are erased so you can't define a generic type
 	 * extending {@link Set} and refine return type or arguments in order to distinct it from a {@link List} version.
 	 * 
-	 * Note that no reverse setter nor getter is proposed to be configured because it would mean to fetch it (because
-	 * Stalactite's philosophy is to fetch everything eagerly) hence triggering some back and forth with the database
-	 * until both sides of the relation on all dependent entities are fully loaded, which may be very time-consuming
-	 * and, according to your data, load too many of them.
-	 * This means that only current side of the relation has to be filled, Stalactite won't touch the other side.
-	 * This may make this many-to-many implementation looks like a unidirectional one-to-many relation with table association,
-	 * which is quite right since the only difference with it is the absence of unique constraint on table association.
+	 * For bidirectional relation, you may be interested in using {@link ManyToManyOptions#reverseCollection(SerializableFunction)}
+	 * or {@link ManyToManyOptions#reverselySetBy(SerializableBiConsumer)} on returned instance.
 	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
 	 * to handle any super type of current entity type.
 	 *
@@ -591,14 +586,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * Declares a many-to-many relation between current entity and some of type {@code O} through a {@link Set}.
 	 * This method is dedicated to {@link Set} because generic types are erased so you can't define a generic type
 	 * extending {@link Set} and refine return type or arguments in order to distinct it from a {@link List} version.
-	 * 
-	 * Note that no reverse setter nor getter is proposed to be configured because it would mean to fetch it (because
-	 * Stalactite's philosophy is to fetch everything eagerly) hence triggering some back and forth with the database
-	 * until both sides of the relation on all dependent entities are fully loaded, which may be very time-consuming
-	 * and, according to your data, load too many of them.
-	 * This means that only current side of the relation has to be filled, Stalactite won't touch the other side.
-	 * This may make this many-to-many implementation looks like a unidirectional one-to-many relation with table association,
-	 * which is quite right since the only difference with it is the absence of unique constraint on table association.
+	 *
+	 * For bidirectional relation, you may be interested in using {@link ManyToManyOptions#reverseCollection(SerializableFunction)}
+	 * or {@link ManyToManyOptions#reverselySetBy(SerializableBiConsumer)} on returned instance.
 	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
 	 * to handle any super type of current entity type.
 	 *
@@ -622,14 +612,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * Declares a many-to-many relation between current entity and some of type {@code O} through a {@link Set}.
 	 * This method is dedicated to {@link Set} because generic types are erased so you can't define a generic type
 	 * extending {@link Set} and refine return type or arguments in order to distinct it from a {@link List} version.
-	 * 
-	 * Note that no reverse setter nor getter is proposed to be configured because it would mean to fetch it (because
-	 * Stalactite's philosophy is to fetch everything eagerly) hence triggering some back and forth with the database
-	 * until both sides of the relation on all dependent entities are fully loaded, which may be very time-consuming
-	 * and, according to your data, load too many of them.
-	 * This means that only current side of the relation has to be filled, Stalactite won't touch the other side.
-	 * This may make this many-to-many implementation looks like a unidirectional one-to-many relation with table association,
-	 * which is quite right since the only difference with it is the absence of unique constraint on table association.
+	 *
+	 * For bidirectional relation, you may be interested in using {@link ManyToManyOptions#reverseCollection(SerializableFunction)}
+	 * or {@link ManyToManyOptions#reverselySetBy(SerializableBiConsumer)} on returned instance.
 	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
 	 * to handle any super type of current entity type.
 	 *
