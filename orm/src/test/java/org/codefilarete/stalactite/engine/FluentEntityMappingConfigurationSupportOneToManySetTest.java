@@ -16,6 +16,7 @@ import org.codefilarete.stalactite.engine.idprovider.LongProvider;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.State;
+import org.codefilarete.stalactite.engine.model.Town;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
 import org.codefilarete.stalactite.id.Identifier;
@@ -314,6 +315,65 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		// testing update : removal of a city, reversed column must be set to null
 		Country modifiedCountry = new Country(country.getId());
 		modifiedCountry.addCity(Iterables.first(country.getCities()));
+		
+		persister.update(modifiedCountry, country, false);
+		
+		ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select countryId from city", Long.class)
+				.mapKey(i -> i, "countryId", Long.class);
+		cityCountryIds = longExecutableQuery1.execute(Accumulators.toSet());
+		assertThat(new HashSet<>(cityCountryIds)).isEqualTo(Arrays.asSet(country.getId().getSurrogate(), null));
+		
+		// testing delete
+		persister.delete(modifiedCountry);
+		// referencing columns must be set to null (we didn't ask for delete orphan)
+		ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select countryId from city", Long.class)
+				.mapKey(i -> i, "countryId", Long.class);
+		cityCountryIds = longExecutableQuery.execute(Accumulators.toSet());
+		assertThat(new HashSet<>(cityCountryIds)).isEqualTo(Arrays.asSet((Long) null));
+	}
+	
+	@Test
+	void withPolymorphicTarget_crud() {
+		FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration = entityBuilder(City.class, LONG_TYPE)
+				.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(City::getName)
+				.mapPolymorphism(PolymorphismPolicy.<City>joinTable()
+						.addSubClass(MappingEase.subentityBuilder(Town.class, LONG_TYPE)));
+		
+		EntityPersister<Country, Identifier<Long>> persister = entityBuilder(Country.class, LONG_TYPE)
+				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.mapOneToMany(Country::getTowns, cityConfiguration)
+				// we indicate that relation is owned by reverse side
+				.mappedBy(City::getCountry).cascading(ALL)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Country country = new Country(new PersistableIdentifier<>(1L));
+		Town grenoble = new Town(new PersistableIdentifier<>(13L));
+		grenoble.setName("Grenoble");
+		country.addTown(grenoble);
+		Town lyon = new Town(new PersistableIdentifier<>(17L));
+		lyon.setName("Lyon");
+		country.addTown(lyon);
+		persister.insert(country);
+		
+		ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select countryId from city", Long.class)
+				.mapKey(i -> i, "countryId", Long.class);
+		Set<Long> cityCountryIds = longExecutableQuery2.execute(Accumulators.toSet());
+		
+		assertThat(new HashSet<>(cityCountryIds)).isEqualTo(Arrays.asSet(country.getId().getSurrogate()));
+		
+		// testing select
+		Country loadedCountry = persister.select(country.getId());
+		assertThat(loadedCountry.getTowns()).extracting(City::getName).containsExactlyInAnyOrder("Grenoble", "Lyon");
+		// ensuring that source is set on reverse side too
+		assertThat(Iterables.first(loadedCountry.getTowns()).getCountry()).isEqualTo(loadedCountry);
+		
+		// testing update : removal of a city, reversed column must be set to null
+		Country modifiedCountry = new Country(country.getId());
+		modifiedCountry.addTown(Iterables.first(country.getTowns()));
 		
 		persister.update(modifiedCountry, country, false);
 		

@@ -89,7 +89,7 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 	public ManyToManyRelation(ReversibleAccessor<SRC, C1> collectionAccessor,
 							  ValueAccessPointByMethodReference<SRC> methodReference,
 							  EntityMappingConfigurationProvider<? extends SRC, ?> sourceMappingConfiguration,
-							  EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration,
+							  EntityMappingConfigurationProvider<? super TRGT, TRGTID> targetMappingConfiguration,
 							  @Nullable Table targetTable) {
 		this.collectionAccessor = collectionAccessor;
 		this.methodReference = methodReference;

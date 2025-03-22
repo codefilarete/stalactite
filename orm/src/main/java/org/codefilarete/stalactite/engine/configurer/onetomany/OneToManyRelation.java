@@ -99,7 +99,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	public OneToManyRelation(ReversibleAccessor<SRC, C> collectionProvider,
 							 ValueAccessPointByMethodReference<SRC> methodReference,
 							 BooleanSupplier sourceTablePerClassPolymorphic,
-							 EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration,
+							 EntityMappingConfigurationProvider<? super TRGT, TRGTID> targetMappingConfiguration,
 							 @Nullable Table targetTable) {
 		this.collectionProvider = collectionProvider;
 		this.methodReference = methodReference;

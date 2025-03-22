@@ -36,6 +36,8 @@ public class Country extends AbstractCountry implements Identified<Long> {
 	// anything that is a List with a reverse relation-owning column
 	private List<City> ancientCities = new ArrayList<>();
 	
+	private Set<Town> towns;
+	
 	private Set<State> states = new HashSet<>();
 	
 	private int version;
@@ -157,6 +159,18 @@ public class Country extends AbstractCountry implements Identified<Long> {
 	public void addAncientCity(City city) {
 		this.ancientCities.add(city);
 		city.setCountry(this);
+	}
+	
+	public Set<Town> getTowns() {
+		return towns;
+	}
+	
+	public void addTown(Town town) {
+		if (towns == null) {
+			towns = new LinkedHashSet<>();
+		}
+		this.towns.add(town);
+		town.setCountry(this);
 	}
 	
 	public Set<State> getStates() {

@@ -105,19 +105,19 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 	 */
 	<O, J, S extends Collection<O>>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
+	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
 	
 	<O, J, S extends Collection<O>, T extends Table>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	<O, J, S extends Collection<O>, T extends Table>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
+	mapOneToMany(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
 	
 	<O, J, S extends Collection<O>, T extends Table>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	mapOneToMany(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter,
 																							  EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);

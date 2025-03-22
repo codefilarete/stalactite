@@ -687,7 +687,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	@Override
 	public <O, J, S extends Collection<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
 			SerializableFunction<C, S> getter,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
+			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
 		
 		AccessorByMethodReference<C, S> getterReference = Accessors.accessorByMethodReference(getter);
@@ -702,7 +702,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	@Override
 	public <O, J, S extends Collection<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
 			SerializableBiConsumer<C, S> setter,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
+			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
 		
 		MutatorByMethodReference<C, S> setterReference = Accessors.mutatorByMethodReference(setter);
@@ -716,7 +716,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	private <O, J, S extends Collection<O>> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
 			ReversibleAccessor<C, S> propertyAccessor,
 			ValueAccessPointByMethodReference methodReference,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
+			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration,
 			@javax.annotation.Nullable Table table) {
 		OneToManyRelation<C, O, J, S> oneToManyRelation = new OneToManyRelation<>(
 				propertyAccessor,
@@ -734,7 +734,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	@Override
 	public <O, J, S1 extends Set<O>, S2 extends Set<C>, T extends Table>
 	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
-	mapManyToMany(SerializableFunction<C, S1> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table) {
+	mapManyToMany(SerializableFunction<C, S1> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration, @javax.annotation.Nullable T table) {
 		AccessorByMethodReference<C, S1> getterReference = Accessors.accessorByMethodReference(getter);
 		ReversibleAccessor<C, S1> propertyAccessor = new PropertyAccessor<>(
 				// we keep close to user demand : we keep its method reference ...
@@ -748,7 +748,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	public <O, J, S1 extends Set<O>, S2 extends Set<C>, T extends Table>
 	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
 	mapManyToMany(SerializableBiConsumer<C, S1> setter,
-				  EntityMappingConfigurationProvider<O, J> mappingConfiguration,
+				  EntityMappingConfigurationProvider<? super O, J> mappingConfiguration,
 				  @javax.annotation.Nullable T table) {
 		MutatorByMethodReference<C, S1> setterReference = Accessors.mutatorByMethodReference(setter);
 		PropertyAccessor<C, S1> propertyAccessor = new PropertyAccessor<>(
@@ -761,7 +761,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	private <O, J, S1 extends Set<O>, S2 extends Set<C>, T extends Table> FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> mapManyToManySet(
 			ReversibleAccessor<C, S1> propertyAccessor,
 			ValueAccessPointByMethodReference methodReference,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
+			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
 		ManyToManyRelation<C, O, J, S1, S2> manyToManyRelation = new ManyToManyRelation<>(propertyAccessor, methodReference, this, mappingConfiguration, table);
 		this.manyToManyRelations.add(manyToManyRelation);

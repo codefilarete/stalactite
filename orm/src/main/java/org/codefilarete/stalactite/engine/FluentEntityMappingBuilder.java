@@ -422,6 +422,8 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * Declares a relation between current entity and some of type {@code O} through a {@link Collection}.
 	 * Depending on collection type, order persistence can be asked by one of the {@link OneToManyOptions#indexed()}
 	 * methods.
+	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
+	 * to handle any super type of current entity type. 
 	 *
 	 * @param getter the way to get the {@link Set} from source entities
 	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
@@ -433,7 +435,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 */
 	default <O, J, S extends Collection<O>>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
+	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
 		return mapOneToMany(getter, mappingConfiguration, null);
 	}
 	
@@ -443,6 +445,8 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * methods.
 	 * Allows to overwrite the target entity table on this relation : it will overwrite the eventually one of the mapping configuration or the one
 	 * deduced from naming strategy. Made for eventual reuse of target entity from persistence context to another.
+	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
+	 * to handle any super type of current entity type.
 	 *
 	 * @param getter the way to get the {@link Set} from source entities
 	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
@@ -455,14 +459,16 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 */
 	<O, J, S extends Collection<O>, T extends Table>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	
 	/**
 	 * Declares a relation between current entity and some of type {@code O} through a {@link Collection}.
 	 * Depending on collection type, order persistence can be asked by one of the {@link OneToManyOptions#indexed()}
 	 * methods.
-	 *
+	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
+	 * to handle any super type of current entity type.
+	 * 
 	 * @param setter the way to set the {@link Set} from source entities
 	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
 	 * @param <O> type of {@link Collection} element
@@ -473,7 +479,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 */
 	default <O, J, S extends Collection<O>, T extends Table>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
+	mapOneToMany(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
 		return mapOneToMany(setter, mappingConfiguration, null);
 	}
 	
@@ -483,6 +489,8 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * methods.
 	 * Allows to overwrite the target entity table on this relation : it will overwrite the eventually one of the mapping configuration or the one
 	 * deduced from naming strategy. Made for eventual reuse of target entity from persistence context to another.
+	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
+	 * to handle any super type of current entity type.
 	 *
 	 * @param setter the way to set the {@link Set} from source entities
 	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
@@ -495,7 +503,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 */
 	<O, J, S extends Collection<O>, T extends Table>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	mapOneToMany(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	/**
 	 * Declares a many-to-many relation between current entity and some of type {@code O} through a {@link Set}.
@@ -509,7 +517,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * This means that only current side of the relation has to be filled, Stalactite won't touch the other side.
 	 * This may make this many-to-many implementation looks like a unidirectional one-to-many relation with table association,
 	 * which is quite right since the only difference with it is the absence of unique constraint on table association.
-	 * 
+	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
+	 * to handle any super type of current entity type.
+	 *
 	 * @param getter the way to get the {@link Set} from source entities
 	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
 	 * @return
@@ -520,7 +530,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 */
 	default <O, J, S1 extends Set<O>, S2 extends Set<C>>
 	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
-	mapManyToMany(SerializableFunction<C, S1> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
+	mapManyToMany(SerializableFunction<C, S1> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
 		return mapManyToMany(getter, mappingConfiguration, null);
 	}
 	
@@ -536,7 +546,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * This means that only current side of the relation has to be filled, Stalactite won't touch the other side.
 	 * This may make this many-to-many implementation looks like a unidirectional one-to-many relation with table association,
 	 * which is quite right since the only difference with it is the absence of unique constraint on table association.
-	 * 
+	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
+	 * to handle any super type of current entity type.
+	 *
 	 * @param getter the way to get the {@link Set} from source entities
 	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
 	 * @param table
@@ -549,11 +561,36 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 */
 	<O, J, S1 extends Set<O>, S2 extends Set<C>, T extends Table>
 	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
-	mapManyToMany(SerializableFunction<C, S1> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	mapManyToMany(SerializableFunction<C, S1> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
+	/**
+	 * Declares a many-to-many relation between current entity and some of type {@code O} through a {@link Set}.
+	 * This method is dedicated to {@link Set} because generic types are erased so you can't define a generic type
+	 * extending {@link Set} and refine return type or arguments in order to distinct it from a {@link List} version.
+	 * 
+	 * Note that no reverse setter nor getter is proposed to be configured because it would mean to fetch it (because
+	 * Stalactite's philosophy is to fetch everything eagerly) hence triggering some back and forth with the database
+	 * until both sides of the relation on all dependent entities are fully loaded, which may be very time-consuming
+	 * and, according to your data, load too many of them.
+	 * This means that only current side of the relation has to be filled, Stalactite won't touch the other side.
+	 * This may make this many-to-many implementation looks like a unidirectional one-to-many relation with table association,
+	 * which is quite right since the only difference with it is the absence of unique constraint on table association.
+	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
+	 * to handle any super type of current entity type.
+	 *
+	 * @param setter the way to get the {@link Set} from source entities
+	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
+	 * @param table
+	 * @return
+	 * @param <O> type of {@link Set} element
+	 * @param <J> type of identifier of {@code O}
+	 * @param <S1> refined {@link Set} type
+	 * @param <S2>
+	 * @param <T>
+	 */
 	<O, J, S1 extends Set<O>, S2 extends Set<C>, T extends Table>
 	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
-	mapManyToMany(SerializableBiConsumer<C, S1> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	mapManyToMany(SerializableBiConsumer<C, S1> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter, EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
