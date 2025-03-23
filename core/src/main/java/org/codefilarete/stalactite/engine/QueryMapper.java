@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.stalactite.engine.runtime.BeanPersister;
@@ -313,13 +314,13 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * @return this
 	 */
 	@Override
-	public <I> QueryMapper<C> map(String columnName, SerializableBiConsumer<C, I> setter, Class<I> columnType) {
+	public <I> QueryMapper<C> map(String columnName, BiConsumer<C, I> setter, Class<I> columnType) {
 		map(new ColumnMapping<>(columnName, setter, columnType));
 		return this;
 	}
 	
 	/**
-	 * Same as {@link #map(String, SerializableBiConsumer, Class)}.
+	 * Same as {@link #map(String, BiConsumer, Class)}.
 	 * Differs by providing the possiblity to convert the value before setting it onto the bean.
 	 *
 	 * @param columnName a column name
@@ -338,7 +339,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	/**
 	 * Defines a mapping between a column of the query and a bean property through its setter.
 	 * WARNING : Column type will be deduced from the setter type. To do it, some bytecode enhancement is required, therefore it's not the cleanest
-	 * way to define the binding. Prefer {@link #map(String, SerializableBiConsumer, Class)}
+	 * way to define the binding. Prefer {@link #map(String, BiConsumer, Class)}
 	 *
 	 * @param columnName a column name
 	 * @param setter the setter function
@@ -353,7 +354,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	
 	/**
 	 * Same as {@link #map(String, SerializableBiConsumer)}.
-	 * Differs by providing the possiblity to convert the value before setting it onto the bean.
+	 * Differs by providing the possibility to convert the value before setting it onto the bean.
 	 *
 	 * @param columnName a column name
 	 * @param setter the setter function
@@ -365,11 +366,11 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	public <I, J> QueryMapper<C> map(String columnName, SerializableBiConsumer<C, J> setter, Converter<I, J> converter) {
 		Method method = methodReferenceCapturer.findMethod(setter);
 		Class<I> aClass = (Class<I>) method.getParameterTypes()[0];
-		return map(columnName, (SerializableBiConsumer<C, I>) (c, i) -> setter.accept(c, converter.convert(i)), aClass);
+		return map(columnName, (c, i) -> setter.accept(c, converter.convert(i)), aClass);
 	}
 	
 	/**
-	 * Same as {@link #map(String, SerializableBiConsumer, Class)} but with {@link org.codefilarete.stalactite.sql.ddl.structure.Column} signature
+	 * Same as {@link #map(String, BiConsumer, Class)} but with {@link org.codefilarete.stalactite.sql.ddl.structure.Column} signature
 	 *
 	 * @param column the mapped column
 	 * @param setter the setter function
@@ -377,13 +378,13 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * @return this
 	 */
 	@Override
-	public <I> QueryMapper<C> map(org.codefilarete.stalactite.sql.ddl.structure.Column<? extends Table, I> column, SerializableBiConsumer<C, I> setter) {
+	public <I> QueryMapper<C> map(org.codefilarete.stalactite.sql.ddl.structure.Column<? extends Table, I> column, BiConsumer<C, I> setter) {
 		map(new ColumnMapping<>(column, setter));
 		return this;
 	}
 	
 	/**
-	 * Same as {@link #map(org.codefilarete.stalactite.sql.ddl.structure.Column, SerializableBiConsumer)}.
+	 * Same as {@link #map(org.codefilarete.stalactite.sql.ddl.structure.Column, BiConsumer)}.
 	 * Differs by providing the possibility to convert the value before setting it onto the bean.
 	 *
 	 * @param column the mapped column
@@ -395,9 +396,9 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 */
 	@Override
 	public <I, J> QueryMapper<C> map(org.codefilarete.stalactite.sql.ddl.structure.Column<? extends Table, I> column,
-									 SerializableBiConsumer<C, J> setter,
+									 BiConsumer<C, J> setter,
 									 Converter<I, J> converter) {
-		return map(column, (SerializableBiConsumer<C, I>) (c, i) -> setter.accept(c, converter.convert(i)));
+		return map(column, (c, i) -> setter.accept(c, converter.convert(i)));
 	}
 	
 	private <I> void map(ColumnMapping<C, I> columnMapping) {
@@ -424,7 +425,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	
 	/**
 	 * Executes the query onto the connection given by the {@link ConnectionProvider}. Transforms the result to a list of beans thanks to the
-	 * definition given through {@link #mapKey(SerializableFunction, String, Class)}, {@link #map(String, SerializableBiConsumer, Class)}
+	 * definition given through {@link #mapKey(SerializableFunction, String, Class)}, {@link #map(String, BiConsumer, Class)}
 	 * and {@link #map(String, SerializableBiConsumer)} methods.
 	 *
 	 * @param connectionProvider the object that will give the {@link java.sql.Connection}
@@ -590,14 +591,14 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 		
 		private final QueryMapper.Column<I> column;
 		
-		private final SerializableBiConsumer<T, I> setter;
+		private final BiConsumer<T, I> setter;
 		
-		public ColumnMapping(String columnName, SerializableBiConsumer<T, I> setter, Class<I> columnType) {
+		public ColumnMapping(String columnName, BiConsumer<T, I> setter, Class<I> columnType) {
 			this.column = new ColumnDefinition<>(columnName, columnType);
 			this.setter = setter;
 		}
 		
-		public ColumnMapping(org.codefilarete.stalactite.sql.ddl.structure.Column<?, I> column, SerializableBiConsumer<T, I> setter) {
+		public ColumnMapping(org.codefilarete.stalactite.sql.ddl.structure.Column<?, I> column, BiConsumer<T, I> setter) {
 			this.column = new ColumnWrapper<>(column);
 			this.setter = setter;
 		}
@@ -606,7 +607,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 			return column;
 		}
 		
-		public SerializableBiConsumer<T, I> getSetter() {
+		public BiConsumer<T, I> getSetter() {
 			return setter;
 		}
 	}

@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -569,7 +570,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	public interface ExecutableBeanPropertyQueryMapper<C> extends ExecutableQuery<C>, BeanPropertyQueryMapper<C> {
 		
 		@Override
-		<I> ExecutableBeanPropertyQueryMapper<C> map(String columnName, SerializableBiConsumer<C, I> setter, Class<I> columnType);
+		<I> ExecutableBeanPropertyQueryMapper<C> map(String columnName, BiConsumer<C, I> setter, Class<I> columnType);
 		
 		@Override
 		<I, J> ExecutableBeanPropertyQueryMapper<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, Converter<I, J> converter);
@@ -581,10 +582,10 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		<I, J> ExecutableBeanPropertyQueryMapper<C> map(String columnName, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
 		
 		@Override
-		<I> ExecutableBeanPropertyQueryMapper<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, I> setter);
+		<I> ExecutableBeanPropertyQueryMapper<C> map(Column<? extends Table, I> column, BiConsumer<C, I> setter);
 		
 		@Override
-		<I, J> ExecutableBeanPropertyQueryMapper<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
+		<I, J> ExecutableBeanPropertyQueryMapper<C> map(Column<? extends Table, I> column, BiConsumer<C, J> setter, Converter<I, J> converter);
 		
 		@Override
 		<K, V> ExecutableBeanPropertyQueryMapper<C> map(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<V, K> relatedBeanCreator);

@@ -30,10 +30,10 @@ public interface BeanPropertyQueryMapper<C> {
 	 * @return an instance that allows method chaining
 	 * @see #map(String, SerializableBiConsumer, Converter)
 	 */
-	<I> BeanPropertyQueryMapper<C> map(String columnName, SerializableBiConsumer<C, I> setter, Class<I> columnType);
+	<I> BeanPropertyQueryMapper<C> map(String columnName, BiConsumer<C, I> setter, Class<I> columnType);
 	
 	/**
-	 * Equivalent of {@link #map(String, SerializableBiConsumer, Class)} with an additional converter.
+	 * Equivalent of {@link #map(String, BiConsumer, Class)} with an additional converter.
 	 * Maps a column to a bean property by converting its value before setting it.
 	 *
 	 * @param columnName column name that will fill the property
@@ -47,8 +47,8 @@ public interface BeanPropertyQueryMapper<C> {
 	<I, J> BeanPropertyQueryMapper<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, Converter<I, J> converter);
 	
 	/**
-	 * Equivalent of {@link #map(String, SerializableBiConsumer, Class)} without ensuring column type argument : it will be deduced from setter.
-	 * Prefer {@link #map(String, SerializableBiConsumer, Class)} to ensure value reading from {@link ResultSet}
+	 * Equivalent of {@link #map(String, BiConsumer, Class)} without ensuring column type argument : it will be deduced from setter.
+	 * Prefer {@link #map(String, BiConsumer, Class)} to ensure value reading from {@link ResultSet}
 	 *
 	 * @param columnName column name that will fill the property
 	 * @param setter property setter
@@ -77,7 +77,7 @@ public interface BeanPropertyQueryMapper<C> {
 	 * @param <I> column and value type
 	 * @return an instance that allows method chaining
 	 */
-	<I> BeanPropertyQueryMapper<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, I> setter);
+	<I> BeanPropertyQueryMapper<C> map(Column<? extends Table, I> column, BiConsumer<C, I> setter);
 	
 	/**
 	 * Equivalent of {@link #map(String, SerializableBiConsumer, Converter)} with column argument.
@@ -87,7 +87,7 @@ public interface BeanPropertyQueryMapper<C> {
 	 * @param <I> column and value type
 	 * @return an instance that allows method chaining
 	 */
-	<I, J> BeanPropertyQueryMapper<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
+	<I, J> BeanPropertyQueryMapper<C> map(Column<? extends Table, I> column, BiConsumer<C, J> setter, Converter<I, J> converter);
 	
 	/**
 	 * Associates beans created by this instance and the ones created by another converter with setter (represented as a {@link BiConsumer}).
