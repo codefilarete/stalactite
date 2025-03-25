@@ -1074,13 +1074,13 @@ class FluentEntityMappingConfigurationSupportMapTest {
 			personPersister.update(person, loadedPerson, true);
 
 			loadedPerson = personPersister.select(person.getId());
-			ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select \"value\" from Person_mapPropertyMadeOfEntityAsValue", Long.class)
+			ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select value from Person_mapPropertyMadeOfEntityAsValue", Long.class)
 					.mapKey("value", Long.class);
 			Set<Long> remainingEntries = longExecutableQuery2.execute(Accumulators.toSet());
 			assertThat(remainingEntries).containsExactlyInAnyOrder(4L, 3L);
 
 			personPersister.delete(loadedPerson);
-			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select \"value\" from Person_mapPropertyMadeOfEntityAsValue", Long.class)
+			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select value from Person_mapPropertyMadeOfEntityAsValue", Long.class)
 					.mapKey("value", Long.class);
 			remainingEntries = longExecutableQuery1.execute(Accumulators.toSet());
 			assertThat(remainingEntries).isEmpty();
@@ -1177,7 +1177,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 
 			personPersister.insert(person);
 			
-			ExecutableQuery<Long> longExecutableQuery3 = persistenceContext.newQuery("select \"value\" from Person_mapPropertyMadeOfEntityAsValue", Long.class)
+			ExecutableQuery<Long> longExecutableQuery3 = persistenceContext.newQuery("select value from Person_mapPropertyMadeOfEntityAsValue", Long.class)
 					.mapKey("value", Long.class);
 			Set<Long> remainingEntries = longExecutableQuery3.execute(Accumulators.toSet());
 			assertThat(remainingEntries).isEmpty();
@@ -1213,7 +1213,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 			loadedPerson = personPersister.select(person.getId());
 			personPersister.update(person, loadedPerson, true);
 			
-			ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select \"value\" from Person_mapPropertyMadeOfEntityAsValue", Long.class)
+			ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select value from Person_mapPropertyMadeOfEntityAsValue", Long.class)
 					.mapKey("value", Long.class);
 			remainingEntries = longExecutableQuery2.execute(Accumulators.toSet());
 			// Country 1 & 2 should still be present, and Country 3 missing from association table
@@ -1225,7 +1225,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 					.prepareStatement("alter table Person_mapPropertyMadeOfEntityAsValue drop constraint FK_Person_mapPropertyMadeOfEntityAsValue_id_Person_id").execute();
 			loadedPerson = personPersister.select(person.getId());
 			personPersister.delete(loadedPerson);
-			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select \"value\" from Person_mapPropertyMadeOfEntityAsValue", Long.class)
+			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select value from Person_mapPropertyMadeOfEntityAsValue", Long.class)
 					.mapKey("value", Long.class);
 			remainingEntries = longExecutableQuery1.execute(Accumulators.toSet());
 			// Country 1 & 2 should still be present

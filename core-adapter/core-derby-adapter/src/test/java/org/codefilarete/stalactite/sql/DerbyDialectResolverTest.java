@@ -39,7 +39,7 @@ class DerbyDialectResolverTest {
 		assertThat(dialect.getCompatibility()).usingRecursiveComparison().isEqualTo(new DerbyDatabaseSignet(10, 14));
 		
 		DatabaseVendorSettings vendorSettings = dialectResolver.determineVendorSettings(derbyDataSource.getConnection());
-		assertThat(vendorSettings.getKeyWords()).containsExactlyInAnyOrder(KEYWORDS);
+		assertThat(vendorSettings.getKeywords()).containsExactlyInAnyOrder(KEYWORDS);
 		assertThat(vendorSettings.getQuoteCharacter()).isEqualTo('"');
 		assertThat(vendorSettings.getJavaTypeToSqlTypes()).isExactlyInstanceOf(DerbyTypeMapping.class);
 		assertThat(vendorSettings.getParameterBinderRegistry()).isExactlyInstanceOf(DerbyParameterBinderRegistry.class);

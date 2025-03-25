@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine;
 
+import java.util.Set;
 import java.util.function.Function;
 
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
@@ -24,8 +25,8 @@ import org.codefilarete.tool.collection.CaseInsensitiveSet;
 
 public class DialectBuilder {
 	
-	private final DatabaseVendorSettings vendorSettings;
-	private final DialectOptions dialectOptions;
+	protected final DatabaseVendorSettings vendorSettings;
+	protected final DialectOptions dialectOptions;
 	
 	public DialectBuilder(DatabaseVendorSettings vendorSettings) {
 		this(vendorSettings, DialectOptions.noOptions());
@@ -107,18 +108,22 @@ public class DialectBuilder {
 	}
 	
 	protected DMLNameProviderFactory buildDmlNameProviderFactory() {
+		Set<String> keywords = new CaseInsensitiveSet(vendorSettings.getKeywords());
+		dialectOptions.getSqlKeywordsToAdd().consumeIfTouched(keywords::addAll);
+		dialectOptions.getSqlKeywordsToRemove().consumeIfTouched(keywords::removeAll);
+		
 		return dialectOptions.getQuoteSQLIdentifiers().getOrDefault(false)
 				? QuotingDMLNameProvider::new
-				: QuotingKeywordsDMLNameProvider::new;
+				: tableAliaser -> new QuotingKeywordsDMLNameProvider(tableAliaser, keywords);
 	}
 	
 	protected class QuotingKeywordsDMLNameProvider extends QuotingDMLNameProvider {
 		
 		private final CaseInsensitiveSet keywords;
 		
-		protected QuotingKeywordsDMLNameProvider(Function<Fromable, String> tableAliaser) {
+		public QuotingKeywordsDMLNameProvider(Function<Fromable, String> tableAliaser, Set<String> keywords) {
 			super(tableAliaser);
-			this.keywords = new CaseInsensitiveSet(vendorSettings.getKeyWords());
+			this.keywords = new CaseInsensitiveSet(keywords);
 		}
 		
 		@Override
@@ -135,7 +140,7 @@ public class DialectBuilder {
 		
 		private final char quoteCharacter;
 		
-		protected QuotingDMLNameProvider(Function<Fromable, String> tableAliaser) {
+		public QuotingDMLNameProvider(Function<Fromable, String> tableAliaser) {
 			super(tableAliaser);
 			this.quoteCharacter = dialectOptions.getQuoteCharacter().getOrDefault(vendorSettings.getQuoteCharacter());
 		}

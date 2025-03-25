@@ -38,7 +38,7 @@ class MariaDBDialectResolverTest {
 		assertThat(dialect.getCompatibility()).usingRecursiveComparison().isEqualTo(new MariaDBDatabaseSignet(10, 0));
 		
 		DatabaseVendorSettings vendorSettings = dialectResolver.determineVendorSettings(mariaDBDataSource.getConnection());
-		assertThat(vendorSettings.getKeyWords()).containsExactlyInAnyOrder(KEYWORDS);
+		assertThat(vendorSettings.getKeywords()).containsExactlyInAnyOrder(KEYWORDS);
 		assertThat(vendorSettings.getQuoteCharacter()).isEqualTo('`');
 		assertThat(vendorSettings.getJavaTypeToSqlTypes()).isExactlyInstanceOf(MariaDBTypeMapping.class);
 		assertThat(vendorSettings.getParameterBinderRegistry()).isExactlyInstanceOf(MariaDBParameterBinderRegistry.class);

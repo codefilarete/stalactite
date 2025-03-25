@@ -33,7 +33,7 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 			+ " left outer join Vehicle as president_vehicle on president.vehicleId = president_vehicle.id"
 			+ " left outer join Person_nicknames as president_Person_nicknames on president.id = president_Person_nicknames.id"
 			+ " left outer join State as Country_states_State on Country_states.states_id = Country_states_State.id"
-			+ " left outer join \"Language\" as Country_languages_Language on Country_languages.languages_id = Country_languages_Language.id"
+			+ " left outer join Language as Country_languages_Language on Country_languages.languages_id = Country_languages_Language.id"
 			+ " where Republic.id in (:ids)")
 	Set<Republic> loadByIdIn(@Param("ids") Identifier<Long>... ids);
 	
@@ -51,7 +51,7 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 			+ " left outer join Vehicle as president_vehicle on president.vehicleId = president_vehicle.id"
 			+ " left outer join Person_nicknames as president_Person_nicknames on president.id = president_Person_nicknames.id"
 			+ " left outer join State as Country_states_State on Country_states.states_id = Country_states_State.id"
-			+ " left outer join \"Language\" as Country_languages_Language on Country_languages.languages_id = Country_languages_Language.id"
+			+ " left outer join Language as Country_languages_Language on Country_languages.languages_id = Country_languages_Language.id"
 			+ " where Republic.name in (:names)")
 	Set<Republic> loadByNameIn(@Param("names") String... name);
 	
@@ -69,7 +69,7 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 			+ " left outer join Vehicle as president_vehicle on president.vehicleId = president_vehicle.id"
 			+ " left outer join Person_nicknames as president_Person_nicknames on president.id = president_Person_nicknames.id"
 			+ " left outer join State as Country_states_State on Country_states.states_id = Country_states_State.id"
-			+ " left outer join \"Language\" as Country_languages_Language on Country_languages.languages_id = Country_languages_Language.id"
+			+ " left outer join Language as Country_languages_Language on Country_languages.languages_id = Country_languages_Language.id"
 			+ " where Republic.id in (:ids)")
 	Set<Republic> loadByIdIn(@Param("ids") Iterable<Identifier<Long>> ids);
 	
@@ -87,7 +87,7 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 			+ " left outer join Vehicle as president_vehicle on president.vehicleId = president_vehicle.id"
 			+ " left outer join Person_nicknames as president_Person_nicknames on president.id = president_Person_nicknames.id"
 			+ " left outer join State as Country_states_State on Country_states.states_id = Country_states_State.id"
-			+ " left outer join \"Language\" as Country_languages_Language on Country_languages.languages_id = Country_languages_Language.id"
+			+ " left outer join Language as Country_languages_Language on Country_languages.languages_id = Country_languages_Language.id"
 			+ " where Republic.name = :name")
 	Republic loadByName(@Param("name") String name);
 	
@@ -105,7 +105,7 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 			+ " left outer join Vehicle as president_vehicle on president.vehicleId = president_vehicle.id"
 			+ " left outer join Person_nicknames as president_Person_nicknames on president.id = president_Person_nicknames.id"
 			+ " left outer join State as Country_states_State on Country_states.states_id = Country_states_State.id"
-			+ " left outer join \"Language\" as Country_languages_Language on Country_languages.languages_id = Country_languages_Language.id"
+			+ " left outer join Language as Country_languages_Language on Country_languages.languages_id = Country_languages_Language.id"
 			+ " where Republic.euMember = true")
 	Republic loadByEuMemberIsTrue();
 	
@@ -123,7 +123,7 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 			+ " left outer join Vehicle as president_vehicle on president.vehicleId = president_vehicle.id"
 			+ " left outer join Person_nicknames as president_Person_nicknames on president.id = president_Person_nicknames.id"
 			+ " left outer join State as Country_states_State on Country_states.states_id = Country_states_State.id"
-			+ " left outer join \"Language\" as Country_languages_Language on Country_languages.languages_id = Country_languages_Language.id"
+			+ " left outer join Language as Country_languages_Language on Country_languages.languages_id = Country_languages_Language.id"
 			+ " where Republic.id = :id and Republic.name = :name")
 	Republic loadByIdAndName(@Param("id") Identifier<Long> id, @Param("name") String name);
 	
@@ -141,7 +141,7 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 			+ " left outer join Vehicle as president_vehicle on president.vehicleId = president_vehicle.id"
 			+ " left outer join Person_nicknames as president_Person_nicknames on president.id = president_Person_nicknames.id"
 			+ " left outer join State as Country_states_State on Country_states.states_id = Country_states_State.id"
-			+ " left outer join \"Language\" as Country_languages_Language on Country_languages.languages_id = Country_languages_Language.id"
+			+ " left outer join Language as Country_languages_Language on Country_languages.languages_id = Country_languages_Language.id"
 			+ " where president_vehicle.color = :color")
 	Republic loadByPresidentVehicleColor(@Param("color") Color color);
 	

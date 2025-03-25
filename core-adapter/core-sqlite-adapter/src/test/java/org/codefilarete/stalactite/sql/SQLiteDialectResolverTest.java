@@ -39,7 +39,7 @@ class SQLiteDialectResolverTest {
 		assertThat(dialect.getCompatibility()).usingRecursiveComparison().isEqualTo(new SQLiteDatabaseSignet(3, 45));
 		
 		DatabaseVendorSettings vendorSettings = dialectResolver.determineVendorSettings(SQLiteDataSource.getConnection());
-		assertThat(vendorSettings.getKeyWords()).containsExactlyInAnyOrder(KEYWORDS);
+		assertThat(vendorSettings.getKeywords()).containsExactlyInAnyOrder(KEYWORDS);
 		assertThat(vendorSettings.getQuoteCharacter()).isEqualTo('"');
 		assertThat(vendorSettings.getJavaTypeToSqlTypes()).isExactlyInstanceOf(SQLiteTypeMapping.class);
 		assertThat(vendorSettings.getParameterBinderRegistry()).isExactlyInstanceOf(SQLiteParameterBinderRegistry.class);

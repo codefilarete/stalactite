@@ -39,7 +39,7 @@ class HSQLDBDialectResolverTest {
 		assertThat(dialect.getCompatibility()).usingRecursiveComparison().isEqualTo(new HSQLDBDatabaseSignet(2, 7));
 		
 		DatabaseVendorSettings vendorSettings = dialectResolver.determineVendorSettings(hsqldbDataSource.getConnection());
-		assertThat(vendorSettings.getKeyWords()).containsExactlyInAnyOrder(KEYWORDS);
+		assertThat(vendorSettings.getKeywords()).containsExactlyInAnyOrder(KEYWORDS);
 		assertThat(vendorSettings.getQuoteCharacter()).isEqualTo('"');
 		assertThat(vendorSettings.getJavaTypeToSqlTypes()).isExactlyInstanceOf(HSQLDBTypeMapping.class);
 		assertThat(vendorSettings.getParameterBinderRegistry()).isExactlyInstanceOf(HSQLDBParameterBinderRegistry.class);

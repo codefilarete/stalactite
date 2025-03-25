@@ -22,7 +22,7 @@ public class DatabaseVendorSettings {
 	/**
 	 * Keywords to be escaped in generated SQL 
 	 */
-	private final Set<String> keyWords;
+	private final Set<String> keywords;
 	
 	private final char quotingCharacter;
 	
@@ -42,7 +42,7 @@ public class DatabaseVendorSettings {
 	private final boolean supportsTupleCondition;
 	
 	public DatabaseVendorSettings(DatabaseSignet compatibility,
-								  Set<String> keyWords,
+								  Set<String> keywords,
 								  char quotingCharacter,
 								  JavaTypeToSqlTypeMapping javaTypeToSqlTypes,
 								  ParameterBinderRegistry parameterBinderRegistry,
@@ -51,7 +51,7 @@ public class DatabaseVendorSettings {
 								  int inOperatorMaxSize,
 								  boolean supportsTupleCondition) {
 		this.compatibility = compatibility;
-		this.keyWords = keyWords;
+		this.keywords = keywords;
 		this.quotingCharacter = quotingCharacter;
 		this.javaTypeToSqlTypes = javaTypeToSqlTypes;
 		this.parameterBinderRegistry = parameterBinderRegistry;
@@ -65,8 +65,8 @@ public class DatabaseVendorSettings {
 		return compatibility;
 	}
 	
-	public Set<String> getKeyWords() {
-		return keyWords;
+	public Set<String> getKeywords() {
+		return keywords;
 	}
 	
 	public char getQuoteCharacter() {

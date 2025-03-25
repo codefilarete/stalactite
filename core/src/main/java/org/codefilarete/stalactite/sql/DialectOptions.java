@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.tool.collection.CaseInsensitiveSet;
 import org.codefilarete.tool.function.Hanger.Holder;
 
 /**
@@ -22,6 +23,8 @@ public class DialectOptions {
 	private final OptionalSetting<Boolean> quoteSQLIdentifiers = new OptionalSetting<>();
 	private final OptionalSetting<Set<JavaTypeToSQLType<?>>> javaTypeToSqlTypeMappings = new OptionalSetting<>();
 	private final OptionalSetting<Set<JavaTypeBinder<?>>> javaTypeBinders = new OptionalSetting<>();
+	private final OptionalSetting<Set<String>> sqlKeywordsToAdd = new OptionalSetting<>();
+	private final OptionalSetting<Set<String>> sqlKeywordsToRemove = new OptionalSetting<>();
 	
 	public OptionalSetting<Integer> getInOperatorMaxSize() {
 		return inOperatorMaxSize;
@@ -45,11 +48,25 @@ public class DialectOptions {
 		return quoteSQLIdentifiers;
 	}
 	
+	/**
+	 * Sets quoting SQL Identifiers options (out of SQL keywords).
+	 * Made to make the database respect identifier case sensitivity.
+	 * If set to false, only SQL keywords will be quoted.
+	 *
+	 * @param quoteSQLIdentifiers true for quoting SQL Identifiers, false to quote only SQL keywords
+	 * @return this
+	 */
 	public DialectOptions setQuoteSQLIdentifiers(boolean quoteSQLIdentifiers) {
 		this.quoteSQLIdentifiers.set(quoteSQLIdentifiers);
 		return this;
 	}
 	
+	/**
+	 * Asks for quoting all SQL Identifiers (out of SQL keywords).
+	 * Made to make the database respect identifier case sensitivity.
+	 * 
+	 * @return this
+	 */
 	public DialectOptions quoteSQLIdentifiers() {
 		return setQuoteSQLIdentifiers(true);
 	}
@@ -108,6 +125,46 @@ public class DialectOptions {
 			this.javaTypeBinders.set(new HashSet<>());
 		}
 		this.javaTypeBinders.get().add(new JavaTypeBinder<>(javaType, parameterBinder));
+		return this;
+	}
+	
+	/**
+	 * Gives keywords to be added to the dialect.
+	 * Made to fix a missing keyword in the vendor setting.
+	 * 
+	 * @return keywords to be added to the dialect
+	 */
+	public OptionalSetting<Set<String>> getSqlKeywordsToAdd() {
+		return sqlKeywordsToAdd;
+	}
+	
+	/**
+	 * Adds keywords to be added to the dialect.
+	 * @param keywords the keywords to be added
+	 * @return this
+	 */
+	public DialectOptions addSqlKeywords(String... keywords) {
+		sqlKeywordsToAdd.set(new CaseInsensitiveSet(keywords));
+		return this;
+	}
+	
+	/**
+	 * Gives keywords to be removed from the dialect.
+	 * Made to fix a not-wanted keyword in the vendor settings.
+	 *
+	 * @return keywords to be added to the dialect
+	 */
+	public OptionalSetting<Set<String>> getSqlKeywordsToRemove() {
+		return sqlKeywordsToRemove;
+	}
+	
+	/**
+	 * Removes some keywords from the dialect.
+	 * @param keywords the keywords to be removed
+	 * @return this
+	 */
+	public DialectOptions removeSqlKeywords(String... keywords) {
+		sqlKeywordsToRemove.set(new CaseInsensitiveSet(keywords));
 		return this;
 	}
 	
@@ -178,7 +235,7 @@ public class DialectOptions {
 		
 		private boolean touched;
 		
-		private OptionalSetting() {
+		public OptionalSetting() {
 		}
 		
 		@Override

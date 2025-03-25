@@ -39,7 +39,7 @@ class OracleDialectResolverTest {
 		assertThat(dialect.getCompatibility()).usingRecursiveComparison().isEqualTo(new OracleDatabaseSignet(23, 0));
 		
 		DatabaseVendorSettings vendorSettings = dialectResolver.determineVendorSettings(oracleDataSource.getConnection());
-		assertThat(vendorSettings.getKeyWords()).containsExactlyInAnyOrder(KEYWORDS);
+		assertThat(vendorSettings.getKeywords()).containsExactlyInAnyOrder(KEYWORDS);
 		assertThat(vendorSettings.getQuoteCharacter()).isEqualTo('"');
 		assertThat(vendorSettings.getJavaTypeToSqlTypes()).isExactlyInstanceOf(OracleTypeMapping.class);
 		assertThat(vendorSettings.getParameterBinderRegistry()).isExactlyInstanceOf(OracleParameterBinderRegistry.class);

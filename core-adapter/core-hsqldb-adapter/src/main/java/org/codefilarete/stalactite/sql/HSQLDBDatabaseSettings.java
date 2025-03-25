@@ -40,12 +40,44 @@ import org.codefilarete.tool.function.ThrowingBiFunction;
 public class HSQLDBDatabaseSettings extends DatabaseVendorSettings {
 	
 	/**
-	 * HSQLDB keywords, took at <a href="https://hsqldb.org/doc/guide/lists-app.html">HSQLDB keywords</a>
-	 * Source available at {@link org.hsqldb.Tokens#isKeyword(String)} but not through {@link java.sql.DatabaseMetaData#getSQLKeywords()}
-	 * which returns "" (see {@link org.hsqldb.jdbc.JDBCDatabaseMetaData#getSQLKeywords()}).
+	 * HSQLDB keywords, took at <a href="https://hsqldb.org/doc/guide/lists-app.html">HSQLDB keywords</a> in chapter
+	 * "List of SQL Keywords Disallowed as HyperSQL Identifiers".
+	 * Because HSQLDB has 2 modes (depending on "SQL NAMES" database option) and below keywords are the one strictly
+	 * prohibited.
+	 * @see #EXTENDED_KEYWORDS
 	 */
 	@VisibleForTesting
 	static final String[] KEYWORDS = new String[] {
+			"ALL", "AND", "ANY", "ARRAY", "AS", "AT",
+			"BETWEEN", "BOTH", "BY",
+			"CALL", "CASE", "CAST", "COALESCE", "CONVERT", "CORRESPONDING", "COUNT", "CREATE", "CROSS", "CUBE",
+			"DEFAULT", "DISTINCT", "DO", "DROP",
+			"ELSE", "EVERY", "EXCEPT", "EXISTS",
+			"FETCH", "FOR", "FROM", "FULL",
+			"GRANT", "GROUP", "GROUPING",
+			"HAVING",
+			"IN", "INNER", "INTERSECT", "INTO", "IS",
+			"JOIN",
+			"LEADING", "LEFT", "LIKE",
+			"MAX", "MIN",
+			"NATURAL", "NOT", "NULLIF",
+			"ON", "OR", "ORDER", "OUTER",
+			"PRIMARY",
+			"REFERENCES", "RIGHT", "ROLLUP",
+			"SELECT", "SET", "SOME", "STDDEV_POP", "STDDEV_SAMP", "SUM",
+			"TABLE", "THEN", "TO", "TRAILING", "TRIGGER",
+			"UNION", "UNIQUE", "USING",
+			"VALUES", "VAR_POP", "VAR_SAMP",
+			"WHEN", "WHERE", "WITH"
+	};
+	
+	/**
+	 * Extended HSQLDB keywords, took at <a href="https://hsqldb.org/doc/guide/lists-app.html">HSQLDB keywords</a> in chapter
+	 * "List of SQL Standard Keywords".
+	 * Source available at {@link org.hsqldb.Tokens#isKeyword(String)} but not through {@link java.sql.DatabaseMetaData#getSQLKeywords()}
+	 * which returns "" (see {@link org.hsqldb.jdbc.JDBCDatabaseMetaData#getSQLKeywords()}).
+	 */
+	static final String[] EXTENDED_KEYWORDS = new String[] {
 			"ABS", "ABSENT", "ACOS", "ALL", "ALLOCATE", "ALTER", "AND", "ANY", "ANY_VALUE", "ARE", "ARRAY", "ARRAY_AGG", "ARRAY_MAX_CARDINALITY", "AS", "ASENSITIVE", "ASIN", "ASYMMETRIC", "AT", "ATAN", "ATOMIC", "AUTHORIZATION", "AVG",
 			"BEGIN", "BEGIN_FRAME", "BEGIN_PARTITION", "BETWEEN", "BIGINT", "BINARY", "BIT_LENGTH", "BLOB", "BOOLEAN", "BOTH", "BY",
 			"CALL", "CALLED", "CARDINALITY", "CASCADED", "CASE", "CAST", "CEIL", "CEILING", "CHAR", "CHARACTER", "CHARACTER_LENGTH", "CHAR_LENGTH", "CHECK", "CLOB", "CLOSE", "COALESCE", "COLLATE", "COLLECT", "COLUMN", "COMMIT", "COMPARABLE", "CONDIITON", "CONNECT", "CONSTRAINT", "CONTAINS", "CONVERT", "CORR", "CORRESPONDING", "COS", "COSH", "COUNT", "COVAR_POP", "COVAR_SAMP", "CREATE", "CROSS", "CUBE", "CUME_DIST", "CURRENT", "CURRENT_CATALOG", "CURRENT_DATE", "CURRENT_DEFAULT_TRANSFORM_GROUP", "CURRENT_PATH", "CURRENT_ROLE", "CURRENT_ROW", "CURRENT_SCHEMA", "CURRENT_TIME", "CURRENT_TIMESTAMP", "CURRENT_TRANSFORM_GROUP_FOR_TYPE", "CURRENT_USER", "CURSOR", "CYCLE",

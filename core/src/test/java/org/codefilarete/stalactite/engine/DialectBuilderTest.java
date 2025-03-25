@@ -79,35 +79,73 @@ class DialectBuilderTest {
 		);
 	}
 	
-	@Test
-	<T extends Table<T>> void build_keywordsAreEscaped() {
-		DialectBuilder testInstance = new DialectBuilder(defaultDatabaseVendorSettings);
+	
+	@Nested
+	class Keywords {
 		
-		Dialect dialect = testInstance.build();
+		@Test
+		<T extends Table<T>> void keywordsAreEscaped() {
+			DialectBuilder testInstance = new DialectBuilder(defaultDatabaseVendorSettings);
+			
+			Dialect dialect = testInstance.build();
+			
+			T keywordNamedTable = (T) new Table("a_KeYworD");
+			Column<T, Long> idColumn = keywordNamedTable.addColumn("id", long.class);
+			Column<T, String> nameColumn = keywordNamedTable.addColumn("name", String.class);
+			
+			// Note that since that there's a lot of propagation of quote character in the code, it is simpler to check
+			// the result of some SQL code formating instead of checking that all generators have the right quote character
+			String totoTableCreateScript = dialect.getDdlTableGenerator().generateCreateTable(keywordNamedTable);
+			assertThat(totoTableCreateScript).isEqualTo("create table 'a_KeYworD'(id bigint not null, name varchar)");
+			
+			String sequenceScript = dialect.getDdlSequenceGenerator().generateCreateSequence(new org.codefilarete.stalactite.sql.ddl.structure.Sequence(null, "A_KeywOrD"));
+			assertThat(sequenceScript).isEqualTo("create sequence 'A_KeywOrD'");
+			
+			ColumnParameterizedSQL<T> insert = dialect.getDmlGenerator().buildInsert(Arrays.asList(idColumn, nameColumn));
+			assertThat(insert.getSQL()).isEqualTo("insert into 'a_KeYworD'(id, name) values (?, ?)");
+			
+			PreparedUpdate<T> update = dialect.getDmlGenerator().buildUpdate(Arrays.asList(idColumn, nameColumn), Arrays.asList(idColumn));
+			assertThat(update.getSQL()).isEqualTo("update 'a_KeYworD' set id = ?, name = ? where id = ?");
+			
+			ColumnParameterizedSQL<T> delete = dialect.getDmlGenerator().buildDelete(keywordNamedTable, Arrays.asList(idColumn));
+			assertThat(delete.getSQL()).isEqualTo("delete from 'a_KeYworD' where id = ?");
+			
+			ColumnParameterizedSQL<T> select = dialect.getDmlGenerator().buildSelect(keywordNamedTable, Arrays.asList(idColumn), Arrays.asList(idColumn));
+			assertThat(select.getSQL()).isEqualTo("select id from 'a_KeYworD' where id = ?");
+		}
 		
-		T keywordNamedTable = (T) new Table("a_KeYworD");
-		Column<T, Long> idColumn = keywordNamedTable.addColumn("id", long.class);
-		Column<T, String> nameColumn = keywordNamedTable.addColumn("name", String.class);
-		
-		// Note that since that there's a lot of propagation of quote character in the code, it is simpler to check
-		// the result of some SQL code formating instead of checking that all generators have the right quote character
-		String totoTableCreateScript = dialect.getDdlTableGenerator().generateCreateTable(keywordNamedTable);
-		assertThat(totoTableCreateScript).isEqualTo("create table 'a_KeYworD'(id bigint not null, name varchar)");
-		
-		String sequenceScript = dialect.getDdlSequenceGenerator().generateCreateSequence(new org.codefilarete.stalactite.sql.ddl.structure.Sequence(null, "A_KeywOrD"));
-		assertThat(sequenceScript).isEqualTo("create sequence 'A_KeywOrD'");
-		
-		ColumnParameterizedSQL<T> insert = dialect.getDmlGenerator().buildInsert(Arrays.asList(idColumn, nameColumn));
-		assertThat(insert.getSQL()).isEqualTo("insert into 'a_KeYworD'(id, name) values (?, ?)");
-		
-		PreparedUpdate<T> update = dialect.getDmlGenerator().buildUpdate(Arrays.asList(idColumn, nameColumn), Arrays.asList(idColumn));
-		assertThat(update.getSQL()).isEqualTo("update 'a_KeYworD' set id = ?, name = ? where id = ?");
-		
-		ColumnParameterizedSQL<T> delete = dialect.getDmlGenerator().buildDelete(keywordNamedTable, Arrays.asList(idColumn));
-		assertThat(delete.getSQL()).isEqualTo("delete from 'a_KeYworD' where id = ?");
-		
-		ColumnParameterizedSQL<T> select = dialect.getDmlGenerator().buildSelect(keywordNamedTable, Arrays.asList(idColumn), Arrays.asList(idColumn));
-		assertThat(select.getSQL()).isEqualTo("select id from 'a_KeYworD' where id = ?");
+		@Test
+		<T extends Table<T>> void keywordsCanBeChanged() {
+			DialectBuilder testInstance = new DialectBuilder(defaultDatabaseVendorSettings, new DialectOptions()
+					.addSqlKeywords("another_keyword")
+					.removeSqlKeywords("a_keyWOrd"));
+			
+			Dialect dialect = testInstance.build();
+			
+			T keywordNamedTable = (T) new Table("a_KeYworD");
+			Column<T, Long> idColumn = keywordNamedTable.addColumn("another_keyword", long.class);
+			Column<T, String> nameColumn = keywordNamedTable.addColumn("name", String.class);
+			
+			// Note that since that there's a lot of propagation of quote character in the code, it is simpler to check
+			// the result of some SQL code formating instead of checking that all generators have the right quote character
+			String totoTableCreateScript = dialect.getDdlTableGenerator().generateCreateTable(keywordNamedTable);
+			assertThat(totoTableCreateScript).isEqualTo("create table a_KeYworD('another_keyword' bigint not null, name varchar)");
+			
+			String sequenceScript = dialect.getDdlSequenceGenerator().generateCreateSequence(new org.codefilarete.stalactite.sql.ddl.structure.Sequence(null, "A_KeywOrD"));
+			assertThat(sequenceScript).isEqualTo("create sequence A_KeywOrD");
+			
+			ColumnParameterizedSQL<T> insert = dialect.getDmlGenerator().buildInsert(Arrays.asList(idColumn, nameColumn));
+			assertThat(insert.getSQL()).isEqualTo("insert into a_KeYworD('another_keyword', name) values (?, ?)");
+			
+			PreparedUpdate<T> update = dialect.getDmlGenerator().buildUpdate(Arrays.asList(idColumn, nameColumn), Arrays.asList(idColumn));
+			assertThat(update.getSQL()).isEqualTo("update a_KeYworD set 'another_keyword' = ?, name = ? where 'another_keyword' = ?");
+			
+			ColumnParameterizedSQL<T> delete = dialect.getDmlGenerator().buildDelete(keywordNamedTable, Arrays.asList(idColumn));
+			assertThat(delete.getSQL()).isEqualTo("delete from a_KeYworD where 'another_keyword' = ?");
+			
+			ColumnParameterizedSQL<T> select = dialect.getDmlGenerator().buildSelect(keywordNamedTable, Arrays.asList(idColumn), Arrays.asList(idColumn));
+			assertThat(select.getSQL()).isEqualTo("select 'another_keyword' from a_KeYworD where 'another_keyword' = ?");
+		}
 	}
 	
 	@Nested

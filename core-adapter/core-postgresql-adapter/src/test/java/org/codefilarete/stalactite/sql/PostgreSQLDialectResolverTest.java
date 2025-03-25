@@ -40,7 +40,7 @@ class PostgreSQLDialectResolverTest {
 		assertThat(dialect.getCompatibility()).usingRecursiveComparison().isEqualTo(new PostgreSQLDatabaseSignet(9, 6));
 		
 		DatabaseVendorSettings vendorSettings = dialectResolver.determineVendorSettings(postgresqlDataSource.getConnection());
-		assertThat(vendorSettings.getKeyWords()).containsExactlyInAnyOrder(KEYWORDS);
+		assertThat(vendorSettings.getKeywords()).containsExactlyInAnyOrder(KEYWORDS);
 		assertThat(vendorSettings.getQuoteCharacter()).isEqualTo('`');
 		assertThat(vendorSettings.getJavaTypeToSqlTypes()).isExactlyInstanceOf(PostgreSQLTypeMapping.class);
 		assertThat(vendorSettings.getParameterBinderRegistry()).isExactlyInstanceOf(PostgreSQLParameterBinderRegistry.class);

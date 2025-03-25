@@ -39,7 +39,7 @@ class MySQLDialectResolverTest {
 		assertThat(dialect.getCompatibility()).usingRecursiveComparison().isEqualTo(new MySQLDatabaseSignet(5, 6));
 		
 		DatabaseVendorSettings vendorSettings = dialectResolver.determineVendorSettings(mySQLDataSource.getConnection());
-		assertThat(vendorSettings.getKeyWords()).containsExactlyInAnyOrder(KEYWORDS);
+		assertThat(vendorSettings.getKeywords()).containsExactlyInAnyOrder(KEYWORDS);
 		assertThat(vendorSettings.getQuoteCharacter()).isEqualTo('`');
 		assertThat(vendorSettings.getJavaTypeToSqlTypes()).isExactlyInstanceOf(MySQLTypeMapping.class);
 		assertThat(vendorSettings.getParameterBinderRegistry()).isExactlyInstanceOf(MySQLParameterBinderRegistry.class);
