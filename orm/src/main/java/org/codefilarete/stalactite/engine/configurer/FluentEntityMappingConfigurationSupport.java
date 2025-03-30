@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -316,15 +317,29 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapCompositeKey(SerializableFunction<C, I> getter, CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder) {
-		CompositeKeyLinkageSupport<C, I> mapping = propertiesMappingConfigurationSurrogate.addCompositeKeyMapping(getter, compositeKeyMappingBuilder);
-		return this.propertiesMappingConfigurationSurrogate.wrapWithKeyOptions(mapping);
+	public FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapCompositeKey(SerializableFunction<C, I> getter,
+																			   CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder,
+																			   Consumer<C> markAsPersistedFunction,
+																			   Function<C, Boolean> isPersistedFunction) {
+		return this.propertiesMappingConfigurationSurrogate.wrapWithKeyOptions(
+				propertiesMappingConfigurationSurrogate.addCompositeKeyMapping(
+						Accessors.accessor(getter),
+						compositeKeyMappingBuilder,
+						markAsPersistedFunction,
+						isPersistedFunction));
 	}
 	
 	@Override
-	public FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapCompositeKey(SerializableBiConsumer<C, I> setter, CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder) {
-		CompositeKeyLinkageSupport<C, I> mapping = propertiesMappingConfigurationSurrogate.addCompositeKeyMapping(setter, compositeKeyMappingBuilder);
-		return this.propertiesMappingConfigurationSurrogate.wrapWithKeyOptions(mapping);
+	public FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapCompositeKey(SerializableBiConsumer<C, I> setter,
+																			   CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder,
+																			   Consumer<C> markAsPersistedFunction,
+																			   Function<C, Boolean> isPersistedFunction) {
+		return this.propertiesMappingConfigurationSurrogate.wrapWithKeyOptions(
+				propertiesMappingConfigurationSurrogate.addCompositeKeyMapping(
+						Accessors.mutator(setter),
+						compositeKeyMappingBuilder,
+						markAsPersistedFunction,
+						isPersistedFunction));
 	}
 	
 	@Override
@@ -1077,26 +1092,21 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 			return newLinkage;
 		}
 		
-		CompositeKeyLinkageSupport<C, I> addCompositeKeyMapping(SerializableFunction<C, I> getter, CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder) {
-			return addCompositeKeyMapping(Accessors.accessor(getter), compositeKeyMappingBuilder);
-		}
-		
-		CompositeKeyLinkageSupport<C, I> addCompositeKeyMapping(SerializableBiConsumer<C, I> setter, CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder) {
-			return addCompositeKeyMapping(Accessors.mutator(setter), compositeKeyMappingBuilder);
-		}
-		
 		/**
 		 *
 		 * @param propertyAccessor
 		 * @return
 		 */
-		private CompositeKeyLinkageSupport<C, I> addCompositeKeyMapping(ReversibleAccessor<C, I> propertyAccessor, CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder) {
+		private CompositeKeyLinkageSupport<C, I> addCompositeKeyMapping(ReversibleAccessor<C, I> propertyAccessor,
+																		CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder,
+																		Consumer<C> markAsPersistedFunction,
+																		Function<C, Boolean> isPersistedFunction) {
 			
 			// Please note that we don't check for any id presence in inheritance since this will override parent one (see final build()) 
 			if (entityConfigurationSupport.keyMapping != null) {
 				throw new IllegalArgumentException("Identifier is already defined by " + AccessorDefinition.toString(entityConfigurationSupport.keyMapping.getAccessor()));
 			}
-			CompositeKeyLinkageSupport<C, I> newLinkage = new CompositeKeyLinkageSupport<>(propertyAccessor, compositeKeyMappingBuilder);
+			CompositeKeyLinkageSupport<C, I> newLinkage = new CompositeKeyLinkageSupport<>(propertyAccessor, compositeKeyMappingBuilder, markAsPersistedFunction, isPersistedFunction);
 			entityConfigurationSupport.keyMapping = newLinkage;
 			return newLinkage;
 		}
@@ -1458,21 +1468,28 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	/**
-	 * Storage for composite key mapping definition. See {@link #mapCompositeKey(SerializableFunction, CompositeKeyMappingConfigurationProvider)} methods.
+	 * Storage for composite key mapping definition. See {@link FluentEntityMappingBuilder#mapCompositeKey(SerializableFunction, CompositeKeyMappingConfigurationProvider, Consumer, Function)} methods.
 	 */
 	protected static class CompositeKeyLinkageSupport<C, I> implements KeyMapping<C, I>, CompositeKeyMapping<C, I> {
 		
 		private final ReversibleAccessor<C, I> accessor;
 		private final CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder;
+		private final Consumer<C> markAsPersistedFunction;
+		private final Function<C, Boolean> isPersistedFunction;
 		
 		@javax.annotation.Nullable
 		private CompositeKeyLinkageOptions columnOptions;
 		
 		private boolean setByConstructor;
 		
-		public CompositeKeyLinkageSupport(ReversibleAccessor<C, I> accessor, CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder) {
+		public CompositeKeyLinkageSupport(ReversibleAccessor<C, I> accessor,
+										  CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder,
+										  Consumer<C> markAsPersistedFunction,
+										  Function<C, Boolean> isPersistedFunction) {
 			this.accessor = accessor;
 			this.compositeKeyMappingBuilder = compositeKeyMappingBuilder;
+			this.markAsPersistedFunction = markAsPersistedFunction;
+			this.isPersistedFunction = isPersistedFunction;
 		}
 		
 		public CompositeKeyMappingConfigurationProvider<I> getCompositeKeyMappingBuilder() {
@@ -1499,6 +1516,16 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		
 		public List<CompositeKeyLinkage> getPropertiesMapping() {
 			return compositeKeyMappingBuilder.getConfiguration().getPropertiesMapping();
+		}
+		
+		@Override
+		public Consumer<C> getMarkAsPersistedFunction() {
+			return markAsPersistedFunction;
+		}
+		
+		@Override
+		public Function<C, Boolean> getIsPersistedFunction() {
+			return isPersistedFunction;
 		}
 		
 		@javax.annotation.Nullable

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -103,9 +104,14 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 *
 	 * @param getter getter of the property to be used as key
 	 * @param compositeKeyMappingBuilder a configuration that details the properties that composes the identifier
+	 * @param markAsPersistedFunction the {@link Consumer} that allows to mark the entity as "inserted in database"
+	 * @param isPersistedFunction the {@link Function} that allows to know if entity was already inserted in database
 	 * @return an object for configuration chaining
 	 */
-	FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapCompositeKey(SerializableFunction<C, I> getter, CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder);
+	FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapCompositeKey(SerializableFunction<C, I> getter,
+																		CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder,
+																		Consumer<C> markAsPersistedFunction,
+																		Function<C, Boolean> isPersistedFunction);
 	
 	/**
 	 * Maps given property as a composite-identifier. The {@link IdentifierPolicy} is already-assigned.
@@ -113,9 +119,14 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 *
 	 * @param setter setter of the property to be used as key
 	 * @param compositeKeyMappingBuilder a configuration that details the properties that composes the identifier
+	 * @param markAsPersistedFunction the {@link Consumer} that allows to mark the entity as "inserted in database"
+	 * @param isPersistedFunction the {@link Function} that allows to know if entity was already inserted in database
 	 * @return an object for configuration chaining
 	 */
-	FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapCompositeKey(SerializableBiConsumer<C, I> setter, CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder);
+	FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapCompositeKey(SerializableBiConsumer<C, I> setter,
+																		CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder,
+																		Consumer<C> markAsPersistedFunction,
+																		Function<C, Boolean> isPersistedFunction);
 	
 	/**
 	 * Interface for {@link #mapKey(SerializableFunction, IdentifierPolicy)} family methods return. Aimed at chaining to configure entity key mapping. 

@@ -7,25 +7,17 @@ import java.util.function.Function;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.PersistListener;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
-import org.codefilarete.stalactite.engine.runtime.WriteExecutor.JDBCBatchingIterator;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.tool.collection.Collections;
 
 /**
- * 
+ *
  * @param <C>
  * @param <I>
  * @author Guillaume Mary
  */
-public class CompositeKeyAlreadyAssignedIdentifierInsertionManager<C, I> implements IdentifierInsertionManager<C, I> {
+public class CompositeKeyAlreadyAssignedIdentifierInsertionManager<C, I> extends AlreadyAssignedIdentifierManager<C, I> {
 	
-	private final ThreadLocal<Set<C>> currentMarkedPersistedEntities = new ThreadLocal<>();
-	
-	private final Consumer<C> markAsPersistedFunction = o -> currentMarkedPersistedEntities.get().add(o);
-	
-	private final Function<C, Boolean> isPersistedFunction = o -> currentMarkedPersistedEntities.get().contains(o);
+	private final ThreadLocal<Set<C>> currentMarkedPersistedEntities;
 	
 	private final CurrentContextManagerInsertListener currentContextManagerInsertListener = new CurrentContextManagerInsertListener();
 	
@@ -33,28 +25,20 @@ public class CompositeKeyAlreadyAssignedIdentifierInsertionManager<C, I> impleme
 	
 	private final CurrentContextManagerPersistListener currentContextManagerPersistListener = new CurrentContextManagerPersistListener();
 	
-	private final Class<I> identifierType;
+	public CompositeKeyAlreadyAssignedIdentifierInsertionManager(Class<I> identifierType,
+																 Consumer<C> markAsPersistedFunction,
+																 Function<C, Boolean> isPersistedFunction) {
+		super(identifierType, markAsPersistedFunction, isPersistedFunction);
+		this.currentMarkedPersistedEntities = null;
+	}
 	
 	public CompositeKeyAlreadyAssignedIdentifierInsertionManager(Class<I> identifierType) {
-		this.identifierType = identifierType;
+		this(identifierType, new ThreadLocal<>());
 	}
 	
-	public Consumer<C> getMarkAsPersistedFunction() {
-		return markAsPersistedFunction;
-	}
-	
-	public Function<C, Boolean> getIsPersistedFunction() {
-		return isPersistedFunction;
-	}
-	
-	@Override
-	public Class<I> getIdentifierType() {
-		return identifierType;
-	}
-	
-	@Override
-	public JDBCBatchingIterator<C> buildJDBCBatchingIterator(Iterable<? extends C> entities, WriteOperation<? extends Column<? extends Table, ?>> writeOperation, int batchSize) {
-		return new JDBCBatchingIterator<>(entities, writeOperation, batchSize);
+	private CompositeKeyAlreadyAssignedIdentifierInsertionManager(Class<I> identifierType, ThreadLocal<Set<C>> currentMarkedPersistedEntities) {
+		super(identifierType, o -> currentMarkedPersistedEntities.get().add(o), o -> currentMarkedPersistedEntities.get().contains(o));
+		this.currentMarkedPersistedEntities = currentMarkedPersistedEntities;
 	}
 	
 	public PersistListener<C> getPersistListener() {
@@ -81,12 +65,12 @@ public class CompositeKeyAlreadyAssignedIdentifierInsertionManager<C, I> impleme
 	}
 	
 	private class CurrentContextManagerPersistListener implements PersistListener<C> {
-
+		
 		@Override
 		public void beforePersist(Iterable<? extends C> entities) {
 			ensureCurrentEntitySet();
 		}
-
+		
 		@Override
 		public void afterPersist(Iterable<? extends C> entities) {
 			clearCurrentEntitySet();
@@ -102,6 +86,7 @@ public class CompositeKeyAlreadyAssignedIdentifierInsertionManager<C, I> impleme
 		
 		@Override
 		public void afterInsert(Iterable<? extends C> entities) {
+			markAsPersisted(entities);
 			clearCurrentEntitySet();
 		}
 		
@@ -120,6 +105,7 @@ public class CompositeKeyAlreadyAssignedIdentifierInsertionManager<C, I> impleme
 		
 		@Override
 		public void afterSelect(Set<? extends C> result) {
+			markAsPersisted(result);
 			clearCurrentEntitySet();
 		}
 		

@@ -106,7 +106,7 @@ public final class MappingEase {
 	
 	/**
 	 * Starts a {@link FluentCompositeKeyMappingBuilder} for a given class.
-	 * To be used with {@link FluentEntityMappingBuilder#mapCompositeKey(SerializableFunction, CompositeKeyMappingConfigurationProvider)}
+	 * To be used with {@link FluentEntityMappingBuilder#mapCompositeKey(SerializableFunction, CompositeKeyMappingConfigurationProvider, java.util.function.Consumer, java.util.function.Function)}
 	 *
 	 * @param persistedClass the class to be persisted by the {@link EmbeddedClassMapping}
 	 * @param <T> any type to be persisted

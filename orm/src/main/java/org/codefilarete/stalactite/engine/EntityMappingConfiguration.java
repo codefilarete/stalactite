@@ -4,6 +4,7 @@ import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.codefilarete.reflection.ReversibleAccessor;
@@ -127,6 +128,10 @@ public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfi
 		
 		@Nullable
 		CompositeKeyLinkageOptions getColumnsOptions();
+		
+		Consumer<C> getMarkAsPersistedFunction();
+		
+		Function<C, Boolean> getIsPersistedFunction();
 	}
 	
 	interface ColumnLinkageOptions {

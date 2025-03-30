@@ -1,10 +1,13 @@
 package org.codefilarete.stalactite.engine.configurer;
 
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.ColumnOptions;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
+import org.codefilarete.stalactite.engine.EntityMappingConfiguration.CompositeKeyMapping;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
@@ -50,8 +53,8 @@ public abstract class AbstractIdentification<C, I> {
 	 * @param <I> identifier type
 	 * @return a composite-key identification
 	 */
-	static <C, I> CompositeKeyIdentification<C, I> forCompositeKey(EntityMappingConfiguration<C, I> identificationDefiner) {
-		return new CompositeKeyIdentification<>(identificationDefiner);
+	static <C, I> CompositeKeyIdentification<C, I> forCompositeKey(EntityMappingConfiguration<C, I> identificationDefiner, CompositeKeyMapping<C, I> foundKeyMapping) {
+		return new CompositeKeyIdentification<>(identificationDefiner, foundKeyMapping.getMarkAsPersistedFunction(), foundKeyMapping.getIsPersistedFunction());
 	}
 	
 	private final ReversibleAccessor<C, I> idAccessor;
@@ -133,10 +136,26 @@ public abstract class AbstractIdentification<C, I> {
 	 */
 	public static class CompositeKeyIdentification<C, I> extends AbstractIdentification<C, I> {
 		
+		private final Consumer<C> markAsPersistedFunction;
+		
+		private final Function<C, Boolean> isPersistedFunction;
+		
 		private Map<ReversibleAccessor<I, Object>, Column<Table, Object>> compositeKeyMapping;
 		
-		private CompositeKeyIdentification(EntityMappingConfiguration<C, I> identificationDefiner) {
+		private CompositeKeyIdentification(EntityMappingConfiguration<C, I> identificationDefiner,
+										   Consumer<C> markAsPersistedFunction,
+										   Function<C, Boolean> isPersistedFunction) {
 			super(identificationDefiner);
+			this.markAsPersistedFunction = markAsPersistedFunction;
+			this.isPersistedFunction = isPersistedFunction;
+		}
+		
+		public Consumer<C> getMarkAsPersistedFunction() {
+			return markAsPersistedFunction;
+		}
+		
+		public Function<C, Boolean> getIsPersistedFunction() {
+			return isPersistedFunction;
 		}
 		
 		public Map<ReversibleAccessor<I, Object>, Column<Table, Object>> getCompositeKeyMapping() {

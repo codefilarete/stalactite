@@ -22,7 +22,7 @@ import org.codefilarete.stalactite.sql.statement.WriteOperation;
  * A way o managing it can be to create a wrapper around identifier.
  * 
  * @author Guillaume Mary
- * @see SimpleIdMapping.IsNewDeterminer#isNew(Object) 
+ * @see SimpleIdMapping.IsNewDeterminer#isNew(Object)
  */
 public class AlreadyAssignedIdentifierManager<C, I> implements IdentifierInsertionManager<C, I> {
 	
@@ -49,6 +49,10 @@ public class AlreadyAssignedIdentifierManager<C, I> implements IdentifierInserti
 	@Override
 	public Class<I> getIdentifierType() {
 		return identifierType;
+	}
+	
+	public Consumer<C> getMarkAsPersistedFunction() {
+		return markAsPersistedFunction;
 	}
 	
 	public Function<C, Boolean> getIsPersistedFunction() {
@@ -95,13 +99,12 @@ public class AlreadyAssignedIdentifierManager<C, I> implements IdentifierInserti
 	/**
 	 * Massive version of {@link #setPersistedFlag(Object)}, made to avoid code duplicate between {@link SetPersistedFlagAfterInsertListener}
 	 * and {@link SetPersistedFlagAfterSelectListener}
-	 * 
+	 *
 	 * @param entities entities to be marked as persisted
 	 */
-	private void markAsPersisted(Iterable<? extends C> entities) {
+	protected void markAsPersisted(Iterable<? extends C> entities) {
 		for (C e : entities) {
 			setPersistedFlag(e);
 		}
 	}
-	
 }

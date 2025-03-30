@@ -134,7 +134,7 @@ public interface ColumnOptions<O> extends PropertyOptions<O> {
 		 * @return a new policy that will be used to know persistent state of entities
 		 */
 		static <C, I> AlreadyAssignedIdentifierPolicy<C, I> alreadyAssigned(Consumer<C> markAsPersistedFunction,
-																		  Function<C, Boolean> isPersistedFunction) {
+																			Function<C, Boolean> isPersistedFunction) {
 			return new AlreadyAssignedIdentifierPolicySupport<>(markAsPersistedFunction, isPersistedFunction);
 		}
 	}

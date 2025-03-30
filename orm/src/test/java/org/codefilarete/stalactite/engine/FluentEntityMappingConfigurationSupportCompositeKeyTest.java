@@ -15,6 +15,8 @@ import org.codefilarete.stalactite.engine.model.compositekey.House.HouseId;
 import org.codefilarete.stalactite.engine.model.compositekey.Person;
 import org.codefilarete.stalactite.engine.model.compositekey.Person.PersonId;
 import org.codefilarete.stalactite.engine.model.compositekey.Pet;
+import org.codefilarete.stalactite.engine.model.compositekey.Pet.Cat;
+import org.codefilarete.stalactite.engine.model.compositekey.Pet.PetId;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -33,12 +35,18 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.codefilarete.stalactite.engine.MappingEase.compositeKeyBuilder;
+import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
 import static org.codefilarete.stalactite.engine.MappingEase.subentityBuilder;
 
 public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	
 	private final Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
+	
+	private final Set<PersonId> persistedPersons = new HashSet<>();
+	private final Set<PetId> persistedPets = new HashSet<>();
+	private final Set<HouseId> persistedHouses = new HashSet<>();
 	
 	private PersistenceContext persistenceContext;
 	
@@ -47,6 +55,14 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		persistenceContext = new PersistenceContext(dataSource, dialect);
+		clearPersistedStatuses();
+	}
+	
+//	@BeforeEach
+	public void clearPersistedStatuses() {
+		persistedPersons.clear();
+		persistedPets.clear();
+		persistedHouses.clear();
 	}
 	
 	@Nested
@@ -54,14 +70,14 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		
 		@Test
 		void oneToOne_compositeToSingleKey_relationOwnedBySource() throws SQLException {
-			MappingEase.entityBuilder(Person.class, PersonId.class)
+			entityBuilder(Person.class, PersonId.class)
 					// setting a foreign key naming strategy to be tested
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
-					.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+					.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 							.map(PersonId::getFirstName)
 							.map(PersonId::getLastName)
-							.map(PersonId::getAddress))
-					.mapOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Long.class)
+							.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
+					.mapOneToOne(Person::getHouse, entityBuilder(House.class, Long.class)
 							.mapKey(House::getId, IdentifierPolicy.databaseAutoIncrement()))
 					.build(persistenceContext);
 			
@@ -78,14 +94,14 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 
 		@Test
 		void oneToOne_compositeToSingleKey_relationOwnedByTarget() throws SQLException {
-			MappingEase.entityBuilder(Person.class, PersonId.class)
+			entityBuilder(Person.class, PersonId.class)
 					// setting a foreign key naming strategy to be tested
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
-					.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+					.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 							.map(PersonId::getFirstName)
 							.map(PersonId::getLastName)
-							.map(PersonId::getAddress))
-					.mapOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Long.class)
+							.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
+					.mapOneToOne(Person::getHouse, entityBuilder(House.class, Long.class)
 							.mapKey(House::getId, IdentifierPolicy.databaseAutoIncrement()))
 					.mappedBy(House::getOwner)
 					.build(persistenceContext);
@@ -104,19 +120,19 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		
 		@Test
 		void oneToOne_compositeToCompositeKey_relationOwnedBySource() throws SQLException {
-			MappingEase.entityBuilder(Person.class, PersonId.class)
+			entityBuilder(Person.class, PersonId.class)
 					// setting a foreign key naming strategy to be tested
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
-					.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+					.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 							.map(PersonId::getFirstName)
 							.map(PersonId::getLastName)
-							.map(PersonId::getAddress))
-					.mapOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, HouseId.class)
-							.mapCompositeKey(House::getHouseId, MappingEase.compositeKeyBuilder(HouseId.class)
+							.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
+					.mapOneToOne(Person::getHouse, entityBuilder(House.class, HouseId.class)
+							.mapCompositeKey(House::getHouseId, compositeKeyBuilder(HouseId.class)
 									.map(HouseId::getNumber)
 									.map(HouseId::getStreet)
 									.map(HouseId::getZipCode)
-									.map(HouseId::getCity)))
+									.map(HouseId::getCity), h -> persistedHouses.add(h.getHouseId()), h -> persistedHouses.contains(h.getHouseId())))
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -132,19 +148,19 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		
 		@Test
 		void oneToOne_compositeToCompositeKey_relationOwnedByTarget() throws SQLException {
-			MappingEase.entityBuilder(Person.class, PersonId.class)
+			entityBuilder(Person.class, PersonId.class)
 					// setting a foreign key naming strategy to be tested
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
-					.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+					.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 							.map(PersonId::getFirstName)
 							.map(PersonId::getLastName)
-							.map(PersonId::getAddress))
-					.mapOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, HouseId.class)
-							.mapCompositeKey(House::getHouseId, MappingEase.compositeKeyBuilder(HouseId.class)
+							.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
+					.mapOneToOne(Person::getHouse, entityBuilder(House.class, HouseId.class)
+							.mapCompositeKey(House::getHouseId, compositeKeyBuilder(HouseId.class)
 									.map(HouseId::getNumber)
 									.map(HouseId::getStreet)
 									.map(HouseId::getZipCode)
-									.map(HouseId::getCity)))
+									.map(HouseId::getCity), h -> persistedHouses.add(h.getHouseId()), h -> persistedHouses.contains(h.getHouseId())))
 					.mappedBy(House::getOwner)
 					.build(persistenceContext);
 			
@@ -162,17 +178,17 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		
 		@Test
 		void oneToMany_compositeToCompositeKey_withAssociationTable() throws SQLException {
-			EntityPersister<Person, PersonId> personPersister =  MappingEase.entityBuilder(Person.class, PersonId.class)
-					.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+			EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
+					.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 							.map(PersonId::getFirstName)
 							.map(PersonId::getLastName)
-							.map(PersonId::getAddress))
+							.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
 					.map(Person::getAge)
-					.mapOneToMany(Person::getPets, MappingEase.entityBuilder(Pet.class, Pet.PetId.class)
-							.mapCompositeKey(Pet::getId, MappingEase.compositeKeyBuilder(Pet.PetId.class)
+					.mapOneToMany(Person::getPets, entityBuilder(Pet.class, Pet.PetId.class)
+							.mapCompositeKey(Pet::getId, compositeKeyBuilder(Pet.PetId.class)
 									.map(Pet.PetId::getName)
 									.map(Pet.PetId::getRace)
-									.map(Pet.PetId::getAge)))
+									.map(Pet.PetId::getAge), p -> persistedPets.add(p.getId()), p -> persistedPets.contains(p.getId())))
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -225,11 +241,11 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	
 	@Test
 	void crud() {
-		EntityPersister<Person, PersonId> personPersister = MappingEase.entityBuilder(Person.class, PersonId.class)
-				.mapCompositeKey(Person::setId, MappingEase.compositeKeyBuilder(PersonId.class)
+		EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
+				.mapCompositeKey(Person::setId, compositeKeyBuilder(PersonId.class)
 						.map(PersonId::getFirstName)
 						.map(PersonId::getLastName)
-						.map(PersonId::getAddress))
+						.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
 				.map(Person::getAge)
 				.build(persistenceContext);
 		
@@ -257,11 +273,11 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	
 	@Test
 	void crud_columnNameOverridden_columnNameIsUsed() {
-		EntityPersister<Person, PersonId> personPersister = MappingEase.entityBuilder(Person.class, PersonId.class)
-				.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+		EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
+				.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 						.map(PersonId::getFirstName)
 						.map(PersonId::getLastName).columnName("familyName")
-						.map(PersonId::getAddress))
+						.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
 				.map(Person::getAge)
 				.build(persistenceContext);
 		
@@ -279,11 +295,11 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	
 	@Test
 	void crud_fieldNameOverridden_fieldNameIsUsed() throws SQLException {
-		EntityPersister<Person, PersonId> personPersister = MappingEase.entityBuilder(Person.class, PersonId.class)
-				.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+		EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
+				.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 						.map(PersonId::getFirstName)
 						.map(PersonId::getFamilyName).fieldName("lastName")
-						.map(PersonId::getAddress))
+						.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
 				.map(Person::getAge)
 				.build(persistenceContext);
 		
@@ -311,11 +327,11 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	
 	@Test
 	void crud_fieldNameOverriddenAndColumnNameOverridden_columnNameIsUsed() throws SQLException {
-		EntityPersister<Person, PersonId> personPersister = MappingEase.entityBuilder(Person.class, PersonId.class)
-				.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+		EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
+				.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 						.map(PersonId::getFirstName)
 						.map(PersonId::getFamilyName).fieldName("lastName").columnName("familyName")
-						.map(PersonId::getAddress))
+						.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
 				.map(Person::getAge)
 				.build(persistenceContext);
 		
@@ -343,13 +359,13 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	
 	@Test
 	void crud_oneToOne_compositeToSingleKey_ownedBySource() {
-		EntityPersister<Person, PersonId> personPersister =  MappingEase.entityBuilder(Person.class, PersonId.class)
-				.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+		EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
+				.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 						.map(PersonId::getFirstName)
 						.map(PersonId::getLastName)
-						.map(PersonId::getAddress))
+						.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
 				.map(Person::getAge)
-				.mapOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Long.class)
+				.mapOneToOne(Person::getHouse, entityBuilder(House.class, Long.class)
 						.mapKey(House::getId, IdentifierPolicy.databaseAutoIncrement()))
 				.build(persistenceContext);
 		
@@ -379,13 +395,13 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 
 	@Test
 	void crud_oneToOne_compositeToSingleKey_ownedByTarget() {
-		EntityPersister<Person, PersonId> personPersister =  MappingEase.entityBuilder(Person.class, PersonId.class)
-				.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+		EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
+				.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 						.map(PersonId::getFirstName)
 						.map(PersonId::getLastName)
-						.map(PersonId::getAddress))
+						.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
 				.map(Person::getAge)
-				.mapOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Long.class)
+				.mapOneToOne(Person::getHouse, entityBuilder(House.class, Long.class)
 						.mapKey(House::getId, IdentifierPolicy.databaseAutoIncrement()))
 				.mappedBy(House::getOwner)
 				.build(persistenceContext);
@@ -416,18 +432,18 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	
 	@Test
 	void crud_oneToOne_compositeToCompositeKey_ownedBySource() {
-		EntityPersister<Person, PersonId> personPersister =  MappingEase.entityBuilder(Person.class, PersonId.class)
-				.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+		EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
+				.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 						.map(PersonId::getFirstName)
 						.map(PersonId::getLastName)
-						.map(PersonId::getAddress))
+						.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
 				.map(Person::getAge)
-				.mapOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, HouseId.class)
-						.mapCompositeKey(House::getHouseId, MappingEase.compositeKeyBuilder(HouseId.class)
+				.mapOneToOne(Person::getHouse, entityBuilder(House.class, HouseId.class)
+						.mapCompositeKey(House::getHouseId, compositeKeyBuilder(HouseId.class)
 								.map(HouseId::getNumber)
 								.map(HouseId::getStreet)
 								.map(HouseId::getZipCode)
-								.map(HouseId::getCity))
+								.map(HouseId::getCity), h -> persistedHouses.add(h.getHouseId()), h -> persistedHouses.contains(h.getHouseId()))
 						)
 				.build(persistenceContext);
 		
@@ -459,18 +475,18 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	
 	@Test
 	void crud_oneToOne_compositeToCompositeKey_ownedByTarget() {
-		EntityPersister<Person, PersonId> personPersister =  MappingEase.entityBuilder(Person.class, PersonId.class)
-				.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+		EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
+				.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 						.map(PersonId::getFirstName)
 						.map(PersonId::getLastName)
-						.map(PersonId::getAddress))
+						.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
 				.map(Person::getAge)
-				.mapOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, HouseId.class)
-						.mapCompositeKey(House::getHouseId, MappingEase.compositeKeyBuilder(HouseId.class)
+				.mapOneToOne(Person::getHouse, entityBuilder(House.class, HouseId.class)
+						.mapCompositeKey(House::getHouseId, compositeKeyBuilder(HouseId.class)
 								.map(HouseId::getNumber)
 								.map(HouseId::getStreet)
 								.map(HouseId::getZipCode)
-								.map(HouseId::getCity))
+								.map(HouseId::getCity), h -> persistedHouses.add(h.getHouseId()), h -> persistedHouses.contains(h.getHouseId()))
 				)
 				.mappedBy(House::getOwner)
 				.build(persistenceContext);
@@ -503,17 +519,17 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	
 	@Test
 	void crud_oneToMany_ownedByTarget() {
-		EntityPersister<Person, PersonId> personPersister =  MappingEase.entityBuilder(Person.class, PersonId.class)
-				.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+		EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
+				.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 						.map(PersonId::getFirstName)
 						.map(PersonId::getLastName)
-						.map(PersonId::getAddress))
+						.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
 				.map(Person::getAge)
-				.mapOneToMany(Person::getPets, MappingEase.entityBuilder(Pet.class, Pet.PetId.class)
-						.mapCompositeKey(Pet::getId, MappingEase.compositeKeyBuilder(Pet.PetId.class)
+				.mapOneToMany(Person::getPets, entityBuilder(Pet.class, Pet.PetId.class)
+						.mapCompositeKey(Pet::getId, compositeKeyBuilder(Pet.PetId.class)
 								.map(Pet.PetId::getName)
 								.map(Pet.PetId::getRace)
-								.map(Pet.PetId::getAge)))
+								.map(Pet.PetId::getAge), p -> persistedPets.add(p.getId()), p -> persistedPets.contains(p.getId())))
 				.mappedBy(Pet::getOwner)
 				.build(persistenceContext);
 		
@@ -551,17 +567,17 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	
 	@Test
 	void crud_oneToMany_withAssociationTable() {
-		EntityPersister<Person, PersonId> personPersister =  MappingEase.entityBuilder(Person.class, PersonId.class)
-				.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+		EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
+				.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 						.map(PersonId::getFirstName)
 						.map(PersonId::getLastName)
-						.map(PersonId::getAddress))
+						.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
 				.map(Person::getAge)
-				.mapOneToMany(Person::getPets, MappingEase.entityBuilder(Pet.class, Pet.PetId.class)
-						.mapCompositeKey(Pet::getId, MappingEase.compositeKeyBuilder(Pet.PetId.class)
+				.mapOneToMany(Person::getPets, entityBuilder(Pet.class, Pet.PetId.class)
+						.mapCompositeKey(Pet::getId, compositeKeyBuilder(Pet.PetId.class)
 								.map(Pet.PetId::getName)
 								.map(Pet.PetId::getRace)
-								.map(Pet.PetId::getAge)))
+								.map(Pet.PetId::getAge), p -> persistedPets.add(p.getId()), p -> persistedPets.contains(p.getId())))
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -594,19 +610,68 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		assertThat(persons).isEmpty();
 	}
 	
+	
 	@Test
-	void persist_oneToMany_ownedByTarget() {
-		EntityPersister<Person, PersonId> personPersister =  MappingEase.entityBuilder(Person.class, PersonId.class)
-				.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+	void crud_oneToMany_manyTypeIsCompositeKeyAndPolymorphic() {
+		EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
+				.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 						.map(PersonId::getFirstName)
 						.map(PersonId::getLastName)
-						.map(PersonId::getAddress))
+						.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
 				.map(Person::getAge)
-				.mapOneToMany(Person::getPets, MappingEase.entityBuilder(Pet.class, Pet.PetId.class)
-						.mapCompositeKey(Pet::getId, MappingEase.compositeKeyBuilder(Pet.PetId.class)
+				.mapOneToMany(Person::getPets, entityBuilder(Pet.class, PetId.class)
+						.mapCompositeKey(Pet::getId, compositeKeyBuilder(PetId.class)
+								.map(PetId::getName)
+								.map(PetId::getRace)
+								.map(Pet.PetId::getAge), p -> persistedPets.add(p.getId()), p -> persistedPets.contains(p.getId()))
+						.mapPolymorphism(PolymorphismPolicy.<Pet>joinTable().addSubClass(
+								subentityBuilder(Cat.class, PetId.class)))
+				)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Person dummyPerson = new Person(new PersonId("John", "Do", "nowhere"));
+		dummyPerson.getPets().add(new Cat(new PetId("Fluffy", "Cat", 3)));
+		dummyPerson.getPets().add(new Cat(new PetId("Whiskers", "Cat", 2)));
+		personPersister.persist(dummyPerson);
+		
+		Person loadedPerson = personPersister.select(dummyPerson.getId());
+		assertThat(loadedPerson.getPets())
+				// we don't take "owner" into account because Person doesn't implement equals/hashcode
+				.usingRecursiveFieldByFieldElementComparatorIgnoringFields("owner")
+				.containsExactlyInAnyOrderElementsOf(dummyPerson.getPets());
+		
+		// changing value to check for database update
+		loadedPerson.setAge(36);
+		loadedPerson.addPet(new Cat(new Pet.PetId("Schrodinger", "Cat", -42)));
+		loadedPerson.removePet(new Pet.PetId("Whiskers", "Cat", 2));
+		personPersister.persist(loadedPerson);
+		
+		loadedPerson = personPersister.select(dummyPerson.getId());
+		assertThat(loadedPerson.getAge()).isEqualTo(36);
+		assertThat(loadedPerson.getPets())
+				// we don't take "owner" into account because Person doesn't implement equals/hashcode
+				.usingRecursiveFieldByFieldElementComparatorIgnoringFields("owner")
+				.containsExactlyInAnyOrder(
+						new Cat(new Pet.PetId("Fluffy", "Cat", 3)),
+						new Cat(new Pet.PetId("Schrodinger", "Cat", -42)));
+	}
+	
+	@Test
+	void persist_oneToMany_ownedByTarget() {
+		EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
+				.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
+						.map(PersonId::getFirstName)
+						.map(PersonId::getLastName)
+						.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
+				.map(Person::getAge)
+				.mapOneToMany(Person::getPets, entityBuilder(Pet.class, Pet.PetId.class)
+						.mapCompositeKey(Pet::getId, compositeKeyBuilder(Pet.PetId.class)
 								.map(Pet.PetId::getName)
 								.map(Pet.PetId::getRace)
-								.map(Pet.PetId::getAge)))
+								.map(Pet.PetId::getAge), p -> persistedPets.add(p.getId()), p -> persistedPets.contains(p.getId())))
 				.mappedBy(Pet::getOwner)
 				.build(persistenceContext);
 		
@@ -646,17 +711,17 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	
 	@Test
 	void crud_manyToMany() {
-		EntityPersister<Person, PersonId> personPersister =  MappingEase.entityBuilder(Person.class, PersonId.class)
-				.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+		EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
+				.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 						.map(PersonId::getFirstName)
 						.map(PersonId::getLastName)
-						.map(PersonId::getAddress))
+						.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
 				.map(Person::getAge)
-				.mapOneToMany(Person::getPets, MappingEase.entityBuilder(Pet.class, Pet.PetId.class)
-						.mapCompositeKey(Pet::getId, MappingEase.compositeKeyBuilder(Pet.PetId.class)
+				.mapOneToMany(Person::getPets, entityBuilder(Pet.class, Pet.PetId.class)
+						.mapCompositeKey(Pet::getId, compositeKeyBuilder(Pet.PetId.class)
 								.map(Pet.PetId::getName)
 								.map(Pet.PetId::getRace)
-								.map(Pet.PetId::getAge)))
+								.map(Pet.PetId::getAge), p -> persistedPets.add(p.getId()), p -> persistedPets.contains(p.getId())))
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -691,17 +756,17 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	
 	@Test
 	void persist_manyToMany() {
-		EntityPersister<Person, PersonId> personPersister =  MappingEase.entityBuilder(Person.class, PersonId.class)
-				.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+		EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
+				.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 						.map(PersonId::getFirstName)
 						.map(PersonId::getLastName)
-						.map(PersonId::getAddress))
+						.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
 				.map(Person::getAge)
-				.mapManyToMany(Person::getPets, MappingEase.entityBuilder(Pet.class, Pet.PetId.class)
-						.mapCompositeKey(Pet::getId, MappingEase.compositeKeyBuilder(Pet.PetId.class)
+				.mapManyToMany(Person::getPets, entityBuilder(Pet.class, Pet.PetId.class)
+						.mapCompositeKey(Pet::getId, compositeKeyBuilder(Pet.PetId.class)
 								.map(Pet.PetId::getName)
 								.map(Pet.PetId::getRace)
-								.map(Pet.PetId::getAge)))
+								.map(Pet.PetId::getAge), p -> persistedPets.add(p.getId()), p -> persistedPets.contains(p.getId())))
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -736,12 +801,12 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	}
 	
 	@Test
-	void crud_inheritance_joinedTables() throws SQLException {
-		EntityPersister<Pet, Pet.PetId> petPersister = MappingEase.entityBuilder(Pet.class, Pet.PetId.class)
-				.mapCompositeKey(Pet::getId, MappingEase.compositeKeyBuilder(Pet.PetId.class)
+	void crud_polymorphism_joinedTables() throws SQLException {
+		EntityPersister<Pet, Pet.PetId> petPersister = entityBuilder(Pet.class, Pet.PetId.class)
+				.mapCompositeKey(Pet::getId, compositeKeyBuilder(Pet.PetId.class)
 						.map(Pet.PetId::getName)
 						.map(Pet.PetId::getRace)
-						.map(Pet.PetId::getAge))
+						.map(Pet.PetId::getAge), p -> persistedPets.add(p.getId()), p -> persistedPets.contains(p.getId()))
 				.mapPolymorphism(PolymorphismPolicy.joinTable(Pet.class)
 						.addSubClass(subentityBuilder(Pet.Cat.class)
 								.mapEnum(Pet.Cat::getCatBreed))
@@ -787,12 +852,12 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	}
 	
 	@Test
-	void crud_inheritance_singleTable() throws SQLException {
-		EntityPersister<Pet, Pet.PetId> petPersister = MappingEase.entityBuilder(Pet.class, Pet.PetId.class)
-				.mapCompositeKey(Pet::getId, MappingEase.compositeKeyBuilder(Pet.PetId.class)
+	void crud_polymorphism_singleTable() throws SQLException {
+		EntityPersister<Pet, Pet.PetId> petPersister = entityBuilder(Pet.class, Pet.PetId.class)
+				.mapCompositeKey(Pet::getId, compositeKeyBuilder(Pet.PetId.class)
 						.map(Pet.PetId::getName)
 						.map(Pet.PetId::getRace)
-						.map(Pet.PetId::getAge))
+						.map(Pet.PetId::getAge), p -> persistedPets.add(p.getId()), p -> persistedPets.contains(p.getId()))
 				.mapPolymorphism(PolymorphismPolicy.singleTable(Pet.class)
 						.addSubClass(subentityBuilder(Pet.Cat.class)
 								.mapEnum(Pet.Cat::getCatBreed), "Pet")
@@ -838,12 +903,12 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	}
 	
 	@Test
-	void crud_inheritance_tablePerClass() throws SQLException {
-		EntityPersister<Pet, Pet.PetId> petPersister = MappingEase.entityBuilder(Pet.class, Pet.PetId.class)
-				.mapCompositeKey(Pet::getId, MappingEase.compositeKeyBuilder(Pet.PetId.class)
+	void crud_polymorphism_tablePerClass() throws SQLException {
+		EntityPersister<Pet, Pet.PetId> petPersister = entityBuilder(Pet.class, Pet.PetId.class)
+				.mapCompositeKey(Pet::getId, compositeKeyBuilder(Pet.PetId.class)
 						.map(Pet.PetId::getName)
 						.map(Pet.PetId::getRace)
-						.map(Pet.PetId::getAge))
+						.map(Pet.PetId::getAge), p -> persistedPets.add(p.getId()), p -> persistedPets.contains(p.getId()))
 				.mapPolymorphism(PolymorphismPolicy.tablePerClass(Pet.class)
 						.addSubClass(subentityBuilder(Pet.Cat.class)
 								.mapEnum(Pet.Cat::getCatBreed))

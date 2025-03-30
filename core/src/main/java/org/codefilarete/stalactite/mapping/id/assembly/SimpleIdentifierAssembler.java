@@ -8,9 +8,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 
@@ -41,7 +41,7 @@ public class SimpleIdentifierAssembler<I, T extends Table<T>> implements Identif
 	@Override
 	public I assemble(Function<Column<?, ?>, Object> columnValueProvider) {
 		Object value = columnValueProvider.apply(primaryKey);
-		return (I) (value == null || ComposedIdMapping.isDefaultPrimitiveValue(value) ? null : value);
+		return (I) (value == null || isDefaultPrimitiveValue(value) ? null : value);
 	}
 	
 	@Override
@@ -63,5 +63,9 @@ public class SimpleIdentifierAssembler<I, T extends Table<T>> implements Identif
 			});
 		}
 		return (Map) pkValues;
+	}
+	
+	public static boolean isDefaultPrimitiveValue(Object o) {
+		return Reflections.PRIMITIVE_DEFAULT_VALUES.get(o.getClass()) == o;
 	}
 }

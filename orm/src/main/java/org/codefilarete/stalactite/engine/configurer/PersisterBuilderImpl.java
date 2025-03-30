@@ -23,7 +23,10 @@ import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.engine.ColumnOptions;
 import org.codefilarete.stalactite.engine.ColumnOptions.AlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.engine.ColumnOptions.BeforeInsertIdentifierPolicy;
+import org.codefilarete.stalactite.engine.ColumnOptions.BeforeInsertIdentifierPolicySupport;
+import org.codefilarete.stalactite.engine.ColumnOptions.DatabaseSequenceIdentifierPolicySupport;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
+import org.codefilarete.stalactite.engine.ColumnOptions.PooledHiLoSequenceIdentifierPolicySupport;
 import org.codefilarete.stalactite.engine.CompositeKeyMappingConfiguration;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration.Linkage;
@@ -59,7 +62,6 @@ import org.codefilarete.stalactite.engine.configurer.polymorphism.PolymorphismPe
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
-import org.codefilarete.stalactite.engine.runtime.CompositeKeyedBeanPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.EntityIsManagedByPersisterAsserter;
 import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
@@ -75,7 +77,6 @@ import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
-import org.codefilarete.stalactite.mapping.id.manager.CompositeKeyAlreadyAssignedIdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.id.manager.JDBCGeneratedKeysIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequence;
@@ -86,6 +87,7 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Database;
+import org.codefilarete.stalactite.sql.ddl.structure.Database.Schema;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
@@ -449,13 +451,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				identification,
 				mappingConfiguration.getEntityType(),
 				mappingConfiguration.getEntityFactoryProvider());
-		if (identification instanceof CompositeKeyIdentification) {
-			CompositeKeyAlreadyAssignedIdentifierInsertionManager insertionManager = (CompositeKeyAlreadyAssignedIdentifierInsertionManager) identification.getInsertionManager();
-			CompositeKeyedBeanPersister<C, I, T> compositeKeyPersister = new CompositeKeyedBeanPersister<>(mappingStrategy, insertionManager, dialect, connectionConfiguration);
-			return new SimpleRelationalEntityPersister<>(compositeKeyPersister, dialect, connectionConfiguration);
-		} else {
-			return new SimpleRelationalEntityPersister<>(mappingStrategy, dialect, connectionConfiguration);
-		}
+		return new SimpleRelationalEntityPersister<>(mappingStrategy, dialect, connectionConfiguration);
 	}
 	
 	/**
@@ -803,7 +799,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			return AbstractIdentification.forSingleKey(foundConfiguration);
 		} else if (foundKeyMapping instanceof CompositeKeyMapping) {
 			assertCompositeKeyIdentifierOverridesEqualsHashcode((CompositeKeyMapping<?, ?>) foundKeyMapping);
-			return AbstractIdentification.forCompositeKey(foundConfiguration);
+			return AbstractIdentification.forCompositeKey(foundConfiguration, (CompositeKeyMapping<C, I>) foundKeyMapping);
 		} else {
 			// should not happen
 			throw new MappingConfigurationException("Unknown key mapping : " + foundKeyMapping);
@@ -841,7 +837,10 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		AccessorDefinition idDefinition = AccessorDefinition.giveDefinition(idAccessor);
 		Class<I> identifierType = idDefinition.getMemberType();
 		if (identification instanceof CompositeKeyIdentification) {
-			CompositeKeyAlreadyAssignedIdentifierInsertionManager<E, I> compositeKeyInsertionManager = new CompositeKeyAlreadyAssignedIdentifierInsertionManager<>(identifierType);
+			AlreadyAssignedIdentifierManager<E, I> compositeKeyInsertionManager
+					= new AlreadyAssignedIdentifierManager<>(
+					identifierType, ((CompositeKeyIdentification<E, I>) identification).getMarkAsPersistedFunction(),
+					((CompositeKeyIdentification<E, I>) identification).getIsPersistedFunction());
 			identification
 					.setInsertionManager(compositeKeyInsertionManager)
 					.setFallbackInsertionManager(new AlreadyAssignedIdentifierManager<>(
@@ -875,13 +874,13 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 								+ " please provide a " + Reflections.toString(SeparateTransactionExecutor.class) + " as connection provider or change identifier policy");
 					}
 					sequence = (Sequence<I>) new PooledHiLoSequence(options,
-							new PooledHiLoSequencePersister(((ColumnOptions.PooledHiLoSequenceIdentifierPolicySupport) identifierPolicy).getStorageOptions(), dialect, (SeparateTransactionExecutor) connectionProvider, connectionConfiguration.getBatchSize()));
+							new PooledHiLoSequencePersister(((PooledHiLoSequenceIdentifierPolicySupport) identifierPolicy).getStorageOptions(), dialect, (SeparateTransactionExecutor) connectionProvider, connectionConfiguration.getBatchSize()));
 				} else if (identifierPolicy instanceof ColumnOptions.DatabaseSequenceIdentifierPolicySupport) {
 					Class<E> entityType = identification.getIdentificationDefiner().getEntityType();
-					ColumnOptions.DatabaseSequenceIdentifierPolicySupport databaseSequenceSupport = (ColumnOptions.DatabaseSequenceIdentifierPolicySupport) identifierPolicy;
+					DatabaseSequenceIdentifierPolicySupport databaseSequenceSupport = (DatabaseSequenceIdentifierPolicySupport) identifierPolicy;
 					String sequenceName = databaseSequenceSupport.getDatabaseSequenceNamingStrategy().giveName(entityType);
 					Database database = new Database();
-					Database.Schema sequenceSchema = nullable(databaseSequenceSupport.getDatabaseSequenceSettings().getSchemaName())
+					Schema sequenceSchema = nullable(databaseSequenceSupport.getDatabaseSequenceSettings().getSchemaName())
 							.map(s -> database.new Schema(s))
 							.elseSet(table.getSchema())
 							.get();
@@ -892,7 +891,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 							;
 					sequence = (Sequence<I>) dialect.getDatabaseSequenceSelectorFactory().create(databaseSequence, connectionConfiguration.getConnectionProvider());
 				} else if (identifierPolicy instanceof ColumnOptions.BeforeInsertIdentifierPolicySupport) {
-					sequence = ((ColumnOptions.BeforeInsertIdentifierPolicySupport<I>) identifierPolicy).getSequence();
+					sequence = ((BeforeInsertIdentifierPolicySupport<I>) identifierPolicy).getSequence();
 				} else {
 					throw new MappingConfigurationException("Before-insert identifier policy " + Reflections.toString(identifierPolicy.getClass()) + " is not supported");
 				}
@@ -1007,7 +1006,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					return result;
 				}
 			};
-			idMappingStrategy = new ComposedIdMapping<>(idAccessor, identifierInsertionManager, composedIdentifierAssembler);
+			idMappingStrategy = new ComposedIdMapping<>(idAccessor, (AlreadyAssignedIdentifierManager<E, I>) identifierInsertionManager, composedIdentifierAssembler);
 		} else {
 			idMappingStrategy = new SimpleIdMapping<>(idAccessor, identifierInsertionManager,
 					new SimpleIdentifierAssembler<>(first(primaryKey.getColumns())));
