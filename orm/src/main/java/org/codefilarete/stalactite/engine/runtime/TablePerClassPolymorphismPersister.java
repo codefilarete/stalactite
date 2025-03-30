@@ -78,7 +78,6 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 	@SuppressWarnings("java:S5164" /* remove() is called by SecondPhaseRelationLoader.afterSelect() */)
 	private static final ThreadLocal<Queue<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */>>>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
-	private final ConfiguredRelationalPersister<C, I> mainPersister;
 	private final Map<Class<? extends C>, UpdateExecutor<? extends C>> subclassUpdateExecutors;
 	private final TablePerClassPolymorphicSelectExecutor<C, I, T> selectExecutor;
 	
@@ -93,7 +92,6 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 						subEntitiesPersisters,
 						connectionProvider,
 						dialect));
-		this.mainPersister = mainPersister;
 		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
 		// impacts but very difficult to measure
 		this.subclassUpdateExecutors = Iterables.map(subEntitiesPersisters.entrySet(), Entry::getKey, Entry::getValue, KeepOrderMap::new);

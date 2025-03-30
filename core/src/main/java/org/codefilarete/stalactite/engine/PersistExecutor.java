@@ -96,7 +96,7 @@ public interface PersistExecutor<C> {
 		
 		Set<I> entitiesIds = Iterables.collect(entities, idProvider::apply, HashSet::new);
 		Set<C> loadedEntities = selector.select(entitiesIds);
-		Set<I> existingEntitiesIds = Iterables.collect(loadedEntities, idProvider::apply, HashSet::new);
+		Set<I> existingEntitiesIds = Iterables.collect(loadedEntities, idProvider, HashSet::new);
 		Predicate<C> isNewProvider = c -> !existingEntitiesIds.contains(idProvider.apply(c));
 		persist(entities, isNewProvider, ids -> loadedEntities, updater, inserter, idProvider);
 	}

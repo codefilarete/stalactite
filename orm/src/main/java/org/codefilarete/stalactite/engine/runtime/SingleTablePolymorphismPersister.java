@@ -68,7 +68,6 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 	@SuppressWarnings("java:S5164" /* remove() is called by SecondPhaseRelationLoader.afterSelect() */)
 	private static final ThreadLocal<Queue<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
-	private final ConfiguredRelationalPersister<C, I> mainPersister;
 	private final Column<T, DTYPE> discriminatorColumn;
 	private final SingleTablePolymorphism<C, DTYPE> polymorphismPolicy;
 	private final SingleTablePolymorphismSelectExecutor<C, I, T, DTYPE> selectExecutor;
@@ -87,7 +86,6 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 						polymorphismPolicy,
 						connectionProvider,
 						dialect));
-		this.mainPersister = mainPersister;
 		this.discriminatorColumn = discriminatorColumn;
 		this.polymorphismPolicy = polymorphismPolicy;
 		

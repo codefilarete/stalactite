@@ -69,7 +69,7 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 	 */
 	private final int inOperatorMaxSize;
 	
-	private PersisterListenerCollection<C, I> persisterListener = new PersisterListenerCollection<>();
+	private final PersisterListenerCollection<C, I> persisterListener = new PersisterListenerCollection<>();
 	private final InsertExecutor<C, I, T> insertExecutor;
 	private final UpdateExecutor<C, I, T> updateExecutor;
 	private final DeleteExecutor<C, I, T> deleteExecutor;
@@ -94,10 +94,8 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 		this.selectExecutor = newSelectExecutor(this.mappingStrategy, this.connectionConfiguration.getConnectionProvider(), dialect);
 		
 		// Transferring identifier manager InsertListener to here
-		getPersisterListener().addInsertListener(
-			getMapping().getIdMapping().getIdentifierInsertionManager().getInsertListener());
-		getPersisterListener().addSelectListener(
-			getMapping().getIdMapping().getIdentifierInsertionManager().getSelectListener());
+		addInsertListener(getMapping().getIdMapping().getIdentifierInsertionManager().getInsertListener());
+		addSelectListener(getMapping().getIdMapping().getIdentifierInsertionManager().getSelectListener());
 	}
 	
 	public BeanPersister(ConnectionConfiguration connectionConfiguration,
@@ -190,18 +188,6 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 		return Collections.singleton(getMainTable());
 	}
 	
-	/**
-	 * Set listener of each CRUD method.
-	 * 
-	 * @param persisterListener any {@link PersisterListenerCollection}, if null then it won't be set to avoid internal "if" on each CRUD method
-	 */
-	public void setPersisterListener(PersisterListenerCollection<C, I> persisterListener) {
-		// prevent from null instance to avoid an "if" on each CRUD method
-		if (persisterListener != null) {
-			this.persisterListener = persisterListener;
-		}
-	}
-	
 	@Override
 	public PersisterListenerCollection<C, I> getPersisterListener() {
 		return persisterListener;
@@ -240,37 +226,37 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 	
 	@Override
 	public void addPersistListener(PersistListener<? extends C> persistListener) {
-		getPersisterListener().addPersistListener(persistListener);
+		persisterListener.addPersistListener(persistListener);
 	}
 	
 	@Override
 	public void addInsertListener(InsertListener<? extends C> insertListener) {
-		getPersisterListener().addInsertListener(insertListener);
+		persisterListener.addInsertListener(insertListener);
 	}
 	
 	@Override
 	public void addUpdateListener(UpdateListener<? extends C> updateListener) {
-		getPersisterListener().addUpdateListener(updateListener);
+		persisterListener.addUpdateListener(updateListener);
 	}
 	
 	@Override
 	public void addUpdateByIdListener(UpdateByIdListener<? extends C> updateByIdListener) {
-		getPersisterListener().addUpdateByIdListener(updateByIdListener);
+		persisterListener.addUpdateByIdListener(updateByIdListener);
 	}
 	
 	@Override
 	public void addSelectListener(SelectListener<? extends C, I> selectListener) {
-		getPersisterListener().addSelectListener(selectListener);
+		persisterListener.addSelectListener(selectListener);
 	}
 	
 	@Override
 	public void addDeleteListener(DeleteListener<? extends C> deleteListener) {
-		getPersisterListener().addDeleteListener(deleteListener);
+		persisterListener.addDeleteListener(deleteListener);
 	}
 	
 	@Override
 	public void addDeleteByIdListener(DeleteByIdListener<? extends C> deleteListener) {
-		getPersisterListener().addDeleteByIdListener(deleteListener);
+		persisterListener.addDeleteByIdListener(deleteListener);
 	}
 	
 	/**
@@ -284,7 +270,7 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 	@Override
 	public void persist(Iterable<? extends C> entities) {
 		if (!Iterables.isEmpty(entities)) {
-			getPersisterListener().doWithPersistListener(entities, () -> doPersist(entities));
+			persisterListener.doWithPersistListener(entities, () -> doPersist(entities));
 		}
 	}
 	
@@ -300,7 +286,7 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 	@Override
 	public void insert(Iterable<? extends C> entities) {
 		if (!Iterables.isEmpty(entities)) {
-			getPersisterListener().doWithInsertListener(entities, () -> doInsert(entities));
+			persisterListener.doWithInsertListener(entities, () -> doInsert(entities));
 		}
 	}
 	
@@ -316,7 +302,7 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 	@Override
 	public void updateById(Iterable<? extends C> entities) {
 		if (!Iterables.isEmpty(entities)) {
-			getPersisterListener().doWithUpdateByIdListener(entities, () -> doUpdateById(entities));
+			persisterListener.doWithUpdateByIdListener(entities, () -> doUpdateById(entities));
 		}
 	}
 	
@@ -335,7 +321,7 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 	@Override
 	public void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		if (!Iterables.isEmpty(differencesIterable)) {
-			getPersisterListener().doWithUpdateListener(differencesIterable, allColumnsStatement, this::doUpdate);
+			persisterListener.doWithUpdateListener(differencesIterable, allColumnsStatement, this::doUpdate);
 		}
 	}
 	
@@ -353,7 +339,7 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 	@Override
 	public void delete(Iterable<? extends C> entities) {
 		if (!Iterables.isEmpty(entities)) {
-			getPersisterListener().doWithDeleteListener(entities, () -> doDelete(entities));
+			persisterListener.doWithDeleteListener(entities, () -> doDelete(entities));
 		}
 	}
 	
@@ -370,7 +356,7 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 	@Override
 	public void deleteById(Iterable<? extends C> entities) {
 		if (!Iterables.isEmpty(entities)) {
-			getPersisterListener().doWithDeleteByIdListener(entities, () -> doDeleteById(entities));
+			persisterListener.doWithDeleteByIdListener(entities, () -> doDeleteById(entities));
 		}
 	}
 	
@@ -396,7 +382,7 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 		if (Iterables.isEmpty(ids)) {
 			return new HashSet<>();
 		} else {
-			return getPersisterListener().doWithSelectListener(ids, () -> doSelect(ids));
+			return persisterListener.doWithSelectListener(ids, () -> doSelect(ids));
 		}
 	}
 	
