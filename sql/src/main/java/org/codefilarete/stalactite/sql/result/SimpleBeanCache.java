@@ -13,7 +13,7 @@ import java.util.function.Function;
  */
 public final class SimpleBeanCache {
 	
-	/** Surrogate bean cache : per type, then per identifier */
+	/** Delegate bean cache : per type, then per identifier */
 	private final Map<Class, Map<BeanKey /* bean key */, Object>> entityCache;
 	
 	public SimpleBeanCache() {

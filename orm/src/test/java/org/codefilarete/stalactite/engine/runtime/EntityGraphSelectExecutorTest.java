@@ -91,7 +91,7 @@ class EntityGraphSelectExecutorTest {
 		);
 		
 		assertThat(Iterables.first(select))
-				.usingComparator(Comparator.comparing(chain(Country::getId, Identifier::getSurrogate)))
+				.usingComparator(Comparator.comparing(chain(Country::getId, Identifier::getDelegate)))
 				.isEqualTo(expectedCountry)
 				.usingComparator(Comparator.comparing(Country::getName))
 				.isEqualTo(expectedCountry);

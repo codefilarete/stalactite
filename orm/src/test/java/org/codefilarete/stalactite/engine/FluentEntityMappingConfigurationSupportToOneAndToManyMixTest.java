@@ -228,7 +228,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		assertThat(persistedCountry2.getStates().stream().map(State::getName).collect(toSet())).isEqualTo(Arrays.asHashSet("changed", "ardeche"));
 		
 		// Ain shouldn't have been deleted because we didn't asked for orphan removal
-		ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
+		ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from State where id = " + ain.getId().getDelegate(), Long.class)
 				.mapKey(Long::new, "id", long.class);
 		Set<Long> loadedAin = longExecutableQuery.execute(Accumulators.toSet());
 		assertThat(first(loadedAin)).isNotNull();
@@ -304,7 +304,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		assertThat(persistedCountry2.getStates().stream().map(State::getName).collect(toSet())).isEqualTo(Arrays.asHashSet("changed", "ardeche"));
 		
 		// Ain shouldn't have been deleted because we didn't asked for orphan removal
-		ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
+		ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from State where id = " + ain.getId().getDelegate(), Long.class)
 				.mapKey(Long::new, "id", long.class);
 		Set<Long> loadedAin = longExecutableQuery.execute(Accumulators.toSet());
 		assertThat(first(loadedAin)).isNotNull();

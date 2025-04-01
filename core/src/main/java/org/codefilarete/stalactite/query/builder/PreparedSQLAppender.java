@@ -21,7 +21,7 @@ import org.codefilarete.tool.trace.MutableInt;
  */
 public class PreparedSQLAppender implements SQLAppender {
 	
-	private final SQLAppender surrogate;
+	private final SQLAppender delegate;
 	private final ColumnBinderRegistry parameterBinderRegistry;
 	private final Map<Integer, ParameterBinder<?>> parameterBinders;
 	private final Map<Integer, Object> values;
@@ -31,12 +31,12 @@ public class PreparedSQLAppender implements SQLAppender {
 		this(sqlAppender, parameterBinderRegistry, new HashMap<>(), new HashMap<>(), new MutableInt(1));
 	}
 	
-	private PreparedSQLAppender(SQLAppender surrogate,
+	private PreparedSQLAppender(SQLAppender delegate,
 								ColumnBinderRegistry parameterBinderRegistry,
 								Map<Integer, ? extends ParameterBinder<?>> parameterBinders,
 								Map<Integer, Object> values,
 								MutableInt paramCounter) {
-		this.surrogate = surrogate;
+		this.delegate = delegate;
 		this.parameterBinderRegistry = parameterBinderRegistry;
 		this.parameterBinders = (Map<Integer, ParameterBinder<?>>) parameterBinders;
 		this.values = values;
@@ -53,7 +53,7 @@ public class PreparedSQLAppender implements SQLAppender {
 	
 	@Override
 	public PreparedSQLAppender cat(String s, String... ss) {
-		surrogate.cat(s, ss);
+		delegate.cat(s, ss);
 		return this;
 	}
 	
@@ -108,7 +108,7 @@ public class PreparedSQLAppender implements SQLAppender {
 			Object innerValue = ((ValuedVariable) value).getValue();
 			if (innerValue instanceof Column) {
 				// Columns are simply appended (no binder needed nor index increment)
-				surrogate.catColumn((Column) innerValue);
+				delegate.catColumn((Column) innerValue);
 			} else {
 				appendPlaceholder(innerValue, binderSupplier);
 			}
@@ -119,7 +119,7 @@ public class PreparedSQLAppender implements SQLAppender {
 	}
 	
 	private void appendPlaceholder(Object value, ParameterBinder<?> binderSupplier) {
-		surrogate.cat("?");
+		delegate.cat("?");
 		values.put(paramCounter.getValue(), value);
 		parameterBinders.put(paramCounter.getValue(), binderSupplier);
 		paramCounter.increment();
@@ -128,32 +128,32 @@ public class PreparedSQLAppender implements SQLAppender {
 	@Override
 	public PreparedSQLAppender catColumn(Selectable<?> column) {
 		// Columns are simply appended (no binder needed nor index increment)
-		surrogate.catColumn(column);
+		delegate.catColumn(column);
 		return this;
 	}
 	
 	@Override
 	public SQLAppender catTable(Fromable table) {
-		surrogate.catTable(table);
+		delegate.catTable(table);
 		return this;
 	}
 	
 	@Override
 	public SQLAppender removeLastChars(int length) {
-		surrogate.removeLastChars(length);
+		delegate.removeLastChars(length);
 		return this;
 	}
 	
 	@Override
 	public String getSQL() {
-		return surrogate.getSQL();
+		return delegate.getSQL();
 	}
 	
 	@Override
 	public SubSQLAppender newSubPart(DMLNameProvider dmlNameProvider) {
 		SQLAppender self = PreparedSQLAppender.this;
 		return new DefaultSubSQLAppender(new PreparedSQLAppender(
-				this.surrogate.newSubPart(dmlNameProvider),
+				this.delegate.newSubPart(dmlNameProvider),
 				this.parameterBinderRegistry,
 				this.parameterBinders,
 				this.values,

@@ -440,14 +440,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
 			
 			ExecutableBeanPropertyQueryMapper<Integer> carQuery = persistenceContext.newQuery("select"
-					+ " count(*) as carCount from Vehicle where id = " + dummyCar.getId().getSurrogate(), Integer.class)
+					+ " count(*) as carCount from Vehicle where id = " + dummyCar.getId().getDelegate(), Integer.class)
 					.mapKey("carCount", Integer.class);
 			
 			Integer carCount = Iterables.first(carQuery.execute(Accumulators.toSet()));
 			assertThat(carCount).isEqualTo(0);
 			
 			ExecutableBeanPropertyQueryMapper<Integer> truckQuery = persistenceContext.newQuery("select"
-					+ " count(*) as truckCount from Vehicle where id = " + dummyTruck.getId().getSurrogate(), Integer.class)
+					+ " count(*) as truckCount from Vehicle where id = " + dummyTruck.getId().getDelegate(), Integer.class)
 					.mapKey("truckCount", Integer.class);
 			
 			Integer truckCount = Iterables.first(truckQuery.execute(Accumulators.toSet()));
@@ -660,21 +660,21 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			
 			ExecutableBeanPropertyQueryMapper<Integer> vehicleQuery = persistenceContext.newQuery("select"
 					+ " count(*) as vehicleCount from abstractVehicle where id in ("
-					+ dummyCar.getId().getSurrogate() + ", " + + dummyTruck.getId().getSurrogate() + ")", Integer.class)
+					+ dummyCar.getId().getDelegate() + ", " + + dummyTruck.getId().getDelegate() + ")", Integer.class)
 					.mapKey("vehicleCount", Integer.class);
 			
 			Integer vehicleCount = Iterables.first(vehicleQuery.execute(Accumulators.toSet()));
 			assertThat(vehicleCount).isEqualTo(0);
 			
 			ExecutableBeanPropertyQueryMapper<Integer> carQuery = persistenceContext.newQuery("select"
-					+ " count(*) as carCount from car where id = " + dummyCar.getId().getSurrogate(), Integer.class)
+					+ " count(*) as carCount from car where id = " + dummyCar.getId().getDelegate(), Integer.class)
 					.mapKey("carCount", Integer.class);
 			
 			Integer carCount = Iterables.first(carQuery.execute(Accumulators.toSet()));
 			assertThat(carCount).isEqualTo(0);
 			
 			ExecutableBeanPropertyQueryMapper<Integer> truckQuery = persistenceContext.newQuery("select"
-					+ " count(*) as truckCount from car where id = " + dummyTruck.getId().getSurrogate(), Integer.class)
+					+ " count(*) as truckCount from car where id = " + dummyTruck.getId().getDelegate(), Integer.class)
 					.mapKey("truckCount", Integer.class);
 			
 			Integer truckCount = Iterables.first(truckQuery.execute(Accumulators.toSet()));
@@ -798,14 +798,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
 			
 			ExecutableBeanPropertyQueryMapper<Integer> carQuery = persistenceContext.newQuery("select"
-					+ " count(*) as carCount from Vehicle where id = " + dummyCar.getId().getSurrogate(), Integer.class)
+					+ " count(*) as carCount from Vehicle where id = " + dummyCar.getId().getDelegate(), Integer.class)
 					.mapKey("carCount", Integer.class);
 			
 			Integer carCount = Iterables.first(carQuery.execute(Accumulators.toSet()));
 			assertThat(carCount).isEqualTo(0);
 			
 			ExecutableBeanPropertyQueryMapper<Integer> truckQuery = persistenceContext.newQuery("select"
-					+ " count(*) as truckCount from Vehicle where id = " + dummyTruck.getId().getSurrogate(), Integer.class)
+					+ " count(*) as truckCount from Vehicle where id = " + dummyTruck.getId().getDelegate(), Integer.class)
 					.mapKey("truckCount", Integer.class);
 			
 			Integer truckCount = Iterables.first(truckQuery.execute(Accumulators.toSet()));
@@ -1009,14 +1009,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
 			
 			ExecutableBeanPropertyQueryMapper<Integer> carQuery = persistenceContext.newQuery("select"
-					+ " count(*) as carCount from car where id = " + dummyCar.getId().getSurrogate(), Integer.class)
+					+ " count(*) as carCount from car where id = " + dummyCar.getId().getDelegate(), Integer.class)
 					.mapKey("carCount", Integer.class);
 			
 			Integer carCount = Iterables.first(carQuery.execute(Accumulators.toSet()));
 			assertThat(carCount).isEqualTo(0);
 
 			ExecutableBeanPropertyQueryMapper<Integer> truckQuery = persistenceContext.newQuery("select"
-					+ " count(*) as truckCount from car where id = " + dummyTruck.getId().getSurrogate(), Integer.class)
+					+ " count(*) as truckCount from car where id = " + dummyTruck.getId().getDelegate(), Integer.class)
 					.mapKey("truckCount", Integer.class);
 			
 			Integer truckCount = Iterables.first(truckQuery.execute(Accumulators.toSet()));
@@ -1126,14 +1126,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
 
 			ExecutableBeanPropertyQueryMapper<Integer> carQuery = persistenceContext.newQuery("select"
-					+ " count(*) as carCount from car where id = " + dummyCar.getId().getSurrogate(), Integer.class)
+					+ " count(*) as carCount from car where id = " + dummyCar.getId().getDelegate(), Integer.class)
 					.mapKey("carCount", Integer.class);
 			
 			Integer carCount = Iterables.first(carQuery.execute(Accumulators.toSet()));
 			assertThat(carCount).isEqualTo(0);
 
 			ExecutableBeanPropertyQueryMapper<Integer> truckQuery = persistenceContext.newQuery("select"
-					+ " count(*) as truckCount from truck where id = " + dummyTruck.getId().getSurrogate(), Integer.class)
+					+ " count(*) as truckCount from truck where id = " + dummyTruck.getId().getDelegate(), Integer.class)
 					.mapKey("truckCount", Integer.class);
 			
 			Integer truckCount = Iterables.first(truckQuery.execute(Accumulators.toSet()));

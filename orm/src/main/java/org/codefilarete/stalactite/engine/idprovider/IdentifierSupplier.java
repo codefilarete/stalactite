@@ -9,14 +9,14 @@ import java.util.function.Supplier;
  */
 public class IdentifierSupplier<T> implements IdentifierProvider<T> {
 	
-	private final Supplier<T> surrogateSupplier;
+	private final Supplier<T> delegateSupplier;
 	
-	public IdentifierSupplier(Supplier<T> surrogateSupplier) {
-		this.surrogateSupplier = surrogateSupplier;
+	public IdentifierSupplier(Supplier<T> delegateSupplier) {
+		this.delegateSupplier = delegateSupplier;
 	}
 	
 	@Override
 	public final T giveNewIdentifier() {
-		return surrogateSupplier.get();
+		return delegateSupplier.get();
 	}
 }

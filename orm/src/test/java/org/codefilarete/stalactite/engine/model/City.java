@@ -59,7 +59,7 @@ public class City implements Identified<Long> {
 		
 		City city = (City) o;
 		
-		return id.getSurrogate().equals(city.id.getSurrogate());
+		return id.getDelegate().equals(city.id.getDelegate());
 	}
 	
 	/**
@@ -69,7 +69,7 @@ public class City implements Identified<Long> {
 	 */
 	@Override
 	public int hashCode() {
-		return id.getSurrogate().hashCode();
+		return id.getDelegate().hashCode();
 	}
 	
 	public String getName() {

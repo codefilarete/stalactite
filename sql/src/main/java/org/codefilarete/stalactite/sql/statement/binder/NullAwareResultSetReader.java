@@ -12,14 +12,14 @@ import org.codefilarete.tool.function.SerializableThrowingBiFunction;
  */
 public class NullAwareResultSetReader<T> implements ResultSetReader<T> {
 	
-	private final ResultSetReader<T> surrogate;
+	private final ResultSetReader<T> delegate;
 	
 	public NullAwareResultSetReader(SerializableThrowingBiFunction<ResultSet, String, T, SQLException> resultSetGetter) {
 		this(ResultSetReader.ofMethodReference(resultSetGetter));
 	}
 	
-	public NullAwareResultSetReader(ResultSetReader<T> surrogate) {
-		this.surrogate = surrogate;
+	public NullAwareResultSetReader(ResultSetReader<T> delegate) {
+		this.delegate = delegate;
 	}
 	
 	@Override
@@ -33,12 +33,12 @@ public class NullAwareResultSetReader<T> implements ResultSetReader<T> {
 	
 	@Override
 	public Class<T> getType() {
-		return surrogate.getType();
+		return delegate.getType();
 	}
 	
 	@Override
 	public <O> Class<O> getColumnType() {
-		return surrogate.getColumnType();
+		return delegate.getColumnType();
 	}
 	
 	/**
@@ -55,7 +55,7 @@ public class NullAwareResultSetReader<T> implements ResultSetReader<T> {
 	}
 	
 	public T getNotNull(String columnName, ResultSet resultSet) {
-		return surrogate.get(resultSet, columnName);
+		return delegate.get(resultSet, columnName);
 	}
 	
 }

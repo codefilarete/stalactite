@@ -16,7 +16,7 @@ import org.codefilarete.tool.collection.Iterables;
  * Done in particular for inheritance cases where subtypes may have not been mapped but their entities are accepted (due to usual inheritance), this
  * would have resulted in partial persistence : only common (upper) part was took into account without warning user.
  * 
- * Designed as a wrapper of an underlying surrogate which really persists instances. Made as such for single responsibility consideration.
+ * Designed as a wrapper of an underlying delegate which really persists instances. Made as such for single responsibility consideration.
  * 
  * @author Guillaume Mary
  */
@@ -25,10 +25,10 @@ public class EntityIsManagedByPersisterAsserter<C, I> extends PersisterWrapper<C
 	private final Consumer<C> asserter;
 	
 	
-	public EntityIsManagedByPersisterAsserter(ConfiguredRelationalPersister<C, I> surrogate) {
-		super(surrogate);
-		if (getDeepestSurrogate() instanceof PolymorphicPersister) {
-			Set<Class<? extends C>> supportedEntityTypes = ((PolymorphicPersister<C>) getDeepestSurrogate()).getSupportedEntityTypes();
+	public EntityIsManagedByPersisterAsserter(ConfiguredRelationalPersister<C, I> delegate) {
+		super(delegate);
+		if (getDeepestDelegate() instanceof PolymorphicPersister) {
+			Set<Class<? extends C>> supportedEntityTypes = ((PolymorphicPersister<C>) getDeepestDelegate()).getSupportedEntityTypes();
 			asserter = entity -> {
 				if (!supportedEntityTypes.contains(entity.getClass())) {
 					throw newAssertException(entity);

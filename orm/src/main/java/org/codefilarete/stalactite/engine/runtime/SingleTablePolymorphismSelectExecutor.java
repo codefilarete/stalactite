@@ -98,7 +98,7 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table<T>, DTY
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query);
 		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>());
-		Map<Selectable<?>, String> aliases = query.getSelectSurrogate().getAliases();
+		Map<Selectable<?>, String> aliases = query.getSelectDelegate().getAliases();
 		// using keep order Map for steady test, shouldn't have impact on performances
 		Map<Class, Set<I>> idsPerSubclass = new KeepOrderMap<>(polymorphismPolicy.getSubClasses().size());
 		try(ReadOperation readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {

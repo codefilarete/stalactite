@@ -44,7 +44,7 @@ public class State implements Identified<Long> {
 		
 		State state = (State) o;
 		
-		return id.getSurrogate().equals(state.id.getSurrogate());
+		return id.getDelegate().equals(state.id.getDelegate());
 	}
 	
 	/**
@@ -54,7 +54,7 @@ public class State implements Identified<Long> {
 	 */
 	@Override
 	public int hashCode() {
-		return id.getSurrogate().hashCode();
+		return id.getDelegate().hashCode();
 	}
 	
 	public String getName() {

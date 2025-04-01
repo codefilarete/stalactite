@@ -218,7 +218,7 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), originalColumnsToClones);
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
-		query.getSelectSurrogate().clear();
+		query.getSelectDelegate().clear();
 		mainTable.getPrimaryKey().getColumns().forEach(pkColumn -> {
 			Selectable<?> column = mainEntityJoinTree.getRoot().getTable().findColumn(pkColumn.getName());
 			query.select(column, pkColumn.getName());
@@ -288,7 +288,7 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 									 boolean distinct, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(singleLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
-		query.getSelectSurrogate().setDistinct(distinct);
+		query.getSelectDelegate().setDistinct(distinct);
 		
 		Map<Selectable<?>, Selectable<?>> columnClones = entityTreeQuery.getColumnClones();
 		Map<Selectable<?>, Selectable<?>> originalColumnsToClones = new IdentityHashMap<>(columnClones.size());
@@ -297,7 +297,7 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 		// since criteria is passed to union subqueries, we don't need it into the entire query
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where, originalColumnsToClones);
 		
-		selectAdapter.accept(query.getSelectSurrogate());
+		selectAdapter.accept(query.getSelectDelegate());
 		Map<Selectable<?>, String> aliases = query.getAliases();
 		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
 		

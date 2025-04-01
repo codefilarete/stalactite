@@ -140,7 +140,7 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 		// according to the ids
 		if (where.hasCollectionCriteria()) {
 			// First phase : selecting ids (made by clearing selected elements for performance issue)
-			KeepOrderMap<Selectable<?>, String> columns = query.getSelectSurrogate().clear();
+			KeepOrderMap<Selectable<?>, String> columns = query.getSelectDelegate().clear();
 			Column<T, I> pk = (Column<T, I>) Iterables.first(((Table) entityJoinTree.getRoot().getTable()).getPrimaryKey().getColumns());
 			query.select(pk, PRIMARY_KEY_ALIAS);
 			ChainingMap<String, ResultSetReader> columnReaders = Maps.asMap(PRIMARY_KEY_ALIAS, dialect.getColumnBinderRegistry().getBinder(pk));
@@ -155,9 +155,9 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 				return Collections.emptySet();
 			} else {
 				// Second phase : selecting elements by main table pk (adding necessary columns)
-				query.getSelectSurrogate().remove(pk);    // previous pk selection removal
+				query.getSelectDelegate().remove(pk);    // previous pk selection removal
 				columns.forEach(query::select);
-				query.getWhereSurrogate().clear();
+				query.getWhereDelegate().clear();
 				query.where(pk, in(ids));
 				
 				PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(valuesPerParam);
@@ -192,14 +192,14 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 									 Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
-		query.getSelectSurrogate().setDistinct(distinct);
+		query.getSelectDelegate().setDistinct(distinct);
 		orderByClauseConsumer.accept(query.getQuery().orderBy());
 		
 		
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where, entityTreeQuery.getColumnClones());
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
-		selectAdapter.accept(query.getSelectSurrogate());
+		selectAdapter.accept(query.getSelectDelegate());
 		Map<Selectable<?>, String> aliases = query.getAliases();
 		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
 		

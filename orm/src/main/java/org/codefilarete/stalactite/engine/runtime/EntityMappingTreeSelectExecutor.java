@@ -66,7 +66,7 @@ import org.codefilarete.tool.collection.Iterables;
  */
 public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implements org.codefilarete.stalactite.engine.SelectExecutor<C, I>, JoinableSelectExecutor {
 	
-	/** The surrogate for joining the strategies, will help to build the SQL */
+	/** The delegate for joining the strategies, will help to build the SQL */
 	private final EntityJoinTree<C, I> entityJoinTree;
 	private final Dialect dialect;
 	private final int blockSize;

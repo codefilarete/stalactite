@@ -100,7 +100,7 @@ public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table<T>> imple
 			query.getFrom().leftOuterJoin(primaryKey, subclassPrimaryKey);
 		});
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query);
-		Map<Selectable<?>, String> aliases = query.getSelectSurrogate().getAliases();
+		Map<Selectable<?>, String> aliases = query.getSelectDelegate().getAliases();
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>());
 		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
 		// impacts but very difficult to measure

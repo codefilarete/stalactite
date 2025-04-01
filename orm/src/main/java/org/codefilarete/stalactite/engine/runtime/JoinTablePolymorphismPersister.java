@@ -122,8 +122,8 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 		this.subEntitiesPersisters.forEach((c, p) -> {
 			if (p instanceof PolymorphicPersister) {
 				result.addAll((Collection) ((PolymorphicPersister<?>) p).getSupportedEntityTypes());
-			} else if (p instanceof PersisterWrapper && ((PersisterWrapper<C, I>) p).getDeepestSurrogate() instanceof PolymorphicPersister) {
-				result.addAll(((PolymorphicPersister) ((PersisterWrapper) p).getDeepestSurrogate()).getSupportedEntityTypes());
+			} else if (p instanceof PersisterWrapper && ((PersisterWrapper<C, I>) p).getDeepestDelegate() instanceof PolymorphicPersister) {
+				result.addAll(((PolymorphicPersister) ((PersisterWrapper) p).getDeepestDelegate()).getSupportedEntityTypes());
 			} else {
 				result.add(c);
 			}

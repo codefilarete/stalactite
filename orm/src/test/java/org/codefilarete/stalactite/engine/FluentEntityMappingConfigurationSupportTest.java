@@ -871,7 +871,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		Set<Duo> select = persistenceContext.select(Duo::new, id, name);
 		assertThat(select.size()).isEqualTo(1);
-		assertThat(((Identifier) first(select).getLeft()).getSurrogate().toString()).isEqualTo(toto.getId().getSurrogate().toString());
+		assertThat(((Identifier) first(select).getLeft()).getDelegate().toString()).isEqualTo(toto.getId().getDelegate().toString());
 	}
 	
 	@Test
@@ -928,7 +928,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		void tableStructure() {
 			dialect.getColumnBinderRegistry().register(
 					(Class<Identifier<UUID>>) (Class) Identifier.class,
-					new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.UUID_BINDER, PersistedIdentifier::new, StatefulIdentifier::getSurrogate)));
+					new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.UUID_BINDER, PersistedIdentifier::new, StatefulIdentifier::getDelegate)));
 			dialect.getSqlTypeRegistry().put(Identifier.class, "VARCHAR(255)");
 			
 			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
@@ -966,7 +966,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		void tableStructure_columnNameGiven_columnNameIsUsed() {
 			dialect.getColumnBinderRegistry().register(
 					(Class<Identifier<UUID>>) (Class) Identifier.class,
-					new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.UUID_BINDER, PersistedIdentifier::new, StatefulIdentifier::getSurrogate)));
+					new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.UUID_BINDER, PersistedIdentifier::new, StatefulIdentifier::getDelegate)));
 			dialect.getSqlTypeRegistry().put(Identifier.class, "VARCHAR(255)");
 			
 			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
@@ -990,7 +990,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		void crud() {
 			dialect.getColumnBinderRegistry().register(
 					(Class<Identifier<UUID>>) (Class) Identifier.class,
-					new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.UUID_BINDER, PersistedIdentifier::new, StatefulIdentifier::getSurrogate)));
+					new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.UUID_BINDER, PersistedIdentifier::new, StatefulIdentifier::getDelegate)));
 			dialect.getSqlTypeRegistry().put(Identifier.class, "VARCHAR(255)");
 			
 			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
@@ -1026,7 +1026,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		void crud_severalTables() {
 			dialect.getColumnBinderRegistry().register(
 					(Class<Identifier<UUID>>) (Class) Identifier.class,
-					new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.UUID_BINDER, PersistedIdentifier::new, StatefulIdentifier::getSurrogate)));
+					new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.UUID_BINDER, PersistedIdentifier::new, StatefulIdentifier::getDelegate)));
 			dialect.getSqlTypeRegistry().put(Identifier.class, "VARCHAR(255)");
 			
 			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
@@ -1066,7 +1066,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		void crud_withConfigurationFromInheritance() {
 			dialect.getColumnBinderRegistry().register(
 					(Class<Identifier<UUID>>) (Class) Identifier.class,
-					new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.UUID_BINDER, PersistedIdentifier::new, StatefulIdentifier::getSurrogate)));
+					new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.UUID_BINDER, PersistedIdentifier::new, StatefulIdentifier::getDelegate)));
 			dialect.getSqlTypeRegistry().put(Identifier.class, "VARCHAR(255)");
 			
 			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
@@ -1366,7 +1366,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		when(connectionMock.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS))).thenReturn(statementMock);
 		
 		StringBuilder capturedSQL = new StringBuilder();
-		((SimpleRelationalEntityPersister) (((PersisterWrapper) persister).getDeepestSurrogate())).getInsertExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
+		((SimpleRelationalEntityPersister) (((PersisterWrapper) persister).getDeepestDelegate())).getInsertExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
 			@Override
 			public void onValuesSet(Map<Column<Table, Object>, ?> values) {
 				capturedValues.putAll(values);
@@ -1459,7 +1459,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		when(connectionMock.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS))).thenReturn(statementMock);
 		
 		StringBuilder capturedSQL = new StringBuilder();
-		((SimpleRelationalEntityPersister) (((PersisterWrapper) persister).getDeepestSurrogate())).getInsertExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
+		((SimpleRelationalEntityPersister) (((PersisterWrapper) persister).getDeepestDelegate())).getInsertExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
 			@Override
 			public void onValuesSet(Map<Column<Table, Object>, ?> values) {
 				capturedValues.putAll(values);

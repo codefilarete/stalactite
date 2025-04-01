@@ -115,12 +115,12 @@ public abstract class AbstractPolymorphicEntitySelector<C, I, T extends Table<T>
 									 boolean distinct, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.mainEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
-		query.getSelectSurrogate().setDistinct(distinct);
+		query.getSelectDelegate().setDistinct(distinct);
 		
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where, entityTreeQuery.getColumnClones());
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
-		selectAdapter.accept(query.getSelectSurrogate());
+		selectAdapter.accept(query.getSelectDelegate());
 		Map<Selectable<?>, String> aliases = query.getAliases();
 		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
 		

@@ -420,14 +420,14 @@ public class EntityJoinTree<C, I> {
 			throw new IllegalArgumentException("Pseudo table type is not supported: " + Reflections.toString(pseudoTable.getClass()));
 		}
 		queries.forEach(query -> {
-			Fromable rightTable =  query.getFromSurrogate().getRoot();
+			Fromable rightTable =  query.getFromDelegate().getRoot();
 			if (rightTable instanceof Table) {
 				result.add((Table) rightTable);
 			} else if (rightTable instanceof PseudoTable) {
 				result.addAll(lookupTable((PseudoTable) rightTable));
 			}
 		});
-		queries.forEach(query -> query.getFromSurrogate().getJoins().forEach(join -> {
+		queries.forEach(query -> query.getFromDelegate().getJoins().forEach(join -> {
 			Fromable rightTable = join.getRightTable();
 			if (rightTable instanceof Table) {
 				result.add((Table) rightTable);

@@ -74,7 +74,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	
 	private final List<ElementCollectionRelation<C, ?, ? extends Collection>> elementCollections = new ArrayList<>();
 	
-	private final SubEntityDecoratedEmbeddableConfigurationSupport<C, I> propertiesMappingConfigurationSurrogate;
+	private final SubEntityDecoratedEmbeddableConfigurationSupport<C, I> propertiesMappingConfigurationDelegate;
 	
 	@Nullable
 	private PolymorphismPolicy<C> polymorphismPolicy;
@@ -90,7 +90,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 		// Helper to capture Method behind method reference
 		this.methodSpy = new MethodReferenceCapturer();
 		
-		this.propertiesMappingConfigurationSurrogate = new SubEntityDecoratedEmbeddableConfigurationSupport<>(this, classToPersist);
+		this.propertiesMappingConfigurationDelegate = new SubEntityDecoratedEmbeddableConfigurationSupport<>(this, classToPersist);
 	}
 	
 	@Override
@@ -103,7 +103,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 			
 			@Override
 			public EmbeddableMappingConfiguration<C> getPropertiesMapping() {
-				return propertiesMappingConfigurationSurrogate;
+				return propertiesMappingConfigurationDelegate;
 			}
 			
 			@Override
@@ -148,26 +148,26 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	
 	@Override
 	public <O> FluentSubEntityMappingBuilderPropertyOptions<C, I, O> map(SerializableBiConsumer<C, O> setter) {
-		LinkageSupport<C, O> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter);
-		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(mapping);
+		LinkageSupport<C, O> mapping = propertiesMappingConfigurationDelegate.addMapping(setter);
+		return this.propertiesMappingConfigurationDelegate.wrapForAdditionalOptions(mapping);
 	}
 	
 	@Override
 	public <O> FluentSubEntityMappingBuilderPropertyOptions<C, I, O> map(SerializableFunction<C, O> getter) {
-		LinkageSupport<C, O> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter);
-		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(mapping);
+		LinkageSupport<C, O> mapping = propertiesMappingConfigurationDelegate.addMapping(getter);
+		return this.propertiesMappingConfigurationDelegate.wrapForAdditionalOptions(mapping);
 	}
 	
 	@Override
 	public <E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I, E> mapEnum(SerializableBiConsumer<C, E> setter) {
-		LinkageSupport<C, E> linkage = propertiesMappingConfigurationSurrogate.addMapping(setter);
-		return handleEnumOptions(propertiesMappingConfigurationSurrogate.wrapWithEnumOptions(linkage));
+		LinkageSupport<C, E> linkage = propertiesMappingConfigurationDelegate.addMapping(setter);
+		return handleEnumOptions(propertiesMappingConfigurationDelegate.wrapWithEnumOptions(linkage));
 	}
 	
 	@Override
 	public <E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I, E> mapEnum(SerializableFunction<C, E> getter) {
-		LinkageSupport<C, E> linkage = propertiesMappingConfigurationSurrogate.addMapping(getter);
-		return handleEnumOptions(propertiesMappingConfigurationSurrogate.wrapWithEnumOptions(linkage));
+		LinkageSupport<C, E> linkage = propertiesMappingConfigurationDelegate.addMapping(getter);
+		return handleEnumOptions(propertiesMappingConfigurationDelegate.wrapWithEnumOptions(linkage));
 	}
 	
 	private <E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I, E> handleEnumOptions(FluentEmbeddableMappingBuilderEnumOptions<C, E> enumOptionsHandler) {
@@ -183,7 +183,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	public <O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableFunction<C, S> getter,
 																														Class<O> componentType) {
 		ElementCollectionRelation<C, O, S> elementCollectionRelation = new ElementCollectionRelation<>(getter, componentType,
-				propertiesMappingConfigurationSurrogate, null);
+				propertiesMappingConfigurationDelegate, null);
 		elementCollections.add(elementCollectionRelation);
 		return new MethodReferenceDispatcher()
 				.redirect((SerializableBiFunction<FluentSubEntityMappingBuilderElementCollectionOptions, String, FluentSubEntityMappingBuilderElementCollectionOptions>)
@@ -213,7 +213,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 																																   Class<O> componentType,
 																																   EmbeddableMappingConfigurationProvider<O> embeddableConfiguration) {
 		ElementCollectionRelation<C, O, S> elementCollectionRelation = new ElementCollectionRelation<>(getter, componentType,
-				propertiesMappingConfigurationSurrogate,
+				propertiesMappingConfigurationDelegate,
 				embeddableConfiguration);
 		elementCollections.add(elementCollectionRelation);
 		return new MethodReferenceDispatcher()
@@ -423,13 +423,13 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	@Override
 	public <O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter,
 																									 EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder) {
-		return embed(propertiesMappingConfigurationSurrogate.embed(getter, embeddableMappingBuilder));
+		return embed(propertiesMappingConfigurationDelegate.embed(getter, embeddableMappingBuilder));
 	}
 	
 	@Override
 	public <O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter,
 																									 EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder) {
-		return embed(propertiesMappingConfigurationSurrogate.embed(setter, embeddableMappingBuilder));
+		return embed(propertiesMappingConfigurationDelegate.embed(setter, embeddableMappingBuilder));
 	}
 	
 	@Override
@@ -456,13 +456,13 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 					
 					@Override
 					public ImportedEmbedWithColumnOptions override(SerializableBiConsumer setter, Column targetColumn) {
-						propertiesMappingConfigurationSurrogate.currentInset().override(setter, targetColumn);
+						propertiesMappingConfigurationDelegate.currentInset().override(setter, targetColumn);
 						return null;
 					}
 					
 					@Override
 					public ImportedEmbedWithColumnOptions override(SerializableFunction getter, Column targetColumn) {
-						propertiesMappingConfigurationSurrogate.currentInset().override(getter, targetColumn);
+						propertiesMappingConfigurationDelegate.currentInset().override(getter, targetColumn);
 						return null;
 					}
 
@@ -484,7 +484,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	
 	@Override
 	public FluentSubEntityMappingBuilder<C, I> withColumnNaming(ColumnNamingStrategy columnNamingStrategy) {
-		this.propertiesMappingConfigurationSurrogate.withColumnNaming(columnNamingStrategy);
+		this.propertiesMappingConfigurationDelegate.withColumnNaming(columnNamingStrategy);
 		return this;
 	}
 	

@@ -25,129 +25,129 @@ import org.codefilarete.tool.function.Converter;
  */
 public class EntityMappingWrapper<C, I, T extends Table<T>> implements EntityMapping<C, I, T> {
 	
-	private final EntityMapping<C, I, T> surrogate;
+	private final EntityMapping<C, I, T> delegate;
 	
-	public EntityMappingWrapper(EntityMapping<C, I, T> surrogate) {
-		this.surrogate = surrogate;
+	public EntityMappingWrapper(EntityMapping<C, I, T> delegate) {
+		this.delegate = delegate;
 	}
 	
 	@Override
 	public T getTargetTable() {
-		return surrogate.getTargetTable();
+		return delegate.getTargetTable();
 	}
 	
 	@Override
 	public Class<C> getClassToPersist() {
-		return surrogate.getClassToPersist();
+		return delegate.getClassToPersist();
 	}
 	
 	@Override
 	public boolean isNew(C c) {
-		return surrogate.isNew(c);
+		return delegate.isNew(c);
 	}
 	
 	@Override
 	public IdMapping<C, I> getIdMapping() {
-		return surrogate.getIdMapping();
+		return delegate.getIdMapping();
 	}
 	
 	@Override
 	public Set<Column<T, ?>> getInsertableColumns() {
-		return surrogate.getInsertableColumns();
+		return delegate.getInsertableColumns();
 	}
 	
 	@Override
 	public Set<Column<T, ?>> getSelectableColumns() {
-		return surrogate.getSelectableColumns();
+		return delegate.getSelectableColumns();
 	}
 	
 	@Override
 	public Set<Column<T, ?>> getUpdatableColumns() {
-		return surrogate.getUpdatableColumns();
+		return delegate.getUpdatableColumns();
 	}
 	
 	@Override
 	public Iterable<Column<T, ?>> getVersionedKeys() {
-		return surrogate.getVersionedKeys();
+		return delegate.getVersionedKeys();
 	}
 	
 	@Override
 	public Map<Column<T, ?>, Object> getVersionedKeyValues(C c) {
-		return surrogate.getVersionedKeyValues(c);
+		return delegate.getVersionedKeyValues(c);
 	}
 	
 	@Override
 	public Map<ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> getEmbeddedBeanStrategies() {
-		return surrogate.getEmbeddedBeanStrategies();
+		return delegate.getEmbeddedBeanStrategies();
 	}
 	
 	@Override
 	public Map<Column<T, ?>, Object> getInsertValues(C c) {
-		return surrogate.getInsertValues(c);
+		return delegate.getInsertValues(c);
 	}
 	
 	@Override
 	public Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
-		return surrogate.getUpdateValues(modified, unmodified, allColumns);
+		return delegate.getUpdateValues(modified, unmodified, allColumns);
 	}
 	
 	@Override
 	public C transform(Row row) {
-		return surrogate.transform(row);
+		return delegate.transform(row);
 	}
 	
 	@Override
 	public void addShadowColumnInsert(ShadowColumnValueProvider<C, T> valueProvider) {
-		surrogate.addShadowColumnInsert(valueProvider);
+		delegate.addShadowColumnInsert(valueProvider);
 	}
 	
 	@Override
 	public void addShadowColumnUpdate(ShadowColumnValueProvider<C, T> valueProvider) {
-		surrogate.addShadowColumnUpdate(valueProvider);
+		delegate.addShadowColumnUpdate(valueProvider);
 	}
 	
 	@Override
 	public <O> void addShadowColumnSelect(Column<T, O> column) {
-		surrogate.addShadowColumnSelect(column);
+		delegate.addShadowColumnSelect(column);
 	}
 	
 	@Override
 	public void addPropertySetByConstructor(ValueAccessPoint<C> accessor) {
-		surrogate.addPropertySetByConstructor(accessor);
+		delegate.addPropertySetByConstructor(accessor);
 	}
 	
 	@Override
 	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
-		return surrogate.getPropertyToColumn();
+		return delegate.getPropertyToColumn();
 	}
 	
 	@Override
 	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
-		return surrogate.getReadonlyPropertyToColumn();
+		return delegate.getReadonlyPropertyToColumn();
 	}
 	
 	@Override
 	public ValueAccessPointMap<C, Converter<Object, Object>> getReadConverters() {
-		return surrogate.getReadConverters();
+		return delegate.getReadConverters();
 	}
 	
 	@Override
 	public RowTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow) {
-		return surrogate.copyTransformerWithAliases(columnedRow);
+		return delegate.copyTransformerWithAliases(columnedRow);
 	}
 	
 	@Override
 	public void addTransformerListener(TransformerListener<C> listener) {
-		surrogate.addTransformerListener(listener);
+		delegate.addTransformerListener(listener);
 	}
 	
 	@Override
 	public I getId(C c) {
-		return surrogate.getId(c);
+		return delegate.getId(c);
 	}
 	
 	@Override
 	public void setId(C c, I identifier) {
-		surrogate.setId(c, identifier);
+		delegate.setId(c, identifier);
 	}
 }

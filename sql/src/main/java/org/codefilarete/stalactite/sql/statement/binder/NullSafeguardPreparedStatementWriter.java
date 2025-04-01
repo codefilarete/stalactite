@@ -14,19 +14,19 @@ import org.codefilarete.tool.function.SerializableThrowingTriConsumer;
  */
 public class NullSafeguardPreparedStatementWriter<C> implements PreparedStatementWriter<C> {
 	
-	private final PreparedStatementWriter<C> surrogate;
+	private final PreparedStatementWriter<C> delegate;
 	
 	public NullSafeguardPreparedStatementWriter(SerializableThrowingTriConsumer<PreparedStatement, Integer, C, SQLException> preparedStatementSetter) {
 		this(PreparedStatementWriter.ofMethodReference(preparedStatementSetter));
 	}
 	
-	public NullSafeguardPreparedStatementWriter(PreparedStatementWriter<C> surrogate) {
-		this.surrogate = surrogate;
+	public NullSafeguardPreparedStatementWriter(PreparedStatementWriter<C> delegate) {
+		this.delegate = delegate;
 	}
 	
 	@Override
 	public Class<C> getType() {
-		return surrogate.getType();
+		return delegate.getType();
 	}
 	
 	@Override
@@ -35,6 +35,6 @@ public class NullSafeguardPreparedStatementWriter<C> implements PreparedStatemen
 			// NB : we can't give detail about primitive type because we don't know it
 			throw new IllegalArgumentException("Trying to pass null as primitive value");
 		}
-		surrogate.set(preparedStatement, valueIndex, value);
+		delegate.set(preparedStatement, valueIndex, value);
 	}
 }

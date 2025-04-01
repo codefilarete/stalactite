@@ -173,7 +173,7 @@ class TablePerClassPolymorphismPersisterTest {
 			
 			@Override
 			public void set(PreparedStatement statement, int valueIndex, Identifier value) throws SQLException {
-				statement.setInt(valueIndex, (Integer) value.getSurrogate());
+				statement.setInt(valueIndex, (Integer) value.getDelegate());
 			}
 		});
 		// Registering a binder of Set for the AbstractToto.q property
@@ -795,7 +795,7 @@ class TablePerClassPolymorphismPersisterTest {
 		@Override
 		public String toString() {
 			return getClass().getSimpleName() + "["
-					+ Maps.asMap("id", id == null ? "null" : id.getSurrogate()).add("x", x)
+					+ Maps.asMap("id", id == null ? "null" : id.getDelegate()).add("x", x)
 					+ "]";
 		}
 	}
@@ -820,7 +820,7 @@ class TablePerClassPolymorphismPersisterTest {
 		@Override
 		public String toString() {
 			return getClass().getSimpleName() + "["
-					+ Maps.asMap("id", id == null ? "null" : id.getSurrogate())
+					+ Maps.asMap("id", id == null ? "null" : id.getDelegate())
 					.add("x", x)
 					.add("a", a)
 					+ "]";
@@ -847,7 +847,7 @@ class TablePerClassPolymorphismPersisterTest {
 		@Override
 		public String toString() {
 			return getClass().getSimpleName() + "["
-					+ Maps.asMap("id", id == null ? "null" : id.getSurrogate())
+					+ Maps.asMap("id", id == null ? "null" : id.getDelegate())
 					.add("x", x)
 					.add("b", b)
 					+ "]";

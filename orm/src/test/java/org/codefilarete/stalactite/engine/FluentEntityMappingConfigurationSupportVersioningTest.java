@@ -189,7 +189,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		Country dummyCountryClone = countryPersister.select(dummyCountry.getId());
 		// another process updates it (dumb update)
 		connectionProvider.giveConnection().createStatement().executeUpdate(
-				"update Country set version = version + 1 where id = " + dummyCountry.getId().getSurrogate());
+				"update Country set version = version + 1 where id = " + dummyCountry.getId().getDelegate());
 		
 		// the update must fail because the updated object is out of sync
 		dummyCountryClone.setName("Tata");

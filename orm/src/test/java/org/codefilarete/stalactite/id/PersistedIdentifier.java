@@ -8,8 +8,8 @@ package org.codefilarete.stalactite.id;
  */
 public class PersistedIdentifier<T> extends AbstractIdentifier<T> {
 	
-	public PersistedIdentifier(T surrogate) {
-		super(surrogate);
+	public PersistedIdentifier(T delegate) {
+		super (delegate);
 	}
 	
 	/**

@@ -81,7 +81,7 @@ public class Country extends AbstractCountry implements Identified<Long> {
 		
 		Country country = (Country) o;
 		
-		return id.getSurrogate().equals(country.id.getSurrogate());
+		return id.getDelegate().equals(country.id.getDelegate());
 	}
 	
 	/**
@@ -91,7 +91,7 @@ public class Country extends AbstractCountry implements Identified<Long> {
 	 */
 	@Override
 	public int hashCode() {
-		return id.getSurrogate().hashCode();
+		return id.getDelegate().hashCode();
 	}
 	
 	public String getName() {

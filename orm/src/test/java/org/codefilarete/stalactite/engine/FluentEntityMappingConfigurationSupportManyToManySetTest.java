@@ -271,7 +271,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 				.mapKey("answer_id", Long.class);
 		Set<Long> choiceAnswerIds = longExecutableQuery3.execute(Accumulators.toSet());
 
-		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(answer.getId().getSurrogate());
+		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(answer.getId().getDelegate());
 
 		// testing select
 		Answer loadedAnswer = persister.select(answer.getId());
@@ -286,13 +286,13 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select answer_id from answer_choices", Long.class)
 				.mapKey("answer_id", Long.class);
 		choiceAnswerIds = longExecutableQuery2.execute(Accumulators.toSet());
-		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(answer.getId().getSurrogate());
+		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(answer.getId().getDelegate());
 		
 		// referenced Choices must not be deleted (we didn't ask for delete orphan)
 		ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select id from choice", Long.class)
 				.mapKey("id", Long.class);
 		Set<Long> choiceIds = longExecutableQuery1.execute(Accumulators.toSet());
-		assertThat(choiceIds).containsExactlyInAnyOrder(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate());
+		assertThat(choiceIds).containsExactlyInAnyOrder(grenoble.getId().getDelegate(), lyon.getId().getDelegate());
 
 		// testing delete
 		persister.delete(modifiedAnswer);
@@ -326,7 +326,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 				.mapKey("answer_id", Long.class);
 		Set<Long> choiceAnswerIds = longExecutableQuery3.execute(Accumulators.toSet());
 
-		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(answer1.getId().getSurrogate(), answer2.getId().getSurrogate());
+		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(answer1.getId().getDelegate(), answer2.getId().getDelegate());
 
 		// testing select
 		Answer loadedAnswer = persister.select(answer1.getId());
@@ -341,20 +341,20 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select answer_id from answer_choices", Long.class)
 				.mapKey("answer_id", Long.class);
 		choiceAnswerIds = longExecutableQuery2.execute(Accumulators.toSet());
-		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(answer1.getId().getSurrogate(), answer2.getId().getSurrogate());
+		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(answer1.getId().getDelegate(), answer2.getId().getDelegate());
 		
 		// referenced Choices must not be deleted (we didn't ask for orphan deletion)
 		ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select id from choice", Long.class)
 				.mapKey("id", Long.class);
 		Set<Long> choiceIds = longExecutableQuery1.execute(Accumulators.toSet());
-		assertThat(choiceIds).containsExactlyInAnyOrder(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate());
+		assertThat(choiceIds).containsExactlyInAnyOrder(grenoble.getId().getDelegate(), lyon.getId().getDelegate());
 
 		// testing delete
 		persister.delete(modifiedAnswer);
 		ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select answer_id from answer_choices", Long.class)
 				.mapKey("answer_id", Long.class);
 		choiceAnswerIds = longExecutableQuery.execute(Accumulators.toSet());
-		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(answer2.getId().getSurrogate());
+		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(answer2.getId().getDelegate());
 	}
 	
 	private static class Trio<L, M, R> {
@@ -469,7 +469,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from answer", Long.class)
 					.mapKey("id", Long.class);
 			Set<Long> answerIds = longExecutableQuery.execute(Accumulators.toSet());
-			assertThat(answerIds).containsExactlyInAnyOrder(answer.getId().getSurrogate());
+			assertThat(answerIds).containsExactlyInAnyOrder(answer.getId().getDelegate());
 			
 			Long choiceAnswerCount = persistenceContext.newQuery("select count(*) as relationCount from answer_choices", Long.class)
 					.mapKey("relationCount", Long.class)
@@ -741,12 +741,12 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select id from Answer where id in (42, 666)", Long.class)
 					.mapKey("id", Long.class);
 			Set<Long> answerIds = longExecutableQuery1.execute(Accumulators.toSet());
-			assertThat(answerIds).containsExactlyInAnyOrder(answer1.getId().getSurrogate(), answer2.getId().getSurrogate());
+			assertThat(answerIds).containsExactlyInAnyOrder(answer1.getId().getDelegate(), answer2.getId().getDelegate());
 			// this test is unnecessary because foreign keys should have been violated, left for more insurance
 			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select choices_Id from Answer_choices where answer_id in (42, 666)", Long.class)
 					.mapKey("choices_id", Long.class);
 			Set<Long> choicesInRelationIds = longExecutableQuery.execute(Accumulators.toSet());
-			assertThat(choicesInRelationIds).containsExactlyInAnyOrder(choice1.getId().getSurrogate(), choice2.getId().getSurrogate(), choice3.getId().getSurrogate());
+			assertThat(choicesInRelationIds).containsExactlyInAnyOrder(choice1.getId().getDelegate(), choice2.getId().getDelegate(), choice3.getId().getDelegate());
 		}
 		
 		@Test
@@ -878,7 +878,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 				.build(persistenceContext);
 
 		// this is a configuration safeguard, thus we ensure that configuration matches test below
-		assertThat(((OptimizedUpdatePersister<Answer, Identifier<Long>>) answerPersister).getSurrogate()
+		assertThat(((OptimizedUpdatePersister<Answer, Identifier<Long>>) answerPersister).getDelegate()
 				.getEntityJoinTree().getJoin("Answer_Choices0")).isNull();
 
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1135,7 +1135,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		
 		@Override
 		public String toString() {
-			return "Choice{id=" + id.getSurrogate() + ", label='" + label + '\'' + '}';
+			return "Choice{id=" + id.getDelegate() + ", label='" + label + '\'' + '}';
 		}
 	}
 }

@@ -73,12 +73,12 @@ public class StalactiteRepositoryFactoryBean<R extends Repository<C, I>, C, I>
 		// This is hideous : due to the will to not expose AdvancedEntityPersister to the outside world, but combined to the need to use it and
 		// the fact that its implementing classes are hidden by several layers of interfaces, with "dig" into given result to find them
 		// and wrap the result into a proxy that dispatch called methods accordingly.
-		ConfiguredRelationalPersister deepestSurrogate = ((OptimizedUpdatePersister) foundPersister).getDeepestSurrogate();
+		ConfiguredRelationalPersister deepestDelegate = ((OptimizedUpdatePersister) foundPersister).getDeepestDelegate();
 		MethodDispatcher methodDispatcher = new MethodDispatcher();
 		// Please note that order of precedence has an impact on getting a working result or not because AdvancedEntityPersister already extends
 		// ConfiguredPersister (yes, that's awful, but I couldn't find a better way without the constraint of not exposing AdvancedEntityPersister)
 		methodDispatcher
-				.redirect(AdvancedEntityPersister.class, (AdvancedEntityPersister) deepestSurrogate)
+				.redirect(AdvancedEntityPersister.class, (AdvancedEntityPersister) deepestDelegate)
 				.redirect(ConfiguredPersister.class, (ConfiguredPersister) foundPersister);
 		this.entityPersister = methodDispatcher.build(AdvancedEntityPersister.class);
 		

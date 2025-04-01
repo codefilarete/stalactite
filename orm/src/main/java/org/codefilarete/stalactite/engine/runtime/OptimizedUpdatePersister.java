@@ -93,8 +93,8 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 		return new ConnectionConfigurationSupport(connectionProvider, connectionConfiguration.getBatchSize());
 	}
 	
-	public OptimizedUpdatePersister(ConfiguredRelationalPersister<C, I> surrogate) {
-		super(surrogate);
+	public OptimizedUpdatePersister(ConfiguredRelationalPersister<C, I> delegate) {
+		super(delegate);
 	}
 	
 	/**
@@ -267,8 +267,8 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 	 */
 	private static class CachingQueryConnectionWrapper extends ConnectionWrapper {
 		
-		private CachingQueryConnectionWrapper(Connection surrogate) {
-			super(surrogate);
+		private CachingQueryConnectionWrapper(Connection delegate) {
+			super(delegate);
 		}
 		
 		@Override
@@ -426,31 +426,26 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 			
 			@Override
 			public Blob getBlob(String columnLabel) throws SQLException {
-				//return surrogate.getBlob(columnLabel);
 				throw new NotYetSupportedOperationException("Result will not be readable twice");
 			}
 			
 			@Override
 			public Clob getClob(String columnLabel) throws SQLException {
-				//return surrogate.getClob(columnLabel);
 				throw new NotYetSupportedOperationException("Result will not be readable twice");
 			}
 			
 			@Override
 			public InputStream getBinaryStream(String columnLabel) throws SQLException {
-				//return surrogate.getBinaryStream(columnLabel);
 				throw new NotYetSupportedOperationException("Result will not be readable twice");
 			}
 			
 			@Override
 			public Reader getCharacterStream(String columnLabel) throws SQLException {
-				//return surrogate.getCharacterStream(columnLabel);
 				throw new NotYetSupportedOperationException("Result will not be readable twice");
 			}
 			
 			@Override
 			public InputStream getAsciiStream(String columnLabel) throws SQLException {
-				//return surrogate.getAsciiStream(columnLabel);
 				throw new NotYetSupportedOperationException("Result will not be readable twice");
 			}
 		}

@@ -117,7 +117,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			personPersister.update(johnDo, loadedPerson, true);
 			loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
 			assertThat(loadedPerson.getHouse()).isEqualTo(johnDo.getHouse());
-			assertThat(loadedPerson.getHouse().getGardener().getId().getSurrogate()).isEqualTo(999);
+			assertThat(loadedPerson.getHouse().getGardener().getId().getDelegate()).isEqualTo(999);
 			assertThat(loadedPerson.getHouse().getGardener().getName()).isEqualTo("Dandelion");
 			
 			personPersister.delete(johnDo);
@@ -174,7 +174,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			personPersister.update(johnDo, loadedPerson, true);
 			loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
 			assertThat(loadedPerson.getHouse()).isEqualTo(johnDo.getHouse());
-			assertThat(loadedPerson.getHouse().getGardener().getId().getSurrogate()).isEqualTo(999);
+			assertThat(loadedPerson.getHouse().getGardener().getId().getDelegate()).isEqualTo(999);
 			assertThat(loadedPerson.getHouse().getGardener().getName()).isEqualTo("Dandelion");
 			
 			personPersister.delete(johnDo);
@@ -294,7 +294,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			personPersister.update(johnDo, loadedPerson, true);
 			loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
 			assertThat(loadedPerson.getHouse()).isEqualTo(johnDo.getHouse());
-			assertThat(loadedPerson.getHouse().getGardener().getId().getSurrogate()).isEqualTo(999);
+			assertThat(loadedPerson.getHouse().getGardener().getId().getDelegate()).isEqualTo(999);
 			assertThat(loadedPerson.getHouse().getGardener().getName()).isEqualTo("Dandelion");
 			
 			personPersister.delete(johnDo);
@@ -359,7 +359,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			personPersister.update(johnDo, loadedPerson, true);
 			loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
 			assertThat(loadedPerson.getHouse()).isEqualTo(johnDo.getHouse());
-			assertThat(loadedPerson.getHouse().getGardener().getId().getSurrogate()).isEqualTo(999);
+			assertThat(loadedPerson.getHouse().getGardener().getId().getDelegate()).isEqualTo(999);
 			assertThat(loadedPerson.getHouse().getGardener().getName()).isEqualTo("Dandelion");
 			
 			personPersister.delete(johnDo);
@@ -580,7 +580,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			personPersister.update(johnDo, loadedPerson, true);
 			loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
 			assertThat(loadedPerson.getHouse()).isEqualTo(johnDo.getHouse());
-			assertThat(loadedPerson.getHouse1().getGardener().getId().getSurrogate()).isEqualTo(999);
+			assertThat(loadedPerson.getHouse1().getGardener().getId().getDelegate()).isEqualTo(999);
 			assertThat(loadedPerson.getHouse1().getGardener().getName()).isEqualTo("Dandelion");
 			
 			personPersister.delete(johnDo);
@@ -731,7 +731,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			List<Map<Column<Table, Object>, ?>> capturedValues = new ArrayList<>();
 			List<String> capturedSQL = new ArrayList<>();
-			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestSurrogate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
+			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestDelegate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
 				@Override
 				public void onValuesSet(Map<Column<Table, Object>, ?> values) {
 					capturedValues.add(values);
@@ -780,9 +780,9 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 						map.forEach((column, value) -> {
 							Object values;
 							if (value instanceof List) {
-								values = Iterables.collect((List<StatefulIdentifier>) value, StatefulIdentifier::getSurrogate, ArrayList::new);
+								values = Iterables.collect((List<StatefulIdentifier>) value, StatefulIdentifier::getDelegate, ArrayList::new);
 							} else {
-								values = ((StatefulIdentifier) value).getSurrogate();
+								values = ((StatefulIdentifier) value).getDelegate();
 							}
 							result.put(column.getAbsoluteName(), values);
 						});
@@ -840,7 +840,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			List<Map<Column<Table, Object>, ?>> capturedValues = new ArrayList<>();
 			List<String> capturedSQL = new ArrayList<>();
-			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestSurrogate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
+			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestDelegate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
 				@Override
 				public void onValuesSet(Map<Column<Table, Object>, ?> values) {
 					capturedValues.add(values);
@@ -889,9 +889,9 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 						map.forEach((column, value) -> {
 							Object values;
 							if (value instanceof List) {
-								values = Iterables.collect((List<StatefulIdentifier>) value, StatefulIdentifier::getSurrogate, ArrayList::new);
+								values = Iterables.collect((List<StatefulIdentifier>) value, StatefulIdentifier::getDelegate, ArrayList::new);
 							} else {
-								values = ((StatefulIdentifier) value).getSurrogate();
+								values = ((StatefulIdentifier) value).getDelegate();
 							}
 							result.put(column.getAbsoluteName(), values);
 						});
@@ -949,7 +949,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			List<Map<Column<Table, Object>, ?>> capturedValues = new ArrayList<>();
 			List<String> capturedSQL = new ArrayList<>();
-			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestSurrogate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
+			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestDelegate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
 				@Override
 				public void onValuesSet(Map<Column<Table, Object>, ?> values) {
 					capturedValues.add(values);
@@ -998,9 +998,9 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 						map.forEach((column, value) -> {
 							Object values;
 							if (value instanceof List) {
-								values = Iterables.collect((List<StatefulIdentifier>) value, StatefulIdentifier::getSurrogate, ArrayList::new);
+								values = Iterables.collect((List<StatefulIdentifier>) value, StatefulIdentifier::getDelegate, ArrayList::new);
 							} else {
-								values = ((StatefulIdentifier) value).getSurrogate();
+								values = ((StatefulIdentifier) value).getDelegate();
 							}
 							result.put(column.getAbsoluteName(), values);
 						});
@@ -1058,7 +1058,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			List<Map<Column<Table, Object>, ?>> capturedValues = new ArrayList<>();
 			List<String> capturedSQL = new ArrayList<>();
-			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestSurrogate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
+			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestDelegate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
 				@Override
 				public void onValuesSet(Map<Column<Table, Object>, ?> values) {
 					capturedValues.add(values);
@@ -1107,9 +1107,9 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 						map.forEach((column, value) -> {
 							Object values;
 							if (value instanceof List) {
-								values = Iterables.collect((List<StatefulIdentifier>) value, StatefulIdentifier::getSurrogate, ArrayList::new);
+								values = Iterables.collect((List<StatefulIdentifier>) value, StatefulIdentifier::getDelegate, ArrayList::new);
 							} else {
-								values = ((StatefulIdentifier) value).getSurrogate();
+								values = ((StatefulIdentifier) value).getDelegate();
 							}
 							result.put(column.getAbsoluteName(), values);
 						});
@@ -1226,7 +1226,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 
 			List<Map<Column<Table, Object>, ?>> capturedValues = new ArrayList<>();
 			List<String> capturedSQL = new ArrayList<>();
-			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestSurrogate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
+			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestDelegate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
 				@Override
 				public void onValuesSet(Map<Column<Table, Object>, ?> values) {
 					capturedValues.add(values);
@@ -1275,9 +1275,9 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 						map.forEach((column, value) -> {
 							Object values;
 							if (value instanceof List) {
-								values = Iterables.collect((List<StatefulIdentifier>) value, StatefulIdentifier::getSurrogate, ArrayList::new);
+								values = Iterables.collect((List<StatefulIdentifier>) value, StatefulIdentifier::getDelegate, ArrayList::new);
 							} else {
-								values = ((StatefulIdentifier) value).getSurrogate();
+								values = ((StatefulIdentifier) value).getDelegate();
 							}
 							result.put(column.getAbsoluteName(), values);
 						});
@@ -1331,7 +1331,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 
 			List<Map<Column<Table, Object>, ?>> capturedValues = new ArrayList<>();
 			List<String> capturedSQL = new ArrayList<>();
-			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestSurrogate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
+			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestDelegate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
 				@Override
 				public void onValuesSet(Map<Column<Table, Object>, ?> values) {
 					capturedValues.add(values);
@@ -1380,9 +1380,9 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 						map.forEach((column, value) -> {
 							Object values;
 							if (value instanceof List) {
-								values = Iterables.collect((List<StatefulIdentifier>) value, StatefulIdentifier::getSurrogate, ArrayList::new);
+								values = Iterables.collect((List<StatefulIdentifier>) value, StatefulIdentifier::getDelegate, ArrayList::new);
 							} else {
-								values = ((StatefulIdentifier) value).getSurrogate();
+								values = ((StatefulIdentifier) value).getDelegate();
 							}
 							result.put(column.getAbsoluteName(), values);
 						});

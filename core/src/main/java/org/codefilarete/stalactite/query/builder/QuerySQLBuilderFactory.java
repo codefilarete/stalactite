@@ -136,13 +136,13 @@ public class QuerySQLBuilderFactory {
 	}
 	
 	public QuerySQLBuilder queryBuilder(Query query) {
-		DMLNameProvider dmlNameProvider = dmlNameProviderFactory.build(query.getFromSurrogate().getTableAliases()::get);
+		DMLNameProvider dmlNameProvider = dmlNameProviderFactory.build(query.getFromDelegate().getTableAliases()::get);
 		return new QuerySQLBuilder(query,
 				dmlNameProvider,
-				selectBuilderFactory.queryBuilder(query.getSelectSurrogate(), dmlNameProvider),
-				fromBuilderFactory.fromBuilder(query.getFromSurrogate(), dmlNameProvider, this),
-				whereBuilderFactory.whereBuilder(query.getWhereSurrogate(), dmlNameProvider),
-				havingBuilderFactory.whereBuilder(query.getHavingSurrogate(), dmlNameProvider),
+				selectBuilderFactory.queryBuilder(query.getSelectDelegate(), dmlNameProvider),
+				fromBuilderFactory.fromBuilder(query.getFromDelegate(), dmlNameProvider, this),
+				whereBuilderFactory.whereBuilder(query.getWhereDelegate(), dmlNameProvider),
+				havingBuilderFactory.whereBuilder(query.getHavingDelegate(), dmlNameProvider),
 				functionSQLBuilderFactory.functionSQLBuilder(dmlNameProvider),
 				parameterBinderRegistry);
 	}
@@ -234,29 +234,29 @@ public class QuerySQLBuilderFactory {
 			sqlWrapper.cat("select ", selectSQLBuilder.toSQL());
 			sqlWrapper.cat(" from ");
 			fromSqlBuilder.appendTo(sqlWrapper);
-			if (!query.getWhereSurrogate().getConditions().isEmpty()) {
+			if (!query.getWhereDelegate().getConditions().isEmpty()) {
 				sqlWrapper.cat(" where ");
 				whereSqlBuilder.appendTo(sqlWrapper);
 			}
 			
-			GroupBy groupBy = query.getGroupBySurrogate();
+			GroupBy groupBy = query.getGroupByDelegate();
 			if (!groupBy.getGroups().isEmpty()) {
 				cat(groupBy, sqlWrapper.cat(" group by "));
 			}
 			
-			Having having = query.getHavingSurrogate();
+			Having having = query.getHavingDelegate();
 			if (!having.getConditions().isEmpty()) {
 				sqlWrapper.cat(" having ");
 				havingBuilder.appendTo(sqlWrapper);
 			}
 			
-			OrderBy orderBy = query.getOrderBySurrogate();
+			OrderBy orderBy = query.getOrderByDelegate();
 			if (!orderBy.getColumns().isEmpty()) {
 				sqlWrapper.cat(" order by ");
 				cat(orderBy, sqlWrapper);
 			}
 			
-			Limit limit = query.getLimitSurrogate();
+			Limit limit = query.getLimitDelegate();
 			if (limit.getCount() != null) {
 				sqlWrapper.cat(" limit ");
 				sqlWrapper.catValue(new ValuedVariable<>(limit.getCount()));
@@ -338,7 +338,7 @@ public class QuerySQLBuilderFactory {
 			Set<Query> queries = union.getQueries();
 			queries.forEach(query -> {
 				QuerySQLBuilder sqlBuilder = querySQLBuilderFactory.queryBuilder(query);
-				SubSQLAppender subAppender = preparedSQLAppender.newSubPart(dmlNameProviderFactory.build(query.getFromSurrogate().getTableAliases()::get));
+				SubSQLAppender subAppender = preparedSQLAppender.newSubPart(dmlNameProviderFactory.build(query.getFromDelegate().getTableAliases()::get));
 				sqlBuilder.appendTo(subAppender);
 				subAppender.close();
 				preparedSQLAppender.cat(UNION_ALL_SEPARATOR);

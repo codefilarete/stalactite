@@ -26,18 +26,18 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 		QueryStatement, UnionAware {
 	
 	private final FluentSelectClause select;
-	private final Select selectSurrogate;
+	private final Select selectDelegate;
 	private final FluentFromClause from;
-	private final From fromSurrogate;
+	private final From fromDelegate;
 	private final FluentWhereClause where;
-	private final Where whereSurrogate;
+	private final Where whereDelegate;
 	private final FluentGroupByClause groupBy;
-	private final GroupBy groupBySurrogate;
+	private final GroupBy groupByDelegate;
 	private final FluentHavingClause having;
-	private final Having havingSurrogate;
-	private final OrderBy orderBySurrogate;
+	private final Having havingDelegate;
+	private final OrderBy orderByDelegate;
 	private final FluentOrderByClause orderBy;
-	private final Limit limitSurrogate;
+	private final Limit limitDelegate;
 	private final FluentLimitClause limit;
 	private final FluentUnionClause fluentUnionClause;
 	
@@ -46,14 +46,14 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 	}
 	
 	public Query(Fromable rootTable) {
-		this.selectSurrogate = new Select();
+		this.selectDelegate = new Select();
 		this.select = new MethodReferenceDispatcher()
-				.redirect(SelectChain.class, selectSurrogate, true)
+				.redirect(SelectChain.class, selectDelegate, true)
 				.redirect((SerializableTriFunction<FluentSelectClause, String, Class, FluentSelectClauseAliasableExpression>)
 						FluentSelectClause::add, new BiFunction<String, Class, FluentSelectClauseAliasableExpression>() {
 					@Override
 					public FluentSelectClauseAliasableExpression apply(String s, Class aClass) {
-						AliasableExpression<Select> add = selectSurrogate.add(s, aClass);
+						AliasableExpression<Select> add = selectDelegate.add(s, aClass);
 						return new MethodDispatcher()
 								.redirect(Aliasable.class, alias -> {
 									add.as(alias);
@@ -66,52 +66,52 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 				.redirect(FromAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.build(FluentSelectClause.class);
-		this.fromSurrogate = new From(rootTable);
+		this.fromDelegate = new From(rootTable);
 		this.from = new MethodDispatcher()
-				.redirect(JoinChain.class, fromSurrogate, true)
+				.redirect(JoinChain.class, fromDelegate, true)
 				.redirect(WhereAware.class, this)
 				.redirect(GroupByAware.class, this)
 				.redirect(OrderByAware.class, this)
 				.redirect(LimitAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.build(FluentFromClause.class);
-		this.whereSurrogate = new Where();
+		this.whereDelegate = new Where();
 		this.where = new MethodDispatcher()
-				.redirect(CriteriaChain.class, whereSurrogate, true)
-				.redirect(Iterable.class, whereSurrogate)
+				.redirect(CriteriaChain.class, whereDelegate, true)
+				.redirect(Iterable.class, whereDelegate)
 				.redirect(GroupByAware.class, this)
 				.redirect(OrderByAware.class, this)
 				.redirect(LimitAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.redirect(UnionAware.class, this)
 				.build(FluentWhereClause.class);
-		this.groupBySurrogate = new GroupBy();
+		this.groupByDelegate = new GroupBy();
 		this.groupBy = new MethodDispatcher()
-				.redirect(GroupByChain.class, groupBySurrogate, true)
+				.redirect(GroupByChain.class, groupByDelegate, true)
 				.redirect(HavingAware.class, this)
 				.redirect(OrderByAware.class, this)
 				.redirect(LimitAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.redirect(UnionAware.class, this)
 				.build(FluentGroupByClause.class);
-		this.havingSurrogate = new Having();
+		this.havingDelegate = new Having();
 		this.having = new MethodDispatcher()
-				.redirect(CriteriaChain.class, havingSurrogate, true)
+				.redirect(CriteriaChain.class, havingDelegate, true)
 				.redirect(OrderByAware.class, this)
 				.redirect(LimitAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.redirect(UnionAware.class, this)
 				.build(FluentHavingClause.class);
-		this.orderBySurrogate = new OrderBy();
+		this.orderByDelegate = new OrderBy();
 		this.orderBy = new MethodDispatcher()
-				.redirect(OrderByChain.class, orderBySurrogate, true)
+				.redirect(OrderByChain.class, orderByDelegate, true)
 				.redirect(LimitAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.redirect(UnionAware.class, this)
 				.build(FluentOrderByClause.class);
-		this.limitSurrogate = new Limit();
+		this.limitDelegate = new Limit();
 		this.limit = new MethodDispatcher()
-				.redirect(LimitChain.class, limitSurrogate, true)
+				.redirect(LimitChain.class, limitDelegate, true)
 				.redirect(QueryProvider.class, this)
 				.redirect(UnionAware.class, this)
 				.build(FluentLimitClause.class);
@@ -128,64 +128,64 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 	/**
 	 * @return a concrete implementation of a select
 	 */
-	public Select getSelectSurrogate() {
-		return selectSurrogate;
+	public Select getSelectDelegate() {
+		return selectDelegate;
 	}
 	
 	public JoinChain getFrom() {
 		return this.from;
 	}
 	
-	public From getFromSurrogate() {
-		return fromSurrogate;
+	public From getFromDelegate() {
+		return fromDelegate;
 	}
 	
 	public FluentWhereClause getWhere() {
 		return where;
 	}
 	
-	public Where getWhereSurrogate() {
-		return whereSurrogate;
+	public Where getWhereDelegate() {
+		return whereDelegate;
 	}
 	
-	public GroupBy getGroupBySurrogate() {
-		return groupBySurrogate;
+	public GroupBy getGroupByDelegate() {
+		return groupByDelegate;
 	}
 	
-	public Having getHavingSurrogate() {
-		return havingSurrogate;
+	public Having getHavingDelegate() {
+		return havingDelegate;
 	}
 	
-	public OrderBy getOrderBySurrogate() {
-		return orderBySurrogate;
+	public OrderBy getOrderByDelegate() {
+		return orderByDelegate;
 	}
 	
-	public Limit getLimitSurrogate() {
-		return limitSurrogate;
+	public Limit getLimitDelegate() {
+		return limitDelegate;
 	}
 	
 	@Override
 	public KeepOrderSet<Selectable<?>> getColumns() {
-		return this.selectSurrogate.getColumns();
+		return this.selectDelegate.getColumns();
 	}
 	
 	@Override
 	public Map<Selectable<?>, String> getAliases() {
-		return this.selectSurrogate.getAliases();
+		return this.selectDelegate.getAliases();
 	}
 	
 	public FluentSelectClause select(Iterable<? extends Selectable<?>> selectables) {
-		selectables.forEach(this.selectSurrogate::add);
+		selectables.forEach(this.selectDelegate::add);
 		return this.select;
 	}
 	
 	public FluentSelectClause select(Selectable<?> expression, Selectable<?>... expressions) {
-		this.selectSurrogate.add(expression, expressions);
+		this.selectDelegate.add(expression, expressions);
 		return select;
 	}
 	
 	public FluentSelectClauseAliasableExpression select(String expression, Class<?> javaType) {
-		AliasableExpression<Select> add = this.selectSurrogate.add(expression, javaType);
+		AliasableExpression<Select> add = this.selectDelegate.add(expression, javaType);
 		return new MethodDispatcher()
 				.redirect(Aliasable.class, alias -> {
 					add.as(alias);
@@ -196,106 +196,106 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 	}
 	
 	public FluentSelectClause select(Selectable<?> column, String alias) {
-		this.selectSurrogate.add(column, alias);
+		this.selectDelegate.add(column, alias);
 		return select;
 	}
 	
 	public FluentSelectClause select(Selectable<?> col1, String alias1, Selectable<?> col2, String alias2) {
-		this.selectSurrogate.add(col1, alias1, col2, alias2);
+		this.selectDelegate.add(col1, alias1, col2, alias2);
 		return select;
 	}
 	
 	public FluentSelectClause select(Selectable<?> col1, String alias1, Selectable<?> col2, String alias2, Selectable<?> col3, String alias3) {
-		this.selectSurrogate.add(col1, alias1, col2, alias2, col3, alias3);
+		this.selectDelegate.add(col1, alias1, col2, alias2, col3, alias3);
 		return select;
 	}
 	
 	public FluentSelectClause select(Map<? extends Selectable<?>, String> aliasedColumns) {
-		this.selectSurrogate.add(aliasedColumns);
+		this.selectDelegate.add(aliasedColumns);
 		return select;
 	}
 	
 	@Override
 	public FluentFromClause from(Fromable leftTable, Fromable rightTable, String joinCondition) {
-		this.fromSurrogate.setRoot(leftTable).innerJoin(rightTable, joinCondition);
+		this.fromDelegate.setRoot(leftTable).innerJoin(rightTable, joinCondition);
 		return from;
 	}
 	
 	@Override
 	public FluentFromClause from(Fromable leftTable) {
-		this.fromSurrogate.setRoot(leftTable);
+		this.fromDelegate.setRoot(leftTable);
 		return from;
 	}
 	
 	@Override
 	public FluentFromClause from(QueryProvider<?> query, String alias) {
-		this.fromSurrogate.setRoot(query.getQuery().asPseudoTable(), alias);
+		this.fromDelegate.setRoot(query.getQuery().asPseudoTable(), alias);
 		return from;
 	}
 	
 	@Override
 	public FluentFromClause from(Fromable leftTable, String tableAlias) {
-		this.fromSurrogate.setRoot(leftTable, tableAlias);
+		this.fromDelegate.setRoot(leftTable, tableAlias);
 		return from;
 	}
 	
 	@Override
 	public FluentFromClause from(Fromable leftTable, String leftTableAlias, Fromable rightTable, String rightTableAlias, String joinCondition) {
-		this.fromSurrogate.setRoot(leftTable).innerJoin(rightTable, rightTableAlias, joinCondition);
+		this.fromDelegate.setRoot(leftTable).innerJoin(rightTable, rightTableAlias, joinCondition);
 		return from;
 	}
 	
 	@Override
 	public <I> FluentFromClause from(JoinLink<?, I> leftColumn, JoinLink<?, I> rightColumn) {
-		this.fromSurrogate.setRoot(leftColumn.getOwner()).innerJoin(leftColumn, rightColumn);
+		this.fromDelegate.setRoot(leftColumn.getOwner()).innerJoin(leftColumn, rightColumn);
 		return from;
 	}
 	
 	@Override
 	public <O> FluentWhereClause where(Column<?, O> column, CharSequence condition) {
-		this.whereSurrogate.and(new ColumnCriterion(column, condition));
+		this.whereDelegate.and(new ColumnCriterion(column, condition));
 		return where;
 	}
 	
 	@Override
 	public <O> FluentWhereClause where(Column<?, O> column, ConditionalOperator<? super O, ?> condition) {
-		this.whereSurrogate.and(new ColumnCriterion(column, condition));
+		this.whereDelegate.and(new ColumnCriterion(column, condition));
 		return where;
 	}
 	
 	@Override
 	public FluentWhereClause where(Criteria criteria) {
-		this.whereSurrogate.and(criteria);
+		this.whereDelegate.and(criteria);
 		return where;
 	}
 	
 	@Override
 	public FluentWhereClause where(Object... criteria) {
-		this.whereSurrogate.and(criteria);
+		this.whereDelegate.and(criteria);
 		return where;
 	}
 	
 	@Override
 	public FluentGroupByClause groupBy(Column column, Column... columns) {
-		this.groupBySurrogate.add(column, columns);
+		this.groupByDelegate.add(column, columns);
 		return groupBy;
 	}
 	
 	@Override
 	public FluentGroupByClause groupBy(String column, String... columns) {
-		this.groupBySurrogate.add(column, columns);
+		this.groupByDelegate.add(column, columns);
 		return groupBy;
 	}
 	
 	@Override
 	public FluentHavingClause having(Column column, String condition) {
-		this.havingSurrogate.and(column, condition);
+		this.havingDelegate.and(column, condition);
 		return having;
 	}
 	
 	@Override
 	public FluentHavingClause having(Object... columns) {
-		this.havingSurrogate.and(columns);
+		this.havingDelegate.and(columns);
 		return having;
 	}
 	
@@ -310,61 +310,61 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 	
 	@Override
 	public FluentOrderByClause orderBy(Column column, Order order) {
-		this.orderBySurrogate.add(column, order);
+		this.orderByDelegate.add(column, order);
 		return orderBy;
 	}
 	
 	@Override
 	public FluentOrderByClause orderBy(Column col1, Order order1, Column col2, Order order2) {
-		this.orderBySurrogate.add(col1, order1, col2, order2);
+		this.orderByDelegate.add(col1, order1, col2, order2);
 		return orderBy;
 	}
 	
 	@Override
 	public FluentOrderByClause orderBy(Column col1, Order order1, Column col2, Order order2, Column col3, Order order3) {
-		this.orderBySurrogate.add(col1, order1, col2, order2, col3, order3);
+		this.orderByDelegate.add(col1, order1, col2, order2, col3, order3);
 		return orderBy;
 	}
 	
 	@Override
 	public FluentOrderByClause orderBy(String column, Order order) {
-		this.orderBySurrogate.add(column, order);
+		this.orderByDelegate.add(column, order);
 		return orderBy;
 	}
 	
 	@Override
 	public FluentOrderByClause orderBy(String col1, Order order1, String col2, Order order2) {
-		this.orderBySurrogate.add(col1, order1, col2, order2);
+		this.orderByDelegate.add(col1, order1, col2, order2);
 		return orderBy;
 	}
 	
 	@Override
 	public FluentOrderByClause orderBy(String col1, Order order1, String col2, Order order2, String col3, Order order3) {
-		this.orderBySurrogate.add(col1, order1, col2, order2, col3, order3);
+		this.orderByDelegate.add(col1, order1, col2, order2, col3, order3);
 		return orderBy;
 	}
 	
 	@Override
 	public FluentOrderByClause orderBy(Column column, Column... columns) {
-		this.orderBySurrogate.add(column, columns);
+		this.orderByDelegate.add(column, columns);
 		return orderBy;
 	}
 	
 	@Override
 	public FluentOrderByClause orderBy(String column, String... columns) {
-		this.orderBySurrogate.add(column, columns);
+		this.orderByDelegate.add(column, columns);
 		return orderBy;
 	}
 	
 	@Override
 	public FluentLimitClause limit(int value) {
-		this.limitSurrogate.setCount(value);
+		this.limitDelegate.setCount(value);
 		return limit;
 	}
 	
 	@Override
 	public FluentLimitClause limit(int value, Integer offset) {
-		this.limitSurrogate.setCount(value, offset);
+		this.limitDelegate.setCount(value, offset);
 		return limit;
 	}
 	

@@ -19,7 +19,7 @@ public class Delete<T extends Table<T>> {
 	/** Main table of values to delete */
 	private final T targetTable;
 	
-	private final Criteria<?> criteriaSurrogate = new Criteria<>();
+	private final Criteria<?> criteriaDelegate = new Criteria<>();
 	
 	public Delete(T targetTable) {
 		this.targetTable = targetTable;
@@ -30,7 +30,7 @@ public class Delete<T extends Table<T>> {
 	}
 	
 	public CriteriaChain getCriteria() {
-		return criteriaSurrogate;
+		return criteriaDelegate;
 	}
 	
 	/**
@@ -41,7 +41,7 @@ public class Delete<T extends Table<T>> {
 	 * @return this
 	 */
 	public CriteriaChain where(Column<T, ?> column, String condition) {
-		return criteriaSurrogate.and(column, condition);
+		return criteriaDelegate.and(column, condition);
 	}
 	
 	/**
@@ -52,7 +52,7 @@ public class Delete<T extends Table<T>> {
 	 * @return this
 	 */
 	public CriteriaChain where(Column<T, ?> column, ConditionalOperator condition) {
-		return criteriaSurrogate.and(column, condition);
+		return criteriaDelegate.and(column, condition);
 	}
 	
 }

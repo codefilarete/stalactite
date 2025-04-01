@@ -27,7 +27,7 @@ public class Update<T extends Table<T>> {
 	/** Target columns of the update */
 	private final Set<UpdateColumn<T>> columns = new LinkedHashSet<>();
 	
-	private final Criteria<?> criteriaSurrogate = new Criteria<>();
+	private final Criteria<?> criteriaDelegate = new Criteria<>();
 	
 	public Update(T targetTable) {
 		this.targetTable = targetTable;
@@ -38,7 +38,7 @@ public class Update<T extends Table<T>> {
 	}
 	
 	public Criteria<?> getCriteria() {
-		return criteriaSurrogate;
+		return criteriaDelegate;
 	}
 	
 	/**
@@ -82,7 +82,7 @@ public class Update<T extends Table<T>> {
 	 * @return this
 	 */
 	public CriteriaChain where(Column<T, ?> column, String condition) {
-		return criteriaSurrogate.and(column, condition);
+		return criteriaDelegate.and(column, condition);
 	}
 	
 	/**
@@ -93,7 +93,7 @@ public class Update<T extends Table<T>> {
 	 * @return this
 	 */
 	public CriteriaChain where(Column<T, ?> column, ConditionalOperator condition) {
-		return criteriaSurrogate.and(column, condition);
+		return criteriaDelegate.and(column, condition);
 	}
 	
 	/**

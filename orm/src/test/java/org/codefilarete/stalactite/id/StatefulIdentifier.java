@@ -5,7 +5,7 @@ import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierM
 
 /**
  * A marker for identifier that are wrapped into a simple class.
- * The surrogate will be persisted, not the whole instances of this class.
+ * The delegate will be persisted, not the whole instances of this class.
  * 
  * Mainly introduced to manage {@link AlreadyAssignedIdentifierManager} and the need to determine if an instance is persisted or not
  * (see {@link BeanPersister#persist(Object)}.
@@ -19,7 +19,7 @@ public interface StatefulIdentifier<T> {
 	 * Returns the value to persist
 	 * @return the value to persist, obviously not null
 	 */
-	T getSurrogate();
+	T getDelegate();
 	
 	/**
 	 * Gives the persistence state of this identifier: true means that this identifier is used by a database row and committed in the database.

@@ -21,20 +21,20 @@ class NullSafeguardPreparedStatementWriterTest {
 	}
 	
 	@Test
-	public void testSet_nonNullValueIsPassedAsArgument_surrogateIsInvoked() throws SQLException {
-		MutableBoolean isSurrogateInvoked = new MutableBoolean(false);
+	public void testSet_nonNullValueIsPassedAsArgument_delegateIsInvoked() throws SQLException {
+		MutableBoolean isDelegateInvoked = new MutableBoolean(false);
 		NullSafeguardPreparedStatementWriter<Object> testInstance =
-				new NullSafeguardPreparedStatementWriter<>((preparedStatement, valueIndex, value) -> isSurrogateInvoked.setTrue());
+				new NullSafeguardPreparedStatementWriter<>((preparedStatement, valueIndex, value) -> isDelegateInvoked.setTrue());
 		testInstance.set(mock(PreparedStatement.class), 42, 666);
-		assertThat(isSurrogateInvoked.getValue()).isTrue();
+		assertThat(isDelegateInvoked.getValue()).isTrue();
 	}
 	
 	@Test
 	public void testSet_nullIsPassedAsArgument_nonNPEIsThrown() {
-		MutableBoolean isSurrogateInvoked = new MutableBoolean(false);
+		MutableBoolean isDelegateInvoked = new MutableBoolean(false);
 		NullSafeguardPreparedStatementWriter<Object> testInstance =
 				new NullSafeguardPreparedStatementWriter<>((preparedStatement, valueIndex, value) -> {
-			isSurrogateInvoked.setTrue();
+			isDelegateInvoked.setTrue();
 		});
 		assertThatThrownBy(() -> testInstance.set(mock(PreparedStatement.class), 42, null))
 				.isInstanceOf(IllegalArgumentException.class)

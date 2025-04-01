@@ -85,7 +85,7 @@ public class EntityTreeQueryBuilder<C> {
 		Fromable rootTableClone = rootClone.getLeft();
 		columnClones.putAll(rootClone.getRight());
 		tableClonePerJoinNode.put(joinRoot, rootTableClone);
-		query.getFromSurrogate().setRoot(rootTableClone);
+		query.getFromDelegate().setRoot(rootTableClone);
 		resultHelper.addColumnsToSelect(joinRoot, aliasBuilder.buildTableAlias(joinRoot));
 		
 		// completing from clause
@@ -174,7 +174,7 @@ public class EntityTreeQueryBuilder<C> {
 		 * @param <JOINTYPE> internal type of join to avoid weird cast or type loss
 		 */
 		private <JOINTYPE> void applyJoinTree(EntityJoinTree<?, ?> tree) {
-			From targetFrom = query.getFromSurrogate();
+			From targetFrom = query.getFromDelegate();
 			tree.foreachJoin(join -> {
 				String tableAlias = aliasBuilder.buildTableAlias(join);
 				addColumnsToSelect(join, tableAlias);

@@ -181,7 +181,7 @@ class SimpleRelationalEntityPersisterTest {
 			
 			@Override
 			public void set(PreparedStatement statement, int valueIndex, Identifier value) throws SQLException {
-				statement.setInt(valueIndex, (Integer) value.getSurrogate());
+				statement.setInt(valueIndex, (Integer) value.getDelegate());
 			}
 		});
 		// Registering a binder of Set for the Toto.q property
@@ -463,7 +463,7 @@ class SimpleRelationalEntityPersisterTest {
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 7).add(2, 13).add(3, 17).add(1, 23);
 			assertCapturedPairsEqual(expectedPairs);
 			
-			Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> toto.getId().getSurrogate());
+			Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> toto.getId().getDelegate());
 			assertThat(Arrays.asTreeSet(totoComparator, select).toString()).isEqualTo(Arrays.asTreeSet(totoComparator,
 					new Toto(7, 1, 2),
 					new Toto(13, 1, 2),
@@ -498,7 +498,7 @@ class SimpleRelationalEntityPersisterTest {
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 42);
 			assertCapturedPairsEqual(expectedPairs);
 			
-			Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> toto.getId().getSurrogate());
+			Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> toto.getId().getDelegate());
 			assertThat(Arrays.asTreeSet(totoComparator, select).toString()).isEqualTo(Arrays.asTreeSet(totoComparator,
 					new Toto(7, 1, 2)
 			).toString());
@@ -535,7 +535,7 @@ class SimpleRelationalEntityPersisterTest {
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 12).add(2, 42);
 			assertCapturedPairsEqual(expectedPairs);
 
-			Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> toto.getId().getSurrogate());
+			Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> toto.getId().getDelegate());
 			assertThat(Arrays.asTreeSet(totoComparator, select).toString()).isEqualTo(Arrays.asTreeSet(totoComparator,
 					new Toto(7, 1, 2)
 			).toString());
@@ -571,7 +571,7 @@ class SimpleRelationalEntityPersisterTest {
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 42);
 			assertCapturedPairsEqual(expectedPairs);
 			
-			Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> toto.getId().getSurrogate());
+			Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> toto.getId().getDelegate());
 			assertThat(Arrays.asTreeSet(totoComparator, select).toString()).isEqualTo(Arrays.asTreeSet(totoComparator,
 					new Toto(7, 1, 2)
 			).toString());
@@ -629,7 +629,7 @@ class SimpleRelationalEntityPersisterTest {
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 7);
 			assertCapturedPairsEqual(expectedPairs);
 			
-			Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> toto.getId().getSurrogate());
+			Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> toto.getId().getDelegate());
 			assertThat(Arrays.asTreeSet(totoComparator, select).toString()).isEqualTo(Arrays.asTreeSet(totoComparator,
 					new Toto(7, 1, 2)
 			).toString());
@@ -1096,7 +1096,7 @@ class SimpleRelationalEntityPersisterTest {
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 7).add(2, 13).add(3, 17).add(1, 23);
 			assertCapturedPairsEqual(expectedPairs);
 			
-			Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> toto.getId().getSurrogate());
+			Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> toto.getId().getDelegate());
 			assertThat(Arrays.asTreeSet(totoComparator, select).toString()).isEqualTo(Arrays.asTreeSet(totoComparator,
 																									   new Toto(7, 1, 2, 4, 5, 6),
 																									   new Toto(13, 1, 2, 4, 5, 6),
@@ -1174,7 +1174,7 @@ class SimpleRelationalEntityPersisterTest {
 		@Override
 		public String toString() {
 			return getClass().getSimpleName() + "["
-					+ Maps.asMap("id", (Object) id.getSurrogate()).add("a", a).add("b", b).add("x", x).add("y", y).add("z", z)
+					+ Maps.asMap("id", (Object) id.getDelegate()).add("a", a).add("b", b).add("x", x).add("y", y).add("z", z)
 					+ "]";
 		}
 	}

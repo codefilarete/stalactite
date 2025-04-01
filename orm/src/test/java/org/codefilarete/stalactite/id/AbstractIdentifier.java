@@ -11,20 +11,20 @@ import org.codefilarete.tool.Reflections;
 public abstract class AbstractIdentifier<T> implements Identifier<T> {
 	
 	/** Real value, not null */
-	private final T surrogate;
+	private final T delegate;
 	
-	public AbstractIdentifier(T surrogate) {
-		this.surrogate = surrogate;
+	public AbstractIdentifier(T delegate) {
+		this.delegate = delegate;
 	}
 	
-	public T getSurrogate() {
-		return surrogate;
+	public T getDelegate() {
+		return delegate;
 	}
 	
 	/**
-	 * Implementation based on surrogate equality.
+	 * Implementation based on delegate equality.
 	 * @param o another Object
-	 * @return true if the other object as the same (equally) surrogate than this instance
+	 * @return true if the other object as the same (equally) delegate than this instance
 	 */
 	@Override
 	public boolean equals(Object o) {
@@ -41,23 +41,23 @@ public abstract class AbstractIdentifier<T> implements Identifier<T> {
 	/**
 	 * To be overridden to add complementary verification
 	 * @param that another objet, not null
-	 * @return true if this surrogate equals the other surrogate
+	 * @return true if this delegate equals the other delegate
 	 */
 	protected boolean equalsDeeply(AbstractIdentifier<?> that) {
-		return surrogate.equals(that.surrogate);
+		return delegate.equals(that.delegate);
 	}
 	
 	/**
-	 * Implementation based on surrogate hashCode.
-	 * @return the surrogate hashCode
+	 * Implementation based on delegate hashCode.
+	 * @return the delegate hashCode
 	 */
 	@Override
 	public int hashCode() {
-		return surrogate.hashCode();
+		return delegate.hashCode();
 	}
 	
 	@Override
 	public String toString() {
-		return Reflections.toString(getClass()) + "@" + surrogate;
+		return Reflections.toString(getClass()) + "@" + delegate;
 	}
 }

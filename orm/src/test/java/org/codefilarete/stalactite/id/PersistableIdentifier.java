@@ -11,8 +11,8 @@ public class PersistableIdentifier<T> extends AbstractIdentifier<T> {
 	
 	private boolean persisted = false;
 	
-	public PersistableIdentifier(T surrogate) {
-		super(surrogate);
+	public PersistableIdentifier(T delegate) {
+		super (delegate);
 	}
 	
 	@Override

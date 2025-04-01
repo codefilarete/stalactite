@@ -16,17 +16,17 @@ import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
  */
 public interface Identifier<T> extends StatefulIdentifier<T> {
 	
-	/** A simple constant to help to reference a {@link Identifier} which surrogate is a {@link Long} */
+	/** A simple constant to help to reference a {@link Identifier} which delegate is a {@link Long} */
 	Class<Identifier<Long>> LONG_TYPE = (Class<Identifier<Long>>) (Class) Identifier.class;
 	
 	/**
 	 * Gives a {@link ParameterBinder} for a generic {@link Identifier}
-	 * @param parameterBinder the surrogate {@link ParameterBinder} (can be for primitive type because null is already handled by this method result)
-	 * @param <I> the type of the surrogate {@link Identifier}
+	 * @param parameterBinder the delegate {@link ParameterBinder} (can be for primitive type because null is already handled by this method result)
+	 * @param <I> the type of the delegate {@link Identifier}
 	 * @return a new {@link ParameterBinder} which will wrap/unwrap the result of parameterBinder
 	 * @see DefaultParameterBinders
 	 */
 	static <I> ParameterBinder<StatefulIdentifier<I>> identifierBinder(ParameterBinder<I> parameterBinder) {
-		return new NullAwareParameterBinder<>(new LambdaParameterBinder<>(parameterBinder, PersistedIdentifier::new, StatefulIdentifier::getSurrogate));
+		return new NullAwareParameterBinder<>(new LambdaParameterBinder<>(parameterBinder, PersistedIdentifier::new, StatefulIdentifier::getDelegate));
 	}
 }

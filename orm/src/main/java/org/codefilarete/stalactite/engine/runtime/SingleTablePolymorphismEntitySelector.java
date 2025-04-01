@@ -88,7 +88,7 @@ public class SingleTablePolymorphismEntitySelector<C, I, T extends Table<T>, DTY
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), entityTreeQuery.getColumnClones());
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
-		query.getSelectSurrogate().clear();
+		query.getSelectDelegate().clear();
 		PrimaryKey<T, I> pk = ((T) mainEntityJoinTree.getRoot().getTable()).getPrimaryKey();
 		pk.getColumns().forEach(column -> query.select(column, column.getAlias()));
 		query.select(discriminatorColumn, DISCRIMINATOR_ALIAS);

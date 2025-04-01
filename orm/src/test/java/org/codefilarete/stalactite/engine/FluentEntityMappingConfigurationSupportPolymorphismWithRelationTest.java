@@ -936,14 +936,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
 			
 			ExecutableBeanPropertyQueryMapper<Integer> carQuery = persistenceContext.newQuery("select"
-					+ " count(*) as carCount from Vehicle where id = " + dummyCar.getId().getSurrogate(), Integer.class)
+					+ " count(*) as carCount from Vehicle where id = " + dummyCar.getId().getDelegate(), Integer.class)
 					.mapKey("carCount", Integer.class);
 			
 			Integer carCount = Iterables.first(carQuery.execute(Accumulators.toSet()));
 			assertThat(carCount).isEqualTo(0);
 			
 			ExecutableBeanPropertyQueryMapper<Integer> truckQuery = persistenceContext.newQuery("select"
-					+ " count(*) as truckCount from Vehicle where id = " + dummyTruck.getId().getSurrogate(), Integer.class)
+					+ " count(*) as truckCount from Vehicle where id = " + dummyTruck.getId().getDelegate(), Integer.class)
 					.mapKey("truckCount", Integer.class);
 			
 			Integer truckCount = Iterables.first(truckQuery.execute(Accumulators.toSet()));
@@ -1179,21 +1179,21 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			ExecutableBeanPropertyQueryMapper<Integer> vehicleQuery = persistenceContext.newQuery("select"
 					+ " count(*) as vehicleCount from Vehicle where id in ("
-					+ dummyCar.getId().getSurrogate() + ", " + + dummyTruck.getId().getSurrogate() + ")", Integer.class)
+					+ dummyCar.getId().getDelegate() + ", " + + dummyTruck.getId().getDelegate() + ")", Integer.class)
 					.mapKey("vehicleCount", Integer.class);
 			
 			Integer vehicleCount = Iterables.first(vehicleQuery.execute(Accumulators.toSet()));
 			assertThat(vehicleCount).isEqualTo(0);
 			
 			ExecutableBeanPropertyQueryMapper<Integer> carQuery = persistenceContext.newQuery("select"
-					+ " count(*) as carCount from car where id = " + dummyCar.getId().getSurrogate(), Integer.class)
+					+ " count(*) as carCount from car where id = " + dummyCar.getId().getDelegate(), Integer.class)
 					.mapKey("carCount", Integer.class);
 			
 			Integer carCount = Iterables.first(carQuery.execute(Accumulators.toSet()));
 			assertThat(carCount).isEqualTo(0);
 			
 			ExecutableBeanPropertyQueryMapper<Integer> truckQuery = persistenceContext.newQuery("select"
-					+ " count(*) as truckCount from car where id = " + dummyTruck.getId().getSurrogate(), Integer.class)
+					+ " count(*) as truckCount from car where id = " + dummyTruck.getId().getDelegate(), Integer.class)
 					.mapKey("truckCount", Integer.class);
 			
 			Integer truckCount = Iterables.first(truckQuery.execute(Accumulators.toSet()));
@@ -1292,14 +1292,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
 			
 			ExecutableBeanPropertyQueryMapper<Integer> carQuery = persistenceContext.newQuery("select"
-					+ " count(*) as carCount from Vehicle where id = " + dummyCar.getId().getSurrogate(), Integer.class)
+					+ " count(*) as carCount from Vehicle where id = " + dummyCar.getId().getDelegate(), Integer.class)
 					.mapKey("carCount", Integer.class);
 			
 			Integer carCount = Iterables.first(carQuery.execute(Accumulators.toSet()));
 			assertThat(carCount).isEqualTo(0);
 			
 			ExecutableBeanPropertyQueryMapper<Integer> truckQuery = persistenceContext.newQuery("select"
-					+ " count(*) as truckCount from Vehicle where id = " + dummyTruck.getId().getSurrogate(), Integer.class)
+					+ " count(*) as truckCount from Vehicle where id = " + dummyTruck.getId().getDelegate(), Integer.class)
 					.mapKey("truckCount", Integer.class);
 			
 			Integer truckCount = Iterables.first(truckQuery.execute(Accumulators.toSet()));
@@ -1527,14 +1527,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
 
 			ExecutableBeanPropertyQueryMapper<Integer> carQuery = persistenceContext.newQuery("select"
-					+ " count(*) as carCount from car where id = " + dummyCar.getId().getSurrogate(), Integer.class)
+					+ " count(*) as carCount from car where id = " + dummyCar.getId().getDelegate(), Integer.class)
 					.mapKey("carCount", Integer.class);
 			
 			Integer carCount = Iterables.first(carQuery.execute(Accumulators.toSet()));
 			assertThat(carCount).isEqualTo(0);
 
 			ExecutableBeanPropertyQueryMapper<Integer> truckQuery = persistenceContext.newQuery("select"
-					+ " count(*) as truckCount from car where id = " + dummyTruck.getId().getSurrogate(), Integer.class)
+					+ " count(*) as truckCount from car where id = " + dummyTruck.getId().getDelegate(), Integer.class)
 					.mapKey("truckCount", Integer.class);
 			
 			Integer truckCount = Iterables.first(truckQuery.execute(Accumulators.toSet()));
@@ -1621,14 +1621,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
 
 			ExecutableBeanPropertyQueryMapper<Integer> carQuery = persistenceContext.newQuery("select"
-					+ " count(*) as carCount from car where id = " + dummyCar.getId().getSurrogate(), Integer.class)
+					+ " count(*) as carCount from car where id = " + dummyCar.getId().getDelegate(), Integer.class)
 					.mapKey("carCount", Integer.class);
 			
 			Integer carCount = Iterables.first(carQuery.execute(Accumulators.toSet()));
 			assertThat(carCount).isEqualTo(0);
 
 			ExecutableBeanPropertyQueryMapper<Integer> truckQuery = persistenceContext.newQuery("select"
-					+ " count(*) as truckCount from truck where id = " + dummyTruck.getId().getSurrogate(), Integer.class)
+					+ " count(*) as truckCount from truck where id = " + dummyTruck.getId().getDelegate(), Integer.class)
 					.mapKey("truckCount", Integer.class);
 			
 			Integer truckCount = Iterables.first(truckQuery.execute(Accumulators.toSet()));
@@ -1923,13 +1923,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			ObjectPrinter<Vehicle> vehiclePrinter = new ObjectPrinterBuilder<Vehicle>()
 					.addProperty(Vehicle::getId)
 					.addProperty(Vehicle::getClass)
-					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
+					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
 					.build();
 			ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
 					.addProperty(Person::getId)
 					.addProperty(Person::getName)
 					.addProperty(Person::getTimestamp)
-					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
+					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
 					.withPrinter(Vehicle.class, vehiclePrinter::toString)
 					.build();
 			
@@ -2028,13 +2028,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			ObjectPrinter<Vehicle> vehiclePrinter = new ObjectPrinterBuilder<Vehicle>()
 					.addProperty(Vehicle::getId)
 					.addProperty(Vehicle::getClass)
-					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
+					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
 					.build();
 			ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
 					.addProperty(Person::getId)
 					.addProperty(Person::getName)
 					.addProperty(Person::getTimestamp)
-					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
+					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
 					.withPrinter(Vehicle.class, vehiclePrinter::toString)
 					.build();
 			
@@ -2195,14 +2195,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		ObjectPrinter<Vehicle> vehiclePrinter = new ObjectPrinterBuilder<Vehicle>()
 				.addProperty(Vehicle::getId)
 				.addProperty(Vehicle::getClass)
-				.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
+				.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
 				.build();
 		ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
 				.addProperty(Person::getId)
 				.addProperty(Person::getName)
 				.addProperty(Person::getTimestamp)
 				.addProperty(Person::getVehicle)
-				.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
+				.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
 				.withPrinter(Vehicle.class, vehiclePrinter::toString)
 				.build();
 		
@@ -2365,7 +2365,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 				.addProperty(Country::getId)
 				.addProperty(Country::getName)
 				.addProperty(Country::getTimestamp)
-				.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
+				.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
 				.build();
 		ObjectPrinter<City> cityPrinter = new ObjectPrinterBuilder<City>()
 				.addProperty(City::getId)
@@ -2373,7 +2373,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 				.addProperty(Town::getDiscotecCount)
 				.addProperty(City::getName)
 				.addProperty(City::getCountry)
-				.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
+				.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
 				.withPrinter(Country.class, countryPrinter::toString)
 				.build();
 		
@@ -2412,17 +2412,17 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select Country_Id from Country_cities", Long.class)
 					.mapKey("Country_Id", Long.class);
 			cityCountryIds = longExecutableQuery.execute(Accumulators.toSet());
-			assertThat(new HashSet<>(cityCountryIds)).containsExactlyInAnyOrder(country.getId().getSurrogate());
+			assertThat(new HashSet<>(cityCountryIds)).containsExactlyInAnyOrder(country.getId().getDelegate());
 		} else if (isTablePerClass) {
 			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select CountryId from Town union all select CountryId from Village", Long.class)
 					.mapKey("CountryId", Long.class);
 			cityCountryIds = longExecutableQuery.execute(Accumulators.toSet());
-			assertThat(new HashSet<>(cityCountryIds)).containsExactlyInAnyOrder(country.getId().getSurrogate(), null);
+			assertThat(new HashSet<>(cityCountryIds)).containsExactlyInAnyOrder(country.getId().getDelegate(), null);
 		} else {
 			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select CountryId from City", Long.class)
 					.mapKey("CountryId", Long.class);
 			cityCountryIds = longExecutableQuery.execute(Accumulators.toSet());
-			assertThat(new HashSet<>(cityCountryIds)).containsExactlyInAnyOrder(country.getId().getSurrogate(), null);
+			assertThat(new HashSet<>(cityCountryIds)).containsExactlyInAnyOrder(country.getId().getDelegate(), null);
 		}
 		
 		// testing delete
@@ -2555,7 +2555,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.addProperty(Country::getId)
 					.addProperty(Country::getName)
 					.addProperty(Country::getTimestamp)
-					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
+					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
 					.build();
 			ObjectPrinter<City> cityPrinter = new ObjectPrinterBuilder<City>()
 					.addProperty(City::getId)
@@ -2563,7 +2563,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.addProperty(Town::getDiscotecCount)
 					.addProperty(City::getName)
 					.addProperty(City::getCountry)
-					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
+					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
 					.withPrinter(Country.class, countryPrinter::toString)
 					.build();
 			
@@ -2588,7 +2588,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertThat(loadedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(loadedCountry, loadedCountry);
 			
 			// testing update : removal of a city, reversed column must be set to null
-			Country modifiedCountry = new Country(country.getId().getSurrogate());
+			Country modifiedCountry = new Country(country.getId().getDelegate());
 			modifiedCountry.addCity(Iterables.first(country.getCities()));
 			
 			testInstance.update(modifiedCountry, country, false);
@@ -2596,7 +2596,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select countryId from Town union all select countryId from Village", Long.class)
 					.mapKey(i -> i, "countryId", Long.class);
 			Set<Long> cityCountryIds = longExecutableQuery1.execute(Accumulators.toSet());
-			assertThat(cityCountryIds).containsExactlyInAnyOrder(country.getId().getSurrogate(), null);
+			assertThat(cityCountryIds).containsExactlyInAnyOrder(country.getId().getDelegate(), null);
 			
 			// testing delete
 			testInstance.delete(modifiedCountry);
@@ -2604,7 +2604,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from Town union all select id from Village", Long.class)
 					.mapKey(i -> i, "id", Long.class);
 			Set<Long> cityIds = longExecutableQuery.execute(Accumulators.toSet());
-			assertThat(cityIds).containsExactlyInAnyOrder(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate());
+			assertThat(cityIds).containsExactlyInAnyOrder(grenoble.getId().getDelegate(), lyon.getId().getDelegate());
 		}
 	}
 	

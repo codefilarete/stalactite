@@ -82,12 +82,12 @@ public class TransactionListenerCollection implements RollbackObserver, CommitOb
 			
 			@Override
 			public void beforeCompletion() {
-				// no completion to accomplish because the surrogate doesn't
+				// no completion to accomplish because the delegate doesn't
 			}
 			
 			@Override
 			public void afterCompletion() {
-				// no completion to accomplish because the surrogate doesn't
+				// no completion to accomplish because the delegate doesn't
 			}
 			
 			@Override
@@ -123,12 +123,12 @@ public class TransactionListenerCollection implements RollbackObserver, CommitOb
 			
 			@Override
 			public void beforeCompletion() {
-				// no completion to accomplish because the surrogate doesn't
+				// no completion to accomplish because the delegate doesn't
 			}
 			
 			@Override
 			public void afterCompletion() {
-				// no completion to accomplish because the surrogate doesn't
+				// no completion to accomplish because the delegate doesn't
 			}
 			
 			@Override

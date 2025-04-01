@@ -90,7 +90,7 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 		Column<Table, Integer> id = totoTable.addColumn("id", int.class);
 		Column<Table, Wrapper> dummyProp = totoTable.addColumn("dummyProp", Wrapper.class);
 		dialect.getColumnBinderRegistry().register(Wrapper.class, new NullAwareParameterBinder<>(
-				new LambdaParameterBinder<>(DefaultParameterBinders.STRING_BINDER, Wrapper::new, Wrapper::getSurrogate)));
+				new LambdaParameterBinder<>(DefaultParameterBinders.STRING_BINDER, Wrapper::new, Wrapper::getDelegate)));
 		dialect.getSqlTypeRegistry().put(Wrapper.class, "varchar(255)");
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(testInstance);
@@ -108,7 +108,7 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 		
 		records = testInstance.select(Toto::new, id,
 									  select -> select.add(dummyProp, Toto::setDummyWrappedProp));
-		assertThat(records).extracting(chain(Toto::getDummyWrappedProp, Wrapper::getSurrogate)).containsExactlyInAnyOrder("Hello", "World");
+		assertThat(records).extracting(chain(Toto::getDummyWrappedProp, Wrapper::getDelegate)).containsExactlyInAnyOrder("Hello", "World");
 	}
 	
 	@Test
@@ -119,7 +119,7 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 		Column<Table, Integer> id = totoTable.addColumn("id", int.class);
 		Column<Table, Wrapper> dummyProp = totoTable.addColumn("dummyProp", Wrapper.class);
 		dialect.getColumnBinderRegistry().register(dummyProp, new NullAwareParameterBinder<>(
-				new LambdaParameterBinder<>(DefaultParameterBinders.STRING_BINDER, Wrapper::new, Wrapper::getSurrogate)));
+				new LambdaParameterBinder<>(DefaultParameterBinders.STRING_BINDER, Wrapper::new, Wrapper::getDelegate)));
 		dialect.getSqlTypeRegistry().put(dummyProp, "varchar(255)");
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(testInstance);
@@ -137,7 +137,7 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 		
 		records = testInstance.select(Toto::new, id,
 									  select -> select.add(dummyProp, Toto::setDummyWrappedProp));
-		assertThat(records).extracting(chain(Toto::getDummyWrappedProp, Wrapper::getSurrogate)).containsExactlyInAnyOrder("Hello", "World");
+		assertThat(records).extracting(chain(Toto::getDummyWrappedProp, Wrapper::getDelegate)).containsExactlyInAnyOrder("Hello", "World");
 	}
 	
 	@Test
@@ -314,20 +314,20 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 	
 	private static class Wrapper {
 		
-		private final String surrogate;
+		private final String delegate;
 		
-		public Wrapper(String surrogate) {
-			this.surrogate = surrogate;
+		public Wrapper(String delegate) {
+			this.delegate = delegate;
 		}
 		
-		public String getSurrogate() {
-			return surrogate;
+		public String getDelegate() {
+			return delegate;
 		}
 		
 		/** Implemented to ease debug and represention of failing test cases */
 		@Override
 		public String toString() {
-			return Strings.footPrint(this, Wrapper::getSurrogate);
+			return Strings.footPrint(this, Wrapper::getDelegate);
 		}
 	}
 	

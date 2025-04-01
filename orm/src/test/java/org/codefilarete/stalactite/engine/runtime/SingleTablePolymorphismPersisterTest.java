@@ -181,7 +181,7 @@ class SingleTablePolymorphismPersisterTest {
 			
 			@Override
 			public void set(PreparedStatement statement, int valueIndex, Identifier value) throws SQLException {
-				statement.setInt(valueIndex, (Integer) value.getSurrogate());
+				statement.setInt(valueIndex, (Integer) value.getDelegate());
 			}
 		});
 		// Registering a binder of Set for the Toto.q property
@@ -797,7 +797,7 @@ class SingleTablePolymorphismPersisterTest {
 		@Override
 		public String toString() {
 			return getClass().getSimpleName() + "["
-					+ Maps.asMap("id", id == null ? "null" : id.getSurrogate()).add("x", x)
+					+ Maps.asMap("id", id == null ? "null" : id.getDelegate()).add("x", x)
 					+ "]";
 		}
 	}
@@ -822,7 +822,7 @@ class SingleTablePolymorphismPersisterTest {
 		@Override
 		public String toString() {
 			return getClass().getSimpleName() + "["
-					+ Maps.asMap("id", id == null ? "null" : id.getSurrogate())
+					+ Maps.asMap("id", id == null ? "null" : id.getDelegate())
 						.add("x", x)
 						.add("a", a)
 					+ "]";
@@ -849,7 +849,7 @@ class SingleTablePolymorphismPersisterTest {
 		@Override
 		public String toString() {
 			return getClass().getSimpleName() + "["
-					+ Maps.asMap("id", id == null ? "null" : id.getSurrogate())
+					+ Maps.asMap("id", id == null ? "null" : id.getDelegate())
 					.add("x", x)
 					.add("b", b)
 					+ "]";

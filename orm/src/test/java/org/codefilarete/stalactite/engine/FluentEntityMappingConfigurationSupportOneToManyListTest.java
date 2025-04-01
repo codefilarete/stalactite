@@ -175,7 +175,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 				.mapKey(i -> i, "questionId", Long.class);
 		Set<Long> choiceQuestionIds = longExecutableQuery2.execute(Accumulators.toSet());
 		
-		assertThat(choiceQuestionIds).containsExactlyInAnyOrder(question.getId().getSurrogate());
+		assertThat(choiceQuestionIds).containsExactlyInAnyOrder(question.getId().getDelegate());
 		
 		// testing select
 		Question loadedQuestion = questionPersister.select(question.getId());
@@ -192,7 +192,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select questionId from Choice", Long.class)
 				.mapKey(i -> i, "questionId", Long.class);
 		choiceQuestionIds = longExecutableQuery1.execute(Accumulators.toSet());
-		assertThat(choiceQuestionIds).containsExactlyInAnyOrder(question.getId().getSurrogate(), null);
+		assertThat(choiceQuestionIds).containsExactlyInAnyOrder(question.getId().getDelegate(), null);
 		
 		// testing delete
 		questionPersister.delete(modifiedQuestion);
@@ -221,7 +221,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			Choice choice3Clone = new Choice(updateTestData.getChoice3().getId());
 			
 			// creating a clone to test instance swapping
-			Question modifiedQuestion = new Question(newQuestion.getId().getSurrogate());
+			Question modifiedQuestion = new Question(newQuestion.getId().getDelegate());
 			// little swap between 2 elements
 			modifiedQuestion.setChoices(Arrays.asList(choice2Clone, choice1Clone, choice3Clone));
 			
@@ -246,7 +246,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			Question newQuestion = updateTestData.getNewQuestion();
 			
 			// creating a clone to test for no change
-			Question modifiedQuestion = new Question(newQuestion.getId().getSurrogate());
+			Question modifiedQuestion = new Question(newQuestion.getId().getDelegate());
 			// no modifications
 			modifiedQuestion.setChoices(newQuestion.getChoices());
 			
@@ -274,7 +274,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			Choice choice4 = new Choice(40L);
 			
 			// creating a clone to test instance swapping
-			Question modifiedQuestion = new Question(newQuestion.getId().getSurrogate());
+			Question modifiedQuestion = new Question(newQuestion.getId().getDelegate());
 			// addition of an element and little swap
 			modifiedQuestion.setChoices(Arrays.asList(choice3Clone, choice4, choice2Clone, choice1Clone));
 			
@@ -301,9 +301,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			Choice choice3 = updateTestData.getChoice3();
 			
 			// creating a clone to test instance swapping
-			Question modifiedQuestion = new Question(newQuestion.getId().getSurrogate());
-			Choice choice3Copy = new Choice(new PersistedIdentifier<>(choice3.getId().getSurrogate()));
-			Choice choice1Copy = new Choice(new PersistedIdentifier<>(choice1.getId().getSurrogate()));
+			Question modifiedQuestion = new Question(newQuestion.getId().getDelegate());
+			Choice choice3Copy = new Choice(new PersistedIdentifier<>(choice3.getId().getDelegate()));
+			Choice choice1Copy = new Choice(new PersistedIdentifier<>(choice1.getId().getDelegate()));
 			// little swap between 2 elements
 			modifiedQuestion.setChoices(Arrays.asList(choice3Copy, choice1Copy));
 			
@@ -334,7 +334,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			Choice choice3Clone = new Choice(updateTestData.getChoice3().getId());
 			
 			// creating a clone to test instance swaping
-			Question modifiedQuestion = new Question(newQuestion.getId().getSurrogate());
+			Question modifiedQuestion = new Question(newQuestion.getId().getDelegate());
 			// little swap between 2 elements
 			modifiedQuestion.setChoices(Arrays.asList(choice3Clone, choice1Clone));
 			
@@ -434,7 +434,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		Question select = questionPersister.select(new PersistedIdentifier<>(1L));
 		connectionProvider.giveConnection().commit();
-		assertThat(select.getChoices()).extracting(chain(Choice::getId, StatefulIdentifier::getSurrogate)).containsExactlyInAnyOrder(10L, 20L, 30L);
+		assertThat(select.getChoices()).extracting(chain(Choice::getId, StatefulIdentifier::getDelegate)).containsExactlyInAnyOrder(10L, 20L, 30L);
 	}
 	
 	@Test
@@ -537,7 +537,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			
 			Answer selectedAnswer = answerPersister.select(new PersistableIdentifier<>(1L));
 			
-			assertThat(selectedAnswer.getId().getSurrogate()).isEqualTo((Long) 1L);
+			assertThat(selectedAnswer.getId().getDelegate()).isEqualTo((Long) 1L);
 			assertThat(selectedAnswer.getChoices()).extracting(AnswerChoice::getId, AnswerChoice::getLabel).containsExactly(
 					new Tuple(choice1.getId(), choice1.getLabel()),
 					new Tuple(choice2.getId(), choice2.getLabel()),
@@ -569,7 +569,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 					.mapKey("id", Long.class)
 					.set("id", 10L)
 					.execute(Accumulators.getFirstUnique());
-			assertThat(loadedId).isEqualTo(choice1.getId().getSurrogate());
+			assertThat(loadedId).isEqualTo(choice1.getId().getDelegate());
 			
 			// loading the target entity from its aggregate persister
 			Question loadedQuestion = duplicatesTestData.questionPersister.select(new PersistableIdentifier<>(1L));
@@ -618,8 +618,8 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from Choice", Long.class)
 					.mapKey("id", long.class);
 			Set<Long> remainingChoices = longExecutableQuery.execute(Accumulators.toSet());
-			assertThat(new HashSet<>(remainingChoices)).isEqualTo(Arrays.asSet(choice1.getId().getSurrogate(), choice2.getId().getSurrogate(),
-					choice3.getId().getSurrogate()));
+			assertThat(new HashSet<>(remainingChoices)).isEqualTo(Arrays.asSet(choice1.getId().getDelegate(), choice2.getId().getDelegate(),
+					choice3.getId().getDelegate()));
 		}
 		
 		@Test
@@ -655,8 +655,8 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from Choice", Long.class)
 					.mapKey("id", long.class);
 			Set<Long> remainingChoices = longExecutableQuery.execute(Accumulators.toSet());
-			assertThat(new HashSet<>(remainingChoices)).isEqualTo(Arrays.asSet(choice1.getId().getSurrogate(), choice2.getId().getSurrogate(),
-					choice3.getId().getSurrogate()));
+			assertThat(new HashSet<>(remainingChoices)).isEqualTo(Arrays.asSet(choice1.getId().getDelegate(), choice2.getId().getDelegate(),
+					choice3.getId().getDelegate()));
 		}
 
 		@Test
@@ -732,7 +732,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		private int idx;
 		
 		private Result(Identifier<Long> id) {
-			this.id = id.getSurrogate();
+			this.id = id.getDelegate();
 		}
 		
 		public long getId() {
@@ -873,7 +873,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		@Override
 		public String toString() {
-			return "AnswerChoice{id=" + id.getSurrogate() + ", label='" + label + '\'' + '}';
+			return "AnswerChoice{id=" + id.getDelegate() + ", label='" + label + '\'' + '}';
 		}
 		
 	}
@@ -893,7 +893,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		}
 		
 		private RawAnswer(Identifier<Long> answerId, int choiceIdx, Identifier<Long> choiceId) {
-			this(answerId.getSurrogate(), choiceIdx, choiceId.getSurrogate());
+			this(answerId.getDelegate(), choiceIdx, choiceId.getDelegate());
 		}
 		
 		public Long getAnswerId() {
@@ -983,7 +983,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		@Override
 		public String toString() {
-			return "Choice{id=" + id.getSurrogate() + ", question=" + question + ", label='" + label + '\'' + '}';
+			return "Choice{id=" + id.getDelegate() + ", question=" + question + ", label='" + label + '\'' + '}';
 		}
 	}
 	

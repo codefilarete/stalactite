@@ -12,14 +12,14 @@ import org.codefilarete.tool.function.SerializableThrowingTriConsumer;
  */
 public class NullAwarePreparedStatementWriter<T> implements PreparedStatementWriter<T> {
 	
-	private final PreparedStatementWriter<T> surrogate;
+	private final PreparedStatementWriter<T> delegate;
 	
 	public NullAwarePreparedStatementWriter(SerializableThrowingTriConsumer<PreparedStatement, Integer, T, SQLException> preparedStatementSetter) {
 		this(PreparedStatementWriter.ofMethodReference(preparedStatementSetter));
 	}
 	
-	public NullAwarePreparedStatementWriter(PreparedStatementWriter<T> surrogate) {
-		this.surrogate = surrogate;
+	public NullAwarePreparedStatementWriter(PreparedStatementWriter<T> delegate) {
+		this.delegate = delegate;
 	}
 	
 	@Override
@@ -33,7 +33,7 @@ public class NullAwarePreparedStatementWriter<T> implements PreparedStatementWri
 	
 	@Override
 	public Class<T> getType() {
-		return surrogate.getType();
+		return delegate.getType();
 	}
 	
 	/**
@@ -52,6 +52,6 @@ public class NullAwarePreparedStatementWriter<T> implements PreparedStatementWri
 	}
 	
 	public void setNotNull(int valueIndex, T value, PreparedStatement statement) throws SQLException {
-		surrogate.set(statement, valueIndex, value);
+		delegate.set(statement, valueIndex, value);
 	}
 }

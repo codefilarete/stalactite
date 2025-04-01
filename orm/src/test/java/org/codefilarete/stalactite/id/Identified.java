@@ -19,13 +19,13 @@ public interface Identified<I> {
 	
 	/**
 	 * Gives a {@link ParameterBinder} for a general {@link Identified} to be declared in a {@link ParameterBinderRegistry}
-	 * for SQL write operation purpose : it will use the surrogate id as a value for the {@link PreparedStatement}.
+	 * for SQL write operation purpose : it will use the delegate id as a value for the {@link PreparedStatement}.
 	 * The returned {@link ParameterBinder} has no purpose for selection because it doesn't know how to build a fulfilled instance. Even if
 	 * it is called, the result is ignored by {@link EntityTreeInflater} which cleanly handle
 	 * instantiation and filling of the target.
 	 * 
-	 * @param parameterBinder the surrogate {@link ParameterBinder} (can be for primitive type because null is already handled by this method result)
-	 * @param <I> the type of the surrogate {@link Identifier}
+	 * @param parameterBinder the delegate {@link ParameterBinder} (can be for primitive type because null is already handled by this method result)
+	 * @param <I> the type of the delegate {@link Identifier}
 	 * @return a new {@link ParameterBinder} which will wrap/unwrap the result of parameterBinder
 	 * @see DefaultParameterBinders
 	 */
@@ -46,7 +46,7 @@ public interface Identified<I> {
 			
 			@Override
 			public void set(PreparedStatement statement, int valueIndex, Identified<I> value) throws SQLException {
-				parameterBinder.set(statement, valueIndex, value.getId().getSurrogate());
+				parameterBinder.set(statement, valueIndex, value.getId().getDelegate());
 			}
 		});
 	}

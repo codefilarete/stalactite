@@ -65,7 +65,7 @@ class EntityQueryCriteriaSupportTest {
 	void buildComparator_severalCombinedProperty() {
 		KeepOrderSet<OrderByItem> orderBy = new KeepOrderSet<>(
 				new OrderByItem(Arrays.asList(new AccessorByMethodReference<>(Country::getName)), Order.DESC, false),
-				new OrderByItem(Arrays.asList(new AccessorByMethodReference<>(Country::getId), new AccessorByMethodReference<Identifier, Object>(Identifier::getSurrogate)), Order.ASC, false)
+				new OrderByItem(Arrays.asList(new AccessorByMethodReference<>(Country::getId), new AccessorByMethodReference<Identifier, Object>(Identifier::getDelegate)), Order.ASC, false)
 		);
 		Comparator<Country> objectComparator = EntityQueryCriteriaSupport.buildComparator(orderBy);
 		Country country1 = new Country(1);
