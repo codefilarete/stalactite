@@ -8,7 +8,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
@@ -22,7 +21,35 @@ public interface PersistExecutor<C> {
 	
 	void persist(Iterable<? extends C> entities);
 	
-	static <C, I> void persist(Iterable<? extends C> entities, ConfiguredPersister<C, I> persister) {
+	/**
+	 * A default {@link PersistExecutor} that points to {@link PersistExecutor#persist(Iterable, EntityPersister)}
+	 * @param <C>
+	 * @author Guillaume Mary
+	 */
+	class DefaultPersistExecutor<C> implements PersistExecutor<C> {
+		
+		private final EntityPersister<C, ?> persister;
+		
+		public DefaultPersistExecutor(EntityPersister<C, ?> persister) {
+			this.persister = persister;
+		}
+		
+		@Override
+		public void persist(Iterable<? extends C> entities) {
+			PersistExecutor.persist(entities, persister);
+		}
+	}
+	
+	/**
+	 * Persists given entities by choosing if they should be inserted or updated according to the given {@link EntityPersister#isNew(Object)} argument.
+	 * Insert, Update and Select operation are delegated to given {@link EntityPersister}
+	 *
+	 * @param entities entities to be saved in database
+	 * @param persister the {@link EntityPersister} to delegate SQL operations to
+	 * @param <C> entity type
+	 * @param <I> entity identifier type
+	 */
+	static <C, I> void persist(Iterable<? extends C> entities, EntityPersister<C, I> persister) {
 		persist(entities, persister::isNew, persister, persister, persister, persister::getId);
 	}
 	
@@ -70,34 +97,5 @@ public interface PersistExecutor<C> {
 			modifiedVSunmodified.forEach((k, v) -> updateArg.add(new Duo<>(k , v)));
 			updater.update(updateArg, true);
 		}
-	}
-	
-	/**
-	 * Persists given entities by choosing if they should be inserted or updated according to their presence in database.
-	 * Dedicated to already-assigned use case : as a difference with {@link #persist(Iterable, ConfiguredPersister)} the {@code isNewProvider} can't
-	 * rely on {@link ConfiguredPersister#isNew(Object)} because identifier is already set, so "isNew" can only be done through database checking.
-	 *
-	 * @param entities entities to be saved in database
-	 * @param selector used for entity update : loads entities from database so then can be compared to given ones and therefore compute their differences 
-	 * @param updater executor of the update order
-	 * @param inserter executor of the insert order
-	 * @param idProvider used as a comparator between given entities and those found in database, hence avoid to rely on equals/hashcode mechanism of entities
-	 * @param <C> entity type
-	 * @param <I> entity identifier type
-	 */
-	static <C, I> void persist(Iterable<? extends C> entities,
-							   SelectExecutor<C, I> selector,
-							   UpdateExecutor<C> updater,
-							   InsertExecutor<C> inserter,
-							   Function<C, I> idProvider) {
-		if (Iterables.isEmpty(entities)) {
-			return;
-		}
-		
-		Set<I> entitiesIds = Iterables.collect(entities, idProvider::apply, HashSet::new);
-		Set<C> loadedEntities = selector.select(entitiesIds);
-		Set<I> existingEntitiesIds = Iterables.collect(loadedEntities, idProvider, HashSet::new);
-		Predicate<C> isNewProvider = c -> !existingEntitiesIds.contains(idProvider.apply(c));
-		persist(entities, isNewProvider, ids -> loadedEntities, updater, inserter, idProvider);
 	}
 }

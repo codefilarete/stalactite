@@ -10,7 +10,7 @@ import org.codefilarete.tool.Duo;
  */
 public class UpdateListenerCollection<E> implements UpdateListener<E> {
 	
-	private List<UpdateListener<E>> updateListeners = new ArrayList<>();
+	private final List<UpdateListener<E>> updateListeners = new ArrayList<>();
 	
 	@Override
 	public void beforeUpdate(Iterable<? extends Duo<E, E>> updatePayloads, boolean allColumnsStatement) {

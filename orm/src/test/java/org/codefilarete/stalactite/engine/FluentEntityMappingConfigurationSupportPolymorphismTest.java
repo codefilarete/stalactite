@@ -514,13 +514,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			verify(persistListenerMock).afterPersist(Arrays.asHashSet(dummyCar));
 			verify(insertListenerMock).beforeInsert(Arrays.asList(dummyCar));
 			verify(insertListenerMock).afterInsert(Arrays.asList(dummyCar));
-			verify(selectListenerMock, times(0)).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
+			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
 			
 			dummyCar.setModel("Peugeot");
 			abstractVehiclePersister.persist(dummyCar);
 			verify(updateListenerMock).beforeUpdate(any(), eq(true));
 			verify(updateListenerMock).afterUpdate(any(), eq(true));
-			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
+			verify(selectListenerMock, times(2)).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
 			
 			// select test
 			clearInvocations(selectListenerMock);
@@ -872,13 +872,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			verify(persistListenerMock).afterPersist(Arrays.asHashSet(dummyCar));
 			verify(insertListenerMock).beforeInsert(Arrays.asList(dummyCar));
 			verify(insertListenerMock).afterInsert(Arrays.asList(dummyCar));
-			verify(selectListenerMock, times(0)).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
+			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
 			
 			dummyCar.setModel("Peugeot");
 			abstractVehiclePersister.persist(dummyCar);
 			verify(updateListenerMock).beforeUpdate(any(), eq(true));
 			verify(updateListenerMock).afterUpdate(any(), eq(true));
-			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
+			verify(selectListenerMock, times(2)).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
 			
 			// select test
 			clearInvocations(selectListenerMock);
@@ -1200,13 +1200,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			verify(persistListenerMock).afterPersist(Arrays.asHashSet(dummyCar));
 			verify(insertListenerMock).beforeInsert(Arrays.asList(dummyCar));
 			verify(insertListenerMock).afterInsert(Arrays.asList(dummyCar));
-			verify(selectListenerMock, times(0)).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
+			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
 			
 			dummyCar.setModel("Peugeot");
 			abstractVehiclePersister.persist(dummyCar);
 			verify(updateListenerMock).beforeUpdate(any(), eq(true));
 			verify(updateListenerMock).afterUpdate(any(), eq(true));
-			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
+			verify(selectListenerMock, times(2)).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
 			
 			// select test
 			clearInvocations(selectListenerMock);

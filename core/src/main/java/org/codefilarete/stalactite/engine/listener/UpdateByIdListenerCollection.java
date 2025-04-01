@@ -8,7 +8,7 @@ import java.util.List;
  */
 public class UpdateByIdListenerCollection<C> implements UpdateByIdListener<C> {
 	
-	private List<UpdateByIdListener<C>> updateByIdListeners = new ArrayList<>();
+	private final List<UpdateByIdListener<C>> updateByIdListeners = new ArrayList<>();
 	
 	@Override
 	public void beforeUpdateById(Iterable<? extends C> entities) {

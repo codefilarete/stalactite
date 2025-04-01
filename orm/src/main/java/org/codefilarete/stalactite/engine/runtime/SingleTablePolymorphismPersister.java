@@ -20,14 +20,6 @@ import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorp
 import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.engine.UpdateExecutor;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer;
-import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
-import org.codefilarete.stalactite.engine.listener.DeleteListener;
-import org.codefilarete.stalactite.engine.listener.InsertListener;
-import org.codefilarete.stalactite.engine.listener.PersistListener;
-import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
-import org.codefilarete.stalactite.engine.listener.SelectListener;
-import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
-import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
@@ -154,29 +146,19 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 	}
 	
 	@Override
-	public PersisterListenerCollection<C, I> getPersisterListener() {
-		return mainPersister.getPersisterListener();
-	}
-	
-	@Override
-	public I getId(C entity) {
-		return this.mainPersister.getId(entity);
-	}
-	
-	@Override
-	public void insert(Iterable<? extends C> entities) {
+	public void doInsert(Iterable<? extends C> entities) {
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		entitiesPerType.forEach(InsertExecutor::insert);
 	}
 	
 	@Override
-	public void updateById(Iterable<? extends C> entities) {
+	public void doUpdateById(Iterable<? extends C> entities) {
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		entitiesPerType.forEach(UpdateExecutor::updateById);
 	}
 	
 	@Override
-	public void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
+	public void doUpdate(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
 		// impacts but very difficult to measure
 		Map<UpdateExecutor<C>, Set<Duo<C, C>>> entitiesPerType = new KeepOrderMap<>();
@@ -193,18 +175,18 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 	}
 	
 	@Override
-	public Set<C> select(Iterable<I> ids) {
+	public Set<C> doSelect(Iterable<I> ids) {
 		return selectExecutor.select(ids);
 	}
 	
 	@Override
-	public void delete(Iterable<? extends C> entities) {
+	public void doDelete(Iterable<? extends C> entities) {
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		entitiesPerType.forEach(DeleteExecutor::delete);
 	}
 	
 	@Override
-	public void deleteById(Iterable<? extends C> entities) {
+	public void doDeleteById(Iterable<? extends C> entities) {
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		entitiesPerType.forEach(DeleteExecutor::deleteById);
 	}
@@ -224,41 +206,6 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 	@Override
 	public <E, ID> void copyRootJoinsTo(EntityJoinTree<E, ID> entityJoinTree, String joinName) {
 		throw new UnsupportedOperationException();
-	}
-	
-	@Override
-	public void addPersistListener(PersistListener<? extends C> persistListener) {
-		subEntitiesPersisters.values().forEach(p -> p.addPersistListener(persistListener));
-	}
-	
-	@Override
-	public void addInsertListener(InsertListener<? extends C> insertListener) {
-		subEntitiesPersisters.values().forEach(p -> p.addInsertListener(insertListener));
-	}
-	
-	@Override
-	public void addUpdateListener(UpdateListener<? extends C> updateListener) {
-		subEntitiesPersisters.values().forEach(p -> p.addUpdateListener(updateListener));
-	}
-	
-	@Override
-	public void addUpdateByIdListener(UpdateByIdListener<? extends C> updateByIdListener) {
-		subEntitiesPersisters.values().forEach(p -> p.addUpdateByIdListener(updateByIdListener));
-	}
-	
-	@Override
-	public void addSelectListener(SelectListener<? extends C, I> selectListener) {
-		subEntitiesPersisters.values().forEach(p -> p.addSelectListener(selectListener));
-	}
-	
-	@Override
-	public void addDeleteListener(DeleteListener<? extends C> deleteListener) {
-		subEntitiesPersisters.values().forEach(p -> p.addDeleteListener(deleteListener));
-	}
-	
-	@Override
-	public void addDeleteByIdListener(DeleteByIdListener<? extends C> deleteListener) {
-		subEntitiesPersisters.values().forEach(p -> p.addDeleteByIdListener(deleteListener));
 	}
 	
 	/**

@@ -51,7 +51,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @param entities entities to be inserted or updated according to {@link #isNew(Object)} result
 	 */
 	default void persist(Iterable<? extends C> entities) {
-		PersistExecutor.persist(entities, this::isNew, this, this, this, this::getId);
+		PersistExecutor.persist(entities, this);
 	}
 	
 	default void insert(C entity) {

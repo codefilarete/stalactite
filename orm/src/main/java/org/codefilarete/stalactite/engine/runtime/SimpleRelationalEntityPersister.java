@@ -2,21 +2,13 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import org.codefilarete.reflection.ValueAccessPoint;
-import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
-import org.codefilarete.stalactite.engine.listener.DeleteListener;
-import org.codefilarete.stalactite.engine.listener.InsertListener;
-import org.codefilarete.stalactite.engine.listener.PersistListener;
-import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
-import org.codefilarete.stalactite.engine.listener.SelectListener;
-import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
-import org.codefilarete.stalactite.engine.listener.UpdateListener;
+import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
@@ -24,6 +16,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
+import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.query.EntitySelector;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
@@ -36,7 +29,6 @@ import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.collection.Iterables;
 
 /**
  * Persister that registers relations of entities joined on "foreign key = primary key".
@@ -57,6 +49,7 @@ import org.codefilarete.tool.collection.Iterables;
  * @author Guillaume Mary
  */
 public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
+		extends PersisterListenerWrapper<C, I>
 		implements ConfiguredRelationalPersister<C, I>, AdvancedEntityPersister<C, I> {
 	
 	private final BeanPersister<C, I, T> persister;
@@ -65,6 +58,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	/** Support for defining entity criteria on {@link #selectWhere()} */
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	private final EntityMappingTreeSelectExecutor<C, I, T> selectGraphExecutor;
+	private final PersistExecutor<C> persistExecutor;
 	
 	public SimpleRelationalEntityPersister(ClassMapping<C, I, T> mainMappingStrategy,
 										   Dialect dialect,
@@ -77,6 +71,13 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 		this.criteriaSupport = new EntityCriteriaSupport<>(persister.getMapping());
 		this.selectGraphExecutor = newSelectExecutor(persister.getMapping(), connectionConfiguration.getConnectionProvider(), dialect);
 		this.entitySelector = newEntitySelectExecutor(dialect);
+		if (persister.getMapping().getIdMapping().getIdentifierInsertionManager() instanceof AlreadyAssignedIdentifierManager) {
+			// we redirect all invocations to ourselves because targeted methods invoke their listeners
+			this.persistExecutor = new AlreadyAssignedIdentifierPersistExecutor<>(this);
+		} else {
+			// we redirect all invocations to ourselves because targeted methods invoke their listeners
+			this.persistExecutor = new DefaultPersistExecutor<>(this);
+		}
 	}
 	
 	protected EntityMappingTreeSelectExecutor<C, I, T> newSelectExecutor(EntityMapping<C, I, T> mappingStrategy,
@@ -138,25 +139,6 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	}
 	
 	@Override
-	public Set<C> select(Iterable<I> ids) {
-		if (Iterables.isEmpty(ids)) {
-			return new HashSet<>();
-		} else {
-			return getPersisterListener().doWithSelectListener(ids, () -> doSelect(ids));
-		}
-	}
-	
-	/**
-	 * Overridden to implement a load by joining tables
-	 * 
-	 * @param ids entity identifiers
-	 * @return a Set of loaded entities corresponding to identifiers passed as parameter
-	 */
-	protected Set<C> doSelect(Iterable<I> ids) {
-		return selectGraphExecutor.select(ids);
-	}
-	
-	@Override
 	public EntityMapping<C, I, T> getMapping() {
 		return persister.getMapping();
 	}
@@ -164,11 +146,6 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	@Override
 	public Set<Table<?>> giveImpliedTables() {
 		return getEntityJoinTree().giveTables();
-	}
-	
-	@Override
-	public PersisterListenerCollection<C, I> getPersisterListener() {
-		return persister.getPersisterListener();
 	}
 	
 	@Override
@@ -283,62 +260,42 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	}
 	
 	@Override
-	public void delete(Iterable<? extends C> entities) {
+	protected void doPersist(Iterable<? extends C> entities) {
+		persistExecutor.persist(entities);
+	}
+	
+	/**
+	 * Overridden to implement a load by joining tables
+	 *
+	 * @param ids entity identifiers
+	 * @return a Set of loaded entities corresponding to identifiers passed as parameter
+	 */
+	protected Set<C> doSelect(Iterable<I> ids) {
+		return selectGraphExecutor.select(ids);
+	}
+	
+	@Override
+	public void doDelete(Iterable<? extends C> entities) {
 		persister.delete(entities);
 	}
 	
 	@Override
-	public void deleteById(Iterable<? extends C> entities) {
+	public void doDeleteById(Iterable<? extends C> entities) {
 		persister.deleteById(entities);
 	}
 	
 	@Override
-	public void insert(Iterable<? extends C> entities) {
+	public void doInsert(Iterable<? extends C> entities) {
 		persister.insert(entities);
 	}
 	
 	@Override
-	public void updateById(Iterable<? extends C> entities) {
+	public void doUpdateById(Iterable<? extends C> entities) {
 		persister.updateById(entities);
 	}
 	
 	@Override
-	public void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
+	public void doUpdate(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		persister.update(differencesIterable, allColumnsStatement);
-	}
-	
-	@Override
-	public void addPersistListener(PersistListener<? extends C> persistListener) {
-		persister.addPersistListener(persistListener);
-	}
-	
-	@Override
-	public void addInsertListener(InsertListener<? extends C> insertListener) {
-		persister.addInsertListener(insertListener);
-	}
-	
-	@Override
-	public void addUpdateListener(UpdateListener<? extends C> updateListener) {
-		persister.addUpdateListener(updateListener);
-	}
-	
-	@Override
-	public void addUpdateByIdListener(UpdateByIdListener<? extends C> updateByIdListener) {
-		persister.addUpdateByIdListener(updateByIdListener);
-	}
-	
-	@Override
-	public void addSelectListener(SelectListener<? extends C, I> selectListener) {
-		persister.addSelectListener(selectListener);
-	}
-	
-	@Override
-	public void addDeleteListener(DeleteListener<? extends C> deleteListener) {
-		persister.addDeleteListener(deleteListener);
-	}
-	
-	@Override
-	public void addDeleteByIdListener(DeleteByIdListener<? extends C> deleteListener) {
-		persister.addDeleteByIdListener(deleteListener);
 	}
 }

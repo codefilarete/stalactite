@@ -23,7 +23,7 @@ public class ComposedIdMapping<C, I> implements IdMapping<C, I> {
 	 * Main constructor
 	 *
 	 * @param idAccessor entry point to get/set id of an entity
-	 * @param identifierInsertionManager defines the way the id is persisted into the database
+	 * @param identifierInsertionManager used for {@link #isNew(Object)} computation by linking it to {@link AlreadyAssignedIdentifierManager#getIsPersistedFunction()}
 	 * @param identifierMarshaller defines the way the id is read from the database
 	 */
 	public ComposedIdMapping(IdAccessor<C, I> idAccessor,
@@ -39,7 +39,7 @@ public class ComposedIdMapping<C, I> implements IdMapping<C, I> {
 	 * with a {@link ReversibleAccessor} used as a property accessor.
 	 *
 	 * @param identifierAccessor accessor to the property identifying the entity
-	 * @param identifierInsertionManager defines the way the id is persisted into the database
+	 * @param identifierInsertionManager used for {@link #isNew(Object)} computation by linking it to {@link AlreadyAssignedIdentifierManager#getIsPersistedFunction()}
 	 * @param identifierMarshaller defines the way the id is read from the database
 	 */
 	public ComposedIdMapping(ReversibleAccessor<C, I> identifierAccessor,

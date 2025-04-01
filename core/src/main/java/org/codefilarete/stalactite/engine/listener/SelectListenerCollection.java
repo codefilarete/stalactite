@@ -9,7 +9,7 @@ import java.util.Set;
  */
 public class SelectListenerCollection<C, I> implements SelectListener<C, I> {
 	
-	private List<SelectListener<C, I>> selectListeners = new ArrayList<>();
+	private final List<SelectListener<C, I>> selectListeners = new ArrayList<>();
 	
 	@Override
 	public void beforeSelect(Iterable<I> ids) {

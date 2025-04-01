@@ -257,6 +257,7 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 	 * @param persisterListener the target listener on which the one of current instance must be moved to.
 	 */
 	public void moveTo(PersisterListenerCollection<C, I> persisterListener) {
+		this.persistListener.moveTo(persisterListener.persistListener);
 		this.insertListener.moveTo(persisterListener.insertListener);
 		this.updateByIdListener.moveTo(persisterListener.updateByIdListener);
 		this.updateListener.moveTo(persisterListener.updateListener);

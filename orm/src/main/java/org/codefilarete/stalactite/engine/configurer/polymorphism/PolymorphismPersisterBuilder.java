@@ -11,7 +11,6 @@ import org.codefilarete.stalactite.engine.PolymorphismPolicy.TablePerClassPolymo
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
-import org.codefilarete.stalactite.engine.runtime.PersisterListenerWrapper;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -83,9 +82,8 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 			throw new NotImplementedException("Given policy is not implemented : " + polymorphismPolicy);
 		}
 		ConfiguredRelationalPersister<C, I> result = polymorphismBuilder.build(dialect, connectionConfiguration);
-		result = new PersisterListenerWrapper<>(result);
 		// We transfer listeners so that all actions are made in the same "event listener context" : all listeners are aggregated in a top level one.
-		// Made in particular for already-assigned mark-as-persisted mechanism and relation cascade triggering.
+		// Made in particular for relation cascade triggering.
 		mainPersister.getPersisterListener().moveTo(result.getPersisterListener());
 		
 		return result;

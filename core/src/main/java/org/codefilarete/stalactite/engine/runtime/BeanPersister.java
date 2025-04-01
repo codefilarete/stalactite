@@ -1,24 +1,15 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 
 import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.PersistenceContext;
-import org.codefilarete.stalactite.engine.StaleStateObjectException;
-import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
-import org.codefilarete.stalactite.engine.listener.DeleteListener;
-import org.codefilarete.stalactite.engine.listener.InsertListener;
-import org.codefilarete.stalactite.engine.listener.PersistListener;
-import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
-import org.codefilarete.stalactite.engine.listener.SelectListener;
-import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
-import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
+import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
@@ -28,7 +19,6 @@ import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.exception.NotImplementedException;
 
 /**
@@ -42,7 +32,9 @@ import org.codefilarete.tool.exception.NotImplementedException;
  * @param <T> target table type
  * @author Guillaume Mary
  */
-public class BeanPersister<C, I, T extends Table<T>> implements EntityConfiguredPersister<C, I> {
+public class BeanPersister<C, I, T extends Table<T>>
+		extends PersisterListenerWrapper<C, I>
+		implements EntityConfiguredPersister<C, I> {
 
 	/**
 	 * Property mapping on which SQL executors will refer to build their SQL operation
@@ -69,7 +61,7 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 	 */
 	private final int inOperatorMaxSize;
 	
-	private final PersisterListenerCollection<C, I> persisterListener = new PersisterListenerCollection<>();
+	private final PersistExecutor<C> persistExecutor;
 	private final InsertExecutor<C, I, T> insertExecutor;
 	private final UpdateExecutor<C, I, T> updateExecutor;
 	private final DeleteExecutor<C, I, T> deleteExecutor;
@@ -85,6 +77,7 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 		this.dmlGenerator = dialect.getDmlGenerator();
 		this.writeOperationFactory = dialect.getWriteOperationFactory();
 		this.inOperatorMaxSize = dialect.getInOperatorMaxSize();
+		this.persistExecutor = newPersistExecutor();
 		this.insertExecutor = newInsertExecutor(this.mappingStrategy, this.connectionConfiguration, dmlGenerator,
 				writeOperationFactory, inOperatorMaxSize);
 		this.updateExecutor = newUpdateExecutor(this.mappingStrategy, this.connectionConfiguration, dmlGenerator,
@@ -98,24 +91,12 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 		addSelectListener(getMapping().getIdMapping().getIdentifierInsertionManager().getSelectListener());
 	}
 	
-	public BeanPersister(ConnectionConfiguration connectionConfiguration,
-						 DMLGenerator dmlGenerator,
-						 WriteOperationFactory writeOperationFactory,
-						 int inOperatorMaxSize,
-						 EntityMapping<C, I, T> mappingStrategy,
-						 InsertExecutor<C, I, T> insertExecutor,
-						 UpdateExecutor<C, I, T> updateExecutor,
-						 DeleteExecutor<C, I, T> deleteExecutor,
-						 org.codefilarete.stalactite.engine.SelectExecutor<C, I> selectExecutor) {
-		this.mappingStrategy = mappingStrategy;
-		this.connectionConfiguration = connectionConfiguration;
-		this.dmlGenerator = dmlGenerator;
-		this.writeOperationFactory = writeOperationFactory;
-		this.inOperatorMaxSize = inOperatorMaxSize;
-		this.insertExecutor = insertExecutor;
-		this.updateExecutor = updateExecutor;
-		this.deleteExecutor = deleteExecutor;
-		this.selectExecutor = selectExecutor;
+	protected PersistExecutor<C> newPersistExecutor() {
+		if (this.mappingStrategy.getIdMapping().getIdentifierInsertionManager() instanceof AlreadyAssignedIdentifierManager) {
+			return new AlreadyAssignedIdentifierPersistExecutor<>(this);
+		} else {
+			return new DefaultPersistExecutor<>(this);
+		}
 	}
 	
 	protected InsertExecutor<C, I, T> newInsertExecutor(EntityMapping<C, I, T> mappingStrategy,
@@ -188,11 +169,6 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 		return Collections.singleton(getMainTable());
 	}
 	
-	@Override
-	public PersisterListenerCollection<C, I> getPersisterListener() {
-		return persisterListener;
-	}
-	
 	public InsertExecutor<C, I, T> getInsertExecutor() {
 		return insertExecutor;
 	}
@@ -224,41 +200,6 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 		throw new NotImplementedException("Not yet implemented");
 	}
 	
-	@Override
-	public void addPersistListener(PersistListener<? extends C> persistListener) {
-		persisterListener.addPersistListener(persistListener);
-	}
-	
-	@Override
-	public void addInsertListener(InsertListener<? extends C> insertListener) {
-		persisterListener.addInsertListener(insertListener);
-	}
-	
-	@Override
-	public void addUpdateListener(UpdateListener<? extends C> updateListener) {
-		persisterListener.addUpdateListener(updateListener);
-	}
-	
-	@Override
-	public void addUpdateByIdListener(UpdateByIdListener<? extends C> updateByIdListener) {
-		persisterListener.addUpdateByIdListener(updateByIdListener);
-	}
-	
-	@Override
-	public void addSelectListener(SelectListener<? extends C, I> selectListener) {
-		persisterListener.addSelectListener(selectListener);
-	}
-	
-	@Override
-	public void addDeleteListener(DeleteListener<? extends C> deleteListener) {
-		persisterListener.addDeleteListener(deleteListener);
-	}
-	
-	@Override
-	public void addDeleteByIdListener(DeleteByIdListener<? extends C> deleteListener) {
-		persisterListener.addDeleteByIdListener(deleteListener);
-	}
-	
 	/**
 	 * Saves given entities : will apply insert or update according to entities persistent state.
 	 * Triggers cascade on relations. Please note that in case of already-persisted entities (not new), entities will be reloaded from database
@@ -268,100 +209,38 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 	 * @param entities some entities, can be a mix of none-persistent or already-persisted entities
 	 */
 	@Override
-	public void persist(Iterable<? extends C> entities) {
-		if (!Iterables.isEmpty(entities)) {
-			persisterListener.doWithPersistListener(entities, () -> doPersist(entities));
-		}
-	}
-	
 	protected void doPersist(Iterable<? extends C> entities) {
-		PersistExecutor.persist(entities, this::isNew, this, this, this, this::getId);
+		persistExecutor.persist(entities);
 	}
 	
-	/**
-	 * Insert given entities.
-	 *
-	 * @param entities some entities expected to be not persisted yet since inserting them again should cause some primary key constraint failure
-	 */
 	@Override
-	public void insert(Iterable<? extends C> entities) {
-		if (!Iterables.isEmpty(entities)) {
-			persisterListener.doWithInsertListener(entities, () -> doInsert(entities));
-		}
-	}
-	
 	protected void doInsert(Iterable<? extends C> entities) {
 		insertExecutor.insert(entities);
 	}
 	
-	/**
-	 * Updates roughly some entities: no differences are computed, only update statements (full column) are applied.
-	 * 
-	 * @param entities iterable of entities
-	 */
 	@Override
-	public void updateById(Iterable<? extends C> entities) {
-		if (!Iterables.isEmpty(entities)) {
-			persisterListener.doWithUpdateByIdListener(entities, () -> doUpdateById(entities));
-		}
-	}
-	
 	protected void doUpdateById(Iterable<? extends C> entities) {
 		updateExecutor.updateById(entities);
 	}
 	
-	/**
-	 * Update given entities that may have changes.
-	 * Takes optimistic lock into account.
-	 * Groups statements to benefit from JDBC batch. Useful overall when allColumnsStatement is set to false.
-	 * 
-	 * @param differencesIterable pairs of modified-unmodified instances, used to compute differences side by side
-	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be in
-	 */
 	@Override
-	public void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
-		if (!Iterables.isEmpty(differencesIterable)) {
-			persisterListener.doWithUpdateListener(differencesIterable, allColumnsStatement, this::doUpdate);
-		}
-	}
-	
 	protected void doUpdate(Iterable<? extends Duo<C, C>> entities, boolean allColumnsStatement) {
 		updateExecutor.update(entities, allColumnsStatement);
 	}
 	
-	/**
-	 * Delete given entities.
-	 * Takes optimistic lock into account.
-	 *
-	 * @param entities entites to be deleted
-	 * @throws StaleStateObjectException if deleted row count differs from entities count
-	 */
 	@Override
-	public void delete(Iterable<? extends C> entities) {
-		if (!Iterables.isEmpty(entities)) {
-			persisterListener.doWithDeleteListener(entities, () -> doDelete(entities));
-		}
-	}
-	
 	protected void doDelete(Iterable<? extends C> entities) {
 		deleteExecutor.delete(entities);
 	}
 	
-	/**
-	 * Will delete instances only by their identifier.
-	 * This method will not take optimistic lock (versioned entity) into account, so it will delete database rows "roughly".
-	 *
-	 * @param entities entities to be deleted
-	 */
 	@Override
-	public void deleteById(Iterable<? extends C> entities) {
-		if (!Iterables.isEmpty(entities)) {
-			persisterListener.doWithDeleteByIdListener(entities, () -> doDeleteById(entities));
-		}
-	}
-	
 	protected void doDeleteById(Iterable<? extends C> entities) {
 		deleteExecutor.deleteById(entities);
+	}
+	
+	@Override
+	protected Set<C> doSelect(Iterable<I> ids) {
+		return selectExecutor.select(ids);
 	}
 	
 	/**
@@ -375,18 +254,5 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 	@Override
 	public boolean isNew(C c) {
 		return mappingStrategy.isNew(c);
-	}
-	
-	@Override
-	public Set<C> select(Iterable<I> ids) {
-		if (Iterables.isEmpty(ids)) {
-			return new HashSet<>();
-		} else {
-			return persisterListener.doWithSelectListener(ids, () -> doSelect(ids));
-		}
-	}
-	
-	protected Set<C> doSelect(Iterable<I> ids) {
-		return selectExecutor.select(ids);
 	}
 }

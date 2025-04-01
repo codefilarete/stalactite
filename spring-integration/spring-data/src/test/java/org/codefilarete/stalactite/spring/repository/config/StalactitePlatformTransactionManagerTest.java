@@ -28,6 +28,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -44,21 +45,23 @@ class StalactitePlatformTransactionManagerTest {
 	@Autowired
 	private DummyStalactiteRepository dummyStalactiteRepository;
 	
+	@Autowired
+	EntityPersister<Person, Identifier<Long>> personPersister;
+	
 	@Nested
 	@TestMethodOrder(OrderAnnotation.class)
 	class WithRepository {
 		
-		// No @Transactional hence no rollback, the transaction only relies on SimpleStalactiteRepository.save(..)
-		// which impact the "createSameDataAgain" that can't persist the same data due to id constraint 
+		// @Transactional marked as read-only to check that StalactiteRepository uses StalactitePlatformTransactionManager
+		// which handle transaction correctly 
 		@Test
 		@Order(1)
+		@Transactional(readOnly = true)
 		void createData() {
 			Person person = new Person(42);
 			person.setName("Toto");
-			dummyStalactiteRepository.save(person);
-			// we just check that data exist, else test serves no purpose
-			Optional<Person> loadedPerson = dummyStalactiteRepository.findById(new PersistedIdentifier<>(42L));
-			assertThat(loadedPerson).isNotEmpty();
+			assertThatCode(() -> dummyStalactiteRepository.save(person))
+					.hasRootCauseMessage("invalid transaction state: read-only SQL-transaction");
 		}
 		
 		@Test
@@ -67,9 +70,10 @@ class StalactitePlatformTransactionManagerTest {
 			Person person = new Person(42);
 			person.setName("Tata");
 			
-			// trying to insert : this will throw an exception if data already exists due to primary key conflict
-			assertThatCode(() -> dummyStalactiteRepository.save(person))
-					.hasRootCauseMessage("integrity constraint violation: unique constraint or index violation ; SYS_CT_10092 table: PERSON");
+			dummyStalactiteRepository.save(person);
+			// we just check that data exist, else test serves no purpose
+			Optional<Person> loadedPerson = dummyStalactiteRepository.findById(new PersistedIdentifier<>(42L));
+			assertThat(loadedPerson).isNotEmpty();
 		}
 	}
 	

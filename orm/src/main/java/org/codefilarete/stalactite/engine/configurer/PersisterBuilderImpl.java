@@ -836,19 +836,13 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 												ConnectionConfiguration connectionConfiguration) {
 		AccessorDefinition idDefinition = AccessorDefinition.giveDefinition(idAccessor);
 		Class<I> identifierType = idDefinition.getMemberType();
+		IdentifierInsertionManager<E, I> identifierInsertionManager = null;
 		if (identification instanceof CompositeKeyIdentification) {
-			AlreadyAssignedIdentifierManager<E, I> compositeKeyInsertionManager
-					= new AlreadyAssignedIdentifierManager<>(
-					identifierType, ((CompositeKeyIdentification<E, I>) identification).getMarkAsPersistedFunction(),
+			identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(
+					identifierType,
+					((CompositeKeyIdentification<E, I>) identification).getMarkAsPersistedFunction(),
 					((CompositeKeyIdentification<E, I>) identification).getIsPersistedFunction());
-			identification
-					.setInsertionManager(compositeKeyInsertionManager)
-					.setFallbackInsertionManager(new AlreadyAssignedIdentifierManager<>(
-							identifierType,
-							compositeKeyInsertionManager.getMarkAsPersistedFunction(),
-							compositeKeyInsertionManager.getIsPersistedFunction()));
 		} else {
-			IdentifierInsertionManager<E, I> identifierInsertionManager = null;
 			IdentifierPolicy<I> identifierPolicy = ((Identification<E, I>) identification).getIdentifierPolicy();
 			if (identifierPolicy instanceof ColumnOptions.GeneratedKeysPolicy) {
 				// with identifier set by database generated key, identifier must be retrieved as soon as possible which means by the very first
@@ -903,26 +897,31 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 						alreadyAssignedPolicy.getMarkAsPersistedFunction(),
 						alreadyAssignedPolicy.getIsPersistedFunction());
 			}
-			
-			// Treating configurations that are not the identifying one (for child-class) : they get an already-assigned identifier manager
-			AlreadyAssignedIdentifierManager<E, I> fallbackMappingIdentifierManager;
-			if (identifierPolicy instanceof AlreadyAssignedIdentifierPolicy) {
-				fallbackMappingIdentifierManager = new AlreadyAssignedIdentifierManager<>(identifierType,
-						((AlreadyAssignedIdentifierPolicy<E, I>) identifierPolicy).getMarkAsPersistedFunction(),
-						((AlreadyAssignedIdentifierPolicy<E, I>) identifierPolicy).getIsPersistedFunction());
-			} else {
-				Function<E, Boolean> isPersistedFunction;
-				if (!identifierType.isPrimitive()) {
-					isPersistedFunction = c -> idAccessor.get(c) != null;
-				} else {
-					isPersistedFunction = c -> Reflections.PRIMITIVE_DEFAULT_VALUES.get(identifierType) == idAccessor.get(c);
-				}
-				fallbackMappingIdentifierManager = new AlreadyAssignedIdentifierManager<>(identifierType, c -> {}, isPersistedFunction);
-			}
-			identification
-					.setInsertionManager(identifierInsertionManager)
-					.setFallbackInsertionManager(fallbackMappingIdentifierManager);
 		}
+		
+		// Treating configurations that are not the identifying one (for child-class) : they get an already-assigned identifier manager
+		AlreadyAssignedIdentifierManager<E, I> fallbackMappingIdentifierManager = determineFallbackIdentifierManager(idAccessor, identifierInsertionManager, identifierType);
+		identification
+				.setInsertionManager(identifierInsertionManager)
+				.setFallbackInsertionManager(fallbackMappingIdentifierManager);
+	}
+	
+	private <E> AlreadyAssignedIdentifierManager<E, I> determineFallbackIdentifierManager(ReversibleAccessor<E, I> idAccessor,
+																						  IdentifierInsertionManager<E, I> identifierInsertionManager,
+																						  Class<I> identifierType) {
+		AlreadyAssignedIdentifierManager<E, I> fallbackMappingIdentifierManager;
+		if (identifierInsertionManager instanceof AlreadyAssignedIdentifierManager) {
+			fallbackMappingIdentifierManager = new AlreadyAssignedIdentifierManager<>(identifierType,
+					((AlreadyAssignedIdentifierManager<E, I>) identifierInsertionManager).getMarkAsPersistedFunction(),
+					((AlreadyAssignedIdentifierManager<E, I>) identifierInsertionManager).getIsPersistedFunction());
+		} else {
+			// auto-increment, sequence, etc : non-identifying classes get an already-assigned identifier manager based on their default value
+			Function<E, Boolean> isPersistedFunction = identifierType.isPrimitive()
+					? c -> Reflections.PRIMITIVE_DEFAULT_VALUES.get(identifierType) == idAccessor.get(c)
+					: c -> idAccessor.get(c) != null;
+			fallbackMappingIdentifierManager = new AlreadyAssignedIdentifierManager<>(identifierType, c -> {}, isPersistedFunction);
+		}
+		return fallbackMappingIdentifierManager;
 	}
 	
 	private UnsupportedOperationException newMissingIdentificationException() {
