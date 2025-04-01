@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
-import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.Identification;
+import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.SingleColumnIdentification;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMapping;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
@@ -85,7 +85,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 	
 	@Override
 	public ConfiguredRelationalPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
-		if (this.identification instanceof Identification && ((Identification<C, I>) this.identification).getIdentifierPolicy() instanceof ColumnOptions.GeneratedKeysPolicy) {
+		if (this.identification instanceof AbstractIdentification.SingleColumnIdentification && ((SingleColumnIdentification<C, I>) this.identification).getIdentifierPolicy() instanceof ColumnOptions.GeneratedKeysPolicy) {
 			throw new UnsupportedOperationException("Table-per-class polymorphism is not compatible with auto-incremented primary key");
 		}
 		Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass = collectSubClassPersister(dialect, connectionConfiguration);

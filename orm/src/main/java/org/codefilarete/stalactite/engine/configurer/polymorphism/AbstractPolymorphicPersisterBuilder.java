@@ -8,7 +8,7 @@ import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.RelationalMappingConfiguration;
 import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
-import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.Identification;
+import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.SingleColumnIdentification;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.RelationConfigurer;
@@ -131,7 +131,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 		// we only have to call a polymorphic builder with given methods arguments, and same configuration values as this instance
 		PolymorphismPersisterBuilder<D, I, T> polymorphismPersisterBuilder = new PolymorphismPersisterBuilder<>(
 				subPolymorphismPolicy,
-				(Identification<D, I>) identification,
+				(SingleColumnIdentification<D, I>) identification,
 				subPersister,
 				columnBinderRegistry,
 				(Map) subPersister.getMapping().getPropertyToColumn(),

@@ -17,7 +17,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 /**
  * Stores information about entity identification during configuration process.
  * Two cases are expected :
- * - identification for single-column primary key, stored in {@link Identification}
+ * - identification for single-column primary key, stored in {@link SingleColumnIdentification}
  * - identification for multiple-columns primary key, stored in {@link CompositeKeyIdentification}
  * 
  * All this is not expected to be exposed out of configuration process.
@@ -26,7 +26,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  * @param <I> identifier type
  * @author Guillaume Mary
  * @see #forSingleKey(EntityMappingConfiguration)
- * @see #forCompositeKey(EntityMappingConfiguration)
+ * @see #forCompositeKey(EntityMappingConfiguration, CompositeKeyMapping)
  */
 public abstract class AbstractIdentification<C, I> {
 	
@@ -40,8 +40,8 @@ public abstract class AbstractIdentification<C, I> {
 	 * @param <I> identifier type
 	 * @return a single-key identification
 	 */
-	static <C, I> Identification<C, I> forSingleKey(EntityMappingConfiguration<C, I> identificationDefiner) {
-		return new Identification<>(identificationDefiner, ((EntityMappingConfiguration.SingleKeyMapping<C, I>) identificationDefiner.getKeyMapping()).getIdentifierPolicy());
+	static <C, I> SingleColumnIdentification<C, I> forSingleKey(EntityMappingConfiguration<C, I> identificationDefiner) {
+		return new SingleColumnIdentification<>(identificationDefiner, ((EntityMappingConfiguration.SingleKeyMapping<C, I>) identificationDefiner.getKeyMapping()).getIdentifierPolicy());
 	}
 	
 	/**
@@ -114,11 +114,11 @@ public abstract class AbstractIdentification<C, I> {
 	 * @param <C> persisted entity type
 	 * @param <I> identifier type
 	 */
-	public static class Identification<C, I> extends AbstractIdentification<C, I> {
+	public static class SingleColumnIdentification<C, I> extends AbstractIdentification<C, I> {
 		
 		private final ColumnOptions.IdentifierPolicy<I> identifierPolicy;
 		
-		private Identification(EntityMappingConfiguration<C, I> identificationDefiner, ColumnOptions.IdentifierPolicy<I> identifierPolicy) {
+		private SingleColumnIdentification(EntityMappingConfiguration<C, I> identificationDefiner, ColumnOptions.IdentifierPolicy<I> identifierPolicy) {
 			super(identificationDefiner);
 			this.identifierPolicy = identifierPolicy;
 		}
