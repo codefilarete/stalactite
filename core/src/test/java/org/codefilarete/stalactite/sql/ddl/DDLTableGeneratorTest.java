@@ -1,5 +1,7 @@
 package org.codefilarete.stalactite.sql.ddl;
 
+import java.math.BigDecimal;
+import java.nio.file.Path;
 import java.sql.Connection;
 
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
@@ -16,6 +18,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.codefilarete.stalactite.sql.ddl.Size.fixedPoint;
+import static org.codefilarete.stalactite.sql.ddl.Size.length;
 
 public class DDLTableGeneratorTest {
 	
@@ -67,6 +71,22 @@ public class DDLTableGeneratorTest {
 		
 		generatedCreateTable = testInstance.generateCreateTable(t);
 		assertThat(generatedCreateTable).isEqualTo("create table Toto(A type, B type, 'key' type, D type not null, primary key ('key'))");
+	}
+
+	@Test
+	void columnSizeIsTakenIntoAccount() {
+		DefaultTypeMapping typeMapping = new DefaultTypeMapping();
+		DDLTableGenerator testInstance = new DDLTableGenerator(new SqlTypeRegistry(typeMapping), DMLNameProvider::new);
+
+		Table t = new Table(null, "Toto");
+
+		t.addColumn("A", Path.class, length(100));
+		String generatedCreateTable = testInstance.generateCreateTable(t);
+		assertThat(generatedCreateTable).isEqualTo("create table Toto(A varchar(100))");
+
+		t.addColumn("B", BigDecimal.class, fixedPoint(9, 4));
+		generatedCreateTable = testInstance.generateCreateTable(t);
+		assertThat(generatedCreateTable).isEqualTo("create table Toto(A varchar(100), B decimal(9, 4))");
 	}
 	
 	@Test

@@ -13,6 +13,9 @@ import java.util.function.Function;
 
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.sql.ddl.FixedPoint;
+import org.codefilarete.stalactite.sql.ddl.Length;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Database.Schema;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
@@ -126,7 +129,7 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	 * @param <O> column type
 	 * @return the created column or the existing one
 	 */
-	public <O> Column<SELF, O> addColumn(String name, Class<O> javaType, Integer size) {
+	public <O> Column<SELF, O> addColumn(String name, Class<O> javaType, Size size) {
 		return addertColumn(new Column<>((SELF) this, name, javaType, size));
 	}
 	
@@ -143,7 +146,8 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 				&& (!existingColumn.getJavaType().equals(column.getJavaType())
 				|| !Predicates.equalOrNull(existingColumn.getSize(), column.getSize()))
 		) {
-			throw new IllegalArgumentException("Trying to add column '"+column.getName()+"' to '" + this.getAbsoluteName() + "' but it already exists with a different type : "
+			throw new IllegalArgumentException("Trying to add column '"+column.getName()+"' to '" + this.getAbsoluteName()
+					+ "' but it already exists with a different type : "
 					+ typeToString(existingColumn) + " vs " + typeToString(column));
 		}
 		if (existingColumn == null) {
@@ -338,7 +342,17 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	}
 	
 	private static String typeToString(Column column) {
-		return Reflections.toString(column.getJavaType()) + (column.getSize() != null ? "(" + column.getSize() + ")" : "");
+		Size size = column.getSize();
+		String sizeAsString = "";
+		if (size instanceof Length) {
+			sizeAsString = String.valueOf(((Length) size).getValue());
+		} else if (size instanceof FixedPoint) {
+			Integer scale = ((FixedPoint) size).getScale();
+			String scaleAsString = scale == null ? "" : (", " + scale);
+			sizeAsString = ((FixedPoint) size).getPrecision() + scaleAsString;
+		}
+		return Reflections.toString(column.getJavaType())
+				+ (size != null ? "(" + sizeAsString + ")" : "");
 	}
 	
 	private static String toString(ForeignKey column) {

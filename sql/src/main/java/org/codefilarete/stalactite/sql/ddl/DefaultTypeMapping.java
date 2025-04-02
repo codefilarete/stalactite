@@ -15,6 +15,9 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.UUID;
 
+import static org.codefilarete.stalactite.sql.ddl.Size.fixedPoint;
+import static org.codefilarete.stalactite.sql.ddl.Size.length;
+
 /**
  * A default mapping between Java types and SQL type names.
  * This is only used for column types when generating DDL (in upper modules). One can easily overwrite types. 
@@ -49,7 +52,7 @@ public class DefaultTypeMapping extends JavaTypeToSqlTypeMapping {
 		put(Number.class, "double");
 		put(Float.class, "float");
 		put(Float.TYPE, "float");
-		put(BigDecimal.class, "decimal(10,4)");
+		put(BigDecimal.class, "decimal($p, $s)", fixedPoint(10, 4));
 		put(BigInteger.class, "bigint");
 		put(Long.class, "bigint");
 		put(Long.TYPE, "bigint");
@@ -68,15 +71,15 @@ public class DefaultTypeMapping extends JavaTypeToSqlTypeMapping {
 		put(LocalTime.class, "timestamp");
 		put(Instant.class, "bigint");
 		put(String.class, "varchar");
-		put(String.class, "varchar($l)", 16383);
+		put(String.class, "varchar($l)", length(16383));
 		// 35 chars because the largest timezone found is "America/Argentina/ComodRivadavia" (with ZoneId.getAvailableZoneIds())
 		put(ZoneId.class, "varchar(35)");
 		// necessary entry for Enum, "integer" because Enum are stored by their ordinal by default, see ParameterBinderRegistry.lookupForBinder(Class)
 		put(Enum.class, "integer");
 		put(UUID.class, "varchar(36)");	// 36 because it UUID length as String
 		put(Path.class, "varchar");
-		put(Path.class, "varchar($l)", Integer.MAX_VALUE);
+		put(Path.class, "varchar($l)", length(Integer.MAX_VALUE));
 		put(File.class, "varchar");
-		put(File.class, "varchar($l)", Integer.MAX_VALUE);
+		put(File.class, "varchar($l)", length(Integer.MAX_VALUE));
 	}
 }

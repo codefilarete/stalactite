@@ -55,7 +55,7 @@ public class SqlTypeRegistry {
 	 * @param sqlType the SQL type to map on the Java type
 	 * @param size the minimal size from which the SQL type will be used
 	 */
-	public void put(Class clazz, String sqlType, int size) {
+	public void put(Class clazz, String sqlType, Size size) {
 		javaTypeToSqlType.put(clazz, sqlType, size);
 	}
 	
@@ -83,7 +83,7 @@ public class SqlTypeRegistry {
 		}
 		// then, tuning by Java type : same types may use same SQL type (id, timestamp, ...)
 		Class javaType = column.getJavaType();
-		Integer size = column.getSize();
+		Size size = column.getSize();
 		if (size != null) {
 			return javaTypeToSqlType.getTypeName(javaType, size);
 		} else {

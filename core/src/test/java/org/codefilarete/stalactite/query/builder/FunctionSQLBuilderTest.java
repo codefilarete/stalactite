@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.query.model.Operators.cast;
 import static org.codefilarete.stalactite.query.model.Operators.substring;
+import static org.codefilarete.stalactite.sql.ddl.Size.length;
 
 class FunctionSQLBuilderTest {
 	
@@ -98,7 +99,7 @@ class FunctionSQLBuilderTest {
 		StringSQLAppender result = new StringSQLAppender(dmlNameProvider);
 		
 		Table tableToto = new Table("Toto");
-		Column<?, Integer> colA = tableToto.addColumn("a", Integer.class, 128);
+		Column<?, Integer> colA = tableToto.addColumn("a", Integer.class, length(128));
 		
 		testInstance.cat(new Cast<>(new Max<>(colA), Integer.class), result);
 		assertThat(result.getSQL()).isEqualTo("cast(max(Toto.a) as integer)");
@@ -110,9 +111,9 @@ class FunctionSQLBuilderTest {
 		StringSQLAppender result = new StringSQLAppender(dmlNameProvider);
 		
 		Table tableToto = new Table("Toto");
-		Column colA = tableToto.addColumn("a", String.class, 128);
+		Column colA = tableToto.addColumn("a", String.class, length(128));
 		
-		testInstance.cat(new Cast<>(colA, String.class, 128), result);
+		testInstance.cat(new Cast<>(colA, String.class, length(128)), result);
 		assertThat(result.getSQL()).isEqualTo("cast(Toto.a as varchar(128))");
 	}
 	

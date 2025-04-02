@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.codefilarete.stalactite.sql.ddl.Size.length;
 
 /**
  * @author Guillaume Mary
@@ -35,7 +36,7 @@ class TableTest {
 				.hasMessage("Trying to add column 'xx' to 'toto' but it already exists with a different type : j.l.String vs j.l.Integer");
 		
 		// same column with other type throws exception
-		assertThatThrownBy(() -> testInstance.addColumn("xx", String.class, 12))
+		assertThatThrownBy(() -> testInstance.addColumn("xx", String.class, length(12)))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("Trying to add column 'xx' to 'toto' but it already exists with a different type : j.l.String vs j.l.String(12)");
 	}
