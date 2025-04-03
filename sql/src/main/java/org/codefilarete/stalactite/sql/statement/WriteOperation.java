@@ -33,10 +33,11 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	 * Executes the statement, wraps {@link PreparedStatement#executeLargeUpdate()}.
 	 * To be used if you used {@link #setValue(Object, Object)} or {@link #setValues(Map)}
 	 *
+	 * @return
 	 * @see #setValue(Object, Object)
 	 * @see #setValues(Map)
 	 */
-	public void execute() {
+	public long execute() {
 		prepareExecute();
 		long writeCount;
 		try {
@@ -45,15 +46,17 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 			throw new SQLExecutionException(getSQL(), e);
 		}
 		rowCountListener.onRowCount(writeCount);
+		return writeCount;
 	}
 	
 	/**
 	 * Executes the statement, wraps {@link PreparedStatement#executeLargeBatch()}.
 	 * To be used if you used {@link #addBatch(Map)}
 	 *
+	 * @return number of affected rows per batch
 	 * @see #addBatch(Map)
 	 */
-	public void executeBatch() {
+	public long[] executeBatch() {
 		LOGGER.debug("Batching statement {} times", batchedStatementCount);
 		long[] updatedRowCounts;
 		try {
@@ -63,6 +66,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 			batchedStatementCount = 0;
 		}
 		rowCountListener.onRowCounts(updatedRowCounts);
+		return updatedRowCounts;
 	}
 	
 	protected long[] doExecuteBatch() throws SQLException {

@@ -41,7 +41,7 @@ public class InsertCommandBuilder<T extends Table<T>> implements SQLBuilder {
 		ColumnParameterizedSQL<T> columnParameterizedSQL = dialect.getDmlGenerator().buildInsert(insert.getTargetTable().getColumns());
 		PreparedStatementWriterIndex<Column<T, ?>, PreparedStatementWriter<?>> parameterBinderProvider = columnParameterizedSQL.getParameterBinderProvider();
 		InsertStatement<T> result = new InsertStatement<>(parameterBinderProvider, columnParameterizedSQL);
-		insert.getColumns().forEach(c -> result.setValue(c.getColumn(), c.getValue()));
+		insert.getRow().forEach(c -> result.setValue(c.getColumn(), c.getValue()));
 		return result;
 	}
 	

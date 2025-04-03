@@ -4,13 +4,16 @@ import javax.sql.DataSource;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.LongStream;
 
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
@@ -37,6 +40,7 @@ import org.codefilarete.stalactite.sql.order.Insert;
 import org.codefilarete.stalactite.sql.order.InsertCommandBuilder;
 import org.codefilarete.stalactite.sql.order.InsertCommandBuilder.InsertStatement;
 import org.codefilarete.stalactite.sql.order.Update;
+import org.codefilarete.stalactite.sql.order.Update.UpdateColumn;
 import org.codefilarete.stalactite.sql.order.UpdateCommandBuilder;
 import org.codefilarete.stalactite.sql.order.UpdateCommandBuilder.UpdateStatement;
 import org.codefilarete.stalactite.sql.result.Accumulator;
@@ -50,12 +54,15 @@ import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.SerializableTriFunction;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
+
+import static org.codefilarete.tool.function.Predicates.not;
 
 /**
  * Entry point for persistence in a database. Mix of configuration (Transaction, Dialect, ...) and registry for {@link BeanPersister}s.
@@ -362,6 +369,11 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	}
 	
 	@Override
+	public <T extends Table> BatchInsert<T> batchInsert(T table) {
+		return new DefaultBatchInsert<>(table);
+	}
+	
+	@Override
 	public <T extends Table<T>> ExecutableDelete<T> delete(T table) {
 		return new DefaultExecutableDelete<>(table);
 	}
@@ -481,6 +493,50 @@ public class PersistenceContext implements DatabaseCrudOperations {
 				writeOperation.setValues(insertStatement.getValues());
 				writeOperation.execute();
 			}
+		}
+	}
+	
+	private class DefaultBatchInsert<T extends Table<T>> extends Insert<T> implements BatchInsert<T> {
+		
+		private final List<Set<UpdateColumn<T>>> rows = new ArrayList<>();
+		
+		private DefaultBatchInsert(T table) {
+			super(table);
+		}
+		
+		@Override
+		public <C> DefaultBatchInsert<T> set(Column<T, C> column, C value) {
+			super.set(column, value);
+			return this;
+		}
+		
+		@Override
+		public BatchInsert<T> newRow() {
+			rows.add(new KeepOrderSet<>(getRow()));
+			getRow().clear();
+			return this;
+		}
+		
+		@Override
+		public long execute() {
+			// treating remaining values in case user didn't call newRow(..)
+			if (!getRow().isEmpty()) {
+				rows.add(new KeepOrderSet<>(getRow()));
+			}
+			InsertStatement<T> insertStatement = new InsertCommandBuilder<>(this, dialect).toStatement();
+			long[] writeCount;
+			try (WriteOperation<Column<T, ?>> writeOperation = dialect.getWriteOperationFactory().createInstance(insertStatement, getConnectionProvider())) {
+				this.rows.stream()
+						// avoiding empty rows made by several calls to newRow(..) without setting values. Can happen if insert(..) is reused in a loop.
+						.filter(not(Set::isEmpty))
+						.<Map<Column<T, ?>, ?>>map(row -> Iterables.map(row, UpdateColumn::getColumn, UpdateColumn::getValue))
+						.forEach(writeOperation::addBatch);
+				writeCount = writeOperation.executeBatch();
+			}
+			// we clear current rows to let one reuse this instance
+			rows.clear();
+			getRow().clear();
+			return LongStream.of(writeCount).sum();
 		}
 	}
 	

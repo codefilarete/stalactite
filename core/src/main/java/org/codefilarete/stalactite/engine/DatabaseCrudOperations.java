@@ -253,6 +253,8 @@ public interface DatabaseCrudOperations {
 	
 	<T extends Table<T>> ExecutableInsert<T> insert(T table);
 	
+	<T extends Table> BatchInsert<T> batchInsert(T table);
+	
 	<T extends Table<T>> ExecutableDelete<T> delete(T table);
 	
 	interface ExecutableUpdate<T extends Table<T>> {
@@ -317,6 +319,30 @@ public interface DatabaseCrudOperations {
 		 * Executes this insert statement.
 		 */
 		void execute();
+	}
+	
+	interface BatchInsert<T extends Table> {
+		
+		/**
+		 * Adds a column to set and its value. Overwrites any previous value put for that column.
+		 *
+		 * @param column any column
+		 * @param value value to be inserted
+		 * @param <C> value type
+		 * @return this
+		 */
+		<C> BatchInsert<T> set(Column<T, C> column, C value);
+		
+		/**
+		 * Open a new row for insertion. Must be chained with {@link #set(Column, Object)} to fill it.
+		 * @return this
+		 */
+		BatchInsert<T> newRow();
+		
+		/**
+		 * Executes this insert statement and insert all the registered rows.
+		 */
+		long execute();
 	}
 	
 	interface ExecutableDelete<T extends Table<T>> {

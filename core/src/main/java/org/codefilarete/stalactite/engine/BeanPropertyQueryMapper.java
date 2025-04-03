@@ -102,7 +102,7 @@ public interface BeanPropertyQueryMapper<C> {
 	
 	/**
 	 * Adds a low level {@link ResultSet} transformer, for cases where mapping methods are insufficient.
-	 * Assembly will occurs on each row ({@link ResultSetRowAssembler#assemble(Object, ResultSet)} will be call for each {@link ResultSet} row)
+	 * Assembly will occur on each row ({@link ResultSetRowAssembler#assemble(Object, ResultSet)} will be call for each {@link ResultSet} row)
 	 *
 	 * @param assembler a low-level {@link ResultSet} transformer
 	 * @return this
@@ -123,7 +123,8 @@ public interface BeanPropertyQueryMapper<C> {
 	BeanPropertyQueryMapper<C> map(ResultSetRowAssembler<C> assembler, AssemblyPolicy assemblyPolicy);
 	
 	/**
-	 * Sets a value for the given parameter
+	 * Sets a value for the given parameter.
+	 * To be used if the query is a String and contains a named placeholder as ":paramName"
 	 *
 	 * @param paramName name of the parameter in the sql
 	 * @param value value for the parameter
@@ -132,7 +133,8 @@ public interface BeanPropertyQueryMapper<C> {
 	BeanPropertyQueryMapper<C> set(String paramName, Object value);
 	
 	/**
-	 * Sets a value for the given parameter giving explicit binder type
+	 * Sets a value for the given parameter giving explicit binder type.
+	 * To be used if the query is a String and contains a named placeholder as ":paramName"
 	 *
 	 * @param paramName name of the parameter in the sql
 	 * @param value value for the parameter
@@ -143,6 +145,7 @@ public interface BeanPropertyQueryMapper<C> {
 	
 	/**
 	 * Sets a value for the given parameter expected to be a multi-valued one (such as "in") giving values binder type.
+	 * To be used if the query is a String and contains a named placeholder as ":paramName"
 	 *
 	 * @param paramName name of the parameter in the sql
 	 * @param value value for the parameter

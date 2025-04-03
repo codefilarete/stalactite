@@ -903,7 +903,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			countryPersister.update(persistedCountry, dummyCountry, true);
 			
 			Country persistedCountry2 = countryPersister.select(dummyCountry.getId());
-			// Checking deletion : we didn't asked for deletion of removed entities so all of them must be there
+			// Checking deletion : we didn't ask for deletion of removed entities so all of them must be there
 			assertThat(persistedCountry2.getCities()).containsExactlyInAnyOrder(lyon, grenoble);
 			// Checking update is done too
 			assertThat(persistedCountry2.getCities()).extracting(City::getName).containsExactlyInAnyOrder("changed", "Grenoble");

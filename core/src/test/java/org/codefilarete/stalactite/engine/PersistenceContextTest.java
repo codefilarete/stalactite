@@ -5,16 +5,22 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
-import org.codefilarete.stalactite.test.DefaultDialect;
+import org.codefilarete.stalactite.engine.DatabaseCrudOperations.BatchInsert;
+import org.codefilarete.stalactite.sql.ConnectionProvider.DataSourceConnectionProvider;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
+import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
+import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -54,7 +60,10 @@ public class PersistenceContextTest {
 		Column<Table, String> name = totoTable.addColumn("name", String.class);
 		
 		// test insert
-		testInstance.insert(totoTable).set(id, 1L).set(name, "Hello world !").execute();
+		testInstance.insert(totoTable)
+				.set(id, 1L)
+				.set(name, "Hello world !")
+				.execute();
 		
 		assertThat(sqlStatementCaptor.getValue()).isEqualTo("insert into toto(id, name) values (?, ?)");
 		List<Duo<Integer, Object>> statementArgsPairs = new ArrayList<>();
@@ -65,6 +74,52 @@ public class PersistenceContextTest {
 			statementArgsPairs.add(new Duo<>(index, value));
 		}
 		assertThat(statementArgsPairs).containsExactlyInAnyOrder(new Duo<>(1, 1L), new Duo<>(2, "Hello world !"));
+	}
+	
+	@Test
+	void insert_batch() {
+		PersistenceContext testInstance = new PersistenceContext(
+				new DataSourceConnectionProvider(new HSQLDBInMemoryDataSource()), new DefaultDialect());
+		
+		Table totoTable = new Table("toto");
+		Column<Table, Long> id = totoTable.addColumn("id", long.class).primaryKey();
+		Column<Table, String> name = totoTable.addColumn("name", String.class);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(testInstance);
+		ddlDeployer.getDdlGenerator().addTables(totoTable);
+		ddlDeployer.deployDDL();
+		
+		// test insert
+		BatchInsert<Table> batchInsert = testInstance.batchInsert(totoTable);
+		
+		long effectiveWrite;
+		effectiveWrite = batchInsert
+				.set(id, 1L)
+				.set(name, "Hello world !")
+				.newRow()
+				.set(id, 2L)
+				.set(name, "Hello everybody !")
+				.execute();
+		
+		assertThat(effectiveWrite).isEqualTo(2);
+		
+		Set<Long> select = testInstance.select(SerializableFunction.identity(), id);
+		assertThat(select).containsExactly(1L, 2L);
+		
+		// checking that we can reuse the batch insert instance
+		effectiveWrite = batchInsert
+				.newRow()	// this call to newRow() is not necessary but must be taken into account by internal algorithm
+				.set(id, 3L)
+				.set(name, "Hello world !")
+				.newRow()
+				.set(id, 4L)
+				.set(name, "Hello everybody !")
+				.execute();
+		
+		assertThat(effectiveWrite).isEqualTo(2);
+		
+		select = testInstance.select(SerializableFunction.identity(), id);
+		assertThat(select).containsExactly(1L, 2L, 3L, 4L);
 	}
 	
 	@Test

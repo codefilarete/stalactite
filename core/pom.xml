@@ -16,10 +16,17 @@
 			<artifactId>sql</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		<!-- To get DatabaseIntegrationTest -->
 		<dependency>
 			<groupId>org.codefilarete.stalactite</groupId>
 			<artifactId>sql</artifactId>
+			<version>${project.version}</version>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+		<!-- To get HSQLDBInMemoryDataSource in test -->
+		<dependency>
+			<groupId>org.codefilarete.stalactite</groupId>
+			<artifactId>sql-hsqldb-adapter</artifactId>
 			<version>${project.version}</version>
 			<type>test-jar</type>
 			<scope>test</scope>

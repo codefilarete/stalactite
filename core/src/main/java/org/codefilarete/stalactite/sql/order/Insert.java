@@ -18,7 +18,7 @@ public class Insert<T extends Table<T>> {
 	/** Target of the values to insert */
 	private final T targetTable;
 	/** Target columns of the insert */
-	private final Set<UpdateColumn<T>> columns = new LinkedHashSet<>();
+	private final Set<UpdateColumn<T>> row = new LinkedHashSet<>();
 	
 	public Insert(T targetTable) {
 		this.targetTable = targetTable;
@@ -37,7 +37,7 @@ public class Insert<T extends Table<T>> {
 	 * @return this
 	 */
 	public <C> Insert<T> set(Column<T, C> column, C value) {
-		this.columns.add(new UpdateColumn<>(column, value));
+		this.row.add(new UpdateColumn<>(column, value));
 		return this;
 	}
 	
@@ -46,7 +46,7 @@ public class Insert<T extends Table<T>> {
 	 * 
 	 * @return a non null {@link Set}
 	 */
-	public Set<UpdateColumn<T>> getColumns() {
-		return columns;
+	public Set<UpdateColumn<T>> getRow() {
+		return row;
 	}
 }

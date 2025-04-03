@@ -943,7 +943,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			countryPersister.update(modifiedCountry, referentCountry, false);
 			modifiedCountry = countryPersister.select(referentCountry.getId());
 			assertThat(modifiedCountry.getCapital()).isNull();
-			// ensuring that capital was not deleted nor updated (we didn't asked for orphan removal)
+			// ensuring that capital was not deleted nor updated (we didn't ask for orphan removal)
 			
 			ExecutableBeanPropertyQueryMapper<LiteCity> citySelector = persistenceContext.newQuery("select name, countryId from City where id = :id", LiteCity.class)
 					.mapKey(LiteCity::new, "name", String.class, "countryId", Integer.class);
@@ -951,9 +951,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.set("id", paris.getId())
 					.execute(Accumulators.getFirstUnique());
 			// but relation is cut on both sides (because setCapital(..) calls setCountry(..))
-			assertThat(citySelector
-					.set("id", paris.getId())
-					.execute(Accumulators.getFirstUnique())).usingRecursiveComparison().isEqualTo(new LiteCity("Paris", null));
+			assertThat(city).usingRecursiveComparison().isEqualTo(new LiteCity("Paris", null));
 			
 			// from null to a (new) object
 			referentCountry = countryPersister.select(referentCountry.getId());
