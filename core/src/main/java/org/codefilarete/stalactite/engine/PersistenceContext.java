@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 import org.codefilarete.reflection.MethodReferenceCapturer;
@@ -25,6 +26,7 @@ import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryEase;
 import org.codefilarete.stalactite.query.model.QueryProvider;
+import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
@@ -364,12 +366,17 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	}
 	
 	@Override
+	public <T extends Table<T>, W extends Where<W>> BatchUpdate<T> batchUpdate(T table, Set<? extends Column<T, ?>> columns, W where) {
+		return new DefaultBatchUpdate<>(new Update<>(table), columns, where);
+	}
+	
+	@Override
 	public <T extends Table<T>> ExecutableInsert<T> insert(T table) {
 		return new DefaultExecutableInsert<>(table);
 	}
 	
 	@Override
-	public <T extends Table> BatchInsert<T> batchInsert(T table) {
+	public <T extends Table<T>> BatchInsert<T> batchInsert(T table) {
 		return new DefaultBatchInsert<>(table);
 	}
 	
@@ -431,14 +438,14 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		
 		/** Overridden to adapt return type */
 		@Override
-		public <C> DefaultExecutableUpdate<T> set(Column<T, C> column, C value) {
+		public <C> DefaultExecutableUpdate<T> set(Column<? extends T, C> column, C value) {
 			super.set(column, value);
 			return this;
 		}
 		
 		/** Overridden to adapt return type */
 		@Override
-		public <C> DefaultExecutableUpdate<T> set(Column<T, C> column1, Column<?, C> column2) {
+		public <C> DefaultExecutableUpdate<T> set(Column<? extends T, C> column1, Column<?, C> column2) {
 			super.set(column1, column2);
 			return this;
 		}
@@ -447,11 +454,11 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		 * Executes this update statement with given values
 		 */
 		@Override
-		public void execute() {
+		public long execute() {
 			UpdateStatement<T> updateStatement = new UpdateCommandBuilder<>(this, dialect).toStatement();
 			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(updateStatement, getConnectionProvider())) {
 				writeOperation.setValues(updateStatement.getValues());
-				writeOperation.execute();
+				return writeOperation.execute();
 			}
 		}
 		
@@ -474,6 +481,116 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		}
 	}
 	
+	private class DefaultBatchUpdate<T extends Table<T>> implements BatchUpdate<T> {
+		
+		private abstract class StatementVariable<V> {
+			
+			abstract void applyValueTo(UpdateStatement<T> updateStatement);
+		}
+		
+		private class ColumnVariable<V> extends StatementVariable<V> {
+			
+			private final Column<T, V> column;
+			private final V value;
+			
+			public ColumnVariable(Column<? extends T, ? extends V> column, V value) {
+				this.column = (Column<T, V>) column;
+				this.value = value;
+			}
+			
+			@Override
+			void applyValueTo(UpdateStatement<T> updateStatement) {
+				updateStatement.setValue(column, value);
+			}
+		}
+		
+		private class PlaceholderVariable<V> extends StatementVariable<V> {
+			
+			private final String name;
+			private final V value;
+			
+			private PlaceholderVariable(String name, V value) {
+				this.name = name;
+				this.value = value;
+			}
+			
+			@Override
+			void applyValueTo(UpdateStatement<T> updateStatement) {
+				updateStatement.setValue(name, value);
+			}
+		}
+		
+		private final Update<T> statement;
+		private final Set<Column<T, ?>> columns;
+		private final List<Set<? extends StatementVariable<?>>> rows = new ArrayList<>();
+		
+		private DefaultBatchUpdate(Update<T> statement, Set<? extends Column<T, ?>> columns, Where where) {
+			this.statement = statement;
+			this.statement.getCriteria().add(where);
+			this.columns = (Set<Column<T, ?>>) columns;
+			Set<ColumnVariable<?>> rowAsVariables = statement.getRow().stream()
+					.map(updateColumn -> new ColumnVariable<>(
+							updateColumn.getColumn(),
+							updateColumn.getValue()))
+					.collect(Collectors.toCollection(KeepOrderSet::new));
+			this.rows.add(rowAsVariables);
+		}
+		
+		@Override
+		public DefaultBatchUpdate<T> newRow() {
+			statement.getRow().clear();
+			rows.add(new KeepOrderSet<>());
+			return this;
+		}
+		
+		/** Overridden to adapt return type */
+		@Override
+		public <C> DefaultBatchUpdate<T> set(Column<? extends T, C> column, C value) {
+			assertColumnIsInUpdate(column);
+			statement.set(column, value);
+			getCurrentRow().add(new ColumnVariable<>(column, value));
+			return this;
+		}
+		
+		@Override
+		public <C> BatchUpdate<T> set(String argName, C value) {
+			getCurrentRow().add(new PlaceholderVariable<>(argName, value));
+			return this;
+		}
+		
+		private Set<StatementVariable<?>> getCurrentRow() {
+			return (Set<StatementVariable<?>>) Iterables.last(rows);
+		}
+		
+		private <C> void assertColumnIsInUpdate(Column<? extends T, C> column) {
+			if (!columns.contains(column)) {
+				throw new IllegalArgumentException("Column " + column + " is not defined in this batch update");
+			}
+		}
+		
+		/**
+		 * Executes this update statement with given values
+		 */
+		@Override
+		public long execute() {
+			UpdateCommandBuilder<T> updateCommandBuilder = new UpdateCommandBuilder<>(this.statement, dialect);
+			UpdateStatement<T> updateStatement = updateCommandBuilder.toStatement();
+			long[] writeCount;
+			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(updateStatement, getConnectionProvider())) {
+				rows.forEach(row -> {
+					row.forEach(c -> c.applyValueTo(updateStatement));
+					writeOperation.addBatch(updateStatement.getValues());
+				});
+				writeCount = writeOperation.executeBatch();
+			}
+			// we clear current rows to let one reuse this instance
+			rows.clear();
+			rows.add(new KeepOrderSet<>());
+			statement.getRow().clear();
+			return LongStream.of(writeCount).sum();
+		}
+	}
+	
 	private class DefaultExecutableInsert<T extends Table<T>> extends Insert<T> implements ExecutableInsert<T> {
 		
 		private DefaultExecutableInsert(T table) {
@@ -481,31 +598,31 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		}
 		
 		@Override
-		public <C> DefaultExecutableInsert<T> set(Column<T, C> column, C value) {
+		public <C> DefaultExecutableInsert<T> set(Column<? extends T, C> column, C value) {
 			super.set(column, value);
 			return this;
 		}
 		
 		@Override
-		public void execute() {
+		public long execute() {
 			InsertStatement<T> insertStatement = new InsertCommandBuilder<>(this, dialect).toStatement();
 			try (WriteOperation<Column<T, ?>> writeOperation = dialect.getWriteOperationFactory().createInstance(insertStatement, getConnectionProvider())) {
 				writeOperation.setValues(insertStatement.getValues());
-				writeOperation.execute();
+				return writeOperation.execute();
 			}
 		}
 	}
 	
 	private class DefaultBatchInsert<T extends Table<T>> extends Insert<T> implements BatchInsert<T> {
 		
-		private final List<Set<UpdateColumn<T>>> rows = new ArrayList<>();
+		private final List<Set<UpdateColumn<T, ?>>> rows = new ArrayList<>();
 		
 		private DefaultBatchInsert(T table) {
 			super(table);
 		}
 		
 		@Override
-		public <C> DefaultBatchInsert<T> set(Column<T, C> column, C value) {
+		public <C> DefaultBatchInsert<T> set(Column<? extends T, C> column, C value) {
 			super.set(column, value);
 			return this;
 		}
@@ -547,11 +664,11 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		}
 		
 		@Override
-		public void execute() {
+		public long execute() {
 			PreparedSQL deleteStatement = new DeleteCommandBuilder<>(this, dialect).toPreparableSQL().toPreparedSQL(new HashMap<>());
 			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(deleteStatement, getConnectionProvider())) {
 				writeOperation.setValues(deleteStatement.getValues());
-				writeOperation.execute();
+				return writeOperation.execute();
 			}
 		}
 		
@@ -576,11 +693,33 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	
 	public interface ExecutableSQL {
 		
-		void execute();
+		long execute();
 	}
 	
 	public interface ExecutableCriteria extends CriteriaChain<ExecutableCriteria>, ExecutableSQL {
 		
+	}
+	
+	public interface CriteriaAware<T extends Table<T>, O> {
+		
+		/**
+		 * Adds a criteria to this update.
+		 *
+		 * @param column a column target of the condition
+		 * @param condition the condition
+		 * @return this
+		 */
+		O where(Column<T, ?> column, String condition);
+		
+		/**
+		 * Adds a criteria to this update.
+		 *
+		 * @param column a column target of the condition
+		 * @param condition the condition
+		 * @return this
+		 */
+		O where(Column<T, ?> column, ConditionalOperator condition);
+
 	}
 	
 	public interface ExecutableBeanPropertyKeyQueryMapper<C> extends BeanKeyQueryMapper<C>, ExecutableQuery<C> {

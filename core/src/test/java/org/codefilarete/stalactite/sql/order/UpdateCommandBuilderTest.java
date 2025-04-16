@@ -4,19 +4,21 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 import org.codefilarete.stalactite.query.builder.QuotingDMLNameProvider;
-import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
-import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.order.UpdateCommandBuilder.UpdateStatement;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
+import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.codefilarete.stalactite.query.model.Operators.eq;
+import static org.codefilarete.stalactite.query.model.Operators.in;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -31,7 +33,7 @@ class UpdateCommandBuilderTest {
 		Column<T, String> columnB = totoTable.addColumn("b", String.class);
 		
 		Update<T> update = new Update<>(totoTable);
-		update.where(columnA, Operators.eq(44)).or(columnA, Operators.eq(columnB));
+		update.where(columnA, eq(44)).or(columnA, eq(columnB));
 		Dialect dialect = new DefaultDialect();
 		UpdateCommandBuilder<T> testInstance = new UpdateCommandBuilder<>(update, dialect);
 		// this is wrong SQL, but it shows how code behaves without giving column to update
@@ -82,14 +84,14 @@ class UpdateCommandBuilderTest {
 		
 		
 		Update<T1> update1 = new Update<>(totoTable);
-		update1.where(columnA, Operators.eq(columnX)).or(columnA, Operators.eq(columnY));
+		update1.where(columnA, eq(columnX)).or(columnA, eq(columnY));
 		Dialect dialect = new DefaultDialect();
 		UpdateCommandBuilder<T1> testInstance = new UpdateCommandBuilder<>(update1, dialect);
 		assertThat(testInstance.toSQL()).isEqualTo("update Toto, Tata set  where Toto.a = Tata.x or Toto.a = Tata.y");
 		
 		Update<T1> update2 = new Update<>(totoTable)
 				.set(columnC, columnZ);
-		update2.where(columnA, Operators.eq(columnX)).or(columnA, Operators.eq(columnY));
+		update2.where(columnA, eq(columnX)).or(columnA, eq(columnY));
 		testInstance = new UpdateCommandBuilder<>(update2, dialect);
 		assertThat(testInstance.toSQL()).isEqualTo("update Toto, Tata set Toto.c = Tata.z where Toto.a = Tata.x or Toto.a = Tata.y");
 	}
@@ -106,7 +108,7 @@ class UpdateCommandBuilderTest {
 				.set(columnB, columnA)
 				.set(columnC, "tata")
 				.set(columnD, 666);
-		update.where(columnA, Operators.in(42L, 43L)).or(columnA, Operators.eq(columnB));
+		update.where(columnA, in(42L, 43L)).or(columnA, eq(columnB));
 		Dialect dialect = new DefaultDialect();
 		UpdateCommandBuilder<T> testInstance = new UpdateCommandBuilder<T>(update, dialect);
 		
@@ -119,24 +121,44 @@ class UpdateCommandBuilderTest {
 		assertThat(result.getParameterBinder(3)).isEqualTo(DefaultParameterBinders.LONG_BINDER);
 		assertThat(result.getParameterBinder(4)).isEqualTo(DefaultParameterBinders.LONG_BINDER);
 		
-		PreparedStatement mock = mock(PreparedStatement.class);
-		result.applyValues(mock);
-		verify(mock).setString(1, "tata");
-		verify(mock).setInt(2, 666);
-		verify(mock).setLong(3, 42L);
-		verify(mock).setLong(4, 43L);
+		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
+		result.applyValues(preparedStatementMock);
+		verify(preparedStatementMock).setString(1, "tata");
+		verify(preparedStatementMock).setInt(2, 666);
+		verify(preparedStatementMock).setLong(3, 42L);
+		verify(preparedStatementMock).setLong(4, 43L);
 		
 		// test with post modification of pre-set column
 		result.setValue(columnC, "tutu");
-		result.applyValues(mock);
-		verify(mock).setString(1, "tutu");
+		result.applyValues(preparedStatementMock);
+		verify(preparedStatementMock).setString(1, "tutu");
+		verify(preparedStatementMock, times(2)).setInt(2, 666);
+		verify(preparedStatementMock, times(2)).setLong(3, 42L);
+		verify(preparedStatementMock, times(2)).setLong(4, 43L);
+	}
+	
+	@Test
+	<T extends Table<T>> void toStatement_columnParameterBinderIsOverridden_columnParameterBinderIsUsed() throws SQLException {
+		T totoTable = (T) new Table("Toto");
+		Column<T, Long> columnA = totoTable.addColumn("a", Long.class);
+		Column<T, Long> columnB = totoTable.addColumn("b", Long.class);
+		Column<T, String> columnC = totoTable.addColumn("c", String.class);
+		Column<T, Integer> columnD = totoTable.addColumn("d", Integer.class);
 		
+		Update<T> update = new Update<>(totoTable)
+				.set(columnB, columnA)
+				.set(columnC, "tata")
+				.set(columnD, 666);
+		Dialect dialect = new DefaultDialect();
+		UpdateCommandBuilder<T> testInstance = new UpdateCommandBuilder<T>(update, dialect);
+		
+		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		// ensuring that column type override in registry is taken into account
 		dialect.getColumnBinderRegistry().register(columnD, DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER);
-		result = testInstance.toStatement();
+		UpdateStatement<T> result = testInstance.toStatement();
 		assertThat(result.getParameterBinder(2)).isEqualTo(DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER);
 		result.setValue(columnD, -666);
-		result.applyValues(mock);
-		verify(mock).setInt(2, -666);
+		result.applyValues(preparedStatementMock);
+		verify(preparedStatementMock).setInt(2, -666);
 	}
 }

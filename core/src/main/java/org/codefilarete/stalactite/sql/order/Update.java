@@ -1,15 +1,13 @@
 package org.codefilarete.stalactite.sql.order;
 
-import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Criteria;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
-import org.codefilarete.stalactite.query.model.Placeholder;
-import org.codefilarete.stalactite.query.model.ValuedVariable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.collection.KeepOrderSet;
 
 /**
  * A fluent way of writing a SQL update clause by leveraging {@link Column} : update and where clauses are only made of it.
@@ -25,16 +23,27 @@ public class Update<T extends Table<T>> {
 	private final T targetTable;
 	
 	/** Target columns of the update */
-	private final Set<UpdateColumn<T>> columns = new LinkedHashSet<>();
+	private final Set<Column<T, ?>> columnsToUpdate;
+	
+	private final Set<UpdateColumn<T, ?>> row = new KeepOrderSet<>();
 	
 	private final Criteria<?> criteriaDelegate = new Criteria<>();
 	
 	public Update(T targetTable) {
+		this(targetTable, targetTable.getColumns());
+	}
+	
+	public Update(T targetTable, Set<? extends Column<T, ?>> columnsToUpdate) {
 		this.targetTable = targetTable;
+		this.columnsToUpdate = (Set<Column<T, ?>>) new KeepOrderSet<>(columnsToUpdate);
 	}
 	
 	public T getTargetTable() {
 		return targetTable;
+	}
+	
+	public Set<Column<T, ?>> getColumnsToUpdate() {
+		return columnsToUpdate;
 	}
 	
 	public Criteria<?> getCriteria() {
@@ -49,8 +58,8 @@ public class Update<T extends Table<T>> {
 	 * @param <C> value type
 	 * @return this
 	 */
-	public <C> Update<T> set(Column<T, C> column, C value) {
-		this.columns.add(new UpdateColumn<>(column, new ValuedVariable<>(value)));
+	public <C> Update<T> set(Column<? extends T, C> column, C value) {
+		this.row.add(new UpdateColumn<>(column, value));
 		return this;
 	}
 	
@@ -61,17 +70,17 @@ public class Update<T extends Table<T>> {
 	 * @param column2 any column
 	 * @return this
 	 */
-	public <C> Update<T> set(Column<T, C> column1, Column<?, C> column2) {
-		this.columns.add(new UpdateColumn<>((Column<T, Object>) column1, column2));
+	public <C> Update<T> set(Column<? extends T, C> column1, Column<?, C> column2) {
+		this.row.add(new UpdateColumn<>(column1, column2));
 		return this;
 	}
 	
 	/**
-	 * Gives all columns that are target of the update
+	 * Gives all columns that are target by the update
 	 * @return a non null {@link Set}
 	 */
-	public Set<UpdateColumn<T>> getColumns() {
-		return columns;
+	public Set<UpdateColumn<T, ?>> getRow() {
+		return row;
 	}
 	
 	/**
@@ -99,23 +108,21 @@ public class Update<T extends Table<T>> {
 	/**
 	 * {@link Column} and its value to be updated
 	 */
-	public static class UpdateColumn<T extends Table<T>> {
+	public static class UpdateColumn<T extends Table<T>, V> {
 		
-		public static final Placeholder<Object, Object> PLACEHOLDER = new Placeholder<>("?", Object.class);
+		private final Column<T, V> column;
+		private final V value;
 		
-		private final Column<T, ?> column;
-		private final Object value;
-		
-		public <C> UpdateColumn(Column<T, C> column, Object value) {
-			this.column = column;
+		public UpdateColumn(Column<? extends T, ? extends V> column, V value) {
+			this.column = (Column<T, V>) column;
 			this.value = value;
 		}
 		
-		public Column<T, ?> getColumn() {
+		public Column<T, V> getColumn() {
 			return column;
 		}
 		
-		public Object getValue() {
+		public V getValue() {
 			return value;
 		}
 	}

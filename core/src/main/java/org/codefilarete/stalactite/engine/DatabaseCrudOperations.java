@@ -11,6 +11,7 @@ import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryProvider;
+import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulator;
@@ -251,9 +252,11 @@ public interface DatabaseCrudOperations {
 	
 	<T extends Table<T>> ExecutableUpdate<T> update(T table);
 	
+	<T extends Table<T>, W extends Where<W>> BatchUpdate<T> batchUpdate(T table, Set<? extends Column<T, ?>> columns, W where);
+	
 	<T extends Table<T>> ExecutableInsert<T> insert(T table);
 	
-	<T extends Table> BatchInsert<T> batchInsert(T table);
+	<T extends Table<T>> BatchInsert<T> batchInsert(T table);
 	
 	<T extends Table<T>> ExecutableDelete<T> delete(T table);
 	
@@ -267,7 +270,7 @@ public interface DatabaseCrudOperations {
 		 * @param <O> value type
 		 * @return this
 		 */
-		<O> ExecutableUpdate<T> set(Column<T, O> column, O value);
+		<O> ExecutableUpdate<T> set(Column<? extends T, O> column, O value);
 		
 		/**
 		 * Adds a target column which value is took from another column (which can be one of another table if this update is a multi-table one)
@@ -277,12 +280,12 @@ public interface DatabaseCrudOperations {
 		 * @param <O> value type
 		 * @return this
 		 */
-		<O> ExecutableUpdate<T> set(Column<T, O> column1, Column<?, O> column2);
+		<O> ExecutableUpdate<T> set(Column<? extends T, O> column1, Column<?, O> column2);
 		
 		/**
 		 * Executes this update statement with given values
 		 */
-		void execute();
+		long execute();
 		
 		/**
 		 * Adds a criteria to this update.
@@ -292,7 +295,7 @@ public interface DatabaseCrudOperations {
 		 * @return this
 		 */
 		ExecutableCriteria where(Column<T, ?> column, String condition);
-		
+
 		/**
 		 * Adds a criteria to this update.
 		 *
@@ -301,6 +304,33 @@ public interface DatabaseCrudOperations {
 		 * @return this
 		 */
 		ExecutableCriteria where(Column<T, ?> column, ConditionalOperator condition);
+	}
+	
+	
+	interface BatchUpdate<T extends Table<T>> {
+		
+		/**
+		 * Adds a column to set and its value. Overwrites any previous value put for that column.
+		 *
+		 * @param column any column
+		 * @param value value to be inserted
+		 * @param <C> value type
+		 * @return this
+		 */
+		<C> BatchUpdate<T> set(Column<? extends T, C> column, C value);
+		
+		<C> BatchUpdate<T> set(String argName, C value);
+		
+		/**
+		 * Open a new row for insertion. Must be chained with {@link #set(Column, Object)} to fill it.
+		 * @return this
+		 */
+		BatchUpdate<T> newRow();
+		
+		/**
+		 * Executes this insert statement and insert all the registered rows.
+		 */
+		long execute();
 	}
 	
 	interface ExecutableInsert<T extends Table<T>> {
@@ -313,15 +343,15 @@ public interface DatabaseCrudOperations {
 		 * @param <C> value type
 		 * @return this
 		 */
-		<C> ExecutableInsert<T> set(Column<T, C> column, C value);
+		<C> ExecutableInsert<T> set(Column<? extends T, C> column, C value);
 		
 		/**
 		 * Executes this insert statement.
 		 */
-		void execute();
+		long execute();
 	}
 	
-	interface BatchInsert<T extends Table> {
+	interface BatchInsert<T extends Table<T>> extends ExecutableInsert<T> {
 		
 		/**
 		 * Adds a column to set and its value. Overwrites any previous value put for that column.
@@ -331,7 +361,7 @@ public interface DatabaseCrudOperations {
 		 * @param <C> value type
 		 * @return this
 		 */
-		<C> BatchInsert<T> set(Column<T, C> column, C value);
+		<C> BatchInsert<T> set(Column<? extends T, C> column, C value);
 		
 		/**
 		 * Open a new row for insertion. Must be chained with {@link #set(Column, Object)} to fill it.
@@ -350,7 +380,7 @@ public interface DatabaseCrudOperations {
 		/**
 		 * Executes this delete statement with given values.
 		 */
-		void execute();
+		long execute();
 		
 		/**
 		 * Adds a criteria to this delete.
