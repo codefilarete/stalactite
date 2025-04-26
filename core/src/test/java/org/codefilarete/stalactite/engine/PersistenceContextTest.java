@@ -7,9 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.codefilarete.stalactite.engine.DatabaseCrudOperations.BatchInsert;
-import org.codefilarete.stalactite.engine.DatabaseCrudOperations.BatchUpdate;
-import org.codefilarete.stalactite.query.model.Where;
+import org.codefilarete.stalactite.engine.crud.BatchInsert;
+import org.codefilarete.stalactite.engine.crud.BatchUpdate;
 import org.codefilarete.stalactite.sql.ConnectionProvider.DataSourceConnectionProvider;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;

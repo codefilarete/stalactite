@@ -4,22 +4,28 @@ import javax.sql.DataSource;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.sql.Connection;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.LongStream;
 
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.stalactite.engine.PersisterRegistry.DefaultPersisterRegistry;
+import org.codefilarete.stalactite.engine.crud.BatchInsert;
+import org.codefilarete.stalactite.engine.crud.BatchUpdate;
+import org.codefilarete.stalactite.engine.crud.DatabaseCrudOperations;
+import org.codefilarete.stalactite.engine.crud.DefaultBatchInsert;
+import org.codefilarete.stalactite.engine.crud.DefaultBatchUpdate;
+import org.codefilarete.stalactite.engine.crud.DefaultExecutableDelete;
+import org.codefilarete.stalactite.engine.crud.DefaultExecutableInsert;
+import org.codefilarete.stalactite.engine.crud.DefaultExecutableUpdate;
+import org.codefilarete.stalactite.engine.crud.ExecutableDelete;
+import org.codefilarete.stalactite.engine.crud.ExecutableInsert;
+import org.codefilarete.stalactite.engine.crud.ExecutableUpdate;
 import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
@@ -37,37 +43,22 @@ import org.codefilarete.stalactite.sql.DialectResolver;
 import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.order.ColumnVariable;
-import org.codefilarete.stalactite.sql.order.Delete;
-import org.codefilarete.stalactite.sql.order.DeleteCommandBuilder;
-import org.codefilarete.stalactite.sql.order.Insert;
-import org.codefilarete.stalactite.sql.order.InsertCommandBuilder;
-import org.codefilarete.stalactite.sql.order.InsertCommandBuilder.InsertStatement;
-import org.codefilarete.stalactite.sql.order.PlaceholderVariable;
-import org.codefilarete.stalactite.sql.order.StatementVariable;
 import org.codefilarete.stalactite.sql.order.Update;
-import org.codefilarete.stalactite.sql.order.UpdateCommandBuilder;
-import org.codefilarete.stalactite.sql.order.UpdateCommandBuilder.UpdateStatement;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.ResultSetRowAssembler;
 import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer;
 import org.codefilarete.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
-import org.codefilarete.stalactite.sql.statement.PreparedSQL;
-import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.SerializableTriFunction;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
-
-import static org.codefilarete.tool.function.Predicates.not;
 
 /**
  * Entry point for persistence in a database. Mix of configuration (Transaction, Dialect, ...) and registry for {@link BeanPersister}s.
@@ -365,27 +356,27 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	
 	@Override
 	public <T extends Table<T>> ExecutableUpdate<T> update(T table) {
-		return new DefaultExecutableUpdate<>(table);
+		return new DefaultExecutableUpdate<>(table, dialect, getConnectionProvider());
 	}
 	
 	@Override
 	public <T extends Table<T>, W extends Where<W>> BatchUpdate<T> batchUpdate(T table, Set<? extends Column<T, ?>> columns, W where) {
-		return new DefaultBatchUpdate<>(new Update<>(table), columns, where);
+		return new DefaultBatchUpdate<>(new Update<>(table, columns), where, dialect, getConnectionProvider());
 	}
 	
 	@Override
 	public <T extends Table<T>> ExecutableInsert<T> insert(T table) {
-		return new DefaultExecutableInsert<>(table);
+		return new DefaultExecutableInsert<>(table, dialect, getConnectionProvider());
 	}
 	
 	@Override
 	public <T extends Table<T>> BatchInsert<T> batchInsert(T table) {
-		return new DefaultBatchInsert<>(table);
+		return new DefaultBatchInsert<>(table, dialect, getConnectionProvider());
 	}
 	
 	@Override
 	public <T extends Table<T>> ExecutableDelete<T> delete(T table) {
-		return new DefaultExecutableDelete<>(table);
+		return new DefaultExecutableDelete<>(table, dialect, getConnectionProvider());
 	}
 	
 	/**
@@ -430,225 +421,6 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		@javax.annotation.Nullable
 		private T getTable() {
 			return (T) Nullable.nullable(Iterables.first(mapping.keySet())).map(Column::getTable).get();
-		}
-	}
-	
-	private class DefaultExecutableUpdate<T extends Table<T>> extends Update<T> implements ExecutableUpdate<T> {
-		
-		private DefaultExecutableUpdate(T targetTable) {
-			super(targetTable);
-		}
-		
-		/** Overridden to adapt return type */
-		@Override
-		public <C> DefaultExecutableUpdate<T> set(Column<? extends T, C> column, C value) {
-			super.set(column, value);
-			return this;
-		}
-		
-		/** Overridden to adapt return type */
-		@Override
-		public <C> DefaultExecutableUpdate<T> set(Column<? extends T, C> column1, Column<?, C> column2) {
-			super.set(column1, column2);
-			return this;
-		}
-		
-		/**
-		 * Executes this update statement with given values
-		 */
-		@Override
-		public long execute() {
-			UpdateStatement<T> updateStatement = new UpdateCommandBuilder<>(this, dialect).toStatement();
-			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(updateStatement, getConnectionProvider())) {
-				writeOperation.setValues(updateStatement.getValues());
-				return writeOperation.execute();
-			}
-		}
-		
-		@Override
-		public ExecutableCriteria where(Column<T, ?> column, String condition) {
-			CriteriaChain where = super.where(column, condition);
-			return new MethodReferenceDispatcher()
-					.redirect(ExecutableSQL::execute, this::execute)
-					.redirect(CriteriaChain.class, where, true)
-					.fallbackOn(this).build(ExecutableCriteria.class);
-		}
-		
-		@Override
-		public ExecutableCriteria where(Column<T, ?> column, ConditionalOperator condition) {
-			CriteriaChain where = super.where(column, condition);
-			return new MethodReferenceDispatcher()
-					.redirect(ExecutableSQL::execute, this::execute)
-					.redirect(CriteriaChain.class, where, true)
-					.fallbackOn(this).build(ExecutableCriteria.class);
-		}
-	}
-	
-	private class DefaultBatchUpdate<T extends Table<T>> implements BatchUpdate<T> {
-		
-		private final Update<T> statement;
-		private final Set<Column<T, ?>> columns;
-		private final Deque<Set<? extends StatementVariable<?, T>>> rows = new ArrayDeque<>();
-		private UpdateStatement<T> updateStatement;
-		
-		private DefaultBatchUpdate(Update<T> statement, Set<? extends Column<T, ?>> columns, Where where) {
-			this.statement = statement;
-			this.statement.getCriteria().add(where);
-			this.columns = (Set<Column<T, ?>>) columns;
-			this.rows.add(statement.getRow());
-		}
-		
-		@Override
-		public DefaultBatchUpdate<T> newRow() {
-			rows.addLast(new KeepOrderSet<>());
-			return this;
-		}
-		
-		/** Overridden to adapt return type */
-		@Override
-		public <C> DefaultBatchUpdate<T> set(Column<? extends T, C> column, C value) {
-			assertColumnIsInUpdate(column);
-			getCurrentRow().add(new ColumnVariable<>(column, value));
-			return this;
-		}
-		
-		@Override
-		public <C> BatchUpdate<T> set(String argName, C value) {
-			getCurrentRow().add(new PlaceholderVariable<>(argName, value));
-			return this;
-		}
-		
-		private Set<StatementVariable<?, T>> getCurrentRow() {
-			return (Set<StatementVariable<?, T>>) rows.getLast();
-		}
-		
-		private <C> void assertColumnIsInUpdate(Column<? extends T, C> column) {
-			if (!columns.contains(column)) {
-				throw new IllegalArgumentException("Column " + column + " is not defined in this batch update");
-			}
-		}
-		
-		/**
-		 * Executes this update statement with given values
-		 */
-		@Override
-		public long execute() {
-			// because BatchUpdate are reusable we don't recreate the statement each time the execute() method is called
-			if (updateStatement == null) {
-				updateStatement = new UpdateCommandBuilder<>(this.statement, dialect).toStatement();
-			}
-			long[] writeCount;
-			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(updateStatement, getConnectionProvider())) {
-				rows.forEach(row -> {
-					row.forEach(c -> c.applyValueTo(updateStatement));
-					writeOperation.addBatch(updateStatement.getValues());
-				});
-				writeCount = writeOperation.executeBatch();
-			}
-			// we clear current rows to let one reuse this instance
-			rows.clear();
-			rows.add(new KeepOrderSet<>());
-			return LongStream.of(writeCount).sum();
-		}
-	}
-	
-	private class DefaultExecutableInsert<T extends Table<T>> extends Insert<T> implements ExecutableInsert<T> {
-		
-		private DefaultExecutableInsert(T table) {
-			super(table);
-		}
-		
-		@Override
-		public <C> DefaultExecutableInsert<T> set(Column<? extends T, C> column, C value) {
-			super.set(column, value);
-			return this;
-		}
-		
-		@Override
-		public long execute() {
-			InsertStatement<T> insertStatement = new InsertCommandBuilder<>(this, dialect).toStatement();
-			try (WriteOperation<Column<T, ?>> writeOperation = dialect.getWriteOperationFactory().createInstance(insertStatement, getConnectionProvider())) {
-				writeOperation.setValues(insertStatement.getValues());
-				return writeOperation.execute();
-			}
-		}
-	}
-	
-	private class DefaultBatchInsert<T extends Table<T>> extends Insert<T> implements BatchInsert<T> {
-		
-		private final List<Set<InsertColumn<T, ?>>> rows = new ArrayList<>();
-		
-		private DefaultBatchInsert(T table) {
-			super(table);
-		}
-		
-		@Override
-		public <C> DefaultBatchInsert<T> set(Column<? extends T, C> column, C value) {
-			super.set(column, value);
-			return this;
-		}
-		
-		@Override
-		public BatchInsert<T> newRow() {
-			rows.add(new KeepOrderSet<>(getRow()));
-			getRow().clear();
-			return this;
-		}
-		
-		@Override
-		public long execute() {
-			// treating remaining values in case user didn't call newRow(..)
-			if (!getRow().isEmpty()) {
-				rows.add(new KeepOrderSet<>(getRow()));
-			}
-			InsertStatement<T> insertStatement = new InsertCommandBuilder<>(this, dialect).toStatement();
-			long[] writeCount;
-			try (WriteOperation<Column<T, ?>> writeOperation = dialect.getWriteOperationFactory().createInstance(insertStatement, getConnectionProvider())) {
-				this.rows.stream()
-						// avoiding empty rows made by several calls to newRow(..) without setting values. Can happen if insert(..) is reused in a loop.
-						.filter(not(Set::isEmpty))
-						.<Map<Column<T, ?>, ?>>map(row -> Iterables.map(row, InsertColumn::getColumn, InsertColumn::getValue))
-						.forEach(writeOperation::addBatch);
-				writeCount = writeOperation.executeBatch();
-			}
-			// we clear current rows to let one reuse this instance
-			rows.clear();
-			getRow().clear();
-			return LongStream.of(writeCount).sum();
-		}
-	}
-	
-	public class DefaultExecutableDelete<T extends Table<T>> extends Delete<T> implements ExecutableDelete<T> {
-		
-		private DefaultExecutableDelete(T table) {
-			super(table);
-		}
-		
-		@Override
-		public long execute() {
-			PreparedSQL deleteStatement = new DeleteCommandBuilder<>(this, dialect).toPreparableSQL().toPreparedSQL(new HashMap<>());
-			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(deleteStatement, getConnectionProvider())) {
-				writeOperation.setValues(deleteStatement.getValues());
-				return writeOperation.execute();
-			}
-		}
-		
-		@Override
-		public ExecutableCriteria where(Column<T, ?> column, String condition) {
-			CriteriaChain where = super.where(column, condition);
-			return new MethodReferenceDispatcher()
-					.redirect(ExecutableSQL::execute, this::execute)
-					.redirect(CriteriaChain.class, where, true)
-					.fallbackOn(this).build(ExecutableCriteria.class);
-		}
-		
-		@Override
-		public ExecutableCriteria where(Column<T, ?> column, ConditionalOperator condition) {
-			CriteriaChain where = super.where(column, condition);
-			return new MethodReferenceDispatcher()
-					.redirect(ExecutableSQL::execute, this::execute)
-					.redirect(CriteriaChain.class, where, true)
-					.fallbackOn(this).build(ExecutableCriteria.class);
 		}
 	}
 	

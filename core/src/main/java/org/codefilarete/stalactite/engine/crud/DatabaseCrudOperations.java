@@ -1,13 +1,13 @@
-package org.codefilarete.stalactite.engine;
+package org.codefilarete.stalactite.engine.crud;
 
 import java.util.Set;
 import java.util.function.Consumer;
 
+import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyKeyQueryMapper;
-import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableCriteria;
 import org.codefilarete.stalactite.engine.PersistenceContext.SelectMapping;
+import org.codefilarete.stalactite.engine.QueryMapper;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
-import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryProvider;
@@ -259,145 +259,4 @@ public interface DatabaseCrudOperations {
 	<T extends Table<T>> BatchInsert<T> batchInsert(T table);
 	
 	<T extends Table<T>> ExecutableDelete<T> delete(T table);
-	
-	interface ExecutableUpdate<T extends Table<T>> {
-		
-		/**
-		 * Adds a column to update with its value.
-		 *
-		 * @param column any column
-		 * @param value value for given column
-		 * @param <O> value type
-		 * @return this
-		 */
-		<O> ExecutableUpdate<T> set(Column<? extends T, O> column, O value);
-		
-		/**
-		 * Adds a target column which value is took from another column (which can be one of another table if this update is a multi-table one)
-		 *
-		 * @param column1 any column
-		 * @param column2 any column
-		 * @param <O> value type
-		 * @return this
-		 */
-		<O> ExecutableUpdate<T> set(Column<? extends T, O> column1, Column<?, O> column2);
-		
-		/**
-		 * Executes this update statement with given values
-		 */
-		long execute();
-		
-		/**
-		 * Adds a criteria to this update.
-		 *
-		 * @param column a column target of the condition
-		 * @param condition the condition
-		 * @return this
-		 */
-		ExecutableCriteria where(Column<T, ?> column, String condition);
-
-		/**
-		 * Adds a criteria to this update.
-		 *
-		 * @param column a column target of the condition
-		 * @param condition the condition
-		 * @return this
-		 */
-		ExecutableCriteria where(Column<T, ?> column, ConditionalOperator condition);
-	}
-	
-	
-	interface BatchUpdate<T extends Table<T>> {
-		
-		/**
-		 * Adds a column to set and its value. Overwrites any previous value put for that column.
-		 *
-		 * @param column any column
-		 * @param value value to be inserted
-		 * @param <C> value type
-		 * @return this
-		 */
-		<C> BatchUpdate<T> set(Column<? extends T, C> column, C value);
-		
-		<C> BatchUpdate<T> set(String argName, C value);
-		
-		/**
-		 * Open a new row for insertion. Must be chained with {@link #set(Column, Object)} to fill it.
-		 * @return this
-		 */
-		BatchUpdate<T> newRow();
-		
-		/**
-		 * Executes this insert statement and insert all the registered rows.
-		 */
-		long execute();
-	}
-	
-	interface ExecutableInsert<T extends Table<T>> {
-		
-		/**
-		 * Adds a column to set and its value. Overwrites any previous value put for that column.
-		 *
-		 * @param column any column
-		 * @param value value to be inserted
-		 * @param <C> value type
-		 * @return this
-		 */
-		<C> ExecutableInsert<T> set(Column<? extends T, C> column, C value);
-		
-		/**
-		 * Executes this insert statement.
-		 */
-		long execute();
-	}
-	
-	interface BatchInsert<T extends Table<T>> extends ExecutableInsert<T> {
-		
-		/**
-		 * Adds a column to set and its value. Overwrites any previous value put for that column.
-		 *
-		 * @param column any column
-		 * @param value value to be inserted
-		 * @param <C> value type
-		 * @return this
-		 */
-		<C> BatchInsert<T> set(Column<? extends T, C> column, C value);
-		
-		/**
-		 * Open a new row for insertion. Must be chained with {@link #set(Column, Object)} to fill it.
-		 * @return this
-		 */
-		BatchInsert<T> newRow();
-		
-		/**
-		 * Executes this insert statement and insert all the registered rows.
-		 */
-		long execute();
-	}
-	
-	interface ExecutableDelete<T extends Table<T>> {
-		
-		/**
-		 * Executes this delete statement with given values.
-		 */
-		long execute();
-		
-		/**
-		 * Adds a criteria to this delete.
-		 *
-		 * @param column a column target of the condition
-		 * @param condition the condition
-		 * @return this
-		 */
-		ExecutableCriteria where(Column<T, ?> column, String condition);
-		
-		/**
-		 * Adds a criteria to this delete.
-		 *
-		 * @param column a column target of the condition
-		 * @param condition the condition
-		 * @return this
-		 */
-		ExecutableCriteria where(Column<T, ?> column, ConditionalOperator condition);
-	}
 }
