@@ -2,11 +2,7 @@ package org.codefilarete.stalactite.engine.crud;
 
 import java.util.Set;
 
-import org.codefilarete.reflection.MethodReferenceDispatcher;
-import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableCriteria;
-import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableSQL;
-import org.codefilarete.stalactite.query.model.ConditionalOperator;
-import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -23,19 +19,30 @@ import org.codefilarete.stalactite.sql.statement.WriteOperation;
  */
 public class DefaultExecutableUpdate<T extends Table<T>> extends Update<T> implements ExecutableUpdate<T> {
 	
-	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
+	private final ConnectionProvider connectionProvider;
 	
 	public DefaultExecutableUpdate(T targetTable, Dialect dialect, ConnectionProvider connectionProvider) {
 		super(targetTable);
-		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
+		this.connectionProvider = connectionProvider;
+	}
+	public DefaultExecutableUpdate(T targetTable, Where<?> where, Dialect dialect, ConnectionProvider connectionProvider) {
+		super(targetTable, where);
+		this.dialect = dialect;
+		this.connectionProvider = connectionProvider;
 	}
 	
 	public DefaultExecutableUpdate(T targetTable, Set<? extends Column<T, ?>> columnsToUpdate, Dialect dialect, ConnectionProvider connectionProvider) {
 		super(targetTable, columnsToUpdate);
-		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
+		this.connectionProvider = connectionProvider;
+	}
+	
+	public DefaultExecutableUpdate(T targetTable, Set<? extends Column<T, ?>> columnsToUpdate, Where<?> where, Dialect dialect, ConnectionProvider connectionProvider) {
+		super(targetTable, columnsToUpdate, where);
+		this.dialect = dialect;
+		this.connectionProvider = connectionProvider;
 	}
 	
 	/**
@@ -66,23 +73,5 @@ public class DefaultExecutableUpdate<T extends Table<T>> extends Update<T> imple
 			writeOperation.setValues(updateStatement.getValues());
 			return writeOperation.execute();
 		}
-	}
-	
-	@Override
-	public ExecutableCriteria where(Column<T, ?> column, String condition) {
-		CriteriaChain where = super.where(column, condition);
-		return new MethodReferenceDispatcher()
-				.redirect(ExecutableSQL::execute, this::execute)
-				.redirect(CriteriaChain.class, where, true)
-				.fallbackOn(this).build(ExecutableCriteria.class);
-	}
-	
-	@Override
-	public ExecutableCriteria where(Column<T, ?> column, ConditionalOperator condition) {
-		CriteriaChain where = super.where(column, condition);
-		return new MethodReferenceDispatcher()
-				.redirect(ExecutableSQL::execute, this::execute)
-				.redirect(CriteriaChain.class, where, true)
-				.fallbackOn(this).build(ExecutableCriteria.class);
 	}
 }

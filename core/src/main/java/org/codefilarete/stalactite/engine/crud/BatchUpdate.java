@@ -8,15 +8,10 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  * @param <T> table type
  * @author Guillaume Mary
  */
-public interface BatchUpdate<T extends Table<T>> {
+public interface BatchUpdate<T extends Table<T>> extends ExecutableUpdate<T> {
 	
 	/**
-	 * Adds a column to set and its value. Overwrites any previous value put for that column.
-	 *
-	 * @param column any column
-	 * @param value value to be inserted
-	 * @param <C> value type
-	 * @return this
+	 * Overridden to adapt return type
 	 */
 	<C> BatchUpdate<T> set(Column<? extends T, C> column, C value);
 	

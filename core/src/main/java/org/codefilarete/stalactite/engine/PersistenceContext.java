@@ -359,8 +359,12 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		return new DefaultExecutableUpdate<>(table, dialect, getConnectionProvider());
 	}
 	
+	public <T extends Table<T>> ExecutableUpdate<T> update(T table, Where<?> where) {
+		return new DefaultExecutableUpdate<>(table, where, dialect, getConnectionProvider());
+	}
+	
 	@Override
-	public <T extends Table<T>, W extends Where<W>> BatchUpdate<T> batchUpdate(T table, Set<? extends Column<T, ?>> columns, W where) {
+	public <T extends Table<T>> BatchUpdate<T> batchUpdate(T table, Set<? extends Column<T, ?>> columns, Where<?> where) {
 		return new DefaultBatchUpdate<>(new Update<>(table, columns), where, dialect, getConnectionProvider());
 	}
 	

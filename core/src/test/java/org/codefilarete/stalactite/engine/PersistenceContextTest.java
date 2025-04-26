@@ -211,7 +211,9 @@ public class PersistenceContextTest {
 		Column<Table, String> name = totoTable.addColumn("name", String.class);
 		
 		// test update with where
-		testInstance.update(totoTable).set(id, 42L).where(id, eq(666L)).execute();
+		testInstance.update(totoTable, where(id, eq(666L)))
+				.set(id, 42L)
+				.execute();
 		
 		assertThat(sqlStatementCaptor.getValue()).isEqualTo("update toto set id = ? where id = ?");
 		assertThat(valuesStatementCaptor.getAllValues()).containsExactly(42L, 666L);

@@ -46,15 +46,15 @@ public class QueryEase {
 		return new Query().from(rootTable).getQuery().getSelect();
 	}
 	
-	public static Where where(Selectable<?> column, String condition) {
+	public static Where<?> where(Selectable<?> column, String condition) {
 		return new Where<>(column, condition);
 	}
 	
-	public static <O> Where where(Selectable<O> column, ConditionalOperator<? super O, ?> condition) {
+	public static <O> Where<?> where(Selectable<O> column, ConditionalOperator<? super O, ?> condition) {
 		return new Where<>(column, condition);
 	}
 	
-	public static Where where(Object... criteria) {
+	public static Where<?> where(Object... criteria) {
 		return new Where<>(criteria);
 	}
 	
@@ -66,7 +66,7 @@ public class QueryEase {
 	 * @param condition the criteria on the {@link Column}
 	 * @return a new {@link Criteria}
 	 */
-	public static Criteria filter(Selectable<?> column, String condition) {
+	public static Criteria<?> filter(Selectable<?> column, String condition) {
 		return new Criteria<>(column, condition);
 	}
 	
@@ -78,7 +78,7 @@ public class QueryEase {
 	 * @param condition the criteria on the {@link Column}
 	 * @return a new {@link Criteria}
 	 */
-	public static Criteria filter(Selectable<?> column, ConditionalOperator condition) {
+	public static Criteria<?> filter(Selectable<?> column, ConditionalOperator condition) {
 		return new Criteria<>(column, condition);
 	}
 	
@@ -89,7 +89,7 @@ public class QueryEase {
 	 * @param columns a combination of objects describing the criteria
 	 * @return a new {@link Criteria}
 	 */
-	public static Criteria filter(Object ... columns) {
+	public static Criteria<?> filter(Object ... columns) {
 		return new Criteria<>(columns);
 	}
 	

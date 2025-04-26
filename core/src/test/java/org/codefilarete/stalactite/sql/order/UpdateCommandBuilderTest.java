@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.codefilarete.stalactite.query.model.Operators.eq;
 import static org.codefilarete.stalactite.query.model.Operators.in;
+import static org.codefilarete.stalactite.query.model.QueryEase.where;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -34,8 +35,7 @@ class UpdateCommandBuilderTest {
 		Column<T, String> columnA = totoTable.addColumn("a", String.class);
 		Column<T, String> columnB = totoTable.addColumn("b", String.class);
 		
-		Update<T> update = new Update<>(totoTable);
-		update.where(columnA, eq(44)).or(columnA, eq(columnB));
+		Update<T> update = new Update<>(totoTable, where(columnA, eq(44)).or(columnA, eq(columnB)));
 		Dialect dialect = new DefaultDialect();
 		UpdateCommandBuilder<T> testInstance = new UpdateCommandBuilder<>(update, dialect);
 		// this is wrong SQL, but it shows how code behaves without giving column to update
@@ -85,15 +85,13 @@ class UpdateCommandBuilderTest {
 		Column<T2, String> columnZ = tataTable.addColumn("z", String.class);
 		
 		
-		Update<T1> update1 = new Update<>(totoTable);
-		update1.where(columnA, eq(columnX)).or(columnA, eq(columnY));
+		Update<T1> update1 = new Update<>(totoTable, where(columnA, eq(columnX)).or(columnA, eq(columnY)));
 		Dialect dialect = new DefaultDialect();
 		UpdateCommandBuilder<T1> testInstance = new UpdateCommandBuilder<>(update1, dialect);
 		assertThat(testInstance.toSQL()).isEqualTo("update Toto, Tata set  where Toto.a = Tata.x or Toto.a = Tata.y");
 		
-		Update<T1> update2 = new Update<>(totoTable)
+		Update<T1> update2 = new Update<>(totoTable, where(columnA, eq(columnX)).or(columnA, eq(columnY)))
 				.set(columnC, columnZ);
-		update2.where(columnA, eq(columnX)).or(columnA, eq(columnY));
 		testInstance = new UpdateCommandBuilder<>(update2, dialect);
 		assertThat(testInstance.toSQL()).isEqualTo("update Toto, Tata set Toto.c = Tata.z where Toto.a = Tata.x or Toto.a = Tata.y");
 	}
@@ -106,11 +104,10 @@ class UpdateCommandBuilderTest {
 		Column<T, String> columnC = totoTable.addColumn("c", String.class);
 		Column<T, Integer> columnD = totoTable.addColumn("d", Integer.class);
 		
-		Update<T> update = new Update<>(totoTable)
+		Update<T> update = new Update<>(totoTable, where(columnA, in(42L, 43L)).or(columnA, eq(columnB)))
 				.set(columnB, columnA)
 				.set(columnC, "tata")
 				.set(columnD, 666);
-		update.where(columnA, in(42L, 43L)).or(columnA, eq(columnB));
 		Dialect dialect = new DefaultDialect();
 		UpdateCommandBuilder<T> testInstance = new UpdateCommandBuilder<T>(update, dialect);
 		
@@ -147,12 +144,11 @@ class UpdateCommandBuilderTest {
 		Column<T, String> columnC = totoTable.addColumn("c", String.class);
 		Column<T, Integer> columnD = totoTable.addColumn("d", Integer.class);
 		
-		Update<T> update = new Update<>(totoTable)
+		Update<T> update = new Update<>(totoTable, where(columnC, Operators.likeArgNamed("criterion", String.class)))
 				.set(columnB, columnA)
 				.set(columnC, "tata")
 				.set(columnD, 666)
 				.set("criterion", "t");
-		update.where(columnC, Operators.likeArgNamed("criterion", String.class));
 		Dialect dialect = new DefaultDialect();
 		UpdateCommandBuilder<T> testInstance = new UpdateCommandBuilder<T>(update, dialect);
 		
@@ -187,11 +183,10 @@ class UpdateCommandBuilderTest {
 		Column<T, String> columnC = totoTable.addColumn("c", String.class);
 		Column<T, Integer> columnD = totoTable.addColumn("d", Integer.class);
 		
-		Update<T> update = new Update<>(totoTable)
+		Update<T> update = new Update<>(totoTable, where(columnC, Operators.likeArgNamed("criterion", String.class)))
 				.set(columnB, columnA)
 				.set(columnC, "tata")
 				.set(columnD, 666);
-		update.where(columnC, Operators.likeArgNamed("criterion", String.class));
 		Dialect dialect = new DefaultDialect();
 		UpdateCommandBuilder<T> testInstance = new UpdateCommandBuilder<T>(update, dialect);
 		
@@ -217,12 +212,11 @@ class UpdateCommandBuilderTest {
 		Column<T, String> columnC = totoTable.addColumn("c", String.class);
 		Column<T, Integer> columnD = totoTable.addColumn("d", Integer.class);
 		
-		Update<T> update = new Update<>(totoTable)
+		Update<T> update = new Update<>(totoTable, where(columnC, Operators.likeArgNamed("criterion", String.class)))
 				.set(columnB, columnA)
 				.set(columnC, "tata")
 				.set(columnD, 666)
 				.set("xxx", "t");
-		update.where(columnC, Operators.likeArgNamed("criterion", String.class));
 		UpdateCommandBuilder<T> testInstance = new UpdateCommandBuilder<T>(update, new DefaultDialect());
 		
 		assertThatCode(testInstance::toStatement)

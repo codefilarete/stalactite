@@ -252,7 +252,9 @@ public interface DatabaseCrudOperations {
 	
 	<T extends Table<T>> ExecutableUpdate<T> update(T table);
 	
-	<T extends Table<T>, W extends Where<W>> BatchUpdate<T> batchUpdate(T table, Set<? extends Column<T, ?>> columns, W where);
+	<T extends Table<T>> ExecutableUpdate<T> update(T table, Where<?> where);
+	
+	<T extends Table<T>> BatchUpdate<T> batchUpdate(T table, Set<? extends Column<T, ?>> columns, Where<?> where);
 	
 	<T extends Table<T>> ExecutableInsert<T> insert(T table);
 	

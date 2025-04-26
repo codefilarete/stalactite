@@ -2,9 +2,8 @@ package org.codefilarete.stalactite.sql.order;
 
 import java.util.Set;
 
-import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Criteria;
-import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -27,15 +26,24 @@ public class Update<T extends Table<T>> {
 	
 	private final Set<StatementVariable<?, T>> row = new KeepOrderSet<>();
 	
-	private final Criteria<?> criteriaDelegate = new Criteria<>();
+	private final Where<?> criteria;
 	
 	public Update(T targetTable) {
 		this(targetTable, targetTable.getColumns());
 	}
 	
+	public Update(T targetTable, Where<?> where) {
+		this(targetTable, targetTable.getColumns(), where);
+	}
+	
 	public Update(T targetTable, Set<? extends Column<T, ?>> columnsToUpdate) {
+		this(targetTable, columnsToUpdate, new Where<>());
+	}
+	
+	public Update(T targetTable, Set<? extends Column<T, ?>> columnsToUpdate, Where<?> where) {
 		this.targetTable = targetTable;
 		this.columnsToUpdate = (Set<Column<T, ?>>) new KeepOrderSet<>(columnsToUpdate);
+		this.criteria = where;
 	}
 	
 	public T getTargetTable() {
@@ -47,7 +55,7 @@ public class Update<T extends Table<T>> {
 	}
 	
 	public Criteria<?> getCriteria() {
-		return criteriaDelegate;
+		return criteria;
 	}
 	
 	/**
@@ -94,27 +102,5 @@ public class Update<T extends Table<T>> {
 	 */
 	public Set<StatementVariable<?, T>> getRow() {
 		return row;
-	}
-	
-	/**
-	 * Adds a criteria to this update.
-	 * 
-	 * @param column a column target of the condition
-	 * @param condition the condition
-	 * @return this
-	 */
-	public CriteriaChain where(Column<T, ?> column, String condition) {
-		return criteriaDelegate.and(column, condition);
-	}
-	
-	/**
-	 * Adds a criteria to this update.
-	 *
-	 * @param column a column target of the condition
-	 * @param condition the condition
-	 * @return this
-	 */
-	public CriteriaChain where(Column<T, ?> column, ConditionalOperator condition) {
-		return criteriaDelegate.and(column, condition);
 	}
 }

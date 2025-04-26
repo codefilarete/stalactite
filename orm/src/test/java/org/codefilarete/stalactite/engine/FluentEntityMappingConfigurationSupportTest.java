@@ -80,6 +80,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.codefilarete.stalactite.query.model.QueryEase.where;
 import static org.codefilarete.tool.collection.Iterables.first;
 import static org.codefilarete.tool.collection.Iterables.map;
 import static org.codefilarete.tool.function.Functions.chain;
@@ -570,7 +571,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		assertThat(totoNames).containsExactly(new Duo<>(toto.getId(), null));
 		
 		// testing that select fill the property (the property is not totally ignored) 
-		persistenceContext.update(totoTable).set(nameColumn, "dummyName").where(idColumn, Operators.eq(toto.getId())).execute();
+		persistenceContext.update(totoTable, where(idColumn, Operators.eq(toto.getId()))).set(nameColumn, "dummyName").execute();
 		totoNames = persistenceContext.select(Duo::new, idColumn, nameColumn);
 		assertThat(totoNames).containsExactly(new Duo<>(toto.getId(), "dummyName"));
 	}

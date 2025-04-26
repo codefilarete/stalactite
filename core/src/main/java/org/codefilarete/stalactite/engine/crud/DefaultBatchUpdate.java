@@ -32,7 +32,7 @@ public class DefaultBatchUpdate<T extends Table<T>> implements BatchUpdate<T> {
 	private final ConnectionProvider connectionProvider;
 	private UpdateStatement<T> updateStatement;
 	
-	public DefaultBatchUpdate(Update<T> statement, Where where, Dialect dialect, ConnectionProvider connectionProvider) {
+	public DefaultBatchUpdate(Update<T> statement, Where<?> where, Dialect dialect, ConnectionProvider connectionProvider) {
 		this.statement = statement;
 		this.statement.getCriteria().add(where);
 		this.dialect = dialect;

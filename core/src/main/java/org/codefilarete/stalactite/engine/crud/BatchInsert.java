@@ -10,13 +10,9 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  */
 public interface BatchInsert<T extends Table<T>> extends ExecutableInsert<T> {
 	
+	
 	/**
-	 * Adds a column to set and its value. Overwrites any previous value put for that column.
-	 *
-	 * @param column any column
-	 * @param value value to be inserted
-	 * @param <C> value type
-	 * @return this
+	 * Overridden to adapt return type
 	 */
 	<C> BatchInsert<T> set(Column<? extends T, C> column, C value);
 	
@@ -26,9 +22,4 @@ public interface BatchInsert<T extends Table<T>> extends ExecutableInsert<T> {
 	 * @return this
 	 */
 	BatchInsert<T> newRow();
-	
-	/**
-	 * Executes this insert statement and insert all the registered rows.
-	 */
-	long execute();
 }
