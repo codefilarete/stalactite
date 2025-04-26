@@ -9,6 +9,7 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.engine.DatabaseCrudOperations.BatchInsert;
 import org.codefilarete.stalactite.engine.DatabaseCrudOperations.BatchUpdate;
+import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ConnectionProvider.DataSourceConnectionProvider;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
@@ -171,8 +172,7 @@ public class PersistenceContextTest {
 		assertThat(testInstance.select(SerializableFunction.identity(), idColumn)).containsExactly(1L, 2L);
 		
 		// test update
-		Set<Column<Table, ?>> columnsToUpdate = Arrays.asSet(nameColumn);
-		BatchUpdate batchUpdate = testInstance.batchUpdate(totoTable, columnsToUpdate, where(idColumn, equalsArgNamed("pk", Long.class)));
+		BatchUpdate batchUpdate = testInstance.batchUpdate(totoTable, Arrays.asSet(nameColumn), where(idColumn, equalsArgNamed("pk", Long.class)));
 		
 		long effectiveWrite;
 		effectiveWrite = batchUpdate

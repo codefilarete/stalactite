@@ -6,8 +6,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.query.builder.PreparedSQLAppender;
 import org.codefilarete.stalactite.query.builder.SQLAppender;
@@ -22,16 +22,13 @@ import org.codefilarete.stalactite.query.model.ValuedVariable;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.order.Update.UpdateColumn;
+import org.codefilarete.stalactite.sql.order.Insert.InsertColumn;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.trace.MutableInt;
-
-import static org.codefilarete.tool.function.Functions.chain;
 
 /**
  * A SQL builder for {@link Update} objects.
@@ -63,8 +60,8 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 		appendUpdateStatement(result, result, dmlNameProvider);
 	}
 	
-	private void appendUpdateStatement(SQLAppender setValuesAppender, SQLAppender criteriaAppender, MultiTableAwareDMLNameProvider dmlNameProvider) {
-		setValuesAppender.cat("update ");
+	private void appendUpdateStatement(SQLAppender setClauseAppender, SQLAppender criteriaAppender, MultiTableAwareDMLNameProvider dmlNameProvider) {
+		setClauseAppender.cat("update ");
 		
 		// looking for additional Tables : more than the updated one, can be found in conditions
 		Set<Column<Table, Object>> whereColumns = new LinkedHashSet<>();
@@ -86,23 +83,26 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 		// update of the single-table-marker
 		dmlNameProvider.setMultiTable(!additionalTables.isEmpty());
 		
-		setValuesAppender.cat(dmlNameProvider.getName(this.update.getTargetTable()))
+		setClauseAppender.cat(dmlNameProvider.getName(this.update.getTargetTable()))
 				.catIf(dmlNameProvider.isMultiTable(), ", ");
 		// additional tables (with optional alias)
 		Iterator<Table> iterator = additionalTables.iterator();
 		while (iterator.hasNext()) {
 			Table next = iterator.next();
-			setValuesAppender.cat(dmlNameProvider.getName(next)).catIf(iterator.hasNext(), ", ");
+			setClauseAppender.cat(dmlNameProvider.getName(next)).catIf(iterator.hasNext(), ", ");
 		}
 		
 		// append updated columns part
-		setValuesAppender.cat(" set ");
-		Iterator<UpdateColumn<T, ?>> columnIterator = update.getRow().iterator();
+		setClauseAppender.cat(" set ");
+		Iterator<ColumnVariable> columnIterator = update.getRow().stream()
+				.filter(ColumnVariable.class::isInstance)
+				.map(ColumnVariable.class::cast)
+				.iterator();
 		while (columnIterator.hasNext()) {
-			UpdateColumn<T, ?> c = columnIterator.next();
-			setValuesAppender.cat(dmlNameProvider.getName(c.getColumn()), " = ");
-			catUpdateObject(c, setValuesAppender, dmlNameProvider);
-			setValuesAppender.catIf(columnIterator.hasNext(), ", ");
+			ColumnVariable<?, T> c = columnIterator.next();
+			setClauseAppender.cat(dmlNameProvider.getName(c.getColumn()), " = ");
+			appendToSetClause(c, setClauseAppender, dmlNameProvider);
+			setClauseAppender.catIf(columnIterator.hasNext(), ", ");
 		}
 		
 		// append where clause
@@ -115,13 +115,13 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 	
 	/**
 	 * Method that must append the given value coming from the "set" clause to the given SQLAppender.
-	 * Left protected to cover unexpected cases (because {@link UpdateColumn} handle Objects as value)
+	 * Left protected to cover unexpected cases (because {@link InsertColumn} handle Objects as value)
 	 * 
 	 * @param updateColumn the value to append in the {@link SQLAppender}
 	 * @param result the final SQL appender
 	 * @param dmlNameProvider provider of tables and columns names
 	 */
-	protected void catUpdateObject(UpdateColumn<T, ?> updateColumn, SQLAppender result, MultiTableAwareDMLNameProvider dmlNameProvider) {
+	protected void appendToSetClause(ColumnVariable<?, T> updateColumn, SQLAppender result, MultiTableAwareDMLNameProvider dmlNameProvider) {
 		Object value = updateColumn.getValue();
 		if (value instanceof Column) {
 			// case Update.set(colA, colB)
@@ -136,18 +136,13 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 		// We ask for SQL generation through a PreparedSQLWrapper because we need SQL placeholders for where + update clause
 		MutableInt variableCounter = new MutableInt();
 		Map<Column<T, ?>, Integer> columnIndexes = new HashMap<>();
-		Map<Placeholder<T, ?>, Integer> placeholderIndexes = new HashMap<>();
+		Map<String, Set<Integer>> placeholderIndexes = new HashMap<>();
 		PreparedSQLAppender setValuesAppender = new PreparedSQLAppender(new StringSQLAppender(dmlNameProvider), dialect.getColumnBinderRegistry()) {
 			
 			@Override
 			public <V> PreparedSQLAppender catValue(@Nullable Selectable<V> column, Object value) {
 				PreparedSQLAppender result = super.catValue(column, value);
-				if (value instanceof Placeholder) {
-					Placeholder placeholder = (Placeholder) value;
-					placeholderIndexes.put(placeholder, variableCounter.increment());
-				} else {
-					columnIndexes.put((Column) column, variableCounter.increment());
-				}
+				columnIndexes.put((Column) column, variableCounter.increment());
 				return result;
 			}
 		};
@@ -158,8 +153,8 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 			public <V> PreparedSQLAppender catValue(@Nullable Selectable<V> column, Object value) {
 				PreparedSQLAppender result = super.catValue(column, value);
 				if (value instanceof Placeholder) {
-					Placeholder placeholder = (Placeholder) value;
-					placeholderIndexes.put(placeholder, variableCounter.increment());
+					placeholderIndexes.computeIfAbsent(((Placeholder) value).getName(), name -> new HashSet<>())
+							.add(variableCounter.increment());
 				}
 				return result;
 			}
@@ -171,6 +166,21 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 		criteriaAppender.getValues().forEach((key, value) -> values.put(key + setValuesAppender.getValues().size(), value));
 		Map<Integer, ParameterBinder<?>> parameterBinders = setValuesAppender.getParameterBinders();
 		criteriaAppender.getParameterBinders().forEach((key, value) -> parameterBinders.put(key + setValuesAppender.getValues().size(), value));
+		
+		Iterator<PlaceholderVariable> placeholderIterator = update.getRow().stream()
+				.filter(PlaceholderVariable.class::isInstance)
+				.map(PlaceholderVariable.class::cast)
+				.iterator();
+		while (placeholderIterator.hasNext()) {
+			PlaceholderVariable<?, T> c = placeholderIterator.next();
+			Set<Integer> indexes = placeholderIndexes.get(c.getName());
+			if (indexes == null) {
+				throw new IllegalArgumentException("No placeholder named \"" + c.getName() + "\" found in statement, available are "
+						+ placeholderIndexes.keySet());
+			}
+			indexes.forEach(index -> values.put(index, c.getValue()));
+		}
+		
 		UpdateStatement<T> result = new UpdateStatement<>(
 				setValuesAppender.getSQL() + criteriaAppender.getSQL(),
 				parameterBinders,
@@ -197,7 +207,7 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 	public static class UpdateStatement<T extends Table<T>> extends PreparedSQL {
 		
 		private final Map<Column<T, Object>, Integer> columnIndexes;
-		private final Map<Placeholder<?, ?>, Integer> placeholderIndexes;
+		private final Map<String, Set<Integer>> placeholderIndexes;
 		
 		/**
 		 * Single constructor, not expected to be used elsewhere than {@link UpdateCommandBuilder}.
@@ -210,10 +220,24 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 		public UpdateStatement(String sql,
 							   Map<Integer, ? extends ParameterBinder<?>> parameterBinders,
 							   Map<? extends Column<T, ?>, Integer> columnIndexes,
-							   Map<? extends Placeholder<?, ?>, Integer> placeholderIndexes) {
+							   Map<String, Set<Integer>> placeholderIndexes) {
 			super(sql, parameterBinders);
 			this.columnIndexes = (Map<Column<T, Object>, Integer>) columnIndexes;
-			this.placeholderIndexes = (Map<Placeholder<?, ?>, Integer>) placeholderIndexes;
+			this.placeholderIndexes = placeholderIndexes;
+		}
+		
+		@Override
+		public void assertValuesAreApplyable() {
+			super.assertValuesAreApplyable();
+			Set<Placeholder> presentPlaceholders = getValues().values().stream()
+					.filter(Placeholder.class::isInstance)
+					.map(Placeholder.class::cast)
+					.collect(Collectors.toSet());
+			if (!presentPlaceholders.isEmpty()) {
+				throw new IllegalStateException("Statement expect values for placeholders: " + presentPlaceholders.stream()
+						.map(Placeholder::getName)
+						.collect(Collectors.joining(", ")));
+			}
 		}
 		
 		/**
@@ -231,11 +255,11 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 		}
 		
 		public <C> void setValue(String placeholderName, C value) {
-			Duo<Entry<Placeholder<?, ?>, Integer>, String> placeholderIndex = Iterables.find(placeholderIndexes.entrySet(), chain(Entry::getKey, Placeholder::getName), placeholderName::equals);
+			Set<Integer> placeholderIndex = placeholderIndexes.get(placeholderName);
 			if (placeholderIndex == null) {
 				throw new IllegalArgumentException("Placeholder '" + placeholderName + "' is not declared as a criteria in the where clause");
 			}
-			setValue(placeholderIndex.getLeft().getValue(), value);
+			placeholderIndex.forEach(index -> setValue(index, value));
 		}
 	}
 	

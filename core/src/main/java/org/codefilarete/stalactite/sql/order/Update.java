@@ -25,7 +25,7 @@ public class Update<T extends Table<T>> {
 	/** Target columns of the update */
 	private final Set<Column<T, ?>> columnsToUpdate;
 	
-	private final Set<UpdateColumn<T, ?>> row = new KeepOrderSet<>();
+	private final Set<StatementVariable<?, T>> row = new KeepOrderSet<>();
 	
 	private final Criteria<?> criteriaDelegate = new Criteria<>();
 	
@@ -59,7 +59,7 @@ public class Update<T extends Table<T>> {
 	 * @return this
 	 */
 	public <C> Update<T> set(Column<? extends T, C> column, C value) {
-		this.row.add(new UpdateColumn<>(column, value));
+		this.row.add(new ColumnVariable<>(column, value));
 		return this;
 	}
 	
@@ -71,7 +71,20 @@ public class Update<T extends Table<T>> {
 	 * @return this
 	 */
 	public <C> Update<T> set(Column<? extends T, C> column1, Column<?, C> column2) {
-		this.row.add(new UpdateColumn<>(column1, column2));
+		this.row.add(new ColumnVariable<>(column1, column2));
+		return this;
+	}
+	
+	/**
+	 * Sets the value of a named parameter.
+	 * 
+	 * @param paramName placeholder name
+	 * @param value the value of the placeholder
+	 * @return this
+	 * @param <C> value type, expected to be compatible with the placeholder one
+	 */
+	public <C> Update<T> set(String paramName, C value) {
+		this.row.add(new PlaceholderVariable<>(paramName, value));
 		return this;
 	}
 	
@@ -79,7 +92,7 @@ public class Update<T extends Table<T>> {
 	 * Gives all columns that are target by the update
 	 * @return a non null {@link Set}
 	 */
-	public Set<UpdateColumn<T, ?>> getRow() {
+	public Set<StatementVariable<?, T>> getRow() {
 		return row;
 	}
 	
@@ -103,27 +116,5 @@ public class Update<T extends Table<T>> {
 	 */
 	public CriteriaChain where(Column<T, ?> column, ConditionalOperator condition) {
 		return criteriaDelegate.and(column, condition);
-	}
-	
-	/**
-	 * {@link Column} and its value to be updated
-	 */
-	public static class UpdateColumn<T extends Table<T>, V> {
-		
-		private final Column<T, V> column;
-		private final V value;
-		
-		public UpdateColumn(Column<? extends T, ? extends V> column, V value) {
-			this.column = (Column<T, V>) column;
-			this.value = value;
-		}
-		
-		public Column<T, V> getColumn() {
-			return column;
-		}
-		
-		public V getValue() {
-			return value;
-		}
 	}
 }

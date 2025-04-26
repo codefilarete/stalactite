@@ -4,7 +4,6 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.order.Update.UpdateColumn;
 import org.codefilarete.tool.collection.KeepOrderSet;
 
 /**
@@ -18,7 +17,7 @@ public class Insert<T extends Table<T>> {
 	/** Target of the values to insert */
 	private final T targetTable;
 	/** Target columns of the insert */
-	private final Set<UpdateColumn<T, ?>> row = new KeepOrderSet<>();
+	private final Set<InsertColumn<T, ?>> row = new KeepOrderSet<>();
 	
 	public Insert(T targetTable) {
 		this.targetTable = targetTable;
@@ -37,7 +36,7 @@ public class Insert<T extends Table<T>> {
 	 * @return this
 	 */
 	public <C> Insert<T> set(Column<? extends T, C> column, C value) {
-		this.row.add(new UpdateColumn<>(column, value));
+		this.row.add(new InsertColumn<>(column, value));
 		return this;
 	}
 	
@@ -46,7 +45,30 @@ public class Insert<T extends Table<T>> {
 	 * 
 	 * @return a non null {@link Set}
 	 */
-	public Set<UpdateColumn<T, ?>> getRow() {
+	public Set<InsertColumn<T, ?>> getRow() {
 		return row;
+	}
+	
+	
+	/**
+	 * {@link Column} and its value to be inserted
+	 */
+	public static class InsertColumn<T extends Table<T>, V> {
+		
+		private final Column<T, V> column;
+		private final V value;
+		
+		public InsertColumn(Column<? extends T, ? extends V> column, V value) {
+			this.column = (Column<T, V>) column;
+			this.value = value;
+		}
+		
+		public Column<T, V> getColumn() {
+			return column;
+		}
+		
+		public V getValue() {
+			return value;
+		}
 	}
 }

@@ -4,8 +4,10 @@ import javax.sql.DataSource;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.sql.Connection;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +15,6 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 import org.codefilarete.reflection.MethodReferenceCapturer;
@@ -36,13 +37,15 @@ import org.codefilarete.stalactite.sql.DialectResolver;
 import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.order.ColumnVariable;
 import org.codefilarete.stalactite.sql.order.Delete;
 import org.codefilarete.stalactite.sql.order.DeleteCommandBuilder;
 import org.codefilarete.stalactite.sql.order.Insert;
 import org.codefilarete.stalactite.sql.order.InsertCommandBuilder;
 import org.codefilarete.stalactite.sql.order.InsertCommandBuilder.InsertStatement;
+import org.codefilarete.stalactite.sql.order.PlaceholderVariable;
+import org.codefilarete.stalactite.sql.order.StatementVariable;
 import org.codefilarete.stalactite.sql.order.Update;
-import org.codefilarete.stalactite.sql.order.Update.UpdateColumn;
 import org.codefilarete.stalactite.sql.order.UpdateCommandBuilder;
 import org.codefilarete.stalactite.sql.order.UpdateCommandBuilder.UpdateStatement;
 import org.codefilarete.stalactite.sql.result.Accumulator;
@@ -483,63 +486,21 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	
 	private class DefaultBatchUpdate<T extends Table<T>> implements BatchUpdate<T> {
 		
-		private abstract class StatementVariable<V> {
-			
-			abstract void applyValueTo(UpdateStatement<T> updateStatement);
-		}
-		
-		private class ColumnVariable<V> extends StatementVariable<V> {
-			
-			private final Column<T, V> column;
-			private final V value;
-			
-			public ColumnVariable(Column<? extends T, ? extends V> column, V value) {
-				this.column = (Column<T, V>) column;
-				this.value = value;
-			}
-			
-			@Override
-			void applyValueTo(UpdateStatement<T> updateStatement) {
-				updateStatement.setValue(column, value);
-			}
-		}
-		
-		private class PlaceholderVariable<V> extends StatementVariable<V> {
-			
-			private final String name;
-			private final V value;
-			
-			private PlaceholderVariable(String name, V value) {
-				this.name = name;
-				this.value = value;
-			}
-			
-			@Override
-			void applyValueTo(UpdateStatement<T> updateStatement) {
-				updateStatement.setValue(name, value);
-			}
-		}
-		
 		private final Update<T> statement;
 		private final Set<Column<T, ?>> columns;
-		private final List<Set<? extends StatementVariable<?>>> rows = new ArrayList<>();
+		private final Deque<Set<? extends StatementVariable<?, T>>> rows = new ArrayDeque<>();
+		private UpdateStatement<T> updateStatement;
 		
 		private DefaultBatchUpdate(Update<T> statement, Set<? extends Column<T, ?>> columns, Where where) {
 			this.statement = statement;
 			this.statement.getCriteria().add(where);
 			this.columns = (Set<Column<T, ?>>) columns;
-			Set<ColumnVariable<?>> rowAsVariables = statement.getRow().stream()
-					.map(updateColumn -> new ColumnVariable<>(
-							updateColumn.getColumn(),
-							updateColumn.getValue()))
-					.collect(Collectors.toCollection(KeepOrderSet::new));
-			this.rows.add(rowAsVariables);
+			this.rows.add(statement.getRow());
 		}
 		
 		@Override
 		public DefaultBatchUpdate<T> newRow() {
-			statement.getRow().clear();
-			rows.add(new KeepOrderSet<>());
+			rows.addLast(new KeepOrderSet<>());
 			return this;
 		}
 		
@@ -547,7 +508,6 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		@Override
 		public <C> DefaultBatchUpdate<T> set(Column<? extends T, C> column, C value) {
 			assertColumnIsInUpdate(column);
-			statement.set(column, value);
 			getCurrentRow().add(new ColumnVariable<>(column, value));
 			return this;
 		}
@@ -558,8 +518,8 @@ public class PersistenceContext implements DatabaseCrudOperations {
 			return this;
 		}
 		
-		private Set<StatementVariable<?>> getCurrentRow() {
-			return (Set<StatementVariable<?>>) Iterables.last(rows);
+		private Set<StatementVariable<?, T>> getCurrentRow() {
+			return (Set<StatementVariable<?, T>>) rows.getLast();
 		}
 		
 		private <C> void assertColumnIsInUpdate(Column<? extends T, C> column) {
@@ -573,8 +533,10 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		 */
 		@Override
 		public long execute() {
-			UpdateCommandBuilder<T> updateCommandBuilder = new UpdateCommandBuilder<>(this.statement, dialect);
-			UpdateStatement<T> updateStatement = updateCommandBuilder.toStatement();
+			// because BatchUpdate are reusable we don't recreate the statement each time the execute() method is called
+			if (updateStatement == null) {
+				updateStatement = new UpdateCommandBuilder<>(this.statement, dialect).toStatement();
+			}
 			long[] writeCount;
 			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(updateStatement, getConnectionProvider())) {
 				rows.forEach(row -> {
@@ -586,7 +548,6 @@ public class PersistenceContext implements DatabaseCrudOperations {
 			// we clear current rows to let one reuse this instance
 			rows.clear();
 			rows.add(new KeepOrderSet<>());
-			statement.getRow().clear();
 			return LongStream.of(writeCount).sum();
 		}
 	}
@@ -615,7 +576,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	
 	private class DefaultBatchInsert<T extends Table<T>> extends Insert<T> implements BatchInsert<T> {
 		
-		private final List<Set<UpdateColumn<T, ?>>> rows = new ArrayList<>();
+		private final List<Set<InsertColumn<T, ?>>> rows = new ArrayList<>();
 		
 		private DefaultBatchInsert(T table) {
 			super(table);
@@ -646,7 +607,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 				this.rows.stream()
 						// avoiding empty rows made by several calls to newRow(..) without setting values. Can happen if insert(..) is reused in a loop.
 						.filter(not(Set::isEmpty))
-						.<Map<Column<T, ?>, ?>>map(row -> Iterables.map(row, UpdateColumn::getColumn, UpdateColumn::getValue))
+						.<Map<Column<T, ?>, ?>>map(row -> Iterables.map(row, InsertColumn::getColumn, InsertColumn::getValue))
 						.forEach(writeOperation::addBatch);
 				writeCount = writeOperation.executeBatch();
 			}

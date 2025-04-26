@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 import org.codefilarete.stalactite.query.builder.QuotingDMLNameProvider;
+import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -15,6 +16,7 @@ import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.codefilarete.stalactite.query.model.Operators.eq;
 import static org.codefilarete.stalactite.query.model.Operators.in;
 import static org.mockito.Mockito.mock;
@@ -135,6 +137,97 @@ class UpdateCommandBuilderTest {
 		verify(preparedStatementMock, times(2)).setInt(2, 666);
 		verify(preparedStatementMock, times(2)).setLong(3, 42L);
 		verify(preparedStatementMock, times(2)).setLong(4, 43L);
+	}
+	
+	@Test
+	<T extends Table<T>> void toStatement_withPlaceHolderInCriteria() throws SQLException {
+		T totoTable = (T) new Table("Toto");
+		Column<T, Long> columnA = totoTable.addColumn("a", Long.class);
+		Column<T, Long> columnB = totoTable.addColumn("b", Long.class);
+		Column<T, String> columnC = totoTable.addColumn("c", String.class);
+		Column<T, Integer> columnD = totoTable.addColumn("d", Integer.class);
+		
+		Update<T> update = new Update<>(totoTable)
+				.set(columnB, columnA)
+				.set(columnC, "tata")
+				.set(columnD, 666)
+				.set("criterion", "t");
+		update.where(columnC, Operators.likeArgNamed("criterion", String.class));
+		Dialect dialect = new DefaultDialect();
+		UpdateCommandBuilder<T> testInstance = new UpdateCommandBuilder<T>(update, dialect);
+		
+		UpdateStatement<T> result = testInstance.toStatement();
+		assertThat(result.getSQL()).isEqualTo("update Toto set b = a, c = ?, d = ? where c like ?");
+		
+		assertThat(result.getValues()).containsAllEntriesOf(Maps.asMap(1, (Object) "tata").add(2, 666));
+		assertThat(result.getParameterBinder(1)).isEqualTo(DefaultParameterBinders.STRING_BINDER);
+		assertThat(result.getParameterBinder(2)).isEqualTo(DefaultParameterBinders.INTEGER_BINDER);
+		assertThat(result.getParameterBinder(3)).isEqualTo(DefaultParameterBinders.STRING_BINDER);
+		
+		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
+		result.applyValues(preparedStatementMock);
+		verify(preparedStatementMock).setString(1, "tata");
+		verify(preparedStatementMock).setInt(2, 666);
+		verify(preparedStatementMock).setString(3, "t");
+		
+		// test with modification of already-set columns
+		result.setValue(columnC, "tutu");
+		result.applyValues(preparedStatementMock);
+		verify(preparedStatementMock, times(1)).setString(1, "tata");
+		verify(preparedStatementMock, times(1)).setString(1, "tutu");
+		verify(preparedStatementMock, times(2)).setInt(2, 666);
+		verify(preparedStatementMock, times(2)).setString(3, "t");
+	}
+	
+	@Test
+	<T extends Table<T>> void toStatement_placeholderValueIsNotSet_throwsException() {
+		T totoTable = (T) new Table("Toto");
+		Column<T, Long> columnA = totoTable.addColumn("a", Long.class);
+		Column<T, Long> columnB = totoTable.addColumn("b", Long.class);
+		Column<T, String> columnC = totoTable.addColumn("c", String.class);
+		Column<T, Integer> columnD = totoTable.addColumn("d", Integer.class);
+		
+		Update<T> update = new Update<>(totoTable)
+				.set(columnB, columnA)
+				.set(columnC, "tata")
+				.set(columnD, 666);
+		update.where(columnC, Operators.likeArgNamed("criterion", String.class));
+		Dialect dialect = new DefaultDialect();
+		UpdateCommandBuilder<T> testInstance = new UpdateCommandBuilder<T>(update, dialect);
+		
+		UpdateStatement<T> result = testInstance.toStatement();
+		assertThat(result.getSQL()).isEqualTo("update Toto set b = a, c = ?, d = ? where c like ?");
+		
+		assertThat(result.getValues()).containsAllEntriesOf(Maps.asMap(1, (Object) "tata").add(2, 666));
+		assertThat(result.getParameterBinder(1)).isEqualTo(DefaultParameterBinders.STRING_BINDER);
+		assertThat(result.getParameterBinder(2)).isEqualTo(DefaultParameterBinders.INTEGER_BINDER);
+		assertThat(result.getParameterBinder(3)).isEqualTo(DefaultParameterBinders.STRING_BINDER);
+		
+		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
+		assertThatCode(() -> result.applyValues(preparedStatementMock))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("Statement expect values for placeholders: criterion");
+	}
+	
+	@Test
+	<T extends Table<T>> void toStatement_givenPlaceholderNameDoesntMatchAnyExistingOne_throwsException() {
+		T totoTable = (T) new Table("Toto");
+		Column<T, Long> columnA = totoTable.addColumn("a", Long.class);
+		Column<T, Long> columnB = totoTable.addColumn("b", Long.class);
+		Column<T, String> columnC = totoTable.addColumn("c", String.class);
+		Column<T, Integer> columnD = totoTable.addColumn("d", Integer.class);
+		
+		Update<T> update = new Update<>(totoTable)
+				.set(columnB, columnA)
+				.set(columnC, "tata")
+				.set(columnD, 666)
+				.set("xxx", "t");
+		update.where(columnC, Operators.likeArgNamed("criterion", String.class));
+		UpdateCommandBuilder<T> testInstance = new UpdateCommandBuilder<T>(update, new DefaultDialect());
+		
+		assertThatCode(testInstance::toStatement)
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("No placeholder named \"xxx\" found in statement, available are [criterion]");
 	}
 	
 	@Test
