@@ -1,10 +1,8 @@
 package org.codefilarete.stalactite.sql.order;
 
+import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.model.ConditionalOperator;
-import org.codefilarete.stalactite.query.model.Criteria;
-import org.codefilarete.stalactite.query.model.CriteriaChain;
 
 /**
  * A fluent way of writing a SQL delete clause by leveraging {@link Column} : conditions can only be set through it.
@@ -19,40 +17,22 @@ public class Delete<T extends Table<T>> {
 	/** Main table of values to delete */
 	private final T targetTable;
 	
-	private final Criteria<?> criteriaDelegate = new Criteria<>();
+	private final Where<?> criteria;
 	
 	public Delete(T targetTable) {
+		this(targetTable, new Where<>());
+	}
+	
+	public Delete(T targetTable, Where<?> where) {
 		this.targetTable = targetTable;
+		this.criteria = where;
 	}
 	
 	public T getTargetTable() {
 		return targetTable;
 	}
 	
-	public CriteriaChain getCriteria() {
-		return criteriaDelegate;
+	public Where<?> getCriteria() {
+		return criteria;
 	}
-	
-	/**
-	 * Adds a criteria to this delete.
-	 *
-	 * @param column a column target of the condition
-	 * @param condition the condition
-	 * @return this
-	 */
-	public CriteriaChain where(Column<T, ?> column, String condition) {
-		return criteriaDelegate.and(column, condition);
-	}
-	
-	/**
-	 * Adds a criteria to this delete.
-	 *
-	 * @param column a column target of the condition
-	 * @param condition the condition
-	 * @return this
-	 */
-	public CriteriaChain where(Column<T, ?> column, ConditionalOperator condition) {
-		return criteriaDelegate.and(column, condition);
-	}
-	
 }

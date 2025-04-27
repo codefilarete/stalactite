@@ -235,7 +235,7 @@ public class PersistenceContextTest {
 		Column<Table, String> name = totoTable.addColumn("name", String.class);
 		
 		// test delete
-		testInstance.delete(totoTable).where(id, eq(42L)).and(name, eq("Hello world !")).execute();
+		testInstance.delete(totoTable, where(id, eq(42L)).and(name, eq("Hello world !"))).execute();
 		
 		assertThat(sqlStatementCaptor.getValue()).isEqualTo("delete from toto where id = ? and name = ?");
 		assertThat(valuesStatementCaptor.getAllValues()).containsExactly(42L, "Hello world !");

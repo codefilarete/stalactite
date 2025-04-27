@@ -261,4 +261,6 @@ public interface DatabaseCrudOperations {
 	<T extends Table<T>> BatchInsert<T> batchInsert(T table);
 	
 	<T extends Table<T>> ExecutableDelete<T> delete(T table);
+	
+	<T extends Table<T>> ExecutableDelete<T> delete(T table, Where<?> where);
 }

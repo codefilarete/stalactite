@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.sql.order;
 
 import java.util.Set;
 
-import org.codefilarete.stalactite.query.model.Criteria;
 import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -54,7 +53,7 @@ public class Update<T extends Table<T>> {
 		return columnsToUpdate;
 	}
 	
-	public Criteria<?> getCriteria() {
+	public Where<?> getCriteria() {
 		return criteria;
 	}
 	

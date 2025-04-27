@@ -365,7 +365,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	
 	@Override
 	public <T extends Table<T>> BatchUpdate<T> batchUpdate(T table, Set<? extends Column<T, ?>> columns, Where<?> where) {
-		return new DefaultBatchUpdate<>(new Update<>(table, columns), where, dialect, getConnectionProvider());
+		return new DefaultBatchUpdate<>(new Update<>(table, columns, where), dialect, getConnectionProvider());
 	}
 	
 	@Override
@@ -381,6 +381,11 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	@Override
 	public <T extends Table<T>> ExecutableDelete<T> delete(T table) {
 		return new DefaultExecutableDelete<>(table, dialect, getConnectionProvider());
+	}
+	
+	@Override
+	public <T extends Table<T>> ExecutableDelete<T> delete(T table, Where<?> where) {
+		return new DefaultExecutableDelete<>(table, where, dialect, getConnectionProvider());
 	}
 	
 	/**

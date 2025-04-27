@@ -47,6 +47,7 @@ import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.query.model.Operators.like;
+import static org.codefilarete.stalactite.query.model.QueryEase.where;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -260,7 +261,7 @@ class DialectBuilderTest {
 			assertThat(sqlCaptor.getValue()).isEqualTo("select dummyTable.dummyColumn from dummyTable where dummyTable.dummyColumn LIKE 'x'");
 			
 			// Checking that operator override is taken into Delete rendering
-			persistenceContext.delete(dummyTable).where(dummyColumn, like("x")).execute();
+			persistenceContext.delete(dummyTable, where(dummyColumn, like("x"))).execute();
 			assertThat(sqlCaptor.getValue()).isEqualTo("delete from dummyTable where dummyColumn LIKE ?");
 		}
 		
@@ -316,7 +317,7 @@ class DialectBuilderTest {
 			assertThat(sqlCaptor.getValue()).isEqualTo("select dummyTable.dummyColumn from dummyTable where dummyTable.dummyColumn myOperator '42'");
 			
 			// Checking that operator override is taken into Delete rendering
-			persistenceContext.delete(dummyTable).where(dummyColumn, new MyOperator("42")).execute();
+			persistenceContext.delete(dummyTable, where(dummyColumn, new MyOperator("42"))).execute();
 			assertThat(sqlCaptor.getValue()).isEqualTo("delete from dummyTable where dummyColumn myOperator ?");
 		}
 	}

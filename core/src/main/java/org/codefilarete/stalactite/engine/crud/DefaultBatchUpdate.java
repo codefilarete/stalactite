@@ -5,7 +5,6 @@ import java.util.Deque;
 import java.util.Set;
 import java.util.stream.LongStream;
 
-import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -32,9 +31,8 @@ public class DefaultBatchUpdate<T extends Table<T>> implements BatchUpdate<T> {
 	private final ConnectionProvider connectionProvider;
 	private UpdateStatement<T> updateStatement;
 	
-	public DefaultBatchUpdate(Update<T> statement, Where<?> where, Dialect dialect, ConnectionProvider connectionProvider) {
+	public DefaultBatchUpdate(Update<T> statement, Dialect dialect, ConnectionProvider connectionProvider) {
 		this.statement = statement;
-		this.statement.getCriteria().add(where);
 		this.dialect = dialect;
 		this.connectionProvider = connectionProvider;
 		this.rows.add(statement.getRow());
