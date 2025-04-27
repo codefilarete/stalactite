@@ -31,7 +31,7 @@ public interface SQLAppender {
 	<V> SQLAppender catValue(@Nullable Selectable<V> column, Object value);
 	
 	/**
-	 * Appends value to underlying statement. To be used when {@link #catValue(Selectable, Object)} can't be applied.
+	 * Appends value to the underlying statement. To be used when {@link #catValue(Selectable, Object)} can't be applied.
 	 * 
 	 * @param value the value to be printed
 	 * @return this

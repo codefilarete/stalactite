@@ -77,10 +77,6 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 		this.entityJoinTree = entityJoinTree;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
-//		// we use EntityTreeQueryBuilder to get the inflater, please note that it also build the default Query
-//		this.entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
-//		this.inflater = entityTreeQuery.getInflater();
-//		this.defaultQuery = entityTreeQuery.getQuery();
 	}
 	
 	public Set<C> selectFromQueryBean(String sql, Map<String, Object> values) {

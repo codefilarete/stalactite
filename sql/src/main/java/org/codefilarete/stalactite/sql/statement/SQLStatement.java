@@ -9,11 +9,11 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriterIndex;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriterProvider;
+import org.codefilarete.tool.collection.Iterables;
 
 /**
  * Parent class that defines methods for applying values to {@link PreparedStatement} that is supposed to be built
@@ -124,9 +124,11 @@ public abstract class SQLStatement<ParamType> {
 			throw new IllegalArgumentException("Missing value for parameters " + indexDiff + " in values " + values + " in \"" + getSQL() + "\"");
 		}
 		// Looking for undefined binder
-		Set<ParamType> missingParameters = values.keySet().stream().filter(paramType -> parameterBinderProvider.doGetWriter(paramType) == null).collect(Collectors.toSet());
+		Set<ParamType> missingParameters = values.keySet().stream()
+				.filter(paramType -> parameterBinderProvider.doGetWriter(paramType) == null)
+				.collect(Collectors.toSet());
 		if (!missingParameters.isEmpty()) {
-			throw new IllegalArgumentException("Missing binder for " + missingParameters + " for values " + values + " in \"" + getSQL() + "\"");
+			throw new IllegalArgumentException("Missing binder for parameters " + missingParameters + " for values " + values + " in \"" + getSQL() + "\"");
 		}
 	}
 	
