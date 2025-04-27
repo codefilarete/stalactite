@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.codefilarete.stalactite.query.model.Operators;
@@ -48,7 +49,7 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 		connection.prepareStatement("insert into Toto(id, name) values (1, 'Hello')").execute();
 		connection.prepareStatement("insert into Toto(id, name) values (2, 'World')").execute();
 		
-		Set<Toto> records = testInstance.select(Toto::new, selectMapping -> selectMapping.add(name, Toto::setName));
+		List<Toto> records = testInstance.select(Toto::new, selectMapping -> selectMapping.add(name, Toto::setName));
 		assertThat(records)
 				.usingRecursiveFieldByFieldElementComparator()
 				.containsExactlyInAnyOrder(new Toto(-1, "Hello"), new Toto(-1, "World"));
@@ -101,7 +102,7 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 		connection.prepareStatement("insert into Toto(id, dummyProp) values (1, 'Hello')").execute();
 		connection.prepareStatement("insert into Toto(id, dummyProp) values (2, 'World')").execute();
 		
-		Set<Toto> records = testInstance.select(Toto::new, id, dummyProp);
+		List<Toto> records = testInstance.select(Toto::new, id, dummyProp);
 		assertThat(records)
 				.usingRecursiveFieldByFieldElementComparator()
 				.containsExactlyInAnyOrder(new Toto(1, new Wrapper("Hello")), new Toto(2, new Wrapper("World")));
@@ -130,7 +131,7 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 		connection.prepareStatement("insert into Toto(id, dummyProp) values (1, 'Hello')").execute();
 		connection.prepareStatement("insert into Toto(id, dummyProp) values (2, 'World')").execute();
 		
-		Set<Toto> records = testInstance.select(Toto::new, id, dummyProp);
+		List<Toto> records = testInstance.select(Toto::new, id, dummyProp);
 		assertThat(records)
 				.usingRecursiveFieldByFieldElementComparator()
 				.containsExactlyInAnyOrder(new Toto(1, new Wrapper("Hello")), new Toto(2, new Wrapper("World")));

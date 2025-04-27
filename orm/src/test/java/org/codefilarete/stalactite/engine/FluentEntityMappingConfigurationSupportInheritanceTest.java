@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine;
 
 import javax.sql.DataSource;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -102,7 +103,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			// insert test
 			carPersister.insert(dummyCar);
 			
-			Set<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
+			List<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
 					.add(mappedSuperClassData.carTable.modelColumn, Car::setModel)
 					.add(mappedSuperClassData.carTable.colorColumn, Car::setColor));
 			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
@@ -140,7 +141,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			// insert test
 			carPersister.insert(dummyCar);
 			
-			Set<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
+			List<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
 					.add(mappedSuperClassData.carTable.modelColumn, Car::setModel)
 					.add(mappedSuperClassData.carTable.colorColumn, Car::setColor));
 			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
@@ -345,7 +346,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			// insert test
 			carPersister.insert(dummyCar);
 			
-			Set<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
+			List<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
 					.add(mappedSuperClassData.carTable.modelColumn, Car::setModel)
 					.add(mappedSuperClassData.carTable.colorColumn, Car::setColor));
 			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
@@ -423,7 +424,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			// insert test
 			carPersister.insert(dummyCar);
 			
-			Set<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
+			List<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
 					.add(mappedSuperClassData.carTable.modelColumn, Car::setModel)
 					.add(mappedSuperClassData.carTable.colorColumn, Car::setColor));
 			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
@@ -466,7 +467,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			// insert test
 			carPersister.insert(dummyCar);
 			
-			Set<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
+			List<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
 					.add(mappedSuperClassData.carTable.modelColumn, Car::setModel)
 					.add(mappedSuperClassData.carTable.colorColumn, Car::setColor));
 			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);

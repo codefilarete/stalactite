@@ -14,6 +14,7 @@ import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -47,7 +48,6 @@ import org.codefilarete.stalactite.id.StatefulIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
@@ -66,6 +66,7 @@ import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter.LambdaPreparedStatementWriter;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader.LambdaResultSetReader;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.tool.Dates;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.InvocationHandlerSupport;
@@ -567,7 +568,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		persister.insert(toto);
 		
 		// insert should not write data
-		Set<Duo<Identifier<UUID>, String>> totoNames = persistenceContext.select(Duo::new, idColumn, nameColumn);
+		List<Duo<Identifier<UUID>, String>> totoNames = persistenceContext.select(Duo::new, idColumn, nameColumn);
 		assertThat(totoNames).containsExactly(new Duo<>(toto.getId(), null));
 		
 		// testing that select fill the property (the property is not totally ignored) 
@@ -726,7 +727,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		select = persister.select(toto.getId());
 		assertThat(select.getName()).isEqualTo("TITI");
 		// database value is in upper case
-		assertThat(persistenceContext.select(SerializableFunction.identity(), name)).containsExactly("TITI");
+		assertThat(persistenceContext.select(SerializableFunction.identity(), name)).containsExactly(new Object[] { "TITI" });
 	}
 	
 	@Test
@@ -870,7 +871,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		toto.setName("toto");
 		persister.persist(toto);
 		
-		Set<Duo> select = persistenceContext.select(Duo::new, id, name);
+		List<Duo> select = persistenceContext.select(Duo::new, id, name);
 		assertThat(select.size()).isEqualTo(1);
 		assertThat(((Identifier) first(select).getLeft()).getDelegate().toString()).isEqualTo(toto.getId().getDelegate().toString());
 	}
@@ -1561,7 +1562,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			persister.insert(toto);
 			
 			// Is everything fine in database ?
-			Set<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
+			List<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
 			assertThat(first(select)).isEqualTo(toto.getTimestamp());
 			
 			// Is loading is fine too ?
@@ -1608,7 +1609,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			persister.insert(toto);
 			
 			// Is everything fine in database ?
-			Set<TimestampWithLocale> select = persistenceContext.select(TimestampWithLocale::new, creationDate, modificationDate, localeColumn);
+			List<TimestampWithLocale> select = persistenceContext.select(TimestampWithLocale::new, creationDate, modificationDate, localeColumn);
 			assertThat(first(select)).isEqualTo(toto.getTimestamp());
 			
 			// Is loading is fine too ?
@@ -1656,7 +1657,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			persister.insert(toto);
 			
 			// Is everything fine in database ?
-			Set<TimestampWithLocale> select = persistenceContext.select(TimestampWithLocale::new, creationDate, modificationDate, localeColumn);
+			List<TimestampWithLocale> select = persistenceContext.select(TimestampWithLocale::new, creationDate, modificationDate, localeColumn);
 			assertThat(first(select)).isEqualTo(toto.getTimestamp());
 			
 			// Is loading is fine too ?
@@ -1699,7 +1700,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			persister.insert(toto);
 			
 			// Is everything fine in database ?
-			Set<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
+			List<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
 			assertThat(first(select)).isEqualTo(toto.getTimestamp());
 			
 			// Is loading is fine too ?
@@ -1760,7 +1761,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			persister.insert(toto);
 			
 			// Is everything fine in database ?
-			Set<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
+			List<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
 			assertThat(first(select)).isEqualTo(toto.getTimestamp());
 			
 			// Is loading is fine too ?
@@ -1861,7 +1862,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			persister.insert(toto);
 			
 			// Is everything fine in database ?
-			Set<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
+			List<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
 			assertThat(first(select)).isEqualTo(toto.getTimestamp());
 			
 			// Is loading is fine too ?

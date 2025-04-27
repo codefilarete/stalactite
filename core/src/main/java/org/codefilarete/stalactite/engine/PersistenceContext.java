@@ -6,6 +6,7 @@ import java.lang.reflect.Executable;
 import java.sql.Connection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -256,55 +257,55 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	}
 	
 	@Override
-	public <C, I, T extends Table> Set<C> select(SerializableFunction<I, C> factory, Column<T, I> column) {
+	public <C, I, T extends Table> List<C> select(SerializableFunction<I, C> factory, Column<T, I> column) {
 		Executable constructor = new MethodReferenceCapturer().findExecutable(factory);
 		return newQuery(QueryEase
 				.select(column).from(column.getTable()), ((Class<C>) constructor.getDeclaringClass()))
 				.mapKey(factory, column)
-				.execute(Accumulators.toSet());
+				.execute(Accumulators.toList());
 	}
 	
 	@Override
-	public <C, I, J, T extends Table> Set<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2) {
+	public <C, I, J, T extends Table> List<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2) {
 		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
 		return newQuery(QueryEase.select(column1, column2).from(column1.getTable()), constructor.getDeclaringClass())
 				.mapKey(factory, column1, column2)
-				.execute(Accumulators.toSet());
+				.execute(Accumulators.toList());
 	}
 	
 	@Override
-	public <C, I, J, K, T extends Table> Set<C> select(SerializableTriFunction<I, J, K, C> factory, Column<T, I> column1, Column<T, J> column2, Column<T, K> column3) {
+	public <C, I, J, K, T extends Table> List<C> select(SerializableTriFunction<I, J, K, C> factory, Column<T, I> column1, Column<T, J> column2, Column<T, K> column3) {
 		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
 		return newQuery(QueryEase.select(column1, column2, column3).from(column1.getTable()), constructor.getDeclaringClass())
 				.mapKey(factory, column1, column2, column3)
-				.execute(Accumulators.toSet());
+				.execute(Accumulators.toList());
 	}
 	
 	@Override
-	public <C, T extends Table> Set<C> select(SerializableSupplier<C> factory, Consumer<SelectMapping<C, T>> selectMapping) {
+	public <C, T extends Table> List<C> select(SerializableSupplier<C> factory, Consumer<SelectMapping<C, T>> selectMapping) {
 		return select(factory, selectMapping, where -> {});
 	}
 	
 	@Override
-	public <C, I, T extends Table> Set<C> select(SerializableFunction<I, C> factory, Column<T, I> column, Consumer<SelectMapping<C, T>> selectMapping) {
+	public <C, I, T extends Table> List<C> select(SerializableFunction<I, C> factory, Column<T, I> column, Consumer<SelectMapping<C, T>> selectMapping) {
 		return select(factory, column, selectMapping, where -> {});
 	}
 	
 	@Override
-	public <C, I, J, T extends Table> Set<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2,
+	public <C, I, J, T extends Table> List<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2,
 													Consumer<SelectMapping<C, T>> selectMapping) {
 		return select(factory, column1, column2, selectMapping, where -> {});
 	}
 	
 	@Override
-	public <C, T extends Table> Set<C> select(SerializableSupplier<C> factory, Consumer<SelectMapping<C, T>> selectMapping,
+	public <C, T extends Table> List<C> select(SerializableSupplier<C> factory, Consumer<SelectMapping<C, T>> selectMapping,
 											  Consumer<CriteriaChain> where) {
 		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
 		return select(constructor.getDeclaringClass(), queryMapper -> queryMapper.mapKey(factory), Collections.emptySet(), selectMapping, where);
 	}
 	
 	@Override
-	public <C, I, T extends Table> Set<C> select(SerializableFunction<I, C> factory, Column<T, I> column,
+	public <C, I, T extends Table> List<C> select(SerializableFunction<I, C> factory, Column<T, I> column,
 												 Consumer<SelectMapping<C, T>> selectMapping,
 												 Consumer<CriteriaChain> where) {
 		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
@@ -312,7 +313,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	}
 	
 	@Override
-	public <C, I, J, T extends Table> Set<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2,
+	public <C, I, J, T extends Table> List<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2,
 													Consumer<SelectMapping<C, T>> selectMapping,
 													Consumer<CriteriaChain> where) {
 		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
@@ -330,7 +331,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	 * @param <C> type of created beans
 	 * @return beans created with selected data
 	 */
-	private <C, T extends Table> Set<C> select(Class<C> beanType,
+	private <C, T extends Table> List<C> select(Class<C> beanType,
 											   Consumer<BeanKeyQueryMapper<C>> keyMapper,
 											   Set<? extends Column<?, ?>> selectableKeys,
 											   Consumer<SelectMapping<C, T>> selectMapping,
@@ -349,8 +350,8 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		return execute(queryMapper);
 	}
 	
-	private <C> Set<C> execute(QueryMapper<C> queryMapper) {
-		return execute(queryMapper, Accumulators.toSet());
+	private <C> List<C> execute(QueryMapper<C> queryMapper) {
+		return execute(queryMapper, Accumulators.toList());
 	}
 	
 	private <C, R> R execute(QueryMapper<C> queryMapper, Accumulator<C, ?, R> accumulator) {

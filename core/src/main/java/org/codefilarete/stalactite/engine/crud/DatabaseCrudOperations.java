@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine.crud;
 
+import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -88,7 +89,7 @@ public interface DatabaseCrudOperations {
 	 * @see #select(SerializableFunction, Column, Consumer, Consumer)
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	<C, I, T extends Table> Set<C> select(SerializableFunction<I, C> factory, Column<T, I> column);
+	<C, I, T extends Table> List<C> select(SerializableFunction<I, C> factory, Column<T, I> column);
 	
 	/**
 	 * Queries the database for given columns and invokes given 2-args constructor with them.
@@ -108,7 +109,7 @@ public interface DatabaseCrudOperations {
 	 * @see #select(SerializableBiFunction, Column, Column, Consumer, Consumer)
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	<C, I, J, T extends Table> Set<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2);
+	<C, I, J, T extends Table> List<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2);
 	
 	/**
 	 * Queries the database for given columns and invokes given 3-args constructor with them.
@@ -130,7 +131,7 @@ public interface DatabaseCrudOperations {
 	 * @see #select(SerializableBiFunction, Column, Column, Consumer, Consumer)
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	<C, I, J, K, T extends Table> Set<C> select(SerializableTriFunction<I, J, K, C> factory, Column<T, I> column1, Column<T, J> column2, Column<T, K> column3);
+	<C, I, J, K, T extends Table> List<C> select(SerializableTriFunction<I, J, K, C> factory, Column<T, I> column1, Column<T, J> column2, Column<T, K> column3);
 	
 	/**
 	 * Queries the database and invokes given no-arg constructor for each row.
@@ -147,7 +148,7 @@ public interface DatabaseCrudOperations {
 	 * @see #select(SerializableBiFunction, Column, Column, Consumer, Consumer)
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	<C, T extends Table> Set<C> select(SerializableSupplier<C> factory, Consumer<SelectMapping<C, T>> selectMapping);
+	<C, T extends Table> List<C> select(SerializableSupplier<C> factory, Consumer<SelectMapping<C, T>> selectMapping);
 	
 	/**
 	 * Queries the database for given columns and invokes given 1-arg constructor with it.
@@ -167,7 +168,7 @@ public interface DatabaseCrudOperations {
 	 * @see #select(SerializableFunction, Column, Consumer, Consumer)
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	<C, I, T extends Table> Set<C> select(SerializableFunction<I, C> factory, Column<T, I> column, Consumer<SelectMapping<C, T>> selectMapping);
+	<C, I, T extends Table> List<C> select(SerializableFunction<I, C> factory, Column<T, I> column, Consumer<SelectMapping<C, T>> selectMapping);
 	
 	/**
 	 * Queries the database for given columns and invokes given 2-args constructor with them.
@@ -188,7 +189,7 @@ public interface DatabaseCrudOperations {
 	 * @see #select(SerializableFunction, Column, Consumer, Consumer)
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	<C, I, J, T extends Table> Set<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2,
+	<C, I, J, T extends Table> List<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2,
 											 Consumer<SelectMapping<C, T>> selectMapping);
 	
 	/**
@@ -205,7 +206,7 @@ public interface DatabaseCrudOperations {
 	 * @see #select(SerializableBiFunction, Column, Column, Consumer, Consumer)
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	<C, T extends Table> Set<C> select(SerializableSupplier<C> factory, Consumer<SelectMapping<C, T>> selectMapping,
+	<C, T extends Table> List<C> select(SerializableSupplier<C> factory, Consumer<SelectMapping<C, T>> selectMapping,
 									   Consumer<CriteriaChain> where);
 	
 	/**
@@ -224,7 +225,7 @@ public interface DatabaseCrudOperations {
 	 * @return a set of all table records mapped to the given bean
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	<C, I, T extends Table> Set<C> select(SerializableFunction<I, C> factory, Column<T, I> column,
+	<C, I, T extends Table> List<C> select(SerializableFunction<I, C> factory, Column<T, I> column,
 										  Consumer<SelectMapping<C, T>> selectMapping,
 										  Consumer<CriteriaChain> where);
 	
@@ -246,7 +247,7 @@ public interface DatabaseCrudOperations {
 	 * @return a set of all table records mapped to the given bean
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	<C, I, J, T extends Table> Set<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2,
+	<C, I, J, T extends Table> List<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2,
 											 Consumer<SelectMapping<C, T>> selectMapping,
 											 Consumer<CriteriaChain> where);
 	

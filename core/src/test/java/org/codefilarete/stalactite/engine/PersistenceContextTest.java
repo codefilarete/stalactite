@@ -5,7 +5,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import org.codefilarete.stalactite.engine.crud.BatchDelete;
 import org.codefilarete.stalactite.engine.crud.BatchInsert;
@@ -107,7 +106,7 @@ public class PersistenceContextTest {
 		
 		assertThat(effectiveWrite).isEqualTo(2);
 		
-		Set<Long> select = testInstance.select(SerializableFunction.identity(), id);
+		List<Long> select = testInstance.select(SerializableFunction.identity(), id);
 		assertThat(select).containsExactly(1L, 2L);
 		
 		// checking that we can reuse the batch insert instance
@@ -180,7 +179,7 @@ public class PersistenceContextTest {
 				.set("pk", 2L)
 				.execute();
 		
-		assertThat(testInstance.select(SerializableFunction.identity(), nameColumn)).containsExactly("Hello world !");
+		assertThat(testInstance.select(SerializableFunction.identity(), nameColumn)).containsExactly("Hello world !", "Hello world !");
 		
 		assertThat(effectiveWrite).isEqualTo(1);
 		
