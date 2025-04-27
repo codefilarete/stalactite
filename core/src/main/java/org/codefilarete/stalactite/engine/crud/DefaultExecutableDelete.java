@@ -33,6 +33,15 @@ public class DefaultExecutableDelete<T extends Table<T>> extends Delete<T> imple
 		this.connectionProvider = connectionProvider;
 	}
 	
+	/**
+	 * Overridden to adapt return type
+	 */
+	@Override
+	public <O> DefaultExecutableDelete<T> set(String paramName, O value) {
+		super.set(paramName, value);
+		return this;
+	}
+	
 	@Override
 	public long execute() {
 		PreparedSQL deleteStatement = new DeleteCommandBuilder<>(this, dialect).toPreparableSQL().toPreparedSQL(new HashMap<>());

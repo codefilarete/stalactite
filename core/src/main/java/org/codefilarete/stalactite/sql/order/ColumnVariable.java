@@ -29,7 +29,6 @@ public class ColumnVariable<V, T extends Table<T>> extends StatementVariable<V, 
 		return value;
 	}
 	
-	@Override
 	public void applyValueTo(UpdateStatement<T> updateStatement) {
 		updateStatement.setValue(column, value);
 	}

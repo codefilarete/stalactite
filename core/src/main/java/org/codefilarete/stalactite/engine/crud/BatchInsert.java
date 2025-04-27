@@ -14,7 +14,7 @@ public interface BatchInsert<T extends Table<T>> extends ExecutableInsert<T> {
 	/**
 	 * Overridden to adapt return type
 	 */
-	<C> BatchInsert<T> set(Column<? extends T, C> column, C value);
+	<O> BatchInsert<T> set(Column<? extends T, O> column, O value);
 	
 	/**
 	 * Open a new row for insertion. Must be chained with {@link #set(Column, Object)} to fill it.

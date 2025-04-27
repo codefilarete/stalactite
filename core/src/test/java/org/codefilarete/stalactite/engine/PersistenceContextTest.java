@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.codefilarete.stalactite.engine.crud.BatchDelete;
 import org.codefilarete.stalactite.engine.crud.BatchInsert;
 import org.codefilarete.stalactite.engine.crud.BatchUpdate;
 import org.codefilarete.stalactite.sql.ConnectionProvider.DataSourceConnectionProvider;
@@ -239,6 +240,52 @@ public class PersistenceContextTest {
 		
 		assertThat(sqlStatementCaptor.getValue()).isEqualTo("delete from toto where id = ? and name = ?");
 		assertThat(valuesStatementCaptor.getAllValues()).containsExactly(42L, "Hello world !");
+	}
+	
+	@Test
+	void delete_batch() {
+		PersistenceContext testInstance = new PersistenceContext(
+				new DataSourceConnectionProvider(new HSQLDBInMemoryDataSource()), new DefaultDialect());
+		
+		Table totoTable = new Table<>("toto");
+		Column<Table, Long> idColumn = totoTable.addColumn("id", long.class).primaryKey();
+		Column<Table, String> nameColumn = totoTable.addColumn("name", String.class);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(testInstance);
+		ddlDeployer.getDdlGenerator().addTables(totoTable);
+		ddlDeployer.deployDDL();
+		
+		testInstance.batchInsert(totoTable)
+				.set(idColumn, 1L)
+				.set(nameColumn, "Hello world !")
+				.newRow()
+				.set(idColumn, 2L)
+				.set(nameColumn, "Hello everybody !")
+				.newRow()
+				.set(idColumn, 3L)
+				.set(nameColumn, "Hello everyone !")
+				.execute();
+		
+		// test delete
+		BatchDelete deleteStatement = testInstance.batchDelete(totoTable, where(nameColumn, equalsArgNamed("name", String.class)));
+		long execute;
+		
+		execute = deleteStatement
+				.set("name", "Hello world !")
+				.newRow()
+				.set("name", "Hello everybody !")
+				.execute();
+		
+		assertThat(execute).isEqualTo(2);
+		assertThat(testInstance.select(SerializableFunction.identity(), idColumn)).containsExactly(3L);
+		
+		// testing statement reuse
+		execute = deleteStatement
+				.set("name", "Hello everyone !")
+				.execute();
+		
+		assertThat(execute).isEqualTo(1);
+		assertThat(testInstance.select(SerializableFunction.identity(), idColumn)).isEmpty();
 	}
 	
 	@Test

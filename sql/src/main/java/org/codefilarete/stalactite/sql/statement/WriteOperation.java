@@ -58,6 +58,9 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	 */
 	public long[] executeBatch() {
 		LOGGER.debug("Batching statement {} times", batchedStatementCount);
+		// Statement may not have been created in case of a Delete statement because addBatch(..) has not been called, thus we must ensure/create it
+		// for this particular case (which is a kind of bad usage because a Delete statement doesn't require to be a Batch one)
+		ensureStatement();
 		long[] updatedRowCounts;
 		try {
 			getListener().onExecute(getSqlStatement());

@@ -24,7 +24,7 @@ import static org.mockito.Mockito.*;
 class DeleteCommandBuilderTest {
 	
 	@Test
-	<T extends Table<T>> void appendTo_singleTable() {
+	<T extends Table<T>> void appendDeleteStatement_singleTable() {
 		T totoTable = (T) new Table("Toto");
 		Column<T, Long> columnA = totoTable.addColumn("a", Long.class);
 		Column<T, String> columnB = totoTable.addColumn("b", String.class);
@@ -43,7 +43,7 @@ class DeleteCommandBuilderTest {
 	}
 	
 	@Test
-	<T1 extends Table<T1>, T2 extends Table<T2>> void appendTo_multiTable() {
+	<T1 extends Table<T1>, T2 extends Table<T2>> void appendDeleteStatement_multiTable() {
 		T1 totoTable = (T1) new Table("Toto");
 		Column<T1, Long> columnA = totoTable.addColumn("a", Long.class);
 		Column<T1, String> columnB = totoTable.addColumn("b", String.class);

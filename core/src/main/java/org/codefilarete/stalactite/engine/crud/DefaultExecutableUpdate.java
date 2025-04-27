@@ -49,7 +49,7 @@ public class DefaultExecutableUpdate<T extends Table<T>> extends Update<T> imple
 	 * Overridden to adapt return type
 	 */
 	@Override
-	public <C> DefaultExecutableUpdate<T> set(Column<? extends T, C> column, C value) {
+	public <O> DefaultExecutableUpdate<T> set(Column<? extends T, O> column, O value) {
 		super.set(column, value);
 		return this;
 	}
@@ -58,8 +58,17 @@ public class DefaultExecutableUpdate<T extends Table<T>> extends Update<T> imple
 	 * Overridden to adapt return type
 	 */
 	@Override
-	public <C> DefaultExecutableUpdate<T> set(Column<? extends T, C> column1, Column<?, C> column2) {
+	public <O> DefaultExecutableUpdate<T> set(Column<? extends T, O> column1, Column<?, O> column2) {
 		super.set(column1, column2);
+		return this;
+	}
+	
+	/**
+	 * Overridden to adapt return type
+	 */
+	@Override
+	public <O> DefaultExecutableUpdate<T> set(String paramName, O value) {
+		super.set(paramName, value);
 		return this;
 	}
 	

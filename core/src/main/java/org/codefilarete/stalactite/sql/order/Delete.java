@@ -1,8 +1,11 @@
 package org.codefilarete.stalactite.sql.order;
 
+import java.util.Set;
+
 import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.collection.KeepOrderSet;
 
 /**
  * A fluent way of writing a SQL delete clause by leveraging {@link Column} : conditions can only be set through it.
@@ -16,6 +19,8 @@ public class Delete<T extends Table<T>> {
 	
 	/** Main table of values to delete */
 	private final T targetTable;
+	
+	private final Set<PlaceholderVariable<?, T>> row = new KeepOrderSet<>();
 	
 	private final Where<?> criteria;
 	
@@ -32,7 +37,24 @@ public class Delete<T extends Table<T>> {
 		return targetTable;
 	}
 	
+	public Set<PlaceholderVariable<?, T>> getRow() {
+		return row;
+	}
+	
 	public Where<?> getCriteria() {
 		return criteria;
+	}
+	
+	/**
+	 * Sets the value of a named parameter.
+	 *
+	 * @param paramName placeholder name
+	 * @param value the value of the placeholder
+	 * @return this
+	 * @param <O> value type, expected to be compatible with the placeholder one
+	 */
+	public <O> Delete<T> set(String paramName, O value) {
+		this.row.add(new PlaceholderVariable<>(paramName, value));
+		return this;
 	}
 }

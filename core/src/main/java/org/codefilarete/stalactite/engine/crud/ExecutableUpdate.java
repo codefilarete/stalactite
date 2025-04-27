@@ -4,6 +4,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
+ * Contract for an update operation: allows updating a row of a table with some given column values.
  * 
  * @param <T> table type
  * @author Guillaume Mary
@@ -11,14 +12,26 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 public interface ExecutableUpdate<T extends Table<T>> {
 	
 	/**
-	 * Adds a column to update with its value.
+	 * Sets a column value to be updated by this statement.
 	 *
-	 * @param column any column
-	 * @param value value for given column
+	 * @param column any column of targeted {@link Table}
+	 * @param value value for the given column
 	 * @param <O> value type
 	 * @return this
 	 */
 	<O> ExecutableUpdate<T> set(Column<? extends T, O> column, O value);
+	
+	/**
+	 * Sets a criteria value to this statement.
+	 * Criteria are expected to be named and created by some {@link org.codefilarete.stalactite.query.model.Operators} methods
+	 * like {@link org.codefilarete.stalactite.query.model.Operators#equalsArgNamed(String, Class)}.
+	 *
+	 * @param paramName name of the criteria
+	 * @param value value for given parameter
+	 * @param <O> value type
+	 * @return this
+	 */
+	<O> ExecutableUpdate<T> set(String paramName, O value);
 	
 	/**
 	 * Executes this update statement with given values

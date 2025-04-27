@@ -62,10 +62,10 @@ public class Update<T extends Table<T>> {
 	 * 
 	 * @param column any column
 	 * @param value value for given column
-	 * @param <C> value type
+	 * @param <O> value type
 	 * @return this
 	 */
-	public <C> Update<T> set(Column<? extends T, C> column, C value) {
+	public <O> Update<T> set(Column<? extends T, O> column, O value) {
 		this.row.add(new ColumnVariable<>(column, value));
 		return this;
 	}
@@ -77,7 +77,7 @@ public class Update<T extends Table<T>> {
 	 * @param column2 any column
 	 * @return this
 	 */
-	public <C> Update<T> set(Column<? extends T, C> column1, Column<?, C> column2) {
+	public <O> Update<T> set(Column<? extends T, O> column1, Column<?, O> column2) {
 		this.row.add(new ColumnVariable<>(column1, column2));
 		return this;
 	}
@@ -88,9 +88,9 @@ public class Update<T extends Table<T>> {
 	 * @param paramName placeholder name
 	 * @param value the value of the placeholder
 	 * @return this
-	 * @param <C> value type, expected to be compatible with the placeholder one
+	 * @param <O> value type, expected to be compatible with the placeholder one
 	 */
-	public <C> Update<T> set(String paramName, C value) {
+	public <O> Update<T> set(String paramName, O value) {
 		this.row.add(new PlaceholderVariable<>(paramName, value));
 		return this;
 	}

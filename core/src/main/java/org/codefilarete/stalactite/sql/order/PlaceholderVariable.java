@@ -1,7 +1,6 @@
 package org.codefilarete.stalactite.sql.order;
 
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.order.UpdateCommandBuilder.UpdateStatement;
 
 /**
  * Placeholder for a named variable in an update statement, used in the update where clause (criteria part)
@@ -28,8 +27,7 @@ public class PlaceholderVariable<V, T extends Table<T>> extends StatementVariabl
 		return value;
 	}
 	
-	@Override
-	public void applyValueTo(UpdateStatement<T> updateStatement) {
+	public void applyValueTo(WherableStatement updateStatement) {
 		updateStatement.setValue(name, value);
 	}
 }

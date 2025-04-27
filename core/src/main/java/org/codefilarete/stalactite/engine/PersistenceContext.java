@@ -15,9 +15,11 @@ import java.util.function.Function;
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.stalactite.engine.PersisterRegistry.DefaultPersisterRegistry;
+import org.codefilarete.stalactite.engine.crud.BatchDelete;
 import org.codefilarete.stalactite.engine.crud.BatchInsert;
 import org.codefilarete.stalactite.engine.crud.BatchUpdate;
 import org.codefilarete.stalactite.engine.crud.DatabaseCrudOperations;
+import org.codefilarete.stalactite.engine.crud.DefaultBatchDelete;
 import org.codefilarete.stalactite.engine.crud.DefaultBatchInsert;
 import org.codefilarete.stalactite.engine.crud.DefaultBatchUpdate;
 import org.codefilarete.stalactite.engine.crud.DefaultExecutableDelete;
@@ -43,6 +45,7 @@ import org.codefilarete.stalactite.sql.DialectResolver;
 import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.order.Delete;
 import org.codefilarete.stalactite.sql.order.Update;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.Accumulators;
@@ -355,8 +358,13 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	}
 	
 	@Override
-	public <T extends Table<T>> ExecutableUpdate<T> update(T table) {
-		return new DefaultExecutableUpdate<>(table, dialect, getConnectionProvider());
+	public <T extends Table<T>> ExecutableInsert<T> insert(T table) {
+		return new DefaultExecutableInsert<>(table, dialect, getConnectionProvider());
+	}
+	
+	@Override
+	public <T extends Table<T>> BatchInsert<T> batchInsert(T table) {
+		return new DefaultBatchInsert<>(table, dialect, getConnectionProvider());
 	}
 	
 	public <T extends Table<T>> ExecutableUpdate<T> update(T table, Where<?> where) {
@@ -369,23 +377,13 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	}
 	
 	@Override
-	public <T extends Table<T>> ExecutableInsert<T> insert(T table) {
-		return new DefaultExecutableInsert<>(table, dialect, getConnectionProvider());
-	}
-	
-	@Override
-	public <T extends Table<T>> BatchInsert<T> batchInsert(T table) {
-		return new DefaultBatchInsert<>(table, dialect, getConnectionProvider());
-	}
-	
-	@Override
-	public <T extends Table<T>> ExecutableDelete<T> delete(T table) {
-		return new DefaultExecutableDelete<>(table, dialect, getConnectionProvider());
-	}
-	
-	@Override
 	public <T extends Table<T>> ExecutableDelete<T> delete(T table, Where<?> where) {
 		return new DefaultExecutableDelete<>(table, where, dialect, getConnectionProvider());
+	}
+	
+	@Override
+	public <T extends Table<T>> BatchDelete<T> batchDelete(T table, Where<?> where) {
+		return new DefaultBatchDelete<>(new Delete<>(table, where), dialect, getConnectionProvider());
 	}
 	
 	/**

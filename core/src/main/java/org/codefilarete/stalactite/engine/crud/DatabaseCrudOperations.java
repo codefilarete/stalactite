@@ -250,17 +250,39 @@ public interface DatabaseCrudOperations {
 											 Consumer<SelectMapping<C, T>> selectMapping,
 											 Consumer<CriteriaChain> where);
 	
-	<T extends Table<T>> ExecutableUpdate<T> update(T table);
-	
-	<T extends Table<T>> ExecutableUpdate<T> update(T table, Where<?> where);
-	
-	<T extends Table<T>> BatchUpdate<T> batchUpdate(T table, Set<? extends Column<T, ?>> columns, Where<?> where);
-	
 	<T extends Table<T>> ExecutableInsert<T> insert(T table);
 	
 	<T extends Table<T>> BatchInsert<T> batchInsert(T table);
 	
-	<T extends Table<T>> ExecutableDelete<T> delete(T table);
+	default <T extends Table<T>> ExecutableUpdate<T> update(T table) {
+		return update(table, new Where<>());
+	}
+	
+	<T extends Table<T>> ExecutableUpdate<T> update(T table, Where<?> where);
+	
+	default <T extends Table<T>> BatchUpdate<T> batchUpdate(T table) {
+		return batchUpdate(table, new Where<>());
+	}
+	
+	default <T extends Table<T>> BatchUpdate<T> batchUpdate(T table, Where<?> where) {
+		return batchUpdate(table, table.getColumns(), where);
+	}
+	
+	default <T extends Table<T>> BatchUpdate<T> batchUpdate(T table, Set<? extends Column<T, ?>> columns) {
+		return batchUpdate(table, columns, new Where<>());
+	}
+	
+	<T extends Table<T>> BatchUpdate<T> batchUpdate(T table, Set<? extends Column<T, ?>> columns, Where<?> where);
+	
+	default <T extends Table<T>> ExecutableDelete<T> delete(T table) {
+		return delete(table, new Where<>());
+	}
 	
 	<T extends Table<T>> ExecutableDelete<T> delete(T table, Where<?> where);
+	
+	default <T extends Table<T>> BatchDelete<T> batchDelete(T table) {
+		return batchDelete(table, new Where<>());
+	}
+	
+	<T extends Table<T>> BatchDelete<T> batchDelete(T table, Where<?> where);
 }

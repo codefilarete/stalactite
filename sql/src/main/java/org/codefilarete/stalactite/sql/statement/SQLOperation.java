@@ -101,13 +101,15 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	/**
 	 * Common operation for subclasses. Rebuild PreparedStatement if connection has changed. Call {@link #getSQL()} when
 	 * necessary.
-	 * 
-	 * @throws SQLException in case of error during execution
 	 */
-	protected void ensureStatement() throws SQLException {
-		Connection connection = this.connectionProvider.giveConnection();
-		if (this.preparedStatement == null) {
-			prepareStatement(connection);
+	protected void ensureStatement() {
+		try {
+			Connection connection = this.connectionProvider.giveConnection();
+			if (this.preparedStatement == null) {
+				prepareStatement(connection);
+			}
+		} catch (RuntimeException | SQLException e) {
+			throw new BindingException("Error while creating statement " + getSQL(), e);
 		}
 	}
 	
@@ -140,11 +142,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	}
 	
 	protected void applyValuesToEnsuredStatement() {
-		try {
-			ensureStatement();
-		} catch (RuntimeException | SQLException e) {
-			throw new BindingException("Error while creating statement " + getSQL(), e);
-		}
+		ensureStatement();
 		try {
 			this.sqlStatement.applyValues(preparedStatement);
 		} catch (RuntimeException e) {

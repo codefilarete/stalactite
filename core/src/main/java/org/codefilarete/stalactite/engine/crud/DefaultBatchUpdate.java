@@ -55,8 +55,8 @@ public class DefaultBatchUpdate<T extends Table<T>> implements BatchUpdate<T> {
 	}
 	
 	@Override
-	public <C> BatchUpdate<T> set(String argName, C value) {
-		giveCurrentRow().add(new PlaceholderVariable<>(argName, value));
+	public <C> BatchUpdate<T> set(String paramName, C value) {
+		giveCurrentRow().add(new PlaceholderVariable<>(paramName, value));
 		return this;
 	}
 	
@@ -82,7 +82,13 @@ public class DefaultBatchUpdate<T extends Table<T>> implements BatchUpdate<T> {
 		long[] writeCount;
 		try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(updateStatement, connectionProvider)) {
 			rows.forEach(row -> {
-				row.forEach(c -> c.applyValueTo(updateStatement));
+				row.forEach(c -> {
+					if (c instanceof ColumnVariable) {
+						((ColumnVariable) c).applyValueTo(updateStatement);
+					} else if (c instanceof PlaceholderVariable) {
+						((PlaceholderVariable) c).applyValueTo(updateStatement);
+					}
+				});
 				writeOperation.addBatch(updateStatement.getValues());
 			});
 			writeCount = writeOperation.executeBatch();

@@ -204,7 +204,7 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 	 * updateStatement.setValue(..);
 	 * }</pre>
 	 */
-	public static class UpdateStatement<T extends Table<T>> extends PreparedSQL {
+	public static class UpdateStatement<T extends Table<T>> extends PreparedSQL implements WherableStatement {
 		
 		private final Map<Column<T, Object>, Integer> columnIndexes;
 		private final Map<String, Set<Integer>> placeholderIndexes;
@@ -246,7 +246,7 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 		 * @param column {@link Column} to be set
 		 * @param value value applied on Column
 		 */
-		public <C> void setValue(Column<T, C> column, C value) {
+		public <O> void setValue(Column<T, O> column, O value) {
 			Integer index = columnIndexes.get(column);
 			if (index == null) {
 				throw new IllegalArgumentException("Column " + column.getAbsoluteName() + " is not declared updatable with fixed value in the update clause");
@@ -254,7 +254,7 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 			setValue(index, value);
 		}
 		
-		public <C> void setValue(String placeholderName, C value) {
+		public <O> void setValue(String placeholderName, O value) {
 			Set<Integer> placeholderIndex = placeholderIndexes.get(placeholderName);
 			if (placeholderIndex == null) {
 				throw new IllegalArgumentException("Placeholder '" + placeholderName + "' is not declared as a criteria in the where clause");
