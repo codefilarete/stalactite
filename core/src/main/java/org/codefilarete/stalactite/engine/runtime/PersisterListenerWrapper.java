@@ -133,7 +133,7 @@ public abstract class PersisterListenerWrapper<C, I>
 	@Override
 	public void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		if (!Iterables.isEmpty(differencesIterable)) {
-			persisterListener.doWithUpdateListener(differencesIterable, allColumnsStatement, this::doUpdate);
+			persisterListener.doWithUpdateListener(differencesIterable, allColumnsStatement, () -> this.doUpdate(differencesIterable, allColumnsStatement));
 		}
 	}
 	

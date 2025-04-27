@@ -1,8 +1,7 @@
 package org.codefilarete.stalactite.engine.listener;
 
 import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Duo;
@@ -15,7 +14,7 @@ import org.codefilarete.tool.function.ThrowingRunnable;
  * 
  * @author Guillaume Mary
  * @see #doWithInsertListener(Iterable, ThrowingExecutable)
- * @see #doWithUpdateListener(Iterable, boolean, BiFunction)
+ * @see #doWithUpdateListener(Iterable, boolean, Supplier)
  * @see #doWithUpdateByIdListener(Iterable, ThrowingExecutable)
  * @see #doWithDeleteListener(Iterable, ThrowingExecutable)
  * @see #doWithDeleteByIdListener(Iterable, ThrowingExecutable)
@@ -136,11 +135,11 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 	}
 	
 	public <R, T extends Table<T>> R doWithUpdateListener(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement,
-														  BiFunction<Iterable<? extends Duo<C, C>>, Boolean, R> delegate) {
+														  Supplier<R> delegate) {
 		R result;
 		try {
 			updateListener.beforeUpdate(differencesIterable, allColumnsStatement);
-			result = delegate.apply(differencesIterable, allColumnsStatement);
+			result = delegate.get();
 			updateListener.afterUpdate(differencesIterable, allColumnsStatement);
 		} catch (RuntimeException e) {
 			updateListener.onUpdateError(Iterables.collectToList(differencesIterable, Duo::getLeft), e);
@@ -150,10 +149,10 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 	}
 	
 	public <T extends Table<T>> void doWithUpdateListener(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement,
-														  BiConsumer<Iterable<? extends Duo<C, C>>, Boolean> delegate) {
+														  Runnable delegate) {
 		try {
 			updateListener.beforeUpdate(differencesIterable, allColumnsStatement);
-			delegate.accept(differencesIterable, allColumnsStatement);
+			delegate.run();
 			updateListener.afterUpdate(differencesIterable, allColumnsStatement);
 		} catch (RuntimeException e) {
 			updateListener.onUpdateError(Iterables.collectToList(differencesIterable, Duo::getLeft), e);

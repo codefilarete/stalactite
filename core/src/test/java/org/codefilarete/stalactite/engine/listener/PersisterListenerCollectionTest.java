@@ -4,11 +4,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.BiConsumer;
 
+import org.codefilarete.stalactite.engine.listener.UpdateListener.UpdatePayload;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.stalactite.engine.listener.UpdateListener.UpdatePayload;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -129,7 +128,7 @@ public class PersisterListenerCollectionTest {
 		ArrayList<UpdatePayload> entities = new ArrayList<>();
 		ArrayList<Object> result = new ArrayList<>();
 		
-		assertThat(testInstance.doWithUpdateListener(entities, true, (p, b) -> result)).isEqualTo(result);
+		assertThat(testInstance.doWithUpdateListener(entities, true, () -> result)).isEqualTo(result);
 		
 		verify(listenerMock).beforeUpdate(eq(entities), eq(true));
 		verify(listenerMock).afterUpdate(eq(result), eq(true));
@@ -143,7 +142,7 @@ public class PersisterListenerCollectionTest {
 		
 		ArrayList<Duo> entities = new ArrayList<>();
 		RuntimeException error = new RuntimeException("This is the expected exception to be thrown");
-		assertThatThrownBy(() -> testInstance.doWithUpdateListener(entities, true, (BiConsumer<Iterable<? extends Duo>, Boolean>) (p, b) -> {
+		assertThatThrownBy(() -> testInstance.doWithUpdateListener(entities, true, () -> {
 			throw error;
 		})).isSameAs(error);
 		
@@ -271,7 +270,7 @@ public class PersisterListenerCollectionTest {
 		Mockito.verify(expectedInsertListener, times(0)).beforeInsert(eq(entities));
 		Mockito.verify(expectedInsertListener, times(0)).afterInsert(eq(entities));
 		List<Duo<Object, Object>> updatableEntities = Arrays.asList(new Duo<>(new Object(), new Object()));
-		testInstance.doWithUpdateListener(updatableEntities, true, (d, b) -> Void.class);
+		testInstance.doWithUpdateListener(updatableEntities, true, () -> Void.class);
 		Mockito.verify(expectedUpdateListener, times(0)).beforeUpdate(eq(updatableEntities), eq(true));
 		Mockito.verify(expectedUpdateListener, times(0)).afterUpdate(eq(updatableEntities), eq(true));
 		testInstance.doWithUpdateByIdListener(entities, () -> 1);
@@ -293,7 +292,7 @@ public class PersisterListenerCollectionTest {
 		targetInstance.doWithInsertListener(entities, () -> 1);
 		Mockito.verify(expectedInsertListener).beforeInsert(eq(entities));
 		Mockito.verify(expectedInsertListener).afterInsert(eq(entities));
-		targetInstance.doWithUpdateListener(updatableEntities, true, (d, b) -> Void.class);
+		targetInstance.doWithUpdateListener(updatableEntities, true, () -> Void.class);
 		Mockito.verify(expectedUpdateListener).beforeUpdate(eq(updatableEntities), eq(true));
 		Mockito.verify(expectedUpdateListener).afterUpdate(eq(updatableEntities), eq(true));
 		targetInstance.doWithUpdateByIdListener(entities, () -> 1);
