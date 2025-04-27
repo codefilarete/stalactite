@@ -5,12 +5,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
 
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Fromable;
-import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.Placeholder;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.statement.ExpandableSQL;
@@ -40,7 +40,7 @@ public class ExpandableSQLAppender implements SQLAppender {
 	/**
 	 * Used to store SQL snippets
 	 */
-	private final List<Object> sqlSnippets = new ArrayList<>();
+	private final List<Object /* Placeholder, StringSQLAppender, or SubSQLAppender */> sqlSnippets = new ArrayList<>();
 	private final DMLNameProvider dmlNameProvider;
 	
 	/**
@@ -214,17 +214,29 @@ public class ExpandableSQLAppender implements SQLAppender {
 	 */
 	@Override
 	public String getSQL() {
-		return this.sqlSnippets.stream().map(sqlSnippet -> {
+		StringBuilder result = new StringBuilder();
+		visitSQLSnippets(placeholder -> 
+				result.append(":").append(placeholder.getName()),
+				sqlAppender -> result.append(sqlAppender.getSQL()),
+				subSQLAppender -> result.append(subSQLAppender.getSQL()));
+		return result.toString();
+	}
+	
+	private void visitSQLSnippets(Consumer<Placeholder<?, ?>> placeholderConsumer,
+								  Consumer<StringSQLAppender> sqlAppenderConsumer,
+								  Consumer<DefaultSubSQLAppender> subSQLAppenderConsumer) {
+		this.sqlSnippets.forEach(sqlSnippet -> {
 			if (sqlSnippet instanceof Placeholder) {
-				return ":" + ((Placeholder<?, ?>) sqlSnippet).getName();
+				placeholderConsumer.accept((Placeholder<?, ?>) sqlSnippet);
 			} else if (sqlSnippet instanceof StringSQLAppender) {
-				// inner SQL case
-				return ((StringSQLAppender) sqlSnippet).getSQL();
+				sqlAppenderConsumer.accept((StringSQLAppender) sqlSnippet);
+			} else if (sqlSnippet instanceof DefaultSubSQLAppender) {
+				subSQLAppenderConsumer.accept((DefaultSubSQLAppender) sqlSnippet);
 			} else {
 				throw new IllegalStateException("Unsupported SQL snippet: "
 						+ (sqlSnippet == null ? "null" : Reflections.toString(sqlSnippet.getClass())));
 			}
-		}).collect(Collectors.joining());
+		});
 	}
 	
 	@Override
@@ -270,15 +282,9 @@ public class ExpandableSQLAppender implements SQLAppender {
 		class ParsedSQLHelper {
 			
 			void add(ExpandableSQLAppender appender) {
-				appender.sqlSnippets.forEach(sqlSnippet -> {
-					if (sqlSnippet instanceof Placeholder) {
-						add((Placeholder) sqlSnippet);
-					} else if (sqlSnippet instanceof StringSQLAppender) {
-						add((StringSQLAppender) sqlSnippet);
-					} else if (sqlSnippet instanceof DefaultSubSQLAppender) {
-						add((ExpandableSQLAppender) ((DefaultSubSQLAppender) sqlSnippet).getDelegate());
-					}
-				});
+				appender.visitSQLSnippets(this::add,
+						this::add,
+						subSQLAppender -> add((ExpandableSQLAppender) subSQLAppender.getDelegate()));
 			}
 			
 			void add(Placeholder variable) {

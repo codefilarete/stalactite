@@ -122,6 +122,8 @@ class ExpandableSQLAppenderTest {
 				.cat(" where a like(")
 				.catValue("me").cat(")");
 		
+		assertThat(testInstance.getSQL()).isEqualTo("select * from :1, (select * from Toto where a like(:2)), (select * from Toto), Toto where a like(:3)");
+		
 		PreparedSQL preparedSQL = testInstance.toPreparedSQL(new HashMap<>());
 		// Remember: DMLNameProvider is only used for alias finding there by SQL builder, SQL appenders don't use it, so "Toto" is always printed
 		// even if we gave aliases to the test instance
