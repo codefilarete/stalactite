@@ -22,7 +22,6 @@ import org.codefilarete.stalactite.query.model.ValuedVariable;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.order.Insert.InsertColumn;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;

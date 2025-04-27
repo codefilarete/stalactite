@@ -261,7 +261,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 					}
 				} else {
 					Set<Column<T, Object>> columns = (Set<Column<T, Object>>) associationPersister.getMainTable().getOneSideForeignKey().getColumns();
-					associationTableDelete.where(first(columns), Operators.in(identifiers));
+					associationTableDelete.getCriteria().and(first(columns), Operators.in(identifiers));
 				}
 				
 				PreparedSQL deleteStatement = new DeleteCommandBuilder(associationTableDelete, dialect).toPreparableSQL().toPreparedSQL(new HashMap<>());

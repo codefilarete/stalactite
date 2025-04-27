@@ -17,7 +17,7 @@ public class Insert<T extends Table<T>> {
 	/** Target of the values to insert */
 	private final T targetTable;
 	/** Target columns of the insert */
-	private final Set<InsertColumn<T, ?>> row = new KeepOrderSet<>();
+	private final Set<ColumnVariable<?, T>> row = new KeepOrderSet<>();
 	
 	public Insert(T targetTable) {
 		this.targetTable = targetTable;
@@ -36,7 +36,7 @@ public class Insert<T extends Table<T>> {
 	 * @return this
 	 */
 	public <C> Insert<T> set(Column<? extends T, C> column, C value) {
-		this.row.add(new InsertColumn<>(column, value));
+		this.row.add(new ColumnVariable<>(column, value));
 		return this;
 	}
 	
@@ -45,30 +45,7 @@ public class Insert<T extends Table<T>> {
 	 * 
 	 * @return a non null {@link Set}
 	 */
-	public Set<InsertColumn<T, ?>> getRow() {
+	public Set<ColumnVariable<?, T>> getRow() {
 		return row;
-	}
-	
-	
-	/**
-	 * {@link Column} and its value to be inserted
-	 */
-	public static class InsertColumn<T extends Table<T>, V> {
-		
-		private final Column<T, V> column;
-		private final V value;
-		
-		public InsertColumn(Column<? extends T, ? extends V> column, V value) {
-			this.column = (Column<T, V>) column;
-			this.value = value;
-		}
-		
-		public Column<T, V> getColumn() {
-			return column;
-		}
-		
-		public V getValue() {
-			return value;
-		}
 	}
 }

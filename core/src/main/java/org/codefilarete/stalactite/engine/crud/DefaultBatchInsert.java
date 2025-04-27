@@ -10,6 +10,7 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.order.ColumnVariable;
 import org.codefilarete.stalactite.sql.order.Insert;
 import org.codefilarete.stalactite.sql.order.InsertCommandBuilder;
 import org.codefilarete.stalactite.sql.order.InsertCommandBuilder.InsertStatement;
@@ -26,7 +27,7 @@ import static org.codefilarete.tool.function.Predicates.not;
  */
 public class DefaultBatchInsert<T extends Table<T>> extends Insert<T> implements BatchInsert<T> {
 	
-	private final List<Set<InsertColumn<T, ?>>> rows = new ArrayList<>();
+	private final List<Set<ColumnVariable<?, T>>> rows = new ArrayList<>();
 	private final Dialect dialect;
 	private final ConnectionProvider connectionProvider;
 	
@@ -61,7 +62,7 @@ public class DefaultBatchInsert<T extends Table<T>> extends Insert<T> implements
 			this.rows.stream()
 					// avoiding empty rows made by several calls to newRow(..) without setting values. Can happen if insert(..) is reused in a loop.
 					.filter(not(Set::isEmpty))
-					.<Map<Column<T, ?>, ?>>map(row -> Iterables.map(row, InsertColumn::getColumn, InsertColumn::getValue))
+					.<Map<Column<T, ?>, ?>>map(row -> Iterables.map(row, ColumnVariable::getColumn, ColumnVariable::getValue))
 					.forEach(writeOperation::addBatch);
 			writeCount = writeOperation.executeBatch();
 		}
