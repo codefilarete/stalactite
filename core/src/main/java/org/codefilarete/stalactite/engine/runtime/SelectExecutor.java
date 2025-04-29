@@ -10,16 +10,17 @@ import java.util.function.Function;
 
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
+import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.stalactite.sql.result.RowIterator;
 import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSelect;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
+import org.codefilarete.stalactite.sql.statement.ReadOperationFactory;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
 import org.codefilarete.tool.VisibleForTesting;
@@ -34,12 +35,22 @@ import org.codefilarete.tool.collection.Iterables;
 public class SelectExecutor<C, I, T extends Table<T>> extends DMLExecutor<C, I, T> implements org.codefilarete.stalactite.engine.SelectExecutor<C, I> {
 	
 	private final InternalExecutor<C, I, T> internalExecutor;
+
+	private final ReadOperationFactory readOperationFactory;
 	
+	private final Integer fetchSize;
+
 	protected SQLOperationListener<Column<T, ?>> operationListener;
 	
-	public SelectExecutor(EntityMapping<C, I, T> mappingStrategy, ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, int inOperatorMaxSize) {
-		super(mappingStrategy, connectionProvider, dmlGenerator, inOperatorMaxSize);
+	public SelectExecutor(EntityMapping<C, I, T> mappingStrategy,
+						  ConnectionConfiguration connectionConfiguration,
+						  DMLGenerator dmlGenerator,
+						  ReadOperationFactory readOperationFactory,
+						  int inOperatorMaxSize) {
+		super(mappingStrategy, connectionConfiguration.getConnectionProvider(), dmlGenerator, inOperatorMaxSize);
 		this.internalExecutor = new InternalExecutor<>(mappingStrategy);
+		this.readOperationFactory = readOperationFactory;
+		this.fetchSize = connectionConfiguration.getFetchSize();
 	}
 	
 	public void setOperationListener(SQLOperationListener<Column<T, ?>> operationListener) {
@@ -66,25 +77,27 @@ public class SelectExecutor<C, I, T extends Table<T>> extends DMLExecutor<C, I, 
 			T targetTable = getMapping().getTargetTable();
 			Set<Column<T, ?>> columnsToRead = getMapping().getSelectableColumns();
 			if (!parcels.isEmpty()) {
-				ReadOperation<Column<T, ?>> defaultReadOperation = newReadOperation(targetTable, columnsToRead, blockSize, localConnectionProvider);
-				parcels.forEach(parcel -> result.addAll(internalExecutor.execute(defaultReadOperation, parcel)));
+				try (ReadOperation<Column<T, ?>> defaultReadOperation = newReadOperation(targetTable, columnsToRead, blockSize, localConnectionProvider)) {
+					parcels.forEach(parcel -> result.addAll(internalExecutor.execute(defaultReadOperation, parcel)));
+				}
 			}
 			
 			// last packet treatment (packet size may be different)
 			if (!lastParcel.isEmpty()) {
-				ReadOperation<Column<T, ?>> lastReadOperation = newReadOperation(targetTable, columnsToRead, lastBlockSize, localConnectionProvider);
-				result.addAll(internalExecutor.execute(lastReadOperation, lastParcel));
+				try (ReadOperation<Column<T, ?>> lastReadOperation = newReadOperation(targetTable, columnsToRead, lastBlockSize, localConnectionProvider)) {
+					result.addAll(internalExecutor.execute(lastReadOperation, lastParcel));
+				}
 			}
 		}
 		return result;
 	}
 	
-	@SuppressWarnings("java:S2095")	// ReadOperation is close at execution time and is not used in this method
-	private ReadOperation<Column<T, ?>> newReadOperation(T targetTable, Set<Column<T, ?>> columnsToRead, int blockSize,
-												   ConnectionProvider connectionProvider) {
-		PrimaryKey<T, ?> primaryKey = targetTable.getPrimaryKey();
-		ColumnParameterizedSelect<T> selectStatement = getDmlGenerator().buildSelectByKey(targetTable, columnsToRead, primaryKey.getColumns(), blockSize);
-		ReadOperation<Column<T, ?>> readOperation = new ReadOperation<>(selectStatement, connectionProvider);
+	private ReadOperation<Column<T, ?>> newReadOperation(T targetTable,
+														 Set<Column<T, ?>> columnsToRead,
+														 int blockSize,
+														 ConnectionProvider connectionProvider) {
+		ColumnParameterizedSelect<T> selectStatement = getDmlGenerator().buildSelectByKey(targetTable, columnsToRead, targetTable.getPrimaryKey().getColumns(), blockSize);
+		ReadOperation<Column<T, ?>> readOperation = readOperationFactory.createInstance(selectStatement, connectionProvider, fetchSize);
 		readOperation.setListener(this.operationListener);
 		return readOperation;
 	}

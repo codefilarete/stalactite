@@ -10,7 +10,11 @@ import org.codefilarete.stalactite.engine.runtime.DMLExecutorTest.PersistenceCon
 import org.codefilarete.stalactite.engine.runtime.DMLExecutorTest.Tata;
 import org.codefilarete.stalactite.engine.runtime.DMLExecutorTest.Toto;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.statement.ReadOperation;
+import org.codefilarete.stalactite.sql.statement.ReadOperationFactory;
 import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
@@ -48,7 +52,11 @@ abstract class SelectExecutorITTest<T extends Table<T>> extends DatabaseIntegrat
 		connection.prepareStatement("insert into Toto(a, b, c) values (3, 30, 300)").execute();
 		connection.prepareStatement("insert into Toto(a, b, c) values (4, 40, 400)").execute();
 		
-		SelectExecutor<Toto, Integer, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, connectionProvider, dmlGenerator, 3);
+		SelectExecutor<Toto, Integer, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy,
+				new ConnectionConfigurationSupport(connectionProvider, 10, 100),
+				dmlGenerator,
+				new ReadOperationFactory(),
+				3);
 		
 		// test with 1 id
 		Set<Toto> totos = testInstance.select(Arrays.asList(1));
@@ -81,8 +89,12 @@ abstract class SelectExecutorITTest<T extends Table<T>> extends DatabaseIntegrat
 		connection.prepareStatement("insert into Toto(a, b, c) values (2, 20, 200)").execute();
 		connection.prepareStatement("insert into Toto(a, b, c) values (3, 30, 300)").execute();
 		connection.prepareStatement("insert into Toto(a, b, c) values (4, 40, 400)").execute();
-		
-		SelectExecutor<Toto, Toto, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, connectionProvider, dmlGenerator, 3);
+
+		SelectExecutor<Toto, Toto, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy,
+				new ConnectionConfigurationSupport(connectionProvider, 10, 100),
+				dmlGenerator,
+				new ReadOperationFactory(),
+				3);
 		Set<Toto> result = testInstance.select(Arrays.asList(new Toto(1, 10, null), new Toto(2, 20, null), new Toto(3, 30, null), new Toto(4, 40, null)));
 		assertThat(result)
 				.usingRecursiveFieldByFieldElementComparator()
@@ -107,8 +119,12 @@ abstract class SelectExecutorITTest<T extends Table<T>> extends DatabaseIntegrat
 		connection.prepareStatement("insert into Tata(a, b, c) values (2, 20, 200)").execute();
 		connection.prepareStatement("insert into Tata(a, b, c) values (3, 30, 300)").execute();
 		connection.prepareStatement("insert into Tata(a, b, c) values (4, 40, 400)").execute();
-		
-		SelectExecutor<Tata, ComposedId, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, connectionProvider, dmlGenerator, 3);
+
+		SelectExecutor<Tata, ComposedId, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy,
+				new ConnectionConfigurationSupport(connectionProvider, 10, 100),
+				dmlGenerator,
+				new ReadOperationFactory(),
+				3);
 		Set<Tata> result = testInstance.select(Arrays.asList(new ComposedId(1, 10), new ComposedId(2, 20), new ComposedId(3, 30), new ComposedId(4, 40)));
 		Set<Tata> expectedResult = Arrays.asHashSet(
 			new Tata(1, 10, 100),

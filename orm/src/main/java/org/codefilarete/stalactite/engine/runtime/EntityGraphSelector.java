@@ -67,10 +67,6 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 	
 	private final Dialect dialect;
 	
-//	private final EntityTreeQuery<C> entityTreeQuery;
-//	private final Query defaultQuery;
-//	private final EntityTreeInflater<C> inflater;
-	
 	public EntityGraphSelector(EntityJoinTree<C, I> entityJoinTree,
 							   ConnectionProvider connectionProvider,
 							   Dialect dialect) {
@@ -171,9 +167,8 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 	
 	private Set<I> readIds(PreparedSQL preparedSQL, Map<String, ResultSetReader> columnReaders, ColumnedRow columnedRow) {
 		EntityInflater<C, I> entityInflater = entityJoinTree.getRoot().getEntityInflater();
-		try (ReadOperation<Integer> closeableOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
-			ResultSet resultSet = closeableOperation.execute();
-			RowIterator rowIterator = new RowIterator(resultSet, columnReaders);
+		try (ReadOperation<Integer> closeableOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
+			RowIterator rowIterator = new RowIterator(closeableOperation.execute(), columnReaders);
 			return Iterables.collect(() -> rowIterator, row -> entityInflater.giveIdentifier(row, columnedRow), HashSet::new);
 		} catch (RuntimeException e) {
 			throw new SQLExecutionException(preparedSQL.getSQL(), e);
@@ -206,9 +201,8 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 	}
 	
 	private <R, O> R readProjection(PreparedSQL preparedSQL, Map<String, ResultSetReader<?>> columnReaders, ColumnedRow columnedRow, Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator) {
-		try (ReadOperation<Integer> closeableOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
-			ResultSet resultSet = closeableOperation.execute();
-			RowIterator rowIterator = new RowIterator(resultSet, columnReaders);
+		try (ReadOperation<Integer> closeableOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
+			RowIterator rowIterator = new RowIterator(closeableOperation.execute(), columnReaders);
 			return accumulator.collect(Iterables.stream(rowIterator).map(row -> (Function<Selectable<O>, O>) selectable -> columnedRow.getValue(selectable, row)).collect(Collectors.toList()));
 		} catch (RuntimeException e) {
 			throw new SQLExecutionException(preparedSQL.getSQL(), e);
@@ -233,7 +227,7 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 		}
 		
 		protected Set<C> execute(SQLStatement<?> query) {
-			try (ReadOperation<?> readOperation = new ReadOperation<>(query, connectionProvider)) {
+			try (ReadOperation<?> readOperation = dialect.getReadOperationFactory().createInstance(query, connectionProvider)) {
 				return transform(readOperation);
 			} catch (RuntimeException e) {
 				throw new SQLExecutionException(query.getSQL(), e);

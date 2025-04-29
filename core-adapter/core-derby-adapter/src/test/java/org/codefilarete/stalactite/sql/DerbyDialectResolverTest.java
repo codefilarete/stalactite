@@ -7,12 +7,12 @@ import org.codefilarete.stalactite.engine.DatabaseVendorSettings;
 import org.codefilarete.stalactite.engine.SQLOperationsFactories;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.sql.DerbyDatabaseSettings.DerbyGeneratedKeysReaderFactory;
+import org.codefilarete.stalactite.sql.DerbyDatabaseSettings.DerbyReadOperationFactory;
 import org.codefilarete.stalactite.sql.DerbyDatabaseSettings.DerbyWriteOperationFactory;
 import org.codefilarete.stalactite.sql.DerbyDialectResolver.DerbyDatabaseSignet;
 import org.codefilarete.stalactite.sql.ddl.DerbyDDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
-import org.codefilarete.stalactite.sql.statement.ReadOperationFactory;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.DerbyParameterBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.DerbyTypeMapping;
@@ -46,7 +46,7 @@ class DerbyDialectResolverTest {
 		assertThat(vendorSettings.getInOperatorMaxSize()).isEqualTo(1000);
 		
 		SQLOperationsFactories sqlOperationsFactories = vendorSettings.getSqlOperationsFactoriesBuilder().build(new ColumnBinderRegistry(), DMLNameProvider::new, new SqlTypeRegistry());
-		assertThat(sqlOperationsFactories.getReadOperationFactory()).isExactlyInstanceOf(ReadOperationFactory.class);
+		assertThat(sqlOperationsFactories.getReadOperationFactory()).isExactlyInstanceOf(DerbyReadOperationFactory.class);
 		assertThat(sqlOperationsFactories.getWriteOperationFactory()).isExactlyInstanceOf(DerbyWriteOperationFactory.class);
 		assertThat(sqlOperationsFactories.getDdlTableGenerator()).isExactlyInstanceOf(DerbyDDLTableGenerator.class);
 		assertThat(sqlOperationsFactories.getDmlGenerator()).isExactlyInstanceOf(DMLGenerator.class);

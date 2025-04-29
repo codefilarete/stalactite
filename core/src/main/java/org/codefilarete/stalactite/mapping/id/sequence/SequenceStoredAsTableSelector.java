@@ -92,7 +92,7 @@ public class SequenceStoredAsTableSelector implements org.codefilarete.tool.func
 	public synchronized Long next() {
 		long result;
 		boolean hasData;
-		try (ReadOperation<Integer> readOperation = readOperationFactory.createInstance(selectSequenceStatement, connectionProvider)) {
+		try (ReadOperation<Integer> readOperation = readOperationFactory.createInstance(selectSequenceStatement, connectionProvider, 1)) {
 			ResultSet resultSet = readOperation.execute();
 			hasData = resultSet.next();
 			if (hasData) {

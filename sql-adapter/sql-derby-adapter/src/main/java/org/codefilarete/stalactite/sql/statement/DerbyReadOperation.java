@@ -12,9 +12,13 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
 public class DerbyReadOperation<ParamType> extends ReadOperation<ParamType> {
 	
 	public DerbyReadOperation(SQLStatement<ParamType> sqlGenerator, ConnectionProvider connectionProvider) {
-		super(sqlGenerator, connectionProvider);
+		this(sqlGenerator, connectionProvider, null);
 	}
 	
+	public DerbyReadOperation(SQLStatement<ParamType> sqlGenerator, ConnectionProvider connectionProvider, Integer fetchSize) {
+		super(sqlGenerator, connectionProvider, fetchSize);
+	}
+
 	/**
 	 * Overridden to use Derby special {@link EmbedConnection#cancelRunningStatement()} method
 	 * to avoid exception "ERROR 0A000: Feature not implemented: cancel" (see {@link EmbedStatement#cancel()} implementation).
@@ -23,7 +27,7 @@ public class DerbyReadOperation<ParamType> extends ReadOperation<ParamType> {
 	 */
 	@Override
 	public void cancel() throws SQLException {
-		final EmbedConnection conn = preparedStatement.getConnection().unwrap(EmbedConnection.class);
+		EmbedConnection conn = preparedStatement.getConnection().unwrap(EmbedConnection.class);
 		conn.cancelRunningStatement();
 	}
 }

@@ -101,7 +101,7 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table<T>, DTY
 		Map<Selectable<?>, String> aliases = query.getSelectDelegate().getAliases();
 		// using keep order Map for steady test, shouldn't have impact on performances
 		Map<Class, Set<I>> idsPerSubclass = new KeepOrderMap<>(polymorphismPolicy.getSubClasses().size());
-		try(ReadOperation readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
+		try(ReadOperation<Integer> readOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
 			Map<String, ResultSetReader> readers = new HashMap<>();
 			aliases.forEach((c, as) -> {

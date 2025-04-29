@@ -115,7 +115,7 @@ public class JoinTablePolymorphismEntitySelector<C, I, T extends Table<T>> exten
 		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
 		// impacts but very difficult to measure
 		Map<Class, Set<I>> result = new KeepOrderMap<>();
-		try (ReadOperation readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
+		try (ReadOperation<Integer> readOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
 			
 			RowIterator resultSetIterator = new RowIterator(resultSet, columnReaders);

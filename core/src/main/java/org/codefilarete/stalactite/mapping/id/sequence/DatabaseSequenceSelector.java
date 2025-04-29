@@ -55,7 +55,7 @@ public class DatabaseSequenceSelector implements org.codefilarete.tool.function.
 	
 	@VisibleForTesting
 	long callDatabase() {
-		try (ReadOperation<String> readOperation = readOperationFactory.createInstance(sqlOrder, connectionProvider)) {
+		try (ReadOperation<String> readOperation = readOperationFactory.createInstance(sqlOrder, connectionProvider, 1)) {
 			ResultSet rs = readOperation.execute();
 			rs.next();
 			// we use index access to read next value column to avoid keeping the column name in this class

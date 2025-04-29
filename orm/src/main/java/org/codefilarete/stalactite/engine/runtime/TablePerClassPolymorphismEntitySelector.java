@@ -195,7 +195,7 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), originalColumnsToClones);
 		EntityTreeInflater<C> inflater = entityTreeQuery.getInflater();
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>());
-		try (ReadOperation<Integer> readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
+		try (ReadOperation<Integer> readOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
 			// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
 			RowIterator rowIterator = new RowIterator(resultSet, entityTreeQuery.getSelectParameterBinders());
@@ -261,7 +261,7 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 	}
 	
 	private Map<Class, Set<I>> readIds(PreparedSQL preparedSQL, Map<String, ResultSetReader> columnReaders, ColumnedRow columnedRow) {
-		try (ReadOperation<Integer> closeableOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
+		try (ReadOperation<Integer> closeableOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = closeableOperation.execute();
 			RowIterator rowIterator = new RowIterator(resultSet, columnReaders);
 			// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance

@@ -11,9 +11,19 @@ public interface ConnectionConfiguration {
 	
 	ConnectionProvider getConnectionProvider();
 	
+	/**
+	 * Gives the JDBC batch size to use for write operations. Because Stalactite always uses batch, this value is mandatory.
+	 * @return the JDBC batch size to use for write operations
+	 */
 	int getBatchSize();
 	
 	/**
+	 * Gives the JDBC fetch size to use for read operations. Optional, because JDBC drivers have their own. 
+	 * @return the JDBC fetch size to use for read operations
+	 */
+    Integer getFetchSize();
+	
+    /**
 	 * Default implementation of {@link ConnectionConfiguration} that keeps and gives values provided at instantiation time
 	 * 
 	 * @author Guillaume Mary
@@ -22,10 +32,16 @@ public interface ConnectionConfiguration {
 		
 		private final ConnectionProvider connectionProvider;
 		private final int batchSize;
+		private final Integer fetchSize;
 		
 		public ConnectionConfigurationSupport(ConnectionProvider connectionProvider, int batchSize) {
+			this(connectionProvider, batchSize, null);
+		}
+
+		public ConnectionConfigurationSupport(ConnectionProvider connectionProvider, int batchSize, Integer fetchSize) {
 			this.connectionProvider = connectionProvider;
 			this.batchSize = batchSize;
+			this.fetchSize = fetchSize;
 		}
 		
 		@Override
@@ -36,6 +52,11 @@ public interface ConnectionConfiguration {
 		@Override
 		public int getBatchSize() {
 			return batchSize;
+		}
+
+		@Override
+		public Integer getFetchSize() {
+			return fetchSize;
 		}
 	}
 	

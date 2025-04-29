@@ -92,7 +92,7 @@ public class StalactiteRepositoriesAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public ConnectionSettings connectionSettings() {
-		return new ConnectionSettings(10, 100);
+		return new ConnectionSettings();
 	}
 	
 	@Bean

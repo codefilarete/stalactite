@@ -100,7 +100,7 @@ public abstract class AbstractPolymorphicEntitySelector<C, I, T extends Table<T>
 		
 		EntityTreeInflater<C> inflater = entityTreeQuery.getInflater();
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>());
-		try (ReadOperation<Integer> readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
+		try (ReadOperation<Integer> readOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
 			// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
 			RowIterator rowIterator = new RowIterator(resultSet, entityTreeQuery.getSelectParameterBinders());
@@ -131,9 +131,8 @@ public abstract class AbstractPolymorphicEntitySelector<C, I, T extends Table<T>
 	}
 	
 	protected <R, O> R readProjection(PreparedSQL preparedSQL, Map<String, ResultSetReader<?>> columnReaders, ColumnedRow columnedRow, Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator) {
-		try (ReadOperation<Integer> closeableOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
-			ResultSet resultSet = closeableOperation.execute();
-			RowIterator rowIterator = new RowIterator(resultSet, columnReaders);
+		try (ReadOperation<Integer> closeableOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
+			RowIterator rowIterator = new RowIterator(closeableOperation.execute(), columnReaders);
 			return accumulator.collect(Iterables.stream(rowIterator).map(row -> (Function<Selectable<O>, O>) selectable -> columnedRow.getValue(selectable, row)).collect(Collectors.toList()));
 		} catch (RuntimeException e) {
 			throw new SQLExecutionException(preparedSQL.getSQL(), e);

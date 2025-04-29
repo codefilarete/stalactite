@@ -17,6 +17,7 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer;
 import org.codefilarete.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
+import org.codefilarete.stalactite.sql.statement.ReadOperationFactory;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders;
 import org.codefilarete.tool.Strings;
@@ -53,6 +54,7 @@ class QueryMapperTest {
 	 */
 	public static Object[][] queryMapperAPI_basicUsage() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
+		ReadOperationFactory readOperationFactory = new ReadOperationFactory();
 		Table totoTable = new Table<>("Toto");
 		Column<Table, Long> id = totoTable.addColumn("id", Long.class).primaryKey();
 		Column<Table, String> name = totoTable.addColumn("name", String.class);
@@ -67,91 +69,91 @@ class QueryMapperTest {
 		// we use different ways of mapping the same thing
 		return new Object[][] {
 				{	// no given key
-					new QueryMapper<>(TotoWithNoArgConstructor.class, dummySql, columnBinderRegistry)
+					new QueryMapper<>(TotoWithNoArgConstructor.class, dummySql, columnBinderRegistry, readOperationFactory)
 						.map("id", Toto::setId, long.class)
 						.map("name", Toto::setName, String.class)
 						.map("active", Toto::setActive), expected },
 				{	// constructor with 1 arg, column name, column type
-					new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
+					new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry, readOperationFactory)
 						.mapKey(Toto::new, "id", long.class)
 						.map("name", Toto::setName, String.class)
 						.map("active", Toto::setActive), expected },
 				{	// with Java Bean constructor (no args)
-					new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
+					new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry, readOperationFactory)
 						.mapKey(Toto::new, "id", long.class)
 						.map("id", Toto::setId)
 						.map("name", Toto::setName, String.class)
 						.map("active", Toto::setActive), expected },
 				{	// constructor as factory method
-					new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
+					new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry, readOperationFactory)
 							.mapKey(Toto::ofId, "id", long.class)
 							.map("name", Toto::setName, String.class)
 							.map("active", Toto::setActive), expected },
 				{	// with Java Bean constructor (no args), Column API
-					new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
+					new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry, readOperationFactory)
 							.mapKey(Toto::new, "id", long.class)
 							.map("id", Toto::setId)
 							.map(name, Toto::setName)
 							.map(active, Toto::setActive), expected },
 				{ 	// with Column API
-					new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
+					new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry, readOperationFactory)
 						.mapKey(Toto::new, id)
 						.map(name, Toto::setName)
 						.map(active, Toto::setActive), expected },
 				{	// with Java Bean constructor with 2 arguments
-						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
+						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry, readOperationFactory)
 						.mapKey(Toto::new, id, name)
 						.map(active, Toto::setActive), expected },
 				{	// with Java Bean constructor with 3 arguments
-						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
+						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry, readOperationFactory)
 						.mapKey(Toto::new, id, name, active), expected },
 				{	// with Java Bean constructor with 1 argument
-						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
+						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry, readOperationFactory)
 						.mapKey(Toto::new, "id", long.class),
 						Arrays.asSet(
 								new Toto(42, null, false),
 								new Toto(43, null, false)
 						) },
 				{	// with Java Bean constructor with 2 arguments
-						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
+						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry, readOperationFactory)
 						.mapKey(Toto::new, "id", long.class, "name", String.class),
 						Arrays.asSet(
 								new Toto(42, "coucou", false),
 								new Toto(43, "hello", false)
 						) },
 				{	// with Java Bean constructor with 3 arguments
-						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
+						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry, readOperationFactory)
 						.mapKey(Toto::new, "id", long.class, "name", String.class, "active", boolean.class), expected },
 				{	// constructor as factory method without type
-						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
+						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry, readOperationFactory)
 								.mapKey(Toto::ofId, "id")
 								.map("name", Toto::setName, String.class)
 								.map("active", Toto::setActive), expected },
 				{	// no-arg constructor
-						new QueryMapper<>(TotoWithNoArgConstructor.class, dummySql, columnBinderRegistry)
+						new QueryMapper<>(TotoWithNoArgConstructor.class, dummySql, columnBinderRegistry, readOperationFactory)
 								.mapKey(TotoWithNoArgConstructor::new)
 								.map("id", Toto::setId, long.class)
 								.map("name", Toto::setName, String.class)
 								.map("active", Toto::setActive), expected },
 				{	// constructor without giving type
-						new QueryMapper<>(TotoWithOneArgConstructor.class, dummySql, columnBinderRegistry)
+						new QueryMapper<>(TotoWithOneArgConstructor.class, dummySql, columnBinderRegistry, readOperationFactory)
 								.mapKey(TotoWithOneArgConstructor::new, "id")
 								.map("name", Toto::setName, String.class)
 								.map("active", Toto::setActive), expected },
 				{	// constructor as factory method without type
-						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
+						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry, readOperationFactory)
 								.mapKey(Toto::ofIdAndName, "id", "name")
 								.map("active", Toto::setActive), expected },
 				{	// constructor without giving type
-						new QueryMapper<>(TotoWithTwoArgConstructor.class, dummySql, columnBinderRegistry)
+						new QueryMapper<>(TotoWithTwoArgConstructor.class, dummySql, columnBinderRegistry, readOperationFactory)
 								.mapKey(TotoWithTwoArgConstructor::new, "id", "name")
 								.map("active", Toto::setActive), expected },
 				{	// constructor as factory method without type
-						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
+						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry, readOperationFactory)
 								.mapKey(Toto::ofIdAndNameAndActive, "id", "name", "active")
 								, expected },
 				{	// constructor without giving type
-						new QueryMapper<>(TotoWithThreeArgConstructor.class, dummySql, columnBinderRegistry)
+						new QueryMapper<>(TotoWithThreeArgConstructor.class, dummySql, columnBinderRegistry, readOperationFactory)
 								.mapKey(TotoWithThreeArgConstructor::new, "id", "name", "active")
 								, expected },
 		};
@@ -174,20 +176,21 @@ class QueryMapperTest {
 	
 	public static Object[][] queryMapperAPI_basicUsageWithConverter() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
+		ReadOperationFactory readOperationFactory = new ReadOperationFactory();
 		Table toto = new Table<>("Toto");
 		Column<Table, Long> id = toto.addColumn("id", Long.class).primaryKey();
 		Column<Table, String> name = toto.addColumn("name", String.class);
 		
 		return new Object[][] {
-				{ new QueryMapper<>(Toto.class, "select id, name from Toto", columnBinderRegistry)
+				{ new QueryMapper<>(Toto.class, "select id, name from Toto", columnBinderRegistry, readOperationFactory)
 							.mapKey(Toto::new, "id", long.class)
 							.map("id", Toto::setId)
 							.map("name", Toto::setName, input -> "coucou") },
-				{ new QueryMapper<>(Toto.class, "select id, active from Toto", columnBinderRegistry)
+				{ new QueryMapper<>(Toto.class, "select id, active from Toto", columnBinderRegistry, readOperationFactory)
 							.mapKey(Toto::new, "id", long.class)
 							.map("id", Toto::setId)
 							.map("active", Toto::setName, boolean.class, input -> "coucou") },
-				{ new QueryMapper<>(Toto.class, "select id, name from Toto", columnBinderRegistry)
+				{ new QueryMapper<>(Toto.class, "select id, name from Toto", columnBinderRegistry, readOperationFactory)
 							.mapKey(Toto::new, "id", long.class)
 							.map("id", Toto::setId)
 							.map(name, Toto::setName, input -> "coucou") }
@@ -221,11 +224,12 @@ class QueryMapperTest {
 		);
 		
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
+		ReadOperationFactory readOperationFactory = new ReadOperationFactory();
 		Table totoTable = new Table<>("Toto");
 		totoTable.addColumn("name", String.class);
 		totoTable.addColumn("active", boolean.class);
 		
-		QueryMapper testInstance = new QueryMapper<>(TotoWithNoArgConstructor.class, "never executed statement", columnBinderRegistry)
+		QueryMapper testInstance = new QueryMapper<>(TotoWithNoArgConstructor.class, "never executed statement", columnBinderRegistry, readOperationFactory)
 			.map("name", Toto::setName, String.class)
 			.map("active", Toto::setActive);
 		
@@ -266,8 +270,9 @@ class QueryMapperTest {
 	@Test
 	void execute_instanceHasParameter() throws SQLException {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
+		ReadOperationFactory readOperationFactory = new ReadOperationFactory();
 		// NB: SQL String is there only for clarification but is never executed
-		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "select id, name from Toto where id in (:id)", columnBinderRegistry)
+		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "select id, name from Toto where id in (:id)", columnBinderRegistry, readOperationFactory)
 				.mapKey(Toto::new, "id", long.class)
 				.set("id", Arrays.asList(1, 2), Integer.class);
 		
@@ -299,8 +304,9 @@ class QueryMapperTest {
 	@Test
 	void execute_instanceHasAssembler() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
+		ReadOperationFactory readOperationFactory = new ReadOperationFactory();
 		MutableInt assemblerCounter = new MutableInt();
-		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry)
+		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry, readOperationFactory)
 				.mapKey(Toto::new, "id", long.class)
 				.map((rootBean, resultSet) -> rootBean.setName(resultSet.getString("name") + assemblerCounter.increment()));
 		
@@ -325,8 +331,9 @@ class QueryMapperTest {
 	@Test
 	void execute_instanceHasAssembler_thatRunOnce() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
+		ReadOperationFactory readOperationFactory = new ReadOperationFactory();
 		MutableInt assemblerCounter = new MutableInt();
-		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry)
+		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry, readOperationFactory)
 				.mapKey(Toto::new, "id", long.class)
 				.map((rootBean, resultSet) -> rootBean.setName(resultSet.getString("name") + assemblerCounter.increment()), AssemblyPolicy.ONCE_PER_BEAN);
 		
@@ -349,7 +356,8 @@ class QueryMapperTest {
 	@Test
 	void execute_instanceHasToOneRelation() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
-		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry)
+		ReadOperationFactory readOperationFactory = new ReadOperationFactory();
+		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry, readOperationFactory)
 				.mapKey(Toto::new, "id", long.class)
 				.map("name", Toto::setName)
 				.map(Toto::setTata, new ResultSetRowTransformer<>(Tata.class, "tataName", DefaultResultSetReaders.STRING_READER, Tata::new));
@@ -374,9 +382,10 @@ class QueryMapperTest {
 	@Test
 	void execute_instanceHasToManyRelation() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
+		ReadOperationFactory readOperationFactory = new ReadOperationFactory();
 		BeanRelationFixer<Tata, Titi> titiCombiner = BeanRelationFixer.of(Tata::setTitis, Tata::getTitis, HashSet::new);
 		
-		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry)
+		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry, readOperationFactory)
 				.mapKey(Toto::new, "id", long.class)
 				.map("name", Toto::setName)
 				.map(Toto::setTata, new ResultSetRowTransformer<>(Tata.class, "tataName", DefaultResultSetReaders.STRING_READER, Tata::new)
@@ -404,11 +413,12 @@ class QueryMapperTest {
 		List<Map<String, Object>> resultSetData = Collections.EMPTY_LIST;
 		
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
+		ReadOperationFactory readOperationFactory = new ReadOperationFactory();
 		Table totoTable = new Table<>("Toto");
 		totoTable.addColumn("name", String.class);
 		totoTable.addColumn("active", boolean.class);
 		
-		QueryMapper<Toto> testInstance = new QueryMapper<>(Toto.class, "never executed statement", columnBinderRegistry)
+		QueryMapper<Toto> testInstance = new QueryMapper<>(Toto.class, "never executed statement", columnBinderRegistry, readOperationFactory)
 			.mapKey(Toto::new, "id", long.class)
 			.map("name", Toto::setName, String.class)
 			.map("active", Toto::setActive);
@@ -424,7 +434,8 @@ class QueryMapperTest {
 		@Test
 		void execute_first_retrievedFirstBean() {
 			ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
-			QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry)
+			ReadOperationFactory readOperationFactory = new ReadOperationFactory();
+			QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry, readOperationFactory)
 					.mapKey(Toto::new, "id", long.class)
 					.map((rootBean, resultSet) -> rootBean.setName(Objects.preventNull(rootBean.getName()) + resultSet.getString("name")));
 			
@@ -449,11 +460,12 @@ class QueryMapperTest {
 			List<Map<String, Object>> resultSetData = Collections.EMPTY_LIST;
 			
 			ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
+			ReadOperationFactory readOperationFactory = new ReadOperationFactory();
 			Table totoTable = new Table<>("Toto");
 			totoTable.addColumn("name", String.class);
 			totoTable.addColumn("active", boolean.class);
 			
-			QueryMapper<Toto> testInstance = new QueryMapper<>(Toto.class, "never executed statement", columnBinderRegistry)
+			QueryMapper<Toto> testInstance = new QueryMapper<>(Toto.class, "never executed statement", columnBinderRegistry, readOperationFactory)
 					.mapKey(Toto::new, "id", long.class)
 					.map("name", Toto::setName, String.class);
 			

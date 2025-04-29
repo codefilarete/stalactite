@@ -34,6 +34,8 @@ import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.CaseInsensitiveSet;
 import org.codefilarete.tool.function.ThrowingBiFunction;
 
+import static org.codefilarete.tool.bean.Objects.preventNull;
+
 /**
  * 
  * @author Guillaume Mary
@@ -95,15 +97,15 @@ public class DerbyDatabaseSettings extends DatabaseVendorSettings {
 	
 	private static class DerbySQLOperationsFactoriesBuilder implements SQLOperationsFactoriesBuilder {
 		
-		private final ReadOperationFactory readOperationFactory;
+		private final DerbyReadOperationFactory readOperationFactory;
 		private final DerbyWriteOperationFactory writeOperationFactory;
 		
 		private DerbySQLOperationsFactoriesBuilder() {
-			this.readOperationFactory = new ReadOperationFactory();
+			this.readOperationFactory = new DerbyReadOperationFactory();
 			this.writeOperationFactory = new DerbyWriteOperationFactory();
 		}
 		
-		private ReadOperationFactory getReadOperationFactory() {
+		private DerbyReadOperationFactory getReadOperationFactory() {
 			return readOperationFactory;
 		}
 		
@@ -121,10 +123,18 @@ public class DerbyDatabaseSettings extends DatabaseVendorSettings {
 	}
 	
 	public static class DerbyReadOperationFactory extends ReadOperationFactory {
-		
+
+		public DerbyReadOperationFactory() {
+			this(null);
+		}
+
+		public DerbyReadOperationFactory(Integer fetchSize) {
+			super(fetchSize);
+		}
+
 		@Override
-		public <ParamType> ReadOperation<ParamType> createInstance(SQLStatement<ParamType> sqlGenerator, ConnectionProvider connectionProvider) {
-			return new DerbyReadOperation<>(sqlGenerator, connectionProvider);
+		public <ParamType> ReadOperation<ParamType> createInstance(SQLStatement<ParamType> sqlGenerator, ConnectionProvider connectionProvider, Integer fetchSize) {
+			return new DerbyReadOperation<>(sqlGenerator, connectionProvider, preventNull(fetchSize, super.fetchSize));
 		}
 	}
 	

@@ -44,7 +44,8 @@ public class DialectBuilder {
 		
 		DMLNameProviderFactory dmlNameProviderFactory = buildDmlNameProviderFactory();
 		
-		SQLOperationsFactories sqlOperationsFactories = vendorSettings.getSqlOperationsFactoriesBuilder().build(columnBinderRegistry, dmlNameProviderFactory, sqlTypeRegistry);
+		SQLOperationsFactories sqlOperationsFactories = vendorSettings.getSqlOperationsFactoriesBuilder()
+				.build(columnBinderRegistry, dmlNameProviderFactory, sqlTypeRegistry);
 		
 		DDLTableGenerator ddlTableGenerator = sqlOperationsFactories.getDdlTableGenerator();
 		DDLSequenceGenerator ddlSequenceGenerator = sqlOperationsFactories.getDdlSequenceGenerator();

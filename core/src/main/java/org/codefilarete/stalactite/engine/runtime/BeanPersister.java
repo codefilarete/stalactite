@@ -56,11 +56,6 @@ public class BeanPersister<C, I, T extends Table<T>>
 	 */
 	private final WriteOperationFactory writeOperationFactory;
 
-	/**
-	 * Size of "in" operator max size (depends on database vendor). Useful for select statement only.
-	 */
-	private final int inOperatorMaxSize;
-	
 	private final PersistExecutor<C> persistExecutor;
 	private final InsertExecutor<C, I, T> insertExecutor;
 	private final UpdateExecutor<C, I, T> updateExecutor;
@@ -76,15 +71,14 @@ public class BeanPersister<C, I, T extends Table<T>>
 		this.connectionConfiguration = connectionConfiguration;
 		this.dmlGenerator = dialect.getDmlGenerator();
 		this.writeOperationFactory = dialect.getWriteOperationFactory();
-		this.inOperatorMaxSize = dialect.getInOperatorMaxSize();
 		this.persistExecutor = newPersistExecutor();
 		this.insertExecutor = newInsertExecutor(this.mappingStrategy, this.connectionConfiguration, dmlGenerator,
-				writeOperationFactory, inOperatorMaxSize);
+				writeOperationFactory, dialect.getInOperatorMaxSize());
 		this.updateExecutor = newUpdateExecutor(this.mappingStrategy, this.connectionConfiguration, dmlGenerator,
-				writeOperationFactory, inOperatorMaxSize);
+				writeOperationFactory, dialect.getInOperatorMaxSize());
 		this.deleteExecutor = newDeleteExecutor(this.mappingStrategy, this.connectionConfiguration, dmlGenerator,
-				writeOperationFactory, inOperatorMaxSize);
-		this.selectExecutor = newSelectExecutor(this.mappingStrategy, this.connectionConfiguration.getConnectionProvider(), dialect);
+				writeOperationFactory, dialect.getInOperatorMaxSize());
+		this.selectExecutor = newSelectExecutor(this.mappingStrategy, this.connectionConfiguration, dialect);
 		
 		// Transferring identifier manager InsertListener to here
 		addInsertListener(getMapping().getIdMapping().getIdentifierInsertionManager().getInsertListener());
@@ -109,11 +103,11 @@ public class BeanPersister<C, I, T extends Table<T>>
 	}
 	
 	protected UpdateExecutor<C, I, T> newUpdateExecutor(EntityMapping<C, I, T> mappingStrategy,
-														ConnectionConfiguration connectionProvider,
+														ConnectionConfiguration connectionConfiguration,
 														DMLGenerator dmlGenerator,
 														WriteOperationFactory writeOperationFactory,
 														int inOperatorMaxSize) {
-		return new UpdateExecutor<>(mappingStrategy, connectionProvider, dmlGenerator,
+		return new UpdateExecutor<>(mappingStrategy, connectionConfiguration, dmlGenerator,
 				writeOperationFactory, inOperatorMaxSize);
 	}
 	
@@ -127,9 +121,14 @@ public class BeanPersister<C, I, T extends Table<T>>
 	}
 	
 	protected org.codefilarete.stalactite.engine.SelectExecutor<C, I> newSelectExecutor(EntityMapping<C, I, T> mappingStrategy,
-																						ConnectionProvider connectionProvider,
+																						ConnectionConfiguration connectionConfiguration,
 																						Dialect dialect) {
-		return new org.codefilarete.stalactite.engine.runtime.SelectExecutor(mappingStrategy, connectionProvider, dialect.getDmlGenerator(), dialect.getInOperatorMaxSize());
+		return new org.codefilarete.stalactite.engine.runtime.SelectExecutor<>(
+				mappingStrategy,
+				connectionConfiguration,
+				dialect.getDmlGenerator(),
+				dialect.getReadOperationFactory(),
+				dialect.getInOperatorMaxSize());
 	}
 	
 	public ConnectionProvider getConnectionProvider() {
@@ -138,10 +137,6 @@ public class BeanPersister<C, I, T extends Table<T>>
 	
 	public DMLGenerator getDmlGenerator() {
 		return dmlGenerator;
-	}
-	
-	public int getInOperatorMaxSize() {
-		return inOperatorMaxSize;
 	}
 	
 	@Override

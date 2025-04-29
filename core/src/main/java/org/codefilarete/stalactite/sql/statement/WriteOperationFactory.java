@@ -18,7 +18,6 @@ import org.codefilarete.tool.function.ThrowingBiFunction;
  * As its name mentions it, this class is a factory for {@link WriteOperation}, introduced to be overridden for database specific behavior.
  * 
  * @author Guillaume Mary
- * @see Dialect#newWriteOperationFactory()
  */
 public class WriteOperationFactory {
 	

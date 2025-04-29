@@ -36,7 +36,8 @@ public class PersistenceContextConfigurationBuilder {
 	protected ConnectionConfiguration buildConnectionConfiguration() {
 		return new ConnectionConfigurationSupport(
 				new CurrentThreadTransactionalConnectionProvider(dataSource),
-				connectionSettings.getBatchSize());
+				connectionSettings.getBatchSize(),
+				connectionSettings.getFetchSize());
 	}
 	
 	/**

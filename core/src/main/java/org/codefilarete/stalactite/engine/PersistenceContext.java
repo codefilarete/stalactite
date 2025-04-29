@@ -253,7 +253,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	}
 	
 	private <C> QueryMapper<C> newTransformableQuery(SQLBuilder sql, Class<C> beanType) {
-		return new QueryMapper<>(beanType, sql, getDialect().getColumnBinderRegistry());
+		return new QueryMapper<>(beanType, sql, getDialect().getColumnBinderRegistry(), getDialect().getReadOperationFactory());
 	}
 	
 	@Override

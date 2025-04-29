@@ -288,7 +288,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 					parameterBinderForPKInSelect,
 					selectParameterBinders);
 			List<C> result = new ArrayList<>(idsParcels.size() * blockSize);
-			try (ReadOperation<Column<T, ?>> columnReadOperation = new ReadOperation<>(preparedSelect, connectionProvider)) {
+			try (ReadOperation<Column<T, ?>> columnReadOperation = dialect.getReadOperationFactory().createInstance(preparedSelect, connectionProvider)) {
 				columnReadOperation.setListener(EntityMappingTreeSelectExecutor.this.operationListener);
 				for (List<I> parcel : idsParcels) {
 					result.addAll(executor.execute(columnReadOperation, parcel));

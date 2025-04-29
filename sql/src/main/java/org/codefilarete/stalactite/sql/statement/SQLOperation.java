@@ -53,9 +53,14 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	/** Parameters that mustn't be logged for security reason for instance */
 	private Set<ParamType> notLoggedParams = Collections.emptySet();
 	
-	/** Timeout for SQl orders, default is null meaning that JDBC default timeout applies, which is generally 0, which means no timeout */
+	/** Timeout for SQL orders, default is null meaning that JDBC default timeout applies, which is generally 0, which means no timeout */
 	private Integer timeout = null;
 	
+	/**
+	 * Constructor with mandatory parameters
+	 * @param sqlStatement the statement that must be executed by this operation
+	 * @param connectionProvider JDBC {@link Connection} provider that will be used to get a connection to execute the statement on
+	 */
 	public SQLOperation(SQLStatement<ParamType> sqlStatement, ConnectionProvider connectionProvider) {
 		this.sqlStatement = sqlStatement;
 		this.connectionProvider = connectionProvider;
@@ -112,7 +117,15 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 			throw new BindingException("Error while creating statement " + getSQL(), e);
 		}
 	}
-	
+
+	/**
+	 * Expected to create the internal field {@link #preparedStatement} from given {@link Connection}
+	 * and {@link SQLStatement#getSQL()} result.
+	 * Exposed to eventually adapt the created {@link PreparedStatement}.
+	 *
+	 * @param connection the {@link Connection} to use to create the {@link PreparedStatement}}
+	 * @throws SQLException in case of error during {@link PreparedStatement} creation from the given {@link Connection}
+	 */
 	protected void prepareStatement(Connection connection) throws SQLException {
 		this.preparedStatement = connection.prepareStatement(getSQL());
 	}

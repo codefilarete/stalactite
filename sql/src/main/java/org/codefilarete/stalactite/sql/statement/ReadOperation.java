@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.sql.statement;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -12,9 +13,39 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
  * @author Guillaume Mary
  */
 public class ReadOperation<ParamType> extends SQLOperation<ParamType> {
-	
-	public ReadOperation(SQLStatement<ParamType> sqlGenerator, ConnectionProvider connectionProvider) {
-		super(sqlGenerator, connectionProvider);
+
+	/** Fetch size to be used for this operation */
+	private final Integer fetchSize;
+
+	/**
+	 * Constructor with mandatory parameters
+	 * @param sqlStatement the statement that must be executed by this operation
+	 * @param connectionProvider JDBC {@link Connection} provider that will be used to get a connection to execute the statement on
+	 */
+	public ReadOperation(SQLStatement<ParamType> sqlStatement, ConnectionProvider connectionProvider) {
+		this(sqlStatement, connectionProvider, null);
+	}
+
+	/**
+	 * Constructor with mandatory parameters
+	 * @param sqlStatement the statement that must be executed by this operation
+	 * @param connectionProvider JDBC {@link Connection} provider that will be used to get a connection to execute the statement on
+	 * @param fetchSize the optional fetch size to be used for this operation, pass null to use default value of {@link PreparedStatement#setFetchSize(int)}   
+	 */
+	public ReadOperation(SQLStatement<ParamType> sqlStatement, ConnectionProvider connectionProvider, Integer fetchSize) {
+		super(sqlStatement, connectionProvider);
+		this.fetchSize = fetchSize;
+	}
+
+	/**
+	 * Overridden to set the fetch size if needed
+	 */
+	@Override
+	protected void prepareStatement(Connection connection) throws SQLException {
+		super.prepareStatement(connection);
+		if (fetchSize != null) {
+			this.preparedStatement.setFetchSize(fetchSize);
+		}
 	}
 	
 	/**

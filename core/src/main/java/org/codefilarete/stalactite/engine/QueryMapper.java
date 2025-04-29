@@ -25,6 +25,7 @@ import org.codefilarete.stalactite.sql.result.SingleColumnReader;
 import org.codefilarete.stalactite.sql.result.WholeResultSetTransformer;
 import org.codefilarete.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
+import org.codefilarete.stalactite.sql.statement.ReadOperationFactory;
 import org.codefilarete.stalactite.sql.statement.StringParamedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
@@ -77,6 +78,8 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	
 	private final QueryMapping<C, ?> mapping = new QueryMapping<>();
 	
+	private final ReadOperationFactory readOperationFactory;
+	
 	/**
 	 * Simple constructor
 	 * 
@@ -84,8 +87,11 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * @param sqlBuilder the sql to execute
 	 * @param columnBinderRegistry a provider for SQL parameters and selected column
 	 */
-	public QueryMapper(Class<C> rootBeanType, CharSequence sqlBuilder, ColumnBinderRegistry columnBinderRegistry) {
-		this(rootBeanType, sqlBuilder, columnBinderRegistry, METHOD_REFERENCE_CAPTURER);
+	public QueryMapper(Class<C> rootBeanType,
+					   CharSequence sqlBuilder,
+					   ColumnBinderRegistry columnBinderRegistry,
+					   ReadOperationFactory readOperationFactory) {
+		this(rootBeanType, sqlBuilder, columnBinderRegistry, METHOD_REFERENCE_CAPTURER, readOperationFactory);
 	}
 	
 	/**
@@ -95,8 +101,11 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * @param sqlBuilder the sql provider
 	 * @param columnBinderRegistry a provider for SQL parameters and selected column
 	 */
-	public QueryMapper(Class<C> rootBeanType, SQLBuilder sqlBuilder, ColumnBinderRegistry columnBinderRegistry) {
-		this(rootBeanType, sqlBuilder, columnBinderRegistry, METHOD_REFERENCE_CAPTURER);
+	public QueryMapper(Class<C> rootBeanType,
+					   SQLBuilder sqlBuilder,
+					   ColumnBinderRegistry columnBinderRegistry,
+					   ReadOperationFactory readOperationFactory) {
+		this(rootBeanType, sqlBuilder, columnBinderRegistry, METHOD_REFERENCE_CAPTURER, readOperationFactory);
 	}
 	
 	/**
@@ -108,8 +117,12 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * @param methodReferenceCapturer a method capturer (when column types are not given by {@link #map(String, SerializableBiConsumer)}),
 	 * default is {@link #METHOD_REFERENCE_CAPTURER}
 	 */
-	public QueryMapper(Class<C> rootBeanType, CharSequence sqlBuilder, ColumnBinderRegistry columnBinderRegistry, MethodReferenceCapturer methodReferenceCapturer) {
-		this(rootBeanType, () -> sqlBuilder, columnBinderRegistry, methodReferenceCapturer);
+	public QueryMapper(Class<C> rootBeanType,
+					   CharSequence sqlBuilder,
+					   ColumnBinderRegistry columnBinderRegistry,
+					   MethodReferenceCapturer methodReferenceCapturer,
+					   ReadOperationFactory readOperationFactory) {
+		this(rootBeanType, () -> sqlBuilder, columnBinderRegistry, methodReferenceCapturer, readOperationFactory);
 	}
 	
 	/**
@@ -121,11 +134,16 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * @param methodReferenceCapturer a method capturer (when column types are not given by {@link #map(String, SerializableBiConsumer)}),
 	 * default is {@link #METHOD_REFERENCE_CAPTURER}
 	 */
-	public QueryMapper(Class<C> rootBeanType, SQLBuilder sqlBuilder, ColumnBinderRegistry columnBinderRegistry, MethodReferenceCapturer methodReferenceCapturer) {
+	public QueryMapper(Class<C> rootBeanType,
+					   SQLBuilder sqlBuilder,
+					   ColumnBinderRegistry columnBinderRegistry,
+					   MethodReferenceCapturer methodReferenceCapturer,
+					   ReadOperationFactory readOperationFactory) {
 		this.rootBeanType = rootBeanType;
 		this.sqlBuilder = sqlBuilder;
 		this.columnBinderRegistry = columnBinderRegistry;
 		this.methodReferenceCapturer = methodReferenceCapturer;
+		this.readOperationFactory = readOperationFactory;
 	}
 	
 	@Override
@@ -445,7 +463,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 		}
 		this.mapping.applyTo((WholeResultSetTransformer) transformerToUse);
 		StringParamedSQL parameterizedSQL = new StringParamedSQL(this.sqlBuilder.toSQL().toString(), sqlParameterBinders);
-		try (ReadOperation<String> readOperation = new ReadOperation<>(parameterizedSQL, connectionProvider)) {
+		try (ReadOperation<String> readOperation = readOperationFactory.createInstance(parameterizedSQL, connectionProvider)) {
 			readOperation.setValues(sqlArguments);
 			return transformerToUse.transformAll(readOperation.execute(), accumulator);
 		}

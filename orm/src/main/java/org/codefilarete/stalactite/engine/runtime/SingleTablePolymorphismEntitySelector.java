@@ -113,7 +113,7 @@ public class SingleTablePolymorphismEntitySelector<C, I, T extends Table<T>, DTY
 	}
 	
 	private Map<Class, Set<I>> readIds(PreparedSQL preparedSQL, Map<String, ResultSetReader> columnReaders, ColumnedRow columnedRow) {
-		try (ReadOperation<Integer> closeableOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
+		try (ReadOperation<Integer> closeableOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = closeableOperation.execute();
 			RowIterator rowIterator = new RowIterator(resultSet, columnReaders);
 			// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance

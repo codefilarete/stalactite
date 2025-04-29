@@ -64,13 +64,49 @@ class PersistenceContextConfigurationBuilderTest {
 						1000,
 						false
 				),
-				new ConnectionSettings(10, 150),
+				new ConnectionSettings(),
 				mock(DataSource.class)
 		);
 		
 		PersistenceContextConfiguration builtConfiguration = testInstance.build(DialectOptions.noOptions().setInOperatorMaxSize(1500));
-		// "In" operator size is taken on ConnectionSettings to make it more easily changed by user. Database vendor's one is considered a default value.
+		// "In" operator size is taken on DialectOptions to make it more easily changed by user. Database vendor's one is considered a default value.
 		assertThat(builtConfiguration.getDialect().getInOperatorMaxSize()).isEqualTo(1500);
+	}
+	
+	@Test
+	void fetchSize() {
+		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
+		DefaultTypeMapping javaTypeToSqlTypes = new DefaultTypeMapping();
+		ParameterBinderRegistry parameterBinderRegistry = new ParameterBinderRegistry();
+
+		PersistenceContextConfigurationBuilder testInstance = new PersistenceContextConfigurationBuilder(
+				new DatabaseVendorSettings(
+						new DatabaseSignet("my_vendor", 1, 0),
+						Arrays.asSet("aKeyWord"),
+						'`',
+						javaTypeToSqlTypes,
+						parameterBinderRegistry,
+						(parameterBinders, dmlNameProviderFactory, sqlTypeRegistry) -> {
+							DMLGenerator dmlGenerator = new DMLGenerator(parameterBinders, NoopSorter.INSTANCE, dmlNameProviderFactory);
+							DDLTableGenerator ddlTableGenerator = new DDLTableGenerator(sqlTypeRegistry, dmlNameProviderFactory);
+							DDLSequenceGenerator ddlSequenceGenerator = new DDLSequenceGenerator(dmlNameProviderFactory);
+							return new SQLOperationsFactories(new WriteOperationFactory(), new ReadOperationFactory(), dmlGenerator, ddlTableGenerator, ddlSequenceGenerator, SEQUENCE_SELECT_BUILDER);
+						},
+						new GeneratedKeysReaderFactory() {
+							@Override
+							public <I> GeneratedKeysReader<I> build(String keyName, Class<I> columnType) {
+								return new GeneratedKeysReader<>(keyName, columnBinderRegistry.getBinder(columnType));
+							}
+						},
+						1000,
+						false
+				),
+				new ConnectionSettings(10, 200),
+				mock(DataSource.class)
+		);
+
+		PersistenceContextConfiguration builtConfiguration = testInstance.build(DialectOptions.noOptions());
+		assertThat(builtConfiguration.getConnectionConfiguration().getFetchSize()).isEqualTo(200);
 	}
 	
 	@Test
@@ -101,7 +137,7 @@ class PersistenceContextConfigurationBuilderTest {
 						100,
 						false
 				),
-				new ConnectionSettings(10, 150),
+				new ConnectionSettings(),
 				mock(DataSource.class)
 		);
 		
