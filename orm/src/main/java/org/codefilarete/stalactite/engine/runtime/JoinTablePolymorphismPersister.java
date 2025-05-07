@@ -75,7 +75,7 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 										  Dialect dialect) {
 		super(mainPersister,
 				subEntitiesPersisters,
-				new JoinTablePolymorphismEntitySelector<>(
+				new JoinTablePolymorphismEntityFinder<>(
 						mainPersister,
 						subEntitiesPersisters,
 						connectionProvider,

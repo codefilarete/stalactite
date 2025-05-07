@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQu
 import org.codefilarete.stalactite.engine.EntityPersister.LimitAware;
 import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain;
 import org.codefilarete.stalactite.engine.ExecutableProjection;
-import org.codefilarete.stalactite.query.EntitySelector;
+import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.Select;
@@ -33,7 +33,7 @@ import static org.codefilarete.tool.Nullable.nullable;
  * <ul>
  * Class aimed at handling projection query configuration and execution triggering :
  * <li>query configuration will be done by redirecting {@link CriteriaChain} methods to an {@link EntityQueryCriteriaSupport}.</li>
- * <li>execution triggering calls {@link EntitySelector#selectProjection(Consumer, Accumulator, CriteriaChain, boolean, Consumer, Consumer)}</li>
+ * <li>execution triggering calls {@link EntityFinder#selectProjection(Consumer, Accumulator, CriteriaChain, boolean, Consumer, Consumer)}</li>
  * </ul>
  *
  * @param <C> entity type
@@ -45,13 +45,13 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 	private final EntityCriteriaSupport<C> entityCriteriaSupport;
 	
 	/** Support for {@link EntityCriteria} query execution */
-	private final EntitySelector<C, I> entitySelector;
+	private final EntityFinder<C, I> entitySelector;
 	
 	private final Consumer<Select> selectAdapter;
 	
-	public ProjectionQueryCriteriaSupport(EntityCriteriaSupport<C> source, EntitySelector<C, I> entitySelector, Consumer<Select> selectAdapter) {
+	public ProjectionQueryCriteriaSupport(EntityCriteriaSupport<C> source, EntityFinder<C, I> entityFinder, Consumer<Select> selectAdapter) {
 		this.entityCriteriaSupport = new EntityCriteriaSupport<>(source);
-		this.entitySelector = entitySelector;
+		this.entitySelector = entityFinder;
 		this.selectAdapter = selectAdapter;
 	}
 	

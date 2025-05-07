@@ -551,7 +551,7 @@ class TablePerClassPolymorphismPersisterTest {
 			String qAlias = "Toto_q";
 			String totoAAlias = "Toto_a";
 			String totoBAlias = "Toto_b";
-			String totoDTYPEAlias = "Toto_" + TablePerClassPolymorphismEntitySelector.DISCRIMINATOR_ALIAS;
+			String totoDTYPEAlias = "Toto_" + TablePerClassPolymorphismEntityFinder.DISCRIMINATOR_ALIAS;
 			when(preparedStatement.executeQuery()).thenReturn(
 					// first result if for id read
 					new InMemoryResultSet(Arrays.asList(
@@ -608,7 +608,7 @@ class TablePerClassPolymorphismPersisterTest {
 			String qAlias = "Toto_q";
 			String totoAAlias = "Toto_a";
 			String totoBAlias = "Toto_b";
-			String totoDTYPEAlias = "Toto_" + TablePerClassPolymorphismEntitySelector.DISCRIMINATOR_ALIAS;
+			String totoDTYPEAlias = "Toto_" + TablePerClassPolymorphismEntityFinder.DISCRIMINATOR_ALIAS;
 			when(preparedStatement.executeQuery()).thenReturn(
 					// first result if for id read
 					new InMemoryResultSet(Arrays.asList(
@@ -680,7 +680,7 @@ class TablePerClassPolymorphismPersisterTest {
 			String totoBQAlias = "TotoB_q";
 			String totoAAlias = "TotoA_a";
 			String totoBAlias = "TotoB_b";
-			String totoDTYPEAlias = TablePerClassPolymorphismEntitySelector.DISCRIMINATOR_ALIAS;
+			String totoDTYPEAlias = TablePerClassPolymorphismEntityFinder.DISCRIMINATOR_ALIAS;
 			when(preparedStatement.executeQuery()).thenReturn(
 					// first result if for id read
 					new InMemoryResultSet(Arrays.asList(

@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
-import org.codefilarete.stalactite.query.EntitySelector;
+import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.LimitAware;
@@ -42,14 +42,14 @@ import org.codefilarete.tool.collection.Iterables;
  * @param <T>
  * @author Guillaume Mary
  */
-public abstract class AbstractPolymorphicEntitySelector<C, I, T extends Table<T>> implements EntitySelector<C, I> {
+public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> implements EntityFinder<C, I> {
 	
 	protected final EntityJoinTree<C, I> mainEntityJoinTree;
 	protected final Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass;
 	protected final ConnectionProvider connectionProvider;
 	protected final Dialect dialect;
 	
-	protected AbstractPolymorphicEntitySelector(
+	protected AbstractPolymorphicEntityFinder(
 			EntityJoinTree<C, I> mainEntityJoinTree,
 			Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
 			ConnectionProvider connectionProvider,

@@ -16,16 +16,17 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
+import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType.INNER;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -104,7 +105,17 @@ class EntityGraphSelectorTest {
 		
 		Set<Toto> totos = testInstance.selectFromQueryBean("select Toto.id as Toto_id, Tata.id as Tata_id from Toto inner join Tata on Toto.id = Tata.id" +
 				" where Toto.id = :toto_id", Maps.asMap("toto_id", 7));
-		System.out.println(totos);
+		Toto expectedResult1 = new Toto(7, null, null);
+		expectedResult1.setTata(new Tata(7));
+		Toto expectedResult2 = new Toto(13, null, null);
+		expectedResult2.setTata(new Tata(13));
+		Toto expectedResult3 = new Toto(17, null, null);
+		expectedResult3.setTata(new Tata(17));
+		Toto expectedResult4 = new Toto(23, null, null);
+		expectedResult4.setTata(new Tata(23));
+		assertThat(totos)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(expectedResult1, expectedResult2, expectedResult3, expectedResult4);
 	}
 	
 	private static class Toto {
@@ -175,6 +186,13 @@ class EntityGraphSelectorTest {
 		private Integer id;
 		
 		private String prop1;
+		
+		public Tata() {
+		}
+		
+		public Tata(Integer id) {
+			this.id = id;
+		}
 		
 		public Integer getId() {
 			return id;

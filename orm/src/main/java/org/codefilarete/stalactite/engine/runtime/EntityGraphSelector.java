@@ -18,7 +18,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
-import org.codefilarete.stalactite.query.EntitySelector;
+import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.LimitAware;
@@ -49,15 +49,15 @@ import static org.codefilarete.stalactite.query.model.Operators.in;
 import static org.codefilarete.tool.bean.Objects.preventNull;
 
 /**
- * Class aimed at loading an entity graph which is selected by properties criteria coming from {@link CriteriaChain}.
+ * Class aimed at loading an entity graph which is selected by some criteria on some properties coming from a {@link CriteriaChain}.
  * 
  * Implemented as a light version of {@link EntityMappingTreeSelectExecutor} focused on {@link EntityCriteriaSupport},
  * hence it is based on {@link EntityJoinTree} to build the bean graph.
  * 
  * @author Guillaume Mary
- * @see EntitySelector#select(ConfiguredEntityCriteria, Consumer, Consumer, Map)
+ * @see EntityFinder#select(ConfiguredEntityCriteria, Consumer, Consumer, Map)
  */
-public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySelector<C, I> {
+public class EntityGraphSelector<C, I, T extends Table<T>> implements EntityFinder<C, I> {
 	
 	private static final String PRIMARY_KEY_ALIAS = "rootId";
 	
@@ -113,7 +113,7 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 	}
 	
 	/**
-	 * Implementation note : the load is done in 2 phases : one for root ids selection from criteria, a second from full graph load from found root ids.
+	 * Implementation note: the load is done in 2 phases: one for root ids selection from criteria, a second for the whole graph load from found root ids.
 	 */
 	@Override
 	public Set<C> select(ConfiguredEntityCriteria where,
@@ -126,12 +126,12 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), entityTreeQuery.getColumnClones());
 		ColumnCloneAwareOrderBy cloneAwareOrderBy = new ColumnCloneAwareOrderBy(query.orderBy(), entityTreeQuery.getColumnClones());
 		
-		// When condition contains some criteria on a collection, the ResultSet contains only data matching it,
+		// When the condition contains some criteria on a collection, the ResultSet contains only data matching it,
 		// then the graph is a partial view of the real entity. Therefore, when the condition contains some Collection criteria
-		// we must load the graph in 2 phases : a first lookup for ids matching the result, and a second phase that loads the entity graph
+		// we must load the graph in 2 phases: a first lookup for ids matching the result, and a second phase that loads the entity graph
 		// according to the ids
 		if (where.hasCollectionCriteria()) {
-			// First phase : selecting ids (made by clearing selected elements for performance issue)
+			// First phase: selecting ids (made by clearing selected elements for performance issue)
 			KeepOrderMap<Selectable<?>, String> columns = query.getSelectDelegate().clear();
 			Column<T, I> pk = (Column<T, I>) Iterables.first(((Table) entityJoinTree.getRoot().getTable()).getPrimaryKey().getColumns());
 			query.select(pk, PRIMARY_KEY_ALIAS);
@@ -156,7 +156,7 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 				return new InternalExecutor(entityTreeQuery).execute(preparedSQL);
 			}
 		} else {
-			// Condition doesn't have criteria on a collection property (*-to-many) : the load can be done with one query because the SQL criteria
+			// The condition doesn't have a criteria on a collection property (*-to-many): the load can be done with one query because the SQL criteria
 			// doesn't make a subset of the entity graph
 			orderByClauseConsumer.accept(cloneAwareOrderBy);
 			limitAwareConsumer.accept(query.orderBy());

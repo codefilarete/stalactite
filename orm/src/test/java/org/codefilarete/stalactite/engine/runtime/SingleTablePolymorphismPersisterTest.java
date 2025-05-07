@@ -69,7 +69,7 @@ import org.mockito.stubbing.Answer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.codefilarete.stalactite.engine.runtime.SingleTablePolymorphismEntitySelector.DISCRIMINATOR_ALIAS;
+import static org.codefilarete.stalactite.engine.runtime.SingleTablePolymorphismEntityFinder.DISCRIMINATOR_ALIAS;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;

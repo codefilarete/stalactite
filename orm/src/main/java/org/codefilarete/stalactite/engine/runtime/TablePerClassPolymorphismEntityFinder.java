@@ -58,7 +58,7 @@ import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROO
 /**
  * @author Guillaume Mary
  */
-public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> extends AbstractPolymorphicEntitySelector<C, I, T> {
+public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> extends AbstractPolymorphicEntityFinder<C, I, T> {
 	
 	@VisibleForTesting
 	static final String DISCRIMINATOR_ALIAS = "DISCRIMINATOR";
@@ -71,7 +71,7 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 	private final SingleLoadEntityJoinTree<C, I> singleLoadEntityJoinTree;
 	private final PhasedEntityJoinTree<C, I> phasedLoadEntityJoinTree;
 	
-	public TablePerClassPolymorphismEntitySelector(
+	public TablePerClassPolymorphismEntityFinder(
 			ConfiguredRelationalPersister<C, I> mainPersister,
 			Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
 			ConnectionProvider connectionProvider,

@@ -33,7 +33,7 @@ import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.runtime.EntityQueryCriteriaSupport.EntityQueryPageSupport.OrderByItem;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.ExecutableEntityQueryCriteria;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
-import org.codefilarete.stalactite.query.EntitySelector;
+import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Limit;
@@ -60,7 +60,7 @@ import static org.codefilarete.tool.Nullable.nullable;
  * <ul>
  * Class aimed at handling entity query configuration and execution triggering :
  * <li>query configuration will be done by redirecting {@link CriteriaChain} methods to an {@link EntityQueryCriteriaSupport}.</li>
- * <li>execution triggering calls {@link EntitySelector#select(ConfiguredEntityCriteria, Consumer, Consumer, Map)}
+ * <li>execution triggering calls {@link EntityFinder#select(ConfiguredEntityCriteria, Consumer, Consumer, Map)}
  * and wraps it into {@link PersisterListenerCollection#doWithSelectListener(Iterable, ThrowingExecutable)}</li>
  * </ul>
  * 
@@ -73,7 +73,7 @@ public class EntityQueryCriteriaSupport<C, I> {
 	public static final Logger LOGGER = LoggerFactory.getLogger(EntityQueryCriteriaSupport.class);
 	
 	/** Support for {@link EntityCriteria} query execution */
-	private final EntitySelector<C, I> entitySelector;
+	private final EntityFinder<C, I> entityFinder;
 	
 	private final EntityCriteriaSupport<C> entityCriteriaSupport;
 	
@@ -81,18 +81,18 @@ public class EntityQueryCriteriaSupport<C, I> {
 	
 	private final PersisterListenerCollection<C, I> persisterListener;
 	
-	public EntityQueryCriteriaSupport(EntityCriteriaSupport<C> source, EntitySelector<C, I> entitySelector, PersisterListenerCollection<C, I> persisterListener) {
-		this.entitySelector = entitySelector;
+	public EntityQueryCriteriaSupport(EntityCriteriaSupport<C> source, EntityFinder<C, I> entityFinder, PersisterListenerCollection<C, I> persisterListener) {
+		this.entityFinder = entityFinder;
 		this.entityCriteriaSupport = new EntityCriteriaSupport<>(source);
 		this.queryPageSupport = new EntityQueryPageSupport<>();
 		this.persisterListener = persisterListener;
 	}
 	
-	private EntityQueryCriteriaSupport(EntitySelector<C, I> entitySelector,
-									  EntityCriteriaSupport<C> entityCriteriaSupport,
-									  EntityQueryPageSupport<C> queryPageSupport,
-									  PersisterListenerCollection<C, I> persisterListener) {
-		this.entitySelector = entitySelector;
+	private EntityQueryCriteriaSupport(EntityFinder<C, I> entityFinder,
+									   EntityCriteriaSupport<C> entityCriteriaSupport,
+									   EntityQueryPageSupport<C> queryPageSupport,
+									   PersisterListenerCollection<C, I> persisterListener) {
+		this.entityFinder = entityFinder;
 		this.entityCriteriaSupport = entityCriteriaSupport;
 		this.queryPageSupport = queryPageSupport;
 		this.persisterListener = persisterListener;
@@ -106,7 +106,7 @@ public class EntityQueryCriteriaSupport<C, I> {
 	 * @return a merge of this instance with given page options
 	 */
 	public EntityQueryCriteriaSupport<C, I> copyFor(EntityQueryPageSupport<C> otherPageSupport) {
-		return new EntityQueryCriteriaSupport<>(entitySelector, entityCriteriaSupport, queryPageSupport.merge(otherPageSupport), persisterListener);
+		return new EntityQueryCriteriaSupport<>(entityFinder, entityCriteriaSupport, queryPageSupport.merge(otherPageSupport), persisterListener);
 	}
 	
 	public EntityCriteriaSupport<C> getEntityCriteriaSupport() {
@@ -162,7 +162,7 @@ public class EntityQueryCriteriaSupport<C, I> {
 			}
 		
 			return persisterListener.doWithSelectListener(emptySet(), () ->
-					entitySelector.select(
+					entityFinder.select(
 							entityCriteriaSupport,
 							orderByAdapter.get(),
 							limitAware -> nullable(queryPageSupport.getLimit()).invoke(limit -> limitAware.limit(limit.getCount(), limit.getOffset())), values)

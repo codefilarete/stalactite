@@ -17,7 +17,7 @@ import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
-import org.codefilarete.stalactite.query.EntitySelector;
+import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
@@ -54,7 +54,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	
 	private final BeanPersister<C, I, T> persister;
 	/** Support for {@link EntityCriteria} query execution */
-	private final EntitySelector<C, I> entitySelector;
+	private final EntityFinder<C, I> entityFinder;
 	/** Support for defining entity criteria on {@link #selectWhere()} */
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	private final EntityMappingTreeSelectExecutor<C, I, T> selectGraphExecutor;
@@ -70,7 +70,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 		this.persister = persister;
 		this.criteriaSupport = new EntityCriteriaSupport<>(persister.getMapping());
 		this.selectGraphExecutor = newSelectExecutor(persister.getMapping(), connectionConfiguration.getConnectionProvider(), dialect);
-		this.entitySelector = newEntitySelectExecutor(dialect);
+		this.entityFinder = newEntitySelectExecutor(dialect);
 		if (persister.getMapping().getIdMapping().getIdentifierInsertionManager() instanceof AlreadyAssignedIdentifierManager) {
 			// we redirect all invocations to ourselves because targeted methods invoke their listeners
 			this.persistExecutor = new AlreadyAssignedIdentifierPersistExecutor<>(this);
@@ -86,7 +86,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 		return new EntityMappingTreeSelectExecutor<>(mappingStrategy, dialect, connectionProvider);
 	}
 	
-	protected EntitySelector<C, I> newEntitySelectExecutor(Dialect dialect) {
+	protected EntityFinder<C, I> newEntitySelectExecutor(Dialect dialect) {
 		return new EntityGraphSelector<>(
 				getEntityJoinTree(),
 				persister.getConnectionProvider(),
@@ -155,12 +155,12 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	
 	@Override
 	public EntityQueryCriteriaSupport<C, I> newCriteriaSupport() {
-		return new EntityQueryCriteriaSupport<>(criteriaSupport, entitySelector, getPersisterListener());
+		return new EntityQueryCriteriaSupport<>(criteriaSupport, entityFinder, getPersisterListener());
 	}
 	
 	@Override
 	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter) {
-		ProjectionQueryCriteriaSupport<C, I> projectionSupport = new ProjectionQueryCriteriaSupport<>(criteriaSupport, entitySelector, selectAdapter);
+		ProjectionQueryCriteriaSupport<C, I> projectionSupport = new ProjectionQueryCriteriaSupport<>(criteriaSupport, entityFinder, selectAdapter);
 		return projectionSupport.wrapIntoExecutable();
 	}
 	

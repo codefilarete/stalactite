@@ -78,7 +78,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 											  Dialect dialect) {
 		super(mainPersister,
 				subEntitiesPersisters,
-				new TablePerClassPolymorphismEntitySelector<C, I, T>(
+				new TablePerClassPolymorphismEntityFinder<C, I, T>(
 						mainPersister,
 						subEntitiesPersisters,
 						connectionProvider,

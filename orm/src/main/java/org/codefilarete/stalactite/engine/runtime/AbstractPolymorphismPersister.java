@@ -7,7 +7,7 @@ import java.util.function.Consumer;
 import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
-import org.codefilarete.stalactite.query.EntitySelector;
+import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 
@@ -25,16 +25,16 @@ public abstract class AbstractPolymorphismPersister<C, I>
 	protected final Map<Class<C>, ConfiguredRelationalPersister<C, I>> subEntitiesPersisters;
 	protected final ConfiguredRelationalPersister<C, I> mainPersister;
 	protected final EntityCriteriaSupport<C> criteriaSupport;
-	protected final EntitySelector<C, I> entitySelector;
+	protected final EntityFinder<C, I> entityFinder;
 	protected final PersistExecutor<C> persistExecutor;
 	
 	protected AbstractPolymorphismPersister(ConfiguredRelationalPersister<C, I> mainPersister,
 											Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> subEntitiesPersisters,
-											EntitySelector<C, I> entitySelector) {
+											EntityFinder<C, I> entityFinder) {
 		this.mainPersister = mainPersister;
 		this.subEntitiesPersisters = (Map<Class<C>, ConfiguredRelationalPersister<C, I>>) subEntitiesPersisters;
 		this.criteriaSupport = new EntityCriteriaSupport<>(mainPersister.getMapping());
-		this.entitySelector = entitySelector;
+		this.entityFinder = entityFinder;
 		if (mainPersister.getMapping().getIdMapping().getIdentifierInsertionManager() instanceof AlreadyAssignedIdentifierManager) {
 			this.persistExecutor = new AlreadyAssignedIdentifierPersistExecutor<>(this);
 		} else {
@@ -49,12 +49,12 @@ public abstract class AbstractPolymorphismPersister<C, I>
 	
 	@Override
 	public EntityQueryCriteriaSupport<C, I> newCriteriaSupport() {
-		return new EntityQueryCriteriaSupport<>(criteriaSupport, entitySelector, getPersisterListener());
+		return new EntityQueryCriteriaSupport<>(criteriaSupport, entityFinder, getPersisterListener());
 	}
 	
 	@Override
 	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter) {
-		ProjectionQueryCriteriaSupport<C, I> projectionSupport = new ProjectionQueryCriteriaSupport<>(criteriaSupport, entitySelector, selectAdapter);
+		ProjectionQueryCriteriaSupport<C, I> projectionSupport = new ProjectionQueryCriteriaSupport<>(criteriaSupport, entityFinder, selectAdapter);
 		return projectionSupport.wrapIntoExecutable();
 	}
 	
@@ -87,10 +87,4 @@ public abstract class AbstractPolymorphismPersister<C, I>
 	protected void doPersist(Iterable<? extends C> entities) {
 		persistExecutor.persist(entities);
 	}
-//	@Override
-//	protected void doPersist(Iterable<? extends C> entities) {
-//		// we redirect all invocations to ourselves because targeted methods invoke their listeners
-//		PersistExecutor.persist(entities, this);
-////		PersistExecutor.persist(entities, this::isNew, this, this, this, this::getId);
-//	}
 }

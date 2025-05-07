@@ -72,7 +72,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 											SingleTablePolymorphism<C, DTYPE> polymorphismPolicy) {
 		super(mainPersister,
 				subEntitiesPersisters,
-				new SingleTablePolymorphismEntitySelector<>(mainPersister,
+				new SingleTablePolymorphismEntityFinder<>(mainPersister,
 						subEntitiesPersisters,
 						discriminatorColumn,
 						polymorphismPolicy,

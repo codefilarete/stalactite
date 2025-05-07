@@ -13,18 +13,18 @@ import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 
 /**
- * Contract that defines expected methods to load an entity graph conditionally on some properties criteria coming
+ * Contract that defines the methods to load an entity graph conditionally on some property criteria coming
  * from {@link CriteriaChain}.
  * 
  * @author Guillaume Mary
  */
-public interface EntitySelector<C, I> {
+public interface EntityFinder<C, I> {
 	
 	/**
-	 * Loads entity graphs that matches given criteria.
+	 * Loads some entities that match given criteria.
 	 *
 	 * <strong>
-	 * Please note that the whole graph of matching entities is loaded : collections are fully loaded with all their
+	 * Please note that the whole graph of matching entities is loaded: collections are fully loaded with all their
 	 * elements, even those that don't match the criteria.
 	 * As long as there is an element that matches the criterion the entire collection is loaded, and the whole graph too.
 	 * </strong>

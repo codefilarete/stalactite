@@ -39,12 +39,12 @@ import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROO
 /**
  * @author Guillaume Mary
  */
-public class JoinTablePolymorphismEntitySelector<C, I, T extends Table<T>> extends AbstractPolymorphicEntitySelector<C, I, T> {
+public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends AbstractPolymorphicEntityFinder<C, I, T> {
 	
 	private final T mainTable;
 	private final SingleLoadEntityJoinTree<C, I> singleLoadEntityJoinTree;
 	
-	public JoinTablePolymorphismEntitySelector(
+	public JoinTablePolymorphismEntityFinder(
 			ConfiguredRelationalPersister<C, I> mainPersister,
 			Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
 			ConnectionProvider connectionProvider,

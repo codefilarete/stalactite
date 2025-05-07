@@ -40,7 +40,7 @@ import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROO
 /**
  * @author Guillaume Mary
  */
-public class SingleTablePolymorphismEntitySelector<C, I, T extends Table<T>, DTYPE> extends AbstractPolymorphicEntitySelector<C, I, T> {
+public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE> extends AbstractPolymorphicEntityFinder<C, I, T> {
 	
 	@VisibleForTesting
 	static final String DISCRIMINATOR_ALIAS = "DISCRIMINATOR";
@@ -50,12 +50,12 @@ public class SingleTablePolymorphismEntitySelector<C, I, T extends Table<T>, DTY
 	private final SingleTablePolymorphism<C, DTYPE> polymorphismPolicy;
 	private final EntityJoinTree<C, I> singleLoadEntityJoinTree;
 	
-	public SingleTablePolymorphismEntitySelector(ConfiguredRelationalPersister<C, I> mainPersister,
-												 Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
-												 Column<T, DTYPE> discriminatorColumn,
-												 SingleTablePolymorphism<C, DTYPE> polymorphismPolicy,
-												 ConnectionProvider connectionProvider,
-												 Dialect dialect) {
+	public SingleTablePolymorphismEntityFinder(ConfiguredRelationalPersister<C, I> mainPersister,
+											   Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
+											   Column<T, DTYPE> discriminatorColumn,
+											   SingleTablePolymorphism<C, DTYPE> polymorphismPolicy,
+											   ConnectionProvider connectionProvider,
+											   Dialect dialect) {
 		super(mainPersister.getEntityJoinTree(), persisterPerSubclass, connectionProvider, dialect);
 		this.identifierAssembler = mainPersister.getMapping().getIdMapping().getIdentifierAssembler();
 		this.discriminatorColumn = discriminatorColumn;
