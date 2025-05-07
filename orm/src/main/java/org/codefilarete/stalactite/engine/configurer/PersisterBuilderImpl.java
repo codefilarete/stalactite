@@ -671,15 +671,15 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					currentMapping = result.add(preventNull(currentKey, embeddableMappingConfiguration), currentTable,
 							// Note that we clone maps because ours are reused while iterating
 							currentColumnMap, currentReadonlyColumnMap,
-							new ValueAccessPointMap<>(readConverters),// new HashMap<>(resultSetReaders),
-							new ValueAccessPointMap<>(writeConverters),// new HashMap<>(preparedStatementWriters),
+							new ValueAccessPointMap<>(readConverters),
+							new ValueAccessPointMap<>(writeConverters),
 							mappedSuperClass);
 				} else {
 					currentMapping = result.add(embeddableMappingConfiguration, currentTable,
 							// Note that we clone maps because ours are reused while iterating
 							currentColumnMap, currentReadonlyColumnMap,
-							new ValueAccessPointMap<>(readConverters),// new HashMap<>(resultSetReaders),
-							new ValueAccessPointMap<>(writeConverters),// new HashMap<>(preparedStatementWriters),
+							new ValueAccessPointMap<>(readConverters),
+							new ValueAccessPointMap<>(writeConverters),
 							mappedSuperClass);
 					currentMapping.getMapping().putAll(currentColumnMap);
 				}
@@ -728,7 +728,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * because current configuration may not have a direct entity ancestor.
 	 * Then visits mapped super classes as {@link EmbeddableMappingConfiguration} of the last visited {@link EntityMappingConfiguration}, optional
 	 * operation too.
-	 * This is because inheritance can only have 2 paths :
+	 * This is because inheritance can only have 2 paths:
 	 * - first an optional inheritance from some other entity
 	 * - then an optional inheritance from some mapped super class
 	 * 
@@ -823,8 +823,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * The result is set in given {@link SingleColumnIdentification}. Could have been done on a separate object but it would have complicated some method
 	 * signature, and {@link SingleColumnIdentification} is a good place for it.
 	 * 
-	 * @param identification given to know expected policy, and to set result in it
-	 * @param mappingPerTable necessary to get table and primary key to be read in after-insert policy
+	 * @param identification given to know the expected policy and to set the result in it
+	 * @param mappingPerTable necessary to get table and primary key to be read in the after-insert policy
 	 * @param idAccessor id accessor to get and set identifier on entity (except for already-assigned strategy)
 	 * @param dialect dialect to compute elements of identifier policy
 	 * @param <E> entity type that defines identifier manager, used as internal, may be C or one of its ancestor

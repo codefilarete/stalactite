@@ -21,7 +21,7 @@ import org.codefilarete.tool.function.Sequence;
 public interface ColumnOptions<O> extends PropertyOptions<O> {
 	
 	/**
-	 * Marks the property as mandatory, which makes the mapped column not nullable : does not make a null checking at runtime.
+	 * Marks the property as mandatory, which makes the mapped column not nullable: does not make a null checking at runtime.
 	 * Note that using this method on an identifier one as no purpose because identifiers are already mandatory.
 	 */
 	@Override
@@ -58,7 +58,7 @@ public interface ColumnOptions<O> extends PropertyOptions<O> {
 	@SuppressWarnings("java:S2326" /* Unused generics is necessary to caller signature (mapKey) to make policy identifier type match entity identifier one */)
 	interface IdentifierPolicy<ID> {
 		/**
-		 * Policy for entities that have their id given by database after insert, such as increment column, implying that generated values can be
+		 * Policy for entities that have their id given by the database after insert, such as increment column, implying that generated values can be
 		 * read through {@link PreparedStatement#getGeneratedKeys()}
 		 * 
 		 * @return a new policy that will be used to get the identifier value
@@ -110,7 +110,7 @@ public interface ColumnOptions<O> extends PropertyOptions<O> {
 		
 		/**
 		 * Policy for entities that want their id fixed just before insert which value is given by a {@link Sequence}.
-		 * Be aware that given sequence will be shared across all managed entities, meaning that, for instance,
+		 * Be aware that the given sequence will be shared across all managed entities, meaning that, for instance,
 		 * if it is a long sequence, an integer value can't be found twice in whole entities.   
 		 * Reader may be interested in other {@link #pooledHiLoSequence()} methods to avoid such sharing behavior.
 		 *
@@ -127,11 +127,11 @@ public interface ColumnOptions<O> extends PropertyOptions<O> {
 		 * Meanwhile, this policy requires those instances to be capable of being marked as persisted (after insert to prevent the engine from
 		 * trying to persist again an already persisted instance, for instance). A basic implementation can be a boolean switch on entity. 
 		 * 
-		 * @param markAsPersistedFunction the {@link Consumer} that allows to mark the entity as "inserted in database"
-		 * @param isPersistedFunction the {@link Function} that allows to know if entity was already inserted in database
+		 * @param markAsPersistedFunction the {@link Consumer} that allows marking the entity as "inserted in database"
+		 * @param isPersistedFunction the {@link Function} that allows knowing if entity was already inserted in database
 		 * @param <C> entity type
 		 * @param <I> identifier type
-		 * @return a new policy that will be used to know persistent state of entities
+		 * @return a new policy that will be used to know the persistent state of entities
 		 */
 		static <C, I> AlreadyAssignedIdentifierPolicy<C, I> alreadyAssigned(Consumer<C> markAsPersistedFunction,
 																			Function<C, Boolean> isPersistedFunction) {
@@ -160,7 +160,7 @@ public interface ColumnOptions<O> extends PropertyOptions<O> {
 	}
 	
 	/**
-	 * Before-insert identifier policy that will used given {@link Sequence} for all entities.
+	 * Before-insert identifier policy that will use given {@link Sequence} for all entities.
 	 * 
 	 * @param <I>
 	 * @author Guillaume Mary

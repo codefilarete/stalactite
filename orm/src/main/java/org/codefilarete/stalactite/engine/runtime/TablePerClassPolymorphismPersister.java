@@ -19,7 +19,6 @@ import org.codefilarete.stalactite.engine.InsertExecutor;
 import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.engine.UpdateExecutor;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer;
-import org.codefilarete.stalactite.engine.listener.PersisterListener;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
@@ -284,7 +283,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 					rightColumn,
 					(Set<? extends ConfiguredRelationalPersister<C, I>>) (Set) new HashSet<>(this.subEntitiesPersisters.values()));
 
-			((PersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
+			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
 			
 			return createdJoinNodeName;
 		} else {
