@@ -68,6 +68,7 @@ import org.codefilarete.stalactite.engine.runtime.EntityIsManagedByPersisterAsse
 import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
@@ -424,8 +425,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			result.add(currentPersister);
 			// a join is necessary to select entity, only if target table changes
 			if (!currentPersister.getMainTable().equals(currentTable.get())) {
-				mainPersister.getEntityMappingTreeSelectExecutor().addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME, currentMappingStrategy,
-																				superclassPK, subclassPK);
+				mainPersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMergerAdapter<>(currentMappingStrategy), superclassPK, subclassPK);
 				currentTable.set(currentPersister.getMainTable());
 			}
 		});

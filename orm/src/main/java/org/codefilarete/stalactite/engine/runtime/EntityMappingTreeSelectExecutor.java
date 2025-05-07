@@ -12,24 +12,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.codefilarete.stalactite.engine.JoinableSelectExecutor;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildLifeCycleListener;
-import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
-import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.model.Fromable;
-import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
@@ -37,10 +31,8 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.DDLAppender;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSelect;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
@@ -64,7 +56,7 @@ import org.codefilarete.tool.collection.Iterables;
  * 
  * @author Guillaume Mary
  */
-public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implements org.codefilarete.stalactite.engine.SelectExecutor<C, I>, JoinableSelectExecutor {
+public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implements org.codefilarete.stalactite.engine.SelectExecutor<C, I> {
 	
 	/** The delegate for joining the strategies, will help to build the SQL */
 	private final EntityJoinTree<C, I> entityJoinTree;
@@ -129,85 +121,6 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 	
 	public void setOperationListener(SQLOperationListener<Column<T, ?>> operationListener) {
 		this.operationListener = operationListener;
-	}
-	
-	/**
-	 * Adds an inner join to this executor.
-	 * Shortcut for {@link EntityJoinTree#addRelationJoin(String, EntityInflater, Key, Key, String, JoinType, BeanRelationFixer, Set)}
-	 *
-	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
-	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link RowTransformer}
-	 * @param leftJoinColumn the {@link Column} (of previous strategy left table) to be joined with {@code rightJoinColumn}
-	 * @param rightJoinColumn the {@link Column} (of the strategy table) to be joined with {@code leftJoinColumn}
-	 * @param beanRelationFixer a function to fulfill relation between 2 strategies beans
-	 * @param <U> type of bean mapped by the given strategy
-	 * @param <T1> joined left table
-	 * @param <T2> joined right table
-	 * @param <ID> type of joined values
-	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
-	 */
-	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelation(
-			String leftStrategyName,
-			EntityMapping<U, ID, T2> strategy,
-			BeanRelationFixer beanRelationFixer,
-			Key<T1, ID> leftJoinColumn,
-			Key<T2, ID> rightJoinColumn) {
-		// we outer join nullable columns
-		boolean isOuterJoin = true;
-		for (JoinLink<T2, ?> joinLink : rightJoinColumn.getColumns()) {
-			isOuterJoin &= joinLink instanceof Column && ((Column<T2, ?>) joinLink).isNullable();
-		}
-		return addRelation(leftStrategyName, strategy, beanRelationFixer, leftJoinColumn, rightJoinColumn, isOuterJoin);
-	}
-
-	/**
-	 * Adds a join to this executor.
-	 * Shortcut for {@link EntityJoinTree#addRelationJoin(String, EntityInflater, Key, Key, String, JoinType, BeanRelationFixer, Set)}
-	 *
-	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
-	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link RowTransformer}
-	 * @param leftJoinColumn the {@link Column} (of previous strategy left table) to be joined with {@code rightJoinColumn}
-	 * @param rightJoinColumn the {@link Column} (of the strategy table) to be joined with {@code leftJoinColumn}
-	 * @param isOuterJoin says wether or not the join must be open
-	 * @param beanRelationFixer a function to fulfill relation between 2 strategies beans
-	 * @param <U> type of bean mapped by the given strategy
-	 * @param <T1> joined left table
-	 * @param <T2> joined right table
-	 * @param <ID> type of joined values
-	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
-	 */
-	@Override
-	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelation(
-			String leftStrategyName,
-			EntityMapping<U, ID, T2> strategy,
-			BeanRelationFixer beanRelationFixer,
-			Key<T1, ID> leftJoinColumn,
-			Key<T2, ID> rightJoinColumn,
-			boolean isOuterJoin) {
-		return entityJoinTree.addRelationJoin(leftStrategyName, new EntityMappingAdapter<U, ID, T2>(strategy), leftJoinColumn, rightJoinColumn,
-											  null, isOuterJoin ? JoinType.OUTER : JoinType.INNER, beanRelationFixer, java.util.Collections.emptySet());
-	}
-	
-	/**
-	 * Adds a join which {@link Column}s will be added to final select. Data retrieved by those columns will be populated onto final entity
-	 * 
-	 * @param leftStrategyName join node name onto which join must be added
-	 * @param strategy strategy used to apply data onto final bean
-	 * @param leftJoinColumn left join column, expected to be one of node table
-	 * @param rightJoinColumn right join column, expected to be one of strategy table
-	 * @param <U> entity type
-	 * @param <T1> left table type
-	 * @param <T2> right table type
-	 * @param <ID> entity identifier type
-	 * @return name of created join node (may be used by caller to add some more join on it)
-	 */
-	@Override
-	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addMergeJoin(
-			String leftStrategyName,
-			EntityMapping<U, ID, T2> strategy,
-			Key<T1, ID> leftJoinColumn,
-			Key<T2, ID> rightJoinColumn) {
-		return entityJoinTree.addMergeJoin(leftStrategyName, new EntityMergerAdapter<>(strategy), leftJoinColumn, rightJoinColumn);
 	}
 	
 	@Override

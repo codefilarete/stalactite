@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -10,14 +9,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.codefilarete.stalactite.engine.JoinableSelectExecutor;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.engine.SelectExecutor;
-import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
-import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Query;
@@ -27,10 +21,8 @@ import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.RowIterator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
@@ -43,8 +35,7 @@ import org.codefilarete.tool.collection.KeepOrderMap;
 /**
  * @author Guillaume Mary
  */
-public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table<T>, DTYPE>
-		implements SelectExecutor<C, I>, JoinableSelectExecutor {
+public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table<T>, DTYPE> implements SelectExecutor<C, I> {
 	
 	private final ConfiguredRelationalPersister<C, I> mainPersister;
 	private final Map<Class<C>, ConfiguredRelationalPersister<C, I>> subEntitiesPersisters;
@@ -134,50 +125,6 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table<T>, DTY
 		idsPerSubclass.forEach((subclass, subclassIds) -> result.addAll(subEntitiesPersisters.get(subclass).select(subclassIds)));
 		
 		return result;
-	}
-	
-	@Override
-	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelation(String leftStrategyName,
-																				  EntityMapping<U, ID, T2> strategy,
-																				  BeanRelationFixer beanRelationFixer,
-																				  Key<T1, ID> leftJoinColumn,
-																				  Key<T2, ID> rightJoinColumn,
-																				  boolean isOuterJoin) {
-		Set<String> joinNames = new HashSet<>();
-		subEntitiesPersisters.forEach((entityClass, persister) -> {
-			String joinName = persister.getEntityJoinTree().addRelationJoin(leftStrategyName, new EntityMappingAdapter<>(strategy),
-					leftJoinColumn, rightJoinColumn, null, isOuterJoin ? JoinType.OUTER : JoinType.INNER, beanRelationFixer, Collections.emptySet());
-			joinNames.add(joinName);
-		});
-		if (joinNames.size() == 1) {
-			return Iterables.first(joinNames);
-		} else {
-			// Grave : this class is a kind of proxy for subEntities mapping. The addRelation(..) can only be done for parent-common properties
-			// of entities, hence it is not expected that join names would be different, else caller isn't able to find created join.
-			// This code is made as a safeguard
-			throw new IllegalStateException("Different names for same join is not expected");
-		}
-	}
-	
-	@Override
-	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addMergeJoin(String leftStrategyName,
-																				   EntityMapping<U, ID, T2> strategy,
-																				   Key<T1, ID> leftJoinColumn,
-																				   Key<T2, ID> rightJoinColumn) {
-		Set<String> joinNames = new HashSet<>();
-		subEntitiesPersisters.forEach((entityClass, persister) -> {
-			String joinName = persister.getEntityJoinTree().addMergeJoin(leftStrategyName, new EntityMergerAdapter<>(strategy),
-					leftJoinColumn, rightJoinColumn);
-			joinNames.add(joinName);
-		});
-		if (joinNames.size() == 1) {
-			return Iterables.first(joinNames);
-		} else {
-			// Grave : this class is a kind of proxy for subEntities mapping. The addRelation(..) can only be done for parent-common properties
-			// of entities, hence it is not expected that join names would be different, else caller isn't able to find created join.
-			// This code is made as a safeguard
-			throw new IllegalStateException("Different names for same join is not expected");
-		}
 	}
 	
 	@VisibleForTesting
