@@ -15,7 +15,6 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.AbstractTransformer;
@@ -173,63 +172,6 @@ public class EntityJoinTree<C, I> {
 				relationIdentifierProvider));
 	}
 	
-	
-	
-	public static class PolymorphicEntityInflater<E, D extends E, I, T extends Table<T>> implements EntityInflater<D, I> {
-		
-		private final ConfiguredRelationalPersister<E, I> mainPersister;
-		
-		private final ConfiguredRelationalPersister<D, I> subPersister;
-		
-		public PolymorphicEntityInflater(ConfiguredRelationalPersister<E, I> mainPersister,
-										 ConfiguredRelationalPersister<D, I> subPersister) {
-			this.mainPersister = mainPersister;
-			this.subPersister = subPersister;
-		}
-		
-		@Override
-		public Class<D> getEntityType() {
-			return subPersister.getClassToPersist();
-		}
-		
-		@Override
-		public I giveIdentifier(Row row, ColumnedRow columnedRow) {
-			return mainPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(row, columnedRow);
-		}
-		
-		@Override
-		public RowTransformer<D> copyTransformerWithAliases(ColumnedRow columnedRow) {
-			return subPersister.getMapping().copyTransformerWithAliases(columnedRow);
-		}
-		
-		@Override
-		public Set<Selectable<?>> getSelectableColumns() {
-			return (Set) subPersister.getMapping().getSelectableColumns();
-		}
-	}
-	
-	public static class PolymorphicMergeJoinRowConsumer<C, D extends C, I> extends MergeJoinRowConsumer<D> {
-		
-		private final BiFunction<Row, ColumnedRow, I> identifierProvider;
-		
-		private final ColumnedRow columnedRow;
-		
-		public PolymorphicMergeJoinRowConsumer(PolymorphicEntityInflater<C, D, I, ?> entityInflater,
-											   ColumnedRow columnedRow) {
-			super(entityInflater.copyTransformerWithAliases(columnedRow));
-			this.identifierProvider = entityInflater::giveIdentifier;
-			this.columnedRow = columnedRow;
-		}
-		
-		@Nullable
-		public I giveIdentifier(Row row) {
-			return identifierProvider.apply(row, columnedRow);
-		}
-		
-		public D transform(Row row) {
-			return super.merger.transform(row);
-		}
-	}
 	
 	/**
 	 * Adds a join to this select.

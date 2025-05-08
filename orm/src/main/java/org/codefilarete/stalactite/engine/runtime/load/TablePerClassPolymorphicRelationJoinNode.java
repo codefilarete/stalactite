@@ -6,7 +6,6 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.PolymorphicMergeJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.ForkJoinRowConsumer;
@@ -82,7 +81,7 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 	private class SubPersisterAndConsumer<C, D extends C> {
 		
 		private final ConfiguredRelationalPersister<D, I> subPersister;
-		private final EntityJoinTree.PolymorphicMergeJoinRowConsumer<C, D, I> subPersisterJoin;
+		private final PolymorphicMergeJoinRowConsumer<C, D, I> subPersisterJoin;
 		private final int discriminatorValue;
 		
 		public SubPersisterAndConsumer(ConfiguredRelationalPersister<D, I> subPersister, PolymorphicMergeJoinRowConsumer<C, D, I> subPersisterJoin, int discriminatorValue) {
