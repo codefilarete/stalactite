@@ -5,25 +5,25 @@ import java.util.function.BiFunction;
 
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.result.Row;
 
 /**
  * 
- * @param <C>
  * @param <D>
  * @param <I>
  * @author Guillaume Mary
  */
-public class PolymorphicMergeJoinRowConsumer<C, D extends C, I> extends MergeJoinRowConsumer<D> {
+public class PolymorphicMergeJoinRowConsumer<D, I> extends MergeJoinRowConsumer<D> {
 	
 	private final BiFunction<Row, ColumnedRow, I> identifierProvider;
 	
 	private final ColumnedRow columnedRow;
 	
-	public PolymorphicMergeJoinRowConsumer(PolymorphicEntityInflater<C, D, I, ?> entityInflater,
+	public PolymorphicMergeJoinRowConsumer(EntityMapping<D, I, ?> entityInflater,
 										   ColumnedRow columnedRow) {
 		super(entityInflater.copyTransformerWithAliases(columnedRow));
-		this.identifierProvider = entityInflater::giveIdentifier;
+		this.identifierProvider = entityInflater.getIdMapping().getIdentifierAssembler()::assemble;
 		this.columnedRow = columnedRow;
 	}
 	

@@ -22,7 +22,6 @@ import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
-import org.codefilarete.stalactite.engine.runtime.load.PolymorphicEntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.PolymorphicMergeJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.JoinNode;
@@ -452,10 +451,9 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 					subPersister.getMainTable().getPrimaryKey(),
 					JoinType.OUTER,
 					columnedRow -> {
-						PolymorphicEntityInflater<C, V, I, T> editPolymorphicEntityInflater = new PolymorphicEntityInflater<>(mainPersister, localSubPersister);
-						PolymorphicMergeJoinRowConsumer<C, V, I> joinRowConsumer = new PolymorphicMergeJoinRowConsumer<>(
-								editPolymorphicEntityInflater, columnedRow);
-						mainPersisterJoin.addSubPersisterJoin(localSubPersister, joinRowConsumer, discriminatorComputer.increment());
+						PolymorphicMergeJoinRowConsumer<V, I> joinRowConsumer = new PolymorphicMergeJoinRowConsumer<>(
+								localSubPersister.<T2>getMapping(), columnedRow);
+						mainPersisterJoin.addSubPersisterJoin(joinRowConsumer, discriminatorComputer.increment());
 						return joinRowConsumer;
 					}); 
 		});
