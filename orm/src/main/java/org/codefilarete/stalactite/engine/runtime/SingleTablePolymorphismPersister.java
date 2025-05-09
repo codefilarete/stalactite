@@ -24,7 +24,6 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMapp
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.JoinNode;
-import org.codefilarete.stalactite.engine.runtime.load.PolymorphicMergeJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.SingleTablePolymorphicRelationJoinNode;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
@@ -47,7 +46,6 @@ import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
-import org.codefilarete.tool.function.Hanger.Holder;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
 
@@ -337,46 +335,18 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 			SingleTablePolymorphism<U, DTYPE> polymorphismPolicy,
 			Column<T2, DTYPE> discriminatorColumn) {
 		
-		Holder<SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE>> createdJoinHolder = new Holder<>();
-		String relationJoinName = entityJoinTree.addJoin(leftStrategyName, parent -> {
-			SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE> polymorphicRelationJoinNode = new SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE>(
-					(JoinNode<T1>) (JoinNode) parent,
-					leftJoinColumn,
-					rightJoinColumn,
-					JoinType.OUTER,
-					mainPersister.getMainTable().getColumns(),
-					null,
-					new EntityMappingAdapter<>(mainPersister.<T>getMapping()),
-					(BeanRelationFixer<Object, U>) beanRelationFixer,
-					discriminatorColumn) {
-				
-				@Override
-				public SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE>.SingleTablePolymorphicRelationJoinRowConsumer toConsumer(ColumnedRow columnedRow) {
-					SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE>.SingleTablePolymorphicRelationJoinRowConsumer joinTablePolymorphicRelationJoinRowConsumer = super.toConsumer(columnedRow);
-					addSingleTableSubPersistersJoin(mainPersister, this, subPersisters, columnedRow, polymorphismPolicy);
-					return joinTablePolymorphicRelationJoinRowConsumer;
-				}
-			};
-			createdJoinHolder.set(polymorphicRelationJoinNode);
-			return polymorphicRelationJoinNode;
-		});
-		
-		return relationJoinName;
-	}
-	
-	private <U, V extends U, T1 extends Table<T1>, T2 extends Table<T2>, JOINCOLTYPE, ID> void addSingleTableSubPersistersJoin(
-			ConfiguredRelationalPersister<U, ID> mainPersister,
-			SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE> mainPersisterJoin,
-			Set<ConfiguredRelationalPersister<? extends U, ID>> subPersisters,
-			ColumnedRow columnedRow,
-			SingleTablePolymorphism<U, DTYPE> polymorphismPolicy) {
-		
-		subPersisters.forEach(subPersister -> {
-			ConfiguredRelationalPersister<V, ID> localSubPersister = (ConfiguredRelationalPersister<V, ID>) subPersister;
-			PolymorphicMergeJoinRowConsumer<V, ID> joinRowConsumer = new PolymorphicMergeJoinRowConsumer<>(
-					localSubPersister.getMapping(), columnedRow);
-			mainPersisterJoin.addSubPersisterJoin(joinRowConsumer, polymorphismPolicy.getDiscriminatorValue(localSubPersister.getClassToPersist()));
-		});
+		return entityJoinTree.addJoin(leftStrategyName, parent -> new SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE>(
+				(JoinNode<T1>) (JoinNode) parent,
+				leftJoinColumn,
+				rightJoinColumn,
+				JoinType.OUTER,
+				mainPersister.getMainTable().getColumns(),
+				null,
+				new EntityMappingAdapter<>(mainPersister.<T>getMapping()),
+				(BeanRelationFixer<Object, U>) beanRelationFixer,
+				discriminatorColumn,
+				subPersisters,
+				polymorphismPolicy));
 	}
 	
 	private class SingleTableFirstPhaseRelationLoader extends FirstPhaseRelationLoader<C, I> {

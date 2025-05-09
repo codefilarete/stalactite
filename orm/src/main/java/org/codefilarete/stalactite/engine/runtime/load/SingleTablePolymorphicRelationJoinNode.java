@@ -1,14 +1,19 @@
 package org.codefilarete.stalactite.engine.runtime.load;
 
 import javax.annotation.Nullable;
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
+import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.ForkJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
+import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
@@ -31,7 +36,9 @@ import org.codefilarete.tool.collection.Iterables;
  */
 public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 extends Table<T2>, JOINCOLTYPE, I, DTYPE> extends RelationJoinNode<C, T1, T2, JOINCOLTYPE, I> {
 	
-	private final Set<SubPersisterAndDiscriminator<? extends C>> subPersisters = new HashSet<>();
+	private final Set<ConfiguredRelationalPersister<? extends C, I>> subPersisters;
+	
+	private final SingleTablePolymorphism<C, DTYPE> polymorphismPolicy;
 	
 	private final Column<T2, DTYPE> discriminatorColumn;
 	
@@ -43,46 +50,32 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 
 												  @Nullable String tableAlias,
 												  EntityInflater<C, I> entityInflater,
 												  BeanRelationFixer<Object, C> beanRelationFixer,
-												  Column<T2, DTYPE> discriminatorColumn) {
+												  Column<T2, DTYPE> discriminatorColumn,
+												  Set<ConfiguredRelationalPersister<? extends C, I>> subPersisters,
+												  SingleTablePolymorphism<C, DTYPE> polymorphismPolicy) {
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias, entityInflater, beanRelationFixer, null);
 		this.discriminatorColumn = discriminatorColumn;
+		this.subPersisters = subPersisters;
+		this.polymorphismPolicy = polymorphismPolicy;
 	}
 	
 	@Override
-	public SingleTablePolymorphicRelationJoinRowConsumer toConsumer(ColumnedRow columnedRow) {
-		return new SingleTablePolymorphicRelationJoinRowConsumer(columnedRow, discriminatorColumn, getConsumptionListener());
-	}
-	
-	public <D extends C> void addSubPersisterJoin(PolymorphicMergeJoinRowConsumer<D, I> subPersisterJoin, DTYPE discriminatorValue) {
-		this.subPersisters.add(new SubPersisterAndDiscriminator<>(subPersisterJoin, discriminatorValue));
-	}
-	
-	private class SubPersisterAndDiscriminator<D extends C> {
-		
-		private final PolymorphicMergeJoinRowConsumer<D, I> subPersisterJoin;
-		private final DTYPE discriminatorValue;
-		
-		public SubPersisterAndDiscriminator(PolymorphicMergeJoinRowConsumer<D, I> subPersisterJoin, DTYPE discriminatorValue) {
-			this.subPersisterJoin = subPersisterJoin;
-			this.discriminatorValue = discriminatorValue;
-		}
+	public RelationJoinRowConsumer<C, I> toConsumer(ColumnedRow columnedRow) {
+		return new SingleTablePolymorphicRelationJoinRowConsumer(columnedRow);
 	}
 	
 	protected class SingleTablePolymorphicRelationJoinRowConsumer implements RelationJoinRowConsumer<C, I> {
 		
+		private final Map<DTYPE, SubEntityDeterminer<? extends C>> subEntityDeterminerPerDiscriminatorValue;
+		
 		private final ColumnedRow columnedRow;
 		
-		/** Optional listener of ResultSet decoding */
-		@Nullable
-		private final EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
-		private final Column<T2, DTYPE> discriminatorColumn;
-		
-		private SingleTablePolymorphicRelationJoinRowConsumer(ColumnedRow columnedRow,
-															  Column<T2, DTYPE> discriminatorColumn,
-															  @Nullable EntityTreeJoinNodeConsumptionListener<C> consumptionListener) {
+		private SingleTablePolymorphicRelationJoinRowConsumer(ColumnedRow columnedRow) {
 			this.columnedRow = columnedRow;
-			this.consumptionListener = consumptionListener;
-			this.discriminatorColumn = discriminatorColumn;
+			this.subEntityDeterminerPerDiscriminatorValue = Iterables.map(subPersisters,
+					subPersister -> polymorphismPolicy.getDiscriminatorValue(subPersister.getClassToPersist()),
+					subPersister -> new SubEntityDeterminer<>(subPersister, columnedRow),
+					HashMap::new);
 		}
 		
 		@Override
@@ -102,11 +95,11 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 
 						rightIdentifier,
 						this);
 				// primary key null means no entity => nothing to do
-				if (rightIdentifier != null && context.isTreatedOrAppend(eventuallyApplied)) {
-					C rightEntity = (C) context.giveEntityFromCache(getEntityType(), rightIdentifier, () -> rowIdentifier.rowConsumer.transform(row));
+				if (context.isTreatedOrAppend(eventuallyApplied)) {
+					C rightEntity = (C) context.giveEntityFromCache(getEntityType(), rightIdentifier, () -> rowIdentifier.rowConsumer.createInstance(row));
 					getBeanRelationFixer().apply(parentJoinEntity, rightEntity);
-					if (this.consumptionListener != null) {
-						this.consumptionListener.onNodeConsumption(rightEntity, col -> columnedRow.getValue(col, row));
+					if (getConsumptionListener() != null) {
+						getConsumptionListener().onNodeConsumption(rightEntity, col -> columnedRow.getValue(col, row));
 					}
 					return rightEntity;
 				} else {
@@ -116,28 +109,51 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 
 		}
 		
 		@Nullable
-		/* Optimized, from 530 000 nanos to 65 000 nanos at 1st exec, from 40 000 nanos to 12 000 nanos on usual run */
 		private <D extends C> RowIdentifier<D> giveIdentifier(Row row) {
-			// @Optimized : use for & return instead of stream().map().filter(notNull).findFirst()
-			Object discriminatorValue = columnedRow.getValue(discriminatorColumn, row);
+			DTYPE discriminatorValue = columnedRow.getValue(discriminatorColumn, row);
 			if (discriminatorValue != null) {
-				SubPersisterAndDiscriminator<D> discriminatorConsumer = (SubPersisterAndDiscriminator) Iterables.find(subPersisters, o -> o.discriminatorValue.equals(discriminatorValue));
+				SubEntityDeterminer<D> discriminatorConsumer = (SubEntityDeterminer<D>) subEntityDeterminerPerDiscriminatorValue.get(discriminatorValue);
 				if (discriminatorConsumer != null) {
-					I identifier = discriminatorConsumer.subPersisterJoin.giveIdentifier(row);
+					I identifier = discriminatorConsumer.giveIdentifier(row);
 					if (identifier != null) {
-						return new RowIdentifier<>(identifier, discriminatorConsumer.subPersisterJoin);
+						return new RowIdentifier<>(identifier, discriminatorConsumer);
 					}
 				}
 			}
 			return null;
 		}
 		
+		/**
+		 * Small class that helps to detect if a persister is concerned by a given row and creates the entity if that's the case.
+		 * @param <D> persister entity type
+		 */
+		private class SubEntityDeterminer<D extends C> {
+			
+			private final Function<Row, I> identifierProvider;
+			
+			private final RowTransformer<D> entityInflater;
+			
+			public SubEntityDeterminer(ConfiguredRelationalPersister<D, I> subPersister, ColumnedRow columnedRow) {
+				this.identifierProvider = row -> subPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(row, columnedRow);
+				this.entityInflater = subPersister.getMapping().copyTransformerWithAliases(columnedRow);
+			}
+			
+			@Nullable
+			public I giveIdentifier(Row row) {
+				return identifierProvider.apply(row);
+			}
+			
+			public D createInstance(Row row) {
+				return entityInflater.transform(row);
+			}
+		}
+		
 		private class RowIdentifier<D extends C> {
 			
 			private final I entityIdentifier;
-			private final PolymorphicMergeJoinRowConsumer<D, I> rowConsumer;
+			private final SubEntityDeterminer<D> rowConsumer;
 			
-			private RowIdentifier(I entityIdentifier, PolymorphicMergeJoinRowConsumer<D, I> rowConsumer) {
+			private RowIdentifier(I entityIdentifier, SubEntityDeterminer<D> rowConsumer) {
 				this.entityIdentifier = entityIdentifier;
 				this.rowConsumer = rowConsumer;
 			}
