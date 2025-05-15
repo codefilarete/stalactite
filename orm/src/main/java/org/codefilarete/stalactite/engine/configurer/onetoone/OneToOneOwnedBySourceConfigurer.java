@@ -8,7 +8,6 @@ import org.codefilarete.reflection.Mutator;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
-import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
@@ -35,7 +34,7 @@ import org.codefilarete.tool.collection.KeepOrderSet;
  * @param <JOINID> joining columns type
  * @author Guillaume Mary
  */
-class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
+public class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
 		extends OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE, JOINID> {
 	
 	private final JoinColumnNamingStrategy joinColumnNamingStrategy;
@@ -46,7 +45,7 @@ class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extend
 	
 	private OneToOneOwnedBySourceEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> engine;
 	
-	OneToOneOwnedBySourceConfigurer(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
+	public OneToOneOwnedBySourceConfigurer(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 									OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation,
 									JoinColumnNamingStrategy joinColumnNamingStrategy,
 									ForeignKeyNamingStrategy foreignKeyNamingStrategy) {

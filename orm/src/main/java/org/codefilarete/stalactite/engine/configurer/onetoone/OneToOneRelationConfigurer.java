@@ -1,84 +1,88 @@
 package org.codefilarete.stalactite.engine.configurer.onetoone;
 
+import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
-import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
+import org.codefilarete.stalactite.engine.configurer.RelationConfigurer.GraphLoadingRelationRegisterer;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.cycle.OneToOneCycleConfigurer;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-
-import static org.codefilarete.tool.Nullable.nullable;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.Nullable;
+import org.codefilarete.tool.collection.Iterables;
 
 /**
- * @param <SRC> type of input (left/source entities)
- * @param <TRGT> type of output (right/target entities)
- * @param <SRCID> identifier type of source entities
- * @param <TRGTID>> identifier type of target entities
+ * Wrapper for {@link OneToOneOwnedBySourceConfigurer} and {@link OneToOneOwnedByTargetConfigurer} to make them available for cycle.
+ *
+ * @param <C> type of input (left/source entities)
+ * @param <I> identifier type of source entities
  * @author Guillaume Mary
  */
-public class OneToOneRelationConfigurer<SRC, TRGT, SRCID, TRGTID> {
-	
+public class OneToOneRelationConfigurer<C, I> {
 	private final Dialect dialect;
 	private final ConnectionConfiguration connectionConfiguration;
-	private final OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation;
-	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
+	private final ConfiguredRelationalPersister<C, I> sourcePersister;
 	private final JoinColumnNamingStrategy joinColumnNamingStrategy;
-	private final OneToOneConfigurerTemplate configurer;
+	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	
-	public OneToOneRelationConfigurer(OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation,
-									  ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-									  Dialect dialect,
-									  ConnectionConfiguration connectionConfiguration,
-									  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-									  JoinColumnNamingStrategy joinColumnNamingStrategy) {
-		this.oneToOneRelation = oneToOneRelation;
+	public OneToOneRelationConfigurer(Dialect dialect,
+			  ConnectionConfiguration connectionConfiguration,
+			  ConfiguredRelationalPersister<C, I> sourcePersister,
+			  JoinColumnNamingStrategy joinColumnNamingStrategy,
+			  ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
 		this.dialect = dialect;
 		this.connectionConfiguration = connectionConfiguration;
-		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
+		this.sourcePersister = sourcePersister;
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
-		if (oneToOneRelation.isRelationOwnedByTarget()) {
-			this.configurer = new OneToOneOwnedByTargetConfigurer<>(sourcePersister, oneToOneRelation, joinColumnNamingStrategy, foreignKeyNamingStrategy, dialect, connectionConfiguration);
-		} else {
-			this.configurer = new OneToOneOwnedBySourceConfigurer<>(sourcePersister, oneToOneRelation, joinColumnNamingStrategy, foreignKeyNamingStrategy);
-		}
-	}
-	
-	public ForeignKeyNamingStrategy getForeignKeyNamingStrategy() {
-		return foreignKeyNamingStrategy;
-	}
-	
-	public JoinColumnNamingStrategy getJoinColumnNamingStrategy() {
-		return joinColumnNamingStrategy;
-	}
-	
-	public void configure(String tableAlias,
-						  PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder,
-						  boolean loadSeparately) {
-		ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = targetPersisterBuilder
-				// please note that even if no table is found in configuration, build(..) will create one
-				.build(dialect, connectionConfiguration,
-						nullable(oneToOneRelation.getTargetTable()).getOr(nullable(oneToOneRelation.getReverseColumn()).map(Column::getTable).get()));
-		this.configurer.configure(tableAlias, targetPersister, loadSeparately);
-	}
-	
-	public CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(
-			String tableAlias,
-			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
-			FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
-		return this.configurer.configureWithSelectIn2Phases(tableAlias, targetPersister, firstPhaseCycleLoadListener);
+		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 	}
 	
 	/**
-	 * Object invoked on row read
-	 * @param <SRC>
-	 * @param <TRGTID>
+	 * Setup given one-to-one relation by adding wite cascade as well as creating appropriate joins in 
+	 *
+	 * @param oneToOneRelation the relation to be configured
+	 * @param <TRGT> type of output (right/target entities)
+	 * @param <TRGTID>> identifier type of target entities
 	 */
-	@FunctionalInterface
-	public interface FirstPhaseCycleLoadListener<SRC, TRGTID> {
+	public <TRGT, TRGTID> void configure(OneToOneRelation<C, TRGT, TRGTID> oneToOneRelation) {
+		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
 		
-		void onFirstPhaseRowRead(SRC src, TRGTID targetId);
+		OneToOneConfigurerTemplate<C, TRGT, I, TRGTID, ?, ?, I> configurer;
+		if (oneToOneRelation.isRelationOwnedByTarget()) {
+			configurer = new OneToOneOwnedByTargetConfigurer<>(sourcePersister, oneToOneRelation, joinColumnNamingStrategy, foreignKeyNamingStrategy, dialect, connectionConfiguration);
+		} else {
+			configurer = new OneToOneOwnedBySourceConfigurer<>(this.sourcePersister, oneToOneRelation, joinColumnNamingStrategy, foreignKeyNamingStrategy);
+		}
+		
+		String relationName = AccessorDefinition.giveDefinition(oneToOneRelation.getTargetProvider()).getName();
+		
+		if (currentBuilderContext.isCycling(oneToOneRelation.getTargetMappingConfiguration())) {
+			// cycle detected
+			// we had a second phase load because cycle can hardly be supported by simply joining things together because at one time we will
+			// fall into infinite loop (think to SQL generation of a cycling graph ...)
+			Class<TRGT> targetEntityType = oneToOneRelation.getTargetMappingConfiguration().getEntityType();
+			// adding the relation to an eventually already existing cycle configurer for the entity
+			OneToOneCycleConfigurer<TRGT> cycleSolver = (OneToOneCycleConfigurer<TRGT>)
+					Iterables.find(currentBuilderContext.getBuildLifeCycleListeners(), p -> p instanceof OneToOneCycleConfigurer && ((OneToOneCycleConfigurer<?>) p).getEntityType() == targetEntityType);
+			if (cycleSolver == null) {
+				cycleSolver = new OneToOneCycleConfigurer<>(targetEntityType);
+				currentBuilderContext.addBuildLifeCycleListener(cycleSolver);
+			}
+			cycleSolver.addCycleSolver(relationName, configurer);
+		} else {
+			// please note that even if no table is found in configuration, build(..) will create one
+			Table targetTable = Nullable.nullable(oneToOneRelation.getTargetTable()).getOr(Nullable.nullable(oneToOneRelation.getReverseColumn()).map(Column::getTable).get());
+			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = new PersisterBuilderImpl<>(oneToOneRelation.getTargetMappingConfiguration())
+					.build(dialect, connectionConfiguration, targetTable);
+			configurer.configure(relationName, targetPersister, oneToOneRelation.isFetchSeparately());
+		}
+		// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
+		currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<C, I, TRGT>(oneToOneRelation.getTargetMappingConfiguration().getEntityType(),
+				oneToOneRelation.getTargetProvider(), sourcePersister.getClassToPersist()));
 		
 	}
 }

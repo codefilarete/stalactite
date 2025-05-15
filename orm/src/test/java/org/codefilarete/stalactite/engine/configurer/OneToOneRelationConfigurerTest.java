@@ -39,13 +39,13 @@ import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
@@ -166,13 +166,14 @@ class OneToOneRelationConfigurerTest {
 		// When
 		SimpleRelationalEntityPersister<Country, Identifier<Long>, T> countryPersister = new SimpleRelationalEntityPersister<>(countryClassMappingStrategy, dialect,
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10));
-		OneToOneRelationConfigurer<Country, City, Identifier<Long>, Identifier<Long>> testInstance = new OneToOneRelationConfigurer<>(countryCapitalRelation,
-				countryPersister,
+		OneToOneRelationConfigurer<Country, Identifier<Long>> testInstance = new OneToOneRelationConfigurer<>(
 				dialect,
 				mock(ConnectionConfiguration.class),
-				ForeignKeyNamingStrategy.DEFAULT,
-				JoinColumnNamingStrategy.JOIN_DEFAULT);
-		testInstance.configure("city", new PersisterBuilderImpl<>(cityMappingConfiguration), false);
+				countryPersister,
+				JoinColumnNamingStrategy.JOIN_DEFAULT,
+				ForeignKeyNamingStrategy.DEFAULT);
+		
+		testInstance.configure(countryCapitalRelation);
 		
 		// Then
 		assertThat(countryTable.mapColumnsOnName().keySet()).isEqualTo(Arrays.asSet("id", "capitalId", "name"));
@@ -285,13 +286,15 @@ class OneToOneRelationConfigurerTest {
 		
 		SimpleRelationalEntityPersister<Country, Identifier<Long>, T> countryPersister = new SimpleRelationalEntityPersister<>(countryClassMappingStrategy, dialect,
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10));
-		OneToOneRelationConfigurer<Country, City, Identifier<Long>, Identifier<Long>> testInstance = new OneToOneRelationConfigurer<>(countryCapitalRelation,
-				countryPersister,
+		
+		OneToOneRelationConfigurer<Country, Identifier<Long>> testInstance = new OneToOneRelationConfigurer<>(
 				dialect,
 				mock(ConnectionConfiguration.class),
-				ForeignKeyNamingStrategy.DEFAULT,
-				JoinColumnNamingStrategy.JOIN_DEFAULT);
-		testInstance.configure("city", new PersisterBuilderImpl<>(cityMappingConfiguration), false);
+				countryPersister,
+				JoinColumnNamingStrategy.JOIN_DEFAULT,
+				ForeignKeyNamingStrategy.DEFAULT);
+		
+		testInstance.configure(countryCapitalRelation);
 		
 		assertThat(cityTable.mapColumnsOnName().keySet()).isEqualTo(Arrays.asSet("id", "countryId", "name"));
 		assertThat(cityTable.getForeignKeys()).extracting(ForeignKey::getName).containsExactlyInAnyOrder("FK_city_countryId_country_id");

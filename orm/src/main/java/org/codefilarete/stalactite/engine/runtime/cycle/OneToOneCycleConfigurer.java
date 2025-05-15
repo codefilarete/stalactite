@@ -5,8 +5,9 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostInitializer;
+import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneConfigurerTemplate;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer;
-import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer.FirstPhaseCycleLoadListener;
+import org.codefilarete.stalactite.engine.configurer.onetoone.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 
 /**
@@ -29,7 +30,7 @@ public class OneToOneCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 	}
 	
 	public <SRC> void addCycleSolver(String relationIdentifier,
-									 OneToOneRelationConfigurer<SRC, TRGT, ?, ?> oneToOneRelationConfigurer) {
+									 OneToOneConfigurerTemplate<SRC, TRGT, ?, ?, ?, ?, ?> oneToOneRelationConfigurer) {
 		this.relations.add(new RelationConfigurer<>(relationIdentifier, oneToOneRelationConfigurer));
 	}
 	
@@ -52,10 +53,10 @@ public class OneToOneCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 	private class RelationConfigurer<SRC, SRCID, TRGTID> {
 		
 		private final String relationName;
-		private final OneToOneRelationConfigurer<SRC, TRGT, SRCID, TRGTID> oneToOneRelationConfigurer;
+		private final OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, ?, ?, ?> oneToOneRelationConfigurer;
 		
 		public RelationConfigurer(String relationName,
-								  OneToOneRelationConfigurer<SRC, TRGT, SRCID, TRGTID> oneToOneRelationConfigurer) {
+								  OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, ?, ?, ?> oneToOneRelationConfigurer) {
 			this.relationName = relationName;
 			this.oneToOneRelationConfigurer = oneToOneRelationConfigurer;
 		}

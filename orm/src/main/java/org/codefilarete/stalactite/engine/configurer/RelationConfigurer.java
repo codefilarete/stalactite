@@ -28,7 +28,6 @@ import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.cycle.ManyToManyCycleConfigurer;
 import org.codefilarete.stalactite.engine.runtime.cycle.OneToManyCycleConfigurer;
-import org.codefilarete.stalactite.engine.runtime.cycle.OneToOneCycleConfigurer;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -49,6 +48,7 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 	private final ConnectionConfiguration connectionConfiguration;
 	private final ConfiguredRelationalPersister<C, I> sourcePersister;
 	private final NamingConfiguration namingConfiguration;
+	private final OneToOneRelationConfigurer<C, I> oneToOneRelationConfigurer;
 	
 	public RelationConfigurer(Dialect dialect,
 							  ConnectionConfiguration connectionConfiguration,
@@ -58,6 +58,11 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 		this.connectionConfiguration = connectionConfiguration;
 		this.sourcePersister = sourcePersister;
 		this.namingConfiguration = namingConfiguration;
+		this.oneToOneRelationConfigurer = new OneToOneRelationConfigurer<>(this.dialect,
+				this.connectionConfiguration,
+				this.sourcePersister,
+				namingConfiguration.getJoinColumnNamingStrategy(),
+				namingConfiguration.getForeignKeyNamingStrategy());
 	}
 	
 	public <TRGT, TRGTID> void configureRelations(RelationalMappingConfiguration<C> entityMappingConfiguration) {
@@ -65,35 +70,7 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
 		
 		for (OneToOneRelation<C, TRGT, TRGTID> oneToOneRelation : entityMappingConfiguration.<TRGT, TRGTID>getOneToOnes()) {
-			OneToOneRelationConfigurer<C, TRGT, I, TRGTID> oneToOneRelationConfigurer = new OneToOneRelationConfigurer<>(
-					oneToOneRelation,
-					sourcePersister,
-					dialect,
-					connectionConfiguration,
-					namingConfiguration.getForeignKeyNamingStrategy(),
-					namingConfiguration.getJoinColumnNamingStrategy());
-			
-			String relationName = AccessorDefinition.giveDefinition(oneToOneRelation.getTargetProvider()).getName();
-			
-			if (currentBuilderContext.isCycling(oneToOneRelation.getTargetMappingConfiguration())) {
-				// cycle detected
-				// we had a second phase load because cycle can hardly be supported by simply joining things together because at one time we will
-				// fall into infinite loop (think to SQL generation of a cycling graph ...)
-				Class<TRGT> targetEntityType = oneToOneRelation.getTargetMappingConfiguration().getEntityType();
-				// adding the relation to an eventually already existing cycle configurer for the entity
-				OneToOneCycleConfigurer<TRGT> cycleSolver = (OneToOneCycleConfigurer<TRGT>)
-						Iterables.find(currentBuilderContext.getBuildLifeCycleListeners(), p -> p instanceof OneToOneCycleConfigurer && ((OneToOneCycleConfigurer<?>) p).getEntityType() == targetEntityType);
-				if (cycleSolver == null) {
-					cycleSolver = new OneToOneCycleConfigurer<>(targetEntityType);
-					currentBuilderContext.addBuildLifeCycleListener(cycleSolver);
-				}
-				cycleSolver.addCycleSolver(relationName, oneToOneRelationConfigurer);
-			} else {
-				oneToOneRelationConfigurer.configure(relationName, new PersisterBuilderImpl<>(oneToOneRelation.getTargetMappingConfiguration()), oneToOneRelation.isFetchSeparately());
-			}
-			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
-			currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<>(oneToOneRelation.getTargetMappingConfiguration().getEntityType(),
-					oneToOneRelation.getTargetProvider()));
+			oneToOneRelationConfigurer.configure(oneToOneRelation);
 		}
 		for (OneToManyRelation<C, TRGT, TRGTID, ? extends Collection<TRGT>> oneToManyRelation : entityMappingConfiguration.<TRGT, TRGTID>getOneToManys()) {
 			OneToManyRelationConfigurer oneToManyRelationConfigurer = new OneToManyRelationConfigurer<>(oneToManyRelation,
@@ -125,7 +102,7 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 			}
 			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
 			currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<>(oneToManyRelation.getTargetMappingConfiguration().getEntityType(),
-					oneToManyRelation.getCollectionProvider()));
+					oneToManyRelation.getCollectionProvider(), sourcePersister.getClassToPersist()));
 		}
 		
 		for (ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>> manyToManyRelation : entityMappingConfiguration.<TRGT, TRGTID>getManyToManyRelations()) {
@@ -160,7 +137,7 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 			
 			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
 			currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<>(manyToManyRelation.getTargetMappingConfiguration().getEntityType(),
-					manyToManyRelation.getCollectionAccessor()));
+					manyToManyRelation.getCollectionAccessor(), sourcePersister.getClassToPersist()));
 		}
 		
 		// taking element collections into account
@@ -175,12 +152,12 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 					connectionConfiguration);
 			SimpleRelationalEntityPersister<? extends ElementRecord<?, I>, ? extends ElementRecord<?, I>, ?> collectionPersister = elementCollectionRelationConfigurer.configure();
 			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
-			currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<C>(entityMappingConfiguration.getEntityType(),
-					elementCollection.getCollectionProvider()) {
+			currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<C, I, C>(entityMappingConfiguration.getEntityType(),
+					elementCollection.getCollectionProvider(), sourcePersister.getClassToPersist()) {
 
 				@Override
 				public void consume(ConfiguredRelationalPersister<C, ?> targetPersister) {
-					// targetPersister is not the one we need : it's owning class one's (see constructor) whereas
+					// targetPersister is not the one we need: its owning class one's (see constructor) whereas
 					// we need the one created by the configure() method above because it manages the relation through
 					// the generic ElementRecord which can't be found in the PersisterRegistry.
 					// Note that we could have used BuildLifeCycleListener directly but I prefer using GraphLoadingRelationRegisterer to clarify the intention
@@ -257,13 +234,15 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 	 * 
 	 * @param <TRGT> relation entity type
 	 */
-	class GraphLoadingRelationRegisterer<TRGT> extends PostInitializer<TRGT> {
+	public static class GraphLoadingRelationRegisterer<C, I, TRGT> extends PostInitializer<TRGT> {
 		
 		private final ReversibleAccessor<C, Object> targetEntityAccessor;
+		private final Class<C> sourceEntityType;
 		
-		GraphLoadingRelationRegisterer(Class<TRGT> targetEntityType, ReversibleAccessor<C, ?> targetEntityAccessor) {
+		public GraphLoadingRelationRegisterer(Class<TRGT> targetEntityType, ReversibleAccessor<C, ?> targetEntityAccessor, Class<C> sourceEntityType) {
 			super(targetEntityType);
 			this.targetEntityAccessor = (ReversibleAccessor<C, Object>) targetEntityAccessor;
+			this.sourceEntityType = sourceEntityType;
 		}
 		
 		@Override
@@ -271,7 +250,7 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 			// we must dynamically retrieve the persister into the registry because sourcePersister might not be the
 			// final / registered one in particular in case of polymorphism
 			PersisterRegistry persisterRegistry = PersisterBuilderContext.CURRENT.get().getPersisterRegistry();
-			ConfiguredRelationalPersister<C, I> registeredSourcePersister = ((ConfiguredRelationalPersister<C, I>) persisterRegistry.getPersister(sourcePersister.getClassToPersist()));
+			ConfiguredRelationalPersister<C, I> registeredSourcePersister = ((ConfiguredRelationalPersister<C, I>) persisterRegistry.getPersister(sourceEntityType));
 			registeredSourcePersister.registerRelation(targetEntityAccessor, targetPersister);
 			
 		}
