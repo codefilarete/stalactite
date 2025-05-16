@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine.configurer.onetomany;
 import java.util.Collection;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
@@ -29,6 +30,8 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 	private final Mutator<SRC, C> setter;
 	private final boolean orphanRemoval;
 	private final boolean writeAuthorized;
+	private final AccessorDefinition accessorDefinition;
+	private final Supplier<C> collectionFactory;
 	
 	OneToManyAssociationConfiguration(OneToManyRelation<SRC, TRGT, TRGTID, C> oneToManyRelation,
 									  ConfiguredRelationalPersister<SRC, SRCID> srcPersister,
@@ -48,10 +51,29 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 		this.columnName = columnName;
 		this.collectionGetter = oneToManyRelation.getCollectionProvider();
 		this.setter = collectionGetter.toMutator();
-		// we don't use AccessorDefinition.giveMemberDefinition(..) because it gives a cross-member definition, loosing get/set for example,
-		// whereas we need this information to build better association table name
 		this.orphanRemoval = orphanRemoval;
 		this.writeAuthorized = writeAuthorized;
+		this.accessorDefinition = buildAccessorDefinition();
+		this.collectionFactory = buildCollectionFactory();
+	}
+	
+	private AccessorDefinition buildAccessorDefinition() {
+		// we don't use AccessorDefinition.giveMemberDefinition(..) because it gives a cross-member definition, loosing get/set for example,
+		// whereas we need this information to build a better association table name
+		return new AccessorDefinition(
+				this.oneToManyRelation.getMethodReference().getDeclaringClass(),
+				AccessorDefinition.giveDefinition(this.oneToManyRelation.getMethodReference()).getName(),
+				// we prefer the target persister type to method reference member type because the latter only gets the collection type which is not
+				// valuable information for table / column naming
+				this.oneToManyRelation.getTargetMappingConfiguration().getEntityType());
+	}
+	
+	private Supplier<C> buildCollectionFactory() {
+		Supplier<C> result = oneToManyRelation.getCollectionFactory();
+		if (result == null) {
+			result = BeanRelationFixer.giveCollectionFactory((Class<C>) oneToManyRelation.getMethodReference().getPropertyType());
+		}
+		return result;
 	}
 	
 	public OneToManyRelation<SRC, TRGT, TRGTID, C> getOneToManyRelation() {
@@ -99,15 +121,19 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 	}
 	
 	/**
+	 * Equivalent to {@link org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation#getMethodReference()} but used for table and colum naming only.
+	 * Collection access will be done through {@link OneToManyAssociationConfiguration#getCollectionGetter()} and {@link OneToManyAssociationConfiguration#getCollectionFactory()}
+	 */
+	public AccessorDefinition getAccessorDefinition() {
+		return accessorDefinition;
+	}
+	
+	/**
 	 * Gives the collection factory used to instantiate relation field.
 	 *
 	 * @return the one given by {@link OneToManyRelation#getCollectionFactory()} or one deduced from member signature
 	 */
-	protected Supplier<C> giveCollectionFactory() {
-		Supplier<C> collectionFactory = oneToManyRelation.getCollectionFactory();
-		if (collectionFactory == null) {
-			collectionFactory = BeanRelationFixer.giveCollectionFactory((Class<C>) oneToManyRelation.getMethodReference().getPropertyType());
-		}
+	public Supplier<C> getCollectionFactory() {
 		return collectionFactory;
 	}
 }

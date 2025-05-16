@@ -60,7 +60,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 		// case : Collection mapping without reverse property : an association table is needed
 		PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey = targetPersister.<RIGHTTABLE>getMapping().getTargetTable().getPrimaryKey();
 		
-		String associationTableName = associationTableNamingStrategy.giveName(accessorDefinition,
+		String associationTableName = associationTableNamingStrategy.giveName(associationConfiguration.getAccessorDefinition(),
 				associationConfiguration.getLeftPrimaryKey(), rightPrimaryKey);
 		if (associationConfiguration.getOneToManyRelation().isOrdered()) {
 			assignEngineForIndexedAssociation(rightPrimaryKey, associationTableName, targetPersister);
@@ -103,7 +103,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 				associationTableName,
 				associationConfiguration.getLeftPrimaryKey(),
 				rightPrimaryKey,
-				accessorDefinition,
+				associationConfiguration.getAccessorDefinition(),
 				associationTableNamingStrategy,
 				associationConfiguration.getForeignKeyNamingStrategy(),
 				createOneSideForeignKey,
@@ -124,7 +124,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 		ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor = new ManyRelationDescriptor<>(
 				associationConfiguration.getCollectionGetter()::get,
 				associationConfiguration.getSetter()::set,
-				associationConfiguration.giveCollectionFactory(),
+				associationConfiguration.getCollectionFactory(),
 				associationConfiguration.getOneToManyRelation().getReverseLink());
 		associationTableEngine = new OneToManyWithAssociationTableEngine<>(
 				associationConfiguration.getSrcPersister(),
@@ -149,7 +149,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 				associationTableName,
 				associationConfiguration.getLeftPrimaryKey(),
 				rightPrimaryKey,
-				accessorDefinition,
+				associationConfiguration.getAccessorDefinition(),
 				associationTableNamingStrategy,
 				associationConfiguration.getForeignKeyNamingStrategy(),
 				createOneSideForeignKey,
@@ -167,7 +167,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 						connectionConfiguration);
 		ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor = new ManyRelationDescriptor<>(
 				associationConfiguration.getCollectionGetter()::get, associationConfiguration.getSetter()::set,
-				associationConfiguration.giveCollectionFactory(),
+				associationConfiguration.getCollectionFactory(),
 				associationConfiguration.getOneToManyRelation().getReverseLink());
 		associationTableEngine = new OneToManyWithIndexedAssociationTableEngine<>(
 				associationConfiguration.getSrcPersister(),

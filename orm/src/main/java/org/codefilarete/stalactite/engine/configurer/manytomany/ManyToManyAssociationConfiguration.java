@@ -6,6 +6,7 @@ import java.util.function.Supplier;
 
 import org.codefilarete.reflection.AccessorByMethod;
 import org.codefilarete.reflection.AccessorByMethodReference;
+import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.Mutator;
@@ -42,6 +43,8 @@ class ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1 extends Co
 	private final Mutator<SRC, C1> setter;
 	private final boolean orphanRemoval;
 	private final boolean writeAuthorized;
+	private final AccessorDefinition accessorDefinition;
+	private final Supplier<C1> collectionFactory;
 	
 	ManyToManyAssociationConfiguration(ManyToManyRelation<SRC, TRGT, TRGTID, C1, C2> manyToManyRelation,
 									   ConfiguredRelationalPersister<SRC, SRCID> srcPersister,
@@ -61,6 +64,27 @@ class ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1 extends Co
 		// whereas we need this information to build better association table name
 		this.orphanRemoval = orphanRemoval;
 		this.writeAuthorized = writeAuthorized;
+		this.accessorDefinition = buildAccessorDefinition();
+		this.collectionFactory = buildCollectionFactory();
+	}
+	
+	private AccessorDefinition buildAccessorDefinition() {
+		// we don't use AccessorDefinition.giveMemberDefinition(..) because it gives a cross-member definition, loosing get/set for example,
+		// whereas we need this information to build a better association table name
+		return new AccessorDefinition(
+				this.manyToManyRelation.getMethodReference().getDeclaringClass(),
+				AccessorDefinition.giveDefinition(this.manyToManyRelation.getMethodReference()).getName(),
+				// we prefer the target persister type to method reference member type because the latter only gets the collection type which is not
+				// valuable information for table / column naming
+				this.manyToManyRelation.getTargetMappingConfiguration().getEntityType());
+	}
+	
+	private Supplier<C1> buildCollectionFactory() {
+		Supplier<C1> result = manyToManyRelation.getCollectionFactory();
+		if (result == null) {
+			result = BeanRelationFixer.giveCollectionFactory((Class<C1>) manyToManyRelation.getMethodReference().getPropertyType());
+		}
+		return result;
 	}
 	
 	public ManyToManyRelation<SRC, TRGT, TRGTID, C1, C2> getManyToManyRelation() {
@@ -100,15 +124,19 @@ class ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1 extends Co
 	}
 	
 	/**
+	 * Equivalent to {@link org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation#getMethodReference()} but used for table and colum naming only.
+	 * Collection access will be done through {@link ManyToManyAssociationConfiguration#getCollectionGetter()} and {@link ManyToManyAssociationConfiguration#getCollectionFactory()}
+	 */
+	public AccessorDefinition getAccessorDefinition() {
+		return accessorDefinition;
+	}
+	
+	/**
 	 * Gives the collection factory used to instantiate relation field.
 	 *
 	 * @return the one given by {@link ManyToManyRelation#getCollectionFactory()} or one deduced from member signature
 	 */
-	protected Supplier<C1> giveCollectionFactory() {
-		Supplier<C1> collectionFactory = manyToManyRelation.getCollectionFactory();
-		if (collectionFactory == null) {
-			collectionFactory = BeanRelationFixer.giveCollectionFactory((Class<C1>) manyToManyRelation.getMethodReference().getPropertyType());
-		}
+	protected Supplier<C1> getCollectionFactory() {
 		return collectionFactory;
 	}
 	
@@ -148,17 +176,4 @@ class ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1 extends Co
 	private Method captureMethod(SerializableBiConsumer setter) {
 		return this.methodSpy.findMethod(setter);
 	}
-	
-	/**
-	 * Gives the collection factory used to instantiate opposite relation field.
-	 *
-	 * @return the one given by {@link ManyToManyRelation.MappedByConfiguration#getReverseCollectionFactory()} or one deduced from member signature
-	 */
-//	protected Supplier<C2> giveReverseCollectionFactory() {
-//		Supplier<C2> collectionFactory = manyToManyRelation.getMappedByConfiguration().getReverseCollectionFactory();
-//		if (collectionFactory == null) {
-//			collectionFactory = BeanRelationFixer.giveCollectionFactory((Class<C2>) manyToManyRelation.getMappedByConfiguration().getMethodReference().getPropertyType());
-//		}
-//		return collectionFactory;
-//	}
 }

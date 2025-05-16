@@ -120,13 +120,6 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 		
 		private final ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1, C2, LEFTTABLE, RIGHTTABLE> associationConfiguration;
 		
-		/**
-		 * Equivalent as cascadeMany.getMethodReference() but used for table and colum naming only.
-		 * Collection access will be done through {@link ManyToManyAssociationConfiguration#getCollectionGetter()}
-		 * and {@link ManyToManyAssociationConfiguration#giveCollectionFactory()}
-		 */
-		private AccessorDefinition accessorDefinition;
-		
 		private final AssociationTableNamingStrategy associationTableNamingStrategy;
 		private final Dialect dialect;
 		private final boolean maintainAssociationOnly;
@@ -151,14 +144,13 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 			RIGHTTABLE rightTable = targetPersister.<RIGHTTABLE>getMapping().getTargetTable();
 			PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey = rightTable.getPrimaryKey();
 			
-			determineAccessorDefinition(targetPersister);
-			String associationTableName = associationTableNamingStrategy.giveName(accessorDefinition,
+			String associationTableName = associationTableNamingStrategy.giveName(associationConfiguration.getAccessorDefinition(),
 					associationConfiguration.getLeftPrimaryKey(), rightPrimaryKey);
 			
 			ManyRelationDescriptor<SRC, TRGT, C1> manyRelationDescriptor = new ManyRelationDescriptor<>(
 					associationConfiguration.getCollectionGetter()::get,
 					associationConfiguration.getSetter()::set,
-					associationConfiguration.giveCollectionFactory(),
+					associationConfiguration.getCollectionFactory(),
 					buildReverseCombiner(targetPersister.getClassToPersist())); 
 			if (associationConfiguration.getManyToManyRelation().isOrdered()) {
 				assignEngineForIndexedAssociation(rightPrimaryKey, associationTableName, manyRelationDescriptor, targetPersister);
@@ -167,20 +159,8 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 			}
 		}
 		
-		void determineAccessorDefinition(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
-			// we don't use AccessorDefinition.giveMemberDefinition(..) because it gives a cross-member definition, loosing get/set for example,
-			// whereas we need this information to build a better association table name
-			this.accessorDefinition = new AccessorDefinition(
-					associationConfiguration.getManyToManyRelation().getMethodReference().getDeclaringClass(),
-					AccessorDefinition.giveDefinition(associationConfiguration.getManyToManyRelation().getMethodReference()).getName(),
-					// we prefer target persister type to method reference member type because the latter only get's collection type which is not
-					// an interesting information for table / column naming
-					targetPersister.getClassToPersist());
-		}
-		
 		/**
 		 * Build the combiner between target entities and source ones.
-		 * 
 		 * 
 		 * @param targetClass target entity type, provided to look up for reverse property if no sufficient info was given
 		 * @return null if no information was provided about the reverse side (no bidirectionality) 
@@ -278,7 +258,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 					associationTableName,
 					associationConfiguration.getLeftPrimaryKey(),
 					rightPrimaryKey,
-					accessorDefinition,
+					associationConfiguration.getAccessorDefinition(),
 					associationTableNamingStrategy,
 					associationConfiguration.getForeignKeyNamingStrategy(),
 					createOneSideForeignKey,
@@ -308,7 +288,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 				ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 			
 			ManyToManyRelation<SRC, TRGT, TRGTID, C1, C2> relation = associationConfiguration.getManyToManyRelation();
-			String indexingColumnName = nullable(relation.getIndexingColumnName()).getOr(() -> associationConfiguration.getIndexColumnNamingStrategy().giveName(accessorDefinition));
+			String indexingColumnName = nullable(relation.getIndexingColumnName()).getOr(() -> associationConfiguration.getIndexColumnNamingStrategy().giveName(associationConfiguration.getAccessorDefinition()));
 			
 			// we don't create foreign key for table-per-class because source columns should reference different tables (the one
 			// per entity) which databases do not allow
@@ -320,7 +300,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 					associationTableName,
 					associationConfiguration.getLeftPrimaryKey(),
 					rightPrimaryKey,
-					accessorDefinition,
+					associationConfiguration.getAccessorDefinition(),
 					associationTableNamingStrategy,
 					associationConfiguration.getForeignKeyNamingStrategy(),
 					createOneSideForeignKey,

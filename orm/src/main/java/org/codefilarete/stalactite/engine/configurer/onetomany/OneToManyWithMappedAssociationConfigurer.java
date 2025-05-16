@@ -223,7 +223,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 													  @Nullable BiConsumer<TRGT, SRC> reverseSetter) {
 		MappedManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDefinition = new MappedManyRelationDescriptor<>(
 				associationConfiguration.getCollectionGetter()::get, associationConfiguration.getSetter()::set,
-				associationConfiguration.giveCollectionFactory(), reverseSetter, reverseColumn);
+				associationConfiguration.getCollectionFactory(), reverseSetter, reverseColumn);
 		mappedAssociationEngine = new OneToManyWithMappedAssociationEngine(
 				targetPersister,
 				manyRelationDefinition,
@@ -238,7 +238,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 												   @Nullable Column<?, Integer> indexingColumn,
 												   ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		if (indexingColumn == null) {
-			String indexingColumnName = nullable(associationConfiguration.getColumnName()).getOr(() -> associationConfiguration.getIndexColumnNamingStrategy().giveName(accessorDefinition));
+			String indexingColumnName = nullable(associationConfiguration.getColumnName()).getOr(() -> associationConfiguration.getIndexColumnNamingStrategy().giveName(associationConfiguration.getAccessorDefinition()));
 			Class indexColumnType = this.associationConfiguration.isOrphanRemoval()
 					? int.class
 					: Integer.class;	// column must be nullable since row won't be deleted through orphan removal but only "detached" from parent row
@@ -248,7 +248,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 		IndexedMappedManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDefinition = new IndexedMappedManyRelationDescriptor<>(
 				associationConfiguration.getCollectionGetter()::get,
 				associationConfiguration.getSetter()::set,
-				associationConfiguration.giveCollectionFactory(),
+				associationConfiguration.getCollectionFactory(),
 				reverseSetter,
 				reverseColumn,
 				indexingColumn,
