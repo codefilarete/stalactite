@@ -1,13 +1,13 @@
 package org.codefilarete.stalactite.engine.configurer.onetoone;
 
 import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
 import org.codefilarete.stalactite.engine.configurer.RelationConfigurer.GraphLoadingRelationRegisterer;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
-import org.codefilarete.stalactite.engine.runtime.cycle.OneToOneCycleConfigurer;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -60,11 +60,12 @@ public class OneToOneRelationConfigurer<C, I> {
 		
 		String relationName = AccessorDefinition.giveDefinition(oneToOneRelation.getTargetProvider()).getName();
 		
-		if (currentBuilderContext.isCycling(oneToOneRelation.getTargetMappingConfiguration())) {
+		EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration = oneToOneRelation.getTargetMappingConfiguration();
+		if (currentBuilderContext.isCycling(targetMappingConfiguration)) {
 			// cycle detected
 			// we had a second phase load because cycle can hardly be supported by simply joining things together because at one time we will
 			// fall into infinite loop (think to SQL generation of a cycling graph ...)
-			Class<TRGT> targetEntityType = oneToOneRelation.getTargetMappingConfiguration().getEntityType();
+			Class<TRGT> targetEntityType = targetMappingConfiguration.getEntityType();
 			// adding the relation to an eventually already existing cycle configurer for the entity
 			OneToOneCycleConfigurer<TRGT> cycleSolver = (OneToOneCycleConfigurer<TRGT>)
 					Iterables.find(currentBuilderContext.getBuildLifeCycleListeners(), p -> p instanceof OneToOneCycleConfigurer && ((OneToOneCycleConfigurer<?>) p).getEntityType() == targetEntityType);
@@ -76,12 +77,12 @@ public class OneToOneRelationConfigurer<C, I> {
 		} else {
 			// please note that even if no table is found in configuration, build(..) will create one
 			Table targetTable = Nullable.nullable(oneToOneRelation.getTargetTable()).getOr(Nullable.nullable(oneToOneRelation.getReverseColumn()).map(Column::getTable).get());
-			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = new PersisterBuilderImpl<>(oneToOneRelation.getTargetMappingConfiguration())
+			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = new PersisterBuilderImpl<>(targetMappingConfiguration)
 					.build(dialect, connectionConfiguration, targetTable);
 			configurer.configure(relationName, targetPersister, oneToOneRelation.isFetchSeparately());
 		}
 		// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
-		currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<C, I, TRGT>(oneToOneRelation.getTargetMappingConfiguration().getEntityType(),
+		currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<C, I, TRGT>(targetMappingConfiguration.getEntityType(),
 				oneToOneRelation.getTargetProvider(), sourcePersister.getClassToPersist()));
 		
 	}

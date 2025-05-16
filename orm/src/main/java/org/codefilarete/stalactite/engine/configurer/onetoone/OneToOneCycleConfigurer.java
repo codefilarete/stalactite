@@ -1,21 +1,19 @@
-package org.codefilarete.stalactite.engine.runtime.cycle;
+package org.codefilarete.stalactite.engine.configurer.onetoone;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostInitializer;
-import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneConfigurerTemplate;
-import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer;
-import org.codefilarete.stalactite.engine.configurer.onetoone.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.cycle.OneToOneCycleLoader;
 
 /**
  * Container of {@link OneToOneRelationConfigurer}s of same entity type and their relation name (through {@link RelationConfigurer}).
  * Expected to exist as a one-per-entity-type.
  * 
  * As a {@link PostInitializer}, will invoke every registered {@link OneToOneRelationConfigurer}
- * {@link OneToOneRelationConfigurer#configureWithSelectIn2Phases(String, ConfiguredRelationalPersister, FirstPhaseCycleLoadListener) configureWithSelectIn2Phases method}
+ * {@link OneToOneConfigurerTemplate#configureWithSelectIn2Phases(String, ConfiguredRelationalPersister, FirstPhaseCycleLoadListener) configureWithSelectIn2Phases method}
  * with a {@link OneToOneCycleLoader}.
  * 
  * @param <TRGT> type of all registered {@link OneToOneRelationConfigurer}

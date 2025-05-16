@@ -24,7 +24,7 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 public class OneToOneCycleLoader<SRC, TRGT, TRGTID> extends AbstractCycleLoader<SRC, TRGT, TRGTID>
 	implements FirstPhaseCycleLoadListener<SRC, TRGTID> {
 	
-	OneToOneCycleLoader(EntityPersister<TRGT, TRGTID> targetPersister) {
+	public OneToOneCycleLoader(EntityPersister<TRGT, TRGTID> targetPersister) {
 		super(targetPersister);
 	}
 	
