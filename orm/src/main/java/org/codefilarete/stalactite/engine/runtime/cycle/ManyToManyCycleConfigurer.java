@@ -15,7 +15,7 @@ import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
  * Expected to exist as a one-per-entity-type.
  * 
  * As a {@link PostInitializer}, will invoke every registered {@link ManyToManyRelationConfigurer}
- * {@link ManyToManyRelationConfigurer#configureWithSelectIn2Phases(String, ConfiguredRelationalPersister, FirstPhaseCycleLoadListener)} configureWithSelectIn2Phases method}
+ * {@link ManyToManyRelationConfigurer#configureWithSelectIn2Phases(ConfiguredRelationalPersister, FirstPhaseCycleLoadListener)} configureWithSelectIn2Phases method}
  * with a {@link ManyToManyCycleLoader}.
  * 
  * @param <TRGT> type of all registered {@link ManyToManyRelationConfigurer}
@@ -45,7 +45,7 @@ public class ManyToManyCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 		((Set<RelationConfigurer<SRC, ?, TRGTID>>) (Set) relations).forEach(c -> {
 			String tableAlias = c.relationName.replaceAll("\\W", "_");
 			CascadeConfigurationResult<SRC, TRGT> configurationResult = c.cascadeManyConfigurer.configureWithSelectIn2Phases(
-					tableAlias, targetPersister, manyToManyCycleLoader.buildRowReader(c.relationName));
+					targetPersister, manyToManyCycleLoader.buildRowReader(c.relationName));
 			manyToManyCycleLoader.addRelation(c.relationName, configurationResult);
 		});
 	}

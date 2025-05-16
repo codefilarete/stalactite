@@ -98,10 +98,9 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 		configurer.configure(targetPersister, associationConfiguration.getManyToManyRelation().isFetchSeparately());
 	}
 	
-	public CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(String tableAlias,
-																			  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
+	public CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 																			  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
-		return this.configurer.configureWithSelectIn2Phases(tableAlias, targetPersister, firstPhaseCycleLoadListener);
+		return this.configurer.configureWithSelectIn2Phases(targetPersister, firstPhaseCycleLoadListener);
 	}
 	
 	private Table determineTargetTable(ManyToManyRelation<SRC, TRGT, TRGTID, C1, C2> manyToManyRelation) {
@@ -113,46 +112,20 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 		return sourcePersister.getMapping().getTargetTable().getPrimaryKey();
 	}
 	
-	// Could be merged with lonely subclass, but kept separated to keep track of parallelism with one-to-many configurer 
-	private static abstract class ConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, C1 extends Collection<TRGT>, C2 extends Collection<SRC>,
+	/**
+	 * Configurer
+	 */
+	private static class ManyToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends Collection<TRGT>, C2 extends Collection<SRC>,
 			LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>> {
 		
-		protected final ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1, C2, LEFTTABLE, RIGHTTABLE> associationConfiguration;
+		private final ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1, C2, LEFTTABLE, RIGHTTABLE> associationConfiguration;
 		
 		/**
 		 * Equivalent as cascadeMany.getMethodReference() but used for table and colum naming only.
 		 * Collection access will be done through {@link ManyToManyAssociationConfiguration#getCollectionGetter()}
 		 * and {@link ManyToManyAssociationConfiguration#giveCollectionFactory()}
 		 */
-		protected AccessorDefinition accessorDefinition;
-		
-		protected ConfigurerTemplate(ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1, C2, LEFTTABLE, RIGHTTABLE> associationConfiguration) {
-			this.associationConfiguration = associationConfiguration;
-		}
-		
-		void determineAccessorDefinition(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
-			// we don't use AccessorDefinition.giveMemberDefinition(..) because it gives a cross-member definition, loosing get/set for example,
-			// whereas we need this information to build better association table name
-			this.accessorDefinition = new AccessorDefinition(
-					associationConfiguration.getManyToManyRelation().getMethodReference().getDeclaringClass(),
-					AccessorDefinition.giveDefinition(associationConfiguration.getManyToManyRelation().getMethodReference()).getName(),
-					// we prefer target persister type to method reference member type because the latter only get's collection type which is not
-					// an interesting information for table / column naming
-					targetPersister.getClassToPersist());
-		}
-		
-		abstract void configure(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister, boolean loadSeparately);
-		
-		public abstract CascadeConfigurationResult<SRC,TRGT> configureWithSelectIn2Phases(String tableAlias, ConfiguredRelationalPersister<TRGT,
-								TRGTID> targetPersister, FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener);
-	}
-	
-	/**
-	 * Configurer dedicated to association that needs an intermediary table between source entities and these of the relation
-	 */
-	private static class ManyToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends Collection<TRGT>, C2 extends Collection<SRC>,
-			LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
-			extends ConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, C1, C2, LEFTTABLE, RIGHTTABLE> {
+		private AccessorDefinition accessorDefinition;
 		
 		private final AssociationTableNamingStrategy associationTableNamingStrategy;
 		private final Dialect dialect;
@@ -161,12 +134,12 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 		
 		private AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C1, AssociationRecord, ?> associationTableEngine;
 		
-		private ManyToManyWithAssociationTableConfigurer(ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1, C2, LEFTTABLE, RIGHTTABLE> manyAssociationConfiguration,
+		private ManyToManyWithAssociationTableConfigurer(ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1, C2, LEFTTABLE, RIGHTTABLE> associationConfiguration,
 														 AssociationTableNamingStrategy associationTableNamingStrategy,
 														 Dialect dialect,
 														 boolean maintainAssociationOnly,
 														 ConnectionConfiguration connectionConfiguration) {
-			super(manyAssociationConfiguration);
+			this.associationConfiguration = associationConfiguration;
 			this.associationTableNamingStrategy = associationTableNamingStrategy;
 			this.dialect = dialect;
 			this.maintainAssociationOnly = maintainAssociationOnly;
@@ -174,7 +147,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 		}
 		
 		private void prepare(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
-			// case : Collection mapping without reverse property : an association table is needed
+			// case : Collection mapping without reverse property: an association table is needed
 			RIGHTTABLE rightTable = targetPersister.<RIGHTTABLE>getMapping().getTargetTable();
 			PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey = rightTable.getPrimaryKey();
 			
@@ -194,17 +167,28 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 			}
 		}
 		
+		void determineAccessorDefinition(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+			// we don't use AccessorDefinition.giveMemberDefinition(..) because it gives a cross-member definition, loosing get/set for example,
+			// whereas we need this information to build a better association table name
+			this.accessorDefinition = new AccessorDefinition(
+					associationConfiguration.getManyToManyRelation().getMethodReference().getDeclaringClass(),
+					AccessorDefinition.giveDefinition(associationConfiguration.getManyToManyRelation().getMethodReference()).getName(),
+					// we prefer target persister type to method reference member type because the latter only get's collection type which is not
+					// an interesting information for table / column naming
+					targetPersister.getClassToPersist());
+		}
+		
 		/**
 		 * Build the combiner between target entities and source ones.
 		 * 
 		 * 
-		 * @param targetClass target entity type, provided to lookup for reverse property if no sufficient info was given
-		 * @return null if no information was provided about reverse side (no bidirectionality) 
+		 * @param targetClass target entity type, provided to look up for reverse property if no sufficient info was given
+		 * @return null if no information was provided about the reverse side (no bidirectionality) 
 		 */
 		private SerializableBiConsumer<TRGT, SRC> buildReverseCombiner(Class<TRGT> targetClass) {
 			MappedByConfiguration<SRC, TRGT, C2> mappedByConfiguration = associationConfiguration.getManyToManyRelation().getMappedByConfiguration();
 			if (mappedByConfiguration.isEmpty()) {
-				// relation is not bidirectional, and not even set by reverse link, there's nothing to do
+				// relation is not bidirectional, and not even set by the reverse link, there's nothing to do
 				return null;
 			} else {
 				PropertyAccessor<TRGT, C2> collectionAccessor = associationConfiguration.buildReversePropertyAccessor();
@@ -256,16 +240,13 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 			}
 		}
 		
-		@Override
 		void configure(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister, boolean loadSeparately) {
 			prepare(targetPersister);
 			associationTableEngine.addSelectCascade(associationConfiguration.getSrcPersister(), loadSeparately);
 			addWriteCascades(associationTableEngine, targetPersister);
 		}
 		
-		@Override
-		public CascadeConfigurationResult<SRC,TRGT> configureWithSelectIn2Phases(String tableAlias,
-																				 ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
+		public CascadeConfigurationResult<SRC,TRGT> configureWithSelectIn2Phases(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 																				 FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 			prepare(targetPersister);
 			associationTableEngine.addSelectCascadeIn2Phases(firstPhaseCycleLoadListener);
@@ -289,7 +270,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 				ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 			
 			// we don't create foreign key for table-per-class because source columns should reference different tables (the one
-			// per entity) which is not allowed by databases
+			// per entity) which databases do not allow
 			boolean createOneSideForeignKey = !(associationConfiguration.getManyToManyRelation().isSourceTablePerClassPolymorphic());
 			boolean createManySideForeignKey = !associationConfiguration.getManyToManyRelation().isTargetTablePerClassPolymorphic();
 			ASSOCIATIONTABLE intermediaryTable = (ASSOCIATIONTABLE) new AssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>(
@@ -330,7 +311,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 			String indexingColumnName = nullable(relation.getIndexingColumnName()).getOr(() -> associationConfiguration.getIndexColumnNamingStrategy().giveName(accessorDefinition));
 			
 			// we don't create foreign key for table-per-class because source columns should reference different tables (the one
-			// per entity) which is not allowed by databases
+			// per entity) which databases do not allow
 			boolean createOneSideForeignKey = !relation.isSourceTablePerClassPolymorphic();
 			boolean createManySideForeignKey = !relation.isTargetTablePerClassPolymorphic();
 			// NB: index column is part of the primary key
