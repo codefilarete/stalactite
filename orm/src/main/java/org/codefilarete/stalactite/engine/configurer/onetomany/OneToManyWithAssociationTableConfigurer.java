@@ -6,7 +6,6 @@ import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.AssociationRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.configurer.IndexedAssociationRecordMapping;
-import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecordPersister;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
@@ -38,13 +37,12 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 	private AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, ? extends AssociationRecord, ?> associationTableEngine;
 	
 	OneToManyWithAssociationTableConfigurer(OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE> associationConfiguration,
-											ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 											boolean loadSeparately,
 											AssociationTableNamingStrategy associationTableNamingStrategy,
 											boolean maintainAssociationOnly,
 											Dialect dialect,
 											ConnectionConfiguration connectionConfiguration) {
-		super(associationConfiguration, targetPersister, loadSeparately);
+		super(associationConfiguration, loadSeparately);
 		this.associationTableNamingStrategy = associationTableNamingStrategy;
 		this.dialect = dialect;
 		this.maintainAssociationOnly = maintainAssociationOnly;
@@ -52,13 +50,13 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 	}
 	
 	@Override
-	protected void configure() {
-		prepare();
+	protected void configure(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+		prepare(targetPersister);
 		associationTableEngine.addSelectCascade(associationConfiguration.getSrcPersister(), loadSeparately);
-		addWriteCascades(associationTableEngine);
+		addWriteCascades(associationTableEngine, targetPersister);
 	}
 	
-	private void prepare() {
+	private void prepare(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		// case : Collection mapping without reverse property : an association table is needed
 		PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey = targetPersister.<RIGHTTABLE>getMapping().getTargetTable().getPrimaryKey();
 		
@@ -73,18 +71,20 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 	
 	@Override
 	public CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(String tableAlias,
+																			  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 																			  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
-		prepare();
+		prepare(targetPersister);
 		associationTableEngine.addSelectCascadeIn2Phases(firstPhaseCycleLoadListener);
-		addWriteCascades(associationTableEngine);
+		addWriteCascades(associationTableEngine, targetPersister);
 		return new CascadeConfigurationResult<>(associationTableEngine.getManyRelationDescriptor().getRelationFixer(), associationConfiguration.getSrcPersister());
 	}
 	
-	private void addWriteCascades(AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, ? extends AssociationRecord, ? extends AssociationTable> oneToManyWithAssociationTableEngine) {
+	private void addWriteCascades(AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, ? extends AssociationRecord, ? extends AssociationTable> oneToManyWithAssociationTableEngine,
+								  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		if (associationConfiguration.isWriteAuthorized()) {
-			oneToManyWithAssociationTableEngine.addInsertCascade(maintainAssociationOnly);
-			oneToManyWithAssociationTableEngine.addUpdateCascade(associationConfiguration.isOrphanRemoval(), maintainAssociationOnly);
-			oneToManyWithAssociationTableEngine.addDeleteCascade(associationConfiguration.isOrphanRemoval(), dialect);
+			oneToManyWithAssociationTableEngine.addInsertCascade(maintainAssociationOnly, targetPersister);
+			oneToManyWithAssociationTableEngine.addUpdateCascade(associationConfiguration.isOrphanRemoval(), maintainAssociationOnly, targetPersister);
+			oneToManyWithAssociationTableEngine.addDeleteCascade(associationConfiguration.isOrphanRemoval(), dialect, targetPersister);
 		}
 	}
 	

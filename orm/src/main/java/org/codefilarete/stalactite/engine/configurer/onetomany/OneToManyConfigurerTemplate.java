@@ -4,7 +4,6 @@ import java.util.Collection;
 
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
-import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
@@ -19,10 +18,9 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  * @param <LEFTTABLE> table type of source entity 
  * @author Guillaume Mary
  */
-public abstract class OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>> {
+abstract class OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>> {
 	
 	protected final OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE> associationConfiguration;
-	protected final ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister;
 	protected final boolean loadSeparately;
 	
 	/**
@@ -32,10 +30,8 @@ public abstract class OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, C ex
 	protected AccessorDefinition accessorDefinition;
 	
 	protected OneToManyConfigurerTemplate(OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE> associationConfiguration,
-										  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 										  boolean loadSeparately) {
 		this.associationConfiguration = associationConfiguration;
-		this.targetPersister = targetPersister;
 		this.loadSeparately = loadSeparately;
 		determineAccessorDefinition();
 	}
@@ -51,11 +47,12 @@ public abstract class OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, C ex
 				AccessorDefinition.giveDefinition(associationConfiguration.getOneToManyRelation().getMethodReference()).getName(),
 				// we prefer target persister type to method reference member type because the latter only gets collection type which is not
 				// a valuable information for table / column naming
-				targetPersister.getClassToPersist());
+				associationConfiguration.getOneToManyRelation().getTargetMappingConfiguration().getEntityType());
 	}
 	
-	protected abstract void configure();
+	protected abstract void configure(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister);
 	
 	public abstract CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(String tableAlias,
+																					   ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 																					   FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener);
 }

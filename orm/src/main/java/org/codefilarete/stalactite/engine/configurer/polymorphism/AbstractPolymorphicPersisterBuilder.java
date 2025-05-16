@@ -147,7 +147,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 														ConnectionConfiguration connectionConfiguration,
 														ConfiguredRelationalPersister<D, I> subEntityPersister) {
 		// Note that for now polymorphism configuration doesn't support many-to-many nor Map relation
-		RelationConfigurer<D, I, T> relationConfigurer = new RelationConfigurer<>(dialect, connectionConfiguration, subEntityPersister, namingConfiguration);
+		RelationConfigurer<D, I> relationConfigurer = new RelationConfigurer<>(dialect, connectionConfiguration, subEntityPersister, namingConfiguration);
 		relationConfigurer.configureRelations(entityMappingConfiguration);
 	}
 }

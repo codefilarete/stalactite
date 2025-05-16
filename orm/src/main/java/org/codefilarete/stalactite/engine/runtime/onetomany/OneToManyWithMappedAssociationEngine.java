@@ -18,7 +18,7 @@ import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteByIdCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteCollectionCascader;
-import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer.FirstPhaseCycleLoadListener;
+import org.codefilarete.stalactite.engine.configurer.onetomany.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
@@ -173,12 +173,12 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		});
 	}
 	
-	public void addInsertCascade() {
+	public void addInsertCascade(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		sourcePersister.addInsertListener(
 				new TargetInstancesInsertCascader(targetPersister, manyRelationDescriptor.getCollectionGetter()));
 	}
 	
-	public void addUpdateCascade(boolean shouldDeleteRemoved) {
+	public void addUpdateCascade(boolean shouldDeleteRemoved, ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		sourcePersister.addUpdateListener(new UpdateListener<SRC>() {
 			
 			/**
@@ -228,7 +228,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 				new AfterUpdateTrigger<>(collectionUpdater));
 	}
 	
-	public void addDeleteCascade(boolean shouldDeleteRemoved) {
+	public void addDeleteCascade(boolean shouldDeleteRemoved, ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		sourcePersister.addDeleteListener(new DeleteListener<SRC>() {
 			
 			@Override

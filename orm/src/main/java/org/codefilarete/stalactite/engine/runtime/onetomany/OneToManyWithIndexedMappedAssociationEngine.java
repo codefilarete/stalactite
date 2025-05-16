@@ -186,10 +186,10 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	}
 	
 	@Override
-	public void addInsertCascade() {
+	public void addInsertCascade(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		// For a List and a given manner to get its owner (so we can deduce index value), we configure persistence to keep index value in database
 		addIndexInsertion();
-		super.addInsertCascade();
+		super.addInsertCascade(targetPersister);
 	}
 	
 	/**

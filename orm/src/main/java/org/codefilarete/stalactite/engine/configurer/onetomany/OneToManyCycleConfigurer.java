@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.runtime.cycle;
+package org.codefilarete.stalactite.engine.configurer.onetomany;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -6,9 +6,8 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostInitializer;
-import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer;
-import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.cycle.OneToManyCycleLoader;
 
 /**
  * Container of {@link OneToManyRelationConfigurer}s of same entity type and their relation name (through {@link RelationConfigurer}).
@@ -20,7 +19,7 @@ import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
  * 
  * @param <TRGT> type of all registered {@link OneToManyRelationConfigurer}
  */
-public class OneToManyCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
+class OneToManyCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 	
 	// instantiated as a LinkedHashSet only for steady debugging purpose, could be replaced by a HashSet
 	private final Set<RelationConfigurer<?, ?, ?>> relations = new LinkedHashSet<>();
@@ -30,7 +29,7 @@ public class OneToManyCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 	}
 	
 	public <SRC> void addCycleSolver(String relationIdentifier,
-									 OneToManyRelationConfigurer<SRC, TRGT, ?, ?, ? extends Collection<TRGT>> oneToManyRelationConfigurer) {
+									 OneToManyConfigurerTemplate<SRC, TRGT, ?, ?, ? extends Collection<TRGT>, ?> oneToManyRelationConfigurer) {
 		this.relations.add(new RelationConfigurer<>(relationIdentifier, oneToManyRelationConfigurer));
 	}
 	
@@ -53,12 +52,12 @@ public class OneToManyCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 	private class RelationConfigurer<SRC, SRCID, TRGTID> {
 		
 		private final String relationName;
-		private final OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, Collection<TRGT>> oneToManyRelationConfigurer;
+		private final OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, Collection<TRGT>, ?> oneToManyRelationConfigurer;
 		
 		public RelationConfigurer(String relationName,
-								  OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, ? extends Collection<TRGT>> oneToManyRelationConfigurer) {
+								  OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, ? extends Collection<TRGT>, ?> oneToManyRelationConfigurer) {
 			this.relationName = relationName;
-			this.oneToManyRelationConfigurer = (OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, Collection<TRGT>>) oneToManyRelationConfigurer;
+			this.oneToManyRelationConfigurer = (OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, Collection<TRGT>, ?>) oneToManyRelationConfigurer;
 		}
 	}
 }

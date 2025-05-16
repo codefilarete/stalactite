@@ -3,14 +3,17 @@ package org.codefilarete.stalactite.engine.configurer.onetomany;
 import java.util.Collection;
 import java.util.Set;
 
+import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
+import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
-import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
+import org.codefilarete.stalactite.engine.configurer.RelationConfigurer.GraphLoadingRelationRegisterer;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -19,6 +22,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
 
 import static org.codefilarete.tool.Nullable.nullable;
 
@@ -27,12 +31,10 @@ import static org.codefilarete.tool.Nullable.nullable;
  * @param <TRGT> type of output (right/target entities)
  * @param <SRCID> identifier type of source entities
  * @param <TRGTID> identifier type of target entities
- * @param <C> collection type of the relation
  * @author Guillaume Mary
  */
-public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>> {
+public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID> {
 	
-	private final OneToManyRelation<SRC, TRGT, TRGTID, C> oneToManyRelation;
 	private final ConfiguredRelationalPersister<SRC, SRCID> sourcePersister;
 	private final Dialect dialect;
 	private final ConnectionConfiguration connectionConfiguration;
@@ -41,15 +43,13 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Col
 	private final AssociationTableNamingStrategy associationTableNamingStrategy;
 	private final ColumnNamingStrategy indexColumnNamingStrategy;
 	
-	public OneToManyRelationConfigurer(OneToManyRelation<SRC, TRGT, TRGTID, C> oneToManyRelation,
-									   ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
+	public OneToManyRelationConfigurer(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 									   Dialect dialect,
 									   ConnectionConfiguration connectionConfiguration,
 									   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 									   JoinColumnNamingStrategy joinColumnNamingStrategy,
 									   AssociationTableNamingStrategy associationTableNamingStrategy,
 									   ColumnNamingStrategy indexColumnNamingStrategy) {
-		this.oneToManyRelation = oneToManyRelation;
 		this.sourcePersister = sourcePersister;
 		this.dialect = dialect;
 		this.connectionConfiguration = connectionConfiguration;
@@ -60,17 +60,7 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Col
 		this.indexColumnNamingStrategy = indexColumnNamingStrategy;
 	}
 	
-	public <T extends Table<T>> void configure(PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder) {
-		Table targetTable = determineTargetTable(oneToManyRelation);
-		ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = targetPersisterBuilder
-				.build(dialect, connectionConfiguration, targetTable);
-		
-		configure(targetPersister);
-	}
-	
-	public CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(String tableAlias,
-																			  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
-																			  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
+	public void configure(OneToManyRelation<SRC, TRGT, TRGTID, ? extends Collection<TRGT>> oneToManyRelation) {
 		PrimaryKey<?, SRCID> leftPrimaryKey = lookupSourcePrimaryKey(sourcePersister);
 		
 		RelationMode maintenanceMode = oneToManyRelation.getRelationMode();
@@ -79,62 +69,58 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Col
 		boolean writeAuthorized = maintenanceMode != RelationMode.READ_ONLY;
 		String columnName = oneToManyRelation.getIndexingColumnName();
 		
-		OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C, ?> associationConfiguration = new OneToManyAssociationConfiguration<>(oneToManyRelation,
+		OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, ?, ?> associationConfiguration = new OneToManyAssociationConfiguration<>(oneToManyRelation,
 				sourcePersister, leftPrimaryKey,
 				foreignKeyNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy, columnName,
 				orphanRemoval, writeAuthorized);
-		OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, C, ?> configurer;
+		OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, ?, ?> configurer;
 		if (oneToManyRelation.isOwnedByReverseSide()) {
 			// case : reverse property is defined through one of the setter, getter or column on the reverse side
 			if (maintenanceMode == RelationMode.ASSOCIATION_ONLY) {
 				throw new MappingConfigurationException(RelationMode.ASSOCIATION_ONLY + " is only relevant with an association table");
 			}
-			configurer = new OneToManyWithMappedAssociationConfigurer<>(associationConfiguration, targetPersister, oneToManyRelation.isFetchSeparately());
+			configurer = new OneToManyWithMappedAssociationConfigurer<>(associationConfiguration, oneToManyRelation.isFetchSeparately());
 		} else {
 			configurer = new OneToManyWithAssociationTableConfigurer<>(associationConfiguration,
-					targetPersister,
 					oneToManyRelation.isFetchSeparately(),
 					associationTableNamingStrategy,
 					maintenanceMode == RelationMode.ASSOCIATION_ONLY,
 					dialect,
 					connectionConfiguration);
 		}
-		return configurer.configureWithSelectIn2Phases(tableAlias, firstPhaseCycleLoadListener);
-	}
-	
-	void configure(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
-		PrimaryKey<?, SRCID> leftPrimaryKey = lookupSourcePrimaryKey(sourcePersister);
 		
-		RelationMode maintenanceMode = oneToManyRelation.getRelationMode();
-		// selection is always present (else configuration is nonsense !)
-		boolean orphanRemoval = maintenanceMode == RelationMode.ALL_ORPHAN_REMOVAL;
-		boolean writeAuthorized = maintenanceMode != RelationMode.READ_ONLY;
-		String columnName = oneToManyRelation.getIndexingColumnName();
 		
-		OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C, ?> associationConfiguration = new OneToManyAssociationConfiguration<>(oneToManyRelation,
-				sourcePersister, leftPrimaryKey,
-				foreignKeyNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy, columnName,
-				orphanRemoval, writeAuthorized);
-		OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, C, ?> configurer;
-		if (oneToManyRelation.isOwnedByReverseSide()) {
-			// case : reverse property is defined through one of the setter, getter or column on the reverse side
-			if (maintenanceMode == RelationMode.ASSOCIATION_ONLY) {
-				throw new MappingConfigurationException(RelationMode.ASSOCIATION_ONLY + " is only relevant with an association table");
+		
+		
+		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
+		
+		EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration = oneToManyRelation.getTargetMappingConfiguration();
+		if (currentBuilderContext.isCycling(targetMappingConfiguration)) {
+			// cycle detected
+			// we had a second phase load because cycle can hardly be supported by simply joining things together because at one time we will
+			// fall into infinite loop (think to SQL generation of a cycling graph ...)
+			Class<TRGT> targetEntityType = targetMappingConfiguration.getEntityType();
+			// adding the relation to an eventually already existing cycle configurer for the entity
+			OneToManyCycleConfigurer<TRGT> cycleSolver = (OneToManyCycleConfigurer<TRGT>)
+					Iterables.find(currentBuilderContext.getBuildLifeCycleListeners(), p -> p instanceof OneToManyCycleConfigurer && ((OneToManyCycleConfigurer<?>) p).getEntityType() == targetEntityType);
+			if (cycleSolver == null) {
+				cycleSolver = new OneToManyCycleConfigurer<>(targetEntityType);
+				currentBuilderContext.addBuildLifeCycleListener(cycleSolver);
 			}
-			configurer = new OneToManyWithMappedAssociationConfigurer<>(associationConfiguration, targetPersister, oneToManyRelation.isFetchSeparately());
+			String relationName = AccessorDefinition.giveDefinition(oneToManyRelation.getCollectionProvider()).getName();
+			cycleSolver.addCycleSolver(relationName, configurer);
 		} else {
-			configurer = new OneToManyWithAssociationTableConfigurer<>(associationConfiguration,
-					targetPersister,
-					oneToManyRelation.isFetchSeparately(),
-					associationTableNamingStrategy,
-					maintenanceMode == RelationMode.ASSOCIATION_ONLY,
-					dialect,
-					connectionConfiguration);
+			Table targetTable = determineTargetTable(oneToManyRelation);
+			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = new PersisterBuilderImpl<>(targetMappingConfiguration)
+					.build(dialect, connectionConfiguration, targetTable);
+			configurer.configure(targetPersister);
 		}
-		configurer.configure();
+		// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
+		currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<>(targetMappingConfiguration.getEntityType(),
+				oneToManyRelation.getCollectionProvider(), sourcePersister.getClassToPersist()));
 	}
 	
-	private Table determineTargetTable(OneToManyRelation<SRC, TRGT, TRGTID, C> oneToManyRelation) {
+	private Table determineTargetTable(OneToManyRelation<SRC, TRGT, TRGTID, ?> oneToManyRelation) {
 		Table reverseTable = nullable(oneToManyRelation.getReverseColumn()).map(Column::getTable).get();
 		Table indexingTable = nullable(oneToManyRelation.getIndexingColumn()).map(Column::getTable).get();
 		Set<Table> availableTables = Arrays.asHashSet(oneToManyRelation.getTargetTable(), reverseTable, indexingTable);
@@ -159,17 +145,5 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Col
 	
 	protected PrimaryKey<?, SRCID> lookupSourcePrimaryKey(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister) {
 		return sourcePersister.getMapping().getTargetTable().getPrimaryKey();
-	}
-	
-	/**
-	 * Object invoked on row read
-	 * @param <SRC>
-	 * @param <TRGTID>
-	 */
-	@FunctionalInterface
-	public interface FirstPhaseCycleLoadListener<SRC, TRGTID> {
-		
-		void onFirstPhaseRowRead(SRC src, TRGTID targetId);
-		
 	}
 }

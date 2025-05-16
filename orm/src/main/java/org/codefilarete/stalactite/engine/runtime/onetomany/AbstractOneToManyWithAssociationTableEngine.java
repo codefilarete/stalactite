@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
-import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer.FirstPhaseCycleLoadListener;
+import org.codefilarete.stalactite.engine.configurer.onetomany.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
@@ -126,7 +126,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 		});
 	}
 	
-	public void addInsertCascade(boolean maintainAssociationOnly) {
+	public void addInsertCascade(boolean maintainAssociationOnly, ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		// Can we cascade insert on target entities ? it depends on relation maintenance mode
 		if (!maintainAssociationOnly) {
 			persisterListener.addInsertListener(new TargetInstancesInsertCascader(targetPersister, manyRelationDescriptor.getCollectionGetter()));
@@ -139,7 +139,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				targetPersister.getMapping()));
 	}
 	
-	public void addUpdateCascade(boolean shouldDeleteRemoved, boolean maintainAssociationOnly) {
+	public void addUpdateCascade(boolean shouldDeleteRemoved, boolean maintainAssociationOnly, ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		// NB: we don't have any reverseSetter (for applying source entity to reverse side (target entity)), because this is only relevant
 		// when association is mapped without intermediary table (owned by "many-side" entity)
 		CollectionUpdater<SRC, TRGT, C> collectionUpdater = new CollectionUpdater<SRC, TRGT, C>(manyRelationDescriptor.getCollectionGetter(), targetPersister, null, shouldDeleteRemoved) {
@@ -211,7 +211,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 	 * @param deleteTargetEntities true to delete many-side entities, false to only delete association records
 	 * @param dialect necessary to build valid SQL for deleteById action
 	 */
-	public void addDeleteCascade(boolean deleteTargetEntities, Dialect dialect) {
+	public void addDeleteCascade(boolean deleteTargetEntities, Dialect dialect, ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		// we delete association records
 		persisterListener.addDeleteListener(new DeleteListener<SRC>() {
 			@Override

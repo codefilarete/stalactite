@@ -108,7 +108,7 @@ public class OneToManyWithIndexedAssociationTableEngine<
 	}
 	
 	@Override
-	public void addUpdateCascade(boolean shouldDeleteRemoved, boolean maintainAssociationOnly) {
+	public void addUpdateCascade(boolean shouldDeleteRemoved, boolean maintainAssociationOnly, ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		
 		// NB: we don't have any reverseSetter (for applying source entity to reverse side (target entity)), because this is only relevant
 		// when association is mapped without intermediary table (owned by "many-side" entity)
