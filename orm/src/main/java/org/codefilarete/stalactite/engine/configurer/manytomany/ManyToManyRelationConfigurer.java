@@ -81,7 +81,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 		this.indexColumnNamingStrategy = indexColumnNamingStrategy;
 		this.associationTableNamingStrategy = associationTableNamingStrategy;
 		
-		this.leftPrimaryKey = lookupSourcePrimaryKey(sourcePersister);
+		this.leftPrimaryKey = sourcePersister.getMapping().getTargetTable().getPrimaryKey();
 		
 		
 	}
@@ -106,7 +106,6 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 				maintenanceMode == RelationMode.ASSOCIATION_ONLY,
 				connectionConfiguration);
 		
-		
 		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
 		
 		String relationName = AccessorDefinition.giveDefinition(manyToManyRelation.getCollectionAccessor()).getName();
@@ -126,7 +125,8 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 			}
 			cycleSolver.addCycleSolver(relationName, configurer);
 		} else {
-			Table targetTable = determineTargetTable(associationConfiguration.getManyToManyRelation());
+			// NB: even if no table is found in configuration, build(..) will create one
+			Table targetTable = associationConfiguration.getManyToManyRelation().getTargetTable();
 			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = new PersisterBuilderImpl<>(targetMappingConfiguration)
 					.build(dialect, connectionConfiguration, targetTable);
 			
@@ -136,15 +136,6 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 		// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
 		currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<>(targetMappingConfiguration.getEntityType(),
 				manyToManyRelation.getCollectionAccessor(), sourcePersister.getClassToPersist()));
-	}
-	
-	private Table determineTargetTable(ManyToManyRelation<SRC, TRGT, TRGTID, C1, C2> manyToManyRelation) {
-		// NB: even if no table is found in configuration, build(..) will create one
-		return manyToManyRelation.getTargetTable();
-	}
-	
-	protected PrimaryKey<?, SRCID> lookupSourcePrimaryKey(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister) {
-		return sourcePersister.getMapping().getTargetTable().getPrimaryKey();
 	}
 	
 	/**

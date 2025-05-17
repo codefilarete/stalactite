@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.engine.runtime.cycle.OneToManyCycleLoader;
  * Expected to exist as a one-per-entity-type.
  * 
  * As a {@link PostInitializer}, will invoke every registered {@link OneToManyRelationConfigurer}
- * {@link OneToManyRelationConfigurer#configureWithSelectIn2Phases(String, ConfiguredRelationalPersister, FirstPhaseCycleLoadListener)} configureWithSelectIn2Phases method}
+ * {@link OneToManyConfigurerTemplate#configureWithSelectIn2Phases(String, ConfiguredRelationalPersister, FirstPhaseCycleLoadListener)} configureWithSelectIn2Phases method}
  * with a {@link OneToManyCycleLoader}.
  * 
  * @param <TRGT> type of all registered {@link OneToManyRelationConfigurer}

@@ -31,8 +31,8 @@ public class ManyToManyCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 	}
 	
 	public <SRC> void addCycleSolver(String relationIdentifier,
-									 ManyToManyWithAssociationTableConfigurer<SRC, TRGT, ?, ?, ? extends Collection<TRGT>, ? extends Collection<SRC>, ?, ?> cascadeManyConfigurer) {
-		this.relations.add(new RelationConfigurer<>(relationIdentifier, cascadeManyConfigurer));
+									 ManyToManyWithAssociationTableConfigurer<SRC, TRGT, ?, ?, ? extends Collection<TRGT>, ? extends Collection<SRC>, ?, ?> manyToManyRelationConfigurer) {
+		this.relations.add(new RelationConfigurer<>(relationIdentifier, manyToManyRelationConfigurer));
 	}
 	
 	@Override

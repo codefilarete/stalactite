@@ -12,8 +12,9 @@ import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.collection.Iterables;
+
+import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * Wrapper for {@link OneToOneOwnedBySourceConfigurer} and {@link OneToOneOwnedByTargetConfigurer} to make them available for cycle.
@@ -42,7 +43,7 @@ public class OneToOneRelationConfigurer<C, I> {
 	}
 	
 	/**
-	 * Setup given one-to-one relation by adding wite cascade as well as creating appropriate joins in 
+	 * Setup given one-to-one relation by adding write cascade as well as creating appropriate joins in 
 	 *
 	 * @param oneToOneRelation the relation to be configured
 	 * @param <TRGT> type of output (right/target entities)
@@ -55,7 +56,7 @@ public class OneToOneRelationConfigurer<C, I> {
 		if (oneToOneRelation.isRelationOwnedByTarget()) {
 			configurer = new OneToOneOwnedByTargetConfigurer<>(sourcePersister, oneToOneRelation, joinColumnNamingStrategy, foreignKeyNamingStrategy, dialect, connectionConfiguration);
 		} else {
-			configurer = new OneToOneOwnedBySourceConfigurer<>(this.sourcePersister, oneToOneRelation, joinColumnNamingStrategy, foreignKeyNamingStrategy);
+			configurer = new OneToOneOwnedBySourceConfigurer<>(sourcePersister, oneToOneRelation, joinColumnNamingStrategy, foreignKeyNamingStrategy);
 		}
 		
 		String relationName = AccessorDefinition.giveDefinition(oneToOneRelation.getTargetProvider()).getName();
@@ -76,7 +77,7 @@ public class OneToOneRelationConfigurer<C, I> {
 			cycleSolver.addCycleSolver(relationName, configurer);
 		} else {
 			// please note that even if no table is found in configuration, build(..) will create one
-			Table targetTable = Nullable.nullable(oneToOneRelation.getTargetTable()).getOr(Nullable.nullable(oneToOneRelation.getReverseColumn()).map(Column::getTable).get());
+			Table targetTable = nullable(oneToOneRelation.getTargetTable()).getOr(nullable(oneToOneRelation.getReverseColumn()).map(Column::getTable).get());
 			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = new PersisterBuilderImpl<>(targetMappingConfiguration)
 					.build(dialect, connectionConfiguration, targetTable);
 			configurer.configure(relationName, targetPersister, oneToOneRelation.isFetchSeparately());

@@ -42,6 +42,7 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID> {
 	private final JoinColumnNamingStrategy joinColumnNamingStrategy;
 	private final AssociationTableNamingStrategy associationTableNamingStrategy;
 	private final ColumnNamingStrategy indexColumnNamingStrategy;
+	private final PrimaryKey<?, SRCID> leftPrimaryKey;
 	
 	public OneToManyRelationConfigurer(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 									   Dialect dialect,
@@ -58,10 +59,11 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
 		this.associationTableNamingStrategy = associationTableNamingStrategy;
 		this.indexColumnNamingStrategy = indexColumnNamingStrategy;
+		
+		this.leftPrimaryKey = sourcePersister.getMapping().getTargetTable().getPrimaryKey();
 	}
 	
 	public void configure(OneToManyRelation<SRC, TRGT, TRGTID, ? extends Collection<TRGT>> oneToManyRelation) {
-		PrimaryKey<?, SRCID> leftPrimaryKey = lookupSourcePrimaryKey(sourcePersister);
 		
 		RelationMode maintenanceMode = oneToManyRelation.getRelationMode();
 		// selection is always present (else configuration is nonsense !)
@@ -137,9 +139,5 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		
 		// NB: even if no table is found in configuration, build(..) will create one
 		return nullable(oneToManyRelation.getTargetTable()).elseSet(reverseTable).elseSet(indexingTable).get();
-	}
-	
-	protected PrimaryKey<?, SRCID> lookupSourcePrimaryKey(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister) {
-		return sourcePersister.getMapping().getTargetTable().getPrimaryKey();
 	}
 }
