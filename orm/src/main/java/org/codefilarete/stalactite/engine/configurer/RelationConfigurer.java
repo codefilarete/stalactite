@@ -3,7 +3,6 @@ package org.codefilarete.stalactite.engine.configurer;
 import java.util.Collection;
 import java.util.Map;
 
-import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
@@ -26,10 +25,8 @@ import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
-import org.codefilarete.stalactite.engine.runtime.cycle.ManyToManyCycleConfigurer;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.tool.collection.Iterables;
 
 /**
  * Main class that manage the configurations of all type of relations:
@@ -48,6 +45,7 @@ public class RelationConfigurer<C, I> {
 	private final NamingConfiguration namingConfiguration;
 	private final OneToOneRelationConfigurer<C, I> oneToOneRelationConfigurer;
 	private final OneToManyRelationConfigurer<C, ?, I, ?> oneToManyRelationConfigurer;
+	private final ManyToManyRelationConfigurer<C, ?, I, ?, ?, Collection<C>> manyRelationConfigurer;
 	
 	public RelationConfigurer(Dialect dialect,
 							  ConnectionConfiguration connectionConfiguration,
@@ -63,7 +61,7 @@ public class RelationConfigurer<C, I> {
 				this.sourcePersister,
 				this.namingConfiguration.getJoinColumnNamingStrategy(),
 				this.namingConfiguration.getForeignKeyNamingStrategy());
-		oneToManyRelationConfigurer = new OneToManyRelationConfigurer<>(
+		this.oneToManyRelationConfigurer = new OneToManyRelationConfigurer<>(
 				this.sourcePersister,
 				this.dialect,
 				this.connectionConfiguration,
@@ -71,6 +69,15 @@ public class RelationConfigurer<C, I> {
 				this.namingConfiguration.getJoinColumnNamingStrategy(),
 				this.namingConfiguration.getAssociationTableNamingStrategy(),
 				this.namingConfiguration.getIndexColumnNamingStrategy());
+		this.manyRelationConfigurer = new ManyToManyRelationConfigurer<>(
+				this.sourcePersister,
+				this.dialect,
+				this.connectionConfiguration,
+				this.namingConfiguration.getForeignKeyNamingStrategy(),
+				this.namingConfiguration.getJoinColumnNamingStrategy(),
+				this.namingConfiguration.getIndexColumnNamingStrategy(),
+				this.namingConfiguration.getAssociationTableNamingStrategy()
+		);
 	}
 	
 	public <TRGT, TRGTID> void configureRelations(RelationalMappingConfiguration<C> entityMappingConfiguration) {
@@ -80,43 +87,12 @@ public class RelationConfigurer<C, I> {
 		for (OneToOneRelation<C, TRGT, TRGTID> oneToOneRelation : entityMappingConfiguration.<TRGT, TRGTID>getOneToOnes()) {
 			oneToOneRelationConfigurer.configure(oneToOneRelation);
 		}
-		for (OneToManyRelation<C, TRGT, TRGTID, ? extends Collection<TRGT>> oneToManyRelation : entityMappingConfiguration.<TRGT, TRGTID>getOneToManys()) {
+		for (OneToManyRelation<C, TRGT, TRGTID, Collection<TRGT>> oneToManyRelation : entityMappingConfiguration.<TRGT, TRGTID>getOneToManys()) {
 			((OneToManyRelationConfigurer<C, TRGT, I, TRGTID>) oneToManyRelationConfigurer).configure(oneToManyRelation);
 		}
 		
 		for (ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>> manyToManyRelation : entityMappingConfiguration.<TRGT, TRGTID>getManyToManyRelations()) {
-			ManyToManyRelationConfigurer<C, TRGT, I, TRGTID, Collection<TRGT>, Collection<C>> manyRelationConfigurer = new ManyToManyRelationConfigurer<>(manyToManyRelation,
-					sourcePersister,
-					dialect,
-					connectionConfiguration,
-					namingConfiguration.getForeignKeyNamingStrategy(),
-					namingConfiguration.getJoinColumnNamingStrategy(),
-					namingConfiguration.getIndexColumnNamingStrategy(),
-					namingConfiguration.getAssociationTableNamingStrategy()
-			);
-			
-			String relationName = AccessorDefinition.giveDefinition(manyToManyRelation.getCollectionAccessor()).getName();
-			
-			if (currentBuilderContext.isCycling(manyToManyRelation.getTargetMappingConfiguration())) {
-				// cycle detected
-				// we had a second phase load because cycle can hardly be supported by simply joining things together because at one time we will
-				// fall into infinite loop (think to SQL generation of a cycling graph ...)
-				Class<TRGT> targetEntityType = manyToManyRelation.getTargetMappingConfiguration().getEntityType();
-				// adding the relation to an eventually already existing cycle configurer for the entity
-				ManyToManyCycleConfigurer<TRGT> cycleSolver = (ManyToManyCycleConfigurer<TRGT>)
-						Iterables.find(currentBuilderContext.getBuildLifeCycleListeners(), p -> p instanceof ManyToManyCycleConfigurer && ((ManyToManyCycleConfigurer<?>) p).getEntityType() == targetEntityType);
-				if (cycleSolver == null) {
-					cycleSolver = new ManyToManyCycleConfigurer<>(targetEntityType);
-					currentBuilderContext.addBuildLifeCycleListener(cycleSolver);
-				}
-				cycleSolver.addCycleSolver(relationName, manyRelationConfigurer);
-			} else {
-				manyRelationConfigurer.configure(new PersisterBuilderImpl<>(manyToManyRelation.getTargetMappingConfiguration()));
-			}
-			
-			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
-			currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<>(manyToManyRelation.getTargetMappingConfiguration().getEntityType(),
-					manyToManyRelation.getCollectionAccessor(), sourcePersister.getClassToPersist()));
+			((ManyToManyRelationConfigurer<C, TRGT, I, TRGTID, Collection<TRGT>, Collection<C>>) manyRelationConfigurer).configure(manyToManyRelation);
 		}
 		
 		// taking element collections into account

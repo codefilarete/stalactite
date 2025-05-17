@@ -44,7 +44,7 @@ class EmptySubEntityMappingConfiguration<C> implements SubEntityMappingConfigura
 	}
 	
 	@Override
-	public <TRGT, TRGTID> List<OneToManyRelation<C, TRGT, TRGTID, ? extends Collection<TRGT>>> getOneToManys() {
+	public <TRGT, TRGTID> List<OneToManyRelation<C, TRGT, TRGTID, Collection<TRGT>>> getOneToManys() {
 		return Collections.emptyList();
 	}
 	

@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.runtime.cycle;
+package org.codefilarete.stalactite.engine.configurer.manytomany;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -6,16 +6,17 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostInitializer;
-import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelationConfigurer.ManyToManyWithAssociationTableConfigurer;
 import org.codefilarete.stalactite.engine.configurer.onetomany.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.cycle.ManyToManyCycleLoader;
 
 /**
  * Container of {@link ManyToManyRelationConfigurer}s of same entity type and their relation name (through {@link RelationConfigurer}).
  * Expected to exist as a one-per-entity-type.
  * 
  * As a {@link PostInitializer}, will invoke every registered {@link ManyToManyRelationConfigurer}
- * {@link ManyToManyRelationConfigurer#configureWithSelectIn2Phases(ConfiguredRelationalPersister, FirstPhaseCycleLoadListener)} configureWithSelectIn2Phases method}
+ * {@link ManyToManyWithAssociationTableConfigurer#configureWithSelectIn2Phases(ConfiguredRelationalPersister, FirstPhaseCycleLoadListener)} configureWithSelectIn2Phases method}
  * with a {@link ManyToManyCycleLoader}.
  * 
  * @param <TRGT> type of all registered {@link ManyToManyRelationConfigurer}
@@ -30,7 +31,7 @@ public class ManyToManyCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 	}
 	
 	public <SRC> void addCycleSolver(String relationIdentifier,
-									 ManyToManyRelationConfigurer<SRC, TRGT, ?, ?, ? extends Collection<TRGT>, ? extends Collection<SRC>> cascadeManyConfigurer) {
+									 ManyToManyWithAssociationTableConfigurer<SRC, TRGT, ?, ?, ? extends Collection<TRGT>, ? extends Collection<SRC>, ?, ?> cascadeManyConfigurer) {
 		this.relations.add(new RelationConfigurer<>(relationIdentifier, cascadeManyConfigurer));
 	}
 	
@@ -53,12 +54,12 @@ public class ManyToManyCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 	private class RelationConfigurer<SRC, SRCID, TRGTID> {
 		
 		private final String relationName;
-		private final ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, Collection<TRGT>, Collection<SRC>> cascadeManyConfigurer;
+		private final ManyToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, Collection<TRGT>, Collection<SRC>, ?, ?> cascadeManyConfigurer;
 		
 		public RelationConfigurer(String relationName,
-								  ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, ? extends Collection<TRGT>, ? extends Collection<SRC>> cascadeManyConfigurer) {
+								  ManyToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, ? extends Collection<TRGT>, ? extends Collection<SRC>, ?, ?> cascadeManyConfigurer) {
 			this.relationName = relationName;
-			this.cascadeManyConfigurer = (ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, Collection<TRGT>, Collection<SRC>>) cascadeManyConfigurer;
+			this.cascadeManyConfigurer = (ManyToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, Collection<TRGT>, Collection<SRC>, ?, ?>) cascadeManyConfigurer;
 		}
 	}
 }

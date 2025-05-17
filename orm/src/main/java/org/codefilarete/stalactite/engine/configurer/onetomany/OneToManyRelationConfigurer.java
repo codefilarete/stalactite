@@ -89,11 +89,7 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID> {
 					connectionConfiguration);
 		}
 		
-		
-		
-		
 		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
-		
 		EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration = oneToManyRelation.getTargetMappingConfiguration();
 		if (currentBuilderContext.isCycling(targetMappingConfiguration)) {
 			// cycle detected

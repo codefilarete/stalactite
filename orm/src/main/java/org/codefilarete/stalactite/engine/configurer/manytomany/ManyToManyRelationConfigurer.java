@@ -13,12 +13,15 @@ import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
+import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.AssociationRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.configurer.IndexedAssociationRecordMapping;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
+import org.codefilarete.stalactite.engine.configurer.RelationConfigurer.GraphLoadingRelationRegisterer;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation.MappedByConfiguration;
 import org.codefilarete.stalactite.engine.configurer.onetomany.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
@@ -54,53 +57,85 @@ import static org.codefilarete.tool.Nullable.nullable;
  */
 public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends Collection<TRGT>, C2 extends Collection<SRC>> {
 	
+	private final ConfiguredRelationalPersister<SRC, SRCID> sourcePersister;
 	private final Dialect dialect;
 	private final ConnectionConfiguration connectionConfiguration;
-	private final ManyToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C1, C2, ?, ?> configurer;
-	private final ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1, C2, ?, ?> associationConfiguration;
+	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
+	private final JoinColumnNamingStrategy joinColumnNamingStrategy;
+	private final ColumnNamingStrategy indexColumnNamingStrategy;
+	private final AssociationTableNamingStrategy associationTableNamingStrategy;
+	private final PrimaryKey<?, SRCID> leftPrimaryKey;
 	
-	public ManyToManyRelationConfigurer(ManyToManyRelation<SRC, TRGT, TRGTID, C1, C2> manyToManyRelation,
-										ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
+	public ManyToManyRelationConfigurer(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 										Dialect dialect,
 										ConnectionConfiguration connectionConfiguration,
 										ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 										JoinColumnNamingStrategy joinColumnNamingStrategy,
 										ColumnNamingStrategy indexColumnNamingStrategy,
 										AssociationTableNamingStrategy associationTableNamingStrategy) {
+		this.sourcePersister = sourcePersister;
 		this.dialect = dialect;
 		this.connectionConfiguration = connectionConfiguration;
+		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
+		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
+		this.indexColumnNamingStrategy = indexColumnNamingStrategy;
+		this.associationTableNamingStrategy = associationTableNamingStrategy;
 		
-		PrimaryKey<?, SRCID> leftPrimaryKey = lookupSourcePrimaryKey(sourcePersister);
+		this.leftPrimaryKey = lookupSourcePrimaryKey(sourcePersister);
+		
+		
+	}
+	
+	public void configure(ManyToManyRelation<SRC, TRGT, TRGTID, C1, C2> manyToManyRelation) {
 		
 		RelationMode maintenanceMode = manyToManyRelation.getRelationMode();
 		// selection is always present (else configuration is nonsense !)
 		boolean orphanRemoval = maintenanceMode == RelationMode.ALL_ORPHAN_REMOVAL;
 		boolean writeAuthorized = maintenanceMode != RelationMode.READ_ONLY;
 		
-		this.associationConfiguration = new ManyToManyAssociationConfiguration<>(manyToManyRelation,
+		ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1, C2, ?, ?> associationConfiguration = new ManyToManyAssociationConfiguration<>(manyToManyRelation,
 				sourcePersister,
 				leftPrimaryKey,
 				foreignKeyNamingStrategy,
 				indexColumnNamingStrategy,
 				orphanRemoval, writeAuthorized);
-		this.configurer = new ManyToManyWithAssociationTableConfigurer<>(associationConfiguration,
+		
+		ManyToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C1, C2, ?, ?> configurer = new ManyToManyWithAssociationTableConfigurer<>(associationConfiguration,
 				associationTableNamingStrategy,
 				dialect,
 				maintenanceMode == RelationMode.ASSOCIATION_ONLY,
 				connectionConfiguration);
-	}
-	
-	public void configure(PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder) {
-		Table targetTable = determineTargetTable(associationConfiguration.getManyToManyRelation());
-		ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = targetPersisterBuilder
-				.build(dialect, connectionConfiguration, targetTable);
 		
-		configurer.configure(targetPersister, associationConfiguration.getManyToManyRelation().isFetchSeparately());
-	}
-	
-	public CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
-																			  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
-		return this.configurer.configureWithSelectIn2Phases(targetPersister, firstPhaseCycleLoadListener);
+		
+		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
+		
+		String relationName = AccessorDefinition.giveDefinition(manyToManyRelation.getCollectionAccessor()).getName();
+		
+		EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration = manyToManyRelation.getTargetMappingConfiguration();
+		if (currentBuilderContext.isCycling(targetMappingConfiguration)) {
+			// cycle detected
+			// we had a second phase load because cycle can hardly be supported by simply joining things together because at one time we will
+			// fall into infinite loop (think to SQL generation of a cycling graph ...)
+			Class<TRGT> targetEntityType = targetMappingConfiguration.getEntityType();
+			// adding the relation to an eventually already existing cycle configurer for the entity
+			ManyToManyCycleConfigurer<TRGT> cycleSolver = (ManyToManyCycleConfigurer<TRGT>)
+					Iterables.find(currentBuilderContext.getBuildLifeCycleListeners(), p -> p instanceof ManyToManyCycleConfigurer && ((ManyToManyCycleConfigurer<?>) p).getEntityType() == targetEntityType);
+			if (cycleSolver == null) {
+				cycleSolver = new ManyToManyCycleConfigurer<>(targetEntityType);
+				currentBuilderContext.addBuildLifeCycleListener(cycleSolver);
+			}
+			cycleSolver.addCycleSolver(relationName, configurer);
+		} else {
+			Table targetTable = determineTargetTable(associationConfiguration.getManyToManyRelation());
+			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = new PersisterBuilderImpl<>(targetMappingConfiguration)
+					.build(dialect, connectionConfiguration, targetTable);
+			
+			configurer.configure(targetPersister, associationConfiguration.getManyToManyRelation().isFetchSeparately());
+		}
+		
+		// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
+		currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<>(targetMappingConfiguration.getEntityType(),
+				manyToManyRelation.getCollectionAccessor(), sourcePersister.getClassToPersist()));
 	}
 	
 	private Table determineTargetTable(ManyToManyRelation<SRC, TRGT, TRGTID, C1, C2> manyToManyRelation) {
@@ -115,7 +150,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 	/**
 	 * Configurer
 	 */
-	private static class ManyToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends Collection<TRGT>, C2 extends Collection<SRC>,
+	public static class ManyToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends Collection<TRGT>, C2 extends Collection<SRC>,
 			LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>> {
 		
 		private final ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1, C2, LEFTTABLE, RIGHTTABLE> associationConfiguration;
