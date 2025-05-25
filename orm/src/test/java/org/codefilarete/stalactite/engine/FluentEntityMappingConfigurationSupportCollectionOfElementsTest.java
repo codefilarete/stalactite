@@ -34,7 +34,6 @@ import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,7 +42,6 @@ import static org.codefilarete.tool.collection.Iterables.map;
 import static org.codefilarete.tool.function.Functions.chain;
 import static org.codefilarete.tool.function.Functions.link;
 
-@Nested
 class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 	
 	private static final Class<Identifier<UUID>> UUID_TYPE = (Class) Identifier.class;

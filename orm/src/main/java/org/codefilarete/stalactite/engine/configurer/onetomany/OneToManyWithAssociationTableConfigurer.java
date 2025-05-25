@@ -34,8 +34,6 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 	private final boolean maintainAssociationOnly;
 	private final ConnectionConfiguration connectionConfiguration;
 	
-	private AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, ? extends AssociationRecord, ?> associationTableEngine;
-	
 	OneToManyWithAssociationTableConfigurer(OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE> associationConfiguration,
 											boolean loadSeparately,
 											AssociationTableNamingStrategy associationTableNamingStrategy,
@@ -51,21 +49,21 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 	
 	@Override
 	protected void configure(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
-		prepare(targetPersister);
+		AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, ? extends AssociationRecord, ?> associationTableEngine = prepare(targetPersister);
 		associationTableEngine.addSelectCascade(associationConfiguration.getSrcPersister(), loadSeparately);
 		addWriteCascades(associationTableEngine, targetPersister);
 	}
 	
-	private void prepare(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	private AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, ?, ?> prepare(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		// case : Collection mapping without reverse property : an association table is needed
 		PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey = targetPersister.<RIGHTTABLE>getMapping().getTargetTable().getPrimaryKey();
 		
 		String associationTableName = associationTableNamingStrategy.giveName(associationConfiguration.getAccessorDefinition(),
 				associationConfiguration.getLeftPrimaryKey(), rightPrimaryKey);
 		if (associationConfiguration.getOneToManyRelation().isOrdered()) {
-			assignEngineForIndexedAssociation(rightPrimaryKey, associationTableName, targetPersister);
+			return assignEngineForIndexedAssociation(rightPrimaryKey, associationTableName, targetPersister);
 		} else {
-			assignEngineForNonIndexedAssociation(rightPrimaryKey, associationTableName, targetPersister);
+			return assignEngineForNonIndexedAssociation(rightPrimaryKey, associationTableName, targetPersister);
 		}
 	}
 	
@@ -73,7 +71,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 	public CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(String tableAlias,
 																			  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 																			  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
-		prepare(targetPersister);
+		AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, ?, ?> associationTableEngine = prepare(targetPersister);
 		associationTableEngine.addSelectCascadeIn2Phases(firstPhaseCycleLoadListener);
 		addWriteCascades(associationTableEngine, targetPersister);
 		return new CascadeConfigurationResult<>(associationTableEngine.getManyRelationDescriptor().getRelationFixer(), associationConfiguration.getSrcPersister());
@@ -89,7 +87,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 	}
 	
 	private <ASSOCIATIONTABLE extends AssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
-	void assignEngineForNonIndexedAssociation(
+	OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, ASSOCIATIONTABLE> assignEngineForNonIndexedAssociation(
 			PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey,
 			String associationTableName,
 			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
@@ -126,7 +124,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 				associationConfiguration.getSetter()::set,
 				associationConfiguration.getCollectionFactory(),
 				associationConfiguration.getOneToManyRelation().getReverseLink());
-		associationTableEngine = new OneToManyWithAssociationTableEngine<>(
+		return new OneToManyWithAssociationTableEngine<>(
 				associationConfiguration.getSrcPersister(),
 				targetPersister,
 				manyRelationDescriptor,
@@ -135,7 +133,8 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 	}
 	
 	private <ASSOCIATIONTABLE extends IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
-	void assignEngineForIndexedAssociation(PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey,
+	OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE>
+	assignEngineForIndexedAssociation(PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey,
 										   String associationTableName,
 										   ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		
@@ -169,7 +168,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 				associationConfiguration.getCollectionGetter()::get, associationConfiguration.getSetter()::set,
 				associationConfiguration.getCollectionFactory(),
 				associationConfiguration.getOneToManyRelation().getReverseLink());
-		associationTableEngine = new OneToManyWithIndexedAssociationTableEngine<>(
+		return new OneToManyWithIndexedAssociationTableEngine<>(
 				associationConfiguration.getSrcPersister(),
 				targetPersister,
 				manyRelationDescriptor,

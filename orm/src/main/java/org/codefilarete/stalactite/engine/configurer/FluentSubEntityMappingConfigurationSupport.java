@@ -70,9 +70,9 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	
 	private final List<OneToOneRelation<C, ?, ?>> oneToOneRelations = new ArrayList<>();
 	
-	private final List<OneToManyRelation<C, ?, ?, ? extends Collection>> oneToManyRelations = new ArrayList<>();
+	private final List<OneToManyRelation<C, ?, ?, ? extends Collection<?>>> oneToManyRelations = new ArrayList<>();
 	
-	private final List<ElementCollectionRelation<C, ?, ? extends Collection>> elementCollections = new ArrayList<>();
+	private final List<ElementCollectionRelation<C, ?, ? extends Collection<?>>> elementCollections = new ArrayList<>();
 	
 	private final SubEntityDecoratedEmbeddableConfigurationSupport<C, I> propertiesMappingConfigurationDelegate;
 	
@@ -122,8 +122,8 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 			}
 			
 			@Override
-			public List<ElementCollectionRelation<C, ?, ? extends Collection>> getElementCollections() {
-				return elementCollections;
+			public <TRGT> List<ElementCollectionRelation<C, TRGT, ? extends Collection<TRGT>>> getElementCollections() {
+				return (List) elementCollections;
 			}
 			
 			@Override

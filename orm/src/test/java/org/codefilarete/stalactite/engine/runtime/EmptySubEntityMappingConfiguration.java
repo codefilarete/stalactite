@@ -22,7 +22,7 @@ import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
  */
 class EmptySubEntityMappingConfiguration<C> implements SubEntityMappingConfiguration<C> {
 	
-	private Class<C> entityType;
+	private final Class<C> entityType;
 	
 	EmptySubEntityMappingConfiguration(Class<C> entityType) {
 		this.entityType = entityType;
@@ -54,7 +54,7 @@ class EmptySubEntityMappingConfiguration<C> implements SubEntityMappingConfigura
 	}
 	
 	@Override
-	public List<ElementCollectionRelation<C, ?, ? extends Collection>> getElementCollections() {
+	public <TRGT> List<ElementCollectionRelation<C, TRGT, ? extends Collection<TRGT>>> getElementCollections() {
 		return Collections.emptyList();
 	}
 	

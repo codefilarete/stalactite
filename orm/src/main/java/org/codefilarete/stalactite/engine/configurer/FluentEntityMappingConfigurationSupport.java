@@ -233,8 +233,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public List<ElementCollectionRelation<C, ?, ? extends Collection>> getElementCollections() {
-		return elementCollections;
+	public <TRGT> List<ElementCollectionRelation<C, TRGT, ? extends Collection<TRGT>>> getElementCollections() {
+		return (List) elementCollections;
 	}
 	
 	@Override
