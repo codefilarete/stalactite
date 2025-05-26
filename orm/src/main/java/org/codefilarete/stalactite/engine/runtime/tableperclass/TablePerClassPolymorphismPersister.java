@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.runtime;
+package org.codefilarete.stalactite.engine.runtime.tableperclass;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -19,6 +19,15 @@ import org.codefilarete.stalactite.engine.InsertExecutor;
 import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.engine.UpdateExecutor;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer;
+import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.EntityMappingWrapper;
+import org.codefilarete.stalactite.engine.runtime.FirstPhaseRelationLoader;
+import org.codefilarete.stalactite.engine.runtime.PersisterWrapper;
+import org.codefilarete.stalactite.engine.runtime.PolymorphicPersister;
+import org.codefilarete.stalactite.engine.runtime.RelationIds;
+import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
+import org.codefilarete.stalactite.engine.runtime.SecondPhaseRelationLoader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
@@ -550,7 +559,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		protected void fillCurrentRelationIds(Row row, C bean, ColumnedRow columnedRow) {
 			Integer discriminator = columnedRow.getValue(discriminatorColumn, row);
 			// we avoid NPE on polymorphismPolicy.getClass(discriminator) caused by null discriminator in case of empty relation
-			// by only treating known discriminator values (preferred way to check against null because type can be primitive one)
+			// by only treating known discriminator values (preferred way to check against null because type can be primitive)
 			SelectExecutor<? extends C, I> subSelectExecutor = subtypeSelectorPerDiscriminatorValue.get(discriminator);
 			if (subSelectExecutor != null) {
 				I id = idMapping.getIdentifierAssembler().assemble(row, columnedRow);

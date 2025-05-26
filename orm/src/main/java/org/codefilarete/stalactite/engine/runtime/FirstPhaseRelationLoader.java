@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.sql.result.Row;
 /**
  * @author Guillaume Mary
  */
-class FirstPhaseRelationLoader<C, I> implements EntityMerger<C> {
+public class FirstPhaseRelationLoader<C, I> implements EntityMerger<C> {
 	
 	protected final IdMapping<C, I> idMapping;
 	private final SelectExecutor<C, I> selectExecutor;

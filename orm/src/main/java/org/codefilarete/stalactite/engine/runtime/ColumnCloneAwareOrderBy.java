@@ -16,12 +16,12 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
  *
  * @author Guillaume Mary
  */
-class ColumnCloneAwareOrderBy implements OrderByChain {
+public class ColumnCloneAwareOrderBy implements OrderByChain {
 	
 	private final OrderByChain delegate;
 	private final Map<Selectable<?>, Selectable<?>> columnClones;
 	
-	ColumnCloneAwareOrderBy(FluentOrderByClause delegate, Map<Selectable<?>, Selectable<?>> columnClones) {
+	public ColumnCloneAwareOrderBy(FluentOrderByClause delegate, Map<Selectable<?>, Selectable<?>> columnClones) {
 		this.delegate = delegate;
 		this.columnClones = columnClones;
 	}

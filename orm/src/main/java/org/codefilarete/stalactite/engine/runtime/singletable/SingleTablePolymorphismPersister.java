@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.runtime;
+package org.codefilarete.stalactite.engine.runtime.singletable;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -20,6 +20,15 @@ import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorp
 import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.engine.UpdateExecutor;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer;
+import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.EntityMappingWrapper;
+import org.codefilarete.stalactite.engine.runtime.FirstPhaseRelationLoader;
+import org.codefilarete.stalactite.engine.runtime.PersisterWrapper;
+import org.codefilarete.stalactite.engine.runtime.PolymorphicPersister;
+import org.codefilarete.stalactite.engine.runtime.RelationIds;
+import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
+import org.codefilarete.stalactite.engine.runtime.SecondPhaseRelationLoader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
@@ -239,12 +248,12 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 	
 	@Override
 	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																					 Key<T1, JOINID> leftColumn,
-																					 Key<T2, JOINID> rightColumn,
-																					 String rightTableAlias,
-																					 BeanRelationFixer<SRC, C> beanRelationFixer,
-																					 boolean optional,
-																					 boolean loadSeparately) {
+																							 Key<T1, JOINID> leftColumn,
+																							 Key<T2, JOINID> rightColumn,
+																							 String rightTableAlias,
+																							 BeanRelationFixer<SRC, C> beanRelationFixer,
+																							 boolean optional,
+																							 boolean loadSeparately) {
 		
 		if (loadSeparately) {
 			SingleTableFirstPhaseRelationLoader singleTableFirstPhaseRelationLoader = new SingleTableFirstPhaseRelationLoader(mainPersister.getMapping().getIdMapping(),

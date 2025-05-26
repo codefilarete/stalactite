@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.runtime;
+package org.codefilarete.stalactite.engine.runtime.jointable;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -16,6 +16,15 @@ import org.codefilarete.stalactite.engine.DeleteExecutor;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.InsertExecutor;
 import org.codefilarete.stalactite.engine.UpdateExecutor;
+import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.EntityMappingWrapper;
+import org.codefilarete.stalactite.engine.runtime.FirstPhaseRelationLoader;
+import org.codefilarete.stalactite.engine.runtime.PersisterWrapper;
+import org.codefilarete.stalactite.engine.runtime.PolymorphicPersister;
+import org.codefilarete.stalactite.engine.runtime.RelationIds;
+import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
+import org.codefilarete.stalactite.engine.runtime.SecondPhaseRelationLoader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;

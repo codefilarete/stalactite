@@ -20,11 +20,11 @@ import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
  * @param <C> sub-entity type
  * @author Guillaume Mary
  */
-class EmptySubEntityMappingConfiguration<C> implements SubEntityMappingConfiguration<C> {
+public class EmptySubEntityMappingConfiguration<C> implements SubEntityMappingConfiguration<C> {
 	
 	private final Class<C> entityType;
 	
-	EmptySubEntityMappingConfiguration(Class<C> entityType) {
+	public EmptySubEntityMappingConfiguration(Class<C> entityType) {
 		this.entityType = entityType;
 	}
 	

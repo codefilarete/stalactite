@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.runtime;
+package org.codefilarete.stalactite.engine.runtime.singletable;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
@@ -25,7 +25,11 @@ import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildLifeCycleListener;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.EmptySubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.ExecutableEntityQueryCriteria;
+import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
@@ -69,7 +73,7 @@ import org.mockito.stubbing.Answer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.codefilarete.stalactite.engine.runtime.SingleTablePolymorphismEntityFinder.DISCRIMINATOR_ALIAS;
+import static org.codefilarete.stalactite.engine.runtime.singletable.SingleTablePolymorphismEntityFinder.DISCRIMINATOR_ALIAS;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -633,7 +637,7 @@ class SingleTablePolymorphismPersisterTest {
 		void selectWhere_orderByOnCollectionProperty_throwsException() {
 			assertThatCode(() -> testInstance.selectWhere(AbstractToto::getX, Operators.eq(42)).orderBy(AbstractToto::getQ))
 					.hasMessage("OrderBy clause on a Collection property is unsupported due to eventual inconsistency with Collection nature :"
-							+ " o.c.s.e.r.SingleTablePolymorphismPersisterTest$AbstractToto::getQ");
+							+ " o.c.s.e.r.s.SingleTablePolymorphismPersisterTest$AbstractToto::getQ");
 		}
 		
 		@Test

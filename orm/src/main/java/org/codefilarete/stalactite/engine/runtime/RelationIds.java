@@ -8,14 +8,14 @@ import org.codefilarete.stalactite.engine.SelectExecutor;
 /**
  * @author Guillaume Mary
  */
-class RelationIds<SRC, TRGT, TRGTID> {
+public class RelationIds<SRC, TRGT, TRGTID> {
 	private final SelectExecutor<TRGT, TRGTID> selectExecutor;
 	private final Function<TRGT, TRGTID> idAccessor;
 	private final SRC source;
 	private final TRGTID targetId;
 	
 	
-	RelationIds(SelectExecutor<TRGT, TRGTID> selectExecutor, Function<TRGT, TRGTID> idAccessor, SRC source, TRGTID targetId) {
+	public RelationIds(SelectExecutor<TRGT, TRGTID> selectExecutor, Function<TRGT, TRGTID> idAccessor, SRC source, TRGTID targetId) {
 		this.selectExecutor = selectExecutor;
 		this.idAccessor = idAccessor;
 		this.source = source;

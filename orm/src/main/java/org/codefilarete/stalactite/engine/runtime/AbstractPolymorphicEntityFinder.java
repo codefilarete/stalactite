@@ -69,9 +69,9 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 		}
 	}
 	
-	abstract Set<C> selectIn2Phases(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer);
+	public abstract Set<C> selectIn2Phases(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer);
 	
-	abstract Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where,
+	public abstract Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where,
 								 Consumer<OrderByChain<?>> orderByClauseConsumer,
 								 Consumer<LimitAware<?>> limitAwareConsumer);
 	
@@ -148,7 +148,7 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 		
 		private final Function<S, String> delegate;
 		
-		protected AliasAsserter(Function<S, String> delegate) {
+		public AliasAsserter(Function<S, String> delegate) {
 			this.delegate = delegate;
 		}
 		

@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.runtime;
+package org.codefilarete.stalactite.engine.runtime.jointable;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
