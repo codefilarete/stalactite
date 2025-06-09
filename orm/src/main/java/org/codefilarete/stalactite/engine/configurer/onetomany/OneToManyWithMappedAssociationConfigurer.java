@@ -118,7 +118,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 		} else if (relation.getReverseGetter() != null) {
 			// Please note that here Getter is only used to get foreign key column names, not to set values on reverse side
 			Map<Column<LEFTTABLE, ?>, Column<RIGHTTABLE, ?>> foreignKeyColumnMapping = new HashMap<>();
-			PrimaryKey<LEFTTABLE, SRCID> primaryKey = associationConfiguration.getSrcPersister().getMainTable().getPrimaryKey();
+			PrimaryKey<LEFTTABLE, SRCID> primaryKey = associationConfiguration.getSrcPersister().<LEFTTABLE>getMainTable().getPrimaryKey();
 			AccessorDefinition reverseGetterDefinition = AccessorDefinition.giveDefinition(Accessors.accessor(relation.getReverseGetter()));
 			primaryKey.getColumns().forEach(pkColumn -> {
 				String colName = associationConfiguration.getJoinColumnNamingStrategy().giveName(reverseGetterDefinition, pkColumn);
@@ -135,7 +135,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 		} else if (relation.getReverseSetter() != null) {
 			// Please note that here Setter is only used to get foreign key column names, not to set values on reverse side
 			Map<Column<LEFTTABLE, ?>, Column<RIGHTTABLE, ?>> foreignKeyColumnMapping = new HashMap<>();
-			PrimaryKey<LEFTTABLE, SRCID> primaryKey = associationConfiguration.getSrcPersister().getMainTable().getPrimaryKey();
+			PrimaryKey<LEFTTABLE, SRCID> primaryKey = associationConfiguration.getSrcPersister().<LEFTTABLE>getMainTable().getPrimaryKey();
 			AccessorDefinition reverseGetterDefinition = AccessorDefinition.giveDefinition(Accessors.mutator(relation.getReverseSetter()));
 			primaryKey.getColumns().forEach(pkColumn -> {
 				String colName = associationConfiguration.getJoinColumnNamingStrategy().giveName(reverseGetterDefinition, pkColumn);

@@ -7,8 +7,10 @@ import org.codefilarete.stalactite.engine.MappingEase;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.model.Country;
+import org.codefilarete.stalactite.engine.model.King;
 import org.codefilarete.stalactite.engine.model.Language;
 import org.codefilarete.stalactite.engine.model.Person;
+import org.codefilarete.stalactite.engine.model.Realm;
 import org.codefilarete.stalactite.engine.model.Republic;
 import org.codefilarete.stalactite.engine.model.State;
 import org.codefilarete.stalactite.engine.model.Timestamp;
@@ -60,7 +62,11 @@ class DerivedQueriesWithTablePerClassPolymorphismTest extends AbstractDerivedQue
 					
 					.mapPolymorphism(PolymorphismPolicy.<Country>tablePerClass()
 							.addSubClass(subentityBuilder(Republic.class)
-									.map(Republic::getDeputeCount)))
+									.map(Republic::getDeputeCount))
+							.addSubClass(subentityBuilder(Realm.class)
+									.mapOneToOne(Realm::getKing, entityBuilder(King.class, LONG_TYPE)
+											.mapKey(King::getId, IdentifierPolicy.<King, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
+											.map(King::getName))))
 					.build(persistenceContext);
 		}
 	}

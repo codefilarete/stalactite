@@ -72,7 +72,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	public <T1 extends Table<T1>, T2 extends Table<T2>> void addSelectCascade(Key<T1, SRCID> sourcePrimaryKey,
 																			  boolean loadSeparately) {
 		// we add target subgraph joins to main persister
-		Set<Column<T2, Object>> columnsToSelect = new HashSet<>(targetPersister.getMainTable().getPrimaryKey().getColumns());
+		Set<Column<T2, ?>> columnsToSelect = new HashSet<>(targetPersister.<T2>getMainTable().getPrimaryKey().getColumns());
 		columnsToSelect.add((Column) getManyRelationDescriptor().getIndexingColumn());
 		String joinNodeName = targetPersister.joinAsMany(sourcePersister, sourcePrimaryKey, (Key<T2, SRCID>) manyRelationDescriptor.getReverseColumn(), manyRelationDescriptor.getRelationFixer(),
 				(row, columnedRow) -> {

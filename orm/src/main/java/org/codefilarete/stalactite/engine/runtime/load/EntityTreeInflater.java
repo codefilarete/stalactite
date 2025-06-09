@@ -16,9 +16,9 @@ import java.util.function.Supplier;
 import org.apache.commons.collections4.map.LinkedMap;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.NodeVisitor.EntityCreationResult;
+import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.ExcludingJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.ForkJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.RootJoinRowConsumer;
-import org.codefilarete.stalactite.engine.runtime.load.JoinTableRootJoinNode.JoinTablePolymorphicJoinRootRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.PassiveJoinNode.PassiveJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.BasicEntityCache;
@@ -166,10 +166,10 @@ public class EntityTreeInflater<C> {
 	private EntityCreationResult getRootEntityCreationResult(Row row, EntityTreeInflater<?>.TreeInflationContext context) {
 		C rootInstance = ((RootJoinRowConsumer<C>) this.consumerRoot.consumer).createRootInstance(row, context);
 		if (rootInstance != null) {
-			if (consumerRoot.consumer instanceof JoinTableRootJoinNode.JoinTablePolymorphicJoinRootRowConsumer) {
-				// In case of join-table polymorphism we have to provide the tree branch on which id was found
+			if (consumerRoot.consumer instanceof ExcludingJoinRowConsumer) {
+				// In case of polymorphism we have to provide the tree branch on which instance was found
 				// in order to let created entity filled with right consumers. "Wrong" branches serve no purpose. 
-				Set<JoinRowConsumer> deadBranches = ((JoinTablePolymorphicJoinRootRowConsumer) consumerRoot.consumer).giveExcludedConsumers();
+				Set<JoinRowConsumer> deadBranches = ((ExcludingJoinRowConsumer) consumerRoot.consumer).giveExcludedConsumers();
 				ArrayList<ConsumerNode> consumerNodes = new ArrayList<>(consumerRoot.consumers);
 				consumerNodes.removeIf(consumer -> deadBranches.contains(consumer.consumer));
 				return new EntityCreationResult(rootInstance, consumerNodes);

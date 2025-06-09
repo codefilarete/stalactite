@@ -78,7 +78,7 @@ public class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 		// right column depends on relation owner
 		if (oneToOneRelation.getReverseColumn() != null) {
 			rightKey = Key.ofSingleColumn(oneToOneRelation.getReverseColumn());
-			PrimaryKey<LEFTTABLE, SRCID> sourcePrimaryKey = sourcePersister.getMainTable().getPrimaryKey();
+			PrimaryKey<LEFTTABLE, SRCID> sourcePrimaryKey = sourcePersister.<LEFTTABLE>getMainTable().getPrimaryKey();
 			if (sourcePrimaryKey.isComposed()) {
 				throw new UnsupportedOperationException("Can't map composite primary key " + sourcePrimaryKey + " on single reverse foreign key : " + oneToOneRelation.getReverseColumn());
 			} else {
@@ -116,7 +116,7 @@ public class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 			reverseColumn = (Column<RIGHTTABLE, SRCID>) targetMappingStrategy.getPropertyToColumn().get(reverseGetter);
 			if (reverseColumn == null) {
 				// no column is defined under reverse getter, then we have to create one
-				PrimaryKey<LEFTTABLE, SRCID> sourcePrimaryKey = sourcePersister.getMainTable().getPrimaryKey();
+				PrimaryKey<LEFTTABLE, SRCID> sourcePrimaryKey = sourcePersister.<LEFTTABLE>getMainTable().getPrimaryKey();
 				KeyBuilder<RIGHTTABLE, SRCID> result = Key.from(targetMappingStrategy.getTargetTable());
 				sourcePrimaryKey.getColumns().forEach(pkColumn -> {
 					Column<RIGHTTABLE, ?> column = targetMappingStrategy.getTargetTable().addColumn(

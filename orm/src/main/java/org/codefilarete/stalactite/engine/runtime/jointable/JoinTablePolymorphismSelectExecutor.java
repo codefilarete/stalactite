@@ -76,7 +76,7 @@ public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table<T>> imple
 		// - make a select with id + discriminator in select clause and ids in where to determine ids per subclass type
 		// - call the right subclass joinExecutor with dedicated ids
 		
-		PrimaryKey<T, I> primaryKey = mainPersister.getMainTable().getPrimaryKey();
+		PrimaryKey<T, I> primaryKey = mainPersister.<T>getMainTable().getPrimaryKey();
 		if (primaryKey.isComposed() && !this.dialect.supportsTupleCondition()) {
 			throw new UnsupportedOperationException("Database doesn't support tuple-in so selection can't be done trivially, not yet supported");
 		}

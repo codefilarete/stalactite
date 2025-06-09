@@ -232,7 +232,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 																							  BeanRelationFixer<SRC, C> beanRelationFixer,
 																							  @Nullable BiFunction<Row, ColumnedRow, Object> relationIdentifierProvider,
 																							  String joinName,
-																							  Set<? extends Column<T2, Object>> selectableColumns,
+																							  Set<? extends Column<T2, ?>> selectableColumns,
 																							  boolean optional,
 																							  boolean loadSeparately) {
 		

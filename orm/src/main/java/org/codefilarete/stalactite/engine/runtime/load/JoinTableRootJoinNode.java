@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
-import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.ForkJoinRowConsumer;
+import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.ExcludingJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.RootJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.AbstractTransformer;
@@ -28,7 +28,7 @@ import org.codefilarete.tool.Duo;
  * and while doing it, it remembers which consumer made it. Then while instantiating entity we invoke it to get right entity type (parent mapping
  * would only give parent entity, which, out of being a wrong approach, can be an abstract type). Then instance is filled up with parent properties
  * by calling merging method (see line 98).
- * Finally, {@link JoinTablePolymorphicJoinRootRowConsumer} must extend {@link ForkJoinRowConsumer} to give next branch to be consumed by
+ * Finally, {@link JoinTablePolymorphicJoinRootRowConsumer} must extend {@link ExcludingJoinRowConsumer} to give next branch to be consumed by
  * {@link EntityTreeInflater} to avoid "dead" branch to be read : we give it according to the consumer which found the identifier. 
  * 
  * @author Guillaume Mary
@@ -93,7 +93,7 @@ public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C,
 		}
 	}
 	
-	static class JoinTablePolymorphicJoinRootRowConsumer<C, I> implements RootJoinRowConsumer<C> {
+	static class JoinTablePolymorphicJoinRootRowConsumer<C, I> implements ExcludingJoinRowConsumer<C> {
 		
 		private static final ThreadLocal<MergeJoinRowConsumer<?>> CURRENTLY_FOUND_CONSUMER = new ThreadLocal<>();
 		

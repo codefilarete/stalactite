@@ -46,7 +46,7 @@ import static org.codefilarete.tool.function.Functions.chain;
 abstract class AbstractDerivedQueriesWithPolymorphismTest {
 	
 	@Autowired
-	private DerivedQueriesRepository derivedQueriesRepository;
+	protected DerivedQueriesRepository derivedQueriesRepository;
 	
 	@Test
 	void projection() {

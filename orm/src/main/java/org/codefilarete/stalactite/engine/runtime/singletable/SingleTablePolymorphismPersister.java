@@ -290,7 +290,8 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 																							  BeanRelationFixer<SRC, C> beanRelationFixer,
 																							  @Nullable BiFunction<Row, ColumnedRow, Object> duplicateIdentifierProvider,
 																							  String joinName,
-																							  Set<? extends Column<T2, Object>> selectableColumns, boolean optional,
+																							  Set<? extends Column<T2, ?>> selectableColumns,
+																							  boolean optional,
 																							  boolean loadSeparately) {
 		
 		if (loadSeparately) {

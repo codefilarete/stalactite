@@ -43,16 +43,16 @@ public class PassiveJoinNode<C, T1 extends Fromable, T2 extends Fromable, I> ext
 		return new PassiveJoinRowConsumer<>(getConsumptionListener(), columnedRow);
 	}
 	
-	static class PassiveJoinRowConsumer<C> implements JoinRowConsumer {
+	public static class PassiveJoinRowConsumer<C> implements JoinRowConsumer {
 		
 		/** Optional listener of ResultSet decoding */
 		@Nullable
 		private final EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
-		/** Used when transformerListener is not null, so could be null, but is never because constructor is always used with not null one */
+		/** Used when transformerListener is not null, so could be null */
 		@Nullable
 		private final ColumnedRow columnedRow;
 		
-		PassiveJoinRowConsumer(@Nullable EntityTreeJoinNodeConsumptionListener<C> consumptionListener, @Nullable ColumnedRow columnedRow) {
+		public PassiveJoinRowConsumer(@Nullable EntityTreeJoinNodeConsumptionListener<C> consumptionListener, @Nullable ColumnedRow columnedRow) {
 			this.consumptionListener = consumptionListener;
 			this.columnedRow = columnedRow;
 		}

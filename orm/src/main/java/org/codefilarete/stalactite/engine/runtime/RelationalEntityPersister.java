@@ -107,7 +107,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 																					   BeanRelationFixer<SRC, C> beanRelationFixer,
 																					   @Nullable BiFunction<Row, ColumnedRow, Object> duplicateIdentifierProvider,
 																					   String joinName,
-																					   Set<? extends Column<T2, Object>> selectableColumns,
+																					   Set<? extends Column<T2, ?>> selectableColumns,
 																					   boolean optional,
 																					   boolean loadSeparately);
 	

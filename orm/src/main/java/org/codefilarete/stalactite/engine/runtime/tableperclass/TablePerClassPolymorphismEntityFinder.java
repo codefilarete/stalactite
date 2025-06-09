@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -16,11 +15,14 @@ import org.codefilarete.stalactite.engine.runtime.ColumnCloneAwareOrderBy;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
+import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRoot;
-import org.codefilarete.stalactite.mapping.AbstractTransformer;
+import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
+import org.codefilarete.stalactite.engine.runtime.load.TablePerClassRootJoinNode;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
@@ -32,11 +34,11 @@ import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.OrderByChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryEase;
+import org.codefilarete.stalactite.query.model.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
 import org.codefilarete.stalactite.query.model.Union;
-import org.codefilarete.stalactite.query.model.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -51,7 +53,6 @@ import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -99,7 +100,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	 */
 	private SingleLoadEntityJoinTree<C, I> buildSingleLoadEntityJoinTree() {
 		Union union = new Union();
-		Set<Selectable<?>> allColumnsInHierarchy = Collections.cat(Arrays.asList(mainPersister), persisterPerSubclass.values())
+		Set<Selectable<?>> allColumnsInHierarchy = Arrays.asList(mainPersister)
 				.stream().flatMap(persister -> ((Table<?>) persister.getMainTable()).getColumns().stream())
 				.map(column -> new SelectableString<>(column.getExpression(), column.getJavaType()))
 				.collect(Collectors.toCollection(KeepOrderSet::new));
@@ -118,13 +119,15 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 					subQueryColumns.put(Operators.cast((String) null, pseudoColumn.getJavaType()), pseudoColumn.getExpression());
 				}
 			});
+			String discriminatorExpression = "'" + discriminatorValue + "'";
 			Query query = QueryEase.
 					select(subQueryColumns)
-					.add("'" + discriminatorValue + "'", String.class).as(DISCRIMINATOR_ALIAS)
+					.add(discriminatorExpression, String.class).as(DISCRIMINATOR_ALIAS)
 					.from(subEntityPersister.getMainTable())
 					.getQuery();
 			union.getQueries().add(query);
-			query.getColumns()
+			query.getColumns().stream()
+					.filter(column -> !column.getExpression().equals(discriminatorExpression))
 					.forEach(column -> union.registerColumn(column.getExpression(), column.getJavaType(), subQueryColumns.get(column)));
 			discriminatorPerSubPersister.put(discriminatorValue, subEntityPersister);
 		});
@@ -133,9 +136,33 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 		// Note that it's very important to use main table name to mimic virtual main table else joins (below) won't work
 		PseudoTable pseudoTable = union.asPseudoTable(mainTable.getName());
 		// we add joins to the union clause
-		SingleLoadEntityJoinTree<C, I> result = new SingleLoadEntityJoinTree<>(mainPersister, discriminatorPerSubPersister, pseudoTable, allColumnsInHierarchy);
+		SingleLoadEntityJoinTree<C, I> result = new SingleLoadEntityJoinTree<>(mainPersister, discriminatorPerSubPersister, pseudoTable, DISCRIMINATOR_COLUMN);
 		mainEntityJoinTree.projectTo(result, ROOT_STRATEGY_NAME);
+		
+		addTablePerClassPolymorphicSubPersistersJoins(result, ROOT_STRATEGY_NAME, discriminatorPerSubPersister);
 		return result;
+	}
+	
+	private <V extends C, T1 extends Table<T1>, T2 extends Table<T2>> void addTablePerClassPolymorphicSubPersistersJoins(
+			SingleLoadEntityJoinTree<C, I> entityJoinTree,
+			String mainPolymorphicJoinNodeName,
+			Map<String, ConfiguredRelationalPersister<C, I>> discriminatorPerSubPersister) {
+		
+		discriminatorPerSubPersister.forEach((discriminatorValue, subPersister) -> {
+						ConfiguredRelationalPersister<V, I> localSubPersister = (ConfiguredRelationalPersister<V, I>) subPersister;
+			entityJoinTree.<V, T1, T2, I>addMergeJoin(mainPolymorphicJoinNodeName,
+					new EntityMergerAdapter<>(localSubPersister.<T2>getMapping()),
+					mainPersister.<T1>getMainTable().getPrimaryKey(),
+					subPersister.<T2>getMainTable().getPrimaryKey(),
+					JoinType.OUTER,
+					columnedRow -> {
+						MergeJoinRowConsumer<V> joinRowConsumer = new MergeJoinRowConsumer<>(
+								localSubPersister.<T2>getMapping().copyTransformerWithAliases(columnedRow));
+						entityJoinTree.getRoot().addSubPersister(subPersister, joinRowConsumer, discriminatorValue, columnedRow);
+						return joinRowConsumer;
+					}
+			);
+		});
 	}
 	
 	/**
@@ -147,7 +174,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 		Union union = new Union();
 		persisterPerSubclass.forEach((subEntityType, subEntityPersister) -> {
 			String discriminatorValue = subEntityType.getSimpleName();
-			Query query = buildSubConfigurationQuery(discriminatorValue, mainTable, subEntityPersister.getMainTable(), aliasPerColumnName);
+			Query query = this.<T>buildSubConfigurationQuery(discriminatorValue, mainTable, subEntityPersister.getMainTable(), aliasPerColumnName);
 			union.getQueries().add(query);
 			query.getColumns()
 					.stream().filter(column -> !column.getExpression().equals(discriminatorValue))
@@ -365,60 +392,10 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 		private final IdentityHashMap<Column<?, ?>, Selectable<?>> mainColumnToPseudoColumn = new IdentityHashMap<>();
 		
 		public <T extends Table<T>> SingleLoadEntityJoinTree(ConfiguredRelationalPersister<C, I> mainPersister,
-															 Map<String, ConfiguredRelationalPersister<C, I>> discriminatorPerSubPersister,
+															 Map<String, ConfiguredRelationalPersister<C, I>> subPersisterPerDiscriminator,
 															 PseudoTable pseudoTable,
-															 Set<Selectable<?>> allColumnInHierarchy) {
-			super(new EntityInflater<C, I>() {
-						@Override
-						public Class<C> getEntityType() {
-							return mainPersister.getClassToPersist();
-						}
-						
-						@Override
-						public I giveIdentifier(Row row, ColumnedRow columnedRow) {
-							return mainPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(row, columnedRow);
-						}
-						
-						@Override
-						public RowTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow) {
-							Map<String, RowTransformer<C>> rowTransformerPerDiscriminator =
-									Iterables.map(discriminatorPerSubPersister.entrySet(), Entry::getKey, entry -> entry.getValue().getMapping().copyTransformerWithAliases(columnedRow));
-							return new RowTransformer<C>() {
-								@Override
-								public C transform(Row row) {
-									String value = columnedRow.getValue(DISCRIMINATOR_COLUMN, row);
-									// NB: we trim because some database (as HSQLDB) adds some padding in order that all values get same length
-									return rowTransformerPerDiscriminator.get(value.trim()).transform(row);
-								}
-								
-								@Override
-								public void applyRowToBean(Row row, C bean) {
-									// Nothing to do because we override transform(..) which does all we need (forward to sub transformer)
-								}
-								
-								@Override
-								public AbstractTransformer<C> copyWithAliases(ColumnedRow columnedRow) {
-									// safeguard against unexpected behavior
-									throw new IllegalStateException("copyWithAliases(..) is not expected to be called twice");
-								}
-								
-								@Override
-								public void addTransformerListener(TransformerListener<? extends C> listener) {
-									
-								}
-							};
-						}
-						
-						@Override
-						public Set<Selectable<?>> getSelectableColumns() {
-							// since this inflater will be used in the case of the union, we provide all the columns available in the hierarchy,
-							// added with the discriminator column
-							KeepOrderSet<Selectable<?>> result = new KeepOrderSet<>(allColumnInHierarchy);
-							result.add(DISCRIMINATOR_COLUMN);
-							return result;
-						}
-					},
-					pseudoTable);
+															 SelectableString<String> discriminatorColumn) {
+			super(self -> new TablePerClassRootJoinNode<>(self, mainPersister, subPersisterPerDiscriminator, pseudoTable, discriminatorColumn));
 			// Building a mapping between main persister columns and those of union
 			// this will allow us to lookup for main persister columns values in final ResultSet
 			pseudoTable.getColumns().forEach(pseudoColumn -> {
@@ -430,8 +407,8 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 		}
 		
 		@Override
-		public JoinRoot<C, I, PseudoTable> getRoot() {
-			return (JoinRoot<C, I, PseudoTable>) super.getRoot();
+		public TablePerClassRootJoinNode<C, I> getRoot() {
+			return (TablePerClassRootJoinNode<C, I>) super.getRoot();
 		}
 		
 		public IdentityHashMap<Column<?, ?>, Selectable<?>> getMainColumnToPseudoColumn() {

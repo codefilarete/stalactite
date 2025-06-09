@@ -4,6 +4,7 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
+import org.codefilarete.stalactite.engine.runtime.load.TablePerClassRootJoinNode.TablePerClassPolymorphicJoinRootRowConsumer;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.result.Row;
 
@@ -25,9 +26,28 @@ interface JoinRowConsumer {
 		
 	}
 	
+	/**
+	 * Interface to implement when a {@link JoinRowConsumer} needs to provide the next join consumer (among the ones he owns): in case of polymorphism,
+	 * we need to choose the right next branch that fills the created entity. This interface is made to provide the next sub-consumer for the next
+	 * iteration.
+	 * @author Guillaume Mary
+	 */
 	interface ForkJoinRowConsumer extends JoinRowConsumer {
 		
 		JoinRowConsumer giveNextConsumer();
+		
+	}
+	
+	/**
+	 * Interface to implement when a {@link RootJoinRowConsumer} needs to skip some joins he owns: by default {@link EntityTreeInflater} iterates
+	 * over all consumers returned by a {@link RootJoinRowConsumer} but, in case of polymorphism, we need to skip the branches that are not implied
+	 * in the process of instance creation. This interface is made to provide the sub-consumers to exclude from next iteration.
+	 * @author Guillaume Mary
+	 */
+	interface ExcludingJoinRowConsumer<C> extends RootJoinRowConsumer<C> {
+		
+		//deadBranches
+		Set<JoinRowConsumer> giveExcludedConsumers();
 		
 	}
 }

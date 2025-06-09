@@ -17,6 +17,7 @@ import java.util.function.Function;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
+import org.codefilarete.stalactite.engine.runtime.load.PassiveJoinNode.PassiveJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.AbstractTransformer;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.RowTransformer;
@@ -265,7 +266,7 @@ public class EntityJoinTree<C, I> {
 																						Key<T1, JOINTYPE> leftJoinColumn,
 																						Key<T2, JOINTYPE> rightJoinColumn,
 																						JoinType joinType,
-																						Set<Column<T2, ?>> columnsToSelect,
+																						Set<? extends Column<T2, ?>> columnsToSelect,
 																						EntityTreeJoinNodeConsumptionListener<C> consumptionListener) {
 		return this.addJoin(leftStrategyName, parent -> new PassiveJoinNode<C, T1, T2, JOINTYPE>((JoinNode<T1>) (JoinNode) parent,
 				leftJoinColumn, rightJoinColumn, joinType,
@@ -277,7 +278,7 @@ public class EntityJoinTree<C, I> {
 																						Key<T2, JOINTYPE> rightJoinColumn,
 																						String tableAlias,
 																						JoinType joinType,
-																						Set<Column<T2, ?>> columnsToSelect,
+																						Set<? extends Column<T2, ?>> columnsToSelect,
 																						EntityTreeJoinNodeConsumptionListener<C> consumptionListener,
 																						boolean rightTableParticipatesToDDL) {
 		if (rightTableParticipatesToDDL) {

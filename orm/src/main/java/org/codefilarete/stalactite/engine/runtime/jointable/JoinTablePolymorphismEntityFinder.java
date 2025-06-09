@@ -72,7 +72,7 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 				columnedRow -> {
 					// implemented to add newly created sub consumer to root one, therefore it will be able to create the right sub-instance
 					MergeJoinRowConsumer<C> subEntityConsumer = new MergeJoinRowConsumer<>(persister.getMapping().copyTransformerWithAliases(columnedRow));
-					((JoinTableRootJoinNode) result.getRoot()).addSubPersister(persister, subEntityConsumer, columnedRow);
+					result.getRoot().addSubPersister(persister, subEntityConsumer, columnedRow);
 					return subEntityConsumer;
 				}
 		));
@@ -161,6 +161,11 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 					mainPersister.<T>getMapping().getSelectableColumns(),
 					(T) mainPersister.getMainTable())
 			);
+		}
+		
+		@Override
+		public JoinTableRootJoinNode<C, I, ?> getRoot() {
+			return (JoinTableRootJoinNode<C, I, ?>) super.getRoot();
 		}
 	}
 }

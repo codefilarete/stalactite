@@ -311,7 +311,8 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 																							  BeanRelationFixer<SRC, C> beanRelationFixer,
 																							  @Nullable BiFunction<Row, ColumnedRow, Object> duplicateIdentifierProvider,
 																							  String joinName,
-																							  Set<? extends Column<T2, Object>> selectableColumns, boolean optional,
+																							  Set<? extends Column<T2, ?>> selectableColumns,
+																							  boolean optional,
 																							  boolean loadSeparately) {
 		
 		PrimaryKey<T, ?> mainTablePK = mainPersister.<T>getMapping().getTargetTable().getPrimaryKey();
@@ -456,8 +457,8 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			ConfiguredRelationalPersister<V, I> localSubPersister = (ConfiguredRelationalPersister<V, I>) subPersister;
 			entityJoinTree.<V, T1, T2, I>addMergeJoin(mainPolymorphicJoinNodeName,
 					new EntityMergerAdapter<>(localSubPersister.<T2>getMapping()),
-					mainPersister.getMainTable().getPrimaryKey(),
-					subPersister.getMainTable().getPrimaryKey(),
+					mainPersister.<T1>getMainTable().getPrimaryKey(),
+					subPersister.<T2>getMainTable().getPrimaryKey(),
 					JoinType.OUTER,
 					columnedRow -> {
 						PolymorphicMergeJoinRowConsumer<V, I> joinRowConsumer = new PolymorphicMergeJoinRowConsumer<>(
@@ -488,7 +489,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		String entityTypeDiscriminatorName = "clazz_";
 		PseudoColumn<Integer> discriminatorPseudoColumn = subPersistersUnion.registerColumn(entityTypeDiscriminatorName, Integer.class);
 		
-		PrimaryKey<T, I> primaryKey = mainPersister.getMainTable().getPrimaryKey();
+		PrimaryKey<T, I> primaryKey = mainPersister.<T>getMainTable().getPrimaryKey();
 		primaryKey.getColumns().forEach(col -> {
 			PseudoColumn<I> primaryKeyPseudoColumn = subPersistersUnion.registerColumn(col.getName(), mainPersister.getMapping().getIdMapping().getIdentifierInsertionManager().getIdentifierType());
 		});

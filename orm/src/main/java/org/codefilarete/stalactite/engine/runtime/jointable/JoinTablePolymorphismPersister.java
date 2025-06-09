@@ -291,7 +291,7 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 																							  BeanRelationFixer<SRC, C> beanRelationFixer,
 																							  @Nullable BiFunction<Row, ColumnedRow, Object> duplicateIdentifierProvider,
 																							  String joinName,
-																							  Set<? extends Column<T2, Object>> selectableColumns,
+																							  Set<? extends Column<T2, ?>> selectableColumns,
 																							  boolean optional,
 																							  boolean loadSeparately) {
 		if (loadSeparately) {
@@ -347,7 +347,7 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 					leftJoinColumn,
 					rightJoinColumn,
 					JoinType.OUTER,
-					mainPersister.getMainTable().getColumns(),
+					mainPersister.<T2>getMainTable().getColumns(),
 					null,
 					new EntityMappingAdapter<>(mainPersister.<T1>getMapping()),
 					(BeanRelationFixer<Object, U>) beanRelationFixer,
@@ -372,8 +372,8 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 			ConfiguredRelationalPersister<V, ID> localSubPersister = (ConfiguredRelationalPersister<V, ID>) subPersister;
 			entityJoinTree.addJoin(mainPolymorphicJoinNodeName, parent -> new MergeJoinNode<V, T1, T2, ID>(
 					(JoinNode<T1>) (JoinNode) parent,
-					mainPersister.getMainTable().getPrimaryKey(),
-					subPersister.getMainTable().getPrimaryKey(),
+					mainPersister.<T1>getMainTable().getPrimaryKey(),
+					subPersister.<T2>getMainTable().getPrimaryKey(),
 					JoinType.OUTER,
 					null,
 					new EntityMergerAdapter<>((EntityMapping<V, ID, ?>) localSubPersister.getMapping())) {

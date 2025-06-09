@@ -55,10 +55,6 @@ public class EntityTreeQueryBuilder<C> {
 	
 	public EntityTreeQuery<C> buildSelectQuery() {
 		Query query = new Query();
-		return buildSelectQuery(query);
-	}
-		
-	public EntityTreeQuery<C> buildSelectQuery(Query query) {
 		Map<String, ParameterBinder<?>> selectParameterBinders = new HashMap<>();
 		
 		// Mapping between original Column of table in joins and Column of cloned tables. Not perfect but made to solve
@@ -67,16 +63,16 @@ public class EntityTreeQueryBuilder<C> {
 		// for them, which causes issue while setting criteria value (column is not found by database driver)
 		IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = new IdentityHashMap<>();
 		
-		// Table clones storage per their initial node to manage several occurrence of same table in query
+		// Table clones storage per their initial node to manage several occurrences of the same table in the query
 		Map<JoinNode, Fromable> tableClonePerJoinNode = new HashMap<>();
 		
 		ResultHelper resultHelper = new ResultHelper(query, parameterBinderProvider, aliasBuilder, selectParameterBinders, tableClonePerJoinNode);
 		
-		/* In the following algorithm, node tables will be cloned and applied a unique alias to manage presence of twice the same table in different
-		 * nodes. This happens when tree contains sibling relations (like person->firstHouse and person->secondaryHouse), or, in a more general way,
-		 * maps some entities onto same table. So by cloning tables and using IdentityMap<Column, String> for alias storage we can affect different
-		 * aliases to same initial table of different nodes : final alias computation can be seen at ResultHelper.createDedicatedRowDecoder(..) 
-		 * Those clones don't affect SQL generation since table and column clones have same name as the original.
+		/* In the following algorithm, node tables will be cloned and applied a unique alias to manage the presence of twice the same table in different
+		 * nodes. This happens when the tree contains sibling relations (like person->firstHouse and person->secondaryHouse), or, in a more general way,
+		 * maps some entities onto the same table. So by cloning tables and using IdentityMap<Column, String> for alias storage we can affect different
+		 * aliases to the same initial table of different nodes : final alias computation can be seen at ResultHelper.createDedicatedRowDecoder(..) 
+		 * Those clones don't affect SQL generation since table and column clones have the same name as the original.
 		 */
 		
 		// initialization of the From clause with the very first table
@@ -134,7 +130,7 @@ public class EntityTreeQueryBuilder<C> {
 		}
 	}
 	
-	// Simple class that helps to add columns to select, made as internal method class else it would take more parameters
+	// Simple class that helps to add columns to select
 	private static class ResultHelper {
 		
 		private final ResultSetReaderRegistry parameterBinderProvider;
@@ -249,7 +245,8 @@ public class EntityTreeQueryBuilder<C> {
 		 * @return a {@link ColumnedRow} that gives aliases according to them in {@link #columnAliases}
 		 */
 		private ColumnedRow createDedicatedRowDecoder(JoinNode node) {
-			return new ColumnedRow(column -> columnAliases.get(tablePerJoinNode.get(node).findColumn(column.getExpression())));
+			Fromable joinTable = tablePerJoinNode.get(node);
+			return new ColumnedRow(column -> columnAliases.get(joinTable.findColumn(column.getExpression())));
 		}
 	}
 	

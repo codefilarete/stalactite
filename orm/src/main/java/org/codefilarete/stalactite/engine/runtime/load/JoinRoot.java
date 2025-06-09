@@ -93,7 +93,7 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<T> {
 		return new JoinRootRowConsumer<>(entityInflater, columnedRow);
 	}
 	
-	static class JoinRootRowConsumer<C, I> implements RootJoinRowConsumer<C> {
+	public static class JoinRootRowConsumer<C, I> implements RootJoinRowConsumer<C> {
 		
 		private final Class<C> entityType;
 		
@@ -104,7 +104,7 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<T> {
 		
 		private final ColumnedRow columnedRow;
 		
-		JoinRootRowConsumer(EntityInflater<C, I> entityInflater, ColumnedRow columnedRow) {
+		public JoinRootRowConsumer(EntityInflater<C, I> entityInflater, ColumnedRow columnedRow) {
 			this.entityType = entityInflater.getEntityType();
 			this.identifierDecoder = entityInflater::giveIdentifier;
 			this.entityBuilder = entityInflater.copyTransformerWithAliases(columnedRow);

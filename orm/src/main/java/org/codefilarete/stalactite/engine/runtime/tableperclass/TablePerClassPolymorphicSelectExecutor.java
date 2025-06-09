@@ -85,7 +85,7 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table<T>> im
 		// - call the right subclass joinExecutor with dedicated ids
 		// TODO : (with which listener ?)
 		
-		PrimaryKey<T, I> primaryKey = mainPersister.getMainTable().getPrimaryKey();
+		PrimaryKey<T, I> primaryKey = mainPersister.<T>getMainTable().getPrimaryKey();
 		if (primaryKey.isComposed() && !this.dialect.supportsTupleCondition()) {
 			throw new UnsupportedOperationException("Database doesn't support tuple-in so selection can't be done trivially, not yet supported");
 		}
