@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.model.Color;
+import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Language;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.Republic;
@@ -407,10 +408,11 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		country3.setName("Tata");
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3));
 		
-		Set<Republic> loadedCountries;
-		loadedCountries = derivedQueriesRepository.findByNameIn("Titi");
-		assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
+		Set<Country> countries;
+		countries = derivedQueriesRepository.findByNameIn("Titi");
+		assertThat(countries).containsExactlyInAnyOrder(country2);
 		
+		Set<Republic> loadedCountries;
 		loadedCountries = derivedQueriesRepository.findByNameIgnoreCaseIn("tiTI");
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
 		

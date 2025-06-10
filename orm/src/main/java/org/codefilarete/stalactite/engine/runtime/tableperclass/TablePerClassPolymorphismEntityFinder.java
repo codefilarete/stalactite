@@ -139,18 +139,17 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 		SingleLoadEntityJoinTree<C, I> result = new SingleLoadEntityJoinTree<>(mainPersister, discriminatorPerSubPersister, pseudoTable, DISCRIMINATOR_COLUMN);
 		mainEntityJoinTree.projectTo(result, ROOT_STRATEGY_NAME);
 		
-		addTablePerClassPolymorphicSubPersistersJoins(result, ROOT_STRATEGY_NAME, discriminatorPerSubPersister);
+		addTablePerClassPolymorphicSubPersistersJoins(result, discriminatorPerSubPersister);
 		return result;
 	}
 	
 	private <V extends C, T1 extends Table<T1>, T2 extends Table<T2>> void addTablePerClassPolymorphicSubPersistersJoins(
 			SingleLoadEntityJoinTree<C, I> entityJoinTree,
-			String mainPolymorphicJoinNodeName,
 			Map<String, ConfiguredRelationalPersister<C, I>> discriminatorPerSubPersister) {
 		
 		discriminatorPerSubPersister.forEach((discriminatorValue, subPersister) -> {
 						ConfiguredRelationalPersister<V, I> localSubPersister = (ConfiguredRelationalPersister<V, I>) subPersister;
-			entityJoinTree.<V, T1, T2, I>addMergeJoin(mainPolymorphicJoinNodeName,
+			String mergeJoinName = entityJoinTree.<V, T1, T2, I>addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
 					new EntityMergerAdapter<>(localSubPersister.<T2>getMapping()),
 					mainPersister.<T1>getMainTable().getPrimaryKey(),
 					subPersister.<T2>getMainTable().getPrimaryKey(),
@@ -162,6 +161,8 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 						return joinRowConsumer;
 					}
 			);
+			// we add the joins of the sub-persister to the whole graph to make it load its relations
+			subPersister.getEntityJoinTree().projectTo(entityJoinTree, mergeJoinName);
 		});
 	}
 	

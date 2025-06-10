@@ -1,6 +1,9 @@
 package org.codefilarete.stalactite.spring.repository.query;
 
 
+import java.util.Map;
+import java.util.Set;
+
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.MappingEase;
@@ -16,9 +19,13 @@ import org.codefilarete.stalactite.engine.model.State;
 import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.id.Identifier;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
 import static org.codefilarete.stalactite.engine.MappingEase.subentityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
@@ -31,6 +38,36 @@ import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 		DerivedQueriesWithTablePerClassPolymorphismTest.StalactiteRepositoryContextConfiguration.class
 })
 class DerivedQueriesWithTablePerClassPolymorphismTest extends AbstractDerivedQueriesWithPolymorphismTest {
+	
+	@Test
+	void crud() {
+		Realm realm = new Realm(42);
+		realm.setName("Toto");
+		Person president = new Person(666);
+		president.setName("me");
+		realm.setPresident(president);
+		King king = new King(999);
+		king.setName("still me");
+		realm.setKing(king);
+		Republic republic = new Republic(43);
+		republic.setName("Tata");
+		derivedQueriesRepository.saveAll(Arrays.asList(realm, republic));
+		
+		Set<Country> foundCountries = derivedQueriesRepository.findByNameIn("Toto", "Tata");
+		
+		Map<String, Country> countryPerName = Iterables.map(foundCountries, Country::getName);
+		Country loadedCountry1 = countryPerName.get("Toto");
+		assertThat(loadedCountry1).isExactlyInstanceOf(Realm.class);
+		assertThat(loadedCountry1.getName()).isEqualTo(realm.getName());
+		assertThat(loadedCountry1.getPresident().getName()).isEqualTo(president.getName());
+		assertThat(((Realm) loadedCountry1).getKing()).isExactlyInstanceOf(King.class);
+		assertThat(((Realm) loadedCountry1).getKing().getName()).isEqualTo(king.getName());
+		
+		Country loadedCountry2 = countryPerName.get("Tata");
+		assertThat(loadedCountry2).isExactlyInstanceOf(Republic.class);
+		assertThat(loadedCountry2.getName()).isEqualTo(republic.getName());
+		assertThat(loadedCountry2.getPresident()).isNull();
+	}
 	
 	public static class StalactiteRepositoryContextConfiguration {
 		

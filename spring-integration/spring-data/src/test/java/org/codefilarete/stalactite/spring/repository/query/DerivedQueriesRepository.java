@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.model.Color;
+import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Republic;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.spring.repository.StalactiteRepository;
@@ -16,13 +17,13 @@ import org.springframework.stereotype.Repository;
  * @author Guillaume Mary
  */
 @Repository
-public interface DerivedQueriesRepository extends StalactiteRepository<Republic, Identifier<Long>> {
+public interface DerivedQueriesRepository extends StalactiteRepository<Country, Identifier<Long>> {
 	
 	Set<Republic> findByIdIn(Iterable<Identifier<Long>> ids);
 	
 	Set<Republic> findByIdIn(Identifier<Long>... ids);
 	
-	Set<Republic> findByNameIn(String... name);
+	Set<Country> findByNameIn(String... name);
 	
 	Set<Republic> findByNameIgnoreCaseIn(String... name);
 	
