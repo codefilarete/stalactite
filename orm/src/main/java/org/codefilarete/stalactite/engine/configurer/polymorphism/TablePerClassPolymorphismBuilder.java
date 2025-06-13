@@ -90,10 +90,9 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 		}
 		Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass = collectSubClassPersister(dialect, connectionConfiguration);
 		
-		// NB : we don't yet manage relations in table-per-class polymorphism because it causes problems of referential integrity when relation
-		// is owned by target table since one column has to reference all tables of the hierarchy ! 
-		// registerSubEntitiesRelations(dialect, connectionConfiguration, persisterRegistry, persisterPerSubclass);
-		registerCascades(persisterPerSubclass, dialect, connectionConfiguration);
+		// Note that registering the cascades to sub-persisters must be done BEFORE the creation of the main persister to make it have all
+		// entities joins and let it build a consistent entity graph load; without it, we miss sub-relations when loading main entities 
+		registerSubEntitiesRelations(persisterPerSubclass, dialect, connectionConfiguration);
 		
 		TablePerClassPolymorphismPersister<C, I, T> result = new TablePerClassPolymorphismPersister<>(
 				mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(), dialect);

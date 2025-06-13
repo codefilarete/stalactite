@@ -79,9 +79,9 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 	 * @param dialect the {@link Dialect} use for type binding
 	 * @param connectionConfiguration the connection configuration
 	 */
-	protected <D extends C> void registerCascades(Map<Class<D>, ConfiguredRelationalPersister<D, I>> persisterPerSubclass,
-												  Dialect dialect,
-												  ConnectionConfiguration connectionConfiguration) {
+	protected <D extends C> void registerSubEntitiesRelations(Map<Class<D>, ConfiguredRelationalPersister<D, I>> persisterPerSubclass,
+															  Dialect dialect,
+															  ConnectionConfiguration connectionConfiguration) {
 		// we surround our relation configuration with cycle detection (see registerRelationCascades(..) implementation), this may seem too wide and
 		// could be closer to registerRelationCascades(..) method call (which actually requires it) but as doing such we also cover the case of 2
 		// subconfigurations using same entity in their relation 
@@ -94,7 +94,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 				}
 				
 				// We register relation of subclass persister to take into account its specific one-to-ones, one-to-manys and element collection mapping
-				this.<D>registerRelationCascades(
+				this.registerRelationCascades(
 						subConfiguration,
 						dialect,
 						connectionConfiguration,

@@ -59,14 +59,16 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 	public ConfiguredRelationalPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
 		Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass = collectSubClassPersister(dialect, connectionConfiguration);
 		
+		// Note that registering the cascades to sub-persisters must be done BEFORE the creation of the main persister to make it have all
+		// entities joins and let it build a consistent entity graph load; without it, we miss sub-relations when loading main entities 
+		registerSubEntitiesRelations(persisterPerSubclass, dialect, connectionConfiguration);
+		
 		Column<T, DTYPE> discriminatorColumn = ensureDiscriminatorColumn();
 		// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
 		// available by PersistenceContext.getPersister(..)) and it is one sure that they are perfect ones (all their features should be tested)
 		SingleTablePolymorphismPersister<C, I, ?, DTYPE> result = new SingleTablePolymorphismPersister<>(
 			mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(), dialect,
 			discriminatorColumn, (SingleTablePolymorphism<C, DTYPE>) polymorphismPolicy);
-		
-		registerCascades(persisterPerSubclass, dialect, connectionConfiguration);
 		
 		return result;
 	}

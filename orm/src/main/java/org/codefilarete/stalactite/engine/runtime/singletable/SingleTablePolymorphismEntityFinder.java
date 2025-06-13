@@ -75,6 +75,10 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 		);
 		// we project main persister tree to keep its relations
 		mainPersister.getEntityJoinTree().projectTo(result, ROOT_STRATEGY_NAME);
+		// we add the joins of the sub-persister to the whole graph to make it load its relations
+		persisterPerSubclass.values().forEach(subPersister -> {
+			subPersister.getEntityJoinTree().projectTo(result, ROOT_STRATEGY_NAME);
+		});
 		return result;
 	}
 	
