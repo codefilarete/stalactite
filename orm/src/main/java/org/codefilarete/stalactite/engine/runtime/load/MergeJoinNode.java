@@ -9,6 +9,7 @@ import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.Reflections;
 
 /**
  * Join node that fulfill some bean properties from a database row.
@@ -53,6 +54,14 @@ public class MergeJoinNode<C, T1 extends Fromable, T2 extends Fromable, I> exten
 		
 		void mergeProperties(C parentJoinEntity, Row row) {
 			this.merger.applyRowToBean(row, parentJoinEntity);
+		}
+		
+		/**
+		 * Implemented for debug. DO NOT RELY ON IT for anything else.
+		 */
+		@Override
+		public String toString() {
+			return Reflections.toString(this.getClass());
 		}
 	}
 }

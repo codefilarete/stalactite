@@ -19,6 +19,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
@@ -130,6 +131,14 @@ public class SingleTableRootJoinNode<C, I, T extends Table<T>, DTYPE> extends Jo
 			Duo<SubPersisterConsumer<C, I>, Class<C>> subClassRowConsumer = Iterables.find(subConsumers, subConsumer -> subConsumer.subEntityType, subEntityClass::equals);
 			SubPersisterConsumer<C, I> subIdentifierConsumer = subClassRowConsumer.getLeft();
 			return new Duo<>(subIdentifierConsumer.identifierAssembler.apply(row), subIdentifierConsumer);
+		}
+		
+		/**
+		 * Implemented for debug. DO NOT RELY ON IT for anything else.
+		 */
+		@Override
+		public String toString() {
+			return Reflections.toString(this.getClass());
 		}
 	}
 }

@@ -17,6 +17,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Iterables;
 
 import static org.codefilarete.tool.Nullable.nullable;
@@ -172,6 +173,14 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 				this.entityIdentifier = entityIdentifier;
 				this.rowConsumer = rowConsumer;
 			}
+		}
+		
+		/**
+		 * Implemented for debug. DO NOT RELY ON IT for anything else.
+		 */
+		@Override
+		public String toString() {
+			return Reflections.toString(this.getClass());
 		}
 	}
 }

@@ -21,6 +21,7 @@ import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Iterables;
 
 import static org.codefilarete.tool.Nullable.nullable;
@@ -159,6 +160,14 @@ public class TablePerClassRootJoinNode<C, I> extends JoinRoot<C, I, PseudoTable>
 					.map(subConsumer -> subConsumer.subPropertiesApplier)
 					.filter(consumerPawn -> CURRENTLY_FOUND_CONSUMER.get() != consumerPawn)
 					.collect(Collectors.toSet());
+		}
+		
+		/**
+		 * Implemented for debug. DO NOT RELY ON IT for anything else.
+		 */
+		@Override
+		public String toString() {
+			return Reflections.toString(this.getClass());
 		}
 	}
 }

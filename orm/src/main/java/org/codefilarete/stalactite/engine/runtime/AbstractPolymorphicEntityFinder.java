@@ -32,6 +32,8 @@ import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.collection.Iterables;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Parent class for polymorphic entity selection.
@@ -43,6 +45,8 @@ import org.codefilarete.tool.collection.Iterables;
  * @author Guillaume Mary
  */
 public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> implements EntityFinder<C, I> {
+	
+	protected final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 	
 	protected final EntityJoinTree<C, I> mainEntityJoinTree;
 	protected final Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass;

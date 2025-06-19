@@ -11,6 +11,7 @@ import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.Reflections;
 
 /**
  * Join node that does nothing particular except eventually triggering a {@link TransformerListener} (if given through
@@ -61,6 +62,14 @@ public class PassiveJoinNode<C, T1 extends Fromable, T2 extends Fromable, I> ext
 			if (this.consumptionListener != null) {
 				this.consumptionListener.onNodeConsumption(parentJoinEntity, col -> columnedRow.getValue(col, row));
 			}
+		}
+		
+		/**
+		 * Implemented for debug. DO NOT RELY ON IT for anything else.
+		 */
+		@Override
+		public String toString() {
+			return Reflections.toString(this.getClass());
 		}
 	}
 }

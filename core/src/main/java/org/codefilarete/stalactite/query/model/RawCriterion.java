@@ -26,4 +26,12 @@ public class RawCriterion extends AbstractCriterion {
 	public List<Object> getCondition() {
 		return condition;
 	}
+	
+	/**
+	 * Implemented for debug. DO NOT RELY ON IT for anything else.
+	 */
+	@Override
+	public String toString() {
+		return (operator == null ? "" : operator) + " " + condition;
+	}
 }

@@ -10,6 +10,8 @@ import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierM
 import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.sql.result.Accumulators;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Parent class of polymorphic persisters, made to share common code.
@@ -21,6 +23,8 @@ import org.codefilarete.stalactite.sql.result.Accumulators;
 public abstract class AbstractPolymorphismPersister<C, I>
 		extends PersisterListenerWrapper<C, I>
 		implements ConfiguredRelationalPersister<C, I>, PolymorphicPersister<C>, AdvancedEntityPersister<C, I> {
+	
+	protected final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 	
 	protected final Map<Class<C>, ConfiguredRelationalPersister<C, I>> subEntitiesPersisters;
 	protected final ConfiguredRelationalPersister<C, I> mainPersister;

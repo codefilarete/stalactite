@@ -33,4 +33,12 @@ public class ColumnCriterion extends AbstractCriterion {
 	public ColumnCriterion copyFor(Selectable<?> column) {
 		return new ColumnCriterion(getOperator(), column, getCondition());
 	}
+	
+	/**
+	 * Implemented for debug. DO NOT RELY ON IT for anything else.
+	 */
+	@Override
+	public String toString() {
+		return (operator == null ? "" : operator) + " " + column + " " + condition.getClass().getSimpleName();
+	}
 }

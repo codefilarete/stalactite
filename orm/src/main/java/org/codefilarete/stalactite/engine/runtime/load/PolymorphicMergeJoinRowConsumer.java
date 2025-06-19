@@ -7,6 +7,7 @@ import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRo
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.Reflections;
 
 /**
  * 
@@ -34,5 +35,13 @@ public class PolymorphicMergeJoinRowConsumer<D, I> extends MergeJoinRowConsumer<
 	
 	public D transform(Row row) {
 		return super.merger.transform(row);
+	}
+	
+	/**
+	 * Implemented for debug. DO NOT RELY ON IT for anything else.
+	 */
+	@Override
+	public String toString() {
+		return Reflections.toString(this.getClass());
 	}
 }

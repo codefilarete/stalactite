@@ -208,6 +208,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	
 	@Override
 	public Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
+		LOGGER.debug("Finding entities in a single query with criteria {}", where);
 		// Condition doesn't have criteria on a collection property (*-to-many) : the load can be done with one query because the SQL criteria
 		// doesn't make a subset of the entity graph
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(singleLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
@@ -238,6 +239,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	
 	@Override
 	public Set<C> selectIn2Phases(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
+		LOGGER.debug("Finding entities in 2-phases query with criteria {}", where);
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(phasedLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		

@@ -84,11 +84,13 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 	
 	@Override
 	public Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
+		LOGGER.debug("Finding entities in a single query with criteria {}", where);
 		return super.selectWithSingleQuery(where, orderByClauseConsumer, limitAwareConsumer, singleLoadEntityJoinTree, dialect, connectionProvider);
 	}
 	
 	@Override
 	public Set<C> selectIn2Phases(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
+		LOGGER.debug("Finding entities in 2-phases query with criteria {}", where);
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(mainEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		

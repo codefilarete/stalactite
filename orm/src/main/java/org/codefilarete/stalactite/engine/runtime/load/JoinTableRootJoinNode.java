@@ -21,6 +21,9 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.Reflections;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Particular {@link JoinRoot} made to handle join-table polymorphic case : polymorphic entity instantiation is the core focus of it.
@@ -97,6 +100,8 @@ public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C,
 		
 		private static final ThreadLocal<MergeJoinRowConsumer<?>> CURRENTLY_FOUND_CONSUMER = new ThreadLocal<>();
 		
+		protected final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
+		
 		private final RowTransformer<C> rootRowTransformer;
 		private final Set<SubPersisterConsumer<C, I>> subConsumers;
 		
@@ -121,7 +126,10 @@ public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C,
 				result = null;
 			} else {
 				CURRENTLY_FOUND_CONSUMER.set(subInflater.getRight().subPropertiesApplier);
-				result = (C) context.giveEntityFromCache(subInflater.getRight().subEntityType, subInflater.getLeft(), () -> subInflater.getRight().subEntityFactory.newBeanInstance(row));
+				result = (C) context.giveEntityFromCache(subInflater.getRight().subEntityType, subInflater.getLeft(), () -> {
+					LOGGER.debug("Instantiating entity of type {}", subInflater.getRight().subEntityType);
+					return subInflater.getRight().subEntityFactory.newBeanInstance(row);
+				});
 				rootRowTransformer.applyRowToBean(row, result);
 			}
 			if (consumptionListener != null) {
@@ -154,6 +162,14 @@ public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C,
 					.map(subConsumer -> subConsumer.subPropertiesApplier)
 					.filter(consumerPawn -> CURRENTLY_FOUND_CONSUMER.get() != consumerPawn)
 					.collect(Collectors.toSet());
+		}
+		
+		/**
+		 * Implemented for debug. DO NOT RELY ON IT for anything else.
+		 */
+		@Override
+		public String toString() {
+			return Reflections.toString(this.getClass());
 		}
 	}
 }

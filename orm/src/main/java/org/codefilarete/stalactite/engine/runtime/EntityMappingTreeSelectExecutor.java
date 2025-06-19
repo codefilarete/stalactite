@@ -48,6 +48,8 @@ import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Class aimed at executing a SQL select statement from multiple joined {@link ClassMapping}.
@@ -57,6 +59,8 @@ import org.codefilarete.tool.collection.Iterables;
  * @author Guillaume Mary
  */
 public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implements org.codefilarete.stalactite.engine.SelectExecutor<C, I> {
+	
+	protected final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 	
 	/** The delegate for joining the strategies, will help to build the SQL */
 	private final EntityJoinTree<C, I> entityJoinTree;
@@ -128,6 +132,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 		// cutting ids into pieces, adjusting expected result size
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
 		Set<C> result = new HashSet<>(parcels.size() * blockSize);
+		LOGGER.debug("selecting entities in {} chunks", parcels.size());
 		if (!parcels.isEmpty()) {
 			// Creation of the where clause: we use a dynamic "in" operator clause to avoid multiple QueryBuilder instantiation
 			DDLAppender identifierCriteria = new JoinDDLAppender(whereClauseDMLNameProvider);

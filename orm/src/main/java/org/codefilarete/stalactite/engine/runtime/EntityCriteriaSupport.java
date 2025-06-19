@@ -180,6 +180,14 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 		return hasCollectionCriteria;
 	}
 	
+	@Override
+	public String toString() {
+		return Reflections.toString(getClass())
+				+ "criteria=" + criteria.getConditions()
+				+ ", hasCollectionCriteria=" + hasCollectionCriteria
+				+ ", parent=" + parent;
+	}
+	
 	/**
 	 * Represents a bean mapping : its simple or embedded properties bound to columns, and its relations which are themselves a mapping between
 	 * a method (as a generic {@link ValueAccessPoint}) and another {@link EntityGraphNode}

@@ -18,6 +18,7 @@ import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.bean.Objects;
 
 /**
@@ -151,6 +152,14 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 			}
 			// null is a marker for caller to not go deeper in the hierarchy : no entity was found on row, we can't go deeper
 			return null;
+		}
+		
+		/**
+		 * Implemented for debug. DO NOT RELY ON IT for anything else.
+		 */
+		@Override
+		public String toString() {
+			return Reflections.toString(this.getClass());
 		}
 	}
 	

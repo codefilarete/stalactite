@@ -179,6 +179,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 	@Override
 	public Set<C> doSelect(Iterable<I> ids) {
 		// Note that executor emits select listener events
+		LOGGER.debug("selecting entities {}", ids);
 		return selectExecutor.select(ids);
 	}
 	

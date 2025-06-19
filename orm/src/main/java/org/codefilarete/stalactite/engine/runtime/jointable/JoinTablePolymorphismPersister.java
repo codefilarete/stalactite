@@ -184,6 +184,7 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 	@Override
 	public Set<C> doSelect(Iterable<I> ids) {
 		// Note that executor emits select listener events
+		LOGGER.debug("selecting entities {}", ids);
 		return selectExecutor.select(ids);
 	}
 	

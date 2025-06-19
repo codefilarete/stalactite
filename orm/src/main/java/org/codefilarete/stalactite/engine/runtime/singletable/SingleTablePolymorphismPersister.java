@@ -182,6 +182,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 	
 	@Override
 	public Set<C> doSelect(Iterable<I> ids) {
+		LOGGER.debug("selecting entities {}", ids);
 		return selectExecutor.select(ids);
 	}
 	

@@ -13,6 +13,7 @@ import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.ReadOnlyList;
 
 /**
@@ -119,6 +120,15 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<T> {
 			} else {
 				return (C) context.giveEntityFromCache(entityType, identifier, () -> entityBuilder.transform(row));
 			}
+		}
+		
+		/**
+		 * Implemented for debug. DO NOT RELY ON IT for anything else.
+		 */
+		@Override
+		public String toString() {
+			return Reflections.toString(this.getClass())
+					+ " entityType=" + Reflections.toString(entityType);
 		}
 	}
 }

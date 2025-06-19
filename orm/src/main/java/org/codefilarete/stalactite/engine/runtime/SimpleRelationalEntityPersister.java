@@ -29,6 +29,8 @@ import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.Duo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Persister that registers relations of entities joined on "foreign key = primary key".
@@ -51,6 +53,8 @@ import org.codefilarete.tool.Duo;
 public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 		extends PersisterListenerWrapper<C, I>
 		implements ConfiguredRelationalPersister<C, I>, AdvancedEntityPersister<C, I> {
+	
+	protected final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 	
 	private final BeanPersister<C, I, T> persister;
 	/** Support for {@link EntityCriteria} query execution */
@@ -270,7 +274,9 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	 * @param ids entity identifiers
 	 * @return a Set of loaded entities corresponding to identifiers passed as parameter
 	 */
+	@Override
 	protected Set<C> doSelect(Iterable<I> ids) {
+		LOGGER.debug("selecting entities {}", ids);
 		return selectGraphExecutor.select(ids);
 	}
 	
