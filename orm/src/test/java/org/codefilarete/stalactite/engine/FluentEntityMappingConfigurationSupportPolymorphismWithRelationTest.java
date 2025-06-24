@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
@@ -565,7 +566,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		assertThat(persister.select(dummyTruck.getId())).isEqualTo(dummyTruckModified);
 		AbstractVehicle selectedCar = persister.select(dummyCar.getId());
-		dummyCarModified.getWheels().forEach(w -> w.setVehicle(dummyCarModified));	// this is done only for equality check of reverse setting, because deletion set it to null (which must be fixed, bug see CollecctionUpdater)
+		// this is done only for equality check of reverse setting, because deletion set it to null (see CollectionUpdater) and not reverted on rollback
+		dummyCarModified.getWheels().forEach(w -> w.setVehicle(dummyCarModified));
 		assertThat(selectedCar).isEqualTo(dummyCarModified);
 		// testing afterSelect listener of sub entities relations
 		((Car) selectedCar).getWheels().forEach(wheel -> assertThat(wheel.isPersisted()).isTrue());
@@ -1332,7 +1334,6 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			Car dummyCar = new Car(1L);
 			dummyCar.setModel("Renault");
-			dummyCar.setEngine(new Engine(100L));
 			dummyCar.setColor(new Color(666));
 			
 			PersistListener persistListenerMock = mock(PersistListener.class);
@@ -1368,7 +1369,6 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			// because it doesn't exist and we don't want to create it for this particular use case.
 			dummyCar = new Car(1L);
 			dummyCar.setModel("Renault");
-			dummyCar.setEngine(new Engine(100L));
 			dummyCar.setColor(new Color(666));
 			abstractVehiclePersister.persist(dummyCar);
 			verify(persistListenerMock).beforePersist(Arrays.asHashSet(dummyCar));
@@ -1376,18 +1376,25 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			verify(insertListenerMock).beforeInsert(Arrays.asList(dummyCar));
 			verify(insertListenerMock).afterInsert(Arrays.asList(dummyCar));
 			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
+			// 2 times for: usual select listening and already-assigned after-select call
+			verify(selectListenerMock, times(2)).afterSelect(Collections.emptySet());	// empty set because entities were deleted earlier
 			
+			clearInvocations(selectListenerMock);
 			dummyCar.setModel("Peugeot");
 			abstractVehiclePersister.persist(dummyCar);
 			verify(updateListenerMock).beforeUpdate(any(), eq(true));
 			verify(updateListenerMock).afterUpdate(any(), eq(true));
-			verify(selectListenerMock, times(2)).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
+			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
+			// 2 times for: usual select listening and already-assigned after-select call
+			dummyCar.setModel("Renault");	// we set back previous value to match verify(..)
+			verify(selectListenerMock, times(2)).afterSelect(Arrays.asHashSet(dummyCar));
 			
 			// select test
 			clearInvocations(selectListenerMock);
 			AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
 			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(new PersistedIdentifier<>(1L)));
-			verify(selectListenerMock).afterSelect(Arrays.asHashSet(loadedCar));
+			// 2 times for: usual select listening and already-assigned after-select call
+			verify(selectListenerMock, times(2)).afterSelect(Arrays.asHashSet(loadedCar));
 		}
 	}
 	

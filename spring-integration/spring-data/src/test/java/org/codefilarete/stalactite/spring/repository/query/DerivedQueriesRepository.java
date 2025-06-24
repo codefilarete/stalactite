@@ -17,13 +17,13 @@ import org.springframework.stereotype.Repository;
  * @author Guillaume Mary
  */
 @Repository
-public interface DerivedQueriesRepository extends StalactiteRepository<Country, Identifier<Long>> {
+public interface DerivedQueriesRepository extends StalactiteRepository<Republic, Identifier<Long>> {
 	
 	Set<Republic> findByIdIn(Iterable<Identifier<Long>> ids);
 	
 	Set<Republic> findByIdIn(Identifier<Long>... ids);
 	
-	Set<Country> findByNameIn(String... name);
+	Set<Republic> findByNameIn(String... name);
 	
 	Set<Republic> findByNameIgnoreCaseIn(String... name);
 	

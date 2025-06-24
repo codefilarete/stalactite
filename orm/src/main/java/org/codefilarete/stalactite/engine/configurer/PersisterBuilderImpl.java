@@ -108,6 +108,7 @@ import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 
 import static org.codefilarete.stalactite.engine.configurer.AbstractIdentification.CompositeKeyIdentification;
 import static org.codefilarete.tool.Nullable.nullable;
+import static org.codefilarete.tool.Reflections.PRIMITIVE_DEFAULT_VALUES;
 import static org.codefilarete.tool.bean.Objects.preventNull;
 import static org.codefilarete.tool.collection.Iterables.first;
 
@@ -917,7 +918,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		} else {
 			// auto-increment, sequence, etc : non-identifying classes get an already-assigned identifier manager based on their default value
 			Function<E, Boolean> isPersistedFunction = identifierType.isPrimitive()
-					? c -> Reflections.PRIMITIVE_DEFAULT_VALUES.get(identifierType) == idAccessor.get(c)
+					? c -> PRIMITIVE_DEFAULT_VALUES.get(identifierType) == idAccessor.get(c)
 					: c -> idAccessor.get(c) != null;
 			fallbackMappingIdentifierManager = new AlreadyAssignedIdentifierManager<>(identifierType, c -> {}, isPersistedFunction);
 		}
@@ -986,6 +987,13 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				@Override
 				public I assemble(Function<Column<?, ?>, Object> columnValueProvider) {
 					// we should not return an id if any value is null
+					boolean hasAnyNullValue = getColumns().stream().anyMatch(column -> {
+						Object partialKeyValue = columnValueProvider.apply(column);
+						return partialKeyValue == null || PRIMITIVE_DEFAULT_VALUES.containsValue(partialKeyValue);
+					});
+					if (hasAnyNullValue) {
+						return null;
+					}
 					Function<Function<Column, Object>, I> keyFactory;
 					if (defaultConstructor == null) {
 						// we'll lately throw an exception (we could do it now) but the lack of constructor may be due to an abstract class in inheritance

@@ -116,7 +116,7 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table<T>> im
 				from.where((Column<T, I>) Iterables.first(subClassPrimaryKey.getColumns()), Operators.in(ids));
 			} else {
 				List<I> idsAsList = org.codefilarete.tool.collection.Collections.asList(ids);
-				Map<Column<T, ?>, Object> columnValues = subEntitiesPersisters.get(subEntityType).getMapping().getIdMapping().<T>getIdentifierAssembler().getColumnValues(idsAsList);
+				Map<Column<T, ?>, Object> columnValues = subEntitiesPersisters.get(subEntityType).getMapping().getIdMapping().<T>getIdentifierAssembler().getColumnValues(ids);
 				from.where(transformCompositeIdentifierColumnValuesToTupleInValues(idsAsList.size(), columnValues));
 			}
 			

@@ -53,6 +53,6 @@ public interface IdentifierAssembler<I, T extends Table<T>> {
 	 * @param ids identifiers
 	 * @return a {@link Map} which keys are primary key columns and values are column-values of all identifiers 
 	 */
-	Map<Column<T, ?>, Object> getColumnValues(List<I> ids);
+	Map<Column<T, ?>, Object> getColumnValues(Iterable<I> ids);
 	
 }

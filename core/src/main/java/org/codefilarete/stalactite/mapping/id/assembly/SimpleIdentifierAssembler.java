@@ -50,11 +50,12 @@ public class SimpleIdentifierAssembler<I, T extends Table<T>> implements Identif
 	}
 	
 	@Override
-	public Map<Column<T, ?>, Object> getColumnValues(List<I> ids) {
+	public Map<Column<T, ?>, Object> getColumnValues(Iterable<I> ids) {
 		Map<Column<T, I>, Object> pkValues = new HashMap<>();
 		// we must pass a single value when expected, else ExpandableStatement may be confused when applying them
-		if (ids.size() == 1) {
-			Map<Column<T, ?>, Object> localPkValues = getColumnValues(Iterables.first(ids));
+		List<I> idsAsList = Iterables.asList(ids);
+		if (idsAsList.size() == 1) {
+			Map<Column<T, ?>, Object> localPkValues = getColumnValues(idsAsList.get(0));
 			pkValues.put(primaryKey, localPkValues.get(primaryKey));
 		} else {
 			ids.forEach(id -> {

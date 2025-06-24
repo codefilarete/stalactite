@@ -245,14 +245,15 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 			indexingColumn = targetPersister.getMapping().getTargetTable().addColumn(indexingColumnName, indexColumnType);
 		}
 		
-		IndexedMappedManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDefinition = new IndexedMappedManyRelationDescriptor<>(
+		IndexedMappedManyRelationDescriptor<SRC, TRGT, C, SRCID, TRGTID> manyRelationDefinition = new IndexedMappedManyRelationDescriptor<>(
 				associationConfiguration.getCollectionGetter()::get,
 				associationConfiguration.getSetter()::set,
 				associationConfiguration.getCollectionFactory(),
 				reverseSetter,
 				reverseColumn,
 				indexingColumn,
-				associationConfiguration.getSrcPersister()::getId);
+				associationConfiguration.getSrcPersister()::getId,
+				targetPersister::getId);
 		mappedAssociationEngine = new OneToManyWithIndexedMappedAssociationEngine(
 				targetPersister,
 				manyRelationDefinition,

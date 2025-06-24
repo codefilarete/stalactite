@@ -917,8 +917,6 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		cat.setCatBreed(CatBreed.Persian);
 		petPersister.persist(cat);
 		
-		clearPersistedStatuses();
-		
 		Pet loadedPet = petPersister.select(cat.getId());
 		assertThat(loadedPet)
 				.usingRecursiveComparison()

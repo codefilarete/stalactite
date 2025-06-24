@@ -48,4 +48,6 @@ public interface CriteriaChain<SELF extends CriteriaChain<SELF>> extends Iterabl
 	SELF add(LogicalOperator logicalOperator, CriteriaChain<?> criteria);
 	
 	SELF add(LogicalOperator logicalOperator, Object... columns);
+	
+	SELF add(AbstractCriterion condition);
 }

@@ -34,7 +34,7 @@ public class Criteria<SELF extends Criteria<SELF>> extends AbstractCriterion imp
 			} else if (criterion instanceof Criteria) {
 				target.add(criterion.getOperator(), ((Criteria<?>) criterion).copyFor(columnClones));
 			} else {
-				target.add(criterion.getOperator(), criterion);
+				target.add(criterion);
 			}
 		});
 	}
@@ -68,6 +68,7 @@ public class Criteria<SELF extends Criteria<SELF>> extends AbstractCriterion imp
 	 * @param condition any criteria 
 	 * @return this
 	 */
+	@Override
 	public SELF add(AbstractCriterion condition) {
 		this.conditions.add(condition);
 		return (SELF) this;

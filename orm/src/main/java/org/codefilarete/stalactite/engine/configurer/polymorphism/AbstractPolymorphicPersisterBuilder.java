@@ -90,7 +90,9 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 				ConfiguredRelationalPersister<D, I> subEntityPersister = persisterPerSubclass.get(subConfiguration.getEntityType());
 				
 				if (subConfiguration.getPolymorphismPolicy() != null) {
-					registerPolymorphismCascades(persisterPerSubclass, dialect, connectionConfiguration, subConfiguration, subEntityPersister);
+					assertSubPolymorphismIsSupported(subConfiguration.getPolymorphismPolicy());
+					subEntityPersister = buildSubPolymorphicPersister(subEntityPersister, subConfiguration.getPolymorphismPolicy(), dialect, connectionConfiguration);
+					persisterPerSubclass.put(subConfiguration.getEntityType(), subEntityPersister);
 				}
 				
 				// We register relation of subclass persister to take into account its specific one-to-ones, one-to-manys and element collection mapping
@@ -101,17 +103,6 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 						subEntityPersister);
 			}
 		});
-	}
-	
-	private <D extends C> void registerPolymorphismCascades(Map<Class<D>, ConfiguredRelationalPersister<D, I>> persisterPerSubclass,
-															Dialect dialect,
-															ConnectionConfiguration connectionConfiguration,
-															SubEntityMappingConfiguration<D> subConfiguration,
-															ConfiguredRelationalPersister<D, I> subEntityPersister) {
-		assertSubPolymorphismIsSupported(subConfiguration.getPolymorphismPolicy());
-		ConfiguredRelationalPersister<D, I> subclassPersister =
-				buildSubPolymorphicPersister(subEntityPersister, subConfiguration.getPolymorphismPolicy(), dialect, connectionConfiguration);
-		persisterPerSubclass.put(subConfiguration.getEntityType(), subclassPersister);
 	}
 	
 	abstract void assertSubPolymorphismIsSupported(PolymorphismPolicy<? extends C> subPolymorphismPolicy);
@@ -125,9 +116,9 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 	 * @param connectionConfiguration the connection configuration
 	 */
 	private <D extends C> ConfiguredRelationalPersister<D, I> buildSubPolymorphicPersister(ConfiguredRelationalPersister<D, I> subPersister,
-																								 PolymorphismPolicy<D> subPolymorphismPolicy,
-																								 Dialect dialect,
-																								 ConnectionConfiguration connectionConfiguration) {
+																						   PolymorphismPolicy<D> subPolymorphismPolicy,
+																						   Dialect dialect,
+																						   ConnectionConfiguration connectionConfiguration) {
 		// we only have to call a polymorphic builder with given methods arguments, and same configuration values as this instance
 		PolymorphismPersisterBuilder<D, I, T> polymorphismPersisterBuilder = new PolymorphismPersisterBuilder<>(
 				subPolymorphismPolicy,

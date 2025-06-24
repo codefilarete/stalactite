@@ -284,8 +284,9 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 		}
 		
 		/**
-		 * Gives the column of a chain of access points
-		 * Note that it supports "many" accessor : given parameter acts as a "transport" of accessors, we don't use
+		 * Gives the column of an access points {@link List}.
+		 * Most of the time result is a 1-size collection, but in the case of complex type (as for a composite key), the result is a collection of columns.
+		 * Note that it supports "many" accessor: given parameter acts as a "transport" of accessors, we don't use
 		 * its functionality such as get() or toMutator() hence it's not necessary that it be consistent. For example,
 		 * it can start with a Collection accessor then an accessor to the component of the Collection. See
 		 * 

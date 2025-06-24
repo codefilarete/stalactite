@@ -84,6 +84,7 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 		ConfiguredRelationalPersister<C, I> result = polymorphismBuilder.build(dialect, connectionConfiguration);
 		// We transfer listeners so that all actions are made in the same "event listener context" : all listeners are aggregated in a top level one.
 		// Made in particular for relation cascade triggering.
+		// TODO: move main persister selectListener propagation to sub-persisters here ? see JoinTablePolymorphismBuilder 
 		mainPersister.getPersisterListener().moveTo(result.getPersisterListener());
 		
 		return result;

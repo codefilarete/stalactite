@@ -19,10 +19,14 @@ import org.codefilarete.stalactite.engine.model.State;
 import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.id.Identifier;
+import org.codefilarete.stalactite.spring.repository.config.EnableStalactiteRepositories;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan.Filter;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,7 +41,16 @@ import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 		StalactiteRepositoryContextConfigurationBase.class,
 		DerivedQueriesWithSingleTablePolymorphismTest.StalactiteRepositoryContextConfiguration.class
 })
-class DerivedQueriesWithSingleTablePolymorphismTest extends AbstractDerivedQueriesWithPolymorphismTest {
+@EnableStalactiteRepositories(basePackages = "org.codefilarete.stalactite.spring.repository.query",
+		// because we have another repository in the same package, we filter them to keep only the appropriate one (it also checks that filtering works !)
+		includeFilters = @Filter(
+				type = FilterType.ASSIGNABLE_TYPE,
+				classes = { DerivedQueriesRepository.class, CountryDerivedQueriesRepository.class })
+)
+class DerivedQueriesWithSingleTablePolymorphismTest extends AbstractDerivedQueriesTest {
+	
+	@Autowired
+	private CountryDerivedQueriesRepository countryDerivedQueriesRepository;
 	
 	@Test
 	void crud() {
@@ -51,9 +64,9 @@ class DerivedQueriesWithSingleTablePolymorphismTest extends AbstractDerivedQueri
 		realm.setKing(king);
 		Republic republic = new Republic(43);
 		republic.setName("Tata");
-		derivedQueriesRepository.saveAll(Arrays.asList(realm, republic));
+		countryDerivedQueriesRepository.saveAll(Arrays.asList(realm, republic));
 		
-		Set<Country> foundCountries = derivedQueriesRepository.findByNameIn("Toto", "Tata");
+		Set<Country> foundCountries = countryDerivedQueriesRepository.findByNameIn("Toto", "Tata");
 		
 		Map<String, Country> countryPerName = Iterables.map(foundCountries, Country::getName);
 		Country loadedCountry1 = countryPerName.get("Toto");

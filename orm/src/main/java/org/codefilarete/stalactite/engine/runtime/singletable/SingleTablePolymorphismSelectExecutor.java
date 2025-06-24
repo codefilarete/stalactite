@@ -82,7 +82,7 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table<T>, DTY
 			from.where((Column<T, I>) Iterables.first(primaryKey.getColumns()), Operators.in(ids));
 		} else {
 			List<I> idsAsList = org.codefilarete.tool.collection.Collections.asList(ids);
-			Map<Column<T, ?>, Object> columnValues = mainPersister.getMapping().getIdMapping().<T>getIdentifierAssembler().getColumnValues(idsAsList);
+			Map<Column<T, ?>, Object> columnValues = mainPersister.getMapping().getIdMapping().<T>getIdentifierAssembler().getColumnValues(ids);
 			from.where(transformCompositeIdentifierColumnValuesToTupleInValues(idsAsList.size(), columnValues));
 		}
 		Query query = from.getQuery();

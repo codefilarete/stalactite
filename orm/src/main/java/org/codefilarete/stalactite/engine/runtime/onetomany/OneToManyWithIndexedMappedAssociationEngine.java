@@ -3,7 +3,6 @@ package org.codefilarete.stalactite.engine.runtime.onetomany;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -11,7 +10,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -34,7 +32,6 @@ import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.ThreadLocals;
 import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.IdentityMap;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.trace.MutableInt;
 
@@ -47,16 +44,8 @@ import static org.codefilarete.tool.Nullable.nullable;
 public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>, RIGHTTABLE extends Table<RIGHTTABLE>>
 		extends OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C, RIGHTTABLE> {
 	
-	/**
-	 * Context for indexed mapped List. Will keep bean index during select between "unrelated" methods/phases :
-	 * index column must be added to SQL select, read from ResultSet and order applied to sort final List, but this particular feature crosses over
-	 * layers (entities and SQL) which is not implemented. In such circumstances, ThreadLocal comes to the rescue.
-	 * Could be static, but would lack the TRGT typing, which leads to some generics errors, so left non-static (acceptable small overhead)
-	 */
-	private final ThreadLocal<IdentityMap<TRGTID, Integer>> currentSelectedIndexes = new ThreadLocal<>();
-	
 	public OneToManyWithIndexedMappedAssociationEngine(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
-													   IndexedMappedManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDefinition,
+													   IndexedMappedManyRelationDescriptor<SRC, TRGT, C, SRCID, TRGTID> manyRelationDefinition,
 													   ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 													   Set<Column<RIGHTTABLE, ?>> mappedReverseColumns,
 													   Function<SRCID, Map<Column<RIGHTTABLE, ?>, Object>> reverseColumnsValueProvider) {
@@ -64,8 +53,8 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	}
 	
 	@Override
-	public IndexedMappedManyRelationDescriptor<SRC, TRGT, C, SRCID> getManyRelationDescriptor() {
-		return (IndexedMappedManyRelationDescriptor<SRC, TRGT, C, SRCID>) manyRelationDescriptor;
+	public IndexedMappedManyRelationDescriptor<SRC, TRGT, C, SRCID, TRGTID> getManyRelationDescriptor() {
+		return (IndexedMappedManyRelationDescriptor<SRC, TRGT, C, SRCID, TRGTID>) manyRelationDescriptor;
 	}
 	
 	@Override
@@ -124,39 +113,15 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
 			@Override
 			public void beforeSelect(Iterable<SRCID> ids) {
-				currentSelectedIndexes.set(new IdentityMap<>());
 				InMemoryRelationHolder relationFixer = (InMemoryRelationHolder) manyRelationDescriptor.getRelationFixer();
 				relationFixer.init();
 			}
 			
 			@Override
 			public void afterSelect(Set<? extends SRC> result) {
-				try {
-					// reordering List element according to read indexes during the transforming phase (see below)
-					result.forEach(src -> {
-						// Note that if relationCollection is null it would mean that select execution returns nothing for it,
-						// but user usually expects that its collection is initialized (to avoid NPE in its domain code),
-						// that's why we add a "getOr(collectionFactory)" clause to our nullable
-						InMemoryRelationHolder relationFixer = (InMemoryRelationHolder) manyRelationDescriptor.getRelationFixer();
-						C relationCollection = (C) nullable(relationFixer.get(src)).getOr(manyRelationDescriptor.getCollectionFactory().get());
-						IdentityMap<TRGTID, Integer> indexPerTargetId = currentSelectedIndexes.get();
-						if (relationCollection instanceof List) {
-							((List<TRGT>) relationCollection).sort(Comparator.comparingInt(target -> indexPerTargetId.get(targetPersister.getId(target))));
-						} else if (relationCollection instanceof LinkedHashSet) {
-							TreeMap<Integer, TRGT> sorter = new TreeMap<>();
-							relationCollection.forEach(trgt -> {
-								sorter.put(indexPerTargetId.get(targetPersister.getId(trgt)), trgt);
-							});
-							relationCollection = manyRelationDescriptor.getCollectionFactory().get();
-							relationCollection.addAll(sorter.values());
-						} else {
-							throw new UnsupportedOperationException("Index computation is not supported for " + Reflections.toString(relationCollection.getClass()));
-						}
-						manyRelationDescriptor.getCollectionSetter().accept(src, relationCollection);
-					});
-				} finally {
-					cleanContext();
-				}
+				InMemoryRelationHolder relationFixer = (InMemoryRelationHolder) manyRelationDescriptor.getRelationFixer();
+				relationFixer.applySort(result);
+				cleanContext();
 			}
 			
 			@Override
@@ -165,14 +130,14 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			}
 			
 			private void cleanContext() {
-				currentSelectedIndexes.remove();
 				InMemoryRelationHolder relationFixer = (InMemoryRelationHolder) manyRelationDescriptor.getRelationFixer();
 				relationFixer.clear();
 			}
 		});
 		AbstractJoinNode<TRGT, Fromable, Fromable, TRGTID> join = (AbstractJoinNode<TRGT, Fromable, Fromable, TRGTID>) sourcePersister.getEntityJoinTree().getJoin(joinNodeName);
 		join.setConsumptionListener((trgt, columnValueProvider) -> {
-			IdentityMap<TRGTID, Integer> indexPerTargetId = currentSelectedIndexes.get();
+			InMemoryRelationHolder relationFixer = (InMemoryRelationHolder) manyRelationDescriptor.getRelationFixer();
+			Map<TRGTID, Integer> indexPerTargetId = relationFixer.getCurrentSelectedIndexes();
 			// indexPerTargetId may not be present because its mechanism was added on persisterListener which is the one of the source bean
 			// so in case of entity loading from its own persister (targetPersister) ThreadLocal is not available
 			if (indexPerTargetId != null) {

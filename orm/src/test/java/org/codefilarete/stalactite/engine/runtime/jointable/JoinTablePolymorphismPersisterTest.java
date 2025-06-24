@@ -25,8 +25,6 @@ import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.EmptySubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.ExecutableEntityQueryCriteria;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
-import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
 import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
@@ -39,13 +37,13 @@ import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
-import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.test.PairSetList;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
@@ -256,12 +254,6 @@ class JoinTablePolymorphismPersisterTest {
 		polymorphismPolicy.addSubClass(new EmptySubEntityMappingConfiguration<>(TotoA.class), totoATable);
 		polymorphismPolicy.addSubClass(new EmptySubEntityMappingConfiguration<>(TotoB.class), totoBTable);
 		
-		subclasses.values().forEach(subclassPersister -> {
-			subclassPersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
-					new EntityMergerAdapter<AbstractToto, T>(mainPersister.getMapping()),
-					subclassPersister.getMapping().getTargetTable().getPrimaryKey(),
-					mainPersister.getMainTable().getPrimaryKey());
-		});
 		
 		testInstance = new JoinTablePolymorphismPersister<>(
 				mainPersister,
@@ -332,24 +324,14 @@ class JoinTablePolymorphismPersisterTest {
 			when(preparedStatement.executeQuery()).thenReturn(
 					// first result if for id read
 					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(idAlias, 1).add(totoAIdAlias, 1).add(totoBIdAlias, null),
-							Maps.asMap(idAlias, 2).add(totoAIdAlias, 2).add(totoBIdAlias, null),
-							Maps.asMap(idAlias, 3).add(totoAIdAlias, null).add(totoBIdAlias, 3),
-							Maps.asMap(idAlias, 4).add(totoAIdAlias, null).add(totoBIdAlias, 4)
-					)),
-					// second result is for TotoA entities read
-					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(idAlias, 1).add(totoAIdAlias, 1).add(totoXAlias, 17).add(totoAAlias, 23),
-							Maps.asMap(idAlias, 2).add(totoAIdAlias, 2).add(totoXAlias, 29).add(totoAAlias, 31)
-					)),
-					// second result is for TotoB entities read
-					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(idAlias, 3).add(totoBIdAlias, 3).add(totoXAlias, 37).add(totoBAlias, 41),
-							Maps.asMap(idAlias, 4).add(totoBIdAlias, 4).add(totoXAlias, 43).add(totoBAlias, 53)
+							Maps.asMap(idAlias, 1).add(totoAIdAlias, 1).add(totoXAlias, 17).add(totoAAlias, 23).add(totoBIdAlias, null).add(totoBAlias, null),
+							Maps.asMap(idAlias, 2).add(totoAIdAlias, 2).add(totoXAlias, 29).add(totoAAlias, 31).add(totoBIdAlias, null).add(totoBAlias, null),
+							Maps.asMap(idAlias, 3).add(totoAIdAlias, null).add(totoXAlias, 37).add(totoAAlias, null).add(totoBIdAlias, 3).add(totoBAlias, 41),
+							Maps.asMap(idAlias, 4).add(totoAIdAlias, null).add(totoXAlias, 43).add(totoAAlias, null).add(totoBIdAlias, 4).add(totoBAlias, 53)
 					))
 			);
 			
-			effectiveBatchedRowCount.setRowCounts(Arrays.asList(new long[] { 2 }, new long[] { 2 }, new long[] { 3 }, new long[] { 1 }));
+			effectiveBatchedRowCount.setRowCounts(Arrays.asList(new long[] { 2 }, new long[] { 2 }, new long[] { 2 }, new long[] { 105 }));
 			// Note that since we didn't Fluent API to build our test instance, the default process that computes
 			// differences between memory and DB is not used, then we'll use UpdateExecutor that roughly update all
 			testInstance.update(Arrays.asList(
@@ -361,42 +343,33 @@ class JoinTablePolymorphismPersisterTest {
 			
 			// 3 queries because we select ids first in a separate query, then we select 4 entities which is made
 			// through 2 queries, to be spread over in(..) operator that has a maximum size of 3
-			verify(preparedStatement, times(3)).executeQuery();
-			verify(preparedStatement, times(16)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			verify(preparedStatement, times(1)).executeQuery();
+			verify(preparedStatement, times(12)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			verify(preparedStatement, times(4)).addBatch();
 			verify(preparedStatement, times(2)).executeLargeBatch();
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
 					"select "
-							+ "Toto.id as " + idAlias
-							+ ", TotoA.id as " + totoAIdAlias
-							+ ", TotoB.id as " + totoBIdAlias
-							+ " from Toto left outer join TotoA on Toto.id = TotoA.id"
-							+ " left outer join TotoB on Toto.id = TotoB.id"
-							+ " where Toto.id in (?, ?, ?, ?)",
-					"select TotoA.a as " + totoAAlias
-							+ ", TotoA.id as " + totoAIdAlias
-							+ ", Toto.x as " + totoXAlias
-							+ ", Toto.q as Toto_q"
-							+ ", Toto.id as " + idAlias
-							+ " from TotoA inner join Toto as Toto on TotoA.id = Toto.id"
-							+ " where TotoA.id in (?, ?)",
-					"select TotoB.b as " + totoBAlias
-							+ ", TotoB.id as " + totoBIdAlias
-							+ ", Toto.x as " + totoXAlias
-							+ ", Toto.q as Toto_q"
-							+ ", Toto.id as " + idAlias
-							+ " from TotoB inner join Toto as Toto on TotoB.id = Toto.id"
-							+ " where TotoB.id in (?, ?)",
+						+ "Toto.x as Toto_x"
+						+ ", Toto.q as Toto_q"
+						+ ", Toto.id as " + idAlias
+						+ ", TotoA.a as " + totoAAlias
+						+ ", TotoA.id as " + totoAIdAlias
+						+ ", TotoB.b as " + totoBAlias
+						+ ", TotoB.id as " + totoBIdAlias
+						+ " from"
+						+ " Toto"
+						+ " left outer join TotoA as TotoA on"
+						+ " Toto.id = TotoA.id"
+						+ " left outer join TotoB as TotoB on"
+						+ " Toto.id = TotoB.id"
+						+ " where"
+						+ " Toto.id in (?, ?, ?, ?)",
 					"update TotoA set a = ? where id = ?",
 					"update TotoB set b = ? where id = ?"
 			));
 			// captured setInt(..) is made of ids
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 					.newRow(1, 1).add(2, 2).add(3, 3).add(4, 4)
-					// this one if for the lonely last select
-					.newRow(1, 1).add(2, 2)
-					// this one if for the lonely last select
-					.newRow(1, 3).add(2, 4)
 					.newRow(1, 123).add(2, 1)
 					.newRow(1, 131).add(2, 2)
 					.newRow(1, 141).add(2, 3)
@@ -539,20 +512,10 @@ class JoinTablePolymorphismPersisterTest {
 			when(preparedStatement.executeQuery()).thenReturn(
 					// first result if for id read
 					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(idAlias, 1).add(totoAIdAlias, 1).add(totoBIdAlias, null),
-							Maps.asMap(idAlias, 2).add(totoAIdAlias, 2).add(totoBIdAlias, null),
-							Maps.asMap(idAlias, 3).add(totoAIdAlias, null).add(totoBIdAlias, 3),
-							Maps.asMap(idAlias, 4).add(totoAIdAlias, null).add(totoBIdAlias, 4)
-					)),
-					// second result is for TotoA entities read
-					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(idAlias, 1).add(totoAIdAlias, 1).add(totoXAlias, 17).add(totoAAlias, 23),
-							Maps.asMap(idAlias, 2).add(totoAIdAlias, 2).add(totoXAlias, 29).add(totoAAlias, 31)
-					)),
-					// second result is for TotoB entities read
-					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(idAlias, 3).add(totoBIdAlias, 3).add(totoXAlias, 37).add(totoBAlias, 41),
-							Maps.asMap(idAlias, 4).add(totoBIdAlias, 4).add(totoXAlias, 43).add(totoBAlias, 53)
+							Maps.asMap(idAlias, 1).add(totoAIdAlias, 1).add(totoXAlias, 17).add(totoAAlias, 23).add(totoBIdAlias, null).add(totoBAlias, null),
+							Maps.asMap(idAlias, 2).add(totoAIdAlias, 2).add(totoXAlias, 29).add(totoAAlias, 31).add(totoBIdAlias, null).add(totoBAlias, null),
+							Maps.asMap(idAlias, 3).add(totoAIdAlias, null).add(totoXAlias, 37).add(totoAAlias, null).add(totoBIdAlias, 3).add(totoBAlias, 41),
+							Maps.asMap(idAlias, 4).add(totoAIdAlias, null).add(totoXAlias, 43).add(totoAAlias, null).add(totoBIdAlias, 4).add(totoBAlias, 53)
 					))
 			);
 			
@@ -565,37 +528,29 @@ class JoinTablePolymorphismPersisterTest {
 			
 			// 3 queries because we select ids first in a separate query, then we select 4 entities which is made
 			// through 2 queries, to be spread over in(..) operator that has a maximum size of 3
-			verify(preparedStatement, times(3)).executeQuery();
-			verify(preparedStatement, times(8)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			verify(preparedStatement, times(1)).executeQuery();
+			verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
 					"select "
-							+ "Toto.id as " + idAlias
-							+ ", TotoA.id as " + totoAIdAlias
-							+ ", TotoB.id as " + totoBIdAlias
-							+ " from Toto left outer join TotoA on Toto.id = TotoA.id"
-							+ " left outer join TotoB on Toto.id = TotoB.id"
-							+ " where Toto.id in (?, ?, ?, ?)",
-					"select TotoA.a as " + totoAAlias
-							+ ", TotoA.id as " + totoAIdAlias
-							+ ", Toto.x as " + totoXAlias
+							+ "Toto.x as Toto_x"
 							+ ", Toto.q as Toto_q"
 							+ ", Toto.id as " + idAlias
-							+ " from TotoA inner join Toto as Toto on TotoA.id = Toto.id"
-							+ " where TotoA.id in (?, ?)",
-					"select TotoB.b as " + totoBAlias
+							+ ", TotoA.a as " + totoAAlias
+							+ ", TotoA.id as " + totoAIdAlias
+							+ ", TotoB.b as " + totoBAlias
 							+ ", TotoB.id as " + totoBIdAlias
-							+ ", Toto.x as " + totoXAlias
-							+ ", Toto.q as Toto_q"
-							+ ", Toto.id as " + idAlias
-							+ " from TotoB inner join Toto as Toto on TotoB.id = Toto.id"
-							+ " where TotoB.id in (?, ?)"));
+							+ " from"
+							+ " Toto"
+							+ " left outer join TotoA as TotoA on"
+							+ " Toto.id = TotoA.id"
+							+ " left outer join TotoB as TotoB on"
+							+ " Toto.id = TotoB.id"
+							+ " where"
+							+ " Toto.id in (?, ?, ?, ?)"
+					));
 			// captured setInt(..) is made of ids
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-					.newRow(1, 1).add(2, 2).add(3, 3).add(4, 4)
-					// this one if for the lonely last select
-					.newRow(1, 1).add(2, 2)
-					// this one if for the lonely last select
-					.newRow(1, 3).add(2, 4);
+					.newRow(1, 1).add(2, 2).add(3, 3).add(4, 4);
 			assertCapturedPairsEqual(expectedPairs);
 			
 			assertThat(select).usingRecursiveFieldByFieldElementComparator()
@@ -723,27 +678,23 @@ class JoinTablePolymorphismPersisterTest {
 			when(preparedStatement.executeQuery()).thenReturn(
 					// first result if for id read
 					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(idAlias, 1).add(totoAIdAlias, 1).add(totoBIdAlias, null).add(totoXAlias, 17),
-							Maps.asMap(idAlias, 2).add(totoAIdAlias, 2).add(totoBIdAlias, null).add(totoXAlias, 29),
-							Maps.asMap(idAlias, 3).add(totoAIdAlias, null).add(totoBIdAlias, 3).add(totoXAlias, 37),
-							Maps.asMap(idAlias, 4).add(totoAIdAlias, null).add(totoBIdAlias, 4).add(totoXAlias, 43)
+							Maps.asMap(idAlias, 1).add(totoAIdAlias, 1).add(totoXAlias, 17).add(totoAAlias, 23).add(totoBIdAlias, null).add(totoBAlias, null),
+							Maps.asMap(idAlias, 2).add(totoAIdAlias, 2).add(totoXAlias, 29).add(totoAAlias, 31).add(totoBIdAlias, null).add(totoBAlias, null),
+							Maps.asMap(idAlias, 3).add(totoAIdAlias, null).add(totoXAlias, 37).add(totoAAlias, null).add(totoBIdAlias, 3).add(totoBAlias, 41),
+							Maps.asMap(idAlias, 4).add(totoAIdAlias, null).add(totoXAlias, 43).add(totoAAlias, null).add(totoBIdAlias, 4).add(totoBAlias, 53)
 					)),
-					// second result is for TotoA entities read
 					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(idAlias, 1).add(totoAIdAlias, 1).add(totoXAlias, 17).add(totoAAlias, 23),
-							Maps.asMap(idAlias, 2).add(totoAIdAlias, 2).add(totoXAlias, 29).add(totoAAlias, 31)
-					)),
-					// second result is for TotoB entities read
-					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(idAlias, 3).add(totoBIdAlias, 3).add(totoXAlias, 37).add(totoBAlias, 41),
-							Maps.asMap(idAlias, 4).add(totoBIdAlias, 4).add(totoXAlias, 43).add(totoBAlias, 53)
+							Maps.asMap(idAlias, 1).add(totoAIdAlias, 1).add(totoXAlias, 17).add(totoAAlias, 23).add(totoBIdAlias, null).add(totoBAlias, null),
+							Maps.asMap(idAlias, 2).add(totoAIdAlias, 2).add(totoXAlias, 29).add(totoAAlias, 31).add(totoBIdAlias, null).add(totoBAlias, null),
+							Maps.asMap(idAlias, 3).add(totoAIdAlias, null).add(totoXAlias, 37).add(totoAAlias, null).add(totoBIdAlias, 3).add(totoBAlias, 41),
+							Maps.asMap(idAlias, 4).add(totoAIdAlias, null).add(totoXAlias, 43).add(totoAAlias, null).add(totoBIdAlias, 4).add(totoBAlias, 53)
 					))
 			);
 			
 			ExecutableEntityQueryCriteria<AbstractToto, ?> totoExecutableEntityQueryCriteria = testInstance.selectWhere(AbstractToto::getQ, Operators.eq(Arrays.asHashSet(42)));
 			Set<AbstractToto> select = totoExecutableEntityQueryCriteria.execute(Accumulators.toSet());
 			
-			verify(preparedStatement, times(3)).executeQuery();
+			verify(preparedStatement, times(2)).executeQuery();
 			verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
 					"select "
@@ -755,20 +706,17 @@ class JoinTablePolymorphismPersisterTest {
 							+ " from Toto left outer join TotoA on Toto.id = TotoA.id"
 							+ " left outer join TotoB on Toto.id = TotoB.id"
 							+ " where Toto.q = ?",
-					"select TotoA.a as " + totoAAlias
+					"select "
+							+ "Toto.x as " + totoXAlias
+							+ ", Toto.q as Toto_q"
+							+ ", Toto.id as " + idAlias
+							+ ", TotoA.a as " + totoAAlias
 							+ ", TotoA.id as " + totoAIdAlias
-							+ ", Toto.x as " + totoXAlias
-							+ ", Toto.q as Toto_q"
-							+ ", Toto.id as " + idAlias
-							+ " from TotoA inner join Toto as Toto on TotoA.id = Toto.id"
-							+ " where TotoA.id in (?, ?)",
-					"select TotoB.b as " + totoBAlias
+							+ ", TotoB.b as " + totoBAlias
 							+ ", TotoB.id as " + totoBIdAlias
-							+ ", Toto.x as " + totoXAlias
-							+ ", Toto.q as Toto_q"
-							+ ", Toto.id as " + idAlias
-							+ " from TotoB inner join Toto as Toto on TotoB.id = Toto.id"
-							+ " where TotoB.id in (?, ?)"));
+							+ " from Toto left outer join TotoA as TotoA on Toto.id = TotoA.id"
+							+ " left outer join TotoB as TotoB on Toto.id = TotoB.id"
+							+ " where Toto.id in (?, ?, ?, ?)"));
 			// Here we don't test the "42" row of the first query because it requires to listen to PreparedStatement.setArray(..) whereas all this
 			// test class is bound to PreparedStatement.setInt(..) and Integer type.
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 1);

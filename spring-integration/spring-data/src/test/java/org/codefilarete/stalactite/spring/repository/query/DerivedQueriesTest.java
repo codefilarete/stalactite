@@ -13,7 +13,10 @@ import org.codefilarete.stalactite.engine.model.State;
 import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.id.Identifier;
+import org.codefilarete.stalactite.spring.repository.config.EnableStalactiteRepositories;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan.Filter;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
@@ -26,7 +29,13 @@ import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 		StalactiteRepositoryContextConfigurationBase.class,
 		DerivedQueriesTest.StalactiteRepositoryContextConfiguration.class
 })
-class DerivedQueriesTest extends AbstractDerivedQueriesWithPolymorphismTest {
+@EnableStalactiteRepositories(basePackages = "org.codefilarete.stalactite.spring.repository.query",
+		// because we have another repository in the same package, we filter them to keep only the appropriate one (it also checks that filtering works !)
+		includeFilters = @Filter(
+				type = FilterType.ASSIGNABLE_TYPE,
+				classes = DerivedQueriesRepository.class)
+)
+class DerivedQueriesTest extends AbstractDerivedQueriesTest {
 	
 	public static class StalactiteRepositoryContextConfiguration {
 		

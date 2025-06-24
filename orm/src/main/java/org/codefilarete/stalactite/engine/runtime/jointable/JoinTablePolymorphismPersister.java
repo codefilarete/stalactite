@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.DeleteExecutor;
 import org.codefilarete.stalactite.engine.EntityPersister;
@@ -19,6 +20,7 @@ import org.codefilarete.stalactite.engine.UpdateExecutor;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.EntityMappingWrapper;
+import org.codefilarete.stalactite.engine.runtime.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.FirstPhaseRelationLoader;
 import org.codefilarete.stalactite.engine.runtime.PersisterWrapper;
 import org.codefilarete.stalactite.engine.runtime.PolymorphicPersister;
@@ -33,16 +35,21 @@ import org.codefilarete.stalactite.engine.runtime.load.JoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.JoinTablePolymorphicRelationJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.PolymorphicMergeJoinRowConsumer;
+import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
+import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
+import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.Duo;
@@ -71,8 +78,6 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 	@SuppressWarnings("java:S5164" /* remove() is called by SecondPhaseRelationLoader.afterSelect() */)
 	private static final ThreadLocal<Queue<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>>> CURRENT_2PHASES_LOAD_CONTEXT = new ThreadLocal<>();
 	
-	/** The wrapper around sub entities loaders, for 2-phases load */
-	private final JoinTablePolymorphismSelectExecutor<C, I, ?> selectExecutor;
 	private final Map<Class<? extends C>, IdMapping<C, I>> subclassIdMappingStrategies;
 	private final Map<Class<? extends C>, Table> tablePerSubEntityType;
 	private final PrimaryKey<?, I> mainTablePrimaryKey;
@@ -98,20 +103,9 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 				Entry::getValue, KeepOrderMap::new);
 		this.subclassIdMappingStrategies = Iterables.map(subPersisterPerSubEntityType, Entry::getKey, e -> (IdMapping<C, I>) e.getValue().getMapping().getIdMapping());
 		
-		// sub entities persisters will be used to select sub entities but at this point they lack subgraph loading, so we add it (from their parent)
-		subEntitiesPersisters.forEach((type, persister) ->
-				// NB: we can't use copyRootJoinsTo(..) because persister is composed of one join to parent table (the one of mainPersister),
-				// since there's no manner to find it cleanly we have to use get(0), dirty thing ...
-				mainPersister.getEntityJoinTree().projectTo(persister.getEntityJoinTree().getRoot().getJoins().get(0))
-		);
-		
 		this.tablePerSubEntityType = Iterables.map(this.subEntitiesPersisters.entrySet(),
 				Entry::getKey,
 				entry -> entry.getValue().getMapping().getTargetTable(), KeepOrderMap::new);
-		this.selectExecutor = new JoinTablePolymorphismSelectExecutor<>(
-				mainPersister,
-				tablePerSubEntityType, subclassSelectExecutors, connectionProvider,
-				dialect);
 	}
 	
 	@Override
@@ -185,7 +179,19 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 	public Set<C> doSelect(Iterable<I> ids) {
 		// Note that executor emits select listener events
 		LOGGER.debug("selecting entities {}", ids);
-		return selectExecutor.select(ids);
+		IdMapping<C, I> idMapping = mainPersister.getMapping().getIdMapping();
+		AccessorWrapperIdAccessor<C, I> idAccessor = (AccessorWrapperIdAccessor<C, I>) idMapping.getIdAccessor();
+		if (idMapping.getIdentifierAssembler() instanceof ComposedIdentifierAssembler) {
+			// && dialect.supportTupleIn
+			// TODO see all transformCompositeIdentifierColumnValuesToTupleInValues() methods in PolymorphismPersisters, follow TupleIn
+			Map columnValues = ((ComposedIdentifierAssembler) idMapping.getIdentifierAssembler()).getColumnValues(ids);
+			TupleIn tupleIn = TupleIn.transformBeanColumnValuesToTupleInValues((int) Iterables.size(ids), columnValues);
+			EntityQueryCriteriaSupport<C, I> newCriteriaSupport = newCriteriaSupport();
+			newCriteriaSupport.getEntityCriteriaSupport().getCriteria().and(tupleIn);
+			return newCriteriaSupport.wrapIntoExecutable().execute(Accumulators.toSet());
+		} else {
+			return selectWhere().and(new AccessorChain<>(idAccessor.getIdAccessor()), Operators.in(ids)).execute(Accumulators.toSet());
+		}
 	}
 	
 	@Override
@@ -260,7 +266,8 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 			this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
 				PrimaryKey<?, I> subclassPrimaryKey = this.tablePerSubEntityType.get(c).getPrimaryKey();
 				sourcePersister.getEntityJoinTree().addMergeJoin(mainTableJoinName,
-						new FirstPhaseRelationLoader<>(idMappingStrategy, selectExecutor,
+						// Note that "this" uses EntityFinder with identifier as criteria to select entities
+						new FirstPhaseRelationLoader<>(idMappingStrategy, this,
 								(ThreadLocal<Queue<Set<RelationIds<Object, C, I>>>>) (ThreadLocal) CURRENT_2PHASES_LOAD_CONTEXT),
 						primaryKey,
 						subclassPrimaryKey,
@@ -306,7 +313,8 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 			this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
 				PrimaryKey<T2, I> subclassPrimaryKey = this.tablePerSubEntityType.get(c).getPrimaryKey();
 				sourcePersister.getEntityJoinTree().addMergeJoin(createdJoinName,
-						new FirstPhaseRelationLoader<C, I>(idMappingStrategy, selectExecutor,
+						// Note that "this" uses EntityFinder with identifier as criteria to select entities
+						new FirstPhaseRelationLoader<C, I>(idMappingStrategy, this,
 								(ThreadLocal<Queue<Set<RelationIds<Object,C,I>>>>) (ThreadLocal) CURRENT_2PHASES_LOAD_CONTEXT),
 						mainTablePrimaryKey,
 						subclassPrimaryKey,
