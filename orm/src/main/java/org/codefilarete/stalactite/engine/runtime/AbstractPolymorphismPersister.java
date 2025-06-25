@@ -53,6 +53,10 @@ public abstract class AbstractPolymorphismPersister<C, I>
 		}
 	}
 	
+	public Map<Class<C>, ConfiguredRelationalPersister<C, I>> getSubEntitiesPersisters() {
+		return subEntitiesPersisters;
+	}
+	
 	@Override
 	public Set<C> doSelect(Iterable<I> ids) {
 		LOGGER.debug("selecting entities {}", ids);

@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine.configurer.polymorphism;
 
+import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -19,5 +20,5 @@ interface PolymorphismBuilder<C, I, T extends Table> {
 	 * @param connectionConfiguration the connection configuration
 	 * @return a persister
 	 */
-	ConfiguredRelationalPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration);
+	AbstractPolymorphismPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration);
 }

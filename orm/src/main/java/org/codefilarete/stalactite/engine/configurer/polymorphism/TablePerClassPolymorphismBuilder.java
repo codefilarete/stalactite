@@ -21,6 +21,7 @@ import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
+import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.tableperclass.TablePerClassPolymorphismPersister;
@@ -86,7 +87,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 	}
 	
 	@Override
-	public ConfiguredRelationalPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+	public AbstractPolymorphismPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
 		if (this.identification instanceof AbstractIdentification.SingleColumnIdentification && ((SingleColumnIdentification<C, I>) this.identification).getIdentifierPolicy() instanceof ColumnOptions.GeneratedKeysPolicy) {
 			throw new UnsupportedOperationException("Table-per-class polymorphism is not compatible with auto-incremented primary key");
 		}
@@ -108,42 +109,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 		((ClassMapping<C, I, T>) mainPersister.getMapping()).getShadowColumnsForUpdate().forEach(columnProvider -> {
 			result.getMapping().addShadowColumnUpdate(columnProvider);
 		});
-		
-		// We propage listeners to sub-persisters to make them trigger their own select listeners, in particular the relation ones and their already-assigned persisted flag
-		// This is necessary because the main persister is not aware of sub-relations.
-		result.addSelectListener(new SelectListener<C, I>() {
-			@Override
-			public void beforeSelect(Iterable<I> ids) {
-				persisterPerSubclass.values().forEach(subPersister -> subPersister.getPersisterListener().getSelectListener().beforeSelect(ids));
-			}
-			
-			@Override
-			public void afterSelect(Set<? extends C> result) {
-				Map<Class<C>, Set<C>> entitiesPerType = computeEntitiesPerType(result);
-				persisterPerSubclass.forEach((type, subPersister) -> {
-					Set<C> subEntities = entitiesPerType.get(type);
-					if (subEntities != null) {
-						subPersister.getPersisterListener().getSelectListener().afterSelect(subEntities);
-					}
-				});
-			}
-			
-			@Override
-			public void onSelectError(Iterable<I> ids, RuntimeException exception) {
-				// since ids are not those of its entities, we should not pass them as argument
-				persisterPerSubclass.values().forEach(subPersister -> subPersister.getPersisterListener().getSelectListener().onSelectError(ids, exception));
-			}
-		});
-		
 		return result;
-	}
-	
-	private Map<Class<C>, Set<C>> computeEntitiesPerType(Iterable<? extends C> entities) {
-		Map<Class<C>, Set<C>> entitiesPerType = new HashMap<>();
-		entities.forEach(entity ->
-				entitiesPerType.computeIfAbsent((Class<C>) entity.getClass(), p -> new KeepOrderSet<>()).add(entity)
-		);
-		return entitiesPerType;
 	}
 		
 	private <D extends C> Map<Class<D>, ConfiguredRelationalPersister<D, I>> collectSubClassPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
