@@ -4,12 +4,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
+import org.codefilarete.stalactite.mapping.IdMapping;
+import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.query.EntityFinder;
+import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Select;
+import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.result.Accumulators;
+import org.codefilarete.tool.collection.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +50,24 @@ public abstract class AbstractPolymorphismPersister<C, I>
 			this.persistExecutor = new AlreadyAssignedIdentifierPersistExecutor<>(this);
 		} else {
 			this.persistExecutor = new DefaultPersistExecutor<>(this);
+		}
+	}
+	
+	@Override
+	public Set<C> doSelect(Iterable<I> ids) {
+		LOGGER.debug("selecting entities {}", ids);
+		// Note that executor emits select listener events
+		IdMapping<C, I> idMapping = mainPersister.getMapping().getIdMapping();
+		AccessorWrapperIdAccessor<C, I> idAccessor = (AccessorWrapperIdAccessor<C, I>) idMapping.getIdAccessor();
+		if (idMapping.getIdentifierAssembler() instanceof ComposedIdentifierAssembler) {
+			// && dialect.supportTupleIn
+			Map columnValues = ((ComposedIdentifierAssembler) idMapping.getIdentifierAssembler()).getColumnValues(ids);
+			TupleIn tupleIn = TupleIn.transformBeanColumnValuesToTupleInValues((int) Iterables.size(ids), columnValues);
+			EntityQueryCriteriaSupport<C, I> newCriteriaSupport = newCriteriaSupport();
+			newCriteriaSupport.getEntityCriteriaSupport().getCriteria().and(tupleIn);
+			return newCriteriaSupport.wrapIntoExecutable().execute(Accumulators.toSet());
+		} else {
+			return selectWhere().and(new AccessorChain<>(idAccessor.getIdAccessor()), Operators.in(ids)).execute(Accumulators.toSet());
 		}
 	}
 	

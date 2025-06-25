@@ -176,25 +176,6 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 	}
 	
 	@Override
-	public Set<C> doSelect(Iterable<I> ids) {
-		// Note that executor emits select listener events
-		LOGGER.debug("selecting entities {}", ids);
-		IdMapping<C, I> idMapping = mainPersister.getMapping().getIdMapping();
-		AccessorWrapperIdAccessor<C, I> idAccessor = (AccessorWrapperIdAccessor<C, I>) idMapping.getIdAccessor();
-		if (idMapping.getIdentifierAssembler() instanceof ComposedIdentifierAssembler) {
-			// && dialect.supportTupleIn
-			// TODO see all transformCompositeIdentifierColumnValuesToTupleInValues() methods in PolymorphismPersisters, follow TupleIn
-			Map columnValues = ((ComposedIdentifierAssembler) idMapping.getIdentifierAssembler()).getColumnValues(ids);
-			TupleIn tupleIn = TupleIn.transformBeanColumnValuesToTupleInValues((int) Iterables.size(ids), columnValues);
-			EntityQueryCriteriaSupport<C, I> newCriteriaSupport = newCriteriaSupport();
-			newCriteriaSupport.getEntityCriteriaSupport().getCriteria().and(tupleIn);
-			return newCriteriaSupport.wrapIntoExecutable().execute(Accumulators.toSet());
-		} else {
-			return selectWhere().and(new AccessorChain<>(idAccessor.getIdAccessor()), Operators.in(ids)).execute(Accumulators.toSet());
-		}
-	}
-	
-	@Override
 	public void doDelete(Iterable<? extends C> entities) {
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		entitiesPerType.forEach(DeleteExecutor::delete);
