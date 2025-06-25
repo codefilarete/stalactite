@@ -312,20 +312,10 @@ class SingleTablePolymorphismPersisterTest {
 			when(preparedStatement.executeQuery()).thenReturn(
 					// first result if for id read
 					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(totoIdAlias, 1).add(totoDTYPEAlias, 100),
-							Maps.asMap(totoIdAlias, 2).add(totoDTYPEAlias, 100),
-							Maps.asMap(totoIdAlias, 3).add(totoDTYPEAlias, 200),
-							Maps.asMap(totoIdAlias, 4).add(totoDTYPEAlias, 200)
-					)),
-					// second result is for TotoA entities read
-					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(totoIdAlias, 1).add(totoXAlias, 17).add(totoAAlias, 23).add(totoBAlias, null).add(totoDTYPEAlias, 100),
-							Maps.asMap(totoIdAlias, 2).add(totoXAlias, 29).add(totoAAlias, 31).add(totoBAlias, null).add(totoDTYPEAlias, 100)
-					)),
-					// second result is for TotoB entities read
-					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(totoIdAlias, 3).add(totoXAlias, 37).add(totoAAlias, null).add(totoBAlias, 41).add(totoDTYPEAlias, 200),
-							Maps.asMap(totoIdAlias, 4).add(totoXAlias, 43).add(totoAAlias, null).add(totoBAlias, 53).add(totoDTYPEAlias, 200)
+							Maps.asMap(totoIdAlias, 1).add(totoDTYPEAlias, 100).add(totoXAlias, 17).add(totoAAlias, 23).add(totoBAlias, null),
+							Maps.asMap(totoIdAlias, 2).add(totoDTYPEAlias, 100).add(totoXAlias, 29).add(totoAAlias, 31).add(totoBAlias, null),
+							Maps.asMap(totoIdAlias, 3).add(totoDTYPEAlias, 200).add(totoXAlias, 37).add(totoAAlias, null).add(totoBAlias, 41),
+							Maps.asMap(totoIdAlias, 4).add(totoDTYPEAlias, 200).add(totoXAlias, 43).add(totoAAlias, null).add(totoBAlias, 53)
 					))
 			);
 			
@@ -341,33 +331,23 @@ class SingleTablePolymorphismPersisterTest {
 			
 			// 3 queries because we select ids first in a separate query, then we select 4 entities which is made
 			// through 2 queries, to be spread over in(..) operator that has a maximum size of 3
-			verify(preparedStatement, times(3)).executeQuery();
-			verify(preparedStatement, times(20)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			verify(preparedStatement, times(1)).executeQuery();
+			verify(preparedStatement, times(16)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			verify(preparedStatement, times(4)).addBatch();
 			verify(preparedStatement, times(2)).executeLargeBatch();
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
 					"select Toto.id as " + totoIdAlias
+							+ ", Toto.x as " + totoXAlias
+							+ ", Toto.q as Toto_q"
+							+ ", Toto.a as Toto_a"
+							+ ", Toto.b as Toto_b"
 							+ ", Toto.DTYPE as " + totoDTYPEAlias
 							+ " from Toto where Toto.id in (?, ?, ?, ?)",
-					"select Toto.a as " + totoAAlias
-							+ ", Toto.id as " + totoIdAlias
-							+ ", Toto.x as " + totoXAlias
-							+ ", Toto.q as Toto_q"
-							+ " from Toto where Toto.id in (?, ?)",
-					"select Toto.b as " + totoBAlias
-							+ ", Toto.id as " + totoIdAlias
-							+ ", Toto.x as " + totoXAlias
-							+ ", Toto.q as Toto_q"
-							+ " from Toto where Toto.id in (?, ?)",
 					"update Toto set a = ?, x = ?, q = ? where id = ?",
 					"update Toto set b = ?, x = ?, q = ? where id = ?"));
 			// captured setInt(..) is made of ids
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 					.newRow(1, 1).add(2, 2).add(3, 3).add(4, 4)
-					// this one if for the lonely last select
-					.newRow(1, 1).add(2, 2)
-						// this one if for the lonely last select
-					.newRow(1, 3).add(2, 4)
 					.newRow(1, 123).add(2, 17).add(4, 1)
 					.newRow(1, 131).add(2, 29).add(4, 2)
 					.newRow(1, 141).add(2, 37).add(4, 3)
@@ -483,20 +463,10 @@ class SingleTablePolymorphismPersisterTest {
 			when(preparedStatement.executeQuery()).thenReturn(
 					// first result if for id read
 					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(totoIdAlias, 1).add(totoDTYPEAlias, 100),
-							Maps.asMap(totoIdAlias, 2).add(totoDTYPEAlias, 100),
-							Maps.asMap(totoIdAlias, 3).add(totoDTYPEAlias, 200),
-							Maps.asMap(totoIdAlias, 4).add(totoDTYPEAlias, 200)
-					)),
-					// second result is for TotoA entities read
-					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(totoIdAlias, 1).add(totoXAlias, 17).add(totoAAlias, 23).add(totoDTYPEAlias, 100),
-							Maps.asMap(totoIdAlias, 2).add(totoXAlias, 29).add(totoAAlias, 31).add(totoDTYPEAlias, 100)
-					)),
-					// third result is for TotoB entities read
-					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(totoIdAlias, 3).add(totoXAlias, 37).add(totoBAlias, 41).add(totoDTYPEAlias, 200),
-							Maps.asMap(totoIdAlias, 4).add(totoXAlias, 43).add(totoBAlias, 53).add(totoDTYPEAlias, 200)
+							Maps.asMap(totoIdAlias, 1).add(totoDTYPEAlias, 100).add(totoXAlias, 17).add(totoAAlias, 23).add(totoBAlias, null),
+							Maps.asMap(totoIdAlias, 2).add(totoDTYPEAlias, 100).add(totoXAlias, 29).add(totoAAlias, 31).add(totoBAlias, null),
+							Maps.asMap(totoIdAlias, 3).add(totoDTYPEAlias, 200).add(totoXAlias, 37).add(totoAAlias, null).add(totoBAlias, 41),
+							Maps.asMap(totoIdAlias, 4).add(totoDTYPEAlias, 200).add(totoXAlias, 43).add(totoAAlias, null).add(totoBAlias, 53)
 					))
 			);
 			
@@ -509,28 +479,18 @@ class SingleTablePolymorphismPersisterTest {
 			
 			// 3 queries because we select ids first in a separate query, then we select 4 entities which is made
 			// through 2 queries, to be spread over in(..) operator that has a maximum size of 3
-			verify(preparedStatement, times(3)).executeQuery();
-			verify(preparedStatement, times(8)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			verify(preparedStatement, times(1)).executeQuery();
+			verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
 					"select Toto.id as " + totoIdAlias
+							+ ", Toto.x as " + totoXAlias
+							+ ", Toto.q as Toto_q"
+							+ ", Toto.a as Toto_a"
+							+ ", Toto.b as Toto_b"
 							+ ", Toto.DTYPE as " + totoDTYPEAlias
-							+ " from Toto where Toto.id in (?, ?, ?, ?)",
-					"select Toto.a as " + totoAAlias
-							+ ", Toto.id as " + totoIdAlias
-							+ ", Toto.x as " + totoXAlias
-							+ ", Toto.q as Toto_q"
-							+ " from Toto where Toto.id in (?, ?)",
-					"select Toto.b as " + totoBAlias
-							+ ", Toto.id as " + totoIdAlias
-							+ ", Toto.x as " + totoXAlias
-							+ ", Toto.q as Toto_q"
-							+ " from Toto where Toto.id in (?, ?)"));
+							+ " from Toto where Toto.id in (?, ?, ?, ?)"));
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-					.newRow(1, 1).add(2, 2).add(3, 3).add(4, 4)
-					// this one if for the selection of A instances
-					.newRow(1, 1).add(2, 2)
-					// this one if for the selection of B instances
-					.newRow(1, 3).add(2, 4);
+					.newRow(1, 1).add(2, 2).add(3, 3).add(4, 4);
 			assertCapturedPairsEqual(expectedPairs);
 			
 			assertThat(select).usingRecursiveFieldByFieldElementComparator()
@@ -656,37 +616,30 @@ class SingleTablePolymorphismPersisterTest {
 							Maps.asMap(totoIdAlias, 3).add(DISCRIMINATOR_ALIAS, 200),
 							Maps.asMap(totoIdAlias, 4).add(DISCRIMINATOR_ALIAS, 200)
 					)),
-					// second result is for TotoA entities read
 					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(totoIdAlias, 1).add(totoXAlias, 17).add(totoAAlias, 23).add(totoBAlias, null).add(totoDTYPEAlias, 100),
-							Maps.asMap(totoIdAlias, 2).add(totoXAlias, 29).add(totoAAlias, 31).add(totoBAlias, null).add(totoDTYPEAlias, 100)
-					)),
-					// third result is for TotoB entities read
-					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(totoIdAlias, 3).add(totoXAlias, 37).add(totoAAlias, null).add(totoBAlias, 41).add(totoDTYPEAlias, 200),
-							Maps.asMap(totoIdAlias, 4).add(totoXAlias, 43).add(totoAAlias, null).add(totoBAlias, 53).add(totoDTYPEAlias, 200)
+							Maps.asMap(totoIdAlias, 1).add(totoDTYPEAlias, 100).add(totoXAlias, 17).add(totoAAlias, 23).add(totoBAlias, null),
+							Maps.asMap(totoIdAlias, 2).add(totoDTYPEAlias, 100).add(totoXAlias, 29).add(totoAAlias, 31).add(totoBAlias, null),
+							Maps.asMap(totoIdAlias, 3).add(totoDTYPEAlias, 200).add(totoXAlias, 37).add(totoAAlias, null).add(totoBAlias, 41),
+							Maps.asMap(totoIdAlias, 4).add(totoDTYPEAlias, 200).add(totoXAlias, 43).add(totoAAlias, null).add(totoBAlias, 53)
 					))
 			);
 			
 			ExecutableEntityQueryCriteria<AbstractToto, ?> totoExecutableEntityQueryCriteria = testInstance.selectWhere(AbstractToto::getQ, Operators.eq(Arrays.asHashSet(42)));
 			Set<AbstractToto> select = totoExecutableEntityQueryCriteria.execute(Accumulators.toSet());
 			
-			verify(preparedStatement, times(3)).executeQuery();
+			verify(preparedStatement, times(2)).executeQuery();
 			verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
 					"select Toto.id as " + totoIdAlias
 							+ ", Toto.DTYPE as " + DISCRIMINATOR_ALIAS
 							+ " from Toto where Toto.q = ?",
-					"select Toto.a as " + totoAAlias
-							+ ", Toto.id as " + totoIdAlias
+					"select Toto.id as " + totoIdAlias
 							+ ", Toto.x as " + totoXAlias
 							+ ", Toto.q as Toto_q"
-							+ " from Toto where Toto.id in (?, ?)",
-					"select Toto.b as " + totoBAlias
-							+ ", Toto.id as " + totoIdAlias
-							+ ", Toto.x as " + totoXAlias
-							+ ", Toto.q as Toto_q"
-							+ " from Toto where Toto.id in (?, ?)"));
+							+ ", Toto.a as Toto_a"
+							+ ", Toto.b as Toto_b"
+							+ ", Toto.DTYPE as " + totoDTYPEAlias
+							+ " from Toto where Toto.id in (?, ?, ?, ?)"));
 			// Here we don't test the "42" row of the first query because it requires to listen to PreparedStatement.setArray(..) whereas all this
 			// test class is bound to PreparedStatement.setInt(..) and Integer type.
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 1);

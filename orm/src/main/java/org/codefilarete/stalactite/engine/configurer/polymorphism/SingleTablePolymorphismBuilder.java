@@ -15,6 +15,7 @@ import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMapping;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
+import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.singletable.SingleTablePolymorphismPersister;
@@ -25,6 +26,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.tool.function.Converter;
 
@@ -70,7 +72,41 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 			mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(), dialect,
 			discriminatorColumn, (SingleTablePolymorphism<C, DTYPE>) polymorphismPolicy);
 		
+		// We propage listeners to sub-persisters to make them trigger their own select listeners, in particular the relation ones and their already-assigned persisted flag
+		// This is necessary because the main persister is not aware of sub-relations.
+		result.addSelectListener(new SelectListener<C, I>() {
+			@Override
+			public void beforeSelect(Iterable<I> ids) {
+				persisterPerSubclass.values().forEach(subPersister -> subPersister.getPersisterListener().getSelectListener().beforeSelect(ids));
+			}
+			
+			@Override
+			public void afterSelect(Set<? extends C> result) {
+				Map<Class<C>, Set<C>> entitiesPerType = computeEntitiesPerType(result);
+				persisterPerSubclass.forEach((type, subPersister) -> {
+					Set<C> subEntities = entitiesPerType.get(type);
+					if (subEntities != null) {
+						subPersister.getPersisterListener().getSelectListener().afterSelect(subEntities);
+					}
+				});
+			}
+			
+			@Override
+			public void onSelectError(Iterable<I> ids, RuntimeException exception) {
+				// since ids are not those of its entities, we should not pass them as argument
+				persisterPerSubclass.values().forEach(subPersister -> subPersister.getPersisterListener().getSelectListener().onSelectError(ids, exception));
+			}
+		});
+		
 		return result;
+	}
+	
+	private Map<Class<C>, Set<C>> computeEntitiesPerType(Iterable<? extends C> entities) {
+		Map<Class<C>, Set<C>> entitiesPerType = new HashMap<>();
+		entities.forEach(entity ->
+				entitiesPerType.computeIfAbsent((Class<C>) entity.getClass(), p -> new KeepOrderSet<>()).add(entity)
+		);
+		return entitiesPerType;
 	}
 	
 	private <D extends C> Map<Class<D>, ConfiguredRelationalPersister<D, I>> collectSubClassPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
