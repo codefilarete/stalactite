@@ -156,26 +156,30 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 		// adding foreign key constraint
 		// NB: we ask it to targetPersister because it may be polymorphic or complex (ie contains several tables) so it knows better how to do it
 		foreignKey = foreignKeyBuilder.build();
-		if (!(relation.isTargetTablePerClassPolymorphic())) {
-			(mainTargetTable).addForeignKey(associationConfiguration.getForeignKeyNamingStrategy()::giveName,
-					foreignKey, associationConfiguration.getLeftPrimaryKey());
-		} else {
+		if (relation.isTargetTablePerClassPolymorphic()) {
 			// table-per-class case : we add a foreign key between each table of subentity and source primary key
 			targetPersister.giveImpliedTables().forEach(table -> {
-				extracted((Table) table);
+				propagateForeignKeyToSubTable((Table) table);
 			});
+		} else {
+			if (!(relation.isSourceTablePerClassPolymorphic())) {
+				mainTargetTable.addForeignKey(associationConfiguration.getForeignKeyNamingStrategy()::giveName,
+						foreignKey, associationConfiguration.getLeftPrimaryKey());
+			}   // else source is table-per-class: FK should be from right side (owner) to the several left sides, which is not possible
+				// because database vendors don't allow adding several FK on same source columns to different targets
 		}
+		
 	}
 	
-	private <IMPLIEDTABLE extends Table<IMPLIEDTABLE>> void extracted(IMPLIEDTABLE table) {
-		KeyBuilder<IMPLIEDTABLE, SRCID> projectedKeyBuilder = Key.from(table);
+	private <SUBTABLE extends Table<SUBTABLE>> void propagateForeignKeyToSubTable(SUBTABLE subTable) {
+		KeyBuilder<SUBTABLE, SRCID> projectedKeyBuilder = Key.from(subTable);
 		((Set<Column<RIGHTTABLE, ?>>) foreignKey.getColumns()).forEach(column -> {
-			projectedKeyBuilder.addColumn(table.addColumn(column.getName(), column.getJavaType(), column.getSize()));
+			projectedKeyBuilder.addColumn(subTable.addColumn(column.getName(), column.getJavaType(), column.getSize()));
 		});
 		// necessary cast due to projectedKey unknown exact Table type
-		Key<IMPLIEDTABLE, SRCID> projectedKey = projectedKeyBuilder.build();
+		Key<SUBTABLE, SRCID> projectedKey = projectedKeyBuilder.build();
 		ForeignKeyNamingStrategy foreignKeyNamingStrategy = associationConfiguration.getForeignKeyNamingStrategy();
-		table.addForeignKey(foreignKeyNamingStrategy::giveName, projectedKey, associationConfiguration.getLeftPrimaryKey());
+		subTable.addForeignKey(foreignKeyNamingStrategy::giveName, projectedKey, associationConfiguration.getLeftPrimaryKey());
 	}
 	
 	void assignAssociationEngine(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {

@@ -93,7 +93,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		
 		// we don't create foreign key for table-per-class because source columns should reference different tables (the one
-		// per entity) which is not allowed by databases
+		// per entity) which databases do not allow
 		boolean createOneSideForeignKey = !(associationConfiguration.getOneToManyRelation().isSourceTablePerClassPolymorphic());
 		boolean createManySideForeignKey = !associationConfiguration.getOneToManyRelation().isTargetTablePerClassPolymorphic();
 		ASSOCIATIONTABLE intermediaryTable = (ASSOCIATIONTABLE) new AssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>(
@@ -139,7 +139,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 										   ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		
 		// we don't create foreign key for table-per-class because source columns should reference different tables (the one
-		// per entity) which is not allowed by databases
+		// per entity) which databases do not allow
 		boolean createOneSideForeignKey = !(associationConfiguration.getOneToManyRelation().isSourceTablePerClassPolymorphic());
 		boolean createManySideForeignKey = !associationConfiguration.getOneToManyRelation().isTargetTablePerClassPolymorphic();
 		// NB: index column is part of the primary key

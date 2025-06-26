@@ -229,19 +229,18 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 												.map(Republic::getDeputeCount)))
 								.build(persistenceContext2)
 				},
-				// Not implementable : one-to-many with mappedby targeting a table-per-class polymorphism is not implemented due to fk constraint, how to ? forget foreign key ?
-//				{	"table per class",
-//						entityBuilder(Country.class, Identifier.LONG_TYPE)
-//								.map(Country::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-//								.map(Country::getName)
-//								.map(Country::getDescription)
-//								.mapOneToOne(Country::getPresident, personMappingBuilder)
-//								.mapOneToManySet(Country::getCities, cityMappingBuilder).mappedBy(City::setCountry).cascading(RelationMode.READ_ONLY)
-//								.mapPolymorphism(PolymorphismPolicy.<Republic>tablePerClass()
-//										.addSubClass(subentityBuilder(Republic.class)
-//												.map(Republic::getDeputeCount)))
-//								.build(persistenceContext3)
-//				 },
+				{	"table per class",
+						entityBuilder(Country.class, Identifier.LONG_TYPE)
+								.mapKey(Country::getId, ALREADY_ASSIGNED)
+								.map(Country::getName)
+								.map(Country::getDescription)
+								.mapOneToOne(Country::getPresident, personMappingBuilder)
+								.mapOneToMany(Country::getCities, cityMappingBuilder).mappedBy(City::setCountry)
+								.mapPolymorphism(PolymorphismPolicy.<Country>tablePerClass()
+										.addSubClass(subentityBuilder(Republic.class)
+												.map(Republic::getDeputeCount)))
+								.build(persistenceContext3)
+				 },
 		};
 		new DDLDeployer(persistenceContext1).deployDDL();
 		new DDLDeployer(persistenceContext2).deployDDL();

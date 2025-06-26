@@ -145,9 +145,7 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 			EntityCriteriaSupport<C> whereId = new EntityCriteriaSupport<>(mainPersister.getMapping())
 					.and(new AccessorChain<>(idAccessor.getIdAccessor()), Operators.in(ids));
 			return selectWithSingleQuery(whereId,
-					orderByChain -> { /* No order by since we are in a Collection criteria, sort we'll be made downstream in memory
-				 see EntityCriteriaSupport#wrapGraphload() */
-					},
+					orderByChain -> { /* No order by since we are in a Collection criteria, sort we'll be made downstream in memory see EntityCriteriaSupport#wrapGraphload() */},
 					limitAware -> { /* No limit since we already have limited our result through the selection of the ids */});
 		}
 	}
