@@ -79,7 +79,6 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	private final Map<String, Class> discriminatorValues;
 	private final SingleLoadEntityJoinTree<C, I> singleLoadEntityJoinTree;
 	private final PhasedEntityJoinTree<C, I> phasedLoadEntityJoinTree;
-	private final boolean hasSubPolymorphicPersister;
 	
 	public TablePerClassPolymorphismEntityFinder(
 			ConfiguredRelationalPersister<C, I> mainPersister,
@@ -87,7 +86,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 			ConnectionProvider connectionProvider,
 			Dialect dialect
 	) {
-		super(mainPersister.getEntityJoinTree(), persisterPerSubclass, connectionProvider, dialect);
+		super(mainPersister, persisterPerSubclass, connectionProvider, dialect);
 		this.mainPersister = mainPersister;
 		this.identifierAssembler = mainPersister.getMapping().getIdMapping().getIdentifierAssembler();
 		this.mainTable = (T) mainPersister.getMainTable();
@@ -96,7 +95,6 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 		persisterPerSubclass.forEach((subEntityType, subEntityTable) -> {
 			discriminatorValues.put(subEntityType.getSimpleName(), subEntityType);
 		});
-		this.hasSubPolymorphicPersister = Iterables.find(persisterPerSubclass.values(), subPersister -> subPersister instanceof AbstractPolymorphismPersister) != null;
 		this.singleLoadEntityJoinTree = buildSingleLoadEntityJoinTree();
 		this.phasedLoadEntityJoinTree = build2PhasesLoadEntityJoinTree();
 	}
@@ -217,6 +215,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	public Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
 		LOGGER.debug("Finding entities in a single query with criteria {}", where);
 		if (hasSubPolymorphicPersister) {
+			LOGGER.debug("Single query was asked but due to sub-polymorphism the query is made in 2 phases");
 			return selectIn2Phases(where, orderByClauseConsumer, limitAwareConsumer);
 		} else {
 			return localSelectWithSingleQuery(where, orderByClauseConsumer, limitAwareConsumer);
@@ -306,16 +305,12 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 		Set<I> ids = idsPerSubtype.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
 		
 		if (hasSubPolymorphicPersister) {
+			LOGGER.debug("Asking sub-polymorphic persisters to load the entities");
 			Set<C> result = new HashSet<>();
 			idsPerSubtype.forEach((k, v) -> result.addAll(persisterPerSubclass.get(k).select(v)));
 			return result;
 		} else {
-			AccessorWrapperIdAccessor<C, I> idAccessor = (AccessorWrapperIdAccessor<C, I>) mainPersister.getMapping().getIdMapping().getIdAccessor();
-			// Because we only need the id in the where clause, we don't need JoinTablePolymorphismPersister's EntityCriteriaSupport that contains all
-			// the potential criteria, hence we can instantiate a new one for our local need
-			EntityCriteriaSupport<C> whereId = new EntityCriteriaSupport<>(mainPersister.getMapping())
-					.and(new AccessorChain<>(idAccessor.getIdAccessor()), Operators.in(ids));
-			return selectWithSingleQuery(whereId,
+			return selectWithSingleQuery(newWhereIdClause(ids),
 					orderByChain -> { /* No order by since we are in a Collection criteria, sort we'll be made downstream in memory see EntityCriteriaSupport#wrapGraphload() */},
 					limitAware -> { /* No limit since we already have limited our result through the selection of the ids */});
 		}

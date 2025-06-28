@@ -8,16 +8,20 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
+import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.LimitAware;
+import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.OrderByChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Select;
@@ -52,16 +56,23 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 	protected final Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass;
 	protected final ConnectionProvider connectionProvider;
 	protected final Dialect dialect;
+	protected final boolean hasSubPolymorphicPersister;
+	private final AccessorChain<C, I> entityIdAccessor;
+	private final EntityMapping<C, I, T> mainMapping;
 	
 	protected AbstractPolymorphicEntityFinder(
-			EntityJoinTree<C, I> mainEntityJoinTree,
+			ConfiguredRelationalPersister<C, I> mainPersister,
 			Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
 			ConnectionProvider connectionProvider,
 			Dialect dialect) {
-		this.mainEntityJoinTree = mainEntityJoinTree;
+		this.mainEntityJoinTree = mainPersister.getEntityJoinTree();
 		this.persisterPerSubclass = (Map<Class<C>, ConfiguredRelationalPersister<C, I>>) persisterPerSubclass;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
+		this.hasSubPolymorphicPersister = Iterables.find(persisterPerSubclass.values(), subPersister -> subPersister instanceof AbstractPolymorphismPersister) != null;
+		this.mainMapping = mainPersister.getMapping();
+		AccessorWrapperIdAccessor<C, I> idAccessor = (AccessorWrapperIdAccessor<C, I>) mainMapping.getIdMapping().getIdAccessor();
+		this.entityIdAccessor = new AccessorChain<>(idAccessor.getIdAccessor());
 	}
 	
 	@Override
@@ -78,6 +89,13 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 	public abstract Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where,
 								 Consumer<OrderByChain<?>> orderByClauseConsumer,
 								 Consumer<LimitAware<?>> limitAwareConsumer);
+	
+	protected EntityCriteriaSupport<C> newWhereIdClause(Iterable<I> ids) {
+		// Because we only need the id in the where clause, we don't need persister's EntityCriteriaSupport that contains all
+		// the potential criteria on relations, hence we can instantiate a new one for our local need
+		return new EntityCriteriaSupport<>(mainMapping)
+				.and(entityIdAccessor, Operators.in(ids));
+	}
 	
 	/**
 	 * A reusable method that execute query build from give {@link EntityJoinTree} with query clauses given as argument
