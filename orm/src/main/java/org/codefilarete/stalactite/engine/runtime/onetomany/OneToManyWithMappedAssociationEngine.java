@@ -104,7 +104,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 			}
 			
 			@Override
-			public Map<Column<RIGHTTABLE, ?>, Object> giveValue(TRGT trgt) {
+			public Map<Column<RIGHTTABLE, ?>, ?> giveValue(TRGT trgt) {
 				Map<Column<RIGHTTABLE, ?>, Object> result;
 				if (giveRelationStorageContext() == null) {
 					// case of TRGT is also root (SRC) in a cycling parent -> parent relation : when some root entities are

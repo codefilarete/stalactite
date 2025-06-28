@@ -49,9 +49,9 @@ public class OneToOneOwnedBySourceEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 			}
 			
 			@Override
-			public Map<Column<LEFTTABLE, ?>, Object> giveValue(SRC bean) {
+			public Map<Column<LEFTTABLE, ?>, ?> giveValue(SRC bean) {
 				TRGTID trgtid = targetIdProvider.apply(bean);
-				Map<Column<RIGHTTABLE, ?>, Object> columnValues = targetPersister.getMapping().getIdMapping().<RIGHTTABLE>getIdentifierAssembler().getColumnValues(trgtid);
+				Map<Column<RIGHTTABLE, ?>, ?> columnValues = targetPersister.getMapping().getIdMapping().<RIGHTTABLE>getIdentifierAssembler().getColumnValues(trgtid);
 				return Maps.innerJoinOnValuesAndKeys(keyColumnsMapping, columnValues);
 			}
 		};

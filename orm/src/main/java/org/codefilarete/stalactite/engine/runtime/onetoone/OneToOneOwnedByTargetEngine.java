@@ -134,13 +134,13 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 			}
 			
 			@Override
-			public Map<Column<RIGHTTABLE, ?>, Object> giveValue(TRGT bean) {
+			public Map<Column<RIGHTTABLE, ?>, ?> giveValue(TRGT bean) {
 				// in many cases currentTargetToSourceRelationStorage is already present through source persister listener (insert or update)
 				// but in the corner case of source and target persist same type (in a parent -> child case) then at very first insert of root
 				// instance, currentTargetToSourceRelationStorage is not present, so we prevent this by initializing it 
 				ensureRelationStorageContext();
 				SRCID srcid = giveRelationStorageContext().giveSourceId(bean);
-				Map<Column<LEFTTABLE, ?>, Object> columnValues = sourcePersister.getMapping().getIdMapping().<LEFTTABLE>getIdentifierAssembler().getColumnValues(srcid);
+				Map<Column<LEFTTABLE, ?>, ?> columnValues = sourcePersister.getMapping().getIdMapping().<LEFTTABLE>getIdentifierAssembler().getColumnValues(srcid);
 				return Maps.innerJoin(keyColumnsMapping, columnValues);
 			}
 		});
@@ -157,13 +157,13 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 			}
 			
 			@Override
-			public Map<Column<RIGHTTABLE, ?>, Object> giveValue(TRGT bean) {
+			public Map<Column<RIGHTTABLE, ?>, ?> giveValue(TRGT bean) {
 				// in many cases currentTargetToSourceRelationStorage is already present through source persister listener (insert or update)
 				// but in the corner case of source and target persist same type (in a parent -> child case) then at very first insert of root
 				// instance, currentTargetToSourceRelationStorage is not present, so we prevent this by initializing it 
 				ensureRelationStorageContext();
 				SRCID srcid = giveRelationStorageContext().giveSourceId(bean);
-				Map<Column<LEFTTABLE, ?>, Object> columnValues = sourcePersister.getMapping().getIdMapping().<LEFTTABLE>getIdentifierAssembler().getColumnValues(srcid);
+				Map<Column<LEFTTABLE, ?>, ?> columnValues = sourcePersister.getMapping().getIdMapping().<LEFTTABLE>getIdentifierAssembler().getColumnValues(srcid);
 				return Maps.innerJoin(keyColumnsMapping, columnValues);
 			}
 		});
@@ -369,7 +369,7 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 												WriteOperation<UpwhereColumn<RIGHTTABLE>> updateOrder) {
 			Map<UpwhereColumn<RIGHTTABLE>, Object> values = new HashMap<>();
 			entities.forEach(e -> {
-				Map<Column<RIGHTTABLE, ?>, Object> columnValues = Maps.innerJoin(keyColumnsMapping, identifierAssembler.getColumnValues(idProvider.apply(e)));
+				Map<Column<RIGHTTABLE, ?>, ?> columnValues = Maps.innerJoin(keyColumnsMapping, identifierAssembler.getColumnValues(idProvider.apply(e)));
 				columnValues.forEach((key, value) -> values.put(new UpwhereColumn<>(key, true), value));
 				targetPersister.<RIGHTTABLE>getMapping().getVersionedKeyValues(targetAccessor.get(sourceProvider.apply(e)))
 						.forEach((c, o) -> values.put(new UpwhereColumn<>(c, false), o));

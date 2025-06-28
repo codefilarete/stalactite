@@ -90,7 +90,7 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 	 */
 	public ClassMapping(Class<C> classToPersist,
 						T targetTable,
-						Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> propertyToColumn,
+						Map<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> propertyToColumn,
 						ReversibleAccessor<C, I> identifierProperty,
 						IdentifierInsertionManager<C, I> identifierInsertionManager) {
 		if (identifierProperty == null) {
@@ -129,7 +129,7 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 	 */
 	public ClassMapping(Class<C> classToPersist,
 						T targetTable,
-						Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn,
+						Map<? extends ReversibleAccessor<C, ?>, Column<T, ?>> propertyToColumn,
 						IdMapping<C, I> idMapping) {
 		this(new EmbeddedClassMapping<>(classToPersist, targetTable, propertyToColumn), idMapping, false);
 	}
@@ -195,8 +195,8 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 	 * @return all properties mapping, even embedded ones
 	 */
 	@Override
-	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
-		Map<ReversibleAccessor<C, Object>, Column<T, Object>> result = new KeepOrderMap<>();
+	public Map<ReversibleAccessor<C, ?>, Column<T, ?>> getPropertyToColumn() {
+		Map<ReversibleAccessor<C, ?>, Column<T, ?>> result = new KeepOrderMap<>();
 		result.putAll(getMainMapping().getPropertyToColumn());
 		for (Entry<ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> value : embeddedMappings.entrySet()) {
 			value.getValue().getPropertyToColumn().forEach((k, v) -> result.put(new AccessorChain<>(value.getKey(), k), v));
@@ -205,8 +205,8 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 	}
 	
 	@Override
-	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
-		Map<ReversibleAccessor<C, Object>, Column<T, Object>> result = new KeepOrderMap<>();
+	public Map<ReversibleAccessor<C, ?>, Column<T, ?>> getReadonlyPropertyToColumn() {
+		Map<ReversibleAccessor<C, ?>, Column<T, ?>> result = new KeepOrderMap<>();
 		result.putAll(getMainMapping().getReadonlyPropertyToColumn());
 		for (Entry<ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> value : embeddedMappings.entrySet()) {
 			value.getValue().getReadonlyPropertyToColumn().forEach((k, v) -> {
@@ -328,7 +328,7 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 	}
 	
 	@Override
-	public Map<Column<T, ?>, Object> getInsertValues(C c) {
+	public Map<Column<T, ?>, ?> getInsertValues(C c) {
 		Map<Column<T, ?>, Object> insertValues = mainMapping.getInsertValues(c);
 		getVersionedKeyValues(c).entrySet().stream()
 				// autoincrement columns mustn't be written
@@ -336,14 +336,14 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 				.forEach(entry -> insertValues.put(entry.getKey(), entry.getValue()));
 		for (Entry<? extends ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> fieldStrategyEntry : embeddedMappings.entrySet()) {
 			Object fieldValue = fieldStrategyEntry.getKey().get(c);
-			Map<Column<T, ?>, Object> fieldInsertValues = fieldStrategyEntry.getValue().getInsertValues(fieldValue);
+			Map<Column<T, ?>, ?> fieldInsertValues = fieldStrategyEntry.getValue().getInsertValues(fieldValue);
 			insertValues.putAll(fieldInsertValues);
 		}
 		return insertValues;
 	}
 	
 	@Override
-	public Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
+	public Map<UpwhereColumn<T>, ?> getUpdateValues(C modified, C unmodified, boolean allColumns) {
 		Map<UpwhereColumn<T>, Object> toReturn;
 		if (modified != null && unmodified != null && !getId(modified).equals(getId(unmodified))) {
 			// entities are different, so there's no value to be updated 
@@ -354,10 +354,8 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 				ReversibleAccessor<C, Object> accessor = fieldStrategyEntry.getKey();
 				Object modifiedValue = accessor.get(modified);
 				Object unmodifiedValue = unmodified == null ? null : accessor.get(unmodified);
-				Map<UpwhereColumn<T>, Object> fieldUpdateValues = fieldStrategyEntry.getValue().getUpdateValues(modifiedValue, unmodifiedValue, allColumns);
-				for (Entry<UpwhereColumn<T>, Object> fieldUpdateValue : fieldUpdateValues.entrySet()) {
-					toReturn.put(fieldUpdateValue.getKey(), fieldUpdateValue.getValue());
-				}
+				Map<UpwhereColumn<T>, ?> fieldUpdateValues = fieldStrategyEntry.getValue().getUpdateValues(modifiedValue, unmodifiedValue, allColumns);
+				toReturn.putAll(fieldUpdateValues);
 			}
 			if (!toReturn.isEmpty()) {
 				if (allColumns) {
@@ -369,7 +367,7 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 				}
 				// Determining on which instance we should take where values : unmodified by default, modified for rough update (unmodified is null)
 				C whereSource = unmodified != null ? unmodified : modified;
-				for (Entry<Column<T, ?>, Object> entry : getVersionedKeyValues(whereSource).entrySet()) {
+				for (Entry<Column<T, ?>, ?> entry : getVersionedKeyValues(whereSource).entrySet()) {
 					toReturn.put(new UpwhereColumn<>(entry.getKey(), false), entry.getValue());
 				}
 			}

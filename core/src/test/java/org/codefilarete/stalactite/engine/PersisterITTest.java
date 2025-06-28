@@ -44,8 +44,8 @@ abstract class PersisterITTest extends DatabaseIntegrationTest {
 	void setUp() {
 		TotoTable totoClassTable = new TotoTable(null, "Toto");
 		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
-		Map<PropertyAccessor<Toto, Object>, Column<TotoTable, Object>> totoClassMapping = persistentFieldHarvester.mapFields(Toto.class, totoClassTable);
-		Map<String, Column<TotoTable, Object>> columns = totoClassTable.mapColumnsOnName();
+		Map<PropertyAccessor<Toto, ?>, Column<TotoTable, ?>> totoClassMapping = persistentFieldHarvester.mapFields(Toto.class, totoClassTable);
+		Map<String, Column<TotoTable, ?>> columns = totoClassTable.mapColumnsOnName();
 		columns.get("a").setPrimaryKey(true);
 		
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();

@@ -31,7 +31,7 @@ abstract class DMLExecutorTest {
 
 		T targetTable = (T) new Table("Toto");
 		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
-		Map<PropertyAccessor<Toto, Object>, Column<T, Object>> mappedFileds = persistentFieldHarvester.mapFields(Toto.class, targetTable);
+		Map<PropertyAccessor<Toto, ?>, Column<T, ?>> mappedFileds = persistentFieldHarvester.mapFields(Toto.class, targetTable);
 		PropertyAccessor<Toto, Integer> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("a"));
 		persistentFieldHarvester.getColumn(primaryKeyAccessor).primaryKey();
 		IdentifierInsertionManager<Toto, Integer> identifierGenerator = new BeforeInsertIdentifierManager<>(
@@ -87,7 +87,7 @@ abstract class DMLExecutorTest {
 		PersistenceConfiguration<Toto, Toto, T> toReturn = new PersistenceConfiguration<>();
 
 		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
-		Map<PropertyAccessor<Toto, Object>, Column<T, Object>> mappedFields = persistentFieldHarvester.mapFields(Toto.class, targetTable);
+		Map<PropertyAccessor<Toto, ?>, Column<T, ?>> mappedFields = persistentFieldHarvester.mapFields(Toto.class, targetTable);
 		ComposedIdMapping<Toto, Toto> idMappingStrategy = new ComposedIdMapping<>(idAccessor,
 																				  new AlreadyAssignedIdentifierManager<>(Toto.class, c -> {}, c -> false),
 																				  composedIdentifierAssembler);
@@ -143,7 +143,7 @@ abstract class DMLExecutorTest {
 																						new AlreadyAssignedIdentifierManager<>(ComposedId.class, c -> {}, c -> false),
 																						composedIdentifierAssembler);
 		
-		Map<AccessorByField<Tata, Object>, Column<T, Object>> mappedFields = Maps.asMap(Accessors.accessorByField(Tata.class, "c"), colC);
+		Map<AccessorByField<Tata, ?>, Column<T, ?>> mappedFields = Maps.asMap(Accessors.accessorByField(Tata.class, "c"), colC);
 		toReturn.classMappingStrategy = new ClassMapping<>(
 				Tata.class,
 				targetTable,

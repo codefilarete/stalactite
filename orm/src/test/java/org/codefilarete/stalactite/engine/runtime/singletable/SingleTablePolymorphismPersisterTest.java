@@ -110,7 +110,7 @@ class SingleTablePolymorphismPersisterTest {
 	
 	protected ConfiguredRelationalPersister<TotoA, Identifier<Integer>> initMappingTotoA(Table totoTable) {
 		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
-		Map<PropertyAccessor<TotoA, Object>, Column<Table, Object>> mappedFields = persistentFieldHarvester.mapFields(TotoA.class, totoTable);
+		Map<PropertyAccessor<TotoA, ?>, Column<Table, ?>> mappedFields = persistentFieldHarvester.mapFields(TotoA.class, totoTable);
 		PropertyAccessor<TotoA, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("id"));
 		persistentFieldHarvester.getColumn(primaryKeyAccessor).primaryKey();
 		
@@ -125,7 +125,7 @@ class SingleTablePolymorphismPersisterTest {
 	
 	protected ConfiguredRelationalPersister<TotoB, Identifier<Integer>> initMappingTotoB(Table totoTable) {
 		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
-		Map<PropertyAccessor<TotoB, Object>, Column<Table, Object>> mappedFields = persistentFieldHarvester.mapFields(TotoB.class, totoTable);
+		Map<PropertyAccessor<TotoB, ?>, Column<Table, ?>> mappedFields = persistentFieldHarvester.mapFields(TotoB.class, totoTable);
 		PropertyAccessor<TotoB, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("id"));
 		persistentFieldHarvester.getColumn(primaryKeyAccessor).primaryKey();
 		

@@ -30,7 +30,7 @@ public interface Mapping<C, T extends Table<T>> {
 	 * 					may be null when this method is called to manage relationship
 	 * @return a mapping between columns that must be put in the SQL insert order and there values
 	 */
-	Map<Column<T, ?>, Object> getInsertValues(C c);
+	Map<Column<T, ?>, ?> getInsertValues(C c);
 	
 	/**
 	 * Returns columns that must be updated because of change between 2 instances.
@@ -44,7 +44,7 @@ public interface Mapping<C, T extends Table<T>> {
 	 * 			thus a distinction between columns to be updated and columns necessary to the where clause must be done, this is done through {@link UpwhereColumn},
 	 * 			so returned value may contain duplicates regarding {@link Column} (they can be in update & where part, especially for optimist lock columns)	
 	 */
-	Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns);
+	Map<UpwhereColumn<T>, ?> getUpdateValues(C modified, C unmodified, boolean allColumns);
 	
 	/**
 	 * Transforms the given row into a new bean. It is not "alias proof" so it is not expected to be used in a select which columns haven't their
@@ -103,9 +103,9 @@ public interface Mapping<C, T extends Table<T>> {
 	
 	void addPropertySetByConstructor(ValueAccessPoint<C> accessor);
 	
-	Map<ReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn();
+	Map<ReversibleAccessor<C, ?>, Column<T, ?>> getPropertyToColumn();
 	
-	Map<ReversibleAccessor<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn();
+	Map<ReversibleAccessor<C, ?>, Column<T, ?>> getReadonlyPropertyToColumn();
 	
 	default ValueAccessPointMap<C, Converter<Object, Object>> getReadConverters() {
 		return new ValueAccessPointMap<>();
@@ -115,11 +115,11 @@ public interface Mapping<C, T extends Table<T>> {
 		return new ValueAccessPointMap<>();
 	}
 	
-	default Set<Column<T, Object>> getWritableColumns() {
+	default Set<Column<T, ?>> getWritableColumns() {
 		return new KeepOrderSet<>(getPropertyToColumn().values());
 	}
 	
-	default Set<Column<T, Object>> getReadonlyColumns() {
+	default Set<Column<T, ?>> getReadonlyColumns() {
 		return new KeepOrderSet<>(getReadonlyPropertyToColumn().values());
 	}
 	
@@ -144,14 +144,14 @@ public interface Mapping<C, T extends Table<T>> {
 		 * @param set a non null set
 		 * @return all columns of the set
 		 */
-		public static <T extends Table<T>> Set<Column<T, Object>> getUpdateColumns(Set<? extends UpwhereColumn<T>> set) {
+		public static <T extends Table<T>> Set<Column<T, ?>> getUpdateColumns(Set<? extends UpwhereColumn<T>> set) {
 			Set<Column<T, ?>> updateColumns = new HashSet<>();
 			for (UpwhereColumn<T> upwhereColumn : set) {
 				if (upwhereColumn.update) {
 					updateColumns.add(upwhereColumn.column);
 				}
 			}
-			return (Set) updateColumns;
+			return updateColumns;
 		}
 		
 		/**
@@ -160,9 +160,9 @@ public interface Mapping<C, T extends Table<T>> {
 		 * @param map a non null map
 		 * @return all columns to be updated
 		 */
-		public static <T extends Table<T>> Map<Column<T, Object>, Object> getUpdateColumns(Map<? extends UpwhereColumn<T>, Object> map) {
+		public static <T extends Table<T>> Map<Column<T, Object>, ?> getUpdateColumns(Map<? extends UpwhereColumn<T>, ?> map) {
 			Map<Column<T, Object>, Object> updateColumns = new HashMap<>();
-			for (Entry<? extends UpwhereColumn<T>, Object> entry : map.entrySet()) {
+			for (Entry<? extends UpwhereColumn<T>, ?> entry : map.entrySet()) {
 				UpwhereColumn<T> upwhereColumn = entry.getKey();
 				if (upwhereColumn.update) {
 					updateColumns.put(upwhereColumn.column, entry.getValue());
@@ -177,9 +177,9 @@ public interface Mapping<C, T extends Table<T>> {
 		 * @param map a non null map
 		 * @return all columns for the where clause
 		 */
-		public static <T extends Table<T>> Map<Column<T, Object>, Object> getWhereColumns(Map<? extends UpwhereColumn<T>, Object> map) {
+		public static <T extends Table<T>> Map<Column<T, Object>, Object> getWhereColumns(Map<? extends UpwhereColumn<T>, ?> map) {
 			Map<Column<T, Object>, Object> updateColumns = new HashMap<>();
-			for (Entry<? extends UpwhereColumn<T>, Object> entry : map.entrySet()) {
+			for (Entry<? extends UpwhereColumn<T>, ?> entry : map.entrySet()) {
 				UpwhereColumn<T> upwhereColumn = entry.getKey();
 				if (!upwhereColumn.update) {
 					updateColumns.put(upwhereColumn.column, entry.getValue());
@@ -279,6 +279,6 @@ public interface Mapping<C, T extends Table<T>> {
 		 * @param bean the entity that is being persisted
 		 * @return values per {@link Column} (must be same column instances that were given to {@link #getColumns()})
 		 */
-		Map<Column<T, ?>, Object> giveValue(C bean);
+		Map<Column<T, ?>, ?> giveValue(C bean);
 	}
 }

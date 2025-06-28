@@ -96,7 +96,7 @@ class KeyValueRecordMappingBuilder<K, V, I, T extends Table<T>, LEFTTABLE extend
 			idMapping = new KeyValueRecordIdMapping<>(
 					associationTable,
 					(row, columnedRow) -> columnedRow.getValue(keyColumn, row),
-					(Function<K, Map<Column<T, ?>, Object>>) k -> (Map) Maps.forHashMap(Column.class, Object.class).add(keyColumn, k),
+					(Function<K, Map<Column<T, ?>, ?>>) k -> (Map) Maps.forHashMap(Column.class, Object.class).add(keyColumn, k),
 					sourceIdentifierAssembler,
 					primaryKeyForeignColumnMapping);
 		} else if (entryKeyMapping != null) {

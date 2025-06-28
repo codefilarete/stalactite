@@ -126,7 +126,7 @@ public class SelectExecutor<C, I, T extends Table<T>> extends DMLExecutor<C, I, 
 		
 		@VisibleForTesting
 		Set<C> execute(ReadOperation<Column<T, ?>> operation, List<I> ids) {
-			Map<Column<T, ?>, Object> primaryKeyValues = primaryKeyProvider.getColumnValues(ids);
+			Map<Column<T, ?>, ?> primaryKeyValues = primaryKeyProvider.getColumnValues(ids);
 			try (ReadOperation<Column<T, ?>> closeableOperation = operation) {
 				closeableOperation.setValues(primaryKeyValues);
 				return transform(closeableOperation, primaryKeyValues.size());

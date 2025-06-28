@@ -46,7 +46,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 	
 	private Set<Column<RIGHTTABLE, ?>> mappedReverseColumns;
 	
-	private Function<SRCID, Map<Column<RIGHTTABLE, ?>, Object>> reverseColumnsValueProvider;
+	private Function<SRCID, Map<Column<RIGHTTABLE, ?>, ?>> reverseColumnsValueProvider;
 	
 	OneToManyWithMappedAssociationConfigurer(OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE> associationConfiguration,
 											 boolean loadSeparately) {
@@ -62,7 +62,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 	}
 	
 	protected void determineForeignKeyColumns(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
-		RIGHTTABLE mainTargetTable = (RIGHTTABLE) targetPersister.getMainTable();
+		RIGHTTABLE mainTargetTable = targetPersister.getMainTable();
 		KeyBuilder<RIGHTTABLE, SRCID> foreignKeyBuilder = Key.from(mainTargetTable);
 		OneToManyRelation<SRC, TRGT, TRGTID, C> relation = associationConfiguration.getOneToManyRelation();
 		if (!relation.getForeignKeyNameMapping().isEmpty()) {
@@ -129,7 +129,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 			mappedReverseColumns = new HashSet<>(foreignKeyColumnMapping.values());
 			reverseColumnsValueProvider = srcid -> {
 				IdentifierAssembler<SRCID, LEFTTABLE> identifierAssembler = associationConfiguration.getSrcPersister().getMapping().getIdMapping().<LEFTTABLE>getIdentifierAssembler();
-				Map<Column<LEFTTABLE, ?>, Object> columnValues = identifierAssembler.getColumnValues(srcid);
+				Map<Column<LEFTTABLE, ?>, ?> columnValues = identifierAssembler.getColumnValues(srcid);
 				return Maps.innerJoin(foreignKeyColumnMapping, columnValues);
 			};
 		} else if (relation.getReverseSetter() != null) {
@@ -146,7 +146,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 			mappedReverseColumns = new HashSet<>(foreignKeyColumnMapping.values());
 			reverseColumnsValueProvider = srcid -> {
 				IdentifierAssembler<SRCID, LEFTTABLE> identifierAssembler = associationConfiguration.getSrcPersister().getMapping().getIdMapping().<LEFTTABLE>getIdentifierAssembler();
-				Map<Column<LEFTTABLE, ?>, Object> columnValues = identifierAssembler.getColumnValues(srcid);
+				Map<Column<LEFTTABLE, ?>, ?> columnValues = identifierAssembler.getColumnValues(srcid);
 				return Maps.innerJoin(foreignKeyColumnMapping, columnValues);
 			};
 		} // else : no reverse side mapped, this case can't happen since OneToManyWithMappedAssociationConfigurer is only

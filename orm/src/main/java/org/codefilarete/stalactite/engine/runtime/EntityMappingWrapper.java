@@ -82,12 +82,12 @@ public class EntityMappingWrapper<C, I, T extends Table<T>> implements EntityMap
 	}
 	
 	@Override
-	public Map<Column<T, ?>, Object> getInsertValues(C c) {
+	public Map<Column<T, ?>, ?> getInsertValues(C c) {
 		return delegate.getInsertValues(c);
 	}
 	
 	@Override
-	public Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
+	public Map<UpwhereColumn<T>, ?> getUpdateValues(C modified, C unmodified, boolean allColumns) {
 		return delegate.getUpdateValues(modified, unmodified, allColumns);
 	}
 	
@@ -117,12 +117,12 @@ public class EntityMappingWrapper<C, I, T extends Table<T>> implements EntityMap
 	}
 	
 	@Override
-	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
+	public Map<ReversibleAccessor<C, ?>, Column<T, ?>> getPropertyToColumn() {
 		return delegate.getPropertyToColumn();
 	}
 	
 	@Override
-	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
+	public Map<ReversibleAccessor<C, ?>, Column<T, ?>> getReadonlyPropertyToColumn() {
 		return delegate.getReadonlyPropertyToColumn();
 	}
 	

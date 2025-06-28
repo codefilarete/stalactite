@@ -50,16 +50,16 @@ public abstract class ComposedIdentifierAssembler<I, T extends Table<T>> impleme
 	public abstract I assemble(Function<Column<?, ?>, Object> columnValueProvider);
 	
 	@Override
-	public Map<Column<T, ?>, Object> getColumnValues(Iterable<I> ids) {
+	public Map<Column<T, ?>, ?> getColumnValues(Iterable<I> ids) {
 		Map<Column<T, ?>, Object> pkValues = new HashMap<>();
 		// we must pass a single value when expected, else ExpandableStatement may be confused when applying them
 		List<I> idsAsList = Iterables.asList(ids);
 		if (idsAsList.size() == 1) {
-			Map<Column<T, ?>, Object> localPkValues = getColumnValues(idsAsList.get(0));
+			Map<Column<T, ?>, ?> localPkValues = getColumnValues(idsAsList.get(0));
 			primaryKey.getColumns().forEach(pkColumn -> pkValues.put(pkColumn, localPkValues.get(pkColumn)));
 		} else {
 			ids.forEach(id -> {
-				Map<Column<T, ?>, Object> localPkValues = getColumnValues(id);
+				Map<Column<T, ?>, ?> localPkValues = getColumnValues(id);
 				primaryKey.getColumns().forEach(pkColumn -> ((List<Object>) pkValues.computeIfAbsent(pkColumn, k -> new ArrayList<>())).add(localPkValues.get(pkColumn)));
 			});
 		}

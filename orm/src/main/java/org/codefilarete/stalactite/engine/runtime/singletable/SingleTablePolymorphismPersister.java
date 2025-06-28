@@ -101,7 +101,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 			}
 			
 			@Override
-			public Map<Column<T, ?>, Object> giveValue(C bean) {
+			public Map<Column<T, ?>, ?> giveValue(C bean) {
 				Map<Column<T, ?>, Object> result = new HashMap<>();
 				result.put(discriminatorColumn, polymorphismPolicy.getDiscriminatorValue((Class<? extends C>) bean.getClass()));
 				return result;

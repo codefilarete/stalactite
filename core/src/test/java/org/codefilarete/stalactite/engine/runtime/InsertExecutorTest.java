@@ -83,7 +83,7 @@ class InsertExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 	
 	@Test
 	void insert_mandatoryColumn() {
-		Column<T, Object> bColumn = testInstance.getMapping().getTargetTable().mapColumnsOnName().get("b");
+		Column<T, ?> bColumn = testInstance.getMapping().getTargetTable().mapColumnsOnName().get("b");
 		bColumn.setNullable(false);
 		
 		assertThatThrownBy(() -> testInstance.insert(Arrays.asList(new Toto(null, 23))))
@@ -179,7 +179,7 @@ class InsertExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 
 		T targetTable = (T) new Table("Toto");
 		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
-		Map<PropertyAccessor<Toto, Object>, Column<T, Object>> mappedFileds = persistentFieldHarvester.mapFields(Toto.class, targetTable);
+		Map<PropertyAccessor<Toto, ?>, Column<T, ?>> mappedFileds = persistentFieldHarvester.mapFields(Toto.class, targetTable);
 		PropertyAccessor<Toto, Integer> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("a"));
 		Column primaryKeyColumn = persistentFieldHarvester.getColumn(primaryKeyAccessor);
 		primaryKeyColumn.primaryKey();

@@ -26,7 +26,7 @@ import org.codefilarete.tool.function.Predicates;
 public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Table<T>> implements EmbeddedBeanMapping<C, T> {
 	
 	private final T targetTable;
-	private final Set<Column<T, Object>> columns;
+	private final Set<Column<T, ?>> columns;
 	private final ToMapRowTransformer<C> rowTransformer;
 	
 	/**
@@ -36,7 +36,7 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 	 * @param columns columns that will be used for persistent of Maps, expected to be a subset of targetTable columns    
 	 * @param rowClass Class to instantiate for select from database
 	 */
-	public ColumnedMapMapping(T targetTable, Set<Column<T, Object>> columns, Class<C> rowClass) {
+	public ColumnedMapMapping(T targetTable, Set<Column<T, ?>> columns, Class<C> rowClass) {
 		this.targetTable = targetTable;
 		this.columns = columns;
 		// We bind conversion on MapMappingStrategy conversion methods */
@@ -48,7 +48,7 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 	}
 	
 	@Override
-	public Set<Column<T, Object>> getColumns() {
+	public Set<Column<T, ?>> getColumns() {
 		return columns;
 	}
 	
@@ -70,7 +70,7 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 		}
 		toIterate.forEach((key, value) -> addUpsertValues(key, value, toReturn));
 		// NB: we must return all columns: we complete non-valued columns with null 
-		for (Column<T, Object> column : columns) {
+		for (Column<T, ?> column : columns) {
 			if (!toReturn.containsKey(column)) {
 				toReturn.put(column, null);
 			}
@@ -79,8 +79,8 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 	}
 	
 	@Override
-	public Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
-		Map<Column<T, Object>, Object> unmodifiedColumns = new HashMap<>();
+	public Map<UpwhereColumn<T>, ?> getUpdateValues(C modified, C unmodified, boolean allColumns) {
+		Map<Column<T, ?>, Object> unmodifiedColumns = new HashMap<>();
 		Map<Column<T, ?>, Object> toReturn = new HashMap<>();
 		if (modified != null) {
 			// getting differences
@@ -88,7 +88,7 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 			for (Entry<K, V> modifiedEntry : modified.entrySet()) {
 				K modifiedKey = modifiedEntry.getKey();
 				V modifiedValue = modifiedEntry.getValue();
-				Column<T, Object> column = getColumn(modifiedKey);
+				Column<T, ?> column = getColumn(modifiedKey);
 				if (!Predicates.equalOrNull(modifiedValue, unmodified == null ? null : unmodified.get(modifiedKey))) {
 					toReturn.put(column, modifiedValue);
 				} else {
@@ -104,15 +104,15 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 			
 			// adding complementary columns if necessary
 			if (allColumns && !toReturn.isEmpty()) {
-				Set<Column<T, Object>> missingColumns = new LinkedHashSet<>(columns);
+				Set<Column<T, ?>> missingColumns = new LinkedHashSet<>(columns);
 				missingColumns.removeAll(toReturn.keySet());
-				for (Column<T, Object> missingColumn : missingColumns) {
+				for (Column<T, ?> missingColumn : missingColumns) {
 					Object missingValue = unmodifiedColumns.get(missingColumn);
 					toReturn.put(missingColumn, missingValue);
 				}
 			}
 		} else if (allColumns && unmodified != null) {
-			for (Column<T, Object> column : columns) {
+			for (Column<T, ?> column : columns) {
 				toReturn.put(column, null);
 			}
 		}
@@ -135,11 +135,11 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 	 */
 	protected void addUpsertValues(K key, V value, Map<Column<T, ?>, Object> valuesToBePersisted) {
 		Object o = toDatabaseValue(key, value);
-		Column<T, Object> column = getColumn(key);
+		Column<T, ?> column = getColumn(key);
 		valuesToBePersisted.put(column, o);
 	}
 	
-	protected abstract Column<T, Object> getColumn(K k);
+	protected abstract Column<T, ?> getColumn(K k);
 	
 	/**
 	 * Expected to return the persisted value for v of key k 
@@ -175,22 +175,22 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 	}
 	
 	@Override
-	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
+	public Map<ReversibleAccessor<C, ?>, Column<T, ?>> getPropertyToColumn() {
 		throw new UnsupportedOperationException(Reflections.toString(ColumnedMapMapping.class) + " can't export a mapping between some accessors and their columns");
 	}
 	
 	@Override
-	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
+	public Map<ReversibleAccessor<C, ?>, Column<T, ?>> getReadonlyPropertyToColumn() {
 		throw new UnsupportedOperationException(Reflections.toString(ColumnedMapMapping.class) + " can't export a mapping between some accessors and their columns");
 	}
 	
 	@Override
-	public Set<Column<T, Object>> getWritableColumns() {
+	public Set<Column<T, ?>> getWritableColumns() {
 		return this.columns;
 	}
 	
 	@Override
-	public Set<Column<T, Object>> getReadonlyColumns() {
+	public Set<Column<T, ?>> getReadonlyColumns() {
 		return java.util.Collections.emptySet();
 	}
 	

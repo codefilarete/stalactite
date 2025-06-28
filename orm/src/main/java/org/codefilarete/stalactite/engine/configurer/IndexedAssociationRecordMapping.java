@@ -71,8 +71,8 @@ public class IndexedAssociationRecordMapping<
 							
 							@Override
 							public Map<Column<ASSOCIATIONTABLE, ?>, Object> getColumnValues(IndexedAssociationRecord id) {
-								Map<Column<LEFTTABLE, ?>, Object> leftValues = leftIdentifierAssembler.getColumnValues((LEFTID) id.getLeft());
-								Map<Column<RIGHTTABLE, ?>, Object> rightValues = rightIdentifierAssembler.getColumnValues((RIGHTID) id.getRight());
+								Map<Column<LEFTTABLE, ?>, ?> leftValues = leftIdentifierAssembler.getColumnValues((LEFTID) id.getLeft());
+								Map<Column<RIGHTTABLE, ?>, ?> rightValues = rightIdentifierAssembler.getColumnValues((RIGHTID) id.getRight());
 								Map<Column<ASSOCIATIONTABLE, ?>, Object> result = new HashMap<>();
 								leftValues.forEach((key, value) -> result.put(leftIdentifierColumnMapping.get(key), value));
 								rightValues.forEach((key, value) -> result.put(rightIdentifierColumnMapping.get(key), value));

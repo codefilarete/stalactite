@@ -191,7 +191,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			}
 			
 			@Override
-			public Map<Column<TARGETTABLE, ?>, Object> giveValue(TRGT target) {
+			public Map<Column<TARGETTABLE, ?>, ?> giveValue(TRGT target) {
 				SRC source = giveRelationStorageContext().get(target);
 				Integer targetEntityIndex;
 				if (source == null) {
@@ -299,7 +299,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				}
 				
 				@Override
-				public Map<Column<TARGETTABLE, ?>, Object> giveValue(TRGT bean) {
+				public Map<Column<TARGETTABLE, ?>, ?> giveValue(TRGT bean) {
 					Map<Column<TARGETTABLE, ?>, Object> result = new HashMap<>();
 					result.put(indexingColumn, currentUpdatableListIndex.get().get(bean));
 					return result;
@@ -322,7 +322,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				}
 				
 				@Override
-				public Map<Column<TARGETTABLE, ?>, Object> giveValue(TRGT bean) {
+				public Map<Column<TARGETTABLE, ?>, ?> giveValue(TRGT bean) {
 					Map<Column<TARGETTABLE, ?>, Object> result = new HashMap<>();
 					result.put(indexingColumn, currentInsertableListIndex.get().get(bean));
 					return result;

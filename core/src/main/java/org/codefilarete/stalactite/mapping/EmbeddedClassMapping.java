@@ -39,18 +39,18 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	
 	private final T targetTable;
 	
-	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn;
+	private final Map<ReversibleAccessor<C, ?>, Column<T, ?>> propertyToColumn;
 	
 	// Could be a Map<Mutator....> if we could have a AccessorChain that can be a Mutator which is not currently the case
-	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> readonlyPropertyToColumn;
+	private final Map<ReversibleAccessor<C, ?>, Column<T, ?>> readonlyPropertyToColumn;
 	
 	private final Set<Column<T, Object>> columns;
 	
 	/** Acts as a cache of insertable properties, could be dynamically deduced from {@link #propertyToColumn} */
-	private final Map<Accessor<C, Object>, Column<T, Object>> insertableProperties;
+	private final Map<Accessor<C, ?>, Column<T, ?>> insertableProperties;
 	
 	/** Acts as a cache of updatable properties, could be dynamically deduced from {@link #propertyToColumn} */
-	private final Map<Accessor<C, Object>, Column<T, Object>> updatableProperties;
+	private final Map<Accessor<C, ?>, Column<T, ?>> updatableProperties;
 	
 	private final ToBeanRowTransformer<C> rowTransformer;
 	
@@ -82,14 +82,14 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	 * @param targetTable the persisting table
 	 * @param propertyToColumn a mapping between Field and Column, expected to be coherent (fields of same class, column of same table)
 	 */
-	public EmbeddedClassMapping(Class<C> classToPersist, T targetTable, Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> propertyToColumn) {
+	public EmbeddedClassMapping(Class<C> classToPersist, T targetTable, Map<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> propertyToColumn) {
 		this(classToPersist, targetTable, propertyToColumn, new HashMap<>(), row -> Reflections.newInstance(classToPersist));
 	}
 	
 	public EmbeddedClassMapping(Class<C> classToPersist,
 								T targetTable,
-								Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> propertiesMapping,
-								Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> readonlyPropertiesMapping,
+								Map<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> propertiesMapping,
+								Map<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> readonlyPropertiesMapping,
 								Function<Function<Column<?, ?>, Object>, C> beanFactory) {
 		this.classToPersist = classToPersist;
 		this.targetTable = targetTable;
@@ -134,7 +134,7 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	 * @return an immutable {@link Map} of the configured mapping
 	 */
 	@Override
-	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
+	public Map<ReversibleAccessor<C, ?>, Column<T, ?>> getPropertyToColumn() {
 		return Collections.unmodifiableMap(propertyToColumn);
 	}
 	
@@ -142,7 +142,7 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	 * @return an immutable {@link Map} of the configured readonly mapping
 	 */
 	@Override
-	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
+	public Map<ReversibleAccessor<C, ?>, Column<T, ?>> getReadonlyPropertyToColumn() {
 		return Collections.unmodifiableMap(readonlyPropertyToColumn);
 	}
 	
@@ -169,15 +169,15 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	 * @return target mapped columns
 	 */
 	@Override
-	public Set<Column<T, Object>> getColumns() {
+	public Set<Column<T, ?>> getColumns() {
 		return Collections.unmodifiableSet(columns);
 	}
 	
-	public Set<Column<T, Object>> getInsertableColumns() {
+	public Set<Column<T, ?>> getInsertableColumns() {
 		return Collections.unmodifiableSet(new KeepOrderSet<>(insertableProperties.values()));
 	}
 	
-	public Set<Column<T, Object>> getUpdatableColumns() {
+	public Set<Column<T, ?>> getUpdatableColumns() {
 		return Collections.unmodifiableSet(new KeepOrderSet<>(updatableProperties.values()));
 	}
 	
@@ -270,14 +270,14 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 		shadowColumnsForUpdate.forEach(shadowColumnValueProvider -> {
 			if (shadowColumnValueProvider.accept(modified)) {
 				if (modified != null && unmodified == null) {
-					Map<Column<T, ?>, Object> modifiedValues = shadowColumnValueProvider.giveValue(modified);
+					Map<Column<T, ?>, ?> modifiedValues = shadowColumnValueProvider.giveValue(modified);
 					modifiedValues.forEach((col, value) -> modifiedFields.put(new UpwhereColumn<>(col, true), value));
 				} else if (modified == null && unmodified != null) {
 					Set<Column<T, ?>> shadowColumns = shadowColumnValueProvider.getColumns();
 					shadowColumns.forEach(col -> modifiedFields.put(new UpwhereColumn<>(col, true), null));
 				} else if (modified != null && unmodified != null) {
-					Map<Column<T, ?>, Object> modifiedValues = shadowColumnValueProvider.giveValue(modified);
-					Map<Column<T, ?>, Object> unmodifiedValues = shadowColumnValueProvider.giveValue(unmodified);
+					Map<Column<T, ?>, ?> modifiedValues = shadowColumnValueProvider.giveValue(modified);
+					Map<Column<T, ?>, ?> unmodifiedValues = shadowColumnValueProvider.giveValue(unmodified);
 					
 					Set<Column<T, ?>> shadowColumns = shadowColumnValueProvider.getColumns();
 					shadowColumns.forEach(col -> {

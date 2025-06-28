@@ -34,7 +34,7 @@ import org.codefilarete.tool.collection.Maps;
 class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<KeyValueRecord<K, V, I>, RecordId<K, I>, T> {
 	
 	KeyValueRecordMapping(T targetTable,
-						  Map<? extends ReversibleAccessor<KeyValueRecord<K, V, I>, Object>, Column<T, Object>> propertyToColumn,
+						  Map<? extends ReversibleAccessor<KeyValueRecord<K, V, I>, ?>, Column<T, ?>> propertyToColumn,
 						  KeyValueRecordIdMapping<K, I, T> idMapping) {
 		super((Class) KeyValueRecord.class,
 				targetTable,
@@ -64,7 +64,7 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 		public <LEFTTABLE extends Table<LEFTTABLE>> KeyValueRecordIdMapping(
 				T targetTable,
 				BiFunction<Row, ColumnedRow, K> entryKeyAssembler,
-				Function<K, Map<Column<T, ?>, Object>> entryKeyColumnValueProvider,
+				Function<K, Map<Column<T, ?>, ?>> entryKeyColumnValueProvider,
 				IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
 				Map<Column<LEFTTABLE, ?>, Column<T, ?>> primaryKey2ForeignKeyMapping) {
 			this(new RecordIdAssembler<>(targetTable, entryKeyAssembler, entryKeyColumnValueProvider, sourceIdentifierAssembler, primaryKey2ForeignKeyMapping));
@@ -114,7 +114,7 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 		static class RecordIdAssembler<K, ID, T extends Table<T>> extends ComposedIdentifierAssembler<RecordId<K, ID>, T> {
 			
 			private final BiFunction<Row, ColumnedRow, K> entryKeyAssembler;
-			private final Function<K, Map<Column<T, ?>, Object>> entryKeyColumnValueProvider;
+			private final Function<K, Map<Column<T, ?>, ?>> entryKeyColumnValueProvider;
 			private final IdentifierAssembler<ID, ?> sourceIdentifierAssembler;
 			private final Map<Column<?, ?>, Column<T, ?>> primaryKey2ForeignKeyMapping;
 			
@@ -132,7 +132,7 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 			<LEFTTABLE extends Table<LEFTTABLE>> RecordIdAssembler(
 					T targetTable,
 					BiFunction<Row, ColumnedRow, K> entryKeyAssembler,
-					Function<K, Map<Column<T, ?>, Object>> entryKeyColumnValueProvider,
+					Function<K, Map<Column<T, ?>, ?>> entryKeyColumnValueProvider,
 					IdentifierAssembler<ID, LEFTTABLE> sourceIdentifierAssembler,
 					Map<? extends Column<LEFTTABLE, ?>, ? extends Column<T, ?>> primaryKey2ForeignKeyMapping
 			) {
@@ -180,7 +180,7 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 					Map<Column<RIGHTTABLE, ?>, Column<T, ?>> rightTable2EntryKeyMapping
 					) {
 				this(targetTable, rightTableIdentifierAssembler::assemble, k -> {
-					Map<Column<RIGHTTABLE, ?>, Object> keyColumnValues = rightTableIdentifierAssembler.getColumnValues(k);
+					Map<Column<RIGHTTABLE, ?>, ?> keyColumnValues = rightTableIdentifierAssembler.getColumnValues(k);
 					return Maps.innerJoin(rightTable2EntryKeyMapping, keyColumnValues);
 					
 				}, sourceIdentifierAssembler, primaryKey2ForeignKeyMapping);
@@ -201,10 +201,10 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 			}
 			
 			@Override
-			public Map<Column<T, ?>, Object> getColumnValues(RecordId<K, ID> record) {
+			public Map<Column<T, ?>, ?> getColumnValues(RecordId<K, ID> record) {
 				Map<Column<?, ?>, Object> sourceColumnValues = (Map) sourceIdentifierAssembler.getColumnValues(record.getId());
 				Map<Column<T, ?>, Object> idColumnValues = Maps.innerJoin(primaryKey2ForeignKeyMapping, sourceColumnValues);
-				Map<Column<T, ?>, Object> entryKeyColumnValues = entryKeyColumnValueProvider.apply(record.getKey());
+				Map<Column<T, ?>, ?> entryKeyColumnValues = entryKeyColumnValueProvider.apply(record.getKey());
 				Map<Column<T, ?>, Object> result = new HashMap<>();
 				result.putAll(idColumnValues);
 				result.putAll(entryKeyColumnValues);

@@ -94,9 +94,9 @@ public class InsertExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 	}
 	
 	private void addToBatch(C entity, WriteOperation<Column<T, ?>> writeOperation) {
-		Map<Column<T, ?>, ? super Object> insertValues = getMapping().getInsertValues(entity);
+		Map<Column<T, ?>, ?> insertValues = getMapping().getInsertValues(entity);
 		assertMandatoryColumnsHaveNonNullValues(insertValues);
-		optimisticLockManager.manageLock(entity, (Map) insertValues);
+		optimisticLockManager.manageLock(entity, (Map<Column<T, ?>, Object>) insertValues);
 		writeOperation.addBatch(insertValues);
 	}
 	
@@ -128,7 +128,7 @@ public class InsertExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 		 * @param updateValues
 		 */
 		// Note that generics syntax is made for write-only into the Map
-		void manageLock(E instance, Map<? super Column<T, ?>, ? super Object> updateValues);
+		void manageLock(E instance, Map<Column<T, ?>, Object> updateValues);
 	}
 	
 	/**
@@ -154,7 +154,7 @@ public class InsertExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 		 * Upgrade inserted instance
 		 */
 		@Override
-		public void manageLock(C instance, Map<? super Column<T, ?>, ? super Object> updateValues) {
+		public void manageLock(C instance, Map<Column<T, ?>, Object> updateValues) {
 			V previousVersion = versioningStrategy.getVersion(instance);
 			this.versioningStrategy.upgrade(instance);
 			V newVersion = versioningStrategy.getVersion(instance);

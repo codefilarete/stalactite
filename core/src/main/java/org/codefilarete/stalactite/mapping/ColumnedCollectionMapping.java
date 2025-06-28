@@ -36,7 +36,7 @@ import org.codefilarete.tool.function.Predicates;
 public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Table<T>> implements EmbeddedBeanMapping<C, T> {
 	
 	private final T targetTable;
-	private final Set<Column<T, Object>> columns;
+	private final Set<Column<T, ?>> columns;
 	private final ToCollectionRowTransformer<C> rowTransformer;
 	private final Class<C> persistedClass;
 	
@@ -49,9 +49,9 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 	 */
 	public ColumnedCollectionMapping(T targetTable, Set<? extends Column<T, ?>> columns, Class<C> rowClass) {
 		this.targetTable = targetTable;
-		this.columns = (Set<Column<T, Object>>) columns;
+		this.columns = (Set<Column<T, ?>>) columns;
 		this.persistedClass = rowClass;
-		this.rowTransformer = new LocalToCollectionRowTransformer<C>(getPersistedClass(), (Set) getColumns(), this::toCollectionValue);
+		this.rowTransformer = new LocalToCollectionRowTransformer<C>(getPersistedClass(), this::toCollectionValue);
 	}
 	
 	public Class<C> getPersistedClass() {
@@ -63,7 +63,7 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 	}
 	
 	@Override
-	public Set<Column<T, Object>> getColumns() {
+	public Set<Column<T, ?>> getColumns() {
 		return columns;
 	}
 	
@@ -73,28 +73,28 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 	}
 	
 	@Override
-	public Map<Column<T, ?>, Object> getInsertValues(C c) {
+	public Map<Column<T, ?>, ?> getInsertValues(C c) {
 		Collection<O> toIterate = c;
 		if (Collections.isEmpty(c)) {
 			toIterate = new ArrayList<>();
 		}
 		// NB: we wrap c.iterator() in an InfiniteIterator to get all columns generated: overflow columns will have
 		// null value (see 	InfiniteIterator#getValue)
-		PairIterator<Column<T, Object>, O> valueColumnPairIterator = new PairIterator<>(columns.iterator(), new InfiniteIterator<>(toIterate.iterator()));
+		PairIterator<Column<T, ?>, O> valueColumnPairIterator = new PairIterator<>(columns.iterator(), new InfiniteIterator<>(toIterate.iterator()));
 		return Iterables.map(() -> valueColumnPairIterator, Duo::getLeft, e -> toDatabaseValue(e.getRight()));
 	}
 	
 	@Override
-	public Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
-		Map<Column<T, Object>, Object> toReturn = new HashMap<>();
+	public Map<UpwhereColumn<T>, ?> getUpdateValues(C modified, C unmodified, boolean allColumns) {
+		Map<Column<T, ?>, Object> toReturn = new HashMap<>();
 		if (modified != null) {
 			// getting differences side by side
-			Map<Column, Object> unmodifiedColumns = new LinkedHashMap<>();
+			Map<Column<T, ?>, O> unmodifiedColumns = new LinkedHashMap<>();
 			Iterator<O> unmodifiedIterator = unmodified == null ? new EmptyIterator<>() : unmodified.iterator();
 			UntilBothIterator<? extends O, ? extends O> untilBothIterator = new UntilBothIterator<>(modified.iterator(), unmodifiedIterator);
-			PairIterator<Column<T, Object>, Duo<? extends O, ? extends O>> valueColumnPairIterator = new PairIterator<>(columns.iterator(), untilBothIterator);
+			PairIterator<Column<T, ?>, Duo<? extends O, ? extends O>> valueColumnPairIterator = new PairIterator<>(columns.iterator(), untilBothIterator);
 			valueColumnPairIterator.forEachRemaining(diffEntry -> {
-				Column fieldColumn = diffEntry.getLeft();
+				Column<T, ?> fieldColumn = diffEntry.getLeft();
 				Duo<? extends O, ? extends O> toBeCompared = diffEntry.getRight();
 				if (!Predicates.equalOrNull(toBeCompared.getLeft(), toBeCompared.getRight())) {
 					toReturn.put(fieldColumn, toDatabaseValue(toBeCompared.getLeft()));
@@ -105,15 +105,15 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 			
 			// adding complementary columns if necessary
 			if (allColumns && !toReturn.isEmpty()) {
-				Set<Column<T, Object>> missingColumns = new LinkedHashSet<>(columns);
+				Set<Column<T, ?>> missingColumns = new LinkedHashSet<>(columns);
 				missingColumns.removeAll(toReturn.keySet());
-				for (Column<T, Object> missingColumn : missingColumns) {
+				for (Column<T, ?> missingColumn : missingColumns) {
 					Object missingValue = unmodifiedColumns.get(missingColumn);
 					toReturn.put(missingColumn, missingValue);
 				}
 			}
 		} else if (allColumns && unmodified != null) {
-			for (Column column : columns) {
+			for (Column<T, ?> column : columns) {
 				toReturn.put(column, null);
 			}
 		}
@@ -121,7 +121,7 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 		return convertToUpwhereColumn(toReturn);
 	}
 	
-	private Map<UpwhereColumn<T>, Object> convertToUpwhereColumn(Map<? extends Column<T, Object>, Object> map) {
+	private Map<UpwhereColumn<T>, ?> convertToUpwhereColumn(Map<? extends Column<T, ?>, ?> map) {
 		Map<UpwhereColumn<T>, Object> convertion = new HashMap<>();
 		map.forEach((c, s) -> convertion.put(new UpwhereColumn<>(c, true), s));
 		return convertion;
@@ -133,7 +133,7 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 	 * This may duplicate behavior of {@link PreparedStatementWriter} in some way, but is located to this strategy so can be
 	 * more accurate.
 	 * 
-	 * @param object any object took from a pesistent collection
+	 * @param object any object took from a persistent collection
 	 * @return the value to be persisted
 	 */
 	protected Object toDatabaseValue(O object) {
@@ -159,22 +159,22 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 	}
 	
 	@Override
-	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
+	public Map<ReversibleAccessor<C, ?>, Column<T, ?>> getPropertyToColumn() {
 		throw new UnsupportedOperationException(Reflections.toString(ColumnedCollectionMapping.class) + " can't export a mapping between some accessors and their columns");
 	}
 	
 	@Override
-	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
+	public Map<ReversibleAccessor<C, ?>, Column<T, ?>> getReadonlyPropertyToColumn() {
 		throw new UnsupportedOperationException(Reflections.toString(ColumnedCollectionMapping.class) + " can't export a mapping between some accessors and their columns");
 	}
 	
 	@Override
-	public Set<Column<T, Object>> getWritableColumns() {
+	public Set<Column<T, ?>> getWritableColumns() {
 		return this.columns;
 	}
 	
 	@Override
-	public Set<Column<T, Object>> getReadonlyColumns() {
+	public Set<Column<T, ?>> getReadonlyColumns() {
 		return java.util.Collections.emptySet();
 	}
 	
@@ -183,33 +183,30 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 		return this.rowTransformer.copyWithAliases(columnedRow);
 	}
 	
-	private static class LocalToCollectionRowTransformer<C extends Collection> extends ToCollectionRowTransformer<C> {
+	private class LocalToCollectionRowTransformer<C extends Collection> extends ToCollectionRowTransformer<C> {
 		
-		private final Iterable<Column> columns;
 		private final Function<Object, Object> databaseValueConverter;
 		
-		private LocalToCollectionRowTransformer(Class<C> persistedClass, Iterable<Column> columns, Function<Object, Object> databaseValueConverter) {
+		private LocalToCollectionRowTransformer(Class<C> persistedClass, Function<Object, Object> databaseValueConverter) {
 			super(persistedClass);
-			this.columns = columns;
 			this.databaseValueConverter = databaseValueConverter;
 		}
 		
 		private LocalToCollectionRowTransformer(Function<Function<Column<?, ?>, Object>, C> beanFactory, ColumnedRow columnedRow,
-												Iterable<Column> columns, Function<Object, Object> databaseValueConverter) {
+												Iterable<Column<T, ?>> columns, Function<Object, Object> databaseValueConverter) {
 			super(beanFactory, columnedRow);
-			this.columns = columns;
 			this.databaseValueConverter = databaseValueConverter;
 		}
 			
 		@Override
 		public AbstractTransformer<C> copyWithAliases(ColumnedRow columnedRow) {
-			return new LocalToCollectionRowTransformer<>(this.beanFactory, columnedRow, this.columns, this.databaseValueConverter);
+			return new LocalToCollectionRowTransformer<>(this.beanFactory, columnedRow, columns, this.databaseValueConverter);
 		}
 		
 		/** We bind conversion on {@link ColumnedCollectionMapping} conversion methods */
 		@Override
 		public void applyRowToBean(Row row, C collection) {
-			for (Column column : this.columns) {
+			for (Column<T, ?> column : columns) {
 				Object value = row.get(column.getName());
 				collection.add(this.databaseValueConverter.apply(value));
 			}

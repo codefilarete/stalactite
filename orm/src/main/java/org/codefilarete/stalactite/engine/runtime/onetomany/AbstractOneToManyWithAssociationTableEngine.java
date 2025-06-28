@@ -249,7 +249,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 						Set<Column> columns = new HashSet<>();
 						List<Object[]> values = new ArrayList<>(identifiers.size());
 						identifiers.forEach(srcid -> {
-							Map<Column<T, ?>, Object> idValues = idMapping.getIdMapping().<T>getIdentifierAssembler().getColumnValues(srcid);
+							Map<Column<T, ?>, ?> idValues = idMapping.getIdMapping().<T>getIdentifierAssembler().getColumnValues(srcid);
 							if (columns.isEmpty()) {	// first time case
 								columns.addAll(idValues.keySet());
 							}

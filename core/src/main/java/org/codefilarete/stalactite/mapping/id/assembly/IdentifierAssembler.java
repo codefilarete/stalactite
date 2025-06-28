@@ -42,7 +42,7 @@ public interface IdentifierAssembler<I, T extends Table<T>> {
 	 * @param id an identifier
 	 * @return a {@link Map} which keys are primary key columns and values are column-values of the identifier
 	 */
-	Map<Column<T, ?>, Object> getColumnValues(I id);
+	Map<Column<T, ?>, ?> getColumnValues(I id);
 	
 	/**
 	 * A Collection-form of {@link #getColumnValues(Object)}.
@@ -53,6 +53,6 @@ public interface IdentifierAssembler<I, T extends Table<T>> {
 	 * @param ids identifiers
 	 * @return a {@link Map} which keys are primary key columns and values are column-values of all identifiers 
 	 */
-	Map<Column<T, ?>, Object> getColumnValues(Iterable<I> ids);
+	Map<Column<T, ?>, ?> getColumnValues(Iterable<I> ids);
 	
 }

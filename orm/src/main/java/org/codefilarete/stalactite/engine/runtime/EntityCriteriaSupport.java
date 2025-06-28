@@ -243,7 +243,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 			this.entityClass = entityMapping.getClassToPersist();
 			Stream.concat(entityMapping.getPropertyToColumn().entrySet().stream(), entityMapping.getReadonlyPropertyToColumn().entrySet().stream())
 					.forEach((entry) -> {
-						ReversibleAccessor<C, Object> accessor = entry.getKey();
+						ReversibleAccessor<C, ?> accessor = entry.getKey();
 						List<? extends ValueAccessPoint<?>> key;
 						if (accessor instanceof AccessorChain) {
 							key = ((AccessorChain<?, ?>) accessor).getAccessors();

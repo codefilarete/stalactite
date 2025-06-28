@@ -160,8 +160,8 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	}
 	
 	@Override
-	public Map<String, Column<SELF, Object>> mapColumnsOnName() {
-		return new HashMap<>((Map) columnsPerName);
+	public Map<String, Column<SELF, ?>> mapColumnsOnName() {
+		return new HashMap<>(columnsPerName);
 	}
 	
 	public <C> Column<SELF, C> getColumn(String columnName) {

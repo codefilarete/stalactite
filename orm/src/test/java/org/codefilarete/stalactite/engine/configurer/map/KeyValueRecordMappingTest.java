@@ -139,7 +139,7 @@ class KeyValueRecordMappingTest {
 			);
 			
 			
-			Map<Column<T, ?>, Object> actual = testInstance.getColumnValues(new RecordId<>(42L, "toto"));
+			Map<Column<T, ?>, ?> actual = testInstance.getColumnValues(new RecordId<>(42L, "toto"));
 			assertThat(actual).isEqualTo(Maps.forHashMap(Column.class, Object.class)
 					.add(joinTableIdColumn, 42L)
 					.add(entryKeyColumn, "toto"));
@@ -184,7 +184,7 @@ class KeyValueRecordMappingTest {
 					rightTable2EntryKeyMapping
 			);
 			
-			Map<Column<T, ?>, Object> actual = testInstance.getColumnValues(new RecordId<>(42L, new EntryKey(17, "toto")));
+			Map<Column<T, ?>, ?> actual = testInstance.getColumnValues(new RecordId<>(42L, new EntryKey(17, "toto")));
 			assertThat(actual).isEqualTo(Maps.forHashMap(Column.class, Object.class)
 					.add(joinTableIdColumn, 42L)
 					.add(entryKeyProp1Column, 17L)

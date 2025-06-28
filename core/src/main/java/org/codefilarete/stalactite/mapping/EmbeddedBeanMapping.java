@@ -18,5 +18,5 @@ public interface EmbeddedBeanMapping<C, T extends Table<T>> extends Mapping<C, T
 	 *  
 	 * @return a non-null set of columns to be written and read
 	 */
-	Set<Column<T, Object>> getColumns();
+	Set<Column<T, ?>> getColumns();
 }

@@ -37,9 +37,9 @@ public interface UpdateListener<C> {
 	class UpdatePayload<C, T extends Table<T>> {
 		private final Duo<? extends C, ? extends C> entities;
 		
-		private final Map<UpwhereColumn<T>, Object> values;
+		private final Map<UpwhereColumn<T>, ?> values;
 		
-		public UpdatePayload(Duo<? extends C, ? extends C> entities, Map<UpwhereColumn<T>, Object> values) {
+		public UpdatePayload(Duo<? extends C, ? extends C> entities, Map<UpwhereColumn<T>, ?> values) {
 			this.entities = entities;
 			this.values = values;
 		}
@@ -58,7 +58,7 @@ public interface UpdateListener<C> {
 		 * 
 		 * @return constructor argument
 		 */
-		public Map<UpwhereColumn<T>, Object> getValues() {
+		public Map<UpwhereColumn<T>, ?> getValues() {
 			return values;
 		}
 	}
@@ -87,7 +87,7 @@ public interface UpdateListener<C> {
 			C modified = next.getLeft();
 			C unmodified = next.getRight();
 			// finding differences between modified instances and unmodified ones
-			Map<UpwhereColumn<T>, Object> updateValues = mappingStrategy.getUpdateValues(modified, unmodified, allColumns);
+			Map<UpwhereColumn<T>, ?> updateValues = mappingStrategy.getUpdateValues(modified, unmodified, allColumns);
 			UpdatePayload<C, T> payload = new UpdatePayload<>(next, updateValues);
 			result.add(payload);
 		}
@@ -95,7 +95,7 @@ public interface UpdateListener<C> {
 	}
 	
 	interface UpdateValuesProvider<C, T extends Table<T>> {
-		Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns);
+		Map<UpwhereColumn<T>, ?> getUpdateValues(C modified, C unmodified, boolean allColumns);
 	}
 	
 }

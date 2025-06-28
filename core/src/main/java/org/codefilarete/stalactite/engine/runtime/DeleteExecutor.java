@@ -171,7 +171,7 @@ public class DeleteExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 			} else {
 				Map<Column<T, ?>, List<Object>> pkValues = new HashMap<>();
 				lastBlock.forEach(id -> {
-					Map<Column<T, ?>, Object> localPkValues = identifierAssembler.getColumnValues(id);
+					Map<Column<T, ?>, ?> localPkValues = identifierAssembler.getColumnValues(id);
 					pkColumns.forEach(pkColumn ->
 							pkValues.computeIfAbsent(pkColumn, k -> new ArrayList<>()).add(localPkValues.get(pkColumn)));
 				});

@@ -74,7 +74,7 @@ class ColumnedCollectionMappingTest {
 	@ParameterizedTest
 	@MethodSource("getInsertValues")
 	void getInsertValues(List<String> toInsert, ChainingMap<Column, String> expected) {
-		Map<? extends Column<?, ?>, Object> insertValues = testInstance.getInsertValues(toInsert);
+		Map<? extends Column<?, ?>, ?> insertValues = testInstance.getInsertValues(toInsert);
 		assertThat(expected).isEqualTo(insertValues);
 	}
 	
@@ -99,7 +99,7 @@ class ColumnedCollectionMappingTest {
 	@ParameterizedTest
 	@MethodSource("getUpdateValues_diffOnly")
 	void testGetUpdateValues_diffOnly(List<String> modified, List<String> unmodified, Map<Column, String> expected) {
-		Map<? extends UpwhereColumn<?>, Object> updateValues = testInstance.getUpdateValues(modified, unmodified, false);
+		Map<? extends UpwhereColumn<?>, ?> updateValues = testInstance.getUpdateValues(modified, unmodified, false);
 		Map<UpwhereColumn, Object> expectationWithUpwhereColumn = new HashMap<>();
 		expected.forEach((c, s) -> expectationWithUpwhereColumn.put(new UpwhereColumn(c, true), s));
 		assertThat(updateValues).isEqualTo(expectationWithUpwhereColumn);
@@ -128,7 +128,7 @@ class ColumnedCollectionMappingTest {
 	@ParameterizedTest
 	@MethodSource("getUpdateValues_allColumns")
 	void getUpdateValues_allColumns(List<String> modified, List<String> unmodified, Map<Column, String> expected) {
-		Map<? extends UpwhereColumn<?>, Object> updateValues = testInstance.getUpdateValues(modified, unmodified, true);
+		Map<? extends UpwhereColumn<?>, ?> updateValues = testInstance.getUpdateValues(modified, unmodified, true);
 		Map<UpwhereColumn, Object> expectationWithUpwhereColumn = new HashMap<>();
 		expected.forEach((c, s) -> expectationWithUpwhereColumn.put(new UpwhereColumn(c, true), s));
 		assertThat(updateValues).isEqualTo(expectationWithUpwhereColumn);

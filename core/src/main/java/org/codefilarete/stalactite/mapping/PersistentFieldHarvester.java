@@ -34,13 +34,13 @@ public class PersistentFieldHarvester {
 		return fieldToColumn;
 	}
 	
-	public <C, T extends Table<T>> Map<PropertyAccessor<C, Object>, Column<T, Object>> mapFields(Class<C> clazz, T targetTable) {
+	public <C, T extends Table<T>> Map<PropertyAccessor<C, ?>, Column<T, ?>> mapFields(Class<C> clazz, T targetTable) {
 		List<Field> fields = getFields(clazz);
-		Map<String, Column<T, Object>> mapColumnsOnName = targetTable.mapColumnsOnName();
+		Map<String, Column<T, ?>> mapColumnsOnName = targetTable.mapColumnsOnName();
 		fieldToColumn = new LinkedHashMap<>(5);
 		nameTofield = new HashMap<>(5);
 		for (Field field : fields) {
-			Column column = mapColumnsOnName.get(field.getName());
+			Column<T, ?> column = mapColumnsOnName.get(field.getName());
 			if (column == null) {
 				column = newColumn(targetTable, field);
 			} // else column already exists, skip it to avoid duplicate column (even if type is different)

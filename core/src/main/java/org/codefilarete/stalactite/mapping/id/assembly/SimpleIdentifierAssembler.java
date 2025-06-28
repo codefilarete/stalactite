@@ -45,25 +45,25 @@ public class SimpleIdentifierAssembler<I, T extends Table<T>> implements Identif
 	}
 	
 	@Override
-	public Map<Column<T, ?>, Object> getColumnValues(I id) {
+	public Map<Column<T, ?>, ?> getColumnValues(I id) {
 		return Collections.singletonMap(primaryKey, id);
 	}
 	
 	@Override
-	public Map<Column<T, ?>, Object> getColumnValues(Iterable<I> ids) {
-		Map<Column<T, I>, Object> pkValues = new HashMap<>();
+	public Map<Column<T, ?>, ?> getColumnValues(Iterable<I> ids) {
+		Map<Column<T, ?>, Object> pkValues = new HashMap<>();
 		// we must pass a single value when expected, else ExpandableStatement may be confused when applying them
 		List<I> idsAsList = Iterables.asList(ids);
 		if (idsAsList.size() == 1) {
-			Map<Column<T, ?>, Object> localPkValues = getColumnValues(idsAsList.get(0));
+			Map<Column<T, ?>, ?> localPkValues = getColumnValues(idsAsList.get(0));
 			pkValues.put(primaryKey, localPkValues.get(primaryKey));
 		} else {
 			ids.forEach(id -> {
-				Map<Column<T, ?>, Object> localPkValues = getColumnValues(id);
+				Map<Column<T, ?>, ?> localPkValues = getColumnValues(id);
 				((List<Object>) pkValues.computeIfAbsent(primaryKey, k -> new ArrayList<>())).add(localPkValues.get(primaryKey));
 			});
 		}
-		return (Map) pkValues;
+		return pkValues;
 	}
 	
 	public static boolean isDefaultPrimitiveValue(Object o) {

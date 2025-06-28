@@ -104,7 +104,7 @@ public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 			JDBCBatchingIterator<C> jdbcBatchingIterator = new JDBCBatchingIterator<>(entities, writeOperation, getBatchSize());
 			while (jdbcBatchingIterator.hasNext()) {
 				C c = jdbcBatchingIterator.next();
-				Map<UpwhereColumn<T>, Object> updateValues = getMapping().getUpdateValues(c, null, true);
+				Map<UpwhereColumn<T>, ?> updateValues = getMapping().getUpdateValues(c, null, true);
 				writeOperation.addBatch(updateValues);
 			}
 		}
@@ -234,7 +234,7 @@ public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 			this.batchSize = batchSize;
 		}
 		
-		private void setValues(Map<UpwhereColumn<T>, Object> values) {
+		private void setValues(Map<UpwhereColumn<T>, ?> values) {
 			this.writeOperation.addBatch(values);
 			this.stepCounter++;
 			executeBatchIfNecessary();
@@ -328,8 +328,8 @@ public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 		private void update(Iterable<UpdatePayload<C, T>> toUpdate) {
 			// building UpdateOperations and update values
 			toUpdate.forEach(p -> {
-				Map<UpwhereColumn<T>, Object> updateValues = p.getValues();
-				optimisticLockManager.manageLock(p.getEntities().getLeft(), p.getEntities().getRight(), (Map) updateValues);
+				Map<UpwhereColumn<T>, ?> updateValues = p.getValues();
+				optimisticLockManager.manageLock(p.getEntities().getLeft(), p.getEntities().getRight(), (Map<UpwhereColumn<T>, Object>) updateValues);
 				JDBCBatchingOperation<T> writeOperation = batchingOperationProvider.getJdbcBatchingOperation(updateValues.keySet());
 				writeOperation.setValues(updateValues);
 			});
@@ -361,7 +361,7 @@ public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 		 * @param updateValues
 		 */
 		// Note that generics syntax is made for write-only into the Map
-		void manageLock(E modified, E unmodified, Map<? super UpwhereColumn<T>, ? super Object> updateValues);
+		void manageLock(E modified, E unmodified, Map<UpwhereColumn<T>, Object> updateValues);
 	}
 	
 	private class RevertOnRollbackMVCC<E, V> extends AbstractRevertOnRollbackMVCC<E, V, T> implements OptimisticLockManager<E, T> {
@@ -382,7 +382,7 @@ public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 		 * Upgrades modified instance and adds version column to the update statement through {@link UpwhereColumn}s
 		 */
 		@Override
-		public void manageLock(E modified, E unmodified, Map<? super UpwhereColumn<T>, ? super Object> updateValues) {
+		public void manageLock(E modified, E unmodified, Map<UpwhereColumn<T>, Object> updateValues) {
 			V modifiedVersion = versioningStrategy.getVersion(modified);
 			V unmodifiedVersion = versioningStrategy.getVersion(unmodified);
 			if (!Predicates.equalOrNull(modifiedVersion, modifiedVersion)) {

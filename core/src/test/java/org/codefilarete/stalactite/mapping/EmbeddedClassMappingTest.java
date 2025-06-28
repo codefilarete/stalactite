@@ -126,7 +126,7 @@ class EmbeddedClassMappingTest {
 			}
 			
 			@Override
-			public Map<Column<T, ?>, Object> giveValue(Toto bean) {
+			public Map<Column<T, ?>, ?> giveValue(Toto bean) {
 				// no modification on shadow column : whatever bean (modified or not), value is the same
 				return Maps.asMap(myShadowColumn, "a");
 			}
@@ -154,7 +154,7 @@ class EmbeddedClassMappingTest {
 			}
 			
 			@Override
-			public Map<Column<T, ?>, Object> giveValue(Toto bean) {
+			public Map<Column<T, ?>, ?> giveValue(Toto bean) {
 				// modification on shadow column
 				if (bean == modified) {
 					return Maps.asMap(myShadowColumn, "b");
@@ -188,7 +188,7 @@ class EmbeddedClassMappingTest {
 			}
 			
 			@Override
-			public Map<Column<T, ?>, Object> giveValue(Toto bean) {
+			public Map<Column<T, ?>, ?> giveValue(Toto bean) {
 				// modification on shadow column
 				if (bean == modified) {
 					return Maps.asMap(myShadowColumn, "b");
@@ -222,7 +222,7 @@ class EmbeddedClassMappingTest {
 			}
 			
 			@Override
-			public Map<Column<T, ?>, Object> giveValue(Toto bean) {
+			public Map<Column<T, ?>, ?> giveValue(Toto bean) {
 				// no modification on shadow column : whatever bean (modified or not), value is the same
 				return Maps.asMap(myShadowColumn, "a");
 			}

@@ -77,7 +77,7 @@ class UpdateExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 	
 	@Test
 	void update_mandatoryColumn() {
-		Column<T, Object> bColumn = testInstance.getMapping().getTargetTable().mapColumnsOnName().get("b");
+		Column<T, ?> bColumn = testInstance.getMapping().getTargetTable().mapColumnsOnName().get("b");
 		bColumn.setNullable(false);
 		
 		List<Duo<Toto, Toto>> differencesIterable = asList(new Duo<>(new Toto(1, null, 23), new Toto(1, 42, 23)));

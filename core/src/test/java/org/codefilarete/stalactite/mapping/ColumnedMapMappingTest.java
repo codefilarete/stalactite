@@ -56,7 +56,7 @@ public class ColumnedMapMappingTest {
 	<T extends Table<T>> void setUp() {
 		testInstance = new ColumnedMapMapping<Map<Integer, String>, Integer, String, T>((T) totoTable, totoTable.getColumns(), (Class<Map<Integer, String>>) (Class) HashMap.class) {
 			@Override
-			protected Column getColumn(Integer key) {
+			protected Column<T, ?> getColumn(Integer key) {
 				if (key > 5) {
 					throw new IllegalArgumentException("Unknown key " + key);
 				}

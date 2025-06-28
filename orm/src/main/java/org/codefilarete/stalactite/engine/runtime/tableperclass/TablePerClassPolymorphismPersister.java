@@ -277,8 +277,8 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 					}
 					
 					@Override
-					public Map<Column<SUBENTITYTABLE, ?>, Object> giveValue(D bean) {
-						Map<Column<T, ?>, Object> columnObjectMap = provider.giveValue(bean);
+					public Map<Column<SUBENTITYTABLE, ?>, ?> giveValue(D bean) {
+						Map<Column<T, ?>, ?> columnObjectMap = provider.giveValue(bean);
 						return Maps.innerJoin(projectedColumnMap, columnObjectMap);
 					}
 				};

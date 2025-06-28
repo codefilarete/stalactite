@@ -41,7 +41,7 @@ public class ZonedDateTimeMapping<T extends Table<T>> implements EmbeddedBeanMap
 	private final Column<T, ZoneId> zoneColumn;
 	private final UpwhereColumn<T> dateTimeUpdateColumn;
 	private final UpwhereColumn<T> zoneUpdateColumn;
-	private final Set<Column<T, Object>> columns;
+	private final Set<Column<T, ?>> columns;
 	private final ZonedDateTimeToBeanRowTransformer zonedDateTimeRowTransformer;
 	
 	/**
@@ -63,13 +63,13 @@ public class ZonedDateTimeMapping<T extends Table<T>> implements EmbeddedBeanMap
 		this.zoneColumn = zoneColumn;
 		this.dateTimeUpdateColumn = new UpwhereColumn<>(dateTimeColumn, true);
 		this.zoneUpdateColumn = new UpwhereColumn<>(zoneColumn, true);
-		this.columns = (Set<Column<T, Object>>) (Set) Collections.unmodifiableSet(Arrays.asHashSet(dateTimeColumn, zoneColumn));
+		this.columns = Collections.unmodifiableSet(Arrays.asHashSet(dateTimeColumn, zoneColumn));
 		this.zonedDateTimeRowTransformer = new ZonedDateTimeToBeanRowTransformer();
 	}
 	
 	@Override
-	public Set<Column<T, Object>> getColumns() {
-		return (Set) columns;
+	public Set<Column<T, ?>> getColumns() {
+		return columns;
 	}
 	
 	@Override
@@ -78,7 +78,7 @@ public class ZonedDateTimeMapping<T extends Table<T>> implements EmbeddedBeanMap
 	}
 	
 	@Override
-	public Map<Column<T, ?>, Object> getInsertValues(ZonedDateTime zonedDateTime) {
+	public Map<Column<T, ?>, ?> getInsertValues(ZonedDateTime zonedDateTime) {
 		Map<Column<T, ?>, Object> result = new HashMap<>();
 		result.put(dateTimeColumn, zonedDateTime.toLocalDateTime());
 		result.put(zoneColumn, zonedDateTime.getZone());
@@ -86,7 +86,7 @@ public class ZonedDateTimeMapping<T extends Table<T>> implements EmbeddedBeanMap
 	}
 	
 	@Override
-	public Map<UpwhereColumn<T>, Object> getUpdateValues(ZonedDateTime modified, ZonedDateTime unmodified, boolean allColumns) {
+	public Map<UpwhereColumn<T>, ?> getUpdateValues(ZonedDateTime modified, ZonedDateTime unmodified, boolean allColumns) {
 		Map<Column<T, ?>, Object> unmodifiedColumns = new HashMap<>();
 		Map<UpwhereColumn<T>, Object> toReturn = new HashMap<>();
 		// getting differences side by side
@@ -123,24 +123,24 @@ public class ZonedDateTimeMapping<T extends Table<T>> implements EmbeddedBeanMap
 	}
 	
 	@Override
-	public Map<ReversibleAccessor<ZonedDateTime, Object>, Column<T, Object>> getPropertyToColumn() {
+	public Map<ReversibleAccessor<ZonedDateTime, ?>, Column<T, ?>> getPropertyToColumn() {
 		throw new NotImplementedException(Reflections.toString(ZonedDateTimeMapping.class) + " can't export a mapping between some accessors and their columns"
 				+ " because properties of " + Reflections.toString(ZonedDateTime.class) + " can't be set");
 	}
 	
 	@Override
-	public Map<ReversibleAccessor<ZonedDateTime, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
+	public Map<ReversibleAccessor<ZonedDateTime, ?>, Column<T, ?>> getReadonlyPropertyToColumn() {
 		throw new NotImplementedException(Reflections.toString(ZonedDateTimeMapping.class) + " can't export a mapping between some accessors and their columns"
 				+ " because properties of " + Reflections.toString(ZonedDateTime.class) + " can't be set");
 	}
 	
 	@Override
-	public Set<Column<T, Object>> getWritableColumns() {
+	public Set<Column<T, ?>> getWritableColumns() {
 		return this.columns;
 	}
 	
 	@Override
-	public Set<Column<T, Object>> getReadonlyColumns() {
+	public Set<Column<T, ?>> getReadonlyColumns() {
 		return java.util.Collections.emptySet();
 	}
 	
