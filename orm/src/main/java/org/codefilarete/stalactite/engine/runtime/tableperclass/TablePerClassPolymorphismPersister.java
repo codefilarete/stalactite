@@ -155,7 +155,21 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 	
 	@Override
 	public void doUpdate(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
-		updateSubEntities(differencesIterable, allColumnsStatement);
+		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
+		// impacts but very difficult to measure
+		Map<UpdateExecutor<C>, Set<Duo<C, C>>> entitiesPerType = new KeepOrderMap<>();
+		differencesIterable.forEach(payload ->
+				this.subEntitiesPersisters.values().forEach(persister -> {
+					C entity = Objects.preventNull(payload.getLeft(), payload.getRight());
+					if (persister.getClassToPersist().isInstance(entity)) {
+						entitiesPerType.computeIfAbsent(persister, p -> new KeepOrderSet<>()).add(payload);
+					}
+				})
+		);
+		
+		entitiesPerType.forEach((updateExecutor, adhocEntities) -> updateExecutor.update(adhocEntities, allColumnsStatement));
+		
+//		updateSubEntities(differencesIterable, allColumnsStatement);
 	}
 	
 	/* Extracted from update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement)

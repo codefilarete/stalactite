@@ -722,23 +722,34 @@ class TablePerClassPolymorphismPersisterTest {
 			String totoAAlias = "TotoA_a";
 			String totoBAlias = "TotoB_b";
 			String totoDTYPEAlias = TablePerClassPolymorphismEntityFinder.DISCRIMINATOR_ALIAS;
+			String totoIdAlias = "Toto_id";
+			String totoXAlias = "Toto_x";
+			String totoDiscriminator = "Toto_DISCRIMINATOR";
 			when(preparedStatement.executeQuery()).thenReturn(
 					// first result if for id read
 					new InMemoryResultSet(Arrays.asList(
-							Maps.forHashMap(String.class, Object.class).add(idAlias, 1).add(totoDTYPEAlias, "TotoA"),
-							Maps.forHashMap(String.class, Object.class).add(idAlias, 2).add(totoDTYPEAlias, "TotoA"),
-							Maps.forHashMap(String.class, Object.class).add(idAlias, 3).add(totoDTYPEAlias, "TotoB"),
-							Maps.forHashMap(String.class, Object.class).add(idAlias, 4).add(totoDTYPEAlias, "TotoB")
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 1).add(totoDTYPEAlias, "TotoA").add(totoAXAlias, 17).add(totoAAlias, 23).add(totoBXAlias, null).add(totoBAlias, null),
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 2).add(totoDTYPEAlias, "TotoA").add(totoAXAlias, 29).add(totoAAlias, 31).add(totoBXAlias, null).add(totoBAlias, null),
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 3).add(totoDTYPEAlias, "TotoB").add(totoAXAlias, null).add(totoAAlias, null).add(totoBXAlias, 37).add(totoBAlias, 41),
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 4).add(totoDTYPEAlias, "TotoB").add(totoAXAlias, null).add(totoAAlias, null).add(totoBXAlias, 43).add(totoBAlias, 53)
 					)),
-					// second result is for TotoA entities read
 					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(totoAIdAlias, 1).add(totoAXAlias, 17).add(totoAAlias, 23),
-							Maps.asMap(totoAIdAlias, 2).add(totoAXAlias, 29).add(totoAAlias, 31)
-					)),
-					// second result is for TotoB entities read
-					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(totoBIdAlias, 3).add(totoBXAlias, 37).add(totoBAlias, 41),
-							Maps.asMap(totoBIdAlias, 4).add(totoBXAlias, 43).add(totoBAlias, 53)
+							Maps.forHashMap(String.class, Object.class)
+									.add(totoIdAlias, 1).add(totoXAlias, 17).add(totoDiscriminator, "TotoA")
+									.add(totoAIdAlias, 1).add(totoAXAlias, 17).add(totoAAlias, 23)
+									.add(totoBIdAlias, null).add(totoBXAlias, null).add(totoBAlias, null),
+							Maps.forHashMap(String.class, Object.class)
+									.add(totoIdAlias, 2).add(totoXAlias, 29).add(totoDiscriminator, "TotoA")
+									.add(totoAIdAlias, 2).add(totoAXAlias, 29).add(totoAAlias, 31)
+									.add(totoBIdAlias, null).add(totoBXAlias, null).add(totoBAlias, null),
+							Maps.forHashMap(String.class, Object.class)
+									.add(totoIdAlias, 3).add(totoXAlias, 31).add(totoDiscriminator, "TotoB")
+									.add(totoAIdAlias, null).add(totoAXAlias, null).add(totoAAlias, null)
+									.add(totoBIdAlias, 3).add(totoBXAlias, 37).add(totoBAlias, 41),
+							Maps.forHashMap(String.class, Object.class)
+									.add(totoIdAlias, 4).add(totoXAlias, 43).add(totoDiscriminator, "TotoB")
+									.add(totoAIdAlias, null).add(totoAXAlias, null).add(totoAAlias, null)
+									.add(totoBIdAlias, 4).add(totoBXAlias, 43).add(totoBAlias, 53)
 					))
 			);
 			
@@ -748,7 +759,7 @@ class TablePerClassPolymorphismPersisterTest {
 			ExecutableEntityQueryCriteria<AbstractToto, ?> totoExecutableEntityQueryCriteria = testInstance.selectWhere(AbstractToto::getQ, Operators.eq(Arrays.asHashSet(42)));
 			Set<AbstractToto> select = totoExecutableEntityQueryCriteria.execute(Accumulators.toSet());
 			
-			verify(preparedStatement, times(3)).executeQuery();
+			verify(preparedStatement, times(2)).executeQuery();
 			verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).containsExactly(
 					"select Toto.id as " + idAlias + ", " + totoDTYPEAlias + " from ("
@@ -762,21 +773,37 @@ class TablePerClassPolymorphismPersisterTest {
 							+ ", TotoB.q as " + qAlias
 							+ ", 'TotoB' as " + totoDTYPEAlias + " from TotoB)"
 							+ " as Toto where Toto.q = ?",
-					"select TotoA.a as " + totoAAlias
-							+ ", TotoA.id as " + totoAIdAlias
+					"select Toto.id as " + totoIdAlias
+							+ ", Toto.x as " + totoXAlias
+							+ ", Toto.q as Toto_q"
+							+ ", Toto.DISCRIMINATOR as " + totoDiscriminator
+							+ ", TotoA.a as " + totoAAlias
+							+ ", TotoA.id as TotoA_id"
 							+ ", TotoA.x as " + totoAXAlias
-							+ ", TotoA.q as " + totoAQAlias
-							+ " from TotoA where TotoA.id in (?, ?)",
-					"select TotoB.b as " + totoBAlias
-							+ ", TotoB.id as " + totoBIdAlias
+							+ ", TotoA.q as TotoA_q"
+							+ ", TotoB.b as " + totoBAlias
+							+ ", TotoB.id as TotoB_id"
 							+ ", TotoB.x as " + totoBXAlias
-							+ ", TotoB.q as " + totoBQAlias
-							+ " from TotoB where TotoB.id in (?, ?)");
+							+ ", TotoB.q as TotoB_q"
+							+ " from (select TotoA.id as id"
+								+ ", TotoA.x as " + xAlias
+								+ ", TotoA.q as " + qAlias
+								+ ", 'TotoA' as " + totoDTYPEAlias
+								+ " from TotoA"
+								+ " union all"
+								+ " select TotoB.id as id"
+								+ ", TotoB.x as " + xAlias
+								+ ", TotoB.q as " + qAlias
+								+ ", 'TotoB' as " + totoDTYPEAlias
+								+ " from TotoB) as Toto"
+								+ " left outer join TotoA as TotoA on Toto.id = TotoA.id"
+								+ " left outer join TotoB as TotoB on Toto.id = TotoB.id"
+							+ " where Toto.id in (?, ?, ?, ?)"
+			);
 			// Here we don't test the "42" row of the first query because it requires to listen to PreparedStatement.setArray(..) whereas all this
 			// test class is bound to PreparedStatement.setInt(..) and Integer type.
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-					.newRow(1, 1).add(2, 2)
-					.newRow(1, 3).add(2, 4);
+					.newRow(1, 1).add(2, 2).add(3, 3).add(4, 4);
 			assertCapturedPairsEqual(expectedPairs);
 			
 			assertThat(select).usingRecursiveFieldByFieldElementComparator()

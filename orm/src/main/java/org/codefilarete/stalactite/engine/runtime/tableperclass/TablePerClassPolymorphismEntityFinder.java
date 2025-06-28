@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.runtime.tableperclass;
 
 import java.sql.ResultSet;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -10,9 +11,12 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphicEntityFinder;
+import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
 import org.codefilarete.stalactite.engine.runtime.ColumnCloneAwareOrderBy;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.EntityCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
@@ -23,6 +27,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.En
 import org.codefilarete.stalactite.engine.runtime.load.JoinRoot;
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.TablePerClassRootJoinNode;
+import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
@@ -74,6 +79,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	private final Map<String, Class> discriminatorValues;
 	private final SingleLoadEntityJoinTree<C, I> singleLoadEntityJoinTree;
 	private final PhasedEntityJoinTree<C, I> phasedLoadEntityJoinTree;
+	private final boolean hasSubPolymorphicPersister;
 	
 	public TablePerClassPolymorphismEntityFinder(
 			ConfiguredRelationalPersister<C, I> mainPersister,
@@ -90,8 +96,9 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 		persisterPerSubclass.forEach((subEntityType, subEntityTable) -> {
 			discriminatorValues.put(subEntityType.getSimpleName(), subEntityType);
 		});
-		singleLoadEntityJoinTree = buildSingleLoadEntityJoinTree();
-		phasedLoadEntityJoinTree = build2PhasesLoadEntityJoinTree();
+		this.hasSubPolymorphicPersister = Iterables.find(persisterPerSubclass.values(), subPersister -> subPersister instanceof AbstractPolymorphismPersister) != null;
+		this.singleLoadEntityJoinTree = buildSingleLoadEntityJoinTree();
+		this.phasedLoadEntityJoinTree = build2PhasesLoadEntityJoinTree();
 	}
 	
 	/**
@@ -209,6 +216,14 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	@Override
 	public Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
 		LOGGER.debug("Finding entities in a single query with criteria {}", where);
+		if (hasSubPolymorphicPersister) {
+			return selectIn2Phases(where, orderByClauseConsumer, limitAwareConsumer);
+		} else {
+			return localSelectWithSingleQuery(where, orderByClauseConsumer, limitAwareConsumer);
+		}
+	}
+	
+	private Set<C> localSelectWithSingleQuery(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
 		// Condition doesn't have criteria on a collection property (*-to-many) : the load can be done with one query because the SQL criteria
 		// doesn't make a subset of the entity graph
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(singleLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
@@ -282,15 +297,28 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 		orderByClauseConsumer.accept(new ColumnCloneAwareOrderBy(query.orderBy(), originalColumnsToClones));
 		limitAwareConsumer.accept(query.orderBy());
 		
-		Map<Class, Set<I>> idsPerSubclass = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>()), columnReaders, columnedRow);
+		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>()), columnReaders, columnedRow);
 		
 		// Second phase : selecting entities by delegating it to each subclass loader
 		// It will generate 1 query per found subclass, made as this :
 		// - to avoid superfluous join and complex query in case of relation
 		// - make it simpler to implement
-		Set<C> result = new HashSet<>();
-		idsPerSubclass.forEach((subClass, subEntityIds) -> result.addAll(persisterPerSubclass.get(subClass).select(subEntityIds)));
-		return result;
+		Set<I> ids = idsPerSubtype.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
+		
+		if (hasSubPolymorphicPersister) {
+			Set<C> result = new HashSet<>();
+			idsPerSubtype.forEach((k, v) -> result.addAll(persisterPerSubclass.get(k).select(v)));
+			return result;
+		} else {
+			AccessorWrapperIdAccessor<C, I> idAccessor = (AccessorWrapperIdAccessor<C, I>) mainPersister.getMapping().getIdMapping().getIdAccessor();
+			// Because we only need the id in the where clause, we don't need JoinTablePolymorphismPersister's EntityCriteriaSupport that contains all
+			// the potential criteria, hence we can instantiate a new one for our local need
+			EntityCriteriaSupport<C> whereId = new EntityCriteriaSupport<>(mainPersister.getMapping())
+					.and(new AccessorChain<>(idAccessor.getIdAccessor()), Operators.in(ids));
+			return selectWithSingleQuery(whereId,
+					orderByChain -> { /* No order by since we are in a Collection criteria, sort we'll be made downstream in memory see EntityCriteriaSupport#wrapGraphload() */},
+					limitAware -> { /* No limit since we already have limited our result through the selection of the ids */});
+		}
 	}
 	
 	private Map<Class, Set<I>> readIds(PreparedSQL preparedSQL, Map<String, ResultSetReader> columnReaders, ColumnedRow columnedRow) {

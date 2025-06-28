@@ -20,7 +20,6 @@ import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMapp
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
-import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
@@ -31,8 +30,8 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.tool.function.Converter;
 
@@ -199,7 +198,10 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 	
 	@Override
 	void assertSubPolymorphismIsSupported(PolymorphismPolicy<? extends C> subPolymorphismPolicy) {
-		// Currently we don't support any kind of polymorphism with table-per-class
-		throw new NotImplementedException("Combining table-per-class polymorphism is not supported");
+		// Everything else than joined-tables and single-table is not implemented (meaning table-per-class)
+		// Written as a negative condition to explicitly say what we support
+		if (subPolymorphismPolicy instanceof PolymorphismPolicy.TablePerClassPolymorphism) {
+			throw new NotImplementedException("Combining table-per-class polymorphism policy with " + Reflections.toString(subPolymorphismPolicy.getClass()));
+		}
 	}
 }

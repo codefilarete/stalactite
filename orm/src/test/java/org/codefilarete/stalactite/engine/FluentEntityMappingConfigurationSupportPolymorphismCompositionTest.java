@@ -213,14 +213,14 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
-										.map(Car::getId)
-										.map(Car::getModel)
-										.map(Car::getColor)
-										// A second level of polymorphism
-										.mapPolymorphism(PolymorphismPolicy.<Car>joinTable()
-												.addSubClass(subentityBuilder(ElectricCar.class)
-														.map(ElectricCar::getPlug)))
-								, "CAR"))
+								.map(Car::getId)
+								.map(Car::getModel)
+								.map(Car::getColor)
+								// A second level of polymorphism
+								.mapPolymorphism(PolymorphismPolicy.<Car>joinTable()
+										.addSubClass(subentityBuilder(ElectricCar.class)
+												.map(ElectricCar::getPlug)))
+						, "CAR"))
 				.build(persistenceContext);
 		
 		// Schema contains only one table : parent class one
@@ -304,5 +304,144 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		assertThatThrownBy(() -> builder.build(persistenceContext))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, NotImplementedException.class), InstanceOfAssertFactories.THROWABLE)
 				.hasMessage("Combining single-table polymorphism policy with o.c.s.e.PolymorphismPolicy$TablePerClassPolymorphism");
+	}
+	
+	@Test
+	void tablePerClass_joinedTables_isNotSupported() {
+		EntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+				// mapped super class defines id
+				.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>tablePerClass()
+						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
+								.map(Car::getId)
+								.map(Car::getModel)
+								.map(Car::getColor)
+								// A second level of polymorphism
+								.mapPolymorphism(PolymorphismPolicy.<Car>joinTable()
+										.addSubClass(subentityBuilder(ElectricCar.class)
+												.map(ElectricCar::getPlug)))))
+				.build(persistenceContext);
+		
+		// Schema contains only one table : parent class one
+		HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
+		assertThat(tables).isEqualTo(Arrays.asHashSet("ElectricCar", "Car"));
+		
+		// Subclasses are not present in context (because they have wrong behavior since some elements are configured on parent's persister)
+		assertThat(persistenceContext.getPersisters()).extracting(EntityPersister::getClassToPersist).containsExactlyInAnyOrder(AbstractVehicle.class);
+		
+		// DML tests
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		ElectricCar dummyCar = new ElectricCar(1L);
+		dummyCar.setModel("Renault");
+		dummyCar.setColor(new Color(666));
+		dummyCar.setPlug(ElectricPlug.CCS);
+		
+		// insert test
+		abstractVehiclePersister.insert(dummyCar);
+		
+		ExecutableBeanPropertyQueryMapper<String> modelQuery = persistenceContext.newQuery("select * from Car", String.class)
+				.mapKey("model", String.class);
+		
+		Set<String> allCars = modelQuery.execute(Accumulators.toSet());
+		assertThat(allCars).containsExactly("Renault");
+		
+		// update test
+		dummyCar.setModel("Peugeot");
+		abstractVehiclePersister.persist(dummyCar);
+		
+		Set<String> existingModels = modelQuery.execute(Accumulators.toSet());
+		assertThat(existingModels).containsExactly("Peugeot");
+		
+		// select test
+		AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
+		assertThat(loadedCar).isEqualTo(dummyCar);
+		
+		// delete test
+		abstractVehiclePersister.delete(dummyCar);
+		
+		existingModels = modelQuery.execute(Accumulators.toSet());
+		assertThat(existingModels).isEmpty();
+	}
+	
+	@Test
+	void tablePerClass_tablePerClass_isNotSupported() {
+		FluentEntityMappingBuilder<AbstractVehicle, Identifier<Long>> builder = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+				// mapped super class defines id
+				.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>tablePerClass()
+						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
+								.map(Car::getId)
+								.map(Car::getModel)
+								.map(Car::getColor)
+								// A second level of polymorphism
+								.mapPolymorphism(PolymorphismPolicy.<Car>tablePerClass()
+										.addSubClass(subentityBuilder(ElectricCar.class)
+												.map(ElectricCar::getPlug), "ELECTRIC_CAR")), "CAR")
+				);
+		assertThatThrownBy(() -> builder.build(persistenceContext))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, NotImplementedException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Combining table-per-class polymorphism policy with o.c.s.e.PolymorphismPolicy$TablePerClassPolymorphism");
+	}
+	
+	@Test
+	void tablePerClass_singleTable_isNotSupported() {
+		EntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+				// mapped super class defines id
+				.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>tablePerClass()
+						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
+								.map(Car::getId)
+								.map(Car::getModel)
+								.map(Car::getColor)
+								// A second level of polymorphism
+								.mapPolymorphism(PolymorphismPolicy.<Car>singleTable()
+										.addSubClass(subentityBuilder(ElectricCar.class)
+												.map(ElectricCar::getPlug), "ELECTRIC_CAR")), "CAR")
+				)
+				.build(persistenceContext);
+		
+		// Schema contains only one table : parent class one
+		HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
+		assertThat(tables).isEqualTo(Arrays.asHashSet("CAR"));
+		
+		// Subclasses are not present in context (because they have wrong behavior since some elements are configured on parent's persister)
+		assertThat(persistenceContext.getPersisters()).extracting(EntityPersister::getClassToPersist).containsExactlyInAnyOrder(AbstractVehicle.class);
+		
+		// DML tests
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		ElectricCar dummyCar = new ElectricCar(1L);
+		dummyCar.setModel("Renault");
+		dummyCar.setColor(new Color(666));
+		dummyCar.setPlug(ElectricPlug.CCS);
+		
+		// insert test
+		abstractVehiclePersister.insert(dummyCar);
+		
+		ExecutableBeanPropertyQueryMapper<String> modelQuery = persistenceContext.newQuery("select * from Car", String.class)
+				.mapKey("model", String.class);
+		
+		Set<String> allCars = modelQuery.execute(Accumulators.toSet());
+		assertThat(allCars).containsExactly("Renault");
+		
+		// update test
+		dummyCar.setModel("Peugeot");
+		abstractVehiclePersister.persist(dummyCar);
+		
+		Set<String> existingModels = modelQuery.execute(Accumulators.toSet());
+		assertThat(existingModels).containsExactly("Peugeot");
+		
+		// select test
+		AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
+		assertThat(loadedCar).isEqualTo(dummyCar);
+		
+		// delete test
+		abstractVehiclePersister.delete(dummyCar);
+		
+		existingModels = modelQuery.execute(Accumulators.toSet());
+		assertThat(existingModels).isEmpty();
 	}
 }
