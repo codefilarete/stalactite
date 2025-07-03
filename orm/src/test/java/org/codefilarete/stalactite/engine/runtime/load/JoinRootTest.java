@@ -6,7 +6,6 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMapp
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -68,11 +67,13 @@ class JoinRootTest {
 		titiTable.addColumn("id", long.class).primaryKey();
 		PrimaryKey titiPrimaryKey = titiTable.getPrimaryKey();
 		
-		EntityJoinTree entityJoinTree = new EntityJoinTree(new EntityMappingAdapter(totoMappingMock), totoMappingMock.getTargetTable());
+		EntityJoinTree<?, ?> entityJoinTree = new EntityJoinTree<>(new EntityMappingAdapter(totoMappingMock), totoMappingMock.getTargetTable());
 		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingAdapter(tataMappingMock), totoPrimaryKey, tataPrimaryKey, null, INNER, null, Collections.emptySet());
 		String tutuAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingAdapter(tutuMappingMock), tataPrimaryKey, tutuPrimaryKey, null, INNER, null, Collections.emptySet());
 		String titiAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingAdapter(titiMappingMock), totoPrimaryKey, titiPrimaryKey, null, INNER, null, Collections.emptySet());
-		
-		assertThat(entityJoinTree.giveTables()).isEqualTo(Arrays.asHashSet(totoTable, tataTable, tutuTable, titiTable));
+
+		assertThat(entityJoinTree.giveTables())
+				.usingElementComparator(Table.COMPARATOR_ON_SCHEMA_AND_NAME)
+				.containsExactlyInAnyOrder(totoTable, tataTable, tutuTable, titiTable);
 	}
 }

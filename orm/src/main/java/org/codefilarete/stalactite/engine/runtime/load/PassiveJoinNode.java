@@ -4,13 +4,12 @@ import javax.annotation.Nullable;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
-import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Reflections;
 
 /**
@@ -40,27 +39,31 @@ public class PassiveJoinNode<C, T1 extends Fromable, T2 extends Fromable, I> ext
 	}
 	
 	@Override
-	public JoinRowConsumer toConsumer(ColumnedRow columnedRow) {
-		return new PassiveJoinRowConsumer<>(getConsumptionListener(), columnedRow);
+	public JoinRowConsumer toConsumer(JoinNode<T2> joinNode) {
+		return new PassiveJoinRowConsumer(getConsumptionListener(), joinNode);
 	}
 	
-	public static class PassiveJoinRowConsumer<C> implements JoinRowConsumer {
+	public class PassiveJoinRowConsumer implements JoinRowConsumer {
 		
 		/** Optional listener of ResultSet decoding */
 		@Nullable
 		private final EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
-		/** Used when transformerListener is not null, so could be null */
-		@Nullable
-		private final ColumnedRow columnedRow;
+		/** Used when transformerListener is not null */
+		private final JoinNode<?> joinNode;
 		
-		public PassiveJoinRowConsumer(@Nullable EntityTreeJoinNodeConsumptionListener<C> consumptionListener, @Nullable ColumnedRow columnedRow) {
+		public PassiveJoinRowConsumer(@Nullable EntityTreeJoinNodeConsumptionListener<C> consumptionListener, JoinNode<?> joinNode) {
 			this.consumptionListener = consumptionListener;
-			this.columnedRow = columnedRow;
+			this.joinNode = joinNode;
+		}
+
+		@Override
+		public JoinNode<?> getNode() {
+			return PassiveJoinNode.this;
 		}
 		
-		void consume(C parentJoinEntity, Row row) {
+		void consume(C parentJoinEntity, ColumnedRow row) {
 			if (this.consumptionListener != null) {
-				this.consumptionListener.onNodeConsumption(parentJoinEntity, col -> columnedRow.getValue(col, row));
+				this.consumptionListener.onNodeConsumption(parentJoinEntity, row);
 			}
 		}
 		

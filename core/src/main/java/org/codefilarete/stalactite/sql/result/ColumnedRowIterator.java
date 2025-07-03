@@ -3,31 +3,35 @@ package org.codefilarete.stalactite.sql.result;
 import javax.annotation.Nullable;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.TreeSet;
+import java.util.Set;
 
+import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderIndex;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
-import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 
 /**
- * {@link ResultSetIterator} specialized in {@link Row} building for each {@link ResultSet} line.
+ * {@link ResultSetIterator} specialized in {@link ColumnedRow} building for each {@link ResultSet} line.
  *
  * @author Guillaume Mary
  */
-public class RowIterator extends ResultSetIterator<Row> {
+public class ColumnedRowIterator extends ResultSetIterator<ColumnedRow> {
 	
 	/** Readers for each column of the {@link ResultSet}, by name (may contain double but doesn't matter, causes only extra conversion) */
 	private final Iterable<Decoder> decoders;
+
+	private final Map<Selectable<?>, String> aliases;
 	
 	/**
 	 * Constructs an instance without {@link ResultSet} : it shall be set further with {@link #setResultSet(ResultSet)}.
 	 *
 	 * @param columnNameBinders columns and associated {@link ResultSetReader} to use for {@link ResultSet} reading
 	 */
-	public RowIterator(Map<String, ? extends ResultSetReader<?>> columnNameBinders) {
-		this(null, columnNameBinders);
+	public ColumnedRowIterator(Map<? extends Selectable<?>, ? extends ResultSetReader<?>> columnNameBinders,
+							   Map<? extends Selectable<?>, String> aliases) {
+		this(null, columnNameBinders, aliases);
 	}
 	
 	/**
@@ -36,9 +40,12 @@ public class RowIterator extends ResultSetIterator<Row> {
 	 * @param rs a ResultSet to wrap into an {@link java.util.Iterator}
 	 * @param columnNameBinders column names and associated {@link ResultSetReader} to use for {@link ResultSet} reading
 	 */
-	public RowIterator(@Nullable ResultSet rs, Map<String, ? extends ResultSetReader<?>> columnNameBinders) {
+	public ColumnedRowIterator(@Nullable ResultSet rs,
+							   Map<? extends Selectable<?>, ? extends ResultSetReader<?>> columnNameBinders,
+							   Map<? extends Selectable<?>, String> aliases) {
 		super(rs);
-		decoders = Decoder.decoders(columnNameBinders.entrySet());
+		this.decoders = Decoder.decoders(columnNameBinders.entrySet());
+		this.aliases = (Map<Selectable<?>, String>) aliases;
 	}
 	
 	/**
@@ -47,9 +54,10 @@ public class RowIterator extends ResultSetIterator<Row> {
 	 * @param rs a ResultSet to wrap into an {@link java.util.Iterator}
 	 * @param columnNameBinders object to extract column names and associated {@link ResultSetReader} to use for <t>ResultSet</t> reading
 	 */
-	public RowIterator(ResultSet rs, ParameterBinderIndex<String, ? extends ResultSetReader> columnNameBinders) {
+	public ColumnedRowIterator(ResultSet rs, ParameterBinderIndex<? extends Selectable, ? extends ResultSetReader> columnNameBinders, Map<? extends Selectable<?>, String> aliases) {
 		super(rs);
-		decoders = Decoder.decoders(columnNameBinders.all());
+		this.decoders = Decoder.decoders(columnNameBinders.all());
+		this.aliases = (Map<Selectable<?>, String>) aliases;
 	}
 	
 	/**
@@ -61,12 +69,12 @@ public class RowIterator extends ResultSetIterator<Row> {
 	 * @throws BindingException if a binding doesn't match its ResultSet value
 	 */
 	@Override
-	public Row convert(ResultSet rs) throws SQLException {
-		Row toReturn = new Row();
+	public ColumnedRow convert(ResultSet rs) throws SQLException {
+		MapBasedColumnedRow toReturn = new MapBasedColumnedRow();
 		for (Decoder columnEntry : decoders) {
-			String columnName = columnEntry.getColumnName();
-			Object columnValue = columnEntry.getReader().get(rs, columnName);
-			toReturn.put(columnName, columnValue);
+			Selectable<?> column = columnEntry.getColumn();
+			Object columnValue = columnEntry.getReader().get(rs, aliases.get(column));
+			toReturn.put(column, columnValue);
 		}
 		return toReturn;
 	}
@@ -76,24 +84,23 @@ public class RowIterator extends ResultSetIterator<Row> {
 	 */
 	private static class Decoder {
 		
-		private static Iterable<Decoder> decoders(Iterable<? extends Map.Entry<String, ? extends ResultSetReader>> input) {
-			// NB: we don't expect duplicate in entry column names, so we don't apply any case-insensitive sort
-			TreeSet<Decoder> result = new TreeSet<>(Comparator.comparing(Decoder::getColumnName));
+		private static Iterable<Decoder> decoders(Iterable<? extends Map.Entry<? extends Selectable, ? extends ResultSetReader>> input) {
+			Set<Decoder> result = new LinkedHashSet<>();
 			input.forEach(e -> result.add(new Decoder(e.getKey(), e.getValue())));
 			return result;
 		}
 		
-		private final String columnName;
+		private final Selectable<?> column;
 		
 		private final ResultSetReader<?> reader;
 		
-		private Decoder(String columnName, ResultSetReader<?> reader) {
-			this.columnName = columnName;
+		private Decoder(Selectable<?> column, ResultSetReader<?> reader) {
+			this.column = column;
 			this.reader = reader;
 		}
 		
-		private String getColumnName() {
-			return columnName;
+		private Selectable<?> getColumn() {
+			return column;
 		}
 		
 		private ResultSetReader<?> getReader() {

@@ -8,7 +8,7 @@ import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.Funct
 import org.codefilarete.stalactite.query.builder.OperatorSQLBuilderFactory.OperatorSQLBuilder;
 import org.codefilarete.stalactite.query.builder.OperatorSQLBuilderFactory.OperatorSQLBuilder.LikePatternAppender;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
-import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
+import org.codefilarete.stalactite.query.model.Selectable.SimpleSelectable;
 import org.codefilarete.stalactite.query.model.Variable;
 import org.codefilarete.stalactite.query.model.operator.Cast;
 import org.codefilarete.stalactite.query.model.operator.Coalesce;
@@ -149,7 +149,7 @@ class OperatorSQLBuilderTest {
 		assertThat(result.getSQL()).isEqualTo("like lower(upper('a'))");
 		
 		result = new StringSQLAppender(dmlNameProvider);
-		testInstance.catLike(new Like<>(new LowerCase<>(new UpperCase<>(new DateFormat(new SelectableString<>("\"2018-09-24\"", CharSequence.class), "%D %b %Y")))), result, null);
+		testInstance.catLike(new Like<>(new LowerCase<>(new UpperCase<>(new DateFormat(new SimpleSelectable<>("\"2018-09-24\"", CharSequence.class), "%D %b %Y")))), result, null);
 		assertThat(result.getSQL()).isEqualTo("like lower(upper(date_format(\"2018-09-24\", '%D %b %Y')))");
 		
 		result = new StringSQLAppender(dmlNameProvider);
@@ -309,7 +309,7 @@ class OperatorSQLBuilderTest {
 		assertThat(result.getSQL()).isEqualTo("= lower(upper('a'))");
 		
 		result = new StringSQLAppender(dmlNameProvider);
-		testInstance.catEquals(new Equals<>(new LowerCase<>(new UpperCase<>(new DateFormat(new SelectableString<>("\"2018-09-24\"", CharSequence.class), "%D %b %Y")))), result, null);
+		testInstance.catEquals(new Equals<>(new LowerCase<>(new UpperCase<>(new DateFormat(new SimpleSelectable<>("\"2018-09-24\"", CharSequence.class), "%D %b %Y")))), result, null);
 		assertThat(result.getSQL()).isEqualTo("= lower(upper(date_format(\"2018-09-24\", '%D %b %Y')))");
 		
 		// The following makes no sense and is only made to document the behavior

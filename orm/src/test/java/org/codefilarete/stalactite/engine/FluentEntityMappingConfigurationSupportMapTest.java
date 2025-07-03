@@ -1360,9 +1360,9 @@ class FluentEntityMappingConfigurationSupportMapTest {
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKeyAndValue, City.class, Country.class)
 						.withKeyMapping(cityPersisterConfiguration)
-					.cascading(RelationMode.ASSOCIATION_ONLY)
+						.cascading(RelationMode.ASSOCIATION_ONLY)
 						.withValueMapping(countryPersisterConfiguration)
-					.cascading(RelationMode.ASSOCIATION_ONLY)
+						.cascading(RelationMode.ASSOCIATION_ONLY)
 					.build(persistenceContext);
 
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

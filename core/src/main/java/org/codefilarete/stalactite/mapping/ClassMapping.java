@@ -25,7 +25,7 @@ import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -460,61 +460,44 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 	}
 	
 	@Override
-	public C transform(Row row) {
-		C toReturn = getRowTransformer().transform(row);
-		// fixing identifier
-		// Note : this may be done twice in single column primary key case, because constructor expects that the column must be present in the
-		// mapping, then it is used by the SimpleIdentifierAssembler
-		ColumnedRow columnedRow = new ColumnedRow();
-		if (!identifierSetByBeanFactory) {
-			setId(toReturn, getIdMapping().getIdentifierAssembler().assemble(row, columnedRow));
-		}
-		// filling other properties
-		for (Entry<? extends ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> mappingStrategyEntry : embeddedMappings.entrySet()) {
-			mappingStrategyEntry.getKey().toMutator().set(toReturn, mappingStrategyEntry.getValue().transform(row));
-		}
-		return toReturn;
+	public C transform(ColumnedRow row) {
+		return getRowTransformer().transform(row);
 	}
 	
 	@Override
-	public RowTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow) {
-		ToBeanRowTransformer<C> mainRowTransformer = getRowTransformer().copyWithAliases(columnedRow);
-		return new AbstractTransformer<C>(getClassToPersist()) {
-			
+	public RowTransformer<C> getRowTransformer() {
+		return new RowTransformer<C>() {
 			@Override
-			public C newBeanInstance(Row row) {
-				return mainRowTransformer.newBeanInstance(row);
-			}
-			
-			@Override
-			public C transform(Row row) {
-				C result = mainRowTransformer.transform(row);
+			public C transform(ColumnedRow row) {
+				C toReturn = mainMapping.getRowTransformer().transform(row);
+				// fixing identifier
+				// Note : this may be done twice in single column primary key case, because constructor expects that the column must be present in the
+				// mapping, then it is used by the SimpleIdentifierAssembler
 				if (!identifierSetByBeanFactory) {
-					setId(result, getIdMapping().getIdentifierAssembler().assemble(row, columnedRow));
+					setId(toReturn, getIdMapping().getIdentifierAssembler().assemble(row));
 				}
-				return result;
+				// filling other properties
+				for (Entry<? extends ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> mappingStrategyEntry : embeddedMappings.entrySet()) {
+					mappingStrategyEntry.getKey().toMutator().set(toReturn, mappingStrategyEntry.getValue().transform(row));
+				}
+				return toReturn;
 			}
-			
+
 			@Override
-			public void applyRowToBean(Row row, C bean) {
-				mainRowTransformer.applyRowToBean(row, bean);
+			public C newBeanInstance(ColumnedRow row) {
+				return mainMapping.transform(row);
 			}
-			
+
 			@Override
-			public AbstractTransformer<C> copyWithAliases(ColumnedRow columnedRow) {
-				// safeguard against unexpected behavior
-				throw new IllegalStateException("copyWithAliases(..) is not expected to be called twice");
+			public void applyRowToBean(ColumnedRow row, C bean) {
+				mainMapping.getRowTransformer().applyRowToBean(row, bean);
 			}
-			
+
 			@Override
 			public void addTransformerListener(TransformerListener<? extends C> listener) {
-				mainRowTransformer.addTransformerListener(listener);
+				mainMapping.addTransformerListener((TransformerListener<C>) listener);
 			}
 		};
-	}
-	
-	public ToBeanRowTransformer<C> getRowTransformer() {
-		return mainMapping.getRowTransformer();
 	}
 	
 	@Override

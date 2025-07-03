@@ -762,7 +762,9 @@ class TablePerClassPolymorphismPersisterTest {
 			verify(preparedStatement, times(2)).executeQuery();
 			verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).containsExactly(
-					"select Toto.id as " + idAlias + ", " + totoDTYPEAlias + " from ("
+					"select Toto.id as " + idAlias
+							+ ", DISCRIMINATOR as DISCRIMINATOR"
+							+ " from ("
 							+ "select TotoA.id as " + idAlias
 							+ ", TotoA.x as " + xAlias
 							+ ", TotoA.q as " + qAlias

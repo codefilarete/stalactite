@@ -3,7 +3,6 @@ package org.codefilarete.stalactite.engine.runtime.load;
 import javax.annotation.Nullable;
 import java.util.Set;
 
-import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.tool.collection.ReadOnlyList;
@@ -39,5 +38,5 @@ public interface JoinNode<T extends Fromable> {
 	 */
 	<ROOT, ID> EntityJoinTree<ROOT, ID> getTree();
 	
-	JoinRowConsumer toConsumer(ColumnedRow columnedRow);
+	JoinRowConsumer toConsumer(JoinNode<T> joinNode);
 }

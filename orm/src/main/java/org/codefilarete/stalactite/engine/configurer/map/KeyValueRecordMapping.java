@@ -2,12 +2,10 @@ package org.codefilarete.stalactite.engine.configurer.map;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.EmbeddedBeanMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
@@ -17,6 +15,7 @@ import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Maps;
@@ -63,7 +62,7 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 		
 		public <LEFTTABLE extends Table<LEFTTABLE>> KeyValueRecordIdMapping(
 				T targetTable,
-				BiFunction<Row, ColumnedRow, K> entryKeyAssembler,
+				Function<ColumnedRow, K> entryKeyAssembler,
 				Function<K, Map<Column<T, ?>, ?>> entryKeyColumnValueProvider,
 				IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
 				Map<Column<LEFTTABLE, ?>, Column<T, ?>> primaryKey2ForeignKeyMapping) {
@@ -113,7 +112,7 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 		@VisibleForTesting
 		static class RecordIdAssembler<K, ID, T extends Table<T>> extends ComposedIdentifierAssembler<RecordId<K, ID>, T> {
 			
-			private final BiFunction<Row, ColumnedRow, K> entryKeyAssembler;
+			private final Function<ColumnedRow, K> entryKeyAssembler;
 			private final Function<K, Map<Column<T, ?>, ?>> entryKeyColumnValueProvider;
 			private final IdentifierAssembler<ID, ?> sourceIdentifierAssembler;
 			private final Map<Column<?, ?>, Column<T, ?>> primaryKey2ForeignKeyMapping;
@@ -131,7 +130,7 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 			@VisibleForTesting
 			<LEFTTABLE extends Table<LEFTTABLE>> RecordIdAssembler(
 					T targetTable,
-					BiFunction<Row, ColumnedRow, K> entryKeyAssembler,
+					Function<ColumnedRow, K> entryKeyAssembler,
 					Function<K, Map<Column<T, ?>, ?>> entryKeyColumnValueProvider,
 					IdentifierAssembler<ID, LEFTTABLE> sourceIdentifierAssembler,
 					Map<? extends Column<LEFTTABLE, ?>, ? extends Column<T, ?>> primaryKey2ForeignKeyMapping
@@ -159,7 +158,7 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 					IdentifierAssembler<ID, LEFTTABLE> sourceIdentifierAssembler,
 					Map<? extends Column<LEFTTABLE, ?>, ? extends Column<T, ?>> primaryKey2ForeignKeyMapping
 					) {
-				this(targetTable, (row, columnedRow) -> entryKeyMapping.copyTransformerWithAliases(columnedRow).transform(row), entryKeyMapping::getInsertValues, sourceIdentifierAssembler, primaryKey2ForeignKeyMapping);
+				this(targetTable, entryKeyMapping::transform, entryKeyMapping::getInsertValues, sourceIdentifierAssembler, primaryKey2ForeignKeyMapping);
 			}
 			
 			/**
@@ -187,16 +186,16 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 			}
 			
 			@Override
-			public RecordId<K, ID> assemble(Row row, ColumnedRow rowAliaser) {
-				ID id = sourceIdentifierAssembler.assemble(row, rowAliaser);
-				K entryKey = entryKeyAssembler.apply(row, rowAliaser);
+			public RecordId<K, ID> assemble(ColumnedRow row) {
+				ID id = sourceIdentifierAssembler.assemble(row);
+				K entryKey = entryKeyAssembler.apply(row);
 				
 				return id == null ? null : new RecordId<>(id, entryKey);
 			}
 			
 			@Override
 			public RecordId<K, ID> assemble(Function<Column<?, ?>, Object> columnValueProvider) {
-				// never called because we override assemble(Row, ColumnedRow)
+				// never called because we override assemble(ColumnedRow)
 				return null;
 			}
 			

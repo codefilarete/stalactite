@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.query.model;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
+import org.codefilarete.stalactite.query.model.Selectable.SimpleSelectable;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.reflect.MethodDispatcher;
@@ -46,12 +46,12 @@ public class Select implements FluentSelect<Select> {
 	
 	@Override
 	public AliasableExpression<Select> add(String expression, Class<?> javaType) {
-		SelectableString<?> selectable = new SelectableString<>(expression, javaType);
+		SimpleSelectable<?> selectable = new SimpleSelectable<>(expression, javaType);
 		add(selectable);
 		return new MethodDispatcher()
 				.redirect(Aliasable.class, alias -> {
 					columns.put(selectable, alias);
-					return null;	// we don't care about returned object since proxy is returned
+					return null;	// we don't care about the returned object since a proxy is returned
 				}, this)
 				.redirect(SelectChain.class, this)
 				.build((Class<AliasableExpression<Select>>) (Class<?>) AliasableExpression.class);

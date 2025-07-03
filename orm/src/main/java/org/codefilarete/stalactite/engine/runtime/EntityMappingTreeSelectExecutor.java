@@ -23,6 +23,7 @@ import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
@@ -33,7 +34,7 @@ import org.codefilarete.stalactite.sql.ddl.DDLAppender;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSelect;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
@@ -77,7 +78,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 	private final DMLGenerator dmlGenerator;
 	private String rawQuery;
 	private EntityTreeQuery<C> entityTreeQuery;
-	private final ParameterBinderIndexFromMap<Column<T, ?>, ParameterBinder<?>> parameterBinderForPKInSelect;
+	private final ParameterBinderIndexFromMap<Column<T, ?>, ParameterBinder<?>> parameterBindersForPKInSelect;
 	
 	public EntityMappingTreeSelectExecutor(EntityMapping<C, I, T> entityMapping,
 										   Dialect dialect,
@@ -96,7 +97,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 		
 		this.dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new NoopSorter(), k -> whereClauseDMLNameProvider);
 		
-		parameterBinderForPKInSelect = new ParameterBinderIndexFromMap<>(Iterables.map(primaryKey.getColumns(), Function.identity(), dialect.getColumnBinderRegistry()::getBinder));
+		parameterBindersForPKInSelect = new ParameterBinderIndexFromMap<>(Iterables.map(primaryKey.getColumns(), Function.identity(), dialect.getColumnBinderRegistry()::getBinder));
 		
 		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
 		currentBuilderContext.addBuildLifeCycleListener(new BuildLifeCycleListener() {
@@ -116,7 +117,8 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 	void prepareQuery() {
 		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
 		this.entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, columnBinderRegistry).buildSelectQuery();
-		this.rawQuery = dialect.getQuerySQLBuilderFactory().queryBuilder(entityTreeQuery.getQuery()).toSQL();
+		QuerySQLBuilderFactory.QuerySQLBuilder sqlBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(entityTreeQuery.getQuery());
+		this.rawQuery = sqlBuilder.toSQL();
 	}
 	
 	public EntityJoinTree<C, I> getEntityJoinTree() {
@@ -178,7 +180,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 		// We store information to make this instance reusable with different parameters to execute(..) 
 		
 		private final EntityTreeInflater<C> entityTreeInflater;
-		private final Map<String, ParameterBinder<?>> selectParameterBinders;
+		private final Map<Selectable<?>, ParameterBinder<?>> selectParameterBinders;
 		private final SelectExecutor.InternalExecutor executor;
 		private final ConnectionProvider connectionProvider;
 		
@@ -190,8 +192,8 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 			// we pass null as transformer because we override transform(..) method
 			this.executor = new SelectExecutor.InternalExecutor<C, I, T>(identifierAssembler, null) {
 				@Override
-				protected Set<C> transform(Iterator<Row> rowIterator, int resultSize) {
-					return entityTreeInflater.transform(() -> rowIterator, resultSize);
+				protected Set<C> transform(Iterator<? extends ColumnedRow> rowIterator, int resultSize) {
+					return entityTreeInflater.transform(() -> (Iterator<ColumnedRow>) rowIterator, resultSize);
 				}
 			};
 		}
@@ -199,12 +201,13 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 		@VisibleForTesting
 		List<C> execute(String sql, Collection<? extends List<I>> idsParcels, Map<Column<T, ?>, int[]> inOperatorValueIndexes) {
 			// binders must be exactly the ones necessary to the request, else an IllegalArgumentException is thrown at execution time
-			// so we have to extract them from what is in the request : only primary key columns are parameterized 
+			// so we have to extract them from what is in the request : only primary key columns are parameterized
 			ColumnParameterizedSelect<T> preparedSelect = new ColumnParameterizedSelect<T>(
 					sql,
 					inOperatorValueIndexes,
-					parameterBinderForPKInSelect,
-					selectParameterBinders);
+					parameterBindersForPKInSelect.getParameterBinders(),
+					selectParameterBinders,
+					entityTreeQuery.getQuery().getAliases());
 			List<C> result = new ArrayList<>(idsParcels.size() * blockSize);
 			try (ReadOperation<Column<T, ?>> columnReadOperation = dialect.getReadOperationFactory().createInstance(preparedSelect, connectionProvider)) {
 				columnReadOperation.setListener(EntityMappingTreeSelectExecutor.this.operationListener);

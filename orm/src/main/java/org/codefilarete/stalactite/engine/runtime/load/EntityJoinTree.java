@@ -3,23 +3,23 @@ package org.codefilarete.stalactite.engine.runtime.load;
 import javax.annotation.Nullable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.apache.commons.collections4.BidiMap;
+import org.apache.commons.collections4.bidimap.DualLinkedHashBidiMap;
+import org.apache.commons.collections4.bidimap.UnmodifiableBidiMap;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
-import org.codefilarete.stalactite.engine.runtime.load.PassiveJoinNode.PassiveJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.AbstractTransformer;
-import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.JoinLink;
@@ -31,7 +31,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.bean.Randomizer;
@@ -41,6 +41,8 @@ import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.ReadOnlyList;
+
+import static org.codefilarete.stalactite.sql.ddl.structure.Table.COMPARATOR_ON_SCHEMA_AND_NAME;
 
 /**
  * Tree representing joins of a from clause, nodes are {@link JoinNode}.
@@ -64,7 +66,8 @@ public class EntityJoinTree<C, I> {
 	 * @see #addRelationJoin(String, EntityInflater, Key, Key, String, JoinType, BeanRelationFixer, Set)
 	 * @see #indexKeyGenerator
 	 */
-	private final Map<String, JoinNode<?>> joinIndex = new HashMap<>();
+	// Implemented as a LinkedHashMap to keep order only for debugging purpose
+	private final BidiMap<String, JoinNode<?>> joinIndex = new DualLinkedHashBidiMap<>();
 	
 	/**
 	 * The objet that will help to give node names / keys into the index (no impact on the generated SQL)
@@ -94,8 +97,8 @@ public class EntityJoinTree<C, I> {
 	 *
 	 * @return an unmodifiable version of the internal mapping (because its maintenance responsibility falls to current class)
 	 */
-	Map<String, JoinNode> getJoinIndex() {
-		return java.util.Collections.unmodifiableMap(joinIndex);
+	BidiMap<String, JoinNode> getJoinIndex() {
+		return UnmodifiableBidiMap.unmodifiableBidiMap(joinIndex);
 	}
 	
 	/**
@@ -134,7 +137,7 @@ public class EntityJoinTree<C, I> {
 	 * parameter : an optional function which computes an identifier of a relation between 2 entities, this is required to prevent from fulfilling
 	 * twice the relation when SQL returns several times same identifier (when at least 2 collections are implied). By default this function is
 	 * made of parentEntityId + childEntityId and can be overwritten here (in particular when relation is a List, entity index is added to computation).
-	 * See {@link RelationJoinNode.RelationJoinRowConsumer#applyRelatedEntity(Object, Row, TreeInflationContext)} for usage.
+	 * See {@link RelationJoinNode.RelationJoinRowConsumer#applyRelatedEntity(Object, ColumnedRow, TreeInflationContext)} for usage.
 	 *
 	 * @param <U> type of bean mapped by the given strategy
 	 * @param <T1> joined left table
@@ -150,7 +153,7 @@ public class EntityJoinTree<C, I> {
 	 * @param additionalSelectableColumns columns to be added to SQL select clause out of ones took from given inflater, necessary for indexed relations
 	 * @param relationIdentifierProvider relation identifier provider, not null for List cases : necessary because List may contain duplicate
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
-	 * @see RelationJoinNode.RelationJoinRowConsumer#applyRelatedEntity(Object, Row, TreeInflationContext)
+	 * @see RelationJoinNode.RelationJoinRowConsumer#applyRelatedEntity(Object, ColumnedRow, TreeInflationContext)
 	 */
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID, JOINTYPE> String addRelationJoin(String leftStrategyName,
 																								EntityInflater<U, ID> inflater,
@@ -160,7 +163,7 @@ public class EntityJoinTree<C, I> {
 																								JoinType joinType,
 																								BeanRelationFixer<C, U> beanRelationFixer,
 																								Set<? extends Column<T2, ?>> additionalSelectableColumns,
-																								@Nullable BiFunction<Row, ColumnedRow, Object> relationIdentifierProvider) {
+																								@Nullable Function<ColumnedRow, Object> relationIdentifierProvider) {
 		return this.addJoin(leftStrategyName, parent -> new RelationJoinNode<>(
 				(JoinNode<T1>) (JoinNode) parent,
 				leftJoinColumn,
@@ -200,7 +203,7 @@ public class EntityJoinTree<C, I> {
 	
 	/**
 	 * Adds a merge join to this select : no bean will be created by given {@link EntityInflater}, only its
-	 * {@link AbstractTransformer#applyRowToBean(Row, Object)} will be used during bean graph loading process.
+	 * {@link AbstractTransformer#applyRowToBean(ColumnedRow, Object)} will be used during bean graph loading process.
 	 *
 	 * @param <T1> left table type
 	 * @param <T2> right table type
@@ -227,13 +230,13 @@ public class EntityJoinTree<C, I> {
 																				 Key<T1, ID> leftJoinColumn,
 																				 Key<T2, ID> rightJoinColumn,
 																				 JoinType joinType,
-																				 Function<ColumnedRow, MergeJoinRowConsumer<U>> columnedRowConsumer) {
+																				 Function<JoinNode<T2>, MergeJoinRowConsumer<U>> columnedRowConsumer) {
 		return this.addJoin(leftStrategyName, parent -> new MergeJoinNode<U, T1, T2, ID>((JoinNode<T1>) parent,
 				leftJoinColumn, rightJoinColumn, joinType,
 				null, entityMerger) {
 			@Override
-			public MergeJoinRowConsumer<U> toConsumer(ColumnedRow columnedRow) {
-				return columnedRowConsumer.apply(columnedRow);
+			public MergeJoinRowConsumer<U> toConsumer(JoinNode<T2> joinNode) {
+				return columnedRowConsumer.apply(joinNode);
 			}
 		});
 	}
@@ -339,7 +342,7 @@ public class EntityJoinTree<C, I> {
 	 */
 	public Set<Table<?>> giveTables() {
 		// because Table implements an hashCode on their name, we can use an HashSet to avoid duplicates
-		Set<Table<?>> result = new HashSet<>();
+		Set<Table<?>> result = new TreeSet<>(COMPARATOR_ON_SCHEMA_AND_NAME);
 		result.add((Table<?>) root.getTable());
 		foreachJoin(node -> {
 			if (node.getTable() instanceof Table && !tablesToBeExcludedFromDDL.contains(node.getTable())) {

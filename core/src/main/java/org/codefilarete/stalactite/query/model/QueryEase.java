@@ -4,7 +4,7 @@ import java.util.Map;
 
 import org.codefilarete.stalactite.query.builder.WhereSQLBuilderFactory.WhereSQLBuilder;
 import org.codefilarete.stalactite.query.model.Query.FluentSelectClause;
-import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
+import org.codefilarete.stalactite.query.model.Selectable.SimpleSelectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**
@@ -94,6 +94,6 @@ public class QueryEase {
 	}
 	
 	public static <C> Selectable<Object> column(String name) {
-		return new SelectableString<>(name, Object.class);
+		return new SimpleSelectable<>(name, Object.class);
 	}
 }

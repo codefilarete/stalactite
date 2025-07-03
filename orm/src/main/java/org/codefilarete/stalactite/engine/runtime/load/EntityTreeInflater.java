@@ -27,14 +27,13 @@ import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.Relation
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.ThreadLocals;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Collections;
-import org.codefilarete.tool.collection.IdentityMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,38 +50,38 @@ public class EntityTreeInflater<C> {
 	public static final Logger LOGGER = LoggerFactory.getLogger(EntityTreeInflater.class);
 	
 	@SuppressWarnings("java:S5164" /* remove() is called by ThreadLocals.AutoRemoveThreadLocal */)
-	private static final ThreadLocal<EntityTreeInflater<?>.TreeInflationContext> CURRENT_CONTEXT = new ThreadLocal<>();
+	private static final ThreadLocal<EntityTreeInflater.TreeInflationContext> CURRENT_CONTEXT = new ThreadLocal<>();
 	
 	/**
 	 * Gives current {@link TreeInflationContext}. A current one is available during {@link #transform(Iterable, int)} invocation.
 	 * 
 	 * @return current {@link TreeInflationContext}, null if you're not invoking it during its lifecycle
 	 */
-	public static EntityTreeInflater<?>.TreeInflationContext currentContext() {
+	public static EntityTreeInflater.TreeInflationContext currentContext() {
 		return CURRENT_CONTEXT.get();
 	}
 	
 	/**
 	 * All inflaters, mergers and so on, in a tree structure that reflects {@link EntityJoinTree}.
-	 * Made as such to benefit from the possibility to cancel in-depth iteration in {@link #transform(Row, TreeInflationContext)} method during relation
+	 * Made as such to benefit from the possibility to cancel in-depth iteration in {@link #transform(ColumnedRow, TreeInflationContext)} method during relation
 	 * building
 	 */
 	private final ConsumerNode consumerRoot;
-	
+
 	/**
-	 * Query row decoder, overall used to be passed to current {@link TreeInflationContext}
- 	 */
-	private final EntityTreeQueryRowDecoder rowDecoder;
-	
+	 * Mapping between tree {@link JoinNode}s and their table clones (left ones)
+	 * Used to look for caller {@link Column} data in {@link ColumnedRow}
+	 */
+	private final Map<JoinNode, Fromable> tableClonePerJoinNode;
+
 	/**
 	 * Constructor with necessary elements
 	 * @param consumerRoot top level row consumer, the one that will compute root instances
-	 * @param columnAliases query column aliases
-	 * @param tablePerJoinNodeName mapping between join nodes and their names
+	 * @param tableClonePerJoinNode mapping between join nodes and their table clone
 	 */
-	EntityTreeInflater(ConsumerNode consumerRoot, IdentityMap<Selectable, String> columnAliases, Map<String, Fromable> tablePerJoinNodeName) {
+	EntityTreeInflater(ConsumerNode consumerRoot, Map<JoinNode, Fromable> tableClonePerJoinNode) {
 		this.consumerRoot = consumerRoot;
-		this.rowDecoder = new EntityTreeQueryRowDecoder(columnAliases, tablePerJoinNodeName);
+		this.tableClonePerJoinNode = tableClonePerJoinNode;
 	}
 	
 	/**
@@ -91,30 +90,32 @@ public class EntityTreeInflater<C> {
 	 * @param resultSize expected result size, only for resulting list optimization
 	 * @return a set of root beans, built from given rows by asking internal strategy joins to instantiate and complete them
 	 */
-	public Set<C> transform(Iterable<Row> rows, int resultSize) {
-		return ThreadLocals.doWithThreadLocal(CURRENT_CONTEXT, () -> this.new TreeInflationContext(), (Function<EntityTreeInflater<?>.TreeInflationContext, Set<C>>) context ->
+	public Set<C> transform(Iterable<? extends ColumnedRow> rows, int resultSize) {
+		return ThreadLocals.doWithThreadLocal(CURRENT_CONTEXT, () -> new TreeInflationContext(tableClonePerJoinNode), (Function<EntityTreeInflater.TreeInflationContext, Set<C>>) context ->
 						transform(rows, resultSize, context));
 	}
 	
-	private Set<C> transform(Iterable<Row> rows, int resultSize, EntityTreeInflater<?>.TreeInflationContext context) {
+	private Set<C> transform(Iterable<? extends ColumnedRow> rows, int resultSize, EntityTreeInflater.TreeInflationContext context) {
 		// we use an "IdentitySet" (doesn't exist directly, but can be done through IdentityLinkedMap) to avoid duplicate entity : with a HashSet
 		// duplicate can happen if equals/hashCode depends on relation, in particular Collection ones, because they are filled from row to row
 		// making hashCode value change. Moreover we need to keep track of the order because query might be sorted through "order by" clause.
 		Set<C> result = java.util.Collections.newSetFromMap(new IdentityLinkedMap<>(resultSize));
-		for (Row row : rows) {
+		for (ColumnedRow row : rows) {
 			Nullable<C> newInstance = transform(row, context);
 			newInstance.invoke(result::add);
 		}
 		return result;
 	}
 	
-	Nullable<C> transform(Row row, EntityTreeInflater<?>.TreeInflationContext context) {
+	Nullable<C> transform(ColumnedRow row, EntityTreeInflater.TreeInflationContext context) {
 		context.setCurrentRow(row);
 		// Algorithm : we iterate depth by depth the tree structure of the joins
 		// We start by hierarchy root.
 		// We process entity of current depth, process the direct relations, then add those relations to depth iterator
 		LOGGER.debug("Creating instance with " + this.consumerRoot.consumer);
-		EntityCreationResult rootEntityCreationResult = getRootEntityCreationResult(row, context);
+
+		ColumnedRow rootRow = currentContext().getDecoder(consumerRoot.consumer.getNode());
+		EntityCreationResult rootEntityCreationResult = getRootEntityCreationResult(rootRow, context);
 
 		if (rootEntityCreationResult != null) {
 			foreachNode(rootEntityCreationResult.consumers, new NodeVisitor(rootEntityCreationResult.entity) {
@@ -124,14 +125,15 @@ public class EntityTreeInflater<C> {
 					LOGGER.debug("Consuming " + join.consumer + " on object " + entity);
 					// processing current depth
 					JoinRowConsumer consumer = join.getConsumer();
+					ColumnedRow nodeRow = currentContext().getDecoder(consumer.getNode());
 					if (consumer instanceof PassiveJoinNode.PassiveJoinRowConsumer) {
-						((PassiveJoinRowConsumer) consumer).consume(entity, row);
+						((PassiveJoinRowConsumer) consumer).consume(entity, nodeRow);
 						return new EntityCreationResult(entity, join);
 					} else if (consumer instanceof MergeJoinNode.MergeJoinRowConsumer) {
-						((MergeJoinRowConsumer) consumer).mergeProperties(entity, row);
+						((MergeJoinRowConsumer) consumer).mergeProperties(entity, nodeRow);
 						return new EntityCreationResult(entity, join);
 					} else if (consumer instanceof RelationJoinNode.RelationJoinRowConsumer) {
-						Object relatedEntity = ((RelationJoinRowConsumer) consumer).applyRelatedEntity(entity, row, context);
+						Object relatedEntity = ((RelationJoinRowConsumer) consumer).applyRelatedEntity(entity, nodeRow, context);
 						if (consumer instanceof ForkJoinRowConsumer) {
 							// In case of join-table polymorphism we have to provide the tree branch on which id was found
 							// in order to let created entity filled with right consumers. "Wrong" branches serve no purpose. 
@@ -163,7 +165,7 @@ public class EntityTreeInflater<C> {
 		return nullable(rootEntityCreationResult).map(c -> (C) c.entity);
 	}
 	
-	private EntityCreationResult getRootEntityCreationResult(Row row, EntityTreeInflater<?>.TreeInflationContext context) {
+	private EntityCreationResult getRootEntityCreationResult(ColumnedRow row, EntityTreeInflater.TreeInflationContext context) {
 		C rootInstance = ((RootJoinRowConsumer<C>) this.consumerRoot.consumer).createRootInstance(row, context);
 		if (rootInstance != null) {
 			if (consumerRoot.consumer instanceof ExcludingJoinRowConsumer) {
@@ -320,7 +322,7 @@ public class EntityTreeInflater<C> {
 	 * 
 	 * @implNote made non-static to ease access to the surrounding {@link EntityTreeInflater} instance
 	 */
-	public class TreeInflationContext {
+	public static class TreeInflationContext {
 		
 		/** Entity cache */
 		private final EntityCache entityCache;
@@ -328,34 +330,52 @@ public class EntityTreeInflater<C> {
 		/** Storage for treated relations */
 		private final Set<RelationIdentifier> treatedRelations = new HashSet<>();
 		
-		private Row currentRow;
+		/**
+		 * Currently (Thread-linked) row read by inflater.
+		 * This row is not linked to any node and can be used has a base to construct some other {@link ColumnedRow}
+		 * based on some {@link JoinNode}.
+		 * @see #getDecoder
+		 */
+		private ColumnedRow currentRow;
+
+		private final Map<JoinNode, Fromable> tableClonePerJoinNode;
 		
 		@VisibleForTesting
-		TreeInflationContext() {
-			this(new BasicEntityCache());
+		TreeInflationContext(Map<JoinNode, Fromable> tableClonePerJoinNode) {
+			this(new BasicEntityCache(), tableClonePerJoinNode);
 		}
 		
-		public TreeInflationContext(EntityCache entityCache) {
+		public TreeInflationContext(EntityCache entityCache, Map<JoinNode, Fromable> tableClonePerJoinNode) {
 			this.entityCache = entityCache;
+			this.tableClonePerJoinNode = tableClonePerJoinNode;
 		}
 		
-		private TreeInflationContext setCurrentRow(Row currentRow) {
+		private TreeInflationContext setCurrentRow(ColumnedRow currentRow) {
 			this.currentRow = currentRow;
 			return this;
 		}
 		
-		
-		@javax.annotation.Nullable
-		public <T extends Table<T>, O> O giveValue(String joinNodeName, Column<T, O> column) {
-			return getRowDecoder().giveValue(joinNodeName, column, currentRow);
-		}
-		
 		/**
-		 * Returns the row decoder of the executed query 
-		 * @return never null
+		 * Gives the value provider of current {@link java.sql.ResultSet} row for given {@link JoinNode}.
+		 * 
+		 *
+		 * @param joinNode relation node identifier 
+		 * @return null if data is null
+		 * @see EntityTreeQueryBuilder#cloneTable(JoinNode)  table clone mechanism.
 		 */
-		public EntityTreeQueryRowDecoder getRowDecoder() {
-			return EntityTreeInflater.this.rowDecoder;
+		 public ColumnedRow getDecoder(JoinNode joinNode) {
+			Fromable table = tableClonePerJoinNode.get(joinNode);
+			return new ColumnedRow() {
+				@Override
+				public <E> E get(Selectable<E> key) {
+					Selectable<E> column = table.findColumn(key.getExpression());
+					if (column == null) {
+						// This is more for debugging purpose than for a real production goal, may be removed later
+						throw new MappingConfigurationException("Can't find column for " + key.getExpression() + " in table : " + joinNode.getTable().getName());
+					}
+					return currentRow.get(column);
+				}
+			};
 		}
 		
 		public boolean isTreatedOrAppend(RelationIdentifier relationIdentifier) {
@@ -376,50 +396,6 @@ public class EntityTreeInflater<C> {
 		 */
 		public <E> E giveEntityFromCache(Class<E> clazz, Object identifier, Supplier<E> fallbackFactory) {
 			return this.entityCache.computeIfAbsent(clazz, identifier, fallbackFactory);
-		}
-	}
-	
-	/**
-	 * Gives access to a {@link Row} value by a {@link Column} and the join node identifier that "owns" the column.
-	 * Made for nodes that need to read data from row but don't own the column table under which the data are, in particular indexing column of a
-	 * {@link java.util.Collection}.
-	 * 
-	 * See {@link EntityTreeQueryBuilder} for table clone mechanism.
-	 * 
-	 * @see #giveValue(String, Column, Row)
-	 */
-	public static class EntityTreeQueryRowDecoder {
-		
-		private final IdentityMap<Selectable, String> columnAliases;
-		
-		private final Map<String, Fromable> tablePerJoinNodeName;
-		
-		EntityTreeQueryRowDecoder(IdentityMap<Selectable, String> columnAliases,
-								  Map<String, Fromable> tablePerJoinNodeName) {
-			this.columnAliases = columnAliases;
-			this.tablePerJoinNodeName = tablePerJoinNodeName;
-		}
-		
-		/**
-		 * Gives the value of given {@link Column} in given {@link Row}.
-		 * Join node name is the one for node that owns the column
-		 * 
-		 * @param joinNodeName relation node identifier 
-		 * @param column a column of the relation node
-		 * @param row data read from database after query execution
-		 * @param <T> column table type
-		 * @param <O> column data type
-		 * @return null if data is null
-		 */
-		@javax.annotation.Nullable
-		public <T extends Table<T>, O> O giveValue(String joinNodeName, Column<T, O> column, Row row) {
-			Fromable table = tablePerJoinNodeName.get(joinNodeName);
-			if (table == null) {
-				// This is more for debugging purpose than for a real production goal, may be removed later
-				throw new MappingConfigurationException("Can't find node named " + joinNodeName + " in joins : " + this.tablePerJoinNodeName);
-			}
-			Column<T, O> columnClone = table.findColumn(column.getName());
-			return (O) row.get(columnAliases.get(columnClone));
 		}
 	}
 	

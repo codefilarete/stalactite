@@ -9,10 +9,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.DeleteExecutor;
 import org.codefilarete.stalactite.engine.EntityPersister;
@@ -23,7 +22,6 @@ import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.EntityMappingWrapper;
-import org.codefilarete.stalactite.engine.runtime.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.FirstPhaseRelationLoader;
 import org.codefilarete.stalactite.engine.runtime.PersisterWrapper;
 import org.codefilarete.stalactite.engine.runtime.PolymorphicPersister;
@@ -33,27 +31,23 @@ import org.codefilarete.stalactite.engine.runtime.SecondPhaseRelationLoader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
-import org.codefilarete.stalactite.engine.runtime.load.PolymorphicMergeJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.JoinNode;
+import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode;
+import org.codefilarete.stalactite.engine.runtime.load.PolymorphicMergeJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.TablePerClassPolymorphicRelationJoinNode;
-import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
-import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
-import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.JoinLink;
-import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryStatement.PseudoColumn;
 import org.codefilarete.stalactite.query.model.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
+import org.codefilarete.stalactite.query.model.Selectable.SimpleSelectable;
 import org.codefilarete.stalactite.query.model.Union;
-import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -61,9 +55,8 @@ import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.collection.Iterables;
@@ -318,7 +311,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 																							  Key<T1, JOINID> leftColumn,
 																							  Key<T2, JOINID> rightColumn,
 																							  BeanRelationFixer<SRC, C> beanRelationFixer,
-																							  @Nullable BiFunction<Row, ColumnedRow, Object> duplicateIdentifierProvider,
+																							  @Nullable Function<ColumnedRow, Object> duplicateIdentifierProvider,
 																							  String joinName,
 																							  Set<? extends Column<T2, ?>> selectableColumns,
 																							  boolean optional,
@@ -422,7 +415,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			nonCommonColumns.forEach(column -> {
 				Selectable<?> expression;
 				if (subPersister.getMapping().getSelectableColumns().contains(column)) {
-					expression = new SelectableString<>(column.getName(), column.getJavaType());
+					expression = new SimpleSelectable<>(column.getName(), column.getJavaType());
 				} else {
 					expression = cast((String) null, column.getJavaType());
 				}
@@ -469,9 +462,10 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 					mainPersister.<T1>getMainTable().getPrimaryKey(),
 					subPersister.<T2>getMainTable().getPrimaryKey(),
 					JoinType.OUTER,
-					columnedRow -> {
+					joinNode -> {
 						PolymorphicMergeJoinRowConsumer<V, I> joinRowConsumer = new PolymorphicMergeJoinRowConsumer<>(
-								localSubPersister.<T2>getMapping(), columnedRow);
+								(MergeJoinNode) joinNode,
+								localSubPersister.<T2>getMapping());
 						mainPersisterJoin.addSubPersisterJoin(joinRowConsumer, discriminatorComputer.increment());
 						return joinRowConsumer;
 					}); 
@@ -566,13 +560,13 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		}
 		
 		@Override
-		protected void fillCurrentRelationIds(Row row, C bean, ColumnedRow columnedRow) {
-			Integer discriminator = columnedRow.getValue(discriminatorColumn, row);
+		protected void fillCurrentRelationIds(ColumnedRow columnedRow, C bean) {
+			Integer discriminator = columnedRow.get(discriminatorColumn);
 			// we avoid NPE on polymorphismPolicy.getClass(discriminator) caused by null discriminator in case of empty relation
 			// by only treating known discriminator values (preferred way to check against null because type can be primitive)
 			SelectExecutor<? extends C, I> subSelectExecutor = subtypeSelectorPerDiscriminatorValue.get(discriminator);
 			if (subSelectExecutor != null) {
-				I id = idMapping.getIdentifierAssembler().assemble(row, columnedRow);
+				I id = idMapping.getIdentifierAssembler().assemble(columnedRow);
 				addToCurrentIdsHolder(bean, subSelectExecutor, id);
 			}
 		}

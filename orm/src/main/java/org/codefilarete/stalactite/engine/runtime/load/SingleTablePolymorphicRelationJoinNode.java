@@ -12,14 +12,13 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.ForkJoinRowConsumer;
-import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Iterables;
 
@@ -61,26 +60,31 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 
 	}
 	
 	@Override
-	public RelationJoinRowConsumer<C, I> toConsumer(ColumnedRow columnedRow) {
-		return new SingleTablePolymorphicRelationJoinRowConsumer(columnedRow);
+	public RelationJoinRowConsumer<C, I> toConsumer(JoinNode<T2> joinNode) {
+		return new SingleTablePolymorphicRelationJoinRowConsumer(joinNode);
 	}
 	
 	protected class SingleTablePolymorphicRelationJoinRowConsumer implements RelationJoinRowConsumer<C, I> {
 		
 		private final Map<DTYPE, SubEntityDeterminer<? extends C>> subEntityDeterminerPerDiscriminatorValue;
+
+		private final JoinNode<?> joinNode;
 		
-		private final ColumnedRow columnedRow;
-		
-		private SingleTablePolymorphicRelationJoinRowConsumer(ColumnedRow columnedRow) {
-			this.columnedRow = columnedRow;
+		private SingleTablePolymorphicRelationJoinRowConsumer(JoinNode<?> joinNode) {
+			this.joinNode = joinNode;
 			this.subEntityDeterminerPerDiscriminatorValue = Iterables.map(subPersisters,
 					subPersister -> polymorphismPolicy.getDiscriminatorValue(subPersister.getClassToPersist()),
-					subPersister -> new SubEntityDeterminer<>(subPersister, columnedRow),
+					subPersister -> new SubEntityDeterminer<>(subPersister),
 					HashMap::new);
 		}
-		
+
 		@Override
-		public C applyRelatedEntity(Object parentJoinEntity, Row row, TreeInflationContext context) {
+		public JoinNode<?> getNode() {
+			return joinNode;
+		}
+
+		@Override
+		public C applyRelatedEntity(Object parentJoinEntity, ColumnedRow row, TreeInflationContext context) {
 			RowIdentifier<C> rowIdentifier = giveIdentifier(row);
 			if (rowIdentifier == null) {
 				return null;
@@ -100,7 +104,7 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 
 					C rightEntity = (C) context.giveEntityFromCache(getEntityType(), rightIdentifier, () -> rowIdentifier.rowConsumer.createInstance(row));
 					getBeanRelationFixer().apply(parentJoinEntity, rightEntity);
 					if (getConsumptionListener() != null) {
-						getConsumptionListener().onNodeConsumption(rightEntity, col -> columnedRow.getValue(col, row));
+						getConsumptionListener().onNodeConsumption(rightEntity, row);
 					}
 					return rightEntity;
 				} else {
@@ -110,8 +114,9 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 
 		}
 		
 		@Nullable
-		private <D extends C> RowIdentifier<D> giveIdentifier(Row row) {
-			DTYPE discriminatorValue = columnedRow.getValue(discriminatorColumn, row);
+		private <D extends C> RowIdentifier<D> giveIdentifier(ColumnedRow row) {
+			row = EntityTreeInflater.currentContext().getDecoder(joinNode);
+			DTYPE discriminatorValue = row.get(discriminatorColumn);
 			if (discriminatorValue != null) {
 				SubEntityDeterminer<D> discriminatorConsumer = (SubEntityDeterminer<D>) subEntityDeterminerPerDiscriminatorValue.get(discriminatorValue);
 				if (discriminatorConsumer != null) {
@@ -130,21 +135,21 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 
 		 */
 		private class SubEntityDeterminer<D extends C> {
 			
-			private final Function<Row, I> identifierProvider;
+			private final Function<ColumnedRow, I> identifierProvider;
 			
 			private final RowTransformer<D> entityInflater;
 			
-			public SubEntityDeterminer(ConfiguredRelationalPersister<D, I> subPersister, ColumnedRow columnedRow) {
-				this.identifierProvider = row -> subPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(row, columnedRow);
-				this.entityInflater = subPersister.getMapping().copyTransformerWithAliases(columnedRow);
+			public SubEntityDeterminer(ConfiguredRelationalPersister<D, I> subPersister) {
+				this.identifierProvider = row -> subPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(row);
+				this.entityInflater = subPersister.getMapping().getRowTransformer();
 			}
 			
 			@Nullable
-			public I giveIdentifier(Row row) {
+			public I giveIdentifier(ColumnedRow row) {
 				return identifierProvider.apply(row);
 			}
 			
-			public D createInstance(Row row) {
+			public D createInstance(ColumnedRow row) {
 				return entityInflater.transform(row);
 			}
 		}

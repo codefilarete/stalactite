@@ -16,7 +16,6 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
-import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
@@ -31,8 +30,8 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulator;
-import org.codefilarete.stalactite.sql.result.Row;
-import org.codefilarete.stalactite.sql.result.RowIterator;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
+import org.codefilarete.stalactite.sql.result.ColumnedRowIterator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
@@ -43,7 +42,6 @@ import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.tool.collection.Maps.ChainingMap;
 
 import static org.codefilarete.stalactite.query.model.Operators.in;
 import static org.codefilarete.tool.bean.Objects.preventNull;
@@ -94,22 +92,24 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntityFind
 		
 		// computing SQL readers from dialect binder registry
 		Query query = entityTreeQuery.getQuery();
-		Map<String, ResultSetReader<?>> selectParameterBinders = new HashMap<>();
+		Map<Selectable<?>, ResultSetReader<?>> selectParameterBinders = new HashMap<>();
+		Map<Selectable<?>, String> aliases = new HashMap<>();
 		query.getColumns().forEach(selectable -> {
 			ResultSetReader<?> reader;
 			String alias = preventNull(query.getAliases().get(selectable), selectable.getExpression());
 			if (selectable instanceof Column) {
 				reader = dialect.getColumnBinderRegistry().getReader((Column) selectable);
-				selectParameterBinders.put(alias, reader);
+				selectParameterBinders.put(selectable, reader);
 			} else {
 				reader = dialect.getColumnBinderRegistry().getReader(selectable.getJavaType());
 			}
-			selectParameterBinders.put(alias, reader);
+			selectParameterBinders.put(selectable, reader);
+			aliases.put(selectable, alias);
 		});
 		
 		StringParamedSQL statement = new StringParamedSQL(sql, parameterBinders);
 		statement.setValues(values);
-		return new InternalExecutor(inflater, selectParameterBinders).execute(statement);
+		return new InternalExecutor(inflater, selectParameterBinders, aliases).execute(statement);
 	}
 	
 	/**
@@ -135,12 +135,11 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntityFind
 			KeepOrderMap<Selectable<?>, String> columns = query.getSelectDelegate().clear();
 			Column<T, I> pk = (Column<T, I>) Iterables.first(((Table) entityJoinTree.getRoot().getTable()).getPrimaryKey().getColumns());
 			query.select(pk, PRIMARY_KEY_ALIAS);
-			ChainingMap<String, ResultSetReader> columnReaders = Maps.asMap(PRIMARY_KEY_ALIAS, dialect.getColumnBinderRegistry().getBinder(pk));
 			Map<Column<?, ?>, String> aliases = Maps.asMap(pk, PRIMARY_KEY_ALIAS);
-			ColumnedRow columnedRow = new ColumnedRow(aliases::get);
+			Map<Column<?, ?>, ResultSetReader<?>> columnReaders = Maps.asMap(pk, dialect.getColumnBinderRegistry().getBinder(pk));
 			orderByClauseConsumer.accept(cloneAwareOrderBy);
 			limitAwareConsumer.accept(query.orderBy());
-			Set<I> ids = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>()), columnReaders, columnedRow);
+			Set<I> ids = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>()), columnReaders, aliases);
 			
 			if (ids.isEmpty()) {
 				// No result found, we must stop here because request below doesn't support in(..) without values (SQL error from database)
@@ -165,11 +164,11 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntityFind
 		}
 	}
 	
-	private Set<I> readIds(PreparedSQL preparedSQL, Map<String, ResultSetReader> columnReaders, ColumnedRow columnedRow) {
+	private Set<I> readIds(PreparedSQL preparedSQL, Map<Column<?, ?>, ResultSetReader<?>> columnReaders, Map<Column<?, ?>, String> aliases) {
 		EntityInflater<C, I> entityInflater = entityJoinTree.getRoot().getEntityInflater();
 		try (ReadOperation<Integer> closeableOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
-			RowIterator rowIterator = new RowIterator(closeableOperation.execute(), columnReaders);
-			return Iterables.collect(() -> rowIterator, row -> entityInflater.giveIdentifier(row, columnedRow), HashSet::new);
+			ColumnedRowIterator rowIterator = new ColumnedRowIterator(closeableOperation.execute(), columnReaders, aliases);
+			return Iterables.collect(() -> rowIterator, row -> entityInflater.giveIdentifier(row), HashSet::new);
 		} catch (RuntimeException e) {
 			throw new SQLExecutionException(preparedSQL.getSQL(), e);
 		}
@@ -192,18 +191,17 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntityFind
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
 		selectAdapter.accept(query.getSelectDelegate());
 		Map<Selectable<?>, String> aliases = query.getAliases();
-		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
 		
-		Map<String, ResultSetReader<?>> columnReaders = Iterables.map(query.getColumns(), new AliasAsserter<>(aliases::get), selectable -> dialect.getColumnBinderRegistry().getBinder(selectable.getJavaType()));
+		Map<Selectable<?>, ResultSetReader<?>> columnReaders = Iterables.map(query.getColumns(), Function.identity(), selectable -> dialect.getColumnBinderRegistry().getBinder(selectable.getJavaType()));
 		
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>());
-		return readProjection(preparedSQL, columnReaders, columnedRow, accumulator);
+		return readProjection(preparedSQL, columnReaders, query.getAliases(), accumulator);
 	}
 	
-	private <R, O> R readProjection(PreparedSQL preparedSQL, Map<String, ResultSetReader<?>> columnReaders, ColumnedRow columnedRow, Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator) {
+	private <R, O> R readProjection(PreparedSQL preparedSQL, Map<Selectable<?>, ResultSetReader<?>> columnReaders, Map<Selectable<?>, String> aliases, Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator) {
 		try (ReadOperation<Integer> closeableOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
-			RowIterator rowIterator = new RowIterator(closeableOperation.execute(), columnReaders);
-			return accumulator.collect(Iterables.stream(rowIterator).map(row -> (Function<Selectable<O>, O>) selectable -> columnedRow.getValue(selectable, row)).collect(Collectors.toList()));
+			ColumnedRowIterator rowIterator = new ColumnedRowIterator(closeableOperation.execute(), columnReaders, aliases);
+			return accumulator.collect(Iterables.stream(rowIterator).map(row -> (Function<Selectable<O>, O>) row::get).collect(Collectors.toList()));
 		} catch (RuntimeException e) {
 			throw new SQLExecutionException(preparedSQL.getSQL(), e);
 		}
@@ -215,15 +213,19 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntityFind
 	private class InternalExecutor {
 		
 		private final EntityTreeInflater<C> inflater;
-		private final Map<String, ResultSetReader<?>> selectParameterBinders;
+		private final Map<Selectable<?>, ResultSetReader<?>> selectParameterBinders;
+		private final Map<Selectable<?>, String> columnAliases;
 		
 		private InternalExecutor(EntityTreeQuery<C> entityTreeQuery) {
-			this(entityTreeQuery.getInflater(), entityTreeQuery.getSelectParameterBinders());
+			this(entityTreeQuery.getInflater(), entityTreeQuery.getSelectParameterBinders(), entityTreeQuery.getColumnAliases());
 		}
 		
-		private InternalExecutor(EntityTreeInflater<C> inflater, Map<String, ? extends ResultSetReader<?>> selectParameterBinders) {
+		public InternalExecutor(EntityTreeInflater<C> inflater,
+								Map<Selectable<?>, ? extends ResultSetReader<?>> selectParameterBinders,
+								Map<Selectable<?>, String> columnAliases) {
 			this.inflater = inflater;
-			this.selectParameterBinders = (Map<String, ResultSetReader<?>>) selectParameterBinders;
+			this.selectParameterBinders = (Map<Selectable<?>, ResultSetReader<?>>) selectParameterBinders;
+			this.columnAliases = columnAliases;
 		}
 		
 		protected Set<C> execute(SQLStatement<?> query) {
@@ -237,35 +239,12 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntityFind
 		protected Set<C> transform(ReadOperation<?> closeableOperation) {
 			ResultSet resultSet = closeableOperation.execute();
 			// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
-			RowIterator rowIterator = new RowIterator(resultSet, selectParameterBinders);
+			ColumnedRowIterator rowIterator = new ColumnedRowIterator(resultSet, selectParameterBinders, columnAliases);
 			return transform(rowIterator);
 		}
 		
-		protected Set<C> transform(Iterator<Row> rowIterator) {
-			return inflater.transform(() -> rowIterator, 50);
-		}
-	}
-	
-	/**
-	 * Small class that will be used to ensure that a {@link Selectable} as an alias in the query
-	 * @param <S>
-	 * @author Guillaume Mary
-	 */
-	private static class AliasAsserter<S extends Selectable> implements Function<S, String> {
-		
-		private final Function<S, String> delegate;
-		
-		private AliasAsserter(Function<S, String> delegate) {
-			this.delegate = delegate;
-		}
-		
-		@Override
-		public String apply(S selectable) {
-			String alias = delegate.apply(selectable);
-			if (alias == null) {
-				throw new IllegalArgumentException("Item " + selectable.getExpression() + " must have an alias");
-			}
-			return alias;
+		protected Set<C> transform(Iterator<? extends ColumnedRow> rowIterator) {
+			return inflater.transform(() -> (Iterator<ColumnedRow>) rowIterator, 50);
 		}
 	}
 }

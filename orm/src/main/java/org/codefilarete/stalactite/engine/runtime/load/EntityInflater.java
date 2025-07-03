@@ -2,12 +2,11 @@ package org.codefilarete.stalactite.engine.runtime.load;
 
 import java.util.Set;
 
-import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 
 /**
  * Contract to deserialize a database row to a bean
@@ -16,9 +15,9 @@ public interface EntityInflater<C, I> {
 	
 	Class<C> getEntityType();
 	
-	I giveIdentifier(Row row, ColumnedRow columnedRow);
+	I giveIdentifier(ColumnedRow row);
 	
-	RowTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow);
+	RowTransformer<C> getRowTransformer();
 	
 	Set<Selectable<?>> getSelectableColumns();
 	
@@ -44,13 +43,13 @@ public interface EntityInflater<C, I> {
 		}
 		
 		@Override
-		public I giveIdentifier(Row row, ColumnedRow columnedRow) {
-			return this.delegate.getIdMapping().getIdentifierAssembler().assemble(row, columnedRow);
+		public I giveIdentifier(ColumnedRow row) {
+			return this.delegate.getIdMapping().getIdentifierAssembler().assemble(row);
 		}
 		
 		@Override
-		public RowTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow) {
-			return this.delegate.copyTransformerWithAliases(columnedRow);
+		public RowTransformer<C> getRowTransformer() {
+			return this.delegate.getRowTransformer();
 		}
 		
 		@Override

@@ -20,10 +20,13 @@ import org.codefilarete.stalactite.engine.runtime.IndexedAssociationRecordInsert
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
+import org.codefilarete.stalactite.engine.runtime.load.JoinNode;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.AfterUpdateTrigger;
 import org.codefilarete.stalactite.mapping.EntityMapping;
+import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Nullable;
@@ -69,14 +72,18 @@ public class OneToManyWithIndexedAssociationTableEngine<
 				associationPersister.getMainTable().getOneSideKey(),
 				associationPersister.getMainTable().getOneSideForeignKey(),
 				JoinType.OUTER,
-				(Set) Arrays.asHashSet(indexColumn));
+				Arrays.asHashSet(indexColumn));
 		
 		// we add target subgraph joins to main persister
-		targetPersister.joinAsMany(sourcePersister, associationPersister.getMainTable().getManySideForeignKey(),
+		targetPersister.joinAsMany(sourcePersister,
+				associationPersister.getMainTable().getManySideForeignKey(),
 				associationPersister.getMainTable().getManySideKey(), manyRelationDescriptor.getRelationFixer(),
-				(row, columnedRow) -> {
-					TRGTID identifier = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(row, columnedRow);
-					Integer targetEntityIndex = EntityTreeInflater.currentContext().getRowDecoder().giveValue(associationTableJoinNodeName, (Column<?, Integer>) indexColumn, row);
+				columnedRow -> {
+					TRGTID identifier = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(columnedRow);
+					// indexColumn column value is took on join of association table, not target table, so we have to grab it
+					JoinNode<Fromable> join = sourcePersister.getEntityJoinTree().getJoin(associationTableJoinNodeName);
+					ColumnedRow rowDecoder = EntityTreeInflater.currentContext().getDecoder(join);
+					Integer targetEntityIndex = rowDecoder.get(indexColumn);
 					return identifier + "-" + targetEntityIndex;
 				}, associationTableJoinNodeName, true, loadSeparately);
 		

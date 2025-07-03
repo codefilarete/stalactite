@@ -12,7 +12,7 @@ import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Converter;
 
@@ -53,7 +53,9 @@ public interface Mapping<C, T extends Table<T>> {
 	 * @param row a row coming from a select clause of this entity
 	 * @return a new bean which properties have been filled by row values
 	 */
-	C transform(Row row);
+	C transform(ColumnedRow row);
+
+	RowTransformer<C> getRowTransformer();
 	
 	/**
 	 * Adds a column for insert. This column is not expected to be already mapped to a bean property of the &lt;T&gt; class
@@ -122,8 +124,6 @@ public interface Mapping<C, T extends Table<T>> {
 	default Set<Column<T, ?>> getReadonlyColumns() {
 		return new KeepOrderSet<>(getReadonlyPropertyToColumn().values());
 	}
-	
-	RowTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow);
 	
 	/**
 	 * Adds a transformer listener, optional operation

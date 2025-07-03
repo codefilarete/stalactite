@@ -167,7 +167,7 @@ class EntityJoinTreeTest {
 		String tutuAddKey2 = entityJoinTree.addRelationJoin(tataAddKey2, new EntityMappingAdapter(tutuCloneMappingMock), tataClonePrimaryKey, tutuClonePrimaryKey, null, INNER, null, Collections.emptySet());
 		
 		Iterator<AbstractJoinNode<?, ?, ?, ?>> actual = entityJoinTree.joinIterator();
-		org.assertj.core.api.Assertions.assertThat(Iterables.copy(actual))
+		assertThat(Iterables.copy(actual))
 				.usingElementComparator(Predicates.toComparator(Predicates.and(AbstractJoinNode::getLeftJoinLink, AbstractJoinNode::getRightJoinLink)))
 				.withRepresentation(new Printer<>(AbstractJoinNode.class, joinNode -> joinNode.getLeftJoinLink() + " = " + joinNode.getRightJoinLink()))
 				.isEqualTo(Arrays.asList(
@@ -245,9 +245,9 @@ class EntityJoinTreeTest {
 			return ++o;
 		});
 		
-		org.assertj.core.api.Assertions.assertThat(depth).isEqualTo(Arrays.asList(1, 1, 2, 2, 2));
+		assertThat(depth).isEqualTo(Arrays.asList(1, 1, 2, 2, 2));
 		
-		org.assertj.core.api.Assertions.assertThat(collectedNodes)
+		assertThat(collectedNodes)
 				.withRepresentation(new Printer<>(AbstractJoinNode.class, joinNode -> joinNode.getLeftJoinLink() + " = " + joinNode.getRightJoinLink()))
 				.isEqualTo(Arrays.asList(
 						entityJoinTree.giveJoin(totoPrimaryKey, tataPrimaryKey),    // X
@@ -316,11 +316,11 @@ class EntityJoinTreeTest {
 		String titiAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingAdapter(titiMappingMock), tataPrimaryKey, titiPrimaryKey, null, INNER, null, Collections.emptySet());
 		String tataAddKey2 = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingAdapter(tataCloneMappingMock), totoPrimaryKey, tataClonePrimaryKey, null, INNER, null, Collections.emptySet());
 		String tutuAddKey2 = entityJoinTree.addRelationJoin(tataAddKey2, new EntityMappingAdapter(tutuCloneMappingMock), tataClonePrimaryKey, tutuClonePrimaryKey, null, INNER, null, Collections.emptySet());
-		
-		Set<Table<?>> actualTables = entityJoinTree.giveTables();
-		
-		org.assertj.core.api.Assertions.assertThat(actualTables).isEqualTo(
-				Arrays.asHashSet(totoTable, tataTable, tataTableClone, titiTable, tutuTable, tutuTableClone));
+
+		assertThat(entityJoinTree.giveTables())
+				.usingElementComparator(Table.COMPARATOR_ON_SCHEMA_AND_NAME)
+				.containsExactlyInAnyOrder(
+				totoTable, tataTable, tataTableClone, titiTable, tutuTable, tutuTableClone);
 		
 	}
 	

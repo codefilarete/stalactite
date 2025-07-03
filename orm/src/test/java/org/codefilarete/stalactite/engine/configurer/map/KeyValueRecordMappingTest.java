@@ -2,20 +2,19 @@ package org.codefilarete.stalactite.engine.configurer.map;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.apache.commons.lang3.builder.MultilineRecursiveToStringStyle;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.assertj.core.presentation.StandardRepresentation;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecordMapping.KeyValueRecordIdMapping.RecordIdAssembler;
-import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
+import org.codefilarete.stalactite.sql.result.MapBasedColumnedRow;
 import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,7 +34,7 @@ class KeyValueRecordMappingTest {
 			Column<T, String> entryKeyColumn = joinTable.addColumn("entryKey", String.class);
 			LEFTTABLE leftTable = (LEFTTABLE) new Table("leftTable");
 			Column<LEFTTABLE, Long> leftTableIdColumn = leftTable.addColumn("id", long.class);
-			BiFunction<Row, ColumnedRow, String> entryKeyAssembler = (row, columnedRow) -> columnedRow.getValue(entryKeyColumn, row);
+			Function<ColumnedRow, String> entryKeyAssembler = columnedRow -> columnedRow.get(entryKeyColumn);
 			IdentifierAssembler<Long, LEFTTABLE> sourceIdentifierAssembler = new SimpleIdentifierAssembler<>(leftTableIdColumn);
 			// Since we test assemble() method there's no need of columns mapping because they are used at insertion time
 			Map<Column<LEFTTABLE, ?>, Column<T, ?>> primaryKey2ForeignKeyMapping = Collections.emptyMap();
@@ -49,22 +48,10 @@ class KeyValueRecordMappingTest {
 					primaryKey2ForeignKeyMapping
 			);
 			
-			Row row = new Row();
-			row.add("id", 42L);
-			row.add("entryKey", "toto");
-			ColumnedRow rowAliaser = new ColumnedRow(selectable -> {
-				// Only leftTableIdColumn and rightTableIdColumn are expected to be read by assemble()
-				// Note that they should be in final select query since they are joined on association table
-				if (selectable == leftTableIdColumn) {
-					return "id";
-				}
-				if (selectable == entryKeyColumn) {
-					return "entryKey";
-				}
-				throw new IllegalArgumentException("Column " + selectable + " is not mapped in row");
-			});
-			
-			RecordId<String, Long> actual = testInstance.assemble(row, rowAliaser);
+			MapBasedColumnedRow row = new MapBasedColumnedRow();
+			row.add(leftTableIdColumn, 42L);
+			row.add(entryKeyColumn, "toto");
+			RecordId<String, Long> actual = testInstance.assemble(row);
 			assertThat(actual)
 					.withRepresentation(new StandardRepresentation() {
 						@Override
@@ -98,23 +85,18 @@ class KeyValueRecordMappingTest {
 					rightTable2EntryKeyMapping
 			);
 			
-			Row row = new Row();
-			row.add("id", 42L);
-			row.add("entryKey", "toto");
-			ColumnedRow rowAliaser = new ColumnedRow(selectable -> {
-				// Only leftTableIdColumn and rightTableIdColumn are expected to be read by assemble()
-				// Note that they should be in final select query since they are joined on association table
-				if (selectable == leftTableIdColumn) {
-					return "id";
-				}
-				if (selectable == rightTableIdColumn) {
-					return "entryKey";
-				}
-				throw new IllegalArgumentException("Column " + selectable + " is not mapped in row");
-			});
-			
-			RecordId<String, Long> actual = testInstance.assemble(row, rowAliaser);
-			assertThat(actual).isEqualTo(new RecordId<>(42L, "toto"));
+			MapBasedColumnedRow row = new MapBasedColumnedRow();
+			row.add(leftTableIdColumn, 42L);
+			row.add(rightTableIdColumn, "toto");
+			RecordId<String, Long> actual = testInstance.assemble(row);
+			assertThat(actual)
+					.withRepresentation(new StandardRepresentation() {
+						@Override
+						protected String fallbackToStringOf(Object object) {
+							return ToStringBuilder.reflectionToString(object, new MultilineRecursiveToStringStyle());
+						}
+					})
+					.isEqualTo(new RecordId<>(42L, "toto"));
 		}
 		
 		@Test
@@ -125,7 +107,7 @@ class KeyValueRecordMappingTest {
 			Column<T, String> entryKeyColumn = joinTable.addColumn("entryKey", String.class);
 			LEFTTABLE leftTable = (LEFTTABLE) new Table("leftTable");
 			Column<LEFTTABLE, Long> leftTableIdColumn = leftTable.addColumn("id", long.class);
-			BiFunction<Row, ColumnedRow, String> entryKeyAssembler = (row, columnedRow) -> columnedRow.getValue(entryKeyColumn, row);
+			Function<ColumnedRow, String> entryKeyAssembler = columnedRow -> columnedRow.get(entryKeyColumn);
 			IdentifierAssembler<Long, LEFTTABLE> sourceIdentifierAssembler = new SimpleIdentifierAssembler<>(leftTableIdColumn);
 			Map<Column<LEFTTABLE, ?>, Column<T, ?>> primaryKey2ForeignKeyMapping = (Map) Maps.forHashMap(Column.class, Column.class)
 					.add(leftTableIdColumn, joinTableIdColumn);

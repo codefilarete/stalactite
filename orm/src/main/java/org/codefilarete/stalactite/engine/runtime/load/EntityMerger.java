@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.engine.runtime.load;
 
 import java.util.Set;
 
-import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.query.model.Selectable;
@@ -13,7 +12,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  */
 public interface EntityMerger<C> {
 	
-	RowTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow);
+	RowTransformer<C> getRowTransformer();
 	
 	Set<Selectable<?>> getSelectableColumns();
 	
@@ -33,8 +32,8 @@ public interface EntityMerger<C> {
 		}
 		
 		@Override
-		public RowTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow) {
-			return delegate.copyTransformerWithAliases(columnedRow);
+		public RowTransformer<C> getRowTransformer() {
+			return delegate.getRowTransformer();
 		}
 		
 		@Override

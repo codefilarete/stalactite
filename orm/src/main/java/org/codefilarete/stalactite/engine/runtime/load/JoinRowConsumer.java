@@ -4,9 +4,8 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
-import org.codefilarete.stalactite.engine.runtime.load.TablePerClassRootJoinNode.TablePerClassPolymorphicJoinRootRowConsumer;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 
 /**
  * Marking interface for consumers of {@link org.codefilarete.stalactite.sql.result.Row} during result set inflating phase
@@ -18,11 +17,13 @@ import org.codefilarete.stalactite.sql.result.Row;
  * Each kind of join implements its own {@link JoinRowConsumer} and {@link EntityTreeInflater} is aware of them by
  * calling sub-class-dedicated methods because there's no common point between them to make an abstract method.
  */
-interface JoinRowConsumer {
+public interface JoinRowConsumer {
+	
+	JoinNode<?> getNode();
 	
 	interface RootJoinRowConsumer<C> extends JoinRowConsumer {
 		
-		C createRootInstance(Row row, TreeInflationContext context);
+		C createRootInstance(ColumnedRow row, TreeInflationContext context);
 		
 	}
 	

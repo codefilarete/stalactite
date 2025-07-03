@@ -129,10 +129,8 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 		// first we'll use table of columns defined in embedded override
 		// then the one defined by inheritance
 		// if both are null we'll create a new one
-		Table tableDefinedByColumnOverride = BeanMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping());
 		Table tableDefinedByInheritanceConfiguration = ((TablePerClassPolymorphism<D>) polymorphismPolicy).giveTable(subConfiguration);
-		
-		assertNullOrEqual(tableDefinedByColumnOverride, tableDefinedByInheritanceConfiguration);
+		Table tableDefinedByColumnOverride = BeanMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping(), tableDefinedByInheritanceConfiguration);
 		
 		SUBTABLE subTable = (SUBTABLE) nullable(tableDefinedByColumnOverride)
 				.elseSet(tableDefinedByInheritanceConfiguration)

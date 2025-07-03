@@ -4,14 +4,13 @@ import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
-import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -19,7 +18,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
@@ -75,7 +74,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 																							   Key<T1, JOINID> leftColumn,
 																							   Key<T2, JOINID> rightColumn,
 																							   BeanRelationFixer<SRC, C> beanRelationFixer,
-																							   @Nullable BiFunction<Row, ColumnedRow, Object> duplicateIdentifierProvider,
+																							   @Nullable Function<ColumnedRow, Object> duplicateIdentifierProvider,
 																							   String joinName,
 																							   boolean optional,
 																							   boolean loadSeparately) {
@@ -105,7 +104,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 																					   Key<T1, JOINID> leftColumn,
 																					   Key<T2, JOINID> rightColumn,
 																					   BeanRelationFixer<SRC, C> beanRelationFixer,
-																					   @Nullable BiFunction<Row, ColumnedRow, Object> duplicateIdentifierProvider,
+																					   @Nullable Function<ColumnedRow, Object> duplicateIdentifierProvider,
 																					   String joinName,
 																					   Set<? extends Column<T2, ?>> selectableColumns,
 																					   boolean optional,

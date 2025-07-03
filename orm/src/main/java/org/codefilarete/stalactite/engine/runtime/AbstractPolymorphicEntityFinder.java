@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import java.sql.ResultSet;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -14,7 +15,6 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
-import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.EntityFinder;
@@ -30,7 +30,8 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulator;
-import org.codefilarete.stalactite.sql.result.RowIterator;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
+import org.codefilarete.stalactite.sql.result.ColumnedRowIterator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
@@ -125,8 +126,8 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 		try (ReadOperation<Integer> readOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
 			// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
-			RowIterator rowIterator = new RowIterator(resultSet, entityTreeQuery.getSelectParameterBinders());
-			return inflater.transform(() -> rowIterator, 50);
+			Iterator<? extends ColumnedRow> rowIterator = new ColumnedRowIterator(resultSet, entityTreeQuery.getSelectParameterBinders(), entityTreeQuery.getColumnAliases());
+			return inflater.transform(() -> (Iterator<ColumnedRow>) rowIterator, 50);
 		} catch (RuntimeException e) {
 			throw new SQLExecutionException(preparedSQL.getSQL(), e);
 		}
@@ -143,19 +144,16 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
 		selectAdapter.accept(query.getSelectDelegate());
-		Map<Selectable<?>, String> aliases = query.getAliases();
-		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
-		
-		Map<String, ResultSetReader<?>> columnReaders = Iterables.map(query.getColumns(), new AliasAsserter<>(aliases::get), selectable -> dialect.getColumnBinderRegistry().getBinder(selectable.getJavaType()));
+		Map<Selectable<?>, ResultSetReader<?>> columnReaders = Iterables.map(query.getColumns(), Function.identity(), selectable -> dialect.getColumnBinderRegistry().getBinder(selectable.getJavaType()));
 		
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>());
-		return readProjection(preparedSQL, columnReaders, columnedRow, accumulator);
+		return readProjection(preparedSQL, columnReaders, query.getAliases(), accumulator);
 	}
 	
-	protected <R, O> R readProjection(PreparedSQL preparedSQL, Map<String, ResultSetReader<?>> columnReaders, ColumnedRow columnedRow, Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator) {
+	protected <R, O> R readProjection(PreparedSQL preparedSQL, Map<Selectable<?>, ResultSetReader<?>> columnReaders, Map<Selectable<?>, String> aliases, Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator) {
 		try (ReadOperation<Integer> closeableOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
-			RowIterator rowIterator = new RowIterator(closeableOperation.execute(), columnReaders);
-			return accumulator.collect(Iterables.stream(rowIterator).map(row -> (Function<Selectable<O>, O>) selectable -> columnedRow.getValue(selectable, row)).collect(Collectors.toList()));
+			ColumnedRowIterator rowIterator = new ColumnedRowIterator(closeableOperation.execute(), columnReaders, aliases);
+			return accumulator.collect(Iterables.stream(rowIterator).map(row -> (Function<Selectable<O>, O>) row::get).collect(Collectors.toList()));
 		} catch (RuntimeException e) {
 			throw new SQLExecutionException(preparedSQL.getSQL(), e);
 		}

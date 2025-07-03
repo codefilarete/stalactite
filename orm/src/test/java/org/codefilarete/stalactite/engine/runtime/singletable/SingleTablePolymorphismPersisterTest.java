@@ -41,7 +41,7 @@ import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierMana
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
+import org.codefilarete.stalactite.query.model.Selectable.SimpleSelectable;
 import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
@@ -674,7 +674,7 @@ class SingleTablePolymorphismPersisterTest {
 			));
 			when(preparedStatement.executeQuery()).thenAnswer((Answer<ResultSet>) invocation -> resultSet);
 			
-			Count count = Operators.count(new SelectableString<>("id", Integer.class));
+			Count count = Operators.count(new SimpleSelectable<>("id", Integer.class));
 			ExecutableProjectionQuery<AbstractToto, ?> totoRelationalExecutableEntityQuery = testInstance.selectProjectionWhere(select ->  {
 				select.clear();
 				select.add(count, "count");

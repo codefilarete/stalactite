@@ -1,16 +1,16 @@
 package org.codefilarete.stalactite.query.model;
 
 /**
- * Contract for elements to be put in a Select clause, in order to be transformed to SQL
+ * Contract for elements to be put in a Select clause to be transformed to SQL
  * 
- * @see SelectableString
+ * @see SimpleSelectable
  * @author Guillaume Mary
  */
 public interface Selectable<C> {
 	
 	/**
 	 * Gives the SQL string that must be put in the select clause.
-	 * Expected to be a valid and security-proof expression : don't consider any validation will be done.
+	 * Expected to be a valid and security-proof expression: don't consider any validation will be done.
 	 * 
 	 * @return any non-null SQL statement for a select clause
 	 */
@@ -18,11 +18,15 @@ public interface Selectable<C> {
 	
 	Class<C> getJavaType();
 	
+	static Selectable<String> selectableString(String expression) {
+		return new SimpleSelectable<>(expression, String.class);
+	}
+	
 	/**
 	 * Implementation for String to be put in Select clause or as a criteria.
 	 * Be aware that expression given at constructor will be rendered as it is to SQL without transformation.
 	 */
-	class SelectableString<C> implements Selectable<C> {
+	class SimpleSelectable<C> implements Selectable<C> {
 		
 		private final String expression;
 		
@@ -35,7 +39,7 @@ public interface Selectable<C> {
 		 * @param expression the text to be put into SQL
 		 * @param javaType type returned by expression
 		 */
-		public SelectableString(String expression, Class<C> javaType) {
+		public SimpleSelectable(String expression, Class<C> javaType) {
 			this.expression = expression;
 			this.javaType = javaType;
 		}

@@ -84,10 +84,8 @@ public class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends Abst
 		// first we'll use table of columns defined in embedded override
 		// then the one defined by inheritance
 		// if both are null we'll create a new one
-		Table tableDefinedByColumnOverride = BeanMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping());
 		Table tableDefinedByInheritanceConfiguration = joinTablePolymorphism.giveTable(subConfiguration);
-		
-		assertNullOrEqual(tableDefinedByColumnOverride, tableDefinedByInheritanceConfiguration);
+		Table tableDefinedByColumnOverride = BeanMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping(), tableDefinedByInheritanceConfiguration);
 		
 		SUBT subTable = (SUBT) nullable(tableDefinedByColumnOverride)
 				.elseSet(tableDefinedByInheritanceConfiguration)

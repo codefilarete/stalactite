@@ -10,6 +10,7 @@ import org.codefilarete.stalactite.engine.runtime.DMLExecutor;
 import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
 import org.codefilarete.stalactite.sql.ddl.DDLAppender;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -219,16 +220,16 @@ public class DMLGenerator {
 		Iterable<Column> sortedColumns = sort(columns);
 		DMLNameProvider dmlNameProvider = dmlNameProviderFactory.build(Fromable::getAbsoluteName);
 		DDLAppender sqlSelect = new DDLAppender(dmlNameProvider, "select ");
-		Map<String, ParameterBinder<?>> selectParameterBinders = new HashMap<>();
+		Map<Selectable<?>, ParameterBinder<?>> selectParameterBinders = new HashMap<>();
 		for (Column column : sortedColumns) {
 			sqlSelect.cat(column, ", ");
-			selectParameterBinders.put(dmlNameProvider.getSimpleName(column), columnBinderRegistry.getBinder(column));
+			selectParameterBinders.put(column, columnBinderRegistry.getBinder(column));
 		}
 		sqlSelect.cutTail(2).cat(" from ", table, " where ");
 		ParameterizedWhere parameterizedWhere = appendTupledWhere(sqlSelect, keyColumns, whereValuesCount);
 		Map<Column<T, ?>, int[]> columnToIndex = parameterizedWhere.getColumnToIndex();
 		Map<Column<T, ?>, ParameterBinder<?>> parameterBinders = parameterizedWhere.getParameterBinders();
-		return new ColumnParameterizedSelect<>(sqlSelect.toString(), columnToIndex, parameterBinders, selectParameterBinders);
+		return new ColumnParameterizedSelect<T>(sqlSelect.toString(), columnToIndex, parameterBinders, selectParameterBinders);
 	}
 	
 	protected Iterable<Column> sort(Iterable<? extends Column> columns) {

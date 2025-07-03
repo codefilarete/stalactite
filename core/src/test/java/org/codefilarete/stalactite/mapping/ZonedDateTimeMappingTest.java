@@ -6,11 +6,11 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Map;
 
-import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.MapBasedColumnedRow;
+import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,18 +54,18 @@ class ZonedDateTimeMappingTest {
 	void transform() {
 		// selecting it to see if it is correctly read
 		ZonedDateTime toBePersisted = ZonedDateTime.of(2018, Month.MAY.ordinal(), 16, 17, 53, 44, 00, ZoneId.of("America/Guadeloupe"));
-		Row row = new Row()
-			.add(colA.getName(), toBePersisted.toLocalDateTime())
-			.add(colB.getName(), toBePersisted.getZone());
+		MapBasedColumnedRow row = new MapBasedColumnedRow();
+		row.put(colA, toBePersisted.toLocalDateTime());
+		row.put(colB, toBePersisted.getZone());
 		ZonedDateTime hydratedZonedDateTime = testInstance.transform(row);
 		assertThat(toBePersisted).isEqualTo(hydratedZonedDateTime);
 	}
 	
 	@Test
 	void transform_null() {
-		Row row = new Row()
-			.add(colA.getName(), null)
-			.add(colB.getName(), null);
+		MapBasedColumnedRow row = new MapBasedColumnedRow();
+		row.put(colA, null);
+		row.put(colB, null);
 		ZonedDateTime hydratedZonedDateTime = testInstance.transform(row);
 		assertThat(hydratedZonedDateTime).isNull();
 	}

@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.sql.result;
 
-import java.util.Map;
 import java.util.TreeMap;
 
 /**
@@ -8,39 +7,19 @@ import java.util.TreeMap;
  * 
  * @author Guillaume Mary
  */
-public class Row {
-	
-	private final TreeMap<String, Object> content = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+public class Row extends AbstractRow<String> {
 	
 	public Row() {
-		// default constructor, properties are already assigned
-	}
-	
-	public Map<String, Object> getContent() {
-		return content;
+		super(new TreeMap<>(String.CASE_INSENSITIVE_ORDER));
 	}
 	
 	/**
-	 * Put a key-value pair to this instance
-	 * @param columnName the key of the value
-	 * @param object the value
-	 */
-	public void put(String columnName, Object object) {
-		content.put(columnName, object);
-	}
-	
-	/**
-	 * Fluent API equivalent to {@link #put(String, Object)}
-	 * @param columnName the key of the value
+	 * Overridden for accurate return type
+	 * @param key the key of the value
 	 * @param object the value
 	 * @return this
 	 */
-	public Row add(String columnName, Object object) {
-		put(columnName, object);
-		return this;
-	}
-	
-	public Object get(String key) {
-		return content.get(key);
+	public Row add(String key, Object object) {
+		return (Row) super.add(key, object);
 	}
 }

@@ -21,7 +21,7 @@ public abstract class ToCollectionRowTransformer<T extends Collection> extends A
 	 *
 	 * @param factory the factory of beans
 	 */
-	public ToCollectionRowTransformer(Function<Function<Column<?, ?>, Object>, T> factory, ColumnedRow columnedRow) {
-		super(factory, columnedRow);
+	public ToCollectionRowTransformer(Function<Function<Column<?, ?>, Object>, T> factory) {
+		super(factory);
 	}
 }

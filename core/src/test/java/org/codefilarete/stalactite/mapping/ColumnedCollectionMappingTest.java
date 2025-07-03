@@ -5,13 +5,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.tool.collection.Maps.ChainingMap;
-import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.MapBasedColumnedRow;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.collection.Maps.ChainingMap;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -136,10 +136,10 @@ class ColumnedCollectionMappingTest {
 	
 	@Test
 	void transform() {
-		Row row = new Row();
-		row.put(col1.getName(), "a");
-		row.put(col2.getName(), "b");
-		row.put(col3.getName(), "c");
+		MapBasedColumnedRow row = new MapBasedColumnedRow();
+		row.put(col1, "a");
+		row.put(col2, "b");
+		row.put(col3, "c");
 		List<String> toto = testInstance.transform(row);
 		// all 5th first element should be filled
 		assertThat(toto.get(0)).isEqualTo("a");

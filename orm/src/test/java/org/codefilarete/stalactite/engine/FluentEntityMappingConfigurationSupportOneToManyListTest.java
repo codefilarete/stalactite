@@ -1140,7 +1140,6 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			answerChoicesTableChoiceId = answerChoicesTable.addColumn("choices_Id", Identifier.class).primaryKey();
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-			ddlDeployer.getDdlGenerator().addTables(answerChoicesTable);
 			ddlDeployer.deployDDL();
 			return this;
 		}

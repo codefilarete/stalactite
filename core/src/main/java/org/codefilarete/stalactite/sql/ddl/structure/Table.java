@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.sql.ddl.structure;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -31,6 +32,15 @@ import static org.codefilarete.tool.Nullable.nullable;
  * @author Guillaume Mary
  */
 public class Table<SELF extends Table<SELF>> implements Fromable {
+
+	private static final Comparator<Table<?>> COMPARATOR_ON_NAME = Comparator.comparing(Table::getName, String.CASE_INSENSITIVE_ORDER);
+	private static final Comparator<Table<?>> COMPARATOR_ON_SCHEMA = Comparator.comparing(Table::getSchema, Comparator.nullsFirst(Comparator.comparing(Schema::getName, String.CASE_INSENSITIVE_ORDER)));
+
+	/**
+	 * Comparator on schema and name
+	 */
+	// implementation note: we compose it from the 2 above comparators due to generics issue that is resolve by decomposing the one line it 2 variables 
+	public static final Comparator<Table<?>> COMPARATOR_ON_SCHEMA_AND_NAME = COMPARATOR_ON_SCHEMA.thenComparing(COMPARATOR_ON_NAME);
 	
 	@Nullable
 	private final Schema schema;
@@ -51,9 +61,6 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	
 	private final Map<String, Column<SELF, ?>> columnsPerName = new HashMap<>();
 	
-	/** Made to avoid name & uppercase computation at each invocation of hashCode(). Made by principle, not for any performance issue observation */
-	private final int hashCode;
-	
 	public Table(String name) {
 		this(null, name);
 	}
@@ -65,7 +72,6 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 		}
 		this.name = name;
 		this.absoluteName = nullable(schema).map(Schema::getName).map(s -> s + "." + name).getOr(name);
-		this.hashCode = name.toUpperCase().hashCode();
 	}
 	
 	@Nullable
@@ -311,34 +317,6 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 		UniqueConstraint newUniqueConstraint = new UniqueConstraint(name, column, columns);
 		this.uniqueConstraints.add(newUniqueConstraint);
 		return newUniqueConstraint;
-	}
-	
-	/**
-	 * Implementation based on name comparison. Override for comparison in Collections.
-	 *
-	 * @param o an Object
-	 * @return true if this table name equals the other table name, case insensitive
-	 */
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof Table)) {
-			return false;
-		}
-		
-		Table table = (Table) o;
-		return getName().equalsIgnoreCase(table.getName());
-	}
-	
-	/**
-	 * Implemented to be compliant with equals override
-	 * @return a hash code based on table name
-	 */
-	@Override
-	public int hashCode() {
-		return hashCode;
 	}
 	
 	private static String typeToString(Column column) {

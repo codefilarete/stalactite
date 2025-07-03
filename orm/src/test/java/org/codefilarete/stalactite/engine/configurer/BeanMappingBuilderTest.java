@@ -62,7 +62,7 @@ class BeanMappingBuilderTest {
 				.override(Person::getVersion, versionColumn);
 		assertThatThrownBy(() -> BeanMappingBuilder.giveTargetTable(vehicleObjectFluentEntityMappingConfigurationSupport.getPropertiesMapping()))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, MappingConfigurationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Property override doesn't target main table : o.c.s.e.m.Person::getName");
+				.hasMessage("Property o.c.s.e.m.Person::getName overrides column with MyOverridingTable.myOverridingColumn but it is not part of main table MyOverridingTable2");
 	}
 	
 	@Test

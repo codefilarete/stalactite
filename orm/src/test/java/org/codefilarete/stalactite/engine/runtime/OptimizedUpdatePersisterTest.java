@@ -126,7 +126,7 @@ class OptimizedUpdatePersisterTest {
 		Connection currentConnection = testInstance.giveConnection();
 		PreparedStatement preparedStatement1 = currentConnection.prepareStatement("Select * from WhateverYouWant");
 		ResultSet effectiveResultSet = preparedStatement1.executeQuery();
-		RowIterator rsReader = new RowIterator(Maps.forHashMap(String.class, ResultSetReader.class)
+		RowIterator rsReader = new RowIterator(Maps.forHashMap(String.class, (Class<ResultSetReader<?>>) (Class) ResultSetReader.class)
 				.add("a", DefaultResultSetReaders.STRING_READER)
 				.add("b", DefaultResultSetReaders.STRING_READER));
 		// we must read whole ResultSet to trigger cache filling

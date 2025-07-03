@@ -23,14 +23,14 @@ public class ColumnParameterizedSQL<T extends Table<T>> extends ExpandableStatem
 	 * @param columnIndexes mapping between {@link Column}s (used on {@link #setValue(Object, Object)} and their indexes in the SQL statement
 	 * @param parameterBinders mapping between {@link Column}s and their 
 	 */
-	public ColumnParameterizedSQL(String sql, Map<Column<T, ?>, int[]> columnIndexes, Map<Column<T, ?>, ? extends PreparedStatementWriter<?>> parameterBinders) {
+	public ColumnParameterizedSQL(String sql, Map<? extends Column<T, ?>, int[]> columnIndexes, Map<? extends Column<T, ?>, ? extends PreparedStatementWriter<?>> parameterBinders) {
 		super(sql, parameterBinders);
-		this.columnIndexes = columnIndexes;
+		this.columnIndexes = (Map<Column<T, ?>, int[]>) columnIndexes;
 	}
 	
-	public ColumnParameterizedSQL(String sql, Map<Column<T, ?>, int[]> columnIndexes, PreparedStatementWriterIndex<Column<T, ?>, ? extends PreparedStatementWriter<?>> parameterBinderProvider) {
+	public ColumnParameterizedSQL(String sql, Map<? extends Column<T, ?>, int[]> columnIndexes, PreparedStatementWriterIndex<? extends Column<T, ?>, ? extends PreparedStatementWriter<?>> parameterBinderProvider) {
 		super(sql, parameterBinderProvider);
-		this.columnIndexes = columnIndexes;
+		this.columnIndexes = (Map<Column<T, ?>, int[]>) columnIndexes;
 	}
 	
 	/**

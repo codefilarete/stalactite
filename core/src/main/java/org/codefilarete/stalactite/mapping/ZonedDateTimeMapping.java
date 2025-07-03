@@ -16,7 +16,7 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
@@ -73,6 +73,11 @@ public class ZonedDateTimeMapping<T extends Table<T>> implements EmbeddedBeanMap
 	}
 	
 	@Override
+	public RowTransformer<ZonedDateTime> getRowTransformer() {
+		return this.zonedDateTimeRowTransformer;
+	}
+	
+	@Override
 	public void addPropertySetByConstructor(ValueAccessPoint<ZonedDateTime> accessor) {
 		// this class doesn't support bean factory so it can't support properties set by constructor
 	}
@@ -118,7 +123,7 @@ public class ZonedDateTimeMapping<T extends Table<T>> implements EmbeddedBeanMap
 	}
 	
 	@Override
-	public ZonedDateTime transform(Row row) {
+	public ZonedDateTime transform(ColumnedRow row) {
 		return zonedDateTimeRowTransformer.transform(row);
 	}
 	
@@ -144,14 +149,9 @@ public class ZonedDateTimeMapping<T extends Table<T>> implements EmbeddedBeanMap
 		return java.util.Collections.emptySet();
 	}
 	
-	@Override
-	public ZonedDateTimeToBeanRowTransformer copyTransformerWithAliases(ColumnedRow columnedRow) {
-		return this.zonedDateTimeRowTransformer.copyWithAliases(columnedRow);
-	}
-	
 	@Nullable
-	private ZonedDateTime buildZonedDateTime(ColumnedRow columnedRow, Row row) {
-		return buildZonedDateTime(columnedRow.getValue(dateTimeColumn, row), columnedRow.getValue(zoneColumn, row));
+	private ZonedDateTime buildZonedDateTime(ColumnedRow columnedRow) {
+		return buildZonedDateTime(columnedRow.get(dateTimeColumn), columnedRow.get(zoneColumn));
 	}
 	
 	@Nullable
@@ -171,19 +171,8 @@ public class ZonedDateTimeMapping<T extends Table<T>> implements EmbeddedBeanMap
 		
 		@Nullable
 		@Override
-		public ZonedDateTime newBeanInstance(Row row) {
-			return buildZonedDateTime(new ColumnedRow(), row);
-		}
-		
-		@Override
-		public ZonedDateTimeToBeanRowTransformer copyWithAliases(ColumnedRow columnedRow) {
-			return new ZonedDateTimeToBeanRowTransformer() {
-				@Nullable
-				@Override
-				public ZonedDateTime newBeanInstance(Row row) {
-					return buildZonedDateTime(columnedRow, row);
-				}
-			};
+		public ZonedDateTime newBeanInstance(ColumnedRow row) {
+			return buildZonedDateTime(row);
 		}
 	}
 }

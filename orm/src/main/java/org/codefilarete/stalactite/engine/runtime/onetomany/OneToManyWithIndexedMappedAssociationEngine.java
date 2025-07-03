@@ -64,9 +64,9 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		Set<Column<T2, ?>> columnsToSelect = new HashSet<>(targetPersister.<T2>getMainTable().getPrimaryKey().getColumns());
 		columnsToSelect.add((Column) getManyRelationDescriptor().getIndexingColumn());
 		String joinNodeName = targetPersister.joinAsMany(sourcePersister, sourcePrimaryKey, (Key<T2, SRCID>) manyRelationDescriptor.getReverseColumn(), manyRelationDescriptor.getRelationFixer(),
-				(row, columnedRow) -> {
-					TRGTID identifier = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(row, columnedRow);
-					Integer targetEntityIndex = columnedRow.getValue(getManyRelationDescriptor().getIndexingColumn(), row);
+				(columnedRow) -> {
+					TRGTID identifier = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(columnedRow);
+					Integer targetEntityIndex = columnedRow.get(getManyRelationDescriptor().getIndexingColumn());
 					return identifier + "-" + targetEntityIndex;
 				},
 				EntityJoinTree.ROOT_STRATEGY_NAME,
@@ -143,7 +143,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			if (indexPerTargetId != null) {
 				// Indexing column is not defined in targetPersister.getMapping().getRowTransformer() but is present in row
 				// because it was read from ResultSet
-				int index = (int) columnValueProvider.apply(getManyRelationDescriptor().getIndexingColumn());
+				int index = columnValueProvider.get(getManyRelationDescriptor().getIndexingColumn());
 				TRGTID relationOwnerId = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(columnValueProvider);
 				indexPerTargetId.put(relationOwnerId, index);
 			}

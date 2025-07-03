@@ -5,9 +5,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.stalactite.sql.result.Row;
 
 /**
@@ -24,12 +24,10 @@ public interface IdentifierAssembler<I, T extends Table<T>> {
 	 * Creates an identifier from a {@link Row}
 	 *
 	 * @param row a current row of an {@link java.sql.ResultSet}
-	 * @param rowAliaser the expected decoder of the row (taking aliases into account).
-	 * 			Implementation note : its {@link ColumnedRow#getValue(org.codefilarete.stalactite.query.model.Selectable, Row)} should be used
 	 * @return an identifier
 	 */
-	default I assemble(Row row, ColumnedRow rowAliaser) {
-		return assemble(column -> rowAliaser.getValue(column, row));
+	default I assemble(ColumnedRow row) {
+		return assemble((Function<Column<?, ?>, Object>) row::get);
 	}
 	
 	I assemble(Function<Column<?, ?>, Object> columnValueProvider);

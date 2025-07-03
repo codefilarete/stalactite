@@ -3,12 +3,12 @@ package org.codefilarete.stalactite.mapping;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.tool.collection.Maps.ChainingMap;
 import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.MapBasedColumnedRow;
+import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.collection.Maps.ChainingMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -76,11 +76,6 @@ public class ColumnedMapMappingTest {
 			@Override
 			protected String toMapValue(Integer key, Object o) {
 				return o == null ? null : o.toString();
-			}
-			
-			@Override
-			public AbstractTransformer<Map<Integer, String>> copyTransformerWithAliases(ColumnedRow columnedRow) {
-				return null;
 			}
 		};
 		
@@ -160,10 +155,10 @@ public class ColumnedMapMappingTest {
 	
 	@Test
 	void transform() {
-		Row row = new Row();
-		row.put(col1.getName(), "a");
-		row.put(col2.getName(), "b");
-		row.put(col3.getName(), "c");
+		MapBasedColumnedRow row = new MapBasedColumnedRow();
+		row.put(col1, "a");
+		row.put(col2, "b");
+		row.put(col3, "c");
 		Map<Integer, String> toto = testInstance.transform(row);
 		assertThat(toto.get(1)).isEqualTo("a");
 		assertThat(toto.get(2)).isEqualTo("b");

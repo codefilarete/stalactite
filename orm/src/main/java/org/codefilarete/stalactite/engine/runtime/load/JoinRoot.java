@@ -4,15 +4,14 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.RootJoinRowConsumer;
-import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.ReadOnlyList;
 
@@ -90,35 +89,39 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<T> {
 	}
 	
 	@Override
-	public RootJoinRowConsumer<C> toConsumer(ColumnedRow columnedRow) {
-		return new JoinRootRowConsumer<>(entityInflater, columnedRow);
+	public RootJoinRowConsumer<C> toConsumer(JoinNode<T> joinNode) {
+		return new JoinRootRowConsumer(this, entityInflater);
 	}
 	
 	public static class JoinRootRowConsumer<C, I> implements RootJoinRowConsumer<C> {
-		
+
+		private final JoinRoot<C, ?, ?> joinNode;
 		private final Class<C> entityType;
 		
 		/** Root entity identifier decoder */
-		private final BiFunction<Row, ColumnedRow, I> identifierDecoder;
+		private final Function<ColumnedRow, I> identifierDecoder;
 		
 		private final RowTransformer<C> entityBuilder;
 		
-		private final ColumnedRow columnedRow;
-		
-		public JoinRootRowConsumer(EntityInflater<C, I> entityInflater, ColumnedRow columnedRow) {
+		public JoinRootRowConsumer(JoinRoot<C, ?, ?> joinNode, EntityInflater<C, I> entityInflater) {
+			this.joinNode = joinNode;
 			this.entityType = entityInflater.getEntityType();
 			this.identifierDecoder = entityInflater::giveIdentifier;
-			this.entityBuilder = entityInflater.copyTransformerWithAliases(columnedRow);
-			this.columnedRow = columnedRow;
+			this.entityBuilder = entityInflater.getRowTransformer();
 		}
-		
+
 		@Override
-		public C createRootInstance(Row row, TreeInflationContext context) {
-			Object identifier = identifierDecoder.apply(row, columnedRow);
+		public JoinNode<?> getNode() {
+			return joinNode;
+		}
+
+		@Override
+		public C createRootInstance(ColumnedRow row, TreeInflationContext context) {
+			Object identifier = identifierDecoder.apply(row);
 			if (identifier == null) {
 				return null;
 			} else {
-				return (C) context.giveEntityFromCache(entityType, identifier, () -> entityBuilder.transform(row));
+				return context.giveEntityFromCache(entityType, identifier, () -> entityBuilder.transform(row));
 			}
 		}
 		

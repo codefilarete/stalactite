@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
@@ -20,6 +21,8 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.codefilarete.stalactite.sql.ddl.structure.Table.COMPARATOR_ON_SCHEMA_AND_NAME;
 
 /**
  * A class aimed at deploying DDL elements to a database. It gets its elements from a {@link DDLGenerator} and execute them
@@ -39,7 +42,7 @@ public class DDLDeployer {
 	 * @return a {@link Collection} of found tables
 	 */
 	public static Collection<Table<?>> collectTables(PersistenceContext persistenceContext) {
-		Set<Table<?>> result = new LinkedHashSet<>(20);
+		Set<Table<?>> result = new TreeSet<>(COMPARATOR_ON_SCHEMA_AND_NAME);
 		persistenceContext.getPersisters().forEach(p -> result.addAll(((ConfiguredPersister<?, ?>) p).giveImpliedTables()));
 		return result;
 	}

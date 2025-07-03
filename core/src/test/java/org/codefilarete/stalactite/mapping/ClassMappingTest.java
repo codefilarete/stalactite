@@ -137,11 +137,6 @@ class ClassMappingTest {
 				protected String toMapValue(String key, Object o) {
 					return o.toString();
 				}
-				
-				@Override
-				public AbstractTransformer<Map<String, String>> copyTransformerWithAliases(ColumnedRow columnedRow) {
-					return null;
-				}
 			};
 			((ClassMapping<Toto, Integer, T>) classMapping).put(myMapField, columnedMapMapping);
 			

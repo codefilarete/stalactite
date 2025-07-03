@@ -99,12 +99,10 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 																				ConnectionConfiguration connectionConfiguration,
 																				T mainTable,
 																				SubEntityMappingConfiguration<D> subConfiguration) {
-		// first we'll use table of columns defined in embedded override
-		// then the one defined by inheritance
-		// if both are null we'll create a new one
-		Table tableDefinedByColumnOverride = BeanMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping());
-		
-		assertNullOrEqual(tableDefinedByColumnOverride, mainTable);
+		// as a difference with other polymorphic cases, we don't use the following line to get the target table, but
+		// only to ensure that configuration is right because it raises an exception if the user gave a column that is
+		// not part of target table
+		BeanMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping(), mainTable);
 		
 		BeanMappingBuilder<D, T> beanMappingBuilder = new BeanMappingBuilder<>(subConfiguration.getPropertiesMapping(),
 				mainTable,

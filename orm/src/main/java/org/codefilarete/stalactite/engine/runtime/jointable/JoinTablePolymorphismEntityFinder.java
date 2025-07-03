@@ -10,25 +10,20 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphicEntityFinder;
-import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
 import org.codefilarete.stalactite.engine.runtime.ColumnCloneAwareOrderBy;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
-import org.codefilarete.stalactite.engine.runtime.EntityCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.engine.runtime.load.JoinTableRootJoinNode;
+import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
-import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
-import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.LimitAware;
-import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.OrderByChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Selectable;
@@ -36,13 +31,12 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.RowIterator;
+import org.codefilarete.stalactite.sql.result.ColumnedRowIterator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
@@ -78,10 +72,10 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 					mainPersister.getMainTable().getPrimaryKey(),
 					persister.getMainTable().getPrimaryKey(),
 					JoinType.OUTER,
-					columnedRow -> {
+					joinNode -> {
 						// implemented to add newly created sub consumer to root one, therefore it will be able to create the right sub-instance
-						MergeJoinRowConsumer<C> subEntityConsumer = new MergeJoinRowConsumer<>(persister.getMapping().copyTransformerWithAliases(columnedRow));
-						result.getRoot().addSubPersister(persister, subEntityConsumer, columnedRow);
+						MergeJoinRowConsumer<C> subEntityConsumer = new MergeJoinRowConsumer<>((MergeJoinNode<C, ?, ?, ?>) joinNode, persister.getMapping().getRowTransformer());
+						result.getRoot().addSubPersister(persister, subEntityConsumer);
 						return subEntityConsumer;
 					}
 			);
@@ -120,14 +114,12 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), entityTreeQuery.getColumnClones());
 		
 		// selecting ids and their entity type
-		Map<String, ResultSetReader> columnReaders = new HashMap<>();
-		Map<Selectable<?>, String> aliases = query.getAliases();
-		aliases.forEach((selectable, s) -> columnReaders.put(s, dialect.getColumnBinderRegistry().getBinder((Column) selectable)));
-		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
+		Map<Selectable<?>, ResultSetReader<?>> columnReaders = new HashMap<>();
+		query.getColumns().forEach((selectable) -> columnReaders.put(selectable, dialect.getColumnBinderRegistry().getBinder((Column) selectable)));
 		orderByClauseConsumer.accept(new ColumnCloneAwareOrderBy(query.orderBy(), entityTreeQuery.getColumnClones()));
 		limitAwareConsumer.accept(query.orderBy());
 		
-		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>()), columnReaders, columnedRow);
+		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>()), columnReaders, query.getAliases());
 		
 		Set<I> ids = idsPerSubtype.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
 		
@@ -144,14 +136,14 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 
 	}
 	
-	private Map<Class, Set<I>> readIds(PreparedSQL preparedSQL, Map<String, ResultSetReader> columnReaders, ColumnedRow columnedRow) {
+	private Map<Class, Set<I>> readIds(PreparedSQL preparedSQL, Map<Selectable<?>, ResultSetReader<?>> columnReaders, Map<Selectable<?>, String> aliases) {
 		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
 		// impacts but very difficult to measure
 		Map<Class, Set<I>> result = new KeepOrderMap<>();
 		try (ReadOperation<Integer> readOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
 			
-			RowIterator resultSetIterator = new RowIterator(resultSet, columnReaders);
+			ColumnedRowIterator resultSetIterator = new ColumnedRowIterator(resultSet, columnReaders, aliases);
 			resultSetIterator.forEachRemaining(row -> {
 				
 				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the 
@@ -160,7 +152,7 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 				Duo<Class, I> duo = null;
 				I identifier;
 				for (Entry<Class<C>, ConfiguredRelationalPersister<C, I>> entry : entries) {
-					identifier = entry.getValue().getMapping().getIdMapping().getIdentifierAssembler().assemble(row, columnedRow);
+					identifier = entry.getValue().getMapping().getIdMapping().getIdentifierAssembler().assemble(row);
 					if (identifier != null) {
 						duo = new Duo<>(entry.getKey(), identifier);
 						break;

@@ -4,8 +4,8 @@ import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.PersistExecutor;
@@ -14,7 +14,6 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMapp
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.query.EntityFinder;
@@ -27,7 +26,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Duo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +35,7 @@ import org.slf4j.LoggerFactory;
  * Persister that registers relations of entities joined on "foreign key = primary key".
  * This does not handle inheritance nor entities mapped on several tables, it focuses on select part : a main table is defined by
  * {@link ClassMapping} passed to constructor which then it can be added to some other {@link RelationalEntityPersister} thanks to
- * {@link RelationalEntityPersister#joinAsMany(RelationalEntityPersister, Key, Key, BeanRelationFixer, BiFunction, String, boolean, boolean)} and
+ * {@link RelationalEntityPersister#joinAsMany(RelationalEntityPersister, Key, Key, BeanRelationFixer, Function, String, boolean, boolean)} and
  * {@link RelationalEntityPersister#joinAsOne(RelationalEntityPersister, Key, Key, String, BeanRelationFixer, boolean, boolean)}.
  * 
  * Entity load is defined by a select that joins all tables, each {@link ClassMapping} is called to complete
@@ -234,7 +233,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 																							  Key<T1, JOINID> leftColumn,
 																							  Key<T2, JOINID> rightColumn,
 																							  BeanRelationFixer<SRC, C> beanRelationFixer,
-																							  @Nullable BiFunction<Row, ColumnedRow, Object> relationIdentifierProvider,
+																							  @Nullable Function<ColumnedRow, Object> relationIdentifierProvider,
 																							  String joinName,
 																							  Set<? extends Column<T2, ?>> selectableColumns,
 																							  boolean optional,

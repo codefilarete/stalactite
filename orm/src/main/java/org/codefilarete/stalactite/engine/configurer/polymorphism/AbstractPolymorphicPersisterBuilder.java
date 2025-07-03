@@ -3,7 +3,6 @@ package org.codefilarete.stalactite.engine.configurer.polymorphism;
 import java.util.Map;
 import java.util.Set;
 
-import org.codefilarete.stalactite.engine.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.RelationalMappingConfiguration;
 import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
@@ -17,38 +16,11 @@ import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
-import org.codefilarete.tool.StringAppender;
-import org.codefilarete.tool.collection.Arrays;
 
 /**
  * @author Guillaume Mary
  */
 abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> implements PolymorphismBuilder<C, I, T> {
-	
-	/**
-	 * Asserts that given arguments are null, or equal
-	 *
-	 * @param table1 any table, null accepted (that's the purpose of the method)
-	 * @param table2 any table, null accepted (that's the purpose of the method)
-	 */
-	protected static void assertNullOrEqual(Table table1, Table table2) {
-		Set<Table> availableTables = Arrays.asHashSet(table1, table2);
-		availableTables.remove(null);
-		if (availableTables.size() > 1) {
-			class TableAppender extends StringAppender {
-				@Override
-				public StringAppender cat(Object o) {
-					if (o instanceof Table) {
-						return super.cat(((Table) o).getName());
-					} else {
-						return super.cat(o);
-					}
-				}
-			}
-			throw new MappingConfigurationException("Table declared in inheritance is different from given one in embeddable properties override : "
-					+ new TableAppender().ccat(availableTables, ", "));
-		}
-	}
 	
 	protected final PolymorphismPolicy<C> polymorphismPolicy;
 	protected final ConfiguredRelationalPersister<C, I> mainPersister;

@@ -14,7 +14,7 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.Duo;
@@ -65,6 +65,11 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 	@Override
 	public Set<Column<T, ?>> getColumns() {
 		return columns;
+	}
+	
+	@Override
+	public ToCollectionRowTransformer<C> getRowTransformer() {
+		return rowTransformer;
 	}
 	
 	@Override
@@ -154,7 +159,7 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 	}
 	
 	@Override
-	public C transform(Row row) {
+	public C transform(ColumnedRow row) {
 		return this.rowTransformer.transform(row);
 	}
 	
@@ -178,11 +183,6 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 		return java.util.Collections.emptySet();
 	}
 	
-	@Override
-	public AbstractTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow) {
-		return this.rowTransformer.copyWithAliases(columnedRow);
-	}
-	
 	private class LocalToCollectionRowTransformer<C extends Collection> extends ToCollectionRowTransformer<C> {
 		
 		private final Function<Object, Object> databaseValueConverter;
@@ -192,22 +192,17 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 			this.databaseValueConverter = databaseValueConverter;
 		}
 		
-		private LocalToCollectionRowTransformer(Function<Function<Column<?, ?>, Object>, C> beanFactory, ColumnedRow columnedRow,
-												Iterable<Column<T, ?>> columns, Function<Object, Object> databaseValueConverter) {
-			super(beanFactory, columnedRow);
+		private LocalToCollectionRowTransformer(Function<Function<Column<?, ?>, Object>, C> beanFactory,
+												Function<Object, Object> databaseValueConverter) {
+			super(beanFactory);
 			this.databaseValueConverter = databaseValueConverter;
-		}
-			
-		@Override
-		public AbstractTransformer<C> copyWithAliases(ColumnedRow columnedRow) {
-			return new LocalToCollectionRowTransformer<>(this.beanFactory, columnedRow, columns, this.databaseValueConverter);
 		}
 		
 		/** We bind conversion on {@link ColumnedCollectionMapping} conversion methods */
 		@Override
-		public void applyRowToBean(Row row, C collection) {
+		public void applyRowToBean(ColumnedRow row, C collection) {
 			for (Column<T, ?> column : columns) {
-				Object value = row.get(column.getName());
+				Object value = row.get(column);
 				collection.add(this.databaseValueConverter.apply(value));
 			}
 		}

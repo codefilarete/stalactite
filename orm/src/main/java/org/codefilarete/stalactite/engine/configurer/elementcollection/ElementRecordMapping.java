@@ -6,7 +6,6 @@ import java.util.function.Function;
 
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.EmbeddedClassMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
@@ -16,7 +15,7 @@ import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.collection.Maps;
 
 /**
@@ -129,7 +128,7 @@ class ElementRecordMapping<C, I, T extends Table<T>> extends ClassMapping<Elemen
 			
 			@Override
 			public ElementRecord<TRGT, ID> assemble(Function<Column<?, ?>, Object> columnValueProvider) {
-				ID leftValue = sourceIdentifierAssembler.assemble(sourceColumn -> {
+				ID leftValue = sourceIdentifierAssembler.assemble((Function<Column<?, ?>, Object>) sourceColumn -> {
 					Column<T, ?> targetColumn = primaryKeyForeignColumnMapping.get(sourceColumn);
 					return columnValueProvider.apply(targetColumn);
 				});
@@ -177,13 +176,13 @@ class ElementRecordMapping<C, I, T extends Table<T>> extends ClassMapping<Elemen
 			}
 			
 			@Override
-			public ElementRecord<TRGT, ID> assemble(Row row, ColumnedRow rowAliaser) {
-				return elementMapping.copyTransformerWithAliases(rowAliaser).transform(row);
+			public ElementRecord<TRGT, ID> assemble(ColumnedRow row) {
+				return elementMapping.transform(row);
 			}
 			
 			@Override
 			public ElementRecord<TRGT, ID> assemble(Function<Column<?, ?>, Object> columnValueProvider) {
-				// never called because we override assemble(Row, ColumnedRow)
+				// never called because we override assemble(ColumnedRow)
 				return null;
 			}
 			

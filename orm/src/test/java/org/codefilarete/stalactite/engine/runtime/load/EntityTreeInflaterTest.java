@@ -12,14 +12,13 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.NodeVi
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer;
-import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.RowTransformer;
+import org.codefilarete.stalactite.sql.result.MapBasedColumnedRow;
 import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
-import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +37,7 @@ import static org.mockito.Mockito.when;
  * @author Guillaume Mary
  */
 class EntityTreeInflaterTest {
-	
+		
 	@Test
 	void transform_doesntGoDeeperIfRelatedBeanIdIsNull() {
 		
@@ -58,15 +57,15 @@ class EntityTreeInflaterTest {
 		
 		EntityInflater leftEntityInflater = Mockito.mock(EntityInflater.class);
 		// these lines are needed to trigger "main bean instance" creation
-		when(leftEntityInflater.giveIdentifier(any(), any())).thenReturn(42);
+		when(leftEntityInflater.giveIdentifier(any())).thenReturn(42);
 		when(leftEntityInflater.getEntityType()).thenReturn(Object.class);
 		RowTransformer rightEntityBuilder = mock(RowTransformer.class);
 		when(rightEntityBuilder.transform(any())).thenReturn(new Object());
-		when(leftEntityInflater.copyTransformerWithAliases(any(ColumnedRow.class))).thenReturn(rightEntityBuilder);
+		when(leftEntityInflater.getRowTransformer()).thenReturn(rightEntityBuilder);
 		
 		// we create a second inflater to be related with first one, but we'll expect its transform() method not to be invoked
 		EntityInflater rightEntityInflater = Mockito.mock(EntityInflater.class);
-		when(rightEntityInflater.giveIdentifier(any(), any())).thenReturn(null);
+		when(rightEntityInflater.giveIdentifier(any())).thenReturn(null);
 		
 		// relation fixer isn't expected to do anything because it won't be called (goal of the test)
 		BeanRelationFixer relationFixer = Mockito.mock(BeanRelationFixer.class);
@@ -75,7 +74,7 @@ class EntityTreeInflaterTest {
 		// but we'll expect none of its method to be invoked
 		EntityInflater rightMostEntityInflater = Mockito.mock(EntityInflater.class);
 		RowTransformer rightMostRowTransformerMock = mock(RowTransformer.class);
-		when(rightMostEntityInflater.copyTransformerWithAliases(any(ColumnedRow.class))).thenReturn(rightMostRowTransformerMock);
+		when(rightMostEntityInflater.getRowTransformer()).thenReturn(rightMostRowTransformerMock);
 		
 		// composing entity tree : leftInflater gets a relation on rightInflater
 		EntityJoinTree entityJoinTree = new EntityJoinTree<>(leftEntityInflater, leftTable);
@@ -99,18 +98,16 @@ class EntityTreeInflaterTest {
 		EntityTreeQuery<Country> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree, new DefaultDialect().getColumnBinderRegistry()).buildSelectQuery();
 		EntityTreeInflater testInstance = entityTreeQuery.getInflater();
 		
-		
-		Row databaseData = new Row()
+		MapBasedColumnedRow databaseData = new MapBasedColumnedRow()
 				.add("leftTable_pk", 1)
 				.add("rightTable_fkToLeftTable", null)
-				.add("rightTable_pk", null)
-				;
-		testInstance.transform(databaseData, testInstance.new TreeInflationContext());
+				.add("rightTable_pk", null);
+		testInstance.transform(Arrays.asList(databaseData), 5);
 		
 		// giveIdentifier is invoked twice because of identifier computation and relation identifier computation
-		verify(rightEntityInflater, times(2)).giveIdentifier(any(), any());
+		verify(rightEntityInflater, times(2)).giveIdentifier(any());
 		// because we returned null on giveIdentifier, the transformation algorithm shouldn't ask for relation appliance
-		verify(rightMostEntityInflater, times(0)).giveIdentifier(any(), any());
+		verify(rightMostEntityInflater, times(0)).giveIdentifier(any());
 		verify(rightMostRowTransformerMock, times(0)).transform(any());
 		verify(relationFixer, times(0)).apply(any(), any());
 	}
@@ -125,14 +122,14 @@ class EntityTreeInflaterTest {
 		Entity12 entity12 = new Entity12();
 		Entity2 entity2 = new Entity2();
 		Entity3 entity3 = new Entity3();
-		ConsumerNode consumerRoot = new ConsumerNode((DummyJoinRowConsumer) () -> root);
-		ConsumerNode consumerNode1 = new ConsumerNode((DummyJoinRowConsumer) () -> entity1);
-		ConsumerNode consumerNode11 = new ConsumerNode((DummyJoinRowConsumer) () -> entity11);
-		ConsumerNode consumerNode111 = new ConsumerNode((DummyJoinRowConsumer) () -> entity111);
-		ConsumerNode consumerNode1111 = new ConsumerNode((DummyJoinRowConsumer) () -> entity1111);
-		ConsumerNode consumerNode12 = new ConsumerNode((DummyJoinRowConsumer) () -> entity12);
-		ConsumerNode consumerNode2 = new ConsumerNode((DummyJoinRowConsumer) () -> entity2);
-		ConsumerNode consumerNode3 = new ConsumerNode((DummyJoinRowConsumer) () -> entity3);
+		ConsumerNode consumerRoot = new ConsumerNode(new DummyConsumerNode.DummyJoinRowConsumer(root));
+		ConsumerNode consumerNode1 = new ConsumerNode(new DummyConsumerNode.DummyJoinRowConsumer(entity1));
+		ConsumerNode consumerNode11 = new ConsumerNode(new DummyConsumerNode.DummyJoinRowConsumer(entity11));
+		ConsumerNode consumerNode111 = new ConsumerNode(new DummyConsumerNode.DummyJoinRowConsumer(entity111));
+		ConsumerNode consumerNode1111 = new ConsumerNode(new DummyConsumerNode.DummyJoinRowConsumer(entity1111));
+		ConsumerNode consumerNode12 = new ConsumerNode(new DummyConsumerNode.DummyJoinRowConsumer(entity12));
+		ConsumerNode consumerNode2 = new ConsumerNode(new DummyConsumerNode.DummyJoinRowConsumer(entity2));
+		ConsumerNode consumerNode3 = new ConsumerNode(new DummyConsumerNode.DummyJoinRowConsumer(entity3));
 		
 		consumerRoot.addConsumer(consumerNode2);
 		consumerRoot.addConsumer(consumerNode3);
@@ -143,7 +140,7 @@ class EntityTreeInflaterTest {
 		consumerNode111.addConsumer(consumerNode1111);
 		
 		
-		EntityTreeInflater<Root> testInstance = new EntityTreeInflater<>(consumerRoot, null, null);
+		EntityTreeInflater<Root> testInstance = new EntityTreeInflater<>(consumerRoot, null);
 		List<List<Object>> entityStackHistory = new ArrayList<>();
 		testInstance.foreachNode(Arrays.asList(consumerRoot), new NodeVisitor(root) {
 			@Override
@@ -151,8 +148,8 @@ class EntityTreeInflaterTest {
 				List<Object> newStack = new ArrayList<>(Iterables.last(entityStackHistory, new ArrayList<>()));
 				newStack.add(parentEntity);
 				entityStackHistory.add(newStack);
-				if (joinRowConsumer.getConsumer() instanceof DummyJoinRowConsumer) {
-					return new EntityCreationResult(((DummyJoinRowConsumer) joinRowConsumer.getConsumer()).get(), joinRowConsumer);
+				if (joinRowConsumer.getConsumer() instanceof DummyConsumerNode.DummyJoinRowConsumer) {
+					return new EntityCreationResult(((DummyConsumerNode.DummyJoinRowConsumer) joinRowConsumer.getConsumer()).get(), joinRowConsumer);
 				} else {
 					throw new UnsupportedOperationException("Something has changed in test data");
 				}
@@ -180,14 +177,14 @@ class EntityTreeInflaterTest {
 		Entity12 entity12 = new Entity12();
 		Entity2 entity2 = new Entity2();
 		Entity3 entity3 = new Entity3();
-		ConsumerNode consumerRoot = new ConsumerNode((DummyJoinRowConsumer) () -> root);
-		ConsumerNode consumerNode1 = new ConsumerNode((DummyJoinRowConsumer) () -> entity1);
-		ConsumerNode consumerNode11 = new ConsumerNode((DummyJoinRowConsumer) () -> entity11);
-		ConsumerNode consumerNode111 = new ConsumerNode((DummyJoinRowConsumer) () -> null);
-		ConsumerNode consumerNode1111 = new ConsumerNode((DummyJoinRowConsumer) () -> entity1111);
-		ConsumerNode consumerNode12 = new ConsumerNode((DummyJoinRowConsumer) () -> entity12);
-		ConsumerNode consumerNode2 = new ConsumerNode((DummyJoinRowConsumer) () -> entity2);
-		ConsumerNode consumerNode3 = new ConsumerNode((DummyJoinRowConsumer) () -> entity3);
+		ConsumerNode consumerRoot = new ConsumerNode(new DummyConsumerNode.DummyJoinRowConsumer(root));
+		ConsumerNode consumerNode1 = new ConsumerNode(new DummyConsumerNode.DummyJoinRowConsumer(entity1));
+		ConsumerNode consumerNode11 = new ConsumerNode(new DummyConsumerNode.DummyJoinRowConsumer(entity11));
+		ConsumerNode consumerNode111 = new ConsumerNode(new DummyConsumerNode.DummyJoinRowConsumer(null));
+		ConsumerNode consumerNode1111 = new ConsumerNode(new DummyConsumerNode.DummyJoinRowConsumer(entity1111));
+		ConsumerNode consumerNode12 = new ConsumerNode(new DummyConsumerNode.DummyJoinRowConsumer(entity12));
+		ConsumerNode consumerNode2 = new ConsumerNode(new DummyConsumerNode.DummyJoinRowConsumer(entity2));
+		ConsumerNode consumerNode3 = new ConsumerNode(new DummyConsumerNode.DummyJoinRowConsumer(entity3));
 		
 		consumerRoot.addConsumer(consumerNode2);
 		consumerRoot.addConsumer(consumerNode3);
@@ -198,7 +195,7 @@ class EntityTreeInflaterTest {
 		consumerNode111.addConsumer(consumerNode1111);
 		
 		
-		EntityTreeInflater<Root> testInstance = new EntityTreeInflater<>(consumerRoot, null, null);
+		EntityTreeInflater<Root> testInstance = new EntityTreeInflater<>(consumerRoot, null);
 		List<List<Object>> entityStackHistory = new ArrayList<>();
 		testInstance.foreachNode(Arrays.asList(consumerRoot), new NodeVisitor(root) {
 			@Override
@@ -206,8 +203,8 @@ class EntityTreeInflaterTest {
 				List<Object> newStack = new ArrayList<>(Iterables.last(entityStackHistory, new ArrayList<>()));
 				newStack.add(parentEntity);
 				entityStackHistory.add(newStack);
-				if (joinRowConsumer.getConsumer() instanceof DummyJoinRowConsumer) {
-					return new EntityCreationResult(((DummyJoinRowConsumer) joinRowConsumer.getConsumer()).get(), joinRowConsumer);
+				if (joinRowConsumer.getConsumer() instanceof DummyConsumerNode.DummyJoinRowConsumer) {
+					return new EntityCreationResult(((DummyConsumerNode.DummyJoinRowConsumer) joinRowConsumer.getConsumer()).get(), joinRowConsumer);
 				} else {
 					throw new UnsupportedOperationException("Something has changed in test data");
 				}
@@ -225,7 +222,7 @@ class EntityTreeInflaterTest {
 	}
 	
 	/**
-	 * Those tests are made as anti-regression ones : if RelationIdentifier equals/hashCode change it would break some hard to debug case 
+	 * Those tests are made as anti-regression ones : if RelationIdentifier equals/hashCode change it would break some hard to debug case
 	 */
 	@Nested
 	class RelationIdentifierTest {
@@ -240,7 +237,7 @@ class EntityTreeInflaterTest {
 			
 			rootEntityReference = new Entity1();
 			reference = new RelationIdentifier(rootEntityReference, Entity1.class, 1, rowConsumerReference);
-		}			
+		}
 		
 		@Test
 		void equals_verySameInstance() {
@@ -369,7 +366,29 @@ class EntityTreeInflaterTest {
 		
 	}
 	
-	private interface DummyJoinRowConsumer extends JoinRowConsumer, Supplier {
+	private static class DummyConsumerNode extends ConsumerNode {
+
+		DummyConsumerNode(Object entity) {
+			super(new DummyJoinRowConsumer(entity));
+		}
 		
+		private static class DummyJoinRowConsumer implements JoinRowConsumer, Supplier<Object> {
+			
+			private final Object entity;
+			
+			DummyJoinRowConsumer(Object entity) {
+				this.entity = entity;
+			}
+			
+			@Override
+			public Object get() {
+				return entity;
+			}
+			
+			@Override
+			public JoinNode<?> getNode() {
+				throw new RuntimeException("This method is not expected to be called in this test");
+			}
+		}
 	}
 }

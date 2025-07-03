@@ -294,7 +294,7 @@ class SelectExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 		// mocking ResultSet transformation because we don't care about it in this test
 		ReadOperation readOperationMock = mock(ReadOperation.class);
 		when(readOperationMock.execute()).thenReturn(new InMemoryResultSet(Collections.emptyList()));
-		when(readOperationMock.getSqlStatement()).thenReturn(new ColumnParameterizedSelect("", new HashMap<>(), new HashMap<>(), new HashMap<>()));
+		when(readOperationMock.getSqlStatement()).thenReturn(new ColumnParameterizedSelect<>("", new HashMap<>(), new HashMap<>(), new HashMap<>()));
 		
 		// we're going to check if values are correctly passed to the underlying ReadOperation
 		ArgumentCaptor<Map> capturedValues = ArgumentCaptor.forClass(Map.class);

@@ -15,6 +15,7 @@ import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.tool.collection.Iterables;
 import org.slf4j.Logger;
@@ -65,7 +66,7 @@ public abstract class AbstractPolymorphismPersister<C, I>
 		AccessorWrapperIdAccessor<C, I> idAccessor = (AccessorWrapperIdAccessor<C, I>) idMapping.getIdAccessor();
 		if (idMapping.getIdentifierAssembler() instanceof ComposedIdentifierAssembler) {
 			// && dialect.supportTupleIn
-			Map columnValues = ((ComposedIdentifierAssembler) idMapping.getIdentifierAssembler()).getColumnValues(ids);
+			Map<? extends Column<?, ?>, ?> columnValues = ((ComposedIdentifierAssembler<I, ?>) idMapping.getIdentifierAssembler()).getColumnValues(ids);
 			TupleIn tupleIn = TupleIn.transformBeanColumnValuesToTupleInValues((int) Iterables.size(ids), columnValues);
 			EntityQueryCriteriaSupport<C, I> newCriteriaSupport = newCriteriaSupport();
 			newCriteriaSupport.getEntityCriteriaSupport().getCriteria().and(tupleIn);

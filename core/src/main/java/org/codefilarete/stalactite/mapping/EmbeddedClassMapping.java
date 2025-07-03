@@ -18,7 +18,7 @@ import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Iterables;
@@ -181,7 +181,8 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 		return Collections.unmodifiableSet(new KeepOrderSet<>(updatableProperties.values()));
 	}
 	
-	public ToBeanRowTransformer<C> getRowTransformer() {
+	@Override
+	public RowTransformer<C> getRowTransformer() {
 		return rowTransformer;
 	}
 	
@@ -302,14 +303,9 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	}
 	
 	@Override
-	public C transform(Row row) {
+	public C transform(ColumnedRow row) {
 		// NB: please note that this transformer will determine intermediary bean instantiation through isDefaultValue(..)
 		return this.rowTransformer.transform(row);
-	}
-	
-	@Override
-	public AbstractTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow) {
-		return getRowTransformer().copyWithAliases(columnedRow);
 	}
 	
 	/**
@@ -318,24 +314,13 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	 */
 	private class EmbeddedBeanRowTransformer extends ToBeanRowTransformer<C> {
 		
-		public EmbeddedBeanRowTransformer(Function<? extends Function<Column<?, ?>, Object>, C> beanFactory, Map<? extends Column, ? extends Mutator<C, Object>> columnToMember) {
+		public EmbeddedBeanRowTransformer(Function<? extends Function<Column<?, ?>, Object>, C> beanFactory,
+										  Map<? extends Column<?, ?>, ? extends Mutator<C, Object>> columnToMember) {
 			super(beanFactory, columnToMember);
 		}
 		
-		/**
-		 * Constructor for private copy, see {@link #copyWithAliases(ColumnedRow)}
-		 * @param beanFactory method that creates instance
-		 * @param columnToMember mapping between database columns and bean properties
-		 * @param columnedRow mapping between {@link Column} and their alias in given row to {@link #transform(Row)} 
-		 * @param rowTransformerListeners listeners that need notification of bean creation
-		 */
-		private EmbeddedBeanRowTransformer(Function<Function<Column<?, ?>, Object>, C> beanFactory, Map<? extends Column, ? extends Mutator<C, Object>> columnToMember,
-										   ColumnedRow columnedRow, Collection<TransformerListener<C>> rowTransformerListeners) {
-			super(beanFactory, columnToMember, columnedRow, rowTransformerListeners);
-		}
-		
 		@Override
-		public void applyRowToBean(Row values, C targetRowBean) {
+		public void applyRowToBean(ColumnedRow values, C targetRowBean) {
 			// Algorithm is a bit complex due to embedded beans into this embedded one and the fact that we may not instantiate them
 			// if all of their attributes has default values in current row : because instantiation is done silently by AccessorChainMutator
 			// (the object that let us set embedded bean attributes) we have to check the need of their invocation before ... their invocation.
@@ -343,10 +328,10 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 			// per accessor to this bean. Example : with the mappings "Person::getTimestamp, Timestamp::setCreationDate" and
 			// "Person::getTimestamp, Timestamp::setModificationDate", then we keep a boolean per "Person::getTimestamp" saying that if one of
 			// creationDate and modificationDate is not null then we should instantiate Timestamp, if both are null then not. 
-			Map<Entry<Column, Mutator<C, Object>>, Object> beanValues = new HashMap<>();
+			Map<Entry<Column<?, ?>, Mutator<C, Object>>, Object> beanValues = new HashMap<>();
 			Map<Accessor, MutableBoolean> valuesAreDefaultOnes = new HashMap<>();
-			for (Entry<Column, Mutator<C, Object>> columnFieldEntry : getColumnToMember().entrySet()) {
-				Object propertyValue = getColumnedRow().getValue(columnFieldEntry.getKey(), values);
+			for (Entry<Column<?, ?>, Mutator<C, Object>> columnFieldEntry : getColumnToMember().entrySet()) {
+				Object propertyValue = values.get(columnFieldEntry.getKey());
 				// applying data converter if specified
 				Converter<Object, Object> converter = readConverters.get(columnFieldEntry.getValue());
 				if (converter != null) {
@@ -398,16 +383,6 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 			public void and(boolean otherValue) {
 				this.value &= otherValue;
 			}
-		}
-		
-		@Override
-		public EmbeddedBeanRowTransformer copyWithAliases(ColumnedRow columnedRow) {
-			return new EmbeddedBeanRowTransformer(beanFactory,
-					getColumnToMember(),
-					columnedRow,
-					// listeners are given to the new instance because they may be interested in transforming rows of this one
-					getRowTransformerListeners()
-			);
 		}
 	}
 	

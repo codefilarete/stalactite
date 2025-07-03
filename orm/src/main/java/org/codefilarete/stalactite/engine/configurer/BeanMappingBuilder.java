@@ -94,11 +94,27 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		}
 		return result.get();
 	}
+
+	public static Table giveTargetTable(EmbeddableMappingConfiguration<?> mappingConfiguration, Table mainTable) {
+		Holder<Table> result = new Holder<>(mainTable);
+
+		// algorithm close to the one of includeEmbeddedMapping(..)
+		Queue<Inset> stack = new ArrayDeque<>(BeanMappingConfiguration.fromEmbeddableMappingConfiguration(mappingConfiguration).getInsets());
+		while (!stack.isEmpty()) {
+			Inset<?, ?> inset = stack.poll();
+			inset.getOverriddenColumns().forEach((valueAccessPoint, targetColumn) ->
+					assertHolderIsFilledWithTargetTable(result, targetColumn, valueAccessPoint)
+			);
+			BeanMappingConfiguration<?> configuration = inset.getConfiguration();
+			stack.addAll(configuration.getInsets());
+		}
+		return result.get();
+	}
 	
 	private static void assertHolderIsFilledWithTargetTable(Holder<Table> result, Column targetColumn, ValueAccessPoint<?> valueAccessPoint) {
 		if (targetColumn != null) {
 			if (result.get() != null && result.get() != targetColumn.getTable()) {
-				throw new MappingConfigurationException("Property override doesn't target main table : " + valueAccessPoint);
+				throw new MappingConfigurationException("Property " + valueAccessPoint + " overrides column with " + targetColumn.getAbsoluteName() + " but it is not part of main table " + result.get().getAbsoluteName());
 			}
 			result.set(targetColumn.getTable());
 		}

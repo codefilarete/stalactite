@@ -6,10 +6,9 @@ import java.util.Set;
 import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.engine.runtime.load.EntityMerger;
 import org.codefilarete.stalactite.mapping.AbstractTransformer;
-import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 
 /**
  * @author Guillaume Mary
@@ -29,19 +28,12 @@ public class FirstPhaseRelationLoader<C, I> implements EntityMerger<C> {
 	}
 	
 	@Override
-	public AbstractTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow) {
-		return new AbstractTransformer<C>(null, columnedRow) {
-			
-			// this is not invoked
-			@Override
-			public AbstractTransformer<C> copyWithAliases(ColumnedRow columnedRow) {
-				throw new UnsupportedOperationException("this instance is not expected to be copied :"
-						+ " row transformation algorithm as changed, please fix it or fix this method");
-			}
+	public AbstractTransformer<C> getRowTransformer() {
+		return new AbstractTransformer<C>((Class) null) {
 			
 			@Override
-			public void applyRowToBean(Row row, C bean) {
-				fillCurrentRelationIds(row, bean, columnedRow);
+			public void applyRowToBean(ColumnedRow row, C bean) {
+				fillCurrentRelationIds(row, bean);
 			}
 		};
 	}
@@ -51,9 +43,9 @@ public class FirstPhaseRelationLoader<C, I> implements EntityMerger<C> {
 		return (Set) idMapping.getIdentifierAssembler().getColumns();
 	}
 	
-	protected void fillCurrentRelationIds(Row row, C bean, ColumnedRow columnedRow) {
+	protected void fillCurrentRelationIds(ColumnedRow row, C bean) {
 		Set<RelationIds<Object, C, I>> relationIds = relationIdsHolder.get().peek();
-		I id = idMapping.getIdentifierAssembler().assemble(row, columnedRow);
+		I id = idMapping.getIdentifierAssembler().assemble(row);
 		relationIds.add(new RelationIds<>(selectExecutor, idMapping.getIdAccessor()::getId, bean, id));
 	}
 }

@@ -8,10 +8,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.DeleteExecutor;
 import org.codefilarete.stalactite.engine.EntityPersister;
@@ -20,7 +19,6 @@ import org.codefilarete.stalactite.engine.UpdateExecutor;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.EntityMappingWrapper;
-import org.codefilarete.stalactite.engine.runtime.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.FirstPhaseRelationLoader;
 import org.codefilarete.stalactite.engine.runtime.PersisterWrapper;
 import org.codefilarete.stalactite.engine.runtime.PolymorphicPersister;
@@ -35,23 +33,17 @@ import org.codefilarete.stalactite.engine.runtime.load.JoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.JoinTablePolymorphicRelationJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.PolymorphicMergeJoinRowConsumer;
-import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
-import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
-import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
-import org.codefilarete.stalactite.query.model.Operators;
-import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.collection.Collections;
@@ -278,7 +270,7 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 																							  Key<T1, JOINID> leftColumn,
 																							  Key<T2, JOINID> rightColumn,
 																							  BeanRelationFixer<SRC, C> beanRelationFixer,
-																							  @Nullable BiFunction<Row, ColumnedRow, Object> duplicateIdentifierProvider,
+																							  @Nullable Function<ColumnedRow, Object> duplicateIdentifierProvider,
 																							  String joinName,
 																							  Set<? extends Column<T2, ?>> selectableColumns,
 																							  boolean optional,
@@ -328,7 +320,7 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 			Key<T2, JOINID> rightJoinColumn,
 			Set<ConfiguredRelationalPersister<? extends U, ID>> subPersisters,
 			BeanRelationFixer<SRC, U> beanRelationFixer,
-			@Nullable BiFunction<Row, ColumnedRow, Object> relationIdentifierProvider) {
+			@Nullable Function<ColumnedRow, Object> relationIdentifierProvider) {
 		
 		Holder<JoinTablePolymorphicRelationJoinNode<U, T1, T2, JOINID, ID>> createdJoinHolder = new Holder<>();
 		String relationJoinName = entityJoinTree.addJoin(leftStrategyName, parent -> {
@@ -368,9 +360,10 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 					null,
 					new EntityMergerAdapter<>((EntityMapping<V, ID, ?>) localSubPersister.getMapping())) {
 				@Override
-				public MergeJoinRowConsumer<V> toConsumer(ColumnedRow columnedRow) {
+				public MergeJoinRowConsumer<V> toConsumer(JoinNode<T2> joinNode) {
 					PolymorphicMergeJoinRowConsumer<V, ID> joinRowConsumer = new PolymorphicMergeJoinRowConsumer<>(
-							localSubPersister.getMapping(), columnedRow);
+							(MergeJoinNode<V, ?, ?, ID>) joinNode, 
+							localSubPersister.getMapping());
 					mainPersisterJoin.addSubPersisterJoin(joinRowConsumer);
 					return joinRowConsumer;
 				}

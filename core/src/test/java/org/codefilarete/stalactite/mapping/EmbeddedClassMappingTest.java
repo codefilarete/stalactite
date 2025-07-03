@@ -9,7 +9,7 @@ import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.MapBasedColumnedRow;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
@@ -20,7 +20,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.reflection.Accessors.*;
+import static org.codefilarete.reflection.Accessors.accessorByMethodReference;
+import static org.codefilarete.reflection.Accessors.mutatorByField;
+import static org.codefilarete.reflection.Accessors.mutatorByMethodReference;
+import static org.codefilarete.reflection.Accessors.propertyAccessor;
 import static org.codefilarete.stalactite.mapping.EmbeddedClassMapping.DefaultValueDeterminer;
 
 /**
@@ -235,10 +238,10 @@ class EmbeddedClassMappingTest {
 	
 	@Test
 	void transform() {
-		Row row = new Row();
-		row.put("a", 1);
-		row.put("b", 2);
-		row.put("c", 3);
+		MapBasedColumnedRow row = new MapBasedColumnedRow();
+		row.put(targetTable.getColumn("a"), 1);
+		row.put(targetTable.getColumn("b"), 2);
+		row.put(targetTable.getColumn("c"), 3);
 		Toto toto = testInstance.transform(row);
 		assertThat((int) toto.a).isEqualTo(1);
 		assertThat((int) toto.b).isEqualTo(2);
@@ -247,11 +250,11 @@ class EmbeddedClassMappingTest {
 	
 	@Test
 	void transform_withNullValueInRow_returnsNotNull() {
-		Row row = new Row();
-		row.put("a", null);
-		row.put("b", null);
-		row.put("c", null);
-		EmbeddedClassMapping<Toto, ?> testInstance = new EmbeddedClassMapping<>(Toto.class, targetTable, (Map) classMapping);
+		MapBasedColumnedRow row = new MapBasedColumnedRow();
+		row.put(targetTable.getColumn("a"), null);
+		row.put(targetTable.getColumn("b"), null);
+		row.put(targetTable.getColumn("c"), null);
+		EmbeddedClassMapping<Toto, ?> testInstance = new EmbeddedClassMapping<>(Toto.class, targetTable, classMapping);
 		Toto toto = testInstance.transform(row);
 		assertThat(toto).isNotNull();
 		assertThat(toto.a).isNull();
@@ -301,15 +304,15 @@ class EmbeddedClassMappingTest {
 		// primary key shall not be written by this class
 		assertThat(testInstance.getInsertableColumns().contains(colA)).isTrue();
 		assertThat(testInstance.getUpdatableColumns().contains(colA)).isFalse();
-		assertThat(testInstance.getRowTransformer().getColumnToMember().containsKey(colA)).isTrue();
+		assertThat(testInstance.getColumns().contains(colA)).isTrue();
 		// generated keys shall not be written by this class
 		assertThat(testInstance.getInsertableColumns().contains(colB)).isFalse();
 		assertThat(testInstance.getUpdatableColumns().contains(colB)).isFalse();
-		assertThat(testInstance.getRowTransformer().getColumnToMember().containsKey(colB)).isTrue();
+		assertThat(testInstance.getColumns().contains(colB)).isTrue();
 		// standard columns shall be written by this class
 		assertThat(testInstance.getInsertableColumns().contains(colC)).isTrue();
 		assertThat(testInstance.getUpdatableColumns().contains(colC)).isTrue();
-		assertThat(testInstance.getRowTransformer().getColumnToMember().containsKey(colC)).isTrue();
+		assertThat(testInstance.getColumns().contains(colC)).isTrue();
 	}
 	
 	private static class Toto {

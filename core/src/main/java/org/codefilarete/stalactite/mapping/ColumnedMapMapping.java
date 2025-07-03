@@ -13,7 +13,7 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.function.Predicates;
@@ -50,6 +50,11 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 	@Override
 	public Set<Column<T, ?>> getColumns() {
 		return columns;
+	}
+	
+	@Override
+	public RowTransformer<C> getRowTransformer() {
+		return rowTransformer;
 	}
 	
 	@Override
@@ -165,13 +170,8 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 	protected abstract V toMapValue(K k, Object o);
 
 	@Override
-	public C transform(Row row) {
+	public C transform(ColumnedRow row) {
 		return this.rowTransformer.transform(row);
-	}
-	
-	@Override
-	public AbstractTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow) {
-		return this.rowTransformer.copyWithAliases(columnedRow);
 	}
 	
 	@Override
@@ -211,26 +211,20 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 		}
 		
 		private LocalToMapRowTransformer(Function<Function<Column<?, ?>, Object>, M> beanFactory,
-										 ColumnedRow columnedRow,
 										 Iterable<Column> columns, Function<Column, K> keyProvider,
 										 BiFunction<K /* key */, Object /* row value */, V> databaseValueConverter) {
-			super(beanFactory, columnedRow);
+			super(beanFactory);
 			this.columns = columns;
 			this.keyProvider = keyProvider;
 			this.databaseValueConverter = databaseValueConverter;
 		}
 		
-		@Override
-		public AbstractTransformer<M> copyWithAliases(ColumnedRow columnedRow) {
-			return new LocalToMapRowTransformer<>(this.beanFactory, columnedRow, this.columns, this.keyProvider, this.databaseValueConverter);
-		}
-		
 		/** We bind conversion on {@link ColumnedCollectionMapping} conversion methods */
 		@Override
-		public void applyRowToBean(Row row, M map) {
-			for (Column column : this.columns) {
+		public void applyRowToBean(ColumnedRow row, M map) {
+			for (Column<?, ?> column : this.columns) {
 				K key = keyProvider.apply(column);
-				V value = (V) getColumnedRow().getValue(column, row);
+				V value = (V) row.get(column);
 				map.put(key, databaseValueConverter.apply(key, value));
 			}
 		}

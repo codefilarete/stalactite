@@ -71,7 +71,7 @@ class TablePerClassPolymorphismBuilderTest {
 		
 		assertThatThrownBy(() -> configuration.build(persistenceContext))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, MappingConfigurationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Table declared in inheritance is different from given one in embeddable properties override : MyOverridingTable, TargetTable");
+				.hasMessage("Property o.c.s.e.m.Color::getRgb overrides column with MyOverridingTable.myOverridingColumn but it is not part of main table TargetTable");
 	}
 	
 	@Test

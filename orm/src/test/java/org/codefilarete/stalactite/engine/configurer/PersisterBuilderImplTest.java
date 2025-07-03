@@ -306,7 +306,7 @@ public class PersisterBuilderImplTest {
 		// Checking AbstractVehicle mapping
 		// we get the table instance created by builder because our (the one of this test) is only one with same name but without columns because
 		// it wasn't given at mapping definition time
-		abstractVehicleTable = Iterables.find(map.giveTables(), abstractVehicleTable::equals);
+		abstractVehicleTable = Iterables.find(map.giveTables(), table -> table.getName().equalsIgnoreCase("AbstractVehicle"));
 		List<Entry<ReversibleAccessor, Column>> expectedAbstractVehicleMapping = new ArrayList<>(Maps
 				.forHashMap(ReversibleAccessor.class, Column.class)
 				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(AbstractVehicle::getTimestamp), mutatorByMethodReference(AbstractVehicle::setTimestamp)),

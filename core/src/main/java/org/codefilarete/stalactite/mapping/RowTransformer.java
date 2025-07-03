@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.mapping;
 import java.util.function.Function;
 
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.stalactite.sql.result.Row;
 
 /**
@@ -12,11 +13,11 @@ import org.codefilarete.stalactite.sql.result.Row;
  */
 public interface RowTransformer<C> {
 	
-	C transform(Row row);
+	C transform(ColumnedRow row);
 	
-	void applyRowToBean(Row row, C bean);
+	C newBeanInstance(ColumnedRow row);
 	
-	AbstractTransformer<C> copyWithAliases(ColumnedRow columnedRow);
+	void applyRowToBean(ColumnedRow row, C bean);
 	
 	void addTransformerListener(TransformerListener<? extends C> listener);
 	

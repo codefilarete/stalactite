@@ -6,7 +6,6 @@ import java.util.Set;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
-import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EmbeddedBeanMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
@@ -14,7 +13,7 @@ import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.function.Converter;
 
 /**
@@ -92,8 +91,13 @@ public class EntityMappingWrapper<C, I, T extends Table<T>> implements EntityMap
 	}
 	
 	@Override
-	public C transform(Row row) {
-		return delegate.transform(row);
+	public RowTransformer<C> getRowTransformer() {
+		return delegate.getRowTransformer();
+	}
+	
+	@Override
+	public C transform(ColumnedRow columnedRow) {
+		return delegate.transform(columnedRow);
 	}
 	
 	@Override
@@ -129,11 +133,6 @@ public class EntityMappingWrapper<C, I, T extends Table<T>> implements EntityMap
 	@Override
 	public ValueAccessPointMap<C, Converter<Object, Object>> getReadConverters() {
 		return delegate.getReadConverters();
-	}
-	
-	@Override
-	public RowTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow) {
-		return delegate.copyTransformerWithAliases(columnedRow);
 	}
 	
 	@Override

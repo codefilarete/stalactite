@@ -307,7 +307,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 						if (columnFromAssociationTableFK == null) {
 							throw new IllegalStateException("No matching column in foreign key of association table " + associationPersister.getMainTable() + " found for primary key " + columnFromRightTablePK);
 						}
-						return columnValueProvider.apply(columnFromAssociationTableFK);
+						return columnValueProvider.get(columnFromAssociationTableFK);
 					};
 					firstPhaseCycleLoadListener.onFirstPhaseRowRead(src, targetIdentifierAssembler.assemble(manySideColumnValueProvider));
 				});

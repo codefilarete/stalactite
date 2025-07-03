@@ -15,8 +15,8 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Row;
-import org.codefilarete.stalactite.sql.result.RowIterator;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
+import org.codefilarete.stalactite.sql.result.ColumnedRowIterator;
 import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSelect;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
@@ -109,7 +109,7 @@ public class SelectExecutor<C, I, T extends Table<T>> extends DMLExecutor<C, I, 
 	static class InternalExecutor<C, I, T extends Table<T>> {
 		
 		private final IdentifierAssembler<I, T> primaryKeyProvider;
-		private final Function<Row, C> transformer;
+		private final Function<ColumnedRow, C> transformer;
 		
 		InternalExecutor(EntityMapping<C, I, T> mapping) {
 			this(mapping.getIdMapping().getIdentifierAssembler(), mapping::transform);
@@ -119,7 +119,7 @@ public class SelectExecutor<C, I, T extends Table<T>> extends DMLExecutor<C, I, 
 		 * @param primaryKeyProvider will provide entity ids necessary to set parameters of {@link ReadOperation} before its execution 
 		 * @param transformer will transform result given by {@link ReadOperation} execution
 		 */
-		InternalExecutor(IdentifierAssembler<I, T> primaryKeyProvider, Function<Row, C> transformer) {
+		InternalExecutor(IdentifierAssembler<I, T> primaryKeyProvider, Function<ColumnedRow, C> transformer) {
 			this.primaryKeyProvider = primaryKeyProvider;
 			this.transformer = transformer;
 		}
@@ -138,12 +138,17 @@ public class SelectExecutor<C, I, T extends Table<T>> extends DMLExecutor<C, I, 
 		protected Set<C> transform(ReadOperation<Column<T, ?>> closeableOperation, int size) {
 			ResultSet resultSet = closeableOperation.execute();
 			// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
-			RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParameterizedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());
+			ColumnParameterizedSelect<?> sqlStatement = (ColumnParameterizedSelect) closeableOperation.getSqlStatement();
+			Iterator<? extends ColumnedRow> rowIterator = new ColumnedRowIterator(
+					resultSet,
+					sqlStatement.getSelectParameterBinders(),
+					sqlStatement.getAliases());
 			return transform(rowIterator, size);
 		}
 		
-		protected Set<C> transform(Iterator<Row> rowIterator, int resultSize) {
-			return Iterables.collect(() -> rowIterator, transformer, () -> new HashSet<>(resultSize));
+		protected Set<C> transform(Iterator<? extends ColumnedRow> rowIterator, int resultSize) {
+			Iterable<? extends ColumnedRow> rows = () -> (Iterator<ColumnedRow>) rowIterator;
+			return Iterables.collect(rows, transformer, () -> new HashSet<>(resultSize));
 		}
 	}
 }
