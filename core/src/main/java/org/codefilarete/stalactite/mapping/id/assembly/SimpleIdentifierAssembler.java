@@ -10,6 +10,7 @@ import java.util.function.Function;
 
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
@@ -39,8 +40,8 @@ public class SimpleIdentifierAssembler<I, T extends Table<T>> implements Identif
 	}
 	
 	@Override
-	public I assemble(Function<Column<?, ?>, Object> columnValueProvider) {
-		Object value = columnValueProvider.apply(primaryKey);
+	public I assemble(ColumnedRow columnValueProvider) {
+		Object value = columnValueProvider.get(primaryKey);
 		return (I) (value == null || isDefaultPrimitiveValue(value) ? null : value);
 	}
 	

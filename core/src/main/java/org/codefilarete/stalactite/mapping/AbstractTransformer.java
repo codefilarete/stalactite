@@ -17,7 +17,7 @@ import org.codefilarete.stalactite.sql.result.Row;
  */
 public abstract class AbstractTransformer<C> implements RowTransformer<C> {
 	
-	protected final Function<Function<Column<?, ?>, Object>, C> beanFactory;
+	protected final Function<ColumnedRow, C> beanFactory;
 	
 	private final Collection<TransformerListener<C>> rowTransformerListeners = new ArrayList<>();
 	
@@ -35,13 +35,13 @@ public abstract class AbstractTransformer<C> implements RowTransformer<C> {
 	 *
 	 * @param beanFactory the factory of beans
 	 */
-	public AbstractTransformer(Function<? extends Function<Column<?, ?>, Object>, C> beanFactory) {
+	public AbstractTransformer(Function<? extends ColumnedRow, C> beanFactory) {
 		this(beanFactory, Collections.emptyList());
 	}
 	
-	protected AbstractTransformer(Function<? extends Function<Column<?, ?>, Object>, C> beanFactory,
+	protected AbstractTransformer(Function<? extends ColumnedRow, C> beanFactory,
 								  Collection<TransformerListener<C>> rowTransformerListeners) {
-		this.beanFactory = (Function<Function<Column<?, ?>, Object>, C>) beanFactory;
+		this.beanFactory = (Function<ColumnedRow, C>) beanFactory;
 		this.rowTransformerListeners.addAll(rowTransformerListeners);
 	}
 	

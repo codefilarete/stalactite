@@ -92,6 +92,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Database;
 import org.codefilarete.stalactite.sql.ddl.structure.Database.Schema;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
@@ -985,16 +986,16 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				
 				@Nullable
 				@Override
-				public I assemble(Function<Column<?, ?>, Object> columnValueProvider) {
+				public I assemble(ColumnedRow columnValueProvider) {
 					// we should not return an id if any value is null
 					boolean hasAnyNullValue = getColumns().stream().anyMatch(column -> {
-						Object partialKeyValue = columnValueProvider.apply(column);
+						Object partialKeyValue = columnValueProvider.get(column);
 						return partialKeyValue == null || PRIMITIVE_DEFAULT_VALUES.containsValue(partialKeyValue);
 					});
 					if (hasAnyNullValue) {
 						return null;
 					}
-					Function<Function<Column, Object>, I> keyFactory;
+					Function<ColumnedRow, I> keyFactory;
 					if (defaultConstructor == null) {
 						// we'll lately throw an exception (we could do it now) but the lack of constructor may be due to an abstract class in inheritance
 						// path which currently won't be instanced at runtime (because its concrete subclass will be) so there's no reason to throw
@@ -1006,9 +1007,9 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					} else {
 						keyFactory = keyValueProvider -> Reflections.newInstance(defaultConstructor);
 					}
-					I result = keyFactory.apply(columnValueProvider::apply);
+					I result = keyFactory.apply(columnValueProvider);
 					((CompositeKeyIdentification<E, I>) identification).getCompositeKeyMapping().forEach((setter, col) -> {
-						setter.toMutator().set(result, columnValueProvider.apply(col));
+						setter.toMutator().set(result, columnValueProvider.get(col));
 					});
 					return result;
 				}
@@ -1019,7 +1020,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					new SimpleIdentifierAssembler<>(first(primaryKey.getColumns())));
 		}
 
-		Function<Function<Column<?, ?>, Object>, E> beanFactory;
+		Function<ColumnedRow, E> beanFactory;
 		boolean identifierSetByBeanFactory = true;
 		if (entityFactoryProvider == null) {
 			Constructor<E> constructorById = Reflections.findConstructor(beanType, idDefinition.getMemberType());

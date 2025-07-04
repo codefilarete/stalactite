@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.function.Function;
 
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 
 /**
  * Class for transforming columns into a Collection.
@@ -21,7 +22,7 @@ public abstract class ToCollectionRowTransformer<T extends Collection> extends A
 	 *
 	 * @param factory the factory of beans
 	 */
-	public ToCollectionRowTransformer(Function<Function<Column<?, ?>, Object>, T> factory) {
+	public ToCollectionRowTransformer(Function<ColumnedRow, T> factory) {
 		super(factory);
 	}
 }

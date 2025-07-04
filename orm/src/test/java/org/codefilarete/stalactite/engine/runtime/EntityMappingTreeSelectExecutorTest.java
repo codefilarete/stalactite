@@ -31,6 +31,7 @@ import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
@@ -137,7 +138,7 @@ public class EntityMappingTreeSelectExecutorTest {
 			t = new ComposedIdentifierAssembler<Object, T>(primaryKey) {
 				@Nullable
 				@Override
-				public Object assemble(Function<Column<?, ?>, Object> columnValueProvider) {
+				public Object assemble(ColumnedRow columnValueProvider) {
 					// this method is not called so we don't need to implement it
 					throw new NotImplementedException("Method is not expected to be called");
 				}
@@ -294,8 +295,8 @@ public class EntityMappingTreeSelectExecutorTest {
 				new ComposedIdMapping<>(idAccessor, new AlreadyAssignedIdentifierManager<>(Toto.class, c -> {}, c -> false)
 						, new ComposedIdentifierAssembler<Toto, T>(targetTable) {
 					@Override
-					public Toto assemble(Function<Column<?, ?>, Object> columnValueProvider) {
-						return new Toto((long) columnValueProvider.apply(id1), (long) columnValueProvider.apply(id2));
+					public Toto assemble(ColumnedRow columnValueProvider) {
+						return new Toto(columnValueProvider.get(id1), columnValueProvider.get(id2));
 					}
 					
 					@Override

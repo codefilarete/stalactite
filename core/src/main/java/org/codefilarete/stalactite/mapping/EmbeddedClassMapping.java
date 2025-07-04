@@ -90,7 +90,7 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 								T targetTable,
 								Map<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> propertiesMapping,
 								Map<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> readonlyPropertiesMapping,
-								Function<Function<Column<?, ?>, Object>, C> beanFactory) {
+								Function<ColumnedRow, C> beanFactory) {
 		this.classToPersist = classToPersist;
 		this.targetTable = targetTable;
 		this.propertyToColumn = new KeepOrderMap<>(propertiesMapping);
@@ -314,7 +314,7 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	 */
 	private class EmbeddedBeanRowTransformer extends ToBeanRowTransformer<C> {
 		
-		public EmbeddedBeanRowTransformer(Function<? extends Function<Column<?, ?>, Object>, C> beanFactory,
+		public EmbeddedBeanRowTransformer(Function<? extends ColumnedRow, C> beanFactory,
 										  Map<? extends Column<?, ?>, ? extends Mutator<C, Object>> columnToMember) {
 			super(beanFactory, columnToMember);
 		}

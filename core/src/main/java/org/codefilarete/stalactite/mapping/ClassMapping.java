@@ -150,7 +150,7 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 						Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> propertyToColumn,
 						Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> readonlyColumns,
 						IdMapping<C, I> idMapping,
-						Function<Function<Column<?, ?>, Object>, C> entityFactory,
+						Function<ColumnedRow, C> entityFactory,
 						boolean identifierSetByBeanFactory) {
 		this(new EmbeddedClassMapping<>(classToPersist, targetTable, propertyToColumn, readonlyColumns, entityFactory), idMapping, identifierSetByBeanFactory);
 	}

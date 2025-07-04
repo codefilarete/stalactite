@@ -14,6 +14,7 @@ import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 
 /**
  * @author Guillaume Mary
@@ -50,7 +51,7 @@ public class AssociationRecordMapping<
 						}, new AlreadyAssignedIdentifierManager<>(AssociationRecord.class, AssociationRecord::markAsPersisted, AssociationRecord::isPersisted),
 						new ComposedIdentifierAssembler<AssociationRecord, ASSOCIATIONTABLE>(targetTable) {
 							@Override
-							public AssociationRecord assemble(Function<Column<?, ?>, Object> columnValueProvider) {
+							public AssociationRecord assemble(ColumnedRow columnValueProvider) {
 								LEFTID leftid = leftIdentifierAssembler.assemble(columnValueProvider);
 								RIGHTID rightid = rightIdentifierAssembler.assemble(columnValueProvider);
 								// we should not return an id if any (both expected in fact) value is null

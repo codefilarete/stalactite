@@ -12,6 +12,7 @@ import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.collection.ReadOnlyIterator;
 
 /**
@@ -93,7 +94,7 @@ public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfi
 	
 	interface EntityFactoryProvider<C, T extends Table> {
 
-		Function<Function<Column<?, ?>, Object>, C> giveEntityFactory(T table);
+		Function<ColumnedRow, C> giveEntityFactory(T table);
 		
 		boolean isIdentifierSetByFactory();
 	}

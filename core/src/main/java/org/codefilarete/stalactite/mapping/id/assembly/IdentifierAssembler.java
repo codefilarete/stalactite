@@ -26,11 +26,7 @@ public interface IdentifierAssembler<I, T extends Table<T>> {
 	 * @param row a current row of an {@link java.sql.ResultSet}
 	 * @return an identifier
 	 */
-	default I assemble(ColumnedRow row) {
-		return assemble((Function<Column<?, ?>, Object>) row::get);
-	}
-	
-	I assemble(Function<Column<?, ?>, Object> columnValueProvider);
+	I assemble(ColumnedRow row);
 	
 	Set<Column<T, ?>> getColumns();
 	

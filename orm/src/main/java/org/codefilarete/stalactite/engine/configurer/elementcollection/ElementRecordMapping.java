@@ -13,6 +13,7 @@ import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
@@ -127,12 +128,15 @@ class ElementRecordMapping<C, I, T extends Table<T>> extends ClassMapping<Elemen
 			}
 			
 			@Override
-			public ElementRecord<TRGT, ID> assemble(Function<Column<?, ?>, Object> columnValueProvider) {
-				ID leftValue = sourceIdentifierAssembler.assemble((Function<Column<?, ?>, Object>) sourceColumn -> {
-					Column<T, ?> targetColumn = primaryKeyForeignColumnMapping.get(sourceColumn);
-					return columnValueProvider.apply(targetColumn);
+			public ElementRecord<TRGT, ID> assemble(ColumnedRow columnValueProvider) {
+				ID leftValue = sourceIdentifierAssembler.assemble(new ColumnedRow() {
+					@Override
+					public <E> E get(Selectable<E> sourceColumn) {
+						Column<T, E> targetColumn = (Column<T, E>) primaryKeyForeignColumnMapping.get(sourceColumn);
+						return columnValueProvider.get(targetColumn);
+					}
 				});
-				TRGT rightValue = (TRGT) columnValueProvider.apply(elementColumn);
+				TRGT rightValue = columnValueProvider.get(elementColumn);
 				// we should not return an id if any (both expected in fact) value is null
 				if (leftValue == null || rightValue == null) {
 					return null;
@@ -178,12 +182,6 @@ class ElementRecordMapping<C, I, T extends Table<T>> extends ClassMapping<Elemen
 			@Override
 			public ElementRecord<TRGT, ID> assemble(ColumnedRow row) {
 				return elementMapping.transform(row);
-			}
-			
-			@Override
-			public ElementRecord<TRGT, ID> assemble(Function<Column<?, ?>, Object> columnValueProvider) {
-				// never called because we override assemble(ColumnedRow)
-				return null;
 			}
 			
 			@Override

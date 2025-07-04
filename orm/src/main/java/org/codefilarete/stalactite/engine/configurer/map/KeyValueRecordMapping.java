@@ -194,12 +194,6 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 			}
 			
 			@Override
-			public RecordId<K, ID> assemble(Function<Column<?, ?>, Object> columnValueProvider) {
-				// never called because we override assemble(ColumnedRow)
-				return null;
-			}
-			
-			@Override
 			public Map<Column<T, ?>, ?> getColumnValues(RecordId<K, ID> record) {
 				Map<Column<?, ?>, Object> sourceColumnValues = (Map) sourceIdentifierAssembler.getColumnValues(record.getId());
 				Map<Column<T, ?>, Object> idColumnValues = Maps.innerJoin(primaryKey2ForeignKeyMapping, sourceColumnValues);

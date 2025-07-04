@@ -69,6 +69,7 @@ import org.codefilarete.stalactite.engine.runtime.AbstractVersioningStrategy.Ver
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.Reflections;
@@ -1126,7 +1127,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 							keyMapping.setByConstructor();
 							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(table -> {
 								Column<?, I> primaryKey = (Column<?, I>) Iterables.first(((Table<?>) table).getPrimaryKey().getColumns());
-								return row -> factory.apply((I) row.apply(primaryKey));
+								return row -> factory.apply((I) row.get(primaryKey));
 							}, true);
 							return null;
 						}
@@ -1135,7 +1136,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 						public <T extends Table<T>> KeyOptions<C, I> usingConstructor(Function<? super I, C> factory, Column<T, I> input) {
 							keyMapping.setColumnOptions(new ColumnLinkageOptionsByColumn(input));
 							keyMapping.setByConstructor();
-							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(table -> row -> factory.apply((I) row.apply(input)), true);
+							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(table -> row -> factory.apply((I) row.get(input)), true);
 							return null;
 						}
 						
@@ -1143,7 +1144,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 						public KeyOptions<C, I> usingConstructor(Function<? super I, C> factory, String columnName) {
 							keyMapping.setColumnOptions(new ColumnLinkageOptionsByName(columnName));
 							keyMapping.setByConstructor();
-							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(table -> row -> factory.apply((I) row.apply(table.getColumn(columnName))), true);
+							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(table -> row -> factory.apply((I) row.get(table.getColumn(columnName))), true);
 							return null;
 						}
 						
@@ -1155,8 +1156,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 							keyMapping.setByConstructor();
 							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(
 									table -> row -> factory.apply(
-											(I) row.apply(input1),
-											(X) row.apply(input2)),
+											(I) row.get(input1),
+											(X) row.get(input2)),
 									true);
 							return null;
 						}
@@ -1169,8 +1170,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 							keyMapping.setByConstructor();
 							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(
 									table -> row -> factory.apply(
-											(I) row.apply(table.getColumn(columnName1)),
-											(X) row.apply(table.getColumn(columnName2))),
+											(I) row.get(table.getColumn(columnName1)),
+											(X) row.get(table.getColumn(columnName2))),
 									true);
 							return null;
 						}
@@ -1185,9 +1186,9 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 							keyMapping.setByConstructor();
 							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(
 									table -> row -> factory.apply(
-											(I) row.apply(input1),
-											(X) row.apply(input2),
-											(Y) row.apply(input3)),
+											(I) row.get(input1),
+											(X) row.get(input2),
+											(Y) row.get(input3)),
 									true);
 							return null;
 						}
@@ -1201,9 +1202,9 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 							keyMapping.setByConstructor();
 							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(
 									table -> row -> factory.apply(
-											(I) row.apply(table.getColumn(columnName1)),
-											(X) row.apply(table.getColumn(columnName2)),
-											(Y) row.apply(table.getColumn(columnName3))),
+											(I) row.get(table.getColumn(columnName1)),
+											(X) row.get(table.getColumn(columnName2)),
+											(Y) row.get(table.getColumn(columnName3))),
 									true);
 							return null;
 						}
@@ -1211,7 +1212,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 						@Override
 						public KeyOptions<C, I> usingFactory(Function<Function<Column<?, ?>, ?>, C> factory) {
 							keyMapping.setByConstructor();
-							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(table -> row -> (C) factory.apply(row), true);
+							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(table -> row -> (C) factory.apply(row::get), true);
 							return null;
 						}
 					}, true)
@@ -1537,17 +1538,17 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	static class EntityFactoryProviderSupport<C, T extends Table> implements EntityFactoryProvider<C, T> {
 		
-		private final Function<Table, Function<Function<Column<?, ?>, Object>, C>> factory;
+		private final Function<Table, Function<ColumnedRow, C>> factory;
 		
 		private final boolean setIdentifier;
 		
-		EntityFactoryProviderSupport(Function<Table, Function<Function<Column<?, ?>, Object>, C>> factory, boolean setIdentifier) {
+		EntityFactoryProviderSupport(Function<Table, Function<ColumnedRow, C>> factory, boolean setIdentifier) {
 			this.factory = factory;
 			this.setIdentifier = setIdentifier;
 		}
 		
 		@Override
-		public Function<Function<Column<?, ?>, Object>, C> giveEntityFactory(T table) {
+		public Function<ColumnedRow, C> giveEntityFactory(T table) {
 			return factory.apply(table);
 		}
 		

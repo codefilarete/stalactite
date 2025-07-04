@@ -141,8 +141,8 @@ class KeyValueRecordMappingTest {
 			Column<RIGHTTABLE, String> rightTableEntryKeyProp2Column = rightTable.addColumn("entryKey_prop2", String.class);
 			IdentifierAssembler<EntryKey, RIGHTTABLE> entryKeyIdentifierAssembler = new ComposedIdentifierAssembler<EntryKey, RIGHTTABLE>(rightTable) {
 				@Override
-				public EntryKey assemble(Function<Column<?, ?>, Object> columnValueProvider) {
-					return new EntryKey((Long) columnValueProvider.apply(entryKeyProp1Column), (String) columnValueProvider.apply(entryKeyProp2Column));
+				public EntryKey assemble(ColumnedRow columnValueProvider) {
+					return new EntryKey(columnValueProvider.get(entryKeyProp1Column), columnValueProvider.get(entryKeyProp2Column));
 				}
 				
 				@Override

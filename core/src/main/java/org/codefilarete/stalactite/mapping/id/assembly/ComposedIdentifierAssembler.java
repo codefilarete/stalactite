@@ -45,10 +45,6 @@ public abstract class ComposedIdentifierAssembler<I, T extends Table<T>> impleme
 		return primaryKey.getColumns();
 	}
 	
-	@Nullable
-	@Override
-	public abstract I assemble(Function<Column<?, ?>, Object> columnValueProvider);
-	
 	@Override
 	public Map<Column<T, ?>, ?> getColumnValues(Iterable<I> ids) {
 		Map<Column<T, ?>, Object> pkValues = new HashMap<>();

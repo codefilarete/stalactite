@@ -33,11 +33,13 @@ import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedA
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.order.Delete;
 import org.codefilarete.stalactite.sql.order.DeleteCommandBuilder;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
@@ -301,13 +303,16 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 					// it is not in join : only association table is. So we wrap column value provider in one that
 					// get association table column that matches the one asked by targetPersister thanks to association table
 					// FK-PK columns mapping
-					Function<Column<?, ?>, Object> manySideColumnValueProvider = columnFromRightTablePK -> {
-						// getting column present in query through association table FK-PK mapping
-						Column<T, ?> columnFromAssociationTableFK = associationPersister.getMainTable().getRightIdentifierColumnMapping().get(columnFromRightTablePK);
-						if (columnFromAssociationTableFK == null) {
-							throw new IllegalStateException("No matching column in foreign key of association table " + associationPersister.getMainTable() + " found for primary key " + columnFromRightTablePK);
+					ColumnedRow manySideColumnValueProvider = new ColumnedRow() {
+						@Override
+						public <E> E get(Selectable<E> columnFromRightTablePK) {
+							// getting column present in query through association table FK-PK mapping
+							Column<T, E> columnFromAssociationTableFK = (Column<T, E>) associationPersister.getMainTable().getRightIdentifierColumnMapping().get(columnFromRightTablePK);
+							if (columnFromAssociationTableFK == null) {
+								throw new IllegalStateException("No matching column in foreign key of association table " + associationPersister.getMainTable() + " found for primary key " + columnFromRightTablePK);
+							}
+							return columnValueProvider.get(columnFromAssociationTableFK);
 						}
-						return columnValueProvider.get(columnFromAssociationTableFK);
 					};
 					firstPhaseCycleLoadListener.onFirstPhaseRowRead(src, targetIdentifierAssembler.assemble(manySideColumnValueProvider));
 				});

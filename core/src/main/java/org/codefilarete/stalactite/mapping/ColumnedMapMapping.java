@@ -210,7 +210,7 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 			this.databaseValueConverter = databaseValueConverter;
 		}
 		
-		private LocalToMapRowTransformer(Function<Function<Column<?, ?>, Object>, M> beanFactory,
+		private LocalToMapRowTransformer(Function<ColumnedRow, M> beanFactory,
 										 Iterable<Column> columns, Function<Column, K> keyProvider,
 										 BiFunction<K /* key */, Object /* row value */, V> databaseValueConverter) {
 			super(beanFactory);

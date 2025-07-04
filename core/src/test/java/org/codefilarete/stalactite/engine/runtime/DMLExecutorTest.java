@@ -19,6 +19,7 @@ import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierMana
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.collection.Maps;
 
 /**
@@ -71,10 +72,10 @@ abstract class DMLExecutorTest {
 
 		ComposedIdentifierAssembler<Toto, ?> composedIdentifierAssembler = new ComposedIdentifierAssembler<Toto, T>(targetTable.getPrimaryKey()) {
 			@Override
-			public Toto assemble(Function<Column<?, ?>, Object> columnValueProvider) {
+			public Toto assemble(ColumnedRow columnValueProvider) {
 				// No need to be implemented because we're on a delete test case, but it may be something 
 				// like this :
-				return new Toto((Integer) columnValueProvider.apply(colA), (Integer) columnValueProvider.apply(colB), null);
+				return new Toto((Integer) columnValueProvider.get(colA), (Integer) columnValueProvider.get(colB), null);
 			}
 
 			@Override
@@ -124,10 +125,10 @@ abstract class DMLExecutorTest {
 		
 		ComposedIdentifierAssembler<ComposedId, ?> composedIdentifierAssembler = new ComposedIdentifierAssembler<ComposedId, T>(targetTable.getPrimaryKey()) {
 			@Override
-			public ComposedId assemble(Function<Column<?, ?>, Object> columnValueProvider) {
+			public ComposedId assemble(ColumnedRow columnValueProvider) {
 				// No need to be implemented because we're on a delete test case, but it may be something 
 				// like this :
-				return new ComposedId((Integer) columnValueProvider.apply(colA), (Integer) columnValueProvider.apply(colB));
+				return new ComposedId((Integer) columnValueProvider.get(colA), (Integer) columnValueProvider.get(colB));
 			}
 
 			@Override

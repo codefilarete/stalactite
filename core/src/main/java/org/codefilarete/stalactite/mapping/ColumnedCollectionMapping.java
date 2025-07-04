@@ -192,7 +192,7 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 			this.databaseValueConverter = databaseValueConverter;
 		}
 		
-		private LocalToCollectionRowTransformer(Function<Function<Column<?, ?>, Object>, C> beanFactory,
+		private LocalToCollectionRowTransformer(Function<ColumnedRow, C> beanFactory,
 												Function<Object, Object> databaseValueConverter) {
 			super(beanFactory);
 			this.databaseValueConverter = databaseValueConverter;
