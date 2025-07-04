@@ -118,7 +118,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 					((ConfiguredPersister) persistenceContext.getPersister(Person.class)).getMapping().getTargetTable().getName().toUpperCase());
 			Map<String, JdbcForeignKey> foreignKeyPerName = giveForeignKeys(exportedKeysForPersonTable);
 			JdbcForeignKey foundForeignKey = Iterables.first(foreignKeyPerName).getValue();
-			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_C7E4C03A", "HOUSE", "OWNERFIRSTNAME, OWNERLASTNAME, OWNERADDRESS", "PERSON", "FIRSTNAME, LASTNAME, ADDRESS");
+			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_A240422", "HOUSE", "OWNERFIRSTNAME, OWNERLASTNAME, OWNERADDRESS", "PERSON", "FIRSTNAME, LASTNAME, ADDRESS");
 			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 		}
 		
@@ -146,7 +146,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 			ResultSet exportedKeysForPersonTable = currentConnection.getMetaData().getExportedKeys(null, null, "HOUSE");
 			Map<String, JdbcForeignKey> foreignKeyPerName = giveForeignKeys(exportedKeysForPersonTable);
 			JdbcForeignKey foundForeignKey = Iterables.first(foreignKeyPerName).getValue();
-			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_DC808DBE", "PERSON", "HOUSENUMBER, HOUSESTREET, HOUSEZIPCODE, HOUSECITY", "HOUSE", "NUMBER, STREET, ZIPCODE, CITY");
+			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_8B87D9BD", "PERSON", "HOUSENUMBER, HOUSESTREET, HOUSEZIPCODE, HOUSECITY", "HOUSE", "NUMBER, STREET, ZIPCODE, CITY");
 			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 		}
 		
@@ -176,7 +176,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 					((ConfiguredPersister) persistenceContext.getPersister(Person.class)).getMapping().getTargetTable().getName().toUpperCase());
 			Map<String, JdbcForeignKey> foreignKeyPerName = giveForeignKeys(exportedKeysForPersonTable);
 			JdbcForeignKey foundForeignKey = Iterables.first(foreignKeyPerName).getValue();
-			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_C7E4C03A", "HOUSE", "OWNERFIRSTNAME, OWNERLASTNAME, OWNERADDRESS", "PERSON", "FIRSTNAME, LASTNAME, ADDRESS");
+			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_A240422", "HOUSE", "OWNERFIRSTNAME, OWNERLASTNAME, OWNERADDRESS", "PERSON", "FIRSTNAME, LASTNAME, ADDRESS");
 			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 		}
 		
@@ -203,13 +203,13 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 					((ConfiguredPersister) persistenceContext.getPersister(Person.class)).getMapping().getTargetTable().getName().toUpperCase());
 			Map<String, JdbcForeignKey> foreignKeyPerName =  giveForeignKeys(exportedKeysForPersonTable);
 			JdbcForeignKey foundForeignKey = Iterables.first(foreignKeyPerName).getValue();
-			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_D6E530BC", "PERSON_PETS", "PERSON_FIRSTNAME, PERSON_LASTNAME, PERSON_ADDRESS", "PERSON", "FIRSTNAME, LASTNAME, ADDRESS");
+			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_47CDB94D", "PERSON_PETS", "PERSON_FIRSTNAME, PERSON_LASTNAME, PERSON_ADDRESS", "PERSON", "FIRSTNAME, LASTNAME, ADDRESS");
 			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 			
 			ResultSet exportedKeysForPetTable = currentConnection.getMetaData().getExportedKeys(null, null, "PET");
 			foreignKeyPerName =  giveForeignKeys(exportedKeysForPetTable);
 			foundForeignKey = Iterables.first(foreignKeyPerName).getValue();
-			expectedForeignKey = new JdbcForeignKey("FK_104A9067", "PERSON_PETS", "PETS_NAME, PETS_RACE, PETS_AGE", "PET", "NAME, RACE, AGE");
+			expectedForeignKey = new JdbcForeignKey("FK_3124176C", "PERSON_PETS", "PETS_NAME, PETS_RACE, PETS_AGE", "PET", "NAME, RACE, AGE");
 			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 		}
 		

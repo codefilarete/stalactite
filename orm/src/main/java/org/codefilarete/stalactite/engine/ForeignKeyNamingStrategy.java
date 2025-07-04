@@ -30,8 +30,12 @@ public interface ForeignKeyNamingStrategy {
 	ForeignKeyNamingStrategy HASH = new ForeignKeyNamingStrategy() {
 		@Override
 		public <SOURCETABLE extends Table<SOURCETABLE>, TARGETTABLE extends Table<TARGETTABLE>, ID> String giveName(Key<SOURCETABLE, ID> src, Key<TARGETTABLE, ID> target) {
-			// We ensure a consistent ordering of columns, regardless of the order they were bound.
 			MutableInt hashCode = new MutableInt(src.getTable().getAbsoluteName().hashCode());
+			hashCode.reset(hashCode.getValue() * 31 + target.getTable().getAbsoluteName().hashCode());
+			// We ensure a consistent ordering of columns, regardless of the order they were bound.
+			src.getColumns().stream().sorted(COLUMN_COMPARATOR).forEach(joinLink -> {
+				hashCode.reset(hashCode.getValue() * 31 + joinLink.getExpression().hashCode());
+			});
 			target.getColumns().stream().sorted(COLUMN_COMPARATOR).forEach(joinLink -> {
 				hashCode.reset(hashCode.getValue() * 31 + joinLink.getExpression().hashCode());
 			});
