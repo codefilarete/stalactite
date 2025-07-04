@@ -27,6 +27,18 @@ public class IndexedAssociationTable<
 	
 	private final Column<SELF, Integer> indexColumn;
 	
+	/**
+	 * @param schema the database schema
+	 * @param name the table name
+	 * @param oneSidePrimaryKey primary key of the "one" side table
+	 * @param manySidePrimaryKey primary key of the "many" side table
+	 * @param accessorDefinition representation of the method that gives the collection to be persisted
+	 * @param namingStrategy strategy for naming the association table and its columns
+	 * @param foreignKeyNamingStrategy strategy for naming foreign keys
+	 * @param createOneSideForeignKey whether to create a foreign key for the one side
+	 * @param createManySideForeignKey whether to create a foreign key for the many side
+	 * @param columnName name of the index column, defaults to "idx" if null
+	 */
 	public IndexedAssociationTable(Schema schema,
 								   String name,
 								   PrimaryKey<LEFTTABLE, LEFTID> oneSidePrimaryKey,
@@ -54,8 +66,8 @@ public class IndexedAssociationTable<
 								   boolean createManySideForeignKey,
 								   Column<SELF, Integer> indexColumn) {
 		super(schema, name, oneSidePrimaryKey, manySidePrimaryKey, accessorDefinition, namingStrategy, foreignKeyNamingStrategy, createOneSideForeignKey, createManySideForeignKey);
-		// index column is part of the primary key for indexed association 
 		this.indexColumn = indexColumn == null ? addColumn(DEFAULT_INDEX_COLUMN_NAME, int.class) : indexColumn;
+		// index column is part of the primary key for indexed association 
 		this.indexColumn.primaryKey();
 		getPrimaryKey().addColumn(this.indexColumn);
 	}

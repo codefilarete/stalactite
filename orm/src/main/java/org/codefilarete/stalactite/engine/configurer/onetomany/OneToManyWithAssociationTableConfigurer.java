@@ -13,6 +13,7 @@ import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
 import org.codefilarete.stalactite.engine.runtime.onetomany.AbstractOneToManyWithAssociationTableEngine;
+import org.codefilarete.stalactite.engine.runtime.onetomany.IndexedAssociationTableManyRelationDescriptor;
 import org.codefilarete.stalactite.engine.runtime.onetomany.ManyRelationDescriptor;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithAssociationTableEngine;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithIndexedAssociationTableEngine;
@@ -164,10 +165,13 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 								intermediaryTable.getRightIdentifierColumnMapping()),
 						dialect,
 						connectionConfiguration);
-		ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor = new ManyRelationDescriptor<>(
-				associationConfiguration.getCollectionGetter()::get, associationConfiguration.getSetter()::set,
+		IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDescriptor = new IndexedAssociationTableManyRelationDescriptor<>(
+				associationConfiguration.getCollectionGetter()::get,
+				associationConfiguration.getSetter()::set,
 				associationConfiguration.getCollectionFactory(),
-				associationConfiguration.getOneToManyRelation().getReverseLink());
+				associationConfiguration.getOneToManyRelation().getReverseLink(),
+				associationConfiguration.getSrcPersister()::getId
+		);
 		return new OneToManyWithIndexedAssociationTableEngine<>(
 				associationConfiguration.getSrcPersister(),
 				targetPersister,

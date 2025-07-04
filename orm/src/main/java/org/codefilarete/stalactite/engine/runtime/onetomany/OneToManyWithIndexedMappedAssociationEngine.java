@@ -44,12 +44,17 @@ import static org.codefilarete.tool.Nullable.nullable;
 public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>, RIGHTTABLE extends Table<RIGHTTABLE>>
 		extends OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C, RIGHTTABLE> {
 	
+	/** Column that stores index value, owned by reverse side table (table of targetPersister) */
+	private final Column<RIGHTTABLE, Integer> indexColumn;
+
 	public OneToManyWithIndexedMappedAssociationEngine(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 													   IndexedMappedManyRelationDescriptor<SRC, TRGT, C, SRCID, TRGTID> manyRelationDefinition,
 													   ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 													   Set<Column<RIGHTTABLE, ?>> mappedReverseColumns,
-													   Function<SRCID, Map<Column<RIGHTTABLE, ?>, Object>> reverseColumnsValueProvider) {
+													   Column<RIGHTTABLE, Integer> indexColumn,
+													   Function<SRCID, Map<Column<RIGHTTABLE, ?>, ?>> reverseColumnsValueProvider) {
 		super(targetPersister, manyRelationDefinition, sourcePersister, mappedReverseColumns, reverseColumnsValueProvider);
+		this.indexColumn = indexColumn;
 	}
 	
 	@Override
@@ -61,12 +66,12 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	public <T1 extends Table<T1>, T2 extends Table<T2>> void addSelectCascade(Key<T1, SRCID> sourcePrimaryKey,
 																			  boolean loadSeparately) {
 		// we add target subgraph joins to main persister
-		Set<Column<T2, ?>> columnsToSelect = new HashSet<>(targetPersister.<T2>getMainTable().getPrimaryKey().getColumns());
-		columnsToSelect.add((Column) getManyRelationDescriptor().getIndexingColumn());
-		String joinNodeName = targetPersister.joinAsMany(sourcePersister, sourcePrimaryKey, (Key<T2, SRCID>) manyRelationDescriptor.getReverseColumn(), manyRelationDescriptor.getRelationFixer(),
+		Set<Column<RIGHTTABLE, ?>> columnsToSelect = new HashSet<>(targetPersister.<RIGHTTABLE>getMainTable().getPrimaryKey().getColumns());
+		columnsToSelect.add(indexColumn);
+		String joinNodeName = targetPersister.joinAsMany(sourcePersister, sourcePrimaryKey, (Key<RIGHTTABLE, SRCID>) manyRelationDescriptor.getReverseColumn(), manyRelationDescriptor.getRelationFixer(),
 				(columnedRow) -> {
 					TRGTID identifier = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(columnedRow);
-					Integer targetEntityIndex = columnedRow.get(getManyRelationDescriptor().getIndexingColumn());
+					Integer targetEntityIndex = columnedRow.get(indexColumn);
 					return identifier + "-" + targetEntityIndex;
 				},
 				EntityJoinTree.ROOT_STRATEGY_NAME,
@@ -143,7 +148,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			if (indexPerTargetId != null) {
 				// Indexing column is not defined in targetPersister.getMapping().getRowTransformer() but is present in row
 				// because it was read from ResultSet
-				int index = columnValueProvider.get(getManyRelationDescriptor().getIndexingColumn());
+				int index = columnValueProvider.get(indexColumn);
 				TRGTID relationOwnerId = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(columnValueProvider);
 				indexPerTargetId.put(relationOwnerId, index);
 			}
@@ -187,7 +192,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			
 			@Override
 			public Set<Column<TARGETTABLE, ?>> getColumns() {
-				return Collections.singleton((Column) getManyRelationDescriptor().getIndexingColumn());
+				return Collections.singleton((Column) indexColumn);
 			}
 			
 			@Override
@@ -202,7 +207,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 					targetEntityIndex = computeTargetIndex(source, target);
 				}
 				Map<Column<TARGETTABLE, ?>, Object> result = new HashMap<>();
-				result.put((Column) getManyRelationDescriptor().getIndexingColumn(), targetEntityIndex);
+				result.put((Column) indexColumn, targetEntityIndex);
 				return result;
 			}
 			
@@ -247,7 +252,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				this.manyRelationDescriptor.getReverseSetter(),
 				shouldDeleteRemoved,
 				this.targetPersister.getMapping()::getId,
-				getManyRelationDescriptor().getIndexingColumn());
+				indexColumn);
 		sourcePersister.getPersisterListener().addUpdateListener(new AfterUpdateTrigger<>(collectionUpdater));
 	}
 	

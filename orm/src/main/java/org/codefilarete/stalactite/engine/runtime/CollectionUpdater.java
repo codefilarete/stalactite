@@ -243,6 +243,8 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 		
 		void delete(Iterable<? extends C> entities);
 		
+		void insert(Iterable<? extends C> entities);
+		
 		void persist(Iterable<? extends C> entities);
 		
 		boolean isNew(C entity);
@@ -274,6 +276,11 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 		@Override
 		public void delete(Iterable<? extends C> entities) {
 			delegate.delete(entities);
+		}
+		
+		@Override
+		public void insert(Iterable<? extends C> entities) {
+			delegate.insert(entities);
 		}
 		
 		@Override

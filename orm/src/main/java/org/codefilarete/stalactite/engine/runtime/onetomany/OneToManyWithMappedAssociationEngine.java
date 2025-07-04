@@ -93,7 +93,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 												MappedManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDescriptor,
 												ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 												Set<Column<RIGHTTABLE, ?>> mappedReverseColumns,
-												Function<SRCID, Map<Column<RIGHTTABLE, ?>, Object>> reverseColumnsValueProvider) {
+												Function<SRCID, Map<Column<RIGHTTABLE, ?>, ?>> reverseColumnsValueProvider) {
 		this.targetPersister = targetPersister;
 		this.manyRelationDescriptor = manyRelationDescriptor;
 		this.sourcePersister = sourcePersister;
@@ -113,7 +113,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 					getColumns().forEach(col -> result.put(col, null));
 				} else {
 					SRCID srcid = giveRelationStorageContext().giveSourceId(trgt);
-					result = reverseColumnsValueProvider.apply(srcid);
+					result = (Map<Column<RIGHTTABLE, ?>, Object>) reverseColumnsValueProvider.apply(srcid);
 				}
 				return result;
 			}

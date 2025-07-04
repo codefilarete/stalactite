@@ -9,8 +9,11 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.EntityMappingConfigurationProvider.EntityMappingConfigurationProviderHolder;
@@ -35,6 +38,7 @@ import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -396,7 +400,10 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 	void crud_relationContainsManyToMany_indexed() {
 		EntityPersister<Answer, Identifier<Long>> persister = entityBuilder(Answer.class, LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
-				.mapManyToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).indexedBy("myIdx").cascading(ALL)
+				.mapManyToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION)
+					.indexedBy("myIdx")
+					.initializeWith(KeepOrderSet::new)
+					.cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -417,8 +424,68 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		Set<Trio<Integer, Integer, Integer>> choiceAnswerIds = trioExecutableQuery.execute(Accumulators.toSet());
 		
 		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(new Trio<>(1, 17, 1), new Trio<>(1, 13, 2), new Trio<>(2, 13, 1), new Trio<>(2, 17, 2));
-	}		
+
+		Answer loadedAnswer1 = persister.select(answer1.getId());
+		assertThat(loadedAnswer1.getChoices()).isInstanceOf(KeepOrderSet.class);
+		assertThat(loadedAnswer1.getChoices()).containsExactly(lyon, grenoble);
+		Answer loadedAnswer2 = persister.select(answer2.getId());
+		assertThat(loadedAnswer2.getChoices()).isInstanceOf(KeepOrderSet.class);
+		assertThat(loadedAnswer2.getChoices()).containsExactly(grenoble, lyon);
+	}
+
+	@Test
+	void crud_relationContainsManyToMany_indexed_siblingProperties() {
+		EntityPersister<Answer, Identifier<Long>> persister = entityBuilder(Answer.class, LONG_TYPE)
+				.mapKey(Answer::getId, ALREADY_ASSIGNED)
+				.mapManyToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION)
+					.indexedBy("myIdx")
+					.initializeWith(KeepOrderSet::new)
+				.cascading(ALL)
+				// we map a second property to create a sibling which eventually confuses engine (the goal is that it doesn't confuse it)
+				.mapManyToMany(Answer::getSecondaryChoices, CHOICE_MAPPING_CONFIGURATION)
+					.indexedBy("myIdx2")
+					.initializeWith(KeepOrderSet::new)
+				.cascading(ALL)
+				.build(persistenceContext);
+
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+
+		Answer answer1 = new Answer(new PersistableIdentifier<>(1L));
+		Answer answer2 = new Answer(new PersistableIdentifier<>(2L));
+		Choice grenoble = new Choice(new PersistableIdentifier<>(13L));
+		grenoble.setLabel("Grenoble");
+		Choice lyon = new Choice(new PersistableIdentifier<>(17L));
+		lyon.setLabel("Lyon");
+		answer1.addChoices(lyon, grenoble);
+		answer1.addSecondaryChoices(lyon, grenoble);
+		answer2.addChoices(grenoble, lyon);
+		answer2.addSecondaryChoices(grenoble, lyon);
+		persister.insert(Arrays.asList(answer1, answer2));
+
+		ExecutableQuery<Trio<Integer, Integer, Integer>> answerChoicesQuery = persistenceContext.newQuery("select answer_id, choices_id, myIdx from answer_choices", (Class<Trio<Integer, Integer, Integer>>) (Class) Trio.class)
+				.<Integer, Integer, Integer>mapKey(Trio::forInteger, "answer_id", "choices_id", "myIdx");
+		Set<Trio<Integer, Integer, Integer>> answerChoicesIds = answerChoicesQuery.execute(Accumulators.toSet());
 		
+		assertThat(answerChoicesIds).containsExactlyInAnyOrder(new Trio<>(1, 17, 1), new Trio<>(1, 13, 2), new Trio<>(2, 13, 1), new Trio<>(2, 17, 2));
+
+		ExecutableQuery<Trio<Integer, Integer, Integer>> answerSecondaryChoicesQuery = persistenceContext.newQuery("select answer_id, secondaryChoices_id, myIdx2 from answer_secondaryChoices", (Class<Trio<Integer, Integer, Integer>>) (Class) Trio.class)
+				.<Integer, Integer, Integer>mapKey(Trio::forInteger, "answer_id", "secondaryChoices_id", "myIdx2");
+		Set<Trio<Integer, Integer, Integer>> secondaryChoicesIds = answerSecondaryChoicesQuery.execute(Accumulators.toSet());
+
+		assertThat(secondaryChoicesIds).containsExactlyInAnyOrder(new Trio<>(1, 17, 1), new Trio<>(1, 13, 2), new Trio<>(2, 13, 1), new Trio<>(2, 17, 2));
+
+		Map<Identifier<Long>, Answer> answerMap = persister.select(answer1.getId(), answer2.getId())
+				.stream()
+				.collect(Collectors.toMap(Answer::getId, Function.identity()));
+		Answer loadedAnswer1 = answerMap.get(answer1.getId());
+		assertThat(loadedAnswer1.getChoices()).isInstanceOf(KeepOrderSet.class);
+		assertThat(loadedAnswer1.getChoices()).containsExactly(lyon, grenoble);
+		Answer loadedAnswer2 = answerMap.get(answer2.getId());
+		assertThat(loadedAnswer2.getChoices()).isInstanceOf(KeepOrderSet.class);
+		assertThat(loadedAnswer2.getChoices()).containsExactly(grenoble, lyon);
+	}
+	
 	@Test
 	void select_collectionFactory() throws SQLException {
 		// mapping building thanks to fluent API
@@ -1041,6 +1108,8 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		
 		private Set<Choice> choices;
 		
+		private Set<Choice> secondaryChoices;
+		
 		private Answer() {
 		}
 		
@@ -1087,10 +1156,35 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		public void setChoices(Set<Choice> choices) {
 			this.choices = choices;
 		}
+
+		public Set<Choice> getSecondaryChoices() {
+			return secondaryChoices;
+		}
+
+		public void addSecondaryChoices(Collection<Choice> choices) {
+			this.secondaryChoices.addAll(choices);
+		}
+
+		public void addSecondaryChoices(Choice... choices) {
+			if (this.secondaryChoices == null) {
+				this.secondaryChoices = new LinkedHashSet<>();
+			}
+			this.secondaryChoices.addAll(Arrays.asList(choices));
+		}
+
+		public void setSecondaryChoices(Set<Choice> secondaryChoices) {
+			this.secondaryChoices = secondaryChoices;
+		}
 		
+		@Override
+		public String toString() {
+			return "Answer{" +
+					"id=" + id +
+					'}';
+		}
 	}
 	
-	private static class Choice implements Identified<Long> {
+	public static class Choice implements Identified<Long> {
 		
 		private Identifier<Long> id;
 		
@@ -1099,7 +1193,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		public Choice() {
 		}
 		
-		private Choice(long id) {
+		public Choice(long id) {
 			this.id = new PersistableIdentifier<>(id);
 		}
 		

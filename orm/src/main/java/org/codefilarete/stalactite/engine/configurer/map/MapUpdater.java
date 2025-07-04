@@ -148,6 +148,11 @@ class MapUpdater<SRC, SRCID, K, V, ENTITY, ENTITY_ID, KK, VV> extends Collection
 		}
 		
 		@Override
+		public void insert(Iterable<? extends Entry<K, V>> entities) {
+			relationEntityPersister.insert(Iterables.stream(entities).map(mapper).collect(Collectors.toSet()));
+		}
+		
+		@Override
 		public void persist(Iterable<? extends Entry<K, V>> entities) {
 			relationEntityPersister.persist(Iterables.stream(entities).map(mapper).collect(Collectors.toSet()));
 		}

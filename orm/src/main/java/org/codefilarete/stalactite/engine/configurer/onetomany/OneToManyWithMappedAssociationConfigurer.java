@@ -239,7 +239,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 	
 	private void assignEngineForIndexedAssociation(@Nullable BiConsumer<TRGT, SRC> reverseSetter,
 												   Key<?, SRCID> reverseColumn,
-												   @Nullable Column<?, Integer> indexingColumn,
+												   @Nullable Column<RIGHTTABLE, Integer> indexingColumn,
 												   ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		if (indexingColumn == null) {
 			String indexingColumnName = nullable(associationConfiguration.getColumnName()).getOr(() -> associationConfiguration.getIndexColumnNamingStrategy().giveName(associationConfiguration.getAccessorDefinition()));
@@ -258,11 +258,12 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 				indexingColumn,
 				associationConfiguration.getSrcPersister()::getId,
 				targetPersister::getId);
-		mappedAssociationEngine = new OneToManyWithIndexedMappedAssociationEngine(
+		mappedAssociationEngine = new OneToManyWithIndexedMappedAssociationEngine<>(
 				targetPersister,
 				manyRelationDefinition,
 				associationConfiguration.getSrcPersister(),
 				mappedReverseColumns,
+				indexingColumn,
 				reverseColumnsValueProvider
 		);
 	}

@@ -176,6 +176,14 @@ class MapEntryKeyAndValueEntitiesUpdater<SRC, SRCID, K, V, KK, VV> extends Colle
 		}
 		
 		@Override
+		public void insert(Iterable<? extends KeyValueRecord<K, V, SRCID>> entities) {
+			relationEntityPersister.insert(Iterables.stream(entities)
+					.map(entity -> new KeyValueRecord<>(entity.getId().getId(),
+							keyMapper.apply(entity.getKey()), valueMapper.apply(entity.getValue())))
+					.collect(Collectors.toSet()));
+		}
+		
+		@Override
 		public void persist(Iterable<? extends KeyValueRecord<K, V, SRCID>> entities) {
 			relationEntityPersister.persist(Iterables.stream(entities)
 					.map(entity -> new KeyValueRecord<>(entity.getId().getId(),

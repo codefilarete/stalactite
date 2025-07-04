@@ -539,10 +539,10 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			
 			assertThat(selectedAnswer.getId().getDelegate()).isEqualTo((Long) 1L);
 			assertThat(selectedAnswer.getChoices()).extracting(AnswerChoice::getId, AnswerChoice::getLabel).containsExactly(
-					new Tuple(choice1.getId(), choice1.getLabel()),
-					new Tuple(choice2.getId(), choice2.getLabel()),
-					new Tuple(choice2.getId(), choice2.getLabel()),
-					new Tuple(choice3.getId(), choice3.getLabel()));
+					new Tuple(choices.get(0).getId(), choices.get(0).getLabel()),
+					new Tuple(choices.get(1).getId(), choices.get(1).getLabel()),
+					new Tuple(choices.get(2).getId(), choices.get(2).getLabel()),
+					new Tuple(choices.get(3).getId(), choices.get(3).getLabel()));
 		}
 		
 		/** Test to check that loading a target entity from its persister still work (no use of the aggregate persister) */

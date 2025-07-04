@@ -15,6 +15,7 @@ import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Experimental;
+import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -142,7 +143,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * Takes optimistic lock into account.
 	 *
 	 * @param entity entity to be deleted
-	 * @throws StaleStateObjectException if deleted row count differs from entities count
+	 * @throws StaleStateObjectException if deleted row count differs from the entities count
 	 */
 	default void delete(C entity) {
 		delete(Collections.singletonList(entity));
@@ -161,11 +162,15 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	default C select(I id) {
 		return Iterables.first(select(Collections.singleton(id)));
 	}
+
+	default Set<C> select(I... ids) {
+		return select(Arrays.asHashSet(ids));
+	}
 	
 	/**
 	 * Creates a query which criteria target mapped properties.
-	 * Please note that whole bean graph is loaded, not only entities that satisfies criteria.
-	 * Raises an exception if targeted property is not mapped as a persisted one (transient).
+	 * Please note that the whole bean graph is loaded, not only entities that satisfy criteria.
+	 * Raises an exception if the targeted property is not mapped as a persisted one (transient).
 	 *
 	 * @param getter a property accessor
 	 * @param operator criteria for the property

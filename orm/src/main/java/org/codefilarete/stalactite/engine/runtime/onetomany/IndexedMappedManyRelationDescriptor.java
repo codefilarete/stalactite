@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine.runtime.onetomany;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -19,7 +20,7 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import static org.codefilarete.tool.bean.Objects.preventNull;
 
 /**
- * Container to store information of a one-to-many indexed mapped relation (by a column on the reverse side)
+ * Container to store information of an indexed *-to-many indexed mapped relation (by a column on the reverse side)
  * 
  * @author Guillaume Mary
  */
@@ -27,20 +28,18 @@ public class IndexedMappedManyRelationDescriptor<SRC, TRGT, C extends Collection
 	
 	/** Column that stores index value, owned by reverse side table (table of targetPersister) */
 	private final Column<Table, Integer> indexingColumn;
-	private final Function<TRGT, TRGTID> targetIdProvider;
 	
 	public IndexedMappedManyRelationDescriptor(Function<SRC, C> collectionGetter,
 											   BiConsumer<SRC, C> collectionSetter,
 											   Supplier<C> collectionFactory,
-											   BiConsumer<TRGT, SRC> reverseSetter,
+											   @Nullable BiConsumer<TRGT, SRC> reverseSetter,
 											   Key<?, SRCID> reverseColumn,
 											   Column<? extends Table, Integer> indexingColumn,
 											   Function<SRC, SRCID> idProvider,
 											   Function<TRGT, TRGTID> targetIdProvider) {
 		super(collectionGetter, collectionSetter, collectionFactory, reverseSetter, reverseColumn);
 		this.indexingColumn = (Column<Table, Integer>) indexingColumn;
-		this.targetIdProvider = targetIdProvider;
-		super.relationFixer = new InMemoryRelationHolder(idProvider);
+		super.relationFixer = new InMemoryRelationHolder(idProvider, targetIdProvider);
 	}
 	
 	public Column<Table, Integer> getIndexingColumn() {
@@ -73,9 +72,12 @@ public class IndexedMappedManyRelationDescriptor<SRC, TRGT, C extends Collection
 		private final ThreadLocal<Map<TRGTID, Integer>> currentSelectedIndexes = new ThreadLocal<>();
 		
 		private final Function<SRC, SRCID> idProvider;
+		private final Function<TRGT, TRGTID> targetIdProvider;
 		
-		public InMemoryRelationHolder(Function<SRC, SRCID> idProvider) {
+		public InMemoryRelationHolder(Function<SRC, SRCID> idProvider,
+									  Function<TRGT, TRGTID> targetIdProvider) {
 			this.idProvider = idProvider;
+			this.targetIdProvider = targetIdProvider;
 		}
 		
 		public Map<TRGTID, Integer> getCurrentSelectedIndexes() {

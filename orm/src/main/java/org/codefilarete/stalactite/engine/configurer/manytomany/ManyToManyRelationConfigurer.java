@@ -31,6 +31,7 @@ import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
 import org.codefilarete.stalactite.engine.runtime.onetomany.AbstractOneToManyWithAssociationTableEngine;
+import org.codefilarete.stalactite.engine.runtime.onetomany.IndexedAssociationTableManyRelationDescriptor;
 import org.codefilarete.stalactite.engine.runtime.onetomany.ManyRelationDescriptor;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithAssociationTableEngine;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithIndexedAssociationTableEngine;
@@ -151,7 +152,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 		private final boolean maintainAssociationOnly;
 		private final ConnectionConfiguration connectionConfiguration;
 		
-		private AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C1, AssociationRecord, ?> associationTableEngine;
+		private AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C1, ? extends AssociationRecord, ?> associationTableEngine;
 		
 		private ManyToManyWithAssociationTableConfigurer(ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1, C2, LEFTTABLE, RIGHTTABLE> associationConfiguration,
 														 AssociationTableNamingStrategy associationTableNamingStrategy,
@@ -172,16 +173,10 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 			
 			String associationTableName = associationTableNamingStrategy.giveName(associationConfiguration.getAccessorDefinition(),
 					associationConfiguration.getLeftPrimaryKey(), rightPrimaryKey);
-			
-			ManyRelationDescriptor<SRC, TRGT, C1> manyRelationDescriptor = new ManyRelationDescriptor<>(
-					associationConfiguration.getCollectionGetter()::get,
-					associationConfiguration.getSetter()::set,
-					associationConfiguration.getCollectionFactory(),
-					buildReverseCombiner(targetPersister.getClassToPersist())); 
 			if (associationConfiguration.getManyToManyRelation().isOrdered()) {
-				assignEngineForIndexedAssociation(rightPrimaryKey, associationTableName, manyRelationDescriptor, targetPersister);
+				assignEngineForIndexedAssociation(rightPrimaryKey, associationTableName, targetPersister);
 			} else {
-				assignEngineForNonIndexedAssociation(rightPrimaryKey, associationTableName, manyRelationDescriptor, targetPersister);
+				assignEngineForNonIndexedAssociation(rightPrimaryKey, associationTableName, targetPersister);
 			}
 		}
 		
@@ -272,7 +267,6 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 		void assignEngineForNonIndexedAssociation(
 				PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey,
 				String associationTableName,
-				ManyRelationDescriptor<SRC, TRGT, C1> manyRelationDescriptor,
 				ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 			
 			// we don't create foreign key for table-per-class because source columns should reference different tables (the one
@@ -299,6 +293,13 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 							intermediaryTable.getRightIdentifierColumnMapping()),
 					dialect,
 					connectionConfiguration);
+
+			ManyRelationDescriptor<SRC, TRGT, C1> manyRelationDescriptor = new ManyRelationDescriptor<>(
+					associationConfiguration.getCollectionGetter()::get,
+					associationConfiguration.getSetter()::set,
+					associationConfiguration.getCollectionFactory(),
+					buildReverseCombiner(targetPersister.getClassToPersist()));
+			
 			associationTableEngine = new OneToManyWithAssociationTableEngine<>(
 					associationConfiguration.getSrcPersister(),
 					targetPersister,
@@ -310,7 +311,6 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 		void assignEngineForIndexedAssociation(
 				PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey,
 				String associationTableName,
-				ManyRelationDescriptor manyRelationDescriptor,
 				ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 			
 			ManyToManyRelation<SRC, TRGT, TRGTID, C1, C2> relation = associationConfiguration.getManyToManyRelation();
@@ -345,6 +345,15 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 									intermediaryTable.getRightIdentifierColumnMapping()),
 							dialect,
 							connectionConfiguration);
+
+			IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C1, SRCID> manyRelationDescriptor = new IndexedAssociationTableManyRelationDescriptor<>(
+					associationConfiguration.getCollectionGetter()::get,
+					associationConfiguration.getSetter()::set,
+					associationConfiguration.getCollectionFactory(),
+					buildReverseCombiner(targetPersister.getClassToPersist()),
+					associationConfiguration.getSrcPersister()::getId
+			);
+			
 			associationTableEngine = new OneToManyWithIndexedAssociationTableEngine<>(
 					associationConfiguration.getSrcPersister(),
 					targetPersister,
