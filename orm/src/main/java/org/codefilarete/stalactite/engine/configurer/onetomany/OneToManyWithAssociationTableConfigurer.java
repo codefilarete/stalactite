@@ -115,9 +115,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 				new AssociationRecordMapping<>(
 						intermediaryTable,
 						associationConfiguration.getSrcPersister().getMapping().getIdMapping().getIdentifierAssembler(),
-						targetPersister.getMapping().getIdMapping().getIdentifierAssembler(),
-						intermediaryTable.getLeftIdentifierColumnMapping(),
-						intermediaryTable.getRightIdentifierColumnMapping()),
+						targetPersister.getMapping().getIdMapping().getIdentifierAssembler()),
 				dialect,
 				connectionConfiguration);
 		ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor = new ManyRelationDescriptor<>(

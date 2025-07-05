@@ -14,6 +14,7 @@ import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
@@ -60,8 +61,20 @@ public class IndexedAssociationRecordMapping<
 						new ComposedIdentifierAssembler<IndexedAssociationRecord, ASSOCIATIONTABLE>(targetTable) {
 							@Override
 							public IndexedAssociationRecord assemble(ColumnedRow columnValueProvider) {
-								LEFTID leftid = leftIdentifierAssembler.assemble(columnValueProvider);
-								RIGHTID rightid = rightIdentifierAssembler.assemble(columnValueProvider);
+								LEFTID leftid = leftIdentifierAssembler.assemble(new ColumnedRow() {
+									@Override
+									public <E> E get(Selectable<E> column) {
+										Column<ASSOCIATIONTABLE, ?> column1 = leftIdentifierColumnMapping.get(column);
+										return (E) columnValueProvider.get(column1);
+									}
+								});
+								RIGHTID rightid = rightIdentifierAssembler.assemble(new ColumnedRow() {
+									@Override
+									public <E> E get(Selectable<E> column) {
+										Column<ASSOCIATIONTABLE, ?> column1 = rightIdentifierColumnMapping.get(column);
+										return (E) columnValueProvider.get(column1);
+									}
+								});
 								// we should not return an id if any (both expected in fact) value is null
 								if (leftid == null || rightid == null) {
 									return null;

@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -969,51 +970,12 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				: identification.getFallbackInsertionManager();
 		IdMapping<E, I> idMappingStrategy;
 		if (identification instanceof CompositeKeyIdentification) {
-			Map<ReversibleAccessor<I, Object>, Column<T, Object>> composedKeyMapping = (Map) ((CompositeKeyIdentification<E, I>) identification).getCompositeKeyMapping();
-			Class<I> keyType = idDefinition.getMemberType();
-			Constructor<I> defaultConstructor = Reflections.findConstructor(keyType);
-			ComposedIdentifierAssembler<I, T> composedIdentifierAssembler = new ComposedIdentifierAssembler<I, T>(targetTable) {
-				
-				@Override
-				public Map<Column<T, ?>, Object> getColumnValues(I id) {
-					Map<Column<T, ?>, Object> result = new HashMap<>();
-					composedKeyMapping.forEach((propertyAccessor, column) -> {
-						column = targetTable.getColumn(column.getName());
-						result.put(column, id == null ? null : propertyAccessor.get(id));
-					});
-					return result;
-				}
-				
-				@Nullable
-				@Override
-				public I assemble(ColumnedRow columnValueProvider) {
-					// we should not return an id if any value is null
-					boolean hasAnyNullValue = getColumns().stream().anyMatch(column -> {
-						Object partialKeyValue = columnValueProvider.get(column);
-						return partialKeyValue == null || PRIMITIVE_DEFAULT_VALUES.containsValue(partialKeyValue);
-					});
-					if (hasAnyNullValue) {
-						return null;
-					}
-					Function<ColumnedRow, I> keyFactory;
-					if (defaultConstructor == null) {
-						// we'll lately throw an exception (we could do it now) but the lack of constructor may be due to an abstract class in inheritance
-						// path which currently won't be instanced at runtime (because its concrete subclass will be) so there's no reason to throw
-						// the exception now
-						keyFactory = keyValueProvider -> {
-							throw new MappingConfigurationException("Key class " + Reflections.toString(keyType) + " doesn't have a compatible accessible constructor,"
-									+ " please implement a no-arg constructor or " + Reflections.toString(idDefinition.getMemberType()) + "-arg constructor");
-						};
-					} else {
-						keyFactory = keyValueProvider -> Reflections.newInstance(defaultConstructor);
-					}
-					I result = keyFactory.apply(columnValueProvider);
-					((CompositeKeyIdentification<E, I>) identification).getCompositeKeyMapping().forEach((setter, col) -> {
-						setter.toMutator().set(result, columnValueProvider.get(col));
-					});
-					return result;
-				}
-			};
+			Map<ReversibleAccessor<I, Object>, Column<T, Object>> composedKeyMapping = Iterables.map(((CompositeKeyIdentification<E, I>) identification).getCompositeKeyMapping().entrySet(), Entry::getKey, entry -> targetTable.getColumn(entry.getValue().getName()));
+			ComposedIdentifierAssembler<I, T> composedIdentifierAssembler = new DefaultComposedIdentifierAssembler<>(
+					targetTable,
+					(Class<I>) idDefinition.getMemberType(),
+					composedKeyMapping
+			);
 			idMappingStrategy = new ComposedIdMapping<>(idAccessor, (AlreadyAssignedIdentifierManager<E, I>) identifierInsertionManager, composedIdentifierAssembler);
 		} else {
 			idMappingStrategy = new SimpleIdMapping<>(idAccessor, identifierInsertionManager,

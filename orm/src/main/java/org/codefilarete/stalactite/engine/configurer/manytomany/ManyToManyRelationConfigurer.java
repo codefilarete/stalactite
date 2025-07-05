@@ -288,9 +288,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 			AssociationRecordPersister<AssociationRecord, ASSOCIATIONTABLE> associationPersister = new AssociationRecordPersister<>(
 					new AssociationRecordMapping<>(intermediaryTable,
 							associationConfiguration.getSrcPersister().getMapping().getIdMapping().getIdentifierAssembler(),
-							targetPersister.getMapping().getIdMapping().getIdentifierAssembler(),
-							intermediaryTable.getLeftIdentifierColumnMapping(),
-							intermediaryTable.getRightIdentifierColumnMapping()),
+							targetPersister.getMapping().getIdMapping().getIdentifierAssembler()),
 					dialect,
 					connectionConfiguration);
 
@@ -304,7 +302,8 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 					associationConfiguration.getSrcPersister(),
 					targetPersister,
 					manyRelationDescriptor,
-					associationPersister, dialect.getWriteOperationFactory());
+					associationPersister,
+					dialect.getWriteOperationFactory());
 		}
 		
 		private <ASSOCIATIONTABLE extends IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>

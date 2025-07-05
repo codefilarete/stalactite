@@ -13,6 +13,7 @@ import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierM
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.VisibleForTesting;
 
 /**
  * Stores information about entity identification during configuration process.
@@ -142,7 +143,8 @@ public abstract class AbstractIdentification<C, I> {
 		
 		private Map<ReversibleAccessor<I, Object>, Column<Table, Object>> compositeKeyMapping;
 		
-		private CompositeKeyIdentification(EntityMappingConfiguration<C, I> identificationDefiner,
+		@VisibleForTesting
+		public CompositeKeyIdentification(EntityMappingConfiguration<C, I> identificationDefiner,
 										   Consumer<C> markAsPersistedFunction,
 										   Function<C, Boolean> isPersistedFunction) {
 			super(identificationDefiner);
