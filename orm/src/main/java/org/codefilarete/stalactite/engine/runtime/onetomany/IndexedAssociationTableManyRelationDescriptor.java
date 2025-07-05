@@ -36,6 +36,11 @@ public class IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C extends 
 		super.relationFixer = new InMemoryRelationHolder(idProvider);
 	}
 	
+	@Override
+	public InMemoryRelationHolder getRelationFixer() {
+		return (InMemoryRelationHolder) super.getRelationFixer();
+	}
+	
 	/**
 	 * A relation fixer that doesn't set the Collection onto the source bean but keeps it in memory.
 	 * Made for collection with persisted order: it is sorted later with {@link #applySort(Set)} (to be called by some afterSelect(..) code),

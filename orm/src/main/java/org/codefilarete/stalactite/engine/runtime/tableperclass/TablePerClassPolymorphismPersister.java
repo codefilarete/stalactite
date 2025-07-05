@@ -429,7 +429,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		Holder<TablePerClassPolymorphicRelationJoinNode<C, T1, JOINCOLTYPE, I>> createdJoinHolder = new Holder<>();
 		String relationJoinName = entityJoinTree.addJoin(leftStrategyName, parent -> {
 			TablePerClassPolymorphicRelationJoinNode<C, T1, JOINCOLTYPE, I> relationJoinNode = new TablePerClassPolymorphicRelationJoinNode<>(
-					(JoinNode<T1>) (JoinNode) parent,
+					(JoinNode<SRC, T1>) (JoinNode) parent,
 					subPersistersUnion,
 					leftJoinColumn,
 					rightJoinColumn,

@@ -56,7 +56,7 @@ public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C,
 	}
 	
 	@Override
-	public RootJoinRowConsumer<C> toConsumer(JoinNode<T> joinNode) {
+	public RootJoinRowConsumer<C> toConsumer(JoinNode<C, T> joinNode) {
 		RowTransformer<C> rootRowTransformer = getEntityInflater().getRowTransformer();
 		Set<SubPersisterConsumer<C, I>> subEntityConsumer = subPersisters.stream().map(subPersister -> {
 			EntityMapping<C, I, T> mapping = subPersister.getMapping();
@@ -100,7 +100,7 @@ public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C,
 		
 		protected final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 		
-		private final JoinNode<?> node;
+		private final JoinNode<C, ?> node;
 		private final RowTransformer<C> rootRowTransformer;
 		private final Set<SubPersisterConsumer<C, I>> subConsumers;
 		
@@ -108,7 +108,7 @@ public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C,
 		@Nullable
 		private final BiConsumer<C, ColumnedRow> consumptionListener;
 		
-		private JoinTablePolymorphicJoinRootRowConsumer(JoinNode<?> node,
+		private JoinTablePolymorphicJoinRootRowConsumer(JoinNode<C, ?> node,
 														RowTransformer<C> rootRowTransformer,
 														Set<SubPersisterConsumer<C, I>> subConsumers,
 														@Nullable BiConsumer<C, ColumnedRow> consumptionListener) {
@@ -119,7 +119,7 @@ public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C,
 		}
 		
 		@Override
-		public JoinNode<?> getNode() {
+		public JoinNode<C, ?> getNode() {
 			return node;
 		}
 

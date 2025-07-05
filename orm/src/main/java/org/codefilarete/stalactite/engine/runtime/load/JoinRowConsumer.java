@@ -19,7 +19,7 @@ import org.codefilarete.stalactite.sql.result.ColumnedRow;
  */
 public interface JoinRowConsumer {
 	
-	JoinNode<?> getNode();
+	JoinNode<?, ?> getNode();
 	
 	interface RootJoinRowConsumer<C> extends JoinRowConsumer {
 		

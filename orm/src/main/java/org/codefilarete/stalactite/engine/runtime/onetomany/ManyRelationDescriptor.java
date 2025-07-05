@@ -39,17 +39,23 @@ public class ManyRelationDescriptor<I, O, C extends Collection<O>> {
 								  BiConsumer<I, C> collectionSetter,
 								  Supplier<C> collectionFactory,
 								  @Nullable BiConsumer<O, I> reverseSetter) {
+		this(collectionGetter, collectionSetter, collectionFactory, reverseSetter, BeanRelationFixer.of(
+				collectionSetter,
+				collectionGetter,
+				collectionFactory,
+				Objects.preventNull(reverseSetter, (BiConsumer<O, I>) NOOP_REVERSE_SETTER)));
+	}
+	
+	public ManyRelationDescriptor(Function<I, C> collectionGetter,
+								  BiConsumer<I, C> collectionSetter,
+								  Supplier<C> collectionFactory,
+								  BiConsumer<O, I> reverseSetter,
+								  BeanRelationFixer<I, O> relationFixer) {
 		this.collectionGetter = collectionGetter;
 		this.collectionSetter = collectionSetter;
 		this.collectionFactory = collectionFactory;
 		this.reverseSetter = reverseSetter;
-		
-		// configuring select for fetching relation
-		this.relationFixer = BeanRelationFixer.of(
-				this.collectionSetter,
-				this.collectionGetter,
-				this.collectionFactory,
-				Objects.preventNull(reverseSetter, NOOP_REVERSE_SETTER));
+		this.relationFixer = relationFixer;
 	}
 	
 	public Function<I, C> getCollectionGetter() {

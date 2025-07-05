@@ -60,7 +60,7 @@ public class TablePerClassRootJoinNode<C, I> extends JoinRoot<C, I, PseudoTable>
 	}
 	
 	@Override
-	public RootJoinRowConsumer<C> toConsumer(JoinNode<PseudoTable> joinNode) {
+	public RootJoinRowConsumer<C> toConsumer(JoinNode<C, PseudoTable> joinNode) {
 		Set<SubPersisterConsumer<C, I>> subEntityConsumers = subPersisters.values().stream().map(subPersister -> {
 			EntityMapping<C, I, ?> mapping = subPersister.getMapping();
 			return new SubPersisterConsumer<>(
@@ -107,7 +107,7 @@ public class TablePerClassRootJoinNode<C, I> extends JoinRoot<C, I, PseudoTable>
 		
 		private static final ThreadLocal<MergeJoinRowConsumer<?>> CURRENTLY_FOUND_CONSUMER = new ThreadLocal<>();
 		
-		private final JoinNode<?> node;
+		private final JoinNode<C, ?> node;
 		private final Set<SubPersisterConsumer<C, I>> subConsumers;
 		
 		/** Optional listener of ResultSet decoding */
@@ -116,7 +116,7 @@ public class TablePerClassRootJoinNode<C, I> extends JoinRoot<C, I, PseudoTable>
 		private final Function<ColumnedRow, String> discriminatorValueReader;
 		
 		private TablePerClassPolymorphicJoinRootRowConsumer(
-				JoinNode<?> node,
+				JoinNode<C, ?> node,
 				Set<SubPersisterConsumer<C, I>> subConsumers,
 				@Nullable BiConsumer<C, ColumnedRow> consumptionListener,
 				Function<ColumnedRow, String> discriminatorValueReader) {
@@ -127,7 +127,7 @@ public class TablePerClassRootJoinNode<C, I> extends JoinRoot<C, I, PseudoTable>
 		}
 
 		@Override
-		public JoinNode<?> getNode() {
+		public JoinNode<C, ?> getNode() {
 			return node;
 		}
 		

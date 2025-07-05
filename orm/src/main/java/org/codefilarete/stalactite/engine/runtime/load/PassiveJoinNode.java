@@ -20,7 +20,7 @@ import org.codefilarete.tool.Reflections;
  */
 public class PassiveJoinNode<C, T1 extends Fromable, T2 extends Fromable, I> extends AbstractJoinNode<C, T1, T2, I> {
 	
-	PassiveJoinNode(JoinNode<T1> parent,
+	PassiveJoinNode(JoinNode<?, T1> parent,
 					JoinLink<T1, I> leftJoinColumn,
 					JoinLink<T2, I> rightJoinColumn,
 					JoinType joinType,
@@ -29,7 +29,7 @@ public class PassiveJoinNode<C, T1 extends Fromable, T2 extends Fromable, I> ext
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias);
 	}
 	
-	PassiveJoinNode(JoinNode<T1> parent,
+	PassiveJoinNode(JoinNode<?, T1> parent,
 					Key<T1, I> leftJoinColumn,
 					Key<T2, I> rightJoinColumn,
 					JoinType joinType,
@@ -39,7 +39,7 @@ public class PassiveJoinNode<C, T1 extends Fromable, T2 extends Fromable, I> ext
 	}
 	
 	@Override
-	public JoinRowConsumer toConsumer(JoinNode<T2> joinNode) {
+	public JoinRowConsumer toConsumer(JoinNode<C, T2> joinNode) {
 		return new PassiveJoinRowConsumer(getConsumptionListener(), joinNode);
 	}
 	
@@ -49,15 +49,15 @@ public class PassiveJoinNode<C, T1 extends Fromable, T2 extends Fromable, I> ext
 		@Nullable
 		private final EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
 		/** Used when transformerListener is not null */
-		private final JoinNode<?> joinNode;
+		private final JoinNode<C, ?> joinNode;
 		
-		public PassiveJoinRowConsumer(@Nullable EntityTreeJoinNodeConsumptionListener<C> consumptionListener, JoinNode<?> joinNode) {
+		public PassiveJoinRowConsumer(@Nullable EntityTreeJoinNodeConsumptionListener<C> consumptionListener, JoinNode<C, ?> joinNode) {
 			this.consumptionListener = consumptionListener;
 			this.joinNode = joinNode;
 		}
 
 		@Override
-		public JoinNode<?> getNode() {
+		public JoinNode<C, ?> getNode() {
 			return PassiveJoinNode.this;
 		}
 		

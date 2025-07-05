@@ -331,7 +331,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 			Column<T2, DTYPE> discriminatorColumn) {
 		
 		return entityJoinTree.addJoin(leftStrategyName, parent -> new SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE>(
-				(JoinNode<T1>) (JoinNode) parent,
+				(JoinNode<SRC, T1>) (JoinNode) parent,
 				leftJoinColumn,
 				rightJoinColumn,
 				JoinType.OUTER,

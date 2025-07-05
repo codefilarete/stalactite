@@ -386,7 +386,7 @@ class EntityTreeInflaterTest {
 			}
 			
 			@Override
-			public JoinNode<?> getNode() {
+			public JoinNode<?, ?> getNode() {
 				throw new RuntimeException("This method is not expected to be called in this test");
 			}
 		}

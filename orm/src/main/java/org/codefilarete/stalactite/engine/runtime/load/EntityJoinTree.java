@@ -67,7 +67,7 @@ public class EntityJoinTree<C, I> {
 	 * @see #indexKeyGenerator
 	 */
 	// Implemented as a LinkedHashMap to keep order only for debugging purpose
-	private final BidiMap<String, JoinNode<?>> joinIndex = new DualLinkedHashBidiMap<>();
+	private final BidiMap<String, JoinNode<?, ?>> joinIndex = new DualLinkedHashBidiMap<>();
 	
 	/**
 	 * The objet that will help to give node names / keys into the index (no impact on the generated SQL)
@@ -165,7 +165,7 @@ public class EntityJoinTree<C, I> {
 																								Set<? extends Column<T2, ?>> additionalSelectableColumns,
 																								@Nullable Function<ColumnedRow, Object> relationIdentifierProvider) {
 		return this.addJoin(leftStrategyName, parent -> new RelationJoinNode<>(
-				(JoinNode<T1>) (JoinNode) parent,
+				(JoinNode<?, T1>) (JoinNode) parent,
 				leftJoinColumn,
 				rightJoinColumn,
 				joinType,
@@ -196,7 +196,7 @@ public class EntityJoinTree<C, I> {
 																				 EntityMerger<U> inflater,
 																				 Key<T1, ID> leftJoinColumn,
 																				 Key<T2, ID> rightJoinColumn) {
-		return this.addJoin(leftStrategyName, parent -> new MergeJoinNode<>((JoinNode<T1>) parent,
+		return this.addJoin(leftStrategyName, parent -> new MergeJoinNode<>((JoinNode<?, T1>) parent,
 				leftJoinColumn, rightJoinColumn, JoinType.INNER,
 				null, inflater));
 	}
@@ -220,7 +220,7 @@ public class EntityJoinTree<C, I> {
 																				 Key<T1, ID> leftJoinColumn,
 																				 Key<T2, ID> rightJoinColumn,
 																				 JoinType joinType) {
-		return this.addJoin(leftStrategyName, parent -> new MergeJoinNode<>((JoinNode<T1>) parent,
+		return this.addJoin(leftStrategyName, parent -> new MergeJoinNode<>((JoinNode<?, T1>) parent,
 				leftJoinColumn, rightJoinColumn, joinType,
 				null, entityMerger));
 	}
@@ -230,12 +230,12 @@ public class EntityJoinTree<C, I> {
 																				 Key<T1, ID> leftJoinColumn,
 																				 Key<T2, ID> rightJoinColumn,
 																				 JoinType joinType,
-																				 Function<JoinNode<T2>, MergeJoinRowConsumer<U>> columnedRowConsumer) {
-		return this.addJoin(leftStrategyName, parent -> new MergeJoinNode<U, T1, T2, ID>((JoinNode<T1>) parent,
+																				 Function<JoinNode<U, T2>, MergeJoinRowConsumer<U>> columnedRowConsumer) {
+		return this.addJoin(leftStrategyName, parent -> new MergeJoinNode<U, T1, T2, ID>((JoinNode<?, T1>) parent,
 				leftJoinColumn, rightJoinColumn, joinType,
 				null, entityMerger) {
 			@Override
-			public MergeJoinRowConsumer<U> toConsumer(JoinNode<T2> joinNode) {
+			public MergeJoinRowConsumer<U> toConsumer(JoinNode<U, T2> joinNode) {
 				return columnedRowConsumer.apply(joinNode);
 			}
 		});
@@ -260,7 +260,7 @@ public class EntityJoinTree<C, I> {
 																						Key<T2, JOINTYPE> rightJoinColumn,
 																						JoinType joinType,
 																						Set<? extends JoinLink<T2, ?>> columnsToSelect) {
-		return this.addJoin(leftStrategyName, parent -> new PassiveJoinNode<C, T1, T2, JOINTYPE>((JoinNode<T1>) (JoinNode) parent,
+		return this.addJoin(leftStrategyName, parent -> new PassiveJoinNode<C, T1, T2, JOINTYPE>((JoinNode<?, T1>) (JoinNode) parent,
 				leftJoinColumn, rightJoinColumn, joinType,
 				columnsToSelect, null));
 	}
@@ -271,7 +271,7 @@ public class EntityJoinTree<C, I> {
 																						JoinType joinType,
 																						Set<? extends Column<T2, ?>> columnsToSelect,
 																						EntityTreeJoinNodeConsumptionListener<C> consumptionListener) {
-		return this.addJoin(leftStrategyName, parent -> new PassiveJoinNode<C, T1, T2, JOINTYPE>((JoinNode<T1>) (JoinNode) parent,
+		return this.addJoin(leftStrategyName, parent -> new PassiveJoinNode<C, T1, T2, JOINTYPE>((JoinNode<?, T1>) (JoinNode) parent,
 				leftJoinColumn, rightJoinColumn, joinType,
 				columnsToSelect, null).setConsumptionListener(consumptionListener));
 	}
@@ -287,13 +287,13 @@ public class EntityJoinTree<C, I> {
 		if (rightTableParticipatesToDDL) {
 			tablesToBeExcludedFromDDL.add(rightJoinColumn.getTable());
 		}
-		return this.addJoin(leftStrategyName, parent -> new PassiveJoinNode<C, T1, T2, JOINTYPE>((JoinNode<T1>) (JoinNode) parent,
+		return this.addJoin(leftStrategyName, parent -> new PassiveJoinNode<C, T1, T2, JOINTYPE>((JoinNode<?, T1>) (JoinNode) parent,
 				leftJoinColumn, rightJoinColumn, joinType,
 				columnsToSelect, tableAlias).setConsumptionListener(consumptionListener));
 	}
 	
-	public String addJoin(String leftStrategyName, Function<? super JoinNode<Fromable> /* parent node */, ? extends AbstractJoinNode<?, ?, ?, ?>> joinNodeSupplier) {
-		JoinNode<Fromable> owningJoin = getJoin(leftStrategyName);
+	public String addJoin(String leftStrategyName, Function<? super JoinNode<?, Fromable> /* parent node */, ? extends AbstractJoinNode<?, ?, ?, ?>> joinNodeSupplier) {
+		JoinNode<?, Fromable> owningJoin = getJoin(leftStrategyName);
 		if (owningJoin == null) {
 			throw new IllegalArgumentException("No join named " + leftStrategyName + " exists to add a new join on");
 		}
@@ -314,8 +314,8 @@ public class EntityJoinTree<C, I> {
 	 * @see #getRoot()
 	 */
 	@Nullable
-	public JoinNode<Fromable> getJoin(String leftStrategyName) {
-		return (JoinNode<Fromable>) this.joinIndex.get(leftStrategyName);
+	public JoinNode<?, Fromable> getJoin(String leftStrategyName) {
+		return (JoinNode<?, Fromable>) this.joinIndex.get(leftStrategyName);
 	}
 	
 	/**
@@ -408,7 +408,7 @@ public class EntityJoinTree<C, I> {
 		projectTo(target.getJoin(joinNodeName));
 	}
 	
-	public void projectTo(JoinNode<Fromable> joinNode) {
+	public void projectTo(JoinNode<?, Fromable> joinNode) {
 		EntityJoinTree<?, ?> tree = joinNode.getTree();
 		foreachJoinWithDepth(joinNode, (targetOwner, currentNode) -> {
 			// cloning each node, the only difference lays on left column : target gets its matching column
@@ -422,8 +422,8 @@ public class EntityJoinTree<C, I> {
 			});
 			AbstractJoinNode nodeClone = copyNodeToParent(currentNode, targetOwner, currentNode.getLeftJoinLink());
 			// maintaining join names through trees : we add current node name to target one. Then nodes can be found across trees
-			Set<Entry<String, JoinNode<?>>> set = this.joinIndex.entrySet();
-			Entry<String, JoinNode<?>> nodeName = Iterables.find(set, entry -> entry.getValue() == currentNode);
+			Set<Entry<String, JoinNode<?, ?>>> set = this.joinIndex.entrySet();
+			Entry<String, JoinNode<?, ?>> nodeName = Iterables.find(set, entry -> entry.getValue() == currentNode);
 			tree.joinIndex.put(nodeName.getKey(), nodeClone);
 			
 			return nodeClone;

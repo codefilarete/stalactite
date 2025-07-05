@@ -363,7 +363,7 @@ public class EntityTreeInflater<C> {
 		 * @return null if data is null
 		 * @see EntityTreeQueryBuilder#cloneTable(JoinNode)  table clone mechanism.
 		 */
-		 public ColumnedRow getDecoder(JoinNode joinNode) {
+		 public ColumnedRow getDecoder(JoinNode<?, ?> joinNode) {
 			Fromable table = tableClonePerJoinNode.get(joinNode);
 			return new ColumnedRow() {
 				@Override

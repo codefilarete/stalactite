@@ -58,7 +58,7 @@ public class SingleTableRootJoinNode<C, I, T extends Table<T>, DTYPE> extends Jo
 	}
 	
 	@Override
-	public RootJoinRowConsumer<C> toConsumer(JoinNode<T> joinNode) {
+	public RootJoinRowConsumer<C> toConsumer(JoinNode<C, T> joinNode) {
 		// the decoder can't be a usual variable because it can't be computed now since we lack the EntityTreeInflater context
 		// (which is only available when the query is executed, not at build time)
 		Supplier<ColumnedRow> decoderProvider = () -> EntityTreeInflater.currentContext().getDecoder(joinNode);
@@ -94,7 +94,7 @@ public class SingleTableRootJoinNode<C, I, T extends Table<T>, DTYPE> extends Jo
 		
 		private final Set<SubPersisterConsumer<C, I>> subConsumers;
 		
-		private final JoinNode<?> joinNode;
+		private final JoinNode<C, ?> joinNode;
 		/**
 		 * Optional listener of ResultSet decoding
 		 */
@@ -104,7 +104,7 @@ public class SingleTableRootJoinNode<C, I, T extends Table<T>, DTYPE> extends Jo
 		private final SingleTablePolymorphism<C, DTYPE> polymorphismPolicy;
 		private final Function<ColumnedRow, DTYPE> discriminatorValueReader;
 		
-		private SingleTablePolymorphicJoinRootRowConsumer(JoinNode<?> node,
+		private SingleTablePolymorphicJoinRootRowConsumer(JoinNode<C, ?> node,
 														  Set<SubPersisterConsumer<C, I>> subConsumers,
 														  @Nullable BiConsumer<C, ColumnedRow> consumptionListener,
 														  SingleTablePolymorphism<C, DTYPE> polymorphismPolicy,
@@ -117,7 +117,7 @@ public class SingleTableRootJoinNode<C, I, T extends Table<T>, DTYPE> extends Jo
 		}
 
 		@Override
-		public JoinNode<?> getNode() {
+		public JoinNode<C, ?> getNode() {
 			return joinNode;
 		}
 

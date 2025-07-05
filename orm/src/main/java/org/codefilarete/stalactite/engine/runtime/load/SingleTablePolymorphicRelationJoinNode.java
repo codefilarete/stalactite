@@ -42,7 +42,7 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 
 	
 	private final Column<T2, DTYPE> discriminatorColumn;
 	
-	public SingleTablePolymorphicRelationJoinNode(JoinNode<T1> parent,
+	public SingleTablePolymorphicRelationJoinNode(JoinNode<?, T1> parent,
 												  Key<T1, JOINCOLTYPE> leftJoinColumn,
 												  Key<T2, JOINCOLTYPE> rightJoinColumn,
 												  JoinType joinType,
@@ -60,7 +60,7 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 
 	}
 	
 	@Override
-	public RelationJoinRowConsumer<C, I> toConsumer(JoinNode<T2> joinNode) {
+	public RelationJoinRowConsumer<C, I> toConsumer(JoinNode<C, T2> joinNode) {
 		return new SingleTablePolymorphicRelationJoinRowConsumer(joinNode);
 	}
 	
@@ -68,9 +68,9 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 
 		
 		private final Map<DTYPE, SubEntityDeterminer<? extends C>> subEntityDeterminerPerDiscriminatorValue;
 
-		private final JoinNode<?> joinNode;
+		private final JoinNode<C, ?> joinNode;
 		
-		private SingleTablePolymorphicRelationJoinRowConsumer(JoinNode<?> joinNode) {
+		private SingleTablePolymorphicRelationJoinRowConsumer(JoinNode<C, ?> joinNode) {
 			this.joinNode = joinNode;
 			this.subEntityDeterminerPerDiscriminatorValue = Iterables.map(subPersisters,
 					subPersister -> polymorphismPolicy.getDiscriminatorValue(subPersister.getClassToPersist()),
@@ -79,7 +79,7 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 
 		}
 
 		@Override
-		public JoinNode<?> getNode() {
+		public JoinNode<C, ?> getNode() {
 			return joinNode;
 		}
 

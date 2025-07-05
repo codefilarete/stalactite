@@ -19,7 +19,7 @@ import org.codefilarete.tool.collection.ReadOnlyList;
  * 
  * @author Guillaume Mary
  */
-public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINTYPE> implements JoinNode<T2> {
+public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINTYPE> implements JoinNode<C, T2> {
 	
 	/** Join column with previous strategy table */
 	private final Key<T1, JOINTYPE> leftJoinLink;
@@ -32,7 +32,7 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 	
 	private final Set<Selectable<?>> columnsToSelect;
 	
-	private final JoinNode<T1> parent;
+	private final JoinNode<?, T1> parent;
 	
 	/** Joins */
 	private final List<AbstractJoinNode> joins = new ArrayList<>();
@@ -43,7 +43,7 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 	@Nullable
 	private EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
 	
-	protected AbstractJoinNode(JoinNode<T1> parent,
+	protected AbstractJoinNode(JoinNode<?, T1> parent,
 							   JoinLink<T1, JOINTYPE> leftJoinLink,
 							   JoinLink<T2, JOINTYPE> rightJoinLink,
 							   JoinType joinType,
@@ -52,7 +52,7 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 		this(parent, Key.ofSingleColumn(leftJoinLink), Key.ofSingleColumn(rightJoinLink), joinType, columnsToSelect, tableAlias);
 	}
 	
-	protected AbstractJoinNode(JoinNode<T1> parent,
+	protected AbstractJoinNode(JoinNode<?, T1> parent,
 							   Key<T1, JOINTYPE> leftJoinLink,
 							   Key<T2, JOINTYPE> rightJoinLink,
 							   JoinType joinType,
@@ -79,7 +79,7 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 		return currentNode.getParent().getTree();
 	} 
 	
-	public JoinNode<T1> getParent() {
+	public JoinNode<?, T1> getParent() {
 		return parent;
 	}
 	
@@ -115,6 +115,7 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 		return consumptionListener;
 	}
 	
+	@Override
 	public AbstractJoinNode<C, T1, T2, JOINTYPE> setConsumptionListener(@Nullable EntityTreeJoinNodeConsumptionListener<C> consumptionListener) {
 		this.consumptionListener = consumptionListener;
 		return this;

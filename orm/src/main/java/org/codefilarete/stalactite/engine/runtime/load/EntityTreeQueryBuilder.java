@@ -198,7 +198,7 @@ public class EntityTreeQueryBuilder<C> {
 			});
 		}
 		
-		private <T1 extends Fromable> void addColumnsToSelect(JoinNode<T1> joinNode, String tableAlias) {
+		private <T1 extends Fromable> void addColumnsToSelect(JoinNode<?, T1> joinNode, String tableAlias) {
 			Set<Selectable<?>> selectableColumns = joinNode.getColumnsToSelect();
 			for (Selectable<?> selectableColumn : selectableColumns) {
 				Fromable nodeTable = tablePerJoinNode.get(joinNode);

@@ -3,9 +3,7 @@ package org.codefilarete.stalactite.engine.runtime.onetomany;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -14,6 +12,7 @@ import java.util.stream.Stream;
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.diff.IndexedDiff;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
+import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecordPersister;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
@@ -23,7 +22,6 @@ import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
 import org.codefilarete.stalactite.engine.runtime.load.AbstractJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
-import org.codefilarete.stalactite.engine.runtime.load.EntityTreeJoinNodeConsumptionListener;
 import org.codefilarete.stalactite.engine.runtime.load.JoinNode;
 import org.codefilarete.stalactite.engine.runtime.onetomany.IndexedAssociationTableManyRelationDescriptor.InMemoryRelationHolder;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.AfterUpdateTrigger;
@@ -35,7 +33,6 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.PairIterator;
 
@@ -58,20 +55,12 @@ public class OneToManyWithIndexedAssociationTableEngine<
 		ASSOCIATIONTABLE extends IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
 		extends AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, IndexedAssociationRecord, ASSOCIATIONTABLE> {
 
-	/**
-	 * Context for indexed mapped List. Will keep bean index during select between "unrelated" methods/phases:
-	 * index column must be added to SQL select, read from ResultSet and order applied to sort final List, but this particular feature crosses over
-	 * layers (entities and SQL) which is not implemented. In such circumstances, ThreadLocal comes to the rescue.
-	 * Could be static, but would lack the TRGT typing, which leads to some generics errors, so left non-static (acceptable small overhead)
-	 */
-	private final ThreadLocal<Map<SRCID, Map<TRGTID, Integer>>> currentSelectedIndexes = new ThreadLocal<>();
-
 	/** Column that stores index value */
 	private final Column<ASSOCIATIONTABLE, Integer> indexColumn;
 	
 	public OneToManyWithIndexedAssociationTableEngine(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 													  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
-													  ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
+													  IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDescriptor,
 													  AssociationRecordPersister<IndexedAssociationRecord, ASSOCIATIONTABLE> associationPersister,
 													  Column<ASSOCIATIONTABLE, Integer> indexColumn,
 													  WriteOperationFactory writeOperationFactory) {
@@ -80,29 +69,13 @@ public class OneToManyWithIndexedAssociationTableEngine<
 	}
 	
 	@Override
+	public IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C, SRCID> getManyRelationDescriptor() {
+		return (IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C, SRCID>) super.getManyRelationDescriptor();
+	}
+	
+	@Override
 	public void addSelectCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister, boolean loadSeparately) {
-		// we join on the association table and add bean association in memory
-		String associationTableJoinNodeName = sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_STRATEGY_NAME,
-				associationPersister.getMainTable().getOneSideKey(),
-				associationPersister.getMainTable().getOneSideForeignKey(),
-				JoinType.OUTER,
-				// we must add all the columns to make them available while decoding the row to create an IndexedAssociationRecord
-				associationPersister.getMainTable().getColumns());
-		
-		// we add target subgraph joins to main persister
-		String rightEntityJoinName = targetPersister.joinAsMany(sourcePersister,
-				associationPersister.getMainTable().getManySideForeignKey(),
-				associationPersister.getMainTable().getManySideKey(), manyRelationDescriptor.getRelationFixer(),
-				columnedRow -> {
-					TRGTID identifier = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(columnedRow);
-					// indexColumn column value is took on join of association table, not target table, so we have to grab it
-					JoinNode<Fromable> join = sourcePersister.getEntityJoinTree().getJoin(associationTableJoinNodeName);
-					ColumnedRow rowDecoder = EntityTreeInflater.currentContext().getDecoder(join);
-					Integer targetEntityIndex = rowDecoder.get(indexColumn);
-					return identifier + "-" + targetEntityIndex;
-				}, associationTableJoinNodeName, true, loadSeparately);
-
-		addIndexSelection(associationTableJoinNodeName, rightEntityJoinName);
+		addIndexSelection(loadSeparately);
 		
 		// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
 		// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity
@@ -131,21 +104,39 @@ public class OneToManyWithIndexedAssociationTableEngine<
 		});
 	}
 
-	private void addIndexSelection(String associationTableJoinNodeName, String rightEntityJoinName) {
+	private void addIndexSelection(boolean loadSeparately) {
+		// we join on the association table and add bean association in memory
+		String associationTableJoinNodeName = sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_STRATEGY_NAME,
+				associationPersister.getMainTable().getOneSideKey(),
+				associationPersister.getMainTable().getOneSideForeignKey(),
+				JoinType.OUTER,
+				// we must add all the columns to make them available while decoding the row to create an IndexedAssociationRecord
+				associationPersister.getMainTable().getColumns());
+		
+		// we add target subgraph joins to main persister
+		String rightEntityJoinName = targetPersister.joinAsMany(sourcePersister,
+				associationPersister.getMainTable().getManySideForeignKey(),
+				associationPersister.getMainTable().getManySideKey(), manyRelationDescriptor.getRelationFixer(),
+				columnedRow -> {
+					TRGTID identifier = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(columnedRow);
+					// indexColumn column value is took on join of association table, not target table, so we have to grab it
+					JoinNode<IndexedAssociationRecord, Fromable> join = (JoinNode<IndexedAssociationRecord, Fromable>) sourcePersister.getEntityJoinTree().getJoin(associationTableJoinNodeName);
+					ColumnedRow rowDecoder = EntityTreeInflater.currentContext().getDecoder(join);
+					Integer targetEntityIndex = rowDecoder.get(indexColumn);
+					return identifier + "-" + targetEntityIndex;
+				}, associationTableJoinNodeName, true, loadSeparately);
+		
 		// Implementation note: we keep the object indexes and put the sorted entities in a temporary Collection, then add them all to the target List
 		RowTransformer<IndexedAssociationRecord> associationRecordProvider = associationPersister.getMapping().getRowTransformer();
 		sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
 			@Override
 			public void beforeSelect(Iterable<SRCID> ids) {
-				currentSelectedIndexes.set(new HashMap<>());
-				InMemoryRelationHolder relationFixer = (InMemoryRelationHolder) manyRelationDescriptor.getRelationFixer();
-				relationFixer.init();
+				getRelationFixer().init();
 			}
 			
 			@Override
 			public void afterSelect(Set<? extends SRC> result) {
-				InMemoryRelationHolder relationFixer = (InMemoryRelationHolder) manyRelationDescriptor.getRelationFixer();
-				relationFixer.applySort(result);
+				getRelationFixer().applySort(result);
 				cleanContext();
 			}
 			
@@ -155,17 +146,19 @@ public class OneToManyWithIndexedAssociationTableEngine<
 			}
 
 			private void cleanContext() {
-				currentSelectedIndexes.remove();
-				InMemoryRelationHolder relationFixer = (InMemoryRelationHolder) manyRelationDescriptor.getRelationFixer();
-				relationFixer.clear();
+				getRelationFixer().clear();
 			}
 		});
 		AbstractJoinNode<TRGT, Fromable, Fromable, TRGTID> join = (AbstractJoinNode<TRGT, Fromable, Fromable, TRGTID>) sourcePersister.getEntityJoinTree().getJoin(rightEntityJoinName);
+		JoinNode<IndexedAssociationRecord, Fromable> associationTableJoinNode = (JoinNode<IndexedAssociationRecord, Fromable>) sourcePersister.getEntityJoinTree().getJoin(associationTableJoinNodeName);
 		join.setConsumptionListener((trgt, columnValueProvider) -> {
-			JoinNode<Fromable> associationTableJoinNode = sourcePersister.getEntityJoinTree().getJoin(associationTableJoinNodeName);
 			IndexedAssociationRecord associationRecord = associationRecordProvider.transform(EntityTreeInflater.currentContext().getDecoder(associationTableJoinNode));
 			((InMemoryRelationHolder) manyRelationDescriptor.getRelationFixer()).addIndex(associationRecord.getLeft(), trgt, associationRecord.getIndex());
 		});
+	}
+	
+	private IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C, SRCID>.InMemoryRelationHolder getRelationFixer() {
+		return getManyRelationDescriptor().getRelationFixer();
 	}
 	
 	@Override

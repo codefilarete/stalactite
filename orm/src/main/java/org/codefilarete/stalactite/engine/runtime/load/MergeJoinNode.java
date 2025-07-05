@@ -19,7 +19,7 @@ public class MergeJoinNode<C, T1 extends Fromable, T2 extends Fromable, I> exten
 	
 	private final EntityMerger<C> merger;
 	
-	public MergeJoinNode(JoinNode<T1> parent,
+	public MergeJoinNode(JoinNode<?, T1> parent,
 						 Key<T1, I> leftJoinColumn,
 						 Key<T2, I> rightJoinColumn,
 						 JoinType joinType,
@@ -34,7 +34,7 @@ public class MergeJoinNode<C, T1 extends Fromable, T2 extends Fromable, I> exten
 	}
 	
 	@Override
-	public MergeJoinRowConsumer<C> toConsumer(JoinNode<T2> joinNode) {
+	public MergeJoinRowConsumer<C> toConsumer(JoinNode<C, T2> joinNode) {
 		return new MergeJoinRowConsumer<>((MergeJoinNode<C, ?, ?, ?>) joinNode, merger.getRowTransformer());
 	}
 	

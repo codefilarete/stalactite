@@ -36,7 +36,7 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 	/** Available only in List cases : gives the identifier of an entity in the List to avoid duplicate mix (typically : concatenates list index to entity id)*/
 	private final Function<ColumnedRow, ?> relationIdentifierProvider;
 	
-	RelationJoinNode(JoinNode<T1> parent,
+	RelationJoinNode(JoinNode<?, T1> parent,
 					 JoinLink<T1, JOINTYPE> leftJoinColumn,
 					 JoinLink<T2, JOINTYPE> rightJoinColumn,
 					 JoinType joinType,
@@ -51,7 +51,7 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 		this.relationIdentifierProvider = relationIdentifierProvider;
 	}
 	
-	RelationJoinNode(JoinNode<T1> parent,
+	RelationJoinNode(JoinNode<?, T1> parent,
 					 Key<T1, JOINTYPE> leftJoinColumn,
 					 Key<T2, JOINTYPE> rightJoinColumn,
 					 JoinType joinType,
@@ -83,7 +83,7 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 	}
 	
 	@Override
-	public RelationJoinRowConsumer<C, I> toConsumer(JoinNode<T2> joinNode) {
+	public RelationJoinRowConsumer<C, I> toConsumer(JoinNode<C, T2> joinNode) {
 		return new DefaultRelationJoinRowConsumer<>(joinNode, entityInflater, beanRelationFixer, relationIdentifierProvider, getConsumptionListener());
 	}
 	
@@ -94,7 +94,7 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 	
 	static class DefaultRelationJoinRowConsumer<C, I> implements RelationJoinRowConsumer<C, I> {
 
-		private final JoinNode<?> joinNode;
+		private final JoinNode<C, ?> joinNode;
 		
 		private final Class<C> entityType;
 		
@@ -111,7 +111,7 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 		@Nullable
 		private final EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
 		
-		DefaultRelationJoinRowConsumer(JoinNode<?> joinNode,
+		DefaultRelationJoinRowConsumer(JoinNode<C, ?> joinNode,
 									   EntityInflater<C, I> entityInflater,
 									   BeanRelationFixer<Object, C> beanRelationFixer,
 									   @Nullable Function<ColumnedRow, ?> relationIdentifierComputer,
@@ -126,7 +126,7 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 		}
 		
 		@Override
-		public JoinNode<?> getNode() {
+		public JoinNode<C, ?> getNode() {
 			return joinNode;
 		}
 		

@@ -325,7 +325,7 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 		Holder<JoinTablePolymorphicRelationJoinNode<U, T1, T2, JOINID, ID>> createdJoinHolder = new Holder<>();
 		String relationJoinName = entityJoinTree.addJoin(leftStrategyName, parent -> {
 			JoinTablePolymorphicRelationJoinNode<U, T1, T2, JOINID, ID> polymorphicRelationJoinNode = new JoinTablePolymorphicRelationJoinNode<U, T1, T2, JOINID, ID>(
-					(JoinNode<T1>) (JoinNode) parent,
+					(JoinNode<SRC, T1>) (JoinNode) parent,
 					leftJoinColumn,
 					rightJoinColumn,
 					JoinType.OUTER,
@@ -353,14 +353,14 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 		subPersisters.forEach(subPersister -> {
 			ConfiguredRelationalPersister<V, ID> localSubPersister = (ConfiguredRelationalPersister<V, ID>) subPersister;
 			entityJoinTree.addJoin(mainPolymorphicJoinNodeName, parent -> new MergeJoinNode<V, T1, T2, ID>(
-					(JoinNode<T1>) (JoinNode) parent,
+					(JoinNode<SRC, T1>) (JoinNode) parent,
 					mainPersister.<T1>getMainTable().getPrimaryKey(),
 					subPersister.<T2>getMainTable().getPrimaryKey(),
 					JoinType.OUTER,
 					null,
 					new EntityMergerAdapter<>((EntityMapping<V, ID, ?>) localSubPersister.getMapping())) {
 				@Override
-				public MergeJoinRowConsumer<V> toConsumer(JoinNode<T2> joinNode) {
+				public MergeJoinRowConsumer<V> toConsumer(JoinNode<V, T2> joinNode) {
 					PolymorphicMergeJoinRowConsumer<V, ID> joinRowConsumer = new PolymorphicMergeJoinRowConsumer<>(
 							(MergeJoinNode<V, ?, ?, ID>) joinNode, 
 							localSubPersister.getMapping());

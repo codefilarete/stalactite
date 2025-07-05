@@ -10,7 +10,7 @@ import org.codefilarete.tool.collection.ReadOnlyList;
 /**
  * @author Guillaume Mary
  */
-public interface JoinNode<T extends Fromable> {
+public interface JoinNode<C, T extends Fromable> {
 	
 	T getTable();
 	
@@ -38,5 +38,7 @@ public interface JoinNode<T extends Fromable> {
 	 */
 	<ROOT, ID> EntityJoinTree<ROOT, ID> getTree();
 	
-	JoinRowConsumer toConsumer(JoinNode<T> joinNode);
+	JoinRowConsumer toConsumer(JoinNode<C, T> joinNode);
+	
+	JoinNode<C, T> setConsumptionListener(@Nullable EntityTreeJoinNodeConsumptionListener<C> consumptionListener);
 }

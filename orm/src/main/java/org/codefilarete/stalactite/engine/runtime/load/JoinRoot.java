@@ -20,7 +20,7 @@ import org.codefilarete.tool.collection.ReadOnlyList;
  * 
  * @author Guillaume Mary
  */
-public class JoinRoot<C, I, T extends Fromable> implements JoinNode<T> {
+public class JoinRoot<C, I, T extends Fromable> implements JoinNode<C, T> {
 
 	private final EntityJoinTree<C, I> tree;
 	
@@ -53,8 +53,10 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<T> {
 		return consumptionListener;
 	}
 	
-	public void setConsumptionListener(@Nullable EntityTreeJoinNodeConsumptionListener<C> consumptionListener) {
+	@Override
+	public JoinRoot<C, I, T> setConsumptionListener(@Nullable EntityTreeJoinNodeConsumptionListener<C> consumptionListener) {
 		this.consumptionListener = consumptionListener;
+		return this;
 	}
 	
 	@Override
@@ -89,8 +91,8 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<T> {
 	}
 	
 	@Override
-	public RootJoinRowConsumer<C> toConsumer(JoinNode<T> joinNode) {
-		return new JoinRootRowConsumer(this, entityInflater);
+	public RootJoinRowConsumer<C> toConsumer(JoinNode<C, T> joinNode) {
+		return new JoinRootRowConsumer<>(this, entityInflater);
 	}
 	
 	public static class JoinRootRowConsumer<C, I> implements RootJoinRowConsumer<C> {
@@ -111,7 +113,7 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<T> {
 		}
 
 		@Override
-		public JoinNode<?> getNode() {
+		public JoinRoot<C, ?, ?> getNode() {
 			return joinNode;
 		}
 

@@ -34,7 +34,7 @@ public class JoinTablePolymorphicRelationJoinNode<C, T1 extends Table, T2 extend
 	
 	private final Set<SubPersisterAndDiscriminator<? extends C>> subPersisters = new HashSet<>();
 	
-	public JoinTablePolymorphicRelationJoinNode(JoinNode<T1> parent,
+	public JoinTablePolymorphicRelationJoinNode(JoinNode<?, T1> parent,
 												Key<T1, JOINTYPE> leftJoinColumn,
 												Key<T2, JOINTYPE> rightJoinColumn,
 												JoinType joinType,
@@ -47,7 +47,7 @@ public class JoinTablePolymorphicRelationJoinNode<C, T1 extends Table, T2 extend
 	}
 	
 	@Override
-	public JoinTablePolymorphicRelationJoinRowConsumer toConsumer(JoinNode<T2> joinNode) {
+	public JoinTablePolymorphicRelationJoinRowConsumer toConsumer(JoinNode<C, T2> joinNode) {
 		DefaultRelationJoinRowConsumer<C, I> parentRowConsumer = (DefaultRelationJoinRowConsumer<C, I>) super.toConsumer(joinNode);
 		return new JoinTablePolymorphicRelationJoinRowConsumer(joinNode, parentRowConsumer, getConsumptionListener());
 	}
@@ -69,7 +69,7 @@ public class JoinTablePolymorphicRelationJoinNode<C, T1 extends Table, T2 extend
 		
 		private final ThreadLocal<RowIdentifier<? extends C>> currentlyFoundConsumer = new ThreadLocal<>();
 		
-		private final JoinNode<?> joinNode;
+		private final JoinNode<C, ?> joinNode;
 		
 		private final DefaultRelationJoinRowConsumer<C, I> parentRowConsumer;
 		
@@ -77,7 +77,7 @@ public class JoinTablePolymorphicRelationJoinNode<C, T1 extends Table, T2 extend
 		@Nullable
 		private final EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
 		
-		private JoinTablePolymorphicRelationJoinRowConsumer(JoinNode<?> joinNode,
+		private JoinTablePolymorphicRelationJoinRowConsumer(JoinNode<C, ?> joinNode,
                                                             DefaultRelationJoinRowConsumer<C, I> parentRowConsumer,
                                                             @Nullable EntityTreeJoinNodeConsumptionListener<C> consumptionListener) {
 			this.joinNode = joinNode;
@@ -86,7 +86,7 @@ public class JoinTablePolymorphicRelationJoinNode<C, T1 extends Table, T2 extend
 		}
 
 		@Override
-		public JoinNode<?> getNode() {
+		public JoinNode<C, ?> getNode() {
 			return joinNode;
 		}
 

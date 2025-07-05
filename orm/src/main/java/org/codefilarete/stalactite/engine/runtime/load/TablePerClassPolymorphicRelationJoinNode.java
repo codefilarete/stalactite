@@ -40,7 +40,7 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 	private final PseudoTable pseudoTable;
 	private final Union.PseudoColumn<Integer> discriminatorColumn;
 	
-	public TablePerClassPolymorphicRelationJoinNode(JoinNode<T1> parent,
+	public TablePerClassPolymorphicRelationJoinNode(JoinNode<?, T1> parent,
 													Union subPersistersUnion,
 													Key<T1, JOINCOLTYPE> leftJoinColumn,
 													Key<?, JOINCOLTYPE> rightJoinColumn,
@@ -71,7 +71,7 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 	}
 	
 	@Override
-	public TablePerClassPolymorphicRelationJoinRowConsumer toConsumer(JoinNode<PseudoTable> joinNode) {
+	public TablePerClassPolymorphicRelationJoinRowConsumer toConsumer(JoinNode<C, PseudoTable> joinNode) {
 		return new TablePerClassPolymorphicRelationJoinRowConsumer(joinNode, discriminatorColumn, getConsumptionListener());
 	}
 	
@@ -94,7 +94,7 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 		
 		private final ThreadLocal<RowIdentifier<? extends C>> currentlyFoundConsumer = new ThreadLocal<>();
 
-		private final JoinNode<PseudoTable> joinNode;
+		private final JoinNode<C, PseudoTable> joinNode;
 		
 		
 		/** Optional listener of ResultSet decoding */
@@ -102,7 +102,7 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 		private final EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
 		private final Union.PseudoColumn<Integer> discriminatorColumn;
 
-		private TablePerClassPolymorphicRelationJoinRowConsumer(JoinNode<PseudoTable> joinNode,
+		private TablePerClassPolymorphicRelationJoinRowConsumer(JoinNode<C, PseudoTable> joinNode,
 																Union.PseudoColumn<Integer> discriminatorColumn,
 																@Nullable EntityTreeJoinNodeConsumptionListener<C> consumptionListener) {
 			this.joinNode = joinNode;
@@ -111,7 +111,7 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 		}
 
 		@Override
-		public JoinNode<?> getNode() {
+		public JoinNode<C, ?> getNode() {
 			return joinNode;
 		}
 		
