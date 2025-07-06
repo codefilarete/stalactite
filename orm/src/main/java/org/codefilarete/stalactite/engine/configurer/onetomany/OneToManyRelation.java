@@ -118,7 +118,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	
 	public boolean isSourceTablePerClassPolymorphic() {
 		return sourceTablePerClassPolymorphic.getAsBoolean();
-	} 
+	}
 	
 	/** @return the configuration used for "many" side beans persistence */
 	public EntityMappingConfiguration<TRGT, TRGTID> getTargetMappingConfiguration() {
@@ -127,7 +127,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	
 	public boolean isTargetTablePerClassPolymorphic() {
 		return getTargetMappingConfiguration().getPolymorphismPolicy() instanceof PolymorphismPolicy.TablePerClassPolymorphism;
-	} 
+	}
 	
 	@Nullable
 	public Table getTargetTable() {

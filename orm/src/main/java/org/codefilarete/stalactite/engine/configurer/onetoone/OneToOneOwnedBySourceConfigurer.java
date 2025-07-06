@@ -62,7 +62,7 @@ public class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 	
 	@Override
 	protected Duo<Key<LEFTTABLE, JOINID>, Key<RIGHTTABLE, JOINID>> determineForeignKeyColumns(EntityMapping<SRC, SRCID, LEFTTABLE> mappingStrategy,
-											  EntityMapping<TRGT, TRGTID, RIGHTTABLE> targetMappingStrategy) {
+																							  EntityMapping<TRGT, TRGTID, RIGHTTABLE> targetMappingStrategy) {
 		Key<RIGHTTABLE, JOINID> rightKey = targetMappingStrategy.getTargetTable().getPrimaryKey();
 		// adding foreign key constraint
 		KeyBuilder<LEFTTABLE, JOINID> leftKeyBuilder = Key.from(mappingStrategy.getTargetTable());
@@ -73,12 +73,19 @@ public class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 			leftKeyBuilder.addColumn(foreignKeyColumn);
 			keyColumnsMapping.put(foreignKeyColumn, column);
 		});
-		Key<LEFTTABLE, JOINID> localLeftKey = leftKeyBuilder.build();
+		Key<LEFTTABLE, JOINID> leftKey = leftKeyBuilder.build();
 		
 		// According to the nullable option, we specify the ddl schema option
-		localLeftKey.getColumns().forEach(c -> ((Column) c).nullable(oneToOneRelation.isNullable()));
+		leftKey.getColumns().forEach(c -> ((Column) c).nullable(oneToOneRelation.isNullable()));
 		
-		Key<LEFTTABLE, JOINID> leftKey = sourcePersister.<LEFTTABLE>getMapping().getTargetTable().addForeignKey(foreignKeyNamingStrategy::giveName, localLeftKey, rightKey);
+		// we don't create foreign key for table-per-class because source columns should reference different tables (the one
+		// per entity) which databases do not allow
+		boolean createForeignKey = !oneToOneRelation.isTargetTablePerClassPolymorphic();
+		if (createForeignKey) {
+			String foreignKeyName = foreignKeyNamingStrategy.giveName(leftKey, rightKey);
+			sourcePersister.<LEFTTABLE>getMapping().getTargetTable().addForeignKey(foreignKeyName, leftKey, rightKey);
+		}
+		
 		return new Duo<>(leftKey, rightKey);
 	}
 	

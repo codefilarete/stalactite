@@ -17,6 +17,8 @@ public class Engine implements Identified<Long> {
 	
 	private double displacement;
 	
+	private Vehicle vehicle;
+	
 	public Engine() {
 	}
 	
@@ -38,6 +40,14 @@ public class Engine implements Identified<Long> {
 	
 	public void setDisplacement(double displacement) {
 		this.displacement = displacement;
+	}
+	
+	public Vehicle getVehicle() {
+		return vehicle;
+	}
+	
+	public void setVehicle(Vehicle vehicle) {
+		this.vehicle = vehicle;
 	}
 	
 	@Override

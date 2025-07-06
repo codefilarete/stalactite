@@ -2,9 +2,12 @@ package org.codefilarete.stalactite.engine.configurer.onetoone;
 
 import javax.annotation.Nullable;
 
+import java.util.function.BooleanSupplier;
+
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityMappingConfigurationProvider;
+import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.codefilarete.reflection.ReversibleAccessor;
@@ -21,6 +24,8 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	
 	/** Configuration used for target beans persistence */
 	private final EntityMappingConfigurationProvider<TRGT, TRGTID> targetMappingConfiguration;
+	
+	private final BooleanSupplier sourceTablePerClassPolymorphic;
 	
 	@Nullable
 	private final Table targetTable;
@@ -46,11 +51,18 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	 */
 	private boolean fetchSeparately;
 	
-	public <T extends Table> OneToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider, EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration, T table) {
-		this(targetProvider, () -> targetMappingConfiguration, table);
+	public <T extends Table> OneToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider,
+											  boolean sourceTablePerClassPolymorphic,
+											  EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration,
+											  T table) {
+		this(targetProvider, () -> sourceTablePerClassPolymorphic, () -> targetMappingConfiguration, table);
 	}
 	
-	public <T extends Table> OneToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider, EntityMappingConfigurationProvider<TRGT, TRGTID> targetMappingConfiguration, T table) {
+	public <T extends Table> OneToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider,
+											  BooleanSupplier sourceTablePerClassPolymorphic,
+											  EntityMappingConfigurationProvider<TRGT, TRGTID> targetMappingConfiguration,
+											  T table) {
+		this.sourceTablePerClassPolymorphic = sourceTablePerClassPolymorphic;
 		this.targetMappingConfiguration = targetMappingConfiguration;
 		this.targetProvider = targetProvider;
 		this.targetTable = table;
@@ -61,9 +73,17 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 		return targetProvider;
 	}
 	
+	public boolean isSourceTablePerClassPolymorphic() {
+		return sourceTablePerClassPolymorphic.getAsBoolean();
+	}
+	
 	/** @return the configuration used for target beans persistence */
 	public EntityMappingConfiguration<TRGT, TRGTID> getTargetMappingConfiguration() {
 		return targetMappingConfiguration.getConfiguration();
+	}
+	
+	public boolean isTargetTablePerClassPolymorphic() {
+		return getTargetMappingConfiguration().getPolymorphismPolicy() instanceof PolymorphismPolicy.TablePerClassPolymorphism;
 	}
 	
 	@Nullable

@@ -714,7 +714,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	}
 	
 	@Nested
-	class OneToSingleTableOne {
+	class SingleTableWithOneToOne {
 		
 		@Test
 		void oneSubClass() {
@@ -1042,7 +1042,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	}
 	
 	@Nested
-	class OneToJoinedTablesOne {
+	class JoinTableWithOneToOne {
 		
 		@Test
 		void oneSubClass() {
@@ -1403,7 +1403,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	}
 	
 	@Nested
-	class OneToTablePerClassOne {
+	class TablePerClassWithOneToOne {
 		
 		@Test
 		void oneSubClass() {

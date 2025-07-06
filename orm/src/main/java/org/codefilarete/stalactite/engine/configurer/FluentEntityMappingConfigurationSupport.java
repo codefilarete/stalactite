@@ -14,12 +14,14 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMethod;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
@@ -629,15 +631,11 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 			SerializableBiConsumer<C, O> setter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			T table) {
-		MutatorByMethodReference<C, O> mutatorByMethodReference = Accessors.mutatorByMethodReference(setter);
-		PropertyAccessor<C, O> propertyAccessor = new PropertyAccessor<>(
-				// we keep close to user demand : we keep its method reference ...
-				new MutatorByMethod<C, O>(captureMethod(setter)).toAccessor(),
-				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
-				mutatorByMethodReference);
-		OneToOneRelation<C, O, J> oneToOneRelation = new OneToOneRelation<>(propertyAccessor, mappingConfiguration.getConfiguration(), table);
-		this.oneToOneRelations.add((OneToOneRelation<C, Object, Object>) oneToOneRelation);
-		return wrapForAdditionalOptions(oneToOneRelation);
+		// we keep close to user demand: we keep its method reference ...
+		Mutator<C, O> mutatorByMethodReference = Accessors.mutatorByMethodReference(setter);
+		// ... but we can't do it for accessor, so we use the most equivalent manner: an accessor based on setter method (fallback to property if not present)
+		Accessor<C, O> accessor = new MutatorByMethod<C, O>(captureMethod(setter)).toAccessor();
+		return mapOneToOne(accessor, mutatorByMethodReference, mappingConfiguration, table);
 	}
 	
 	@Override
@@ -645,13 +643,23 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 			SerializableFunction<C, O> getter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			T table) {
+		// we keep close to user demand: we keep its method reference ...
 		AccessorByMethodReference<C, O> accessorByMethodReference = Accessors.accessorByMethodReference(getter);
-		PropertyAccessor<C, O> propertyAccessor = new PropertyAccessor<>(
-				// we keep close to user demand : we keep its method reference ...
-				accessorByMethodReference,
-				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
-				new AccessorByMethod<C, O>(captureMethod(getter)).toMutator());
-		OneToOneRelation<C, O, J> oneToOneRelation = new OneToOneRelation<>(propertyAccessor, mappingConfiguration, table);
+		// ... but we can't do it for mutator, so we use the most equivalent manner: a mutator based on getter method (fallback to property if not present)
+		Mutator<C, O> mutator = new AccessorByMethod<C, O>(captureMethod(getter)).toMutator();
+		return mapOneToOne(accessorByMethodReference, mutator, mappingConfiguration, table);
+	}
+	
+	private <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(
+			Accessor<C, O> accessor,
+			Mutator<C, O> mutator,
+			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
+			T table) {
+		OneToOneRelation<C, O, J> oneToOneRelation = new OneToOneRelation<>(
+				new PropertyAccessor<>(accessor, mutator),
+				() -> this.polymorphismPolicy instanceof PolymorphismPolicy.TablePerClassPolymorphism,
+				mappingConfiguration,
+				table);
 		this.oneToOneRelations.add((OneToOneRelation<C, Object, Object>) oneToOneRelation);
 		return wrapForAdditionalOptions(oneToOneRelation);
 	}

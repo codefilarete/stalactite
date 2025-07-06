@@ -16,11 +16,21 @@ import java.util.Set;
 
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.InMemoryCounterIdentifierGenerator;
+import org.codefilarete.stalactite.engine.PersistenceContext;
+import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
+import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildLifeCycleListener;
+import org.codefilarete.stalactite.engine.model.Car;
+import org.codefilarete.stalactite.engine.model.Color;
+import org.codefilarete.stalactite.engine.model.Engine;
+import org.codefilarete.stalactite.engine.model.Truck;
+import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.EmptySubEntityMappingConfiguration;
@@ -38,17 +48,24 @@ import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
+import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
+import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
+import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.test.PairSetList;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.Maps;
@@ -65,6 +82,13 @@ import org.mockito.stubbing.Answer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.engine.MappingEase.subentityBuilder;
+import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
+import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
+import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
+import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
+import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -826,6 +850,172 @@ class TablePerClassPolymorphismPersisterTest {
 			obtained.add(new HashSet<>(obtainedPairs.subList(startIndex, startIndex += expectedPair.size())));
 		}
 		assertThat(obtained).isEqualTo(expectedPairs.asList());
+	}
+	
+	@Nested
+	class OneToTablePerClass {
+		
+		private final Dialect DIALECT = HSQLDBDialectBuilder.defaultHSQLDBDialect();
+		
+		{
+			DIALECT.getColumnBinderRegistry().register((Class) Identifier.class, identifierBinder(LONG_PRIMITIVE_BINDER));
+			DIALECT.getSqlTypeRegistry().put(Identifier.class, "int");
+			DIALECT.getColumnBinderRegistry().register(Color.class, new NullAwareParameterBinder<>(new LambdaParameterBinder<>(INTEGER_PRIMITIVE_BINDER, Color::new, Color::getRgb)));
+			DIALECT.getSqlTypeRegistry().put(Color.class, "int");
+		}
+		private final PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), HSQLDBDialectBuilder.defaultHSQLDBDialect());
+		
+		@Test
+		void oneSubClass() {
+			EntityPersister<Engine, Identifier<Long>> enginePersister = entityBuilder(Engine.class, LONG_TYPE)
+					// mapped super class defines id
+					.mapKey(Engine::getId, ALREADY_ASSIGNED)
+					.mapOneToOne(Engine::getVehicle, entityBuilder(Vehicle.class, LONG_TYPE)
+							.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
+							.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
+									.addSubClass(subentityBuilder(Car.class)
+											.map(Car::getModel)
+											.map(Car::getColor))))
+					.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+					.build(persistenceContext);
+			
+			// Schema contains main and children tables
+			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
+			assertThat(tables).containsExactlyInAnyOrder("Car", "Engine");
+			
+			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
+			assertThat(persistenceContext.getPersisters()).extracting(EntityPersister::getClassToPersist).containsExactlyInAnyOrder(Engine.class);
+			
+			// DML tests
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Car dummyCar = new Car(1L);
+			dummyCar.setModel("Renault");
+			dummyCar.setColor(new Color(666));
+			Engine dummyEngine = new Engine(42L);
+			dummyEngine.setVehicle(dummyCar);
+			
+			// insert test
+			enginePersister.insert(dummyEngine);
+			
+			ExecutableBeanPropertyQueryMapper<String> modelQuery = persistenceContext.newQuery("select * from Car", String.class)
+					.mapKey("model", String.class);
+			
+			Set<String> allCars = modelQuery.execute(Accumulators.toSet());
+			assertThat(allCars).containsExactly("Renault");
+			
+			// update test
+			dummyCar.setModel("Peugeot");
+			enginePersister.persist(dummyEngine);
+			
+			Set<String> existingModels = modelQuery.execute(Accumulators.toSet());
+			assertThat(existingModels).containsExactly("Peugeot");
+			
+			// select test
+			Engine loadedEngine = enginePersister.select(new PersistedIdentifier<>(42L));
+			assertThat(loadedEngine).usingRecursiveComparison().isEqualTo(dummyEngine);
+			
+			// delete test
+			enginePersister.delete(dummyEngine);
+			
+			existingModels = modelQuery.execute(Accumulators.toSet());
+			assertThat(existingModels).isEmpty();
+			
+			// because we asked for orphan removal, engine should not be present anymore
+			ExecutableBeanPropertyQueryMapper<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
+					.mapKey("id", Long.class);
+			
+			assertThat(engineQuery.execute(Accumulators.toSet())).isEmpty();
+		}
+		
+		@Test
+		void twoSubClasses() {
+			EntityPersister<Engine, Identifier<Long>> enginePersister = entityBuilder(Engine.class, LONG_TYPE)
+					.mapKey(Engine::getId, ALREADY_ASSIGNED)
+					.mapOneToOne(Engine::getVehicle, entityBuilder(Vehicle.class, LONG_TYPE)
+							// mapped super class defines id
+							.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
+							.map(Vehicle::getColor)
+							.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
+									.addSubClass(subentityBuilder(Car.class)
+											.map(Car::getId)
+											.map(Car::getModel))
+									.addSubClass(subentityBuilder(Truck.class)
+											.map(Truck::getId))))
+					.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+					.build(persistenceContext);
+			
+			// Schema contains main and children tables
+			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
+			assertThat(tables).containsExactlyInAnyOrder("Car", "Truck", "Engine");
+			
+			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
+			assertThat(persistenceContext.getPersisters()).extracting(EntityPersister::getClassToPersist).containsExactlyInAnyOrder(Engine.class);
+			
+			// DML tests
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Car dummyCar = new Car(1L);
+			dummyCar.setModel("Renault");
+			dummyCar.setColor(new Color(666));
+			
+			Engine dummyEngine = new Engine(42L);
+			dummyEngine.setVehicle(dummyCar);
+			
+			// insert test
+			enginePersister.insert(dummyEngine);
+			
+			ExecutableBeanPropertyQueryMapper<Integer> vehicleIdQuery = persistenceContext.newQuery("select id from car union select id from truck", Integer.class)
+					.mapKey("id", Integer.class);
+			
+			Set<Integer> vehicleIds = vehicleIdQuery.execute(Accumulators.toSet());
+			assertThat(vehicleIds).containsExactly(1);
+			
+			ExecutableBeanPropertyQueryMapper<Integer> carIdQuery = persistenceContext.newQuery("select id from car", Integer.class)
+					.mapKey("id", Integer.class);
+			
+			Set<Integer> carIds = carIdQuery.execute(Accumulators.toSet());
+			assertThat(carIds).containsExactly(1);
+			
+			ExecutableBeanPropertyQueryMapper<Integer> truckIdQuery = persistenceContext.newQuery("select id from truck", Integer.class)
+					.mapKey("id", Integer.class);
+			
+			Set<Integer> truckIds = truckIdQuery.execute(Accumulators.toSet());
+			assertThat(truckIds).isEmpty();
+			
+			// update test
+			Truck dummyTruck = new Truck(2L);
+			dummyTruck.setColor(new Color(42));
+			
+			dummyEngine.setVehicle(dummyTruck);
+			enginePersister.persist(dummyEngine);
+			
+			vehicleIds = vehicleIdQuery.execute(Accumulators.toSet());
+			assertThat(vehicleIds).containsExactly(2);
+			
+			carIds = carIdQuery.execute(Accumulators.toSet());
+			assertThat(carIds).isEmpty();	// because we asked for orphan removal
+			
+			truckIds = truckIdQuery.execute(Accumulators.toSet());
+			assertThat(truckIds).containsExactly(2);
+			
+			
+			// select test
+			Engine loadedVehicle;
+			loadedVehicle = enginePersister.select(new PersistedIdentifier<>(42L));
+			assertThat(loadedVehicle).usingRecursiveComparison().isEqualTo(dummyEngine);
+			
+			// delete test
+			enginePersister.delete(loadedVehicle);
+			
+			// because we asked for orphan removal, engine should not be present anymore
+			ExecutableBeanPropertyQueryMapper<Long> engineQuery = persistenceContext.newQuery("select id from Truck", Long.class)
+					.mapKey("id", Long.class);
+			
+			assertThat(engineQuery.execute(Accumulators.toSet())).isEmpty();
+		}
 	}
 	
 	private static abstract class AbstractToto implements Identified<Integer> {

@@ -72,7 +72,7 @@ public class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 	
 	@Override
 	protected Duo<Key<LEFTTABLE, SRCID>, Key<RIGHTTABLE, SRCID>> determineForeignKeyColumns(EntityMapping<SRC, SRCID, LEFTTABLE> mappingStrategy,
-																							  EntityMapping<TRGT, TRGTID, RIGHTTABLE> targetMappingStrategy) {
+																							EntityMapping<TRGT, TRGTID, RIGHTTABLE> targetMappingStrategy) {
 		// left column is always left table primary key
 		Key<LEFTTABLE, SRCID> leftKey = mappingStrategy.getTargetTable().getPrimaryKey();
 		// right column depends on relation owner
@@ -98,10 +98,15 @@ public class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 		}
 		
 		// adding foreign key constraint
-		String foreignKeyName = foreignKeyNamingStrategy.giveName(rightKey, leftKey);
-		// Note that rightColumn can't be null because RelationOwnedByTargetConfigurer is used when one of cascadeOne.getReverseColumn(),
-		// cascadeOne.getReverseGetter() and cascadeOne.getReverseSetter() is not null
-		((Table) rightKey.getTable()).addForeignKey(foreignKeyName, rightKey, leftKey);
+		// we don't create foreign key for table-per-class because source columns should reference different tables (the one
+		// per entity) which databases do not allow
+		boolean createForeignKey = !oneToOneRelation.isTargetTablePerClassPolymorphic();
+		if (createForeignKey) {
+			String foreignKeyName = foreignKeyNamingStrategy.giveName(rightKey, leftKey);
+			// Note that rightColumn can't be null because RelationOwnedByTargetConfigurer is used when one of cascadeOne.getReverseColumn(),
+			// cascadeOne.getReverseGetter() and cascadeOne.getReverseSetter() is not null
+			((Table) rightKey.getTable()).addForeignKey(foreignKeyName, rightKey, leftKey);
+		}
 		
 		return new Duo<>(leftKey, rightKey);
 	}
