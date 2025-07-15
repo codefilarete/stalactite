@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.sql.statement.binder;
 import java.lang.invoke.MethodHandleInfo;
 import java.lang.invoke.SerializedLambda;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.function.Function;
 
@@ -27,15 +28,16 @@ import static org.codefilarete.reflection.MethodReferences.buildSerializedLambda
 public interface PreparedStatementWriter<I> extends JdbcBinder<I> {
 	
 	/**
-	 * Creates a {@link PreparedStatementWriter} from a method reference.
-	 * Its type is deduced from given method reference by introspection of it.
-	 *
-	 * @param preparedStatementSetter one method of {@link PreparedStatement}
-	 * @return a new {@link PreparedStatementWriter} which calls given {@link PreparedStatement} method
-	 * @param <O> the type set to the {@link PreparedStatement}
+	 * Creates a {@link PreparedStatementWriter} from a method reference to a {@link PreparedStatement} setter method.
+	 * The type handled by the writer is inferred from the method reference.
+	 * 
+	 * @param preparedStatementSetter a method reference to a {@link PreparedStatement} setXXX method
+	 * @param <O> the type of the value to be set on the {@link PreparedStatement}
+	 * @return a {@link PreparedStatementWriter} that invokes the specified {@link PreparedStatement} method
 	 */
 	static <O> PreparedStatementWriter<O> ofMethodReference(SerializableThrowingTriConsumer<PreparedStatement, Integer, O, SQLException> preparedStatementSetter) {
-		Class<O> argumentType = giveArgumentTypes(buildSerializedLambda(preparedStatementSetter)).getReturnType();
+		// because the targeted method is expected to be one of the setXXX(index, value), we collect the argument at index 1, not zero. 
+		Class<O> argumentType = giveArgumentTypes(buildSerializedLambda(preparedStatementSetter)).getArgumentTypes()[1];
 		return new LambdaPreparedStatementWriter<>(preparedStatementSetter, argumentType);
 	}
 	

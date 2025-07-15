@@ -29,12 +29,12 @@ import static org.codefilarete.reflection.MethodReferences.buildSerializedLambda
 public interface ResultSetReader<I> extends JdbcBinder<I> {
 	
 	/**
-	 * Creates a {@link ResultSetReader} from a method reference.
-	 * Its type is deduced from given method reference by introspection of it.
+	 * Creates a {@link ResultSetReader} using a method reference to a {@link ResultSet} getter method.
+	 * The type of the reader is inferred from the provided method reference.
 	 * 
-	 * @param resultSetGetter one method of {@link ResultSet}
-	 * @return a new {@link ResultSetReader} which calls given {@link ResultSet} method
-	 * @param <O> the type retrieved from the {@link ResultSet}
+	 * @param resultSetGetter a method reference to a {@link ResultSet} getter method (e.g., ResultSet::getString)
+	 * @param <O> the type returned by the {@link ResultSet} getter
+	 * @return a {@link ResultSetReader} that invokes the specified {@link ResultSet} method
 	 */
 	static <O> ResultSetReader<O> ofMethodReference(SerializableThrowingBiFunction<ResultSet, String, O, SQLException> resultSetGetter) {
 		Class<O> argumentType = giveArgumentTypes(buildSerializedLambda(resultSetGetter)).getReturnType();

@@ -4,13 +4,20 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.util.Date;
+import java.util.function.BiFunction;
+import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
 import org.codefilarete.tool.function.Hanger.Holder;
+import org.codefilarete.tool.function.SerializableThrowingBiFunction;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 /**
  * @author Guillaume Mary
@@ -26,7 +33,7 @@ class ResultSetReaderTest {
 			}
 			
 			@Override
-			public Integer doGet(ResultSet resultSet, String columnName) throws SQLException {
+			public Integer doGet(ResultSet resultSet, String columnName) {
 				return (Integer) new Holder("A").get();
 			}
 		};
@@ -45,7 +52,7 @@ class ResultSetReaderTest {
 			}
 			
 			@Override
-			public Long doGet(ResultSet resultSet, String columnName) throws SQLException {
+			public Long doGet(ResultSet resultSet, String columnName) {
 				return 1L;
 			}
 		};
@@ -67,6 +74,22 @@ class ResultSetReaderTest {
 		DecimalFormat df = new DecimalFormat("");
 		ResultSetReader<String> testInstance4 = resultSetReader.thenApply(df::format);
 		assertThat(testInstance4.getType()).isEqualTo(String.class);
+	}
+	
+	static Stream<Arguments> ofMethodReference() {
+		return Stream.of(
+				arguments((SerializableThrowingBiFunction<ResultSet, String, ?, SQLException>) ResultSet::getLong, long.class),
+				arguments((SerializableThrowingBiFunction<ResultSet, String, ?, SQLException>) ResultSet::getDate, java.sql.Date.class),
+				arguments((SerializableThrowingBiFunction<ResultSet, String, ?, SQLException>) ResultSet::getDouble, double.class),
+				arguments((SerializableThrowingBiFunction<ResultSet, String, ?, SQLException>) ResultSet::getFloat, float.class),
+				arguments((SerializableThrowingBiFunction<ResultSet, String, ?, SQLException>) ResultSet::getString, String.class)
+		);
+	}
+	
+	@ParameterizedTest
+	@MethodSource
+	<O> void ofMethodReference(SerializableThrowingBiFunction<ResultSet, String, O, SQLException> resultSetGetter, Class<O> expectedType) {
+		assertThat(ResultSetReader.ofMethodReference(resultSetGetter).getType()).isEqualTo(expectedType);
 	}
 	
 	
