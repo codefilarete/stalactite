@@ -72,7 +72,7 @@ public class SecondPhaseRelationLoader<SRC, TRGT, ID> implements SelectListener<
 		// then we apply them onto their source entities, to remember which target applies to which source, we use target id
 		Map<TRGTID, TRGT> targetPerId = new HashMap<>();
 		targetsPerSelector.forEach((selector, loadedTargets) -> targetPerId.putAll(Iterables.map(loadedTargets, idAccessors.get(selector))));
-		sourceEntities.forEach(src -> Nullable.nullable(targetIdPerSource.get(src))    // source may not have targetIds if relation if null
+		sourceEntities.forEach(src -> Nullable.nullable(targetIdPerSource.get(src))    // source may not have targetIds if the relation is null
 				.invoke(targetIds -> targetIds.forEach(targetId -> beanRelationFixer.apply(src, targetPerId.get(targetId)))));
 	}
 	

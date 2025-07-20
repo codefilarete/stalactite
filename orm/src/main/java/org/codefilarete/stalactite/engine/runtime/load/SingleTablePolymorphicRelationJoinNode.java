@@ -60,11 +60,11 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 
 	}
 	
 	@Override
-	public RelationJoinRowConsumer<C, I> toConsumer(JoinNode<C, T2> joinNode) {
+	public SingleTablePolymorphicRelationJoinRowConsumer toConsumer(JoinNode<C, T2> joinNode) {
 		return new SingleTablePolymorphicRelationJoinRowConsumer(joinNode);
 	}
 	
-	protected class SingleTablePolymorphicRelationJoinRowConsumer implements RelationJoinRowConsumer<C, I> {
+	public class SingleTablePolymorphicRelationJoinRowConsumer implements RelationJoinRowConsumer<C, I> {
 		
 		private final Map<DTYPE, SubEntityDeterminer<? extends C>> subEntityDeterminerPerDiscriminatorValue;
 

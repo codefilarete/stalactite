@@ -90,7 +90,7 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 		}
 	}
 	
-	private class TablePerClassPolymorphicRelationJoinRowConsumer implements RelationJoinRowConsumer<C, I>, ForkJoinRowConsumer {
+	public class TablePerClassPolymorphicRelationJoinRowConsumer implements RelationJoinRowConsumer<C, I>, ForkJoinRowConsumer {
 		
 		private final ThreadLocal<RowIdentifier<? extends C>> currentlyFoundConsumer = new ThreadLocal<>();
 

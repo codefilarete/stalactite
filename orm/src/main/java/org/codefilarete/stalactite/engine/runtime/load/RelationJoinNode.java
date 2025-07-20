@@ -87,7 +87,7 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 		return new DefaultRelationJoinRowConsumer<>(joinNode, entityInflater, beanRelationFixer, relationIdentifierProvider, getConsumptionListener());
 	}
 	
-	interface RelationJoinRowConsumer<C, I> extends JoinRowConsumer {
+	public interface RelationJoinRowConsumer<C, I> extends JoinRowConsumer {
 		
 		C applyRelatedEntity(Object parentJoinEntity, ColumnedRow row, TreeInflationContext context);
 	}

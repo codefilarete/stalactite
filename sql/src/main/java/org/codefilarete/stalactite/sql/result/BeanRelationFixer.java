@@ -55,9 +55,10 @@ public interface BeanRelationFixer<E, I> {
 	}
 	
 	/**
-	 * Shortcut to create a {@link BeanRelationFixer} for a bidirectionnal one-to-one relation.
+	 * Shortcut to create a {@link BeanRelationFixer} for a bidirectional one-to-one relation.
 	 *
 	 * @param setter the method that fixes the relation
+	 * @param reverseSetter the setter for the other side of the relation   
 	 * @return a {@link BeanRelationFixer} mapped to {@link BiConsumer#accept(Object, Object)}
 	 */
 	static <E, I> BeanRelationFixer<E, I> of(BiConsumer<E, I> setter, BiConsumer<I, E> reverseSetter) {

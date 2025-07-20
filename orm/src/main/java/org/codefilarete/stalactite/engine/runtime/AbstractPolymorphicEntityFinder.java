@@ -158,27 +158,4 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 			throw new SQLExecutionException(preparedSQL.getSQL(), e);
 		}
 	}
-	
-	/**
-	 * Small class that will be used to ensure that a {@link Selectable} as an alias in the query
-	 * @param <S>
-	 * @author Guillaume Mary
-	 */
-	protected static class AliasAsserter<S extends Selectable> implements Function<S, String> {
-		
-		private final Function<S, String> delegate;
-		
-		public AliasAsserter(Function<S, String> delegate) {
-			this.delegate = delegate;
-		}
-		
-		@Override
-		public String apply(S selectable) {
-			String alias = delegate.apply(selectable);
-			if (alias == null) {
-				throw new IllegalArgumentException("Item " + selectable.getExpression() + " must have an alias");
-			}
-			return alias;
-		}
-	}
 }
