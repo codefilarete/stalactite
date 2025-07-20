@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import java.sql.ResultSet;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -22,10 +23,12 @@ import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.ReadOperationFactory;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
+import org.codefilarete.stalactite.sql.statement.SQLOperation;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
 import org.codefilarete.tool.VisibleForTesting;
-import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Class dedicated to select statement execution
@@ -33,6 +36,8 @@ import org.codefilarete.tool.collection.Iterables;
  * @author Guillaume Mary
  */
 public class SelectExecutor<C, I, T extends Table<T>> extends DMLExecutor<C, I, T> implements org.codefilarete.stalactite.engine.SelectExecutor<C, I> {
+	
+	protected final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 	
 	private final InternalExecutor<C, I, T> internalExecutor;
 
@@ -59,36 +64,21 @@ public class SelectExecutor<C, I, T extends Table<T>> extends DMLExecutor<C, I, 
 	
 	@Override
 	public Set<C> select(Iterable<I> ids) {
-		int blockSize = getInOperatorMaxSize();
-		List<List<I>> parcels = Collections.parcel(ids, blockSize);
-		Set<C> result = new HashSet<>(50);
-		if (!parcels.isEmpty()) {
-			List<I> lastParcel = Iterables.last(parcels, java.util.Collections.emptyList());
-			int lastBlockSize = lastParcel.size();
-			if (lastBlockSize != blockSize) {
-				parcels = Iterables.cutTail(parcels);
-			} else {
-				lastParcel = java.util.Collections.emptyList();
-			}
-			// We ensure that the same Connection is used for all operations
-			ConnectionProvider localConnectionProvider = new SimpleConnectionProvider(getConnectionProvider().giveConnection());
-			// We distinguish the default case where packets are of the same size from the (last) case where it's different
-			// So we can apply the same read operation to all the firsts packets
-			T targetTable = getMapping().getTargetTable();
-			Set<Column<T, ?>> columnsToRead = getMapping().getSelectableColumns();
-			if (!parcels.isEmpty()) {
-				try (ReadOperation<Column<T, ?>> defaultReadOperation = newReadOperation(targetTable, columnsToRead, blockSize, localConnectionProvider)) {
-					parcels.forEach(parcel -> result.addAll(internalExecutor.execute(defaultReadOperation, parcel)));
-				}
-			}
-			
-			// last packet treatment (packet size may be different)
-			if (!lastParcel.isEmpty()) {
-				try (ReadOperation<Column<T, ?>> lastReadOperation = newReadOperation(targetTable, columnsToRead, lastBlockSize, localConnectionProvider)) {
-					result.addAll(internalExecutor.execute(lastReadOperation, lastParcel));
-				}
-			}
-		}
+		Set<C> result = new HashSet<>(Iterables.size(ids, () -> 50));
+		// We ensure that the same Connection is used for all operations
+		ConnectionProvider localConnectionProvider = new SimpleConnectionProvider(getConnectionProvider().giveConnection());
+		// We distinguish the default case where chunks are of the same size, from the (last) case where it's different
+		// So we can apply the same read operation to all the first chunks
+		Iterables.forEachChunk(
+				ids,
+				getInOperatorMaxSize(),
+				chunks -> {
+					LOGGER.debug("selecting entities in {} chunks", chunks.size());
+				},
+				chunkSize -> newReadOperation(getMapping().getTargetTable(), getMapping().getSelectableColumns(), chunkSize, localConnectionProvider),
+				(readOperation, chunk) -> result.addAll(internalExecutor.execute(readOperation, chunk)),
+				SQLOperation::close
+		);
 		return result;
 	}
 	
@@ -125,7 +115,7 @@ public class SelectExecutor<C, I, T extends Table<T>> extends DMLExecutor<C, I, 
 		}
 		
 		@VisibleForTesting
-		Set<C> execute(ReadOperation<Column<T, ?>> operation, List<I> ids) {
+		Set<C> execute(ReadOperation<Column<T, ?>> operation, Collection<I> ids) {
 			Map<Column<T, ?>, ?> primaryKeyValues = primaryKeyProvider.getColumnValues(ids);
 			try (ReadOperation<Column<T, ?>> closeableOperation = operation) {
 				closeableOperation.setValues(primaryKeyValues);

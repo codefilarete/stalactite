@@ -38,7 +38,6 @@ import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSelect;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator.ParameterizedWhere;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
@@ -47,7 +46,6 @@ import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderIndex.Par
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.bean.Objects;
-import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +59,7 @@ import org.slf4j.LoggerFactory;
  */
 public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implements org.codefilarete.stalactite.engine.SelectExecutor<C, I> {
 	
-	protected final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
+	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 	
 	/** The delegate for joining the strategies, will help to build the SQL */
 	private final EntityJoinTree<C, I> entityJoinTree;
@@ -131,35 +129,28 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 	
 	@Override
 	public Set<C> select(Iterable<I> ids) {
-		// cutting ids into pieces, adjusting expected result size
-		List<List<I>> parcels = Collections.parcel(ids, blockSize);
-		Set<C> result = new HashSet<>(parcels.size() * blockSize);
-		LOGGER.debug("selecting entities in {} chunks", parcels.size());
-		if (!parcels.isEmpty()) {
-			// Creation of the where clause: we use a dynamic "in" operator clause to avoid multiple QueryBuilder instantiation
-			DDLAppender identifierCriteria = new JoinDDLAppender(whereClauseDMLNameProvider);
-			
-			List<I> lastBlock = Iterables.last(parcels, java.util.Collections.emptyList());
-			// keep only full blocks to run them on the fully filled "in" operator
-			int lastBlockSize = lastBlock.size();
-			if (lastBlockSize != blockSize) {
-				parcels = Iterables.cutTail(parcels);
-			}
-			
-			// Be aware that this executor is made to use same Connection to execute next SQL orders in same transaction
-			InternalExecutor executor = newInternalExecutor(entityTreeQuery);
-			if (!parcels.isEmpty()) {
-				// change parameter mark count to adapt "in" operator values
-				ParameterizedWhere<T> tableParameterizedWhere = dmlGenerator.appendTupledWhere(identifierCriteria, primaryKey.getColumns(), blockSize);
-				result.addAll(executor.execute(rawQuery + " where " + identifierCriteria, parcels, tableParameterizedWhere.getColumnToIndex()));
-			}
-			if (!lastBlock.isEmpty()) {
-				// change parameter mark count to adapt "in" operator values, we must clear previous where clause
-				identifierCriteria.getAppender().setLength(0);
-				ParameterizedWhere<T> tableParameterizedWhere = dmlGenerator.appendTupledWhere(identifierCriteria, primaryKey.getColumns(), lastBlock.size());
-				result.addAll(executor.execute(rawQuery + " where " + identifierCriteria, java.util.Collections.singleton(lastBlock), tableParameterizedWhere.getColumnToIndex()));
-			}
-		}
+		// adjusting expected result size
+		Set<C> result = new HashSet<>(Iterables.size(ids, () -> 50));
+		// Be aware that this executor is made to use the same Connection to execute next SQL orders in same transaction
+		InternalExecutor executor = newInternalExecutor(entityTreeQuery);
+		// Creation of the where clause: we use a dynamic "in" operator clause to avoid multiple QueryBuilder instantiation
+		DDLAppender identifierCriteria = new JoinDDLAppender(whereClauseDMLNameProvider);
+		Iterables.forEachChunk(
+				ids,
+				blockSize,
+				chunks -> {
+					logger.debug("selecting entities in {} chunks", chunks.size());
+				},
+				chunkSize -> {
+					if (chunkSize != blockSize) {
+						// change parameter mark count to adapt "in" operator values, we must clear the previous where clause
+						identifierCriteria.getAppender().setLength(0);
+					}
+					return dmlGenerator.appendTupledWhere(identifierCriteria, primaryKey.getColumns(), chunkSize);
+				},
+				(tableParameterizedWhere, chunk) -> result.addAll(executor.execute(rawQuery + " where " + identifierCriteria, chunk, tableParameterizedWhere.getColumnToIndex())),
+				(tableParameterizedWhere) -> {}
+		);
 		return result;
 	}
 	
@@ -199,7 +190,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 		}
 		
 		@VisibleForTesting
-		List<C> execute(String sql, Collection<? extends List<I>> idsParcels, Map<Column<T, ?>, int[]> inOperatorValueIndexes) {
+		List<C> execute(String sql, Collection<I> parcel, Map<Column<T, ?>, int[]> inOperatorValueIndexes) {
 			// binders must be exactly the ones necessary to the request, else an IllegalArgumentException is thrown at execution time
 			// so we have to extract them from what is in the request : only primary key columns are parameterized
 			ColumnParameterizedSelect<T> preparedSelect = new ColumnParameterizedSelect<T>(
@@ -208,12 +199,10 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 					parameterBindersForPKInSelect.getParameterBinders(),
 					selectParameterBinders,
 					entityTreeQuery.getQuery().getAliases());
-			List<C> result = new ArrayList<>(idsParcels.size() * blockSize);
+			List<C> result = new ArrayList<>(blockSize);
 			try (ReadOperation<Column<T, ?>> columnReadOperation = dialect.getReadOperationFactory().createInstance(preparedSelect, connectionProvider)) {
 				columnReadOperation.setListener(EntityMappingTreeSelectExecutor.this.operationListener);
-				for (List<I> parcel : idsParcels) {
-					result.addAll(executor.execute(columnReadOperation, parcel));
-				}
+				result.addAll(executor.execute(columnReadOperation, parcel));
 			}
 			return result;
 		}

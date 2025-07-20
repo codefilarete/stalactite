@@ -10,7 +10,6 @@ import java.util.Set;
 import java.util.function.LongSupplier;
 
 import org.codefilarete.stalactite.engine.StaleStateObjectException;
-import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.EntityMapping;
@@ -101,7 +100,7 @@ public class DeleteExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 	//@Override
 	public void deleteFromId(Iterable<I> ids) {
 		int blockSize = getInOperatorMaxSize();
-		List<List<I>> parcels = Collections.parcel(ids, blockSize);
+		List<List<I>> parcels = Iterables.chunk(ids, blockSize);
 		
 		if (parcels.isEmpty()) {
 			return;

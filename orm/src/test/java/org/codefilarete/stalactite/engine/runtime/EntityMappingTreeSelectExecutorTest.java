@@ -241,7 +241,7 @@ public class EntityMappingTreeSelectExecutorTest {
 			InternalExecutor newInternalExecutor(EntityTreeQuery<Object> entityTreeQuery) {
 				return new InternalExecutor(entityTreeQuery, connectionProvider) {
 					@Override
-					List<Object> execute(String sql, Collection<? extends List<Object>> idsParcels,
+					List<Object> execute(String sql, Collection<Object> idsParcel,
 										 Map<Column<T, ?>, int[]> inOperatorValueIndexes) {
 						capturedSQL.add(sql);
 						return Collections.emptyList();
