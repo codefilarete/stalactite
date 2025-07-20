@@ -96,7 +96,6 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 
 		private final JoinNode<C, PseudoTable> joinNode;
 		
-		
 		/** Optional listener of ResultSet decoding */
 		@Nullable
 		private final EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
@@ -166,6 +165,11 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 		@Override
 		public JoinRowConsumer giveNextConsumer() {
 			return nullable(currentlyFoundConsumer.get()).map(rowIdentifier -> rowIdentifier.rowConsumer).get();
+		}
+		
+		@Override
+		public void afterRowConsumption(TreeInflationContext context) {
+			currentlyFoundConsumer.remove();
 		}
 		
 		private class RowIdentifier<D extends C> {

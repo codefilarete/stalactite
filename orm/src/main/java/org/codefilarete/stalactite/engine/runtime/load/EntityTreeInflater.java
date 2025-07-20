@@ -112,7 +112,7 @@ public class EntityTreeInflater<C> {
 		// Algorithm : we iterate depth by depth the tree structure of the joins
 		// We start by hierarchy root.
 		// We process entity of current depth, process the direct relations, then add those relations to depth iterator
-		LOGGER.debug("Creating instance with " + this.consumerRoot.consumer);
+		LOGGER.debug("Creating instance with {}", this.consumerRoot.consumer);
 
 		ColumnedRow rootRow = currentContext().getDecoder(consumerRoot.consumer.getNode());
 		EntityCreationResult rootEntityCreationResult = getRootEntityCreationResult(rootRow, context);
@@ -122,9 +122,10 @@ public class EntityTreeInflater<C> {
 				
 				@Override
 				public EntityCreationResult apply(ConsumerNode join, Object entity) {
-					LOGGER.debug("Consuming " + join.consumer + " on object " + entity);
 					// processing current depth
 					JoinRowConsumer consumer = join.getConsumer();
+					LOGGER.debug("Consuming {} on object {}", consumer, entity);
+					consumer.beforeRowConsumption(context);
 					ColumnedRow nodeRow = currentContext().getDecoder(consumer.getNode());
 					if (consumer instanceof PassiveJoinNode.PassiveJoinRowConsumer) {
 						((PassiveJoinRowConsumer) consumer).consume(entity, nodeRow);
@@ -134,23 +135,27 @@ public class EntityTreeInflater<C> {
 						return new EntityCreationResult(entity, join);
 					} else if (consumer instanceof RelationJoinNode.RelationJoinRowConsumer) {
 						Object relatedEntity = ((RelationJoinRowConsumer) consumer).applyRelatedEntity(entity, nodeRow, context);
+						EntityCreationResult result;
 						if (consumer instanceof ForkJoinRowConsumer) {
 							// In case of join-table polymorphism we have to provide the tree branch on which id was found
 							// in order to let created entity filled with right consumers. "Wrong" branches serve no purpose. 
 							JoinRowConsumer nextRowConsumer = ((ForkJoinRowConsumer) consumer).giveNextConsumer();
 							if (nextRowConsumer == null) {
 								// means no identifier of polymorphic entity
-								return new EntityCreationResult(null, (List<ConsumerNode>) null);
+								result = new EntityCreationResult(null, (List<ConsumerNode>) null);
 							} else {
 								Optional<ConsumerNode> consumerNode = join.consumers.stream().filter(c -> nextRowConsumer == c.consumer).findFirst();
 								if (!consumerNode.isPresent()) {
 									throw new IllegalStateException("Can't find consumer node for " + nextRowConsumer + " in " + join.consumers);
 								} else {
-									return new EntityCreationResult(relatedEntity, Arrays.asList(consumerNode.get()));
+									result = new EntityCreationResult(relatedEntity, Arrays.asList(consumerNode.get()));
 								}
 							}
+						} else {
+							result = new EntityCreationResult(relatedEntity, join);
 						}
-						return new EntityCreationResult(relatedEntity, join);
+						consumer.afterRowConsumption(context);
+						return result;
 					} else {
 						// Developer made something wrong because other types than MergeJoin and RelationJoin are not expected
 						throw new IllegalArgumentException("Unexpected join type, only "

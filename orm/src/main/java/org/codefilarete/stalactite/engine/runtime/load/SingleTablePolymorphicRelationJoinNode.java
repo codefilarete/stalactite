@@ -85,7 +85,7 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 
 
 		@Override
 		public C applyRelatedEntity(Object parentJoinEntity, ColumnedRow row, TreeInflationContext context) {
-			RowIdentifier<C> rowIdentifier = giveIdentifier(row);
+			RowIdentifier<C> rowIdentifier = giveIdentifier();
 			if (rowIdentifier == null) {
 				return null;
 			} else {
@@ -114,8 +114,8 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 
 		}
 		
 		@Nullable
-		private <D extends C> RowIdentifier<D> giveIdentifier(ColumnedRow row) {
-			row = EntityTreeInflater.currentContext().getDecoder(joinNode);
+		private <D extends C> RowIdentifier<D> giveIdentifier() {
+			ColumnedRow row = EntityTreeInflater.currentContext().getDecoder(joinNode);
 			DTYPE discriminatorValue = row.get(discriminatorColumn);
 			if (discriminatorValue != null) {
 				SubEntityDeterminer<D> discriminatorConsumer = (SubEntityDeterminer<D>) subEntityDeterminerPerDiscriminatorValue.get(discriminatorValue);

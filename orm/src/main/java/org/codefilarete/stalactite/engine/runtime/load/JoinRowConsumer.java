@@ -21,6 +21,14 @@ public interface JoinRowConsumer {
 	
 	JoinNode<?, ?> getNode();
 	
+	default void beforeRowConsumption(TreeInflationContext context) {
+		
+	}
+	
+	default void afterRowConsumption(TreeInflationContext context) {
+		
+	}
+	
 	interface RootJoinRowConsumer<C> extends JoinRowConsumer {
 		
 		C createRootInstance(ColumnedRow row, TreeInflationContext context);
