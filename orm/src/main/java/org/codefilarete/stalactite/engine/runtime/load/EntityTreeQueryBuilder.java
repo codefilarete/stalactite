@@ -105,27 +105,7 @@ public class EntityTreeQueryBuilder<C> {
 	 */
 	@VisibleForTesting
 	Duo<Fromable, IdentityHashMap<Selectable<?>, Selectable<?>>> cloneTable(JoinNode joinNode) {
-		Fromable joinFromable = joinNode.getTable();
-		if (joinFromable instanceof Table) {
-			Table table = new Table(joinFromable.getName());
-			IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = new IdentityHashMap<>(table.getColumns().size());
-			(((Table<?>) joinFromable).getColumns()).forEach(column -> {
-				Column clone = table.addColumn(column.getName(), column.getJavaType(), column.getSize());
-				columnClones.put(column, clone);
-			});
-			return new Duo<>(table, columnClones);
-		} else if (joinFromable instanceof PseudoTable) {
-			PseudoTable pseudoTable = new PseudoTable(((PseudoTable) joinFromable).getQueryStatement(), joinFromable.getName());
-			IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = new IdentityHashMap<>(pseudoTable.getColumns().size());
-			(((PseudoTable) joinFromable).getColumns()).forEach(column -> {
-				// we can only have Union in From clause, no sub-query, because of table-per-class polymorphism, so we can cast to Union
-				PseudoColumn<?> clone = ((Union) pseudoTable.getQueryStatement()).registerColumn(column.getExpression(), column.getJavaType());
-				columnClones.put(column, clone);
-			});
-			return new Duo<>(pseudoTable, columnClones);
-		} else {
-			throw new UnsupportedOperationException("Cloning " + Reflections.toString(joinNode.getTable().getClass()) + " is not implemented");
-		}
+		return EntityJoinTree.cloneTable(joinNode);
 	}
 	
 	// Simple class that helps to add columns to select
