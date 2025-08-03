@@ -328,23 +328,6 @@ public class EntityJoinTree<C, I> {
 	}
 	
 	/**
-	 * Returns node that joins given columns. Comparison between columns and node ones is made using reference checking, not equality, because
-	 * there's no limitation on multiple presence of same join in the tree, overall with identical column name, so to enforce finding the matching
-	 * join we use reference check.
-	 * Mainly done for testing purpose.
-	 * 
-	 * @param leftKey columns to be compared to left columns of this tree
-	 * @param rightKey columns to be compared to right columns of this tree
-	 * @return the join that as same left and right column as given ones, null if none exists
-	 */
-	@VisibleForTesting
-	<T1 extends Table<T1>, T2 extends Table<T2>, E, ID, O> AbstractJoinNode<E, T1, T2, ID> giveJoin(Key<T1, O> leftKey, Key<T2, O> rightKey) {
-		return (AbstractJoinNode<E, T1, T2, ID>) Iterables.find(joinIterator(), node ->
-				node.getLeftJoinLink().getColumns().equals(leftKey.getColumns())
-				&& node.getRightJoinLink().getColumns().equals(rightKey.getColumns()));
-	}
-	
-	/**
 	 * Gives all tables used by this tree
 	 *
 	 * @return all joins tables of this tree

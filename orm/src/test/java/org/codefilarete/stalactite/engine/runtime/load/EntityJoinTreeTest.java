@@ -339,16 +339,26 @@ class EntityJoinTreeTest {
 		// by checking node count we ensure that node was added 
 		assertThat(Iterables.stream(entityJoinTree1.joinIterator()).count()).isEqualTo(3);
 		// and there was no removal
-		assertThat(entityJoinTree2.giveJoin(tataPrimaryKey, titiPrimaryKey)).isNotNull();
+		assertThat(entityJoinTree2.getJoin(titiAddKey)).isNotNull();
 		// we check that a copy was made, not a node move
-		AbstractJoinNode abstractJoinNode = entityJoinTree1.giveJoin(tataPrimaryKey, titiPrimaryKey);
-		assertThat(abstractJoinNode).isNotSameAs(entityJoinTree2.giveJoin(tataPrimaryKey, titiPrimaryKey));
-		assertThat(abstractJoinNode.getColumnsToSelect()).isEqualTo(titiMappingMock.getSelectableColumns());
+		AbstractJoinNode<?, ?, ?, ?> abstractJoinNode = (AbstractJoinNode) entityJoinTree1.getJoin(titiAddKey);
+		assertThat(abstractJoinNode).isNotSameAs(entityJoinTree2.getJoin(titiAddKey));
+
+		// selectable columns must be cloned ...
+		Function<Selectable, String> getExpression = Selectable::getExpression;
+		Function<Selectable, Class> getJavaType = Selectable::getJavaType;
+		assertThat(abstractJoinNode.getColumnsToSelect())
+				.usingElementComparator(Predicates.toComparator(Predicates.and(getExpression, getExpression).and(Predicates.and(getJavaType, getJavaType))))
+				.isEqualTo(titiMappingMock.getSelectableColumns());
+		// ... but different from the original one
+		assertThat(abstractJoinNode.getColumnsToSelect())
+				.allSatisfy(column -> assertThat(EntityJoinTreeTest.getOwner(column)).isNotSameAs(tataTable));
+		
 		// copy must be put at the right place 
 		assertThat(abstractJoinNode.getParent()).isEqualTo(tataJoinClone);
 		// we check that join indexes were updated: since it's difficult to check detailed content because of index naming strategy, we fallback to count them (far from perfect) 
-		assertThat(entityJoinTree1.getJoinIndex().size()).isEqualTo(4);
-		assertThat(entityJoinTree2.getJoinIndex().size()).isEqualTo(2);
+		assertThat(entityJoinTree1.getJoinIndex()).hasSize(4);
+		assertThat(entityJoinTree2.getJoinIndex()).hasSize(2);
 	}
 	
 	@Test
@@ -414,11 +424,11 @@ class EntityJoinTreeTest {
 				.usingElementComparator(Predicates.toComparator(Predicates.and(AbstractJoinNode::getLeftJoinLink, AbstractJoinNode::getRightJoinLink)))
 				.withRepresentation(new Printer<>(AbstractJoinNode.class, joinNode -> joinNode.getLeftJoinLink() + " = " + joinNode.getRightJoinLink()))
 				.isEqualTo(Arrays.asList(
-						entityJoinTree.giveJoin(totoPrimaryKey, tataPrimaryKey),	// X
-						entityJoinTree.giveJoin(totoPrimaryKey, tataClonePrimaryKey),	// X'
-						entityJoinTree.giveJoin(tataPrimaryKey, tutuPrimaryKey),	// Y
-						entityJoinTree.giveJoin(tataPrimaryKey, titiPrimaryKey),	// Z
-						entityJoinTree.giveJoin(tataClonePrimaryKey, tutuClonePrimaryKey)	// Y'
+						entityJoinTree.getJoin(tataAddKey),	// X
+						entityJoinTree.getJoin(tataAddKey2),	// X'
+						entityJoinTree.getJoin(tutuAddKey),	// Y
+						entityJoinTree.getJoin(titiAddKey),	// Z
+						entityJoinTree.getJoin(tutuAddKey2)	// Y'
 				));
 	}
 	
@@ -493,11 +503,11 @@ class EntityJoinTreeTest {
 		assertThat(collectedNodes)
 				.withRepresentation(new Printer<>(AbstractJoinNode.class, joinNode -> joinNode.getLeftJoinLink() + " = " + joinNode.getRightJoinLink()))
 				.isEqualTo(Arrays.asList(
-						entityJoinTree.giveJoin(totoPrimaryKey, tataPrimaryKey),    // X
-						entityJoinTree.giveJoin(totoPrimaryKey, tataClonePrimaryKey),    // X'
-						entityJoinTree.giveJoin(tataPrimaryKey, tutuPrimaryKey),    // Y
-						entityJoinTree.giveJoin(tataPrimaryKey, titiPrimaryKey),    // Z
-						entityJoinTree.giveJoin(tataClonePrimaryKey, tutuClonePrimaryKey)    // Y'
+						entityJoinTree.getJoin(tataAddKey),    // X
+						entityJoinTree.getJoin(tataAddKey2),    // X'
+						entityJoinTree.getJoin(tutuAddKey),    // Y
+						entityJoinTree.getJoin(titiAddKey),    // Z
+						entityJoinTree.getJoin(tutuAddKey2)    // Y'
 				));
 		
 	}
