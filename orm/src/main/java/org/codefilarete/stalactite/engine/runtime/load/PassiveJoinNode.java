@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.runtime.load;
 
 import javax.annotation.Nullable;
+import java.util.IdentityHashMap;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
@@ -36,6 +37,16 @@ public class PassiveJoinNode<C, T1 extends Fromable, T2 extends Fromable, I> ext
 					Set<? extends Selectable<?>> columnsToSelect,	// of T2
 					@Nullable String tableAlias) {
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias);
+	}
+	
+	PassiveJoinNode(JoinNode<?, T1> parent,
+					Key<T1, I> leftJoinColumn,
+					Key<T2, I> rightJoinColumn,
+					JoinType joinType,
+					Set<? extends Selectable<?>> columnsToSelect,	// of T2
+					@Nullable String tableAlias,
+					IdentityHashMap<Selectable<?>, Selectable<?>> columnClones) {
+		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias, columnClones);
 	}
 	
 	@Override

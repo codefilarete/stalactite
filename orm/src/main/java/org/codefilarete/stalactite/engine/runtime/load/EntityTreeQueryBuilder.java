@@ -101,7 +101,7 @@ public class EntityTreeQueryBuilder<C> {
 	 */
 	@VisibleForTesting
 	Duo<Fromable, IdentityHashMap<? extends Selectable<?>, ? extends Selectable<?>>> cloneTable(JoinNode joinNode) {
-		return EntityJoinTree.cloneTable(joinNode.getTable());
+		return new Duo<>(joinNode.getTable(), joinNode.getOriginalColumnsToLocalOnes());
 	}
 	
 	// Simple class that helps to add columns to select

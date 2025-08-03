@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.runtime.load;
 
 import javax.annotation.Nullable;
 
+import java.util.IdentityHashMap;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
@@ -39,6 +40,18 @@ public class MergeJoinNode<C, T1 extends Fromable, T2 extends Fromable, I> exten
 						 EntityMerger<C> merger,
 						 Set<Selectable<?>> selectableColumns) {
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, selectableColumns, tableAlias);
+		this.merger = merger;
+	}
+	
+	public MergeJoinNode(JoinNode<?, T1> parent,
+						 Key<T1, I> leftJoinColumn,
+						 Key<T2, I> rightJoinColumn,
+						 JoinType joinType,
+						 @Nullable String tableAlias,
+						 EntityMerger<C> merger,
+						 Set<Selectable<?>> selectableColumns,
+						 IdentityHashMap<Selectable<?>, Selectable<?>> columnClones) {
+		super(parent, leftJoinColumn, rightJoinColumn, joinType, selectableColumns, tableAlias, columnClones);
 		this.merger = merger;
 	}
 	

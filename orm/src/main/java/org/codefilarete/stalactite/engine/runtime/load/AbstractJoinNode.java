@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.runtime.load;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -42,7 +43,9 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 	
 	@Nullable
 	private EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
-	
+
+	private final IdentityHashMap<Selectable<?>, Selectable<?>> originalColumnsToLocalOnes;
+
 	protected AbstractJoinNode(JoinNode<?, T1> parent,
 							   JoinLink<T1, JOINTYPE> leftJoinLink,
 							   JoinLink<T2, JOINTYPE> rightJoinLink,
@@ -65,6 +68,39 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 		this.columnsToSelect = (Set) columnsToSelect;
 		this.tableAlias = tableAlias;
 		parent.add(this);
+		this.originalColumnsToLocalOnes = new IdentityHashMap<>();
+		rightJoinLink.getTable().getColumns().forEach(column -> {
+			// we clone columns to avoid side effects on the original query
+			this.originalColumnsToLocalOnes.put(column, column);
+		});
+	}
+
+	/**
+	 * Constructor dedicated for node cloning
+	 * 
+	 * @param parent the node to add the created instance to
+	 * @param leftJoinLink the left joining columns of this node, expected to be taken on parent node table
+	 * @param rightJoinLink the right joining columns of this node, expected to be taken on this node table
+	 * @param joinType inner or outer join type
+	 * @param columnsToSelect additional columns to select from right table (T2), out of the joining columns which are automatically selected
+	 * @param tableAlias optional table alias to use in the query, if null then no alias is used
+	 * @param originalColumnsToLocalOnes a map of original columns to local ones, used to simplify and allow selecting original columns by user
+	 */
+	protected AbstractJoinNode(JoinNode<?, T1> parent,
+							   Key<T1, JOINTYPE> leftJoinLink,
+							   Key<T2, JOINTYPE> rightJoinLink,
+							   JoinType joinType,
+							   Set<? extends Selectable<?>> columnsToSelect,	// From T2
+							   @Nullable String tableAlias,
+							   IdentityHashMap<Selectable<?>, Selectable<?>> originalColumnsToLocalOnes) {
+		this.parent = parent;
+		this.leftJoinLink = leftJoinLink;
+		this.rightJoinLink = rightJoinLink;
+		this.joinType = joinType;
+		this.columnsToSelect = (Set) columnsToSelect;
+		this.tableAlias = tableAlias;
+		parent.add(this);
+		this.originalColumnsToLocalOnes = originalColumnsToLocalOnes;
 	}
 	
 	@Override
@@ -105,6 +141,11 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 		return columnsToSelect;
 	}
 	
+	@Override
+	public IdentityHashMap<Selectable<?>, Selectable<?>> getOriginalColumnsToLocalOnes() {
+		return originalColumnsToLocalOnes;
+	}
+
 	@Override
 	public ReadOnlyList<AbstractJoinNode> getJoins() {
 		return new ReadOnlyList<>(joins);

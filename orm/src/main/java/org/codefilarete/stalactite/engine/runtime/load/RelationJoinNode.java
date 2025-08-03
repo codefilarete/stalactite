@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.runtime.load;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -49,6 +50,30 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 					 EntityInflater<C, I> entityInflater,
 					 BeanRelationFixer<?, C> beanRelationFixer,
 					 @Nullable Function<ColumnedRow, ?> relationIdentifierProvider) {
+		this(parent,
+				propertyAccessor,
+				Key.ofSingleColumn(leftJoinColumn),
+				Key.ofSingleColumn(rightJoinColumn),
+				joinType,
+				columnsToSelect,
+				tableAlias,
+				entityInflater,
+				beanRelationFixer,
+				relationIdentifierProvider,
+				new IdentityHashMap<>()
+		);
+	}
+	
+	RelationJoinNode(JoinNode<?, T1> parent,
+					 Accessor<?, ?> propertyAccessor,
+					 Key<T1, JOINTYPE> leftJoinColumn,
+					 Key<T2, JOINTYPE> rightJoinColumn,
+					 JoinType joinType,
+					 Set<? extends Selectable<?>> columnsToSelect,    // Of T2
+					 @Nullable String tableAlias,
+					 EntityInflater<C, I> entityInflater,
+					 BeanRelationFixer<?, C> beanRelationFixer,
+					 @Nullable Function<ColumnedRow, ?> relationIdentifierProvider) {
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias);
 		this.entityInflater = entityInflater;
 		this.propertyAccessor = propertyAccessor;
@@ -65,8 +90,9 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 					 @Nullable String tableAlias,
 					 EntityInflater<C, I> entityInflater,
 					 BeanRelationFixer<?, C> beanRelationFixer,
-					 @Nullable Function<ColumnedRow, ?> relationIdentifierProvider) {
-		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias);
+					 @Nullable Function<ColumnedRow, ?> relationIdentifierProvider,
+					 IdentityHashMap<Selectable<?>, Selectable<?>> columnClones) {
+		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias, columnClones);
 		this.entityInflater = entityInflater;
 		this.propertyAccessor = propertyAccessor;
 		this.beanRelationFixer = (BeanRelationFixer<Object, C>) beanRelationFixer;

@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.runtime.load;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -37,11 +38,25 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<C, T> {
 	
 	@Nullable
 	private EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
+
+	private final IdentityHashMap<Selectable<?>, Selectable<?>> columnClones;
 	
 	public JoinRoot(EntityJoinTree<C, I> tree, EntityInflater<C, I> entityInflater, T table) {
 		this.tree = tree;
 		this.entityInflater = entityInflater;
 		this.table = table;
+		this.columnClones = new IdentityHashMap<>();
+		table.getColumns().forEach(column -> {
+			// we clone columns to avoid side effects on the original query
+			this.columnClones.put(column, column);
+		});
+	}
+	
+	public JoinRoot(EntityJoinTree<C, I> tree, EntityInflater<C, I> entityInflater, T table, IdentityHashMap<Selectable<?>, Selectable<?>> columnClones) {
+		this.tree = tree;
+		this.entityInflater = entityInflater;
+		this.table = table;
+		this.columnClones = columnClones;
 	}
 	
 	public EntityInflater<C, I> getEntityInflater() {
@@ -59,6 +74,11 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<C, T> {
 		return this;
 	}
 	
+	@Override
+	public IdentityHashMap<Selectable<?>, Selectable<?>> getOriginalColumnsToLocalOnes() {
+		return columnClones;
+	}
+
 	@Override
 	public EntityJoinTree<C, I> getTree() {
 		return tree;

@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.runtime.load;
 
 import javax.annotation.Nullable;
+import java.util.IdentityHashMap;
 import java.util.Set;
 
 import org.codefilarete.stalactite.query.model.Fromable;
@@ -15,6 +16,8 @@ public interface JoinNode<C, T extends Fromable> {
 	T getTable();
 	
 	Set<Selectable<?>> getColumnsToSelect();
+	
+	IdentityHashMap<Selectable<?>, Selectable<?>> getOriginalColumnsToLocalOnes();
 	
 	@Nullable
 	String getTableAlias();
