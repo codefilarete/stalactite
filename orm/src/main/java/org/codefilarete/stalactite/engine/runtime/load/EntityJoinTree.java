@@ -621,12 +621,24 @@ public class EntityJoinTree<C, I> {
 					((MergeJoinNode) node).getMerger(),
 					columnsToSelect);
 		} else if (node instanceof PassiveJoinNode) {
+			Duo<Fromable, IdentityHashMap<Selectable<?>, Selectable<?>>> tableClone = cloneTable(node.getTable());
+			// Build a new Key using the cloned table and the corresponding cloned columns
+			Key.KeyBuilder<Fromable, Object> rightJoinLinkBuilder = Key.from(tableClone.getLeft());
+			Set<? extends JoinLink<?, ?>> columns = node.getRightJoinLink().getColumns();
+			for (JoinLink<?, ?> column : columns) {
+				// Note that we can cast to JoinLink because we're already dealing with JoinLink since we are in JoinNode
+				JoinLink<Fromable, Object> clonedColumn = (JoinLink<Fromable, Object>) tableClone.getRight().get(column);
+				rightJoinLinkBuilder.addColumn(clonedColumn);
+			}
+			// We must use cloned columns to select, not the original ones
+			KeepOrderSet<Selectable<?>> columnsToSelect = Iterables.collect(node.getColumnsToSelect(), column -> tableClone.getRight().get(column), KeepOrderSet::new);
+			
 			nodeCopy = new PassiveJoinNode(
 					parent,
 					leftColumn,
-					node.getRightJoinLink(),
+					rightJoinLinkBuilder.build(),
 					node.getJoinType(),
-					node.getColumnsToSelect(),
+					columnsToSelect,
 					node.getTableAlias());
 		} else {
 			throw new UnsupportedOperationException("Unexpected type of join : some algorithm has changed, please implement it here or fix it : "
