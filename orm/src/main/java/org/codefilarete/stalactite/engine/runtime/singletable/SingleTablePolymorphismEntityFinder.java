@@ -39,7 +39,7 @@ import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
 
-import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
 
 /**
  * @author Guillaume Mary
@@ -75,10 +75,10 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 				polymorphismPolicy
 		);
 		// we project main persister tree to keep its relations
-		mainPersister.getEntityJoinTree().projectTo(result, ROOT_STRATEGY_NAME);
+		mainPersister.getEntityJoinTree().projectTo(result, ROOT_JOIN_NAME);
 		// we add the joins of the sub-persister to the whole graph to make it load its relations
 		persisterPerSubclass.values().forEach(subPersister -> {
-			subPersister.getEntityJoinTree().projectTo(result, ROOT_STRATEGY_NAME);
+			subPersister.getEntityJoinTree().projectTo(result, ROOT_JOIN_NAME);
 		});
 		return result;
 	}

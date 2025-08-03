@@ -286,7 +286,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 				keyValueRecordToSourceForeignKey,
 				relationFixer,
 				null,
-				EntityJoinTree.ROOT_STRATEGY_NAME,
+				EntityJoinTree.ROOT_JOIN_NAME,
 				true,
 				mapRelation.isFetchSeparately());
 	}

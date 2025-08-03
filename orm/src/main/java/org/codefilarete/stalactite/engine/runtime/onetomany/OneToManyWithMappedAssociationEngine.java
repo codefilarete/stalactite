@@ -39,7 +39,7 @@ import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.collection.IdentityMap;
 import org.codefilarete.tool.collection.Iterables;
 
-import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
 import static org.codefilarete.tool.Nullable.nullable;
 import static org.codefilarete.tool.collection.Iterables.stream;
 
@@ -144,7 +144,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 																			  boolean loadSeparately) {
 		// we add target subgraph joins to main persister
 		targetPersister.joinAsMany(sourcePersister, sourcePrimaryKey, (Key<T2, SRCID>) manyRelationDescriptor.getReverseColumn(), manyRelationDescriptor.getRelationFixer(),
-				null, EntityJoinTree.ROOT_STRATEGY_NAME, true, loadSeparately);
+				null, EntityJoinTree.ROOT_JOIN_NAME, true, loadSeparately);
 		
 		// we must trigger subgraph event on loading of our own graph, this is mainly for event that initializes things because given ids
 		// are not those of their entity
@@ -312,7 +312,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		
 		IdentifierAssembler<TRGTID, T> targetIdentifierAssembler = targetPersister.getMapping().getIdMapping().getIdentifierAssembler();
 		sourcePersister.getEntityJoinTree().addPassiveJoin(
-				ROOT_STRATEGY_NAME,
+                ROOT_JOIN_NAME,
 				sourcePrimaryKey,
 				relationOwnerClone.build(),
 				relationOwnerTableClone.getName() + "_" + AccessorDefinition.giveDefinition(collectionGetter).getName(),

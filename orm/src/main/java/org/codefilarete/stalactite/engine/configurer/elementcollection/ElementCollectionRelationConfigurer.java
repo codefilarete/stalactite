@@ -297,7 +297,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 				collectionFactory,
 				(bean, input, collection) -> collection.add(input.getElement()));	// element value is taken from ElementRecord
 		
-		elementRecordPersister.joinAsMany(sourcePersister, sourcePK, elementRecordToSourceForeignKey, relationFixer, null, EntityJoinTree.ROOT_STRATEGY_NAME, true, false);
+		elementRecordPersister.joinAsMany(sourcePersister, sourcePK, elementRecordToSourceForeignKey, relationFixer, null, EntityJoinTree.ROOT_JOIN_NAME, true, false);
 	}
 	
 	private Function<SRC, Collection<ElementRecord<TRGT, I>>> collectionProvider(Accessor<SRC, C> collectionAccessor,

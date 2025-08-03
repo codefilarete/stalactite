@@ -103,7 +103,7 @@ public class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 		// This can't be done directly on root persister (took via persisterRegistry and targetPersister.getClassToPersist()) because
 		// TransformerListener would get root instance as source (aggregate root), not current source
 		String joinName = sourcePersister.getEntityJoinTree().addPassiveJoin(
-				EntityJoinTree.ROOT_STRATEGY_NAME,
+				EntityJoinTree.ROOT_JOIN_NAME,
 				leftKey,
 				targetTableClone.getPrimaryKey(),
 				tableAlias,
@@ -117,7 +117,7 @@ public class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 		targetPersister.getEntityJoinTree().foreachJoin(joinNode -> {
 			if (joinNode instanceof RelationJoinNode
 					&& ((RelationJoinNode<?, ?, ?, ?, ?>) joinNode).getEntityInflater().getEntityType() == sourcePersister.getClassToPersist()) {
-				EntityJoinTree.copyNodeToParent(passiveJoin, joinNode, leftKey);
+				EntityJoinTree.cloneNodeForParent(passiveJoin, joinNode, leftKey);
 			}
 		});
 	}

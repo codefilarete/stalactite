@@ -52,7 +52,7 @@ import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Hanger.Holder;
 
-import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
 
 /**
  * Class that wraps some other persisters and transfers its invocations to them.
@@ -233,7 +233,7 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 			// because subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener) we add a passive join
 			// (we don't need to create bean nor fulfill properties in first phase) 
 			// NB: here rightColumn is parent class primary key or reverse column that owns property (depending how one-to-one relation is mapped) 
-			String mainTableJoinName = sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_STRATEGY_NAME,
+			String mainTableJoinName = sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_JOIN_NAME,
 					leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER, rightColumn.getColumns());
 			PrimaryKey<?, I> primaryKey = this.<Table>getMapping().getTargetTable().getPrimaryKey();
 			this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
@@ -255,7 +255,7 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 		} else {
 			return join(
 					sourcePersister.getEntityJoinTree(),
-					ROOT_STRATEGY_NAME,
+					ROOT_JOIN_NAME,
 					mainPersister,
 					leftColumn,
 					rightColumn,

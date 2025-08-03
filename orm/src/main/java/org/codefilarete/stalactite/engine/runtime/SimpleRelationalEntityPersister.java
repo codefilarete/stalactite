@@ -209,7 +209,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 		// We use our own select system since SelectListener is not aimed at joining table
 		EntityMappingAdapter<C, I, T> strategy = new EntityMappingAdapter<>(getMapping());
 		String createdJoinNodeName = sourcePersister.getEntityJoinTree().addRelationJoin(
-				EntityJoinTree.ROOT_STRATEGY_NAME,
+				EntityJoinTree.ROOT_JOIN_NAME,
 				// because joinAsOne can be called in either case of owned-relation or reversly-owned-relation, generics can't be set correctly,
 				// so we simply cast first argument
 				(EntityInflater) strategy,

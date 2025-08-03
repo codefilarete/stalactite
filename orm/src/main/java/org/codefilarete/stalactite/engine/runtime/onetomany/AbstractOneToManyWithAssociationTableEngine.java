@@ -47,7 +47,7 @@ import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.collection.Iterables;
 
-import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
 import static org.codefilarete.tool.Nullable.nullable;
 import static org.codefilarete.tool.collection.Iterables.collect;
 import static org.codefilarete.tool.collection.Iterables.first;
@@ -91,7 +91,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 	public void addSelectCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister, boolean loadSeparately) {
 		
 		// we join on the association table and add bean association in memory
-		String associationTableJoinNodeName = sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_STRATEGY_NAME,
+		String associationTableJoinNodeName = sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_JOIN_NAME,
 				associationPersister.getMainTable().getOneSideKey(),
 				associationPersister.getMainTable().getOneSideForeignKey(),
 				JoinType.OUTER, Collections.emptySet());
@@ -293,7 +293,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 	public void addSelectCascadeIn2Phases(FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 		// we join on the association table and add bean association in memory
 		IdentifierAssembler<TRGTID, ?> targetIdentifierAssembler = targetPersister.getMapping().getIdMapping().getIdentifierAssembler();
-		sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_STRATEGY_NAME,
+		sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_JOIN_NAME,
 				associationPersister.getMainTable().getOneSideKey(),	// could be taken on source persister, but it's same thing
 				associationPersister.getMainTable().getOneSideForeignKey(),
 				JoinType.OUTER,

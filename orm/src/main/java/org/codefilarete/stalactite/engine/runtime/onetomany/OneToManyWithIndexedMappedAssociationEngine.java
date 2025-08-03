@@ -74,7 +74,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 					Integer targetEntityIndex = columnedRow.get(indexColumn);
 					return identifier + "-" + targetEntityIndex;
 				},
-				EntityJoinTree.ROOT_STRATEGY_NAME,
+				EntityJoinTree.ROOT_JOIN_NAME,
 				columnsToSelect,
 				true,
 				loadSeparately);

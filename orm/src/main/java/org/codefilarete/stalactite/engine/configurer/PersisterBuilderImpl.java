@@ -428,7 +428,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			result.add(currentPersister);
 			// a join is necessary to select entity, only if target table changes
 			if (!currentPersister.getMainTable().equals(currentTable.get())) {
-				mainPersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMergerAdapter<>(currentMappingStrategy), superclassPK, subclassPK);
+				mainPersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMergerAdapter<>(currentMappingStrategy), superclassPK, subclassPK);
 				currentTable.set(currentPersister.getMainTable());
 			}
 		});

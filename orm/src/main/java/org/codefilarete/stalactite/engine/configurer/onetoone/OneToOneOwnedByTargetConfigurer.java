@@ -202,7 +202,7 @@ public class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 				relationOwnerPrimaryKey.addColumn(targetTableClone.addColumn(column.getName(), column.getJavaType()))
 		);
 		String joinName = sourcePersister.getEntityJoinTree().addPassiveJoin(
-				EntityJoinTree.ROOT_STRATEGY_NAME,
+				EntityJoinTree.ROOT_JOIN_NAME,
 				leftKey,
 				relationOwnerForeignKey.build(),
 				tableAlias,
@@ -219,7 +219,7 @@ public class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 		targetPersister.getEntityJoinTree().foreachJoin(joinNode -> {
 			if (joinNode instanceof RelationJoinNode
 					&& ((RelationJoinNode<?, ?, ?, ?, ?>) joinNode).getEntityInflater().getEntityType() == sourcePersister.getClassToPersist()) {
-				EntityJoinTree.copyNodeToParent(passiveJoin, joinNode, leftKey);
+				EntityJoinTree.cloneNodeForParent(passiveJoin, joinNode, leftKey);
 			}
 		});
 	}

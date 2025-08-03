@@ -93,7 +93,7 @@ class EntityGraphSelectorTest {
 		// Given following tree:
 		// Toto.id = Tata.id (X)
 		EntityJoinTree<Toto, Integer> entityJoinTree = new EntityJoinTree<>(new EntityMappingAdapter<>(totoMapping), totoMapping.getTargetTable());
-		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingAdapter<>(tataMapping),
+		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter<>(tataMapping),
 				totoPrimaryKey, tataPrimaryKey, null, INNER, Toto::setTata, Collections.emptySet());
 		
 		ConnectionProvider connectionProvider = Mockito.mock(ConnectionProvider.class);

@@ -66,7 +66,7 @@ import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.trace.MutableInt;
 
-import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
 import static org.codefilarete.stalactite.query.model.Operators.cast;
 
 /**
@@ -95,7 +95,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		this.subclassUpdateExecutors = Iterables.map(subEntitiesPersisters.entrySet(), Entry::getKey, Entry::getValue, KeepOrderMap::new);
 		
 		this.subEntitiesPersisters.forEach((type, persister) ->
-				mainPersister.getEntityJoinTree().projectTo(persister.getEntityJoinTree(), ROOT_STRATEGY_NAME)
+				mainPersister.getEntityJoinTree().projectTo(persister.getEntityJoinTree(), ROOT_JOIN_NAME)
 		);
 		
 	}
@@ -288,7 +288,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 																							 boolean optional,
 																							 boolean loadSeparately) {
 		if (loadSeparately) {
-			String createdJoinNodeName = this.joinAsOneWithSeparateLoading(sourcePersister.getEntityJoinTree(), ROOT_STRATEGY_NAME,
+			String createdJoinNodeName = this.joinAsOneWithSeparateLoading(sourcePersister.getEntityJoinTree(), ROOT_JOIN_NAME,
 					leftColumn,
 					rightColumn,
 					(Set<? extends ConfiguredRelationalPersister<C, I>>) (Set) new HashSet<>(this.subEntitiesPersisters.values()));
@@ -299,7 +299,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		} else {
 			return join(
 					sourcePersister.getEntityJoinTree(),
-					ROOT_STRATEGY_NAME,
+                    ROOT_JOIN_NAME,
 					leftColumn,
 					rightColumn,
 					beanRelationFixer);

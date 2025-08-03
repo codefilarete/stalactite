@@ -58,7 +58,7 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
 
-import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
 
 /**
  * @author Guillaume Mary
@@ -138,7 +138,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 		PseudoTable pseudoTable = union.asPseudoTable(mainTable.getName());
 		// we add joins to the union clause
 		SingleLoadEntityJoinTree<C, I> result = new SingleLoadEntityJoinTree<>(mainPersister, discriminatorPerSubPersister, pseudoTable, DISCRIMINATOR_COLUMN);
-		mainEntityJoinTree.projectTo(result, ROOT_STRATEGY_NAME);
+		mainEntityJoinTree.projectTo(result, ROOT_JOIN_NAME);
 		
 		addTablePerClassPolymorphicSubPersistersJoins(result, discriminatorPerSubPersister);
 		return result;
@@ -150,7 +150,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 		
 		discriminatorPerSubPersister.forEach((discriminatorValue, subPersister) -> {
 						ConfiguredRelationalPersister<V, I> localSubPersister = (ConfiguredRelationalPersister<V, I>) subPersister;
-			String mergeJoinName = entityJoinTree.<V, T1, T2, I>addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
+			String mergeJoinName = entityJoinTree.<V, T1, T2, I>addMergeJoin(EntityJoinTree.ROOT_JOIN_NAME,
 					new EntityMergerAdapter<>(localSubPersister.<T2>getMapping()),
 					mainPersister.<T1>getMainTable().getPrimaryKey(),
 					subPersister.<T2>getMainTable().getPrimaryKey(),
@@ -188,7 +188,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 		PseudoTable pseudoTable = union.asPseudoTable(mainTable.getName());
 		// we add joins to the union clause
 		PhasedEntityJoinTree<C, I> result = new PhasedEntityJoinTree<>(pseudoTable, mainTable);
-		mainEntityJoinTree.projectTo(result, ROOT_STRATEGY_NAME);
+		mainEntityJoinTree.projectTo(result, ROOT_JOIN_NAME);
 		return result;
 	}
 	

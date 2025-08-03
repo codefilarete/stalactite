@@ -79,7 +79,7 @@ class EntityTreeInflaterTest {
 		// composing entity tree : leftInflater gets a relation on rightInflater
 		EntityJoinTree entityJoinTree = new EntityJoinTree<>(leftEntityInflater, leftTable);
 		String joinName = entityJoinTree.addRelationJoin(
-				EntityJoinTree.ROOT_STRATEGY_NAME,
+				EntityJoinTree.ROOT_JOIN_NAME,
 				rightEntityInflater,
 				leftTablePk,
 				rightTableFkToLeftTable,

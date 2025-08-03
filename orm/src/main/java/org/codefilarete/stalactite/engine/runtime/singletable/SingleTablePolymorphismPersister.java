@@ -54,7 +54,7 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
 
-import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
 
 /**
  * @author Guillaume Mary
@@ -102,7 +102,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 				.addShadowColumnInsert(discriminatorValueProvider));
 		
 		subEntitiesPersisters.forEach((type, persister) ->
-				mainPersister.copyRootJoinsTo(persister.getEntityJoinTree(), ROOT_STRATEGY_NAME)
+				mainPersister.copyRootJoinsTo(persister.getEntityJoinTree(), ROOT_JOIN_NAME)
 		);
 		
 	}
@@ -245,7 +245,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 					this,
 					(ThreadLocal<Queue<Set<RelationIds<Object, C, I>>>>) (ThreadLocal) DIFFERED_ENTITY_LOADER,
 					discriminatorColumn, subEntitiesPersisters::get);
-			String createdJoinNodeName = sourcePersister.getEntityJoinTree().addMergeJoin(ROOT_STRATEGY_NAME,
+			String createdJoinNodeName = sourcePersister.getEntityJoinTree().addMergeJoin(ROOT_JOIN_NAME,
 					singleTableFirstPhaseRelationLoader,
 					leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER);
 			
@@ -257,7 +257,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 		} else {
 			return join(
 					sourcePersister.getEntityJoinTree(),
-					ROOT_STRATEGY_NAME,
+                    ROOT_JOIN_NAME,
 					mainPersister,
 					leftColumn,
 					rightColumn,

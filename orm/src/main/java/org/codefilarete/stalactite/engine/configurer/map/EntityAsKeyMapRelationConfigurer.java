@@ -42,7 +42,7 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.function.Functions.NullProofFunction;
 
-import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
 
 /**
  * Handle particular case of {@link MapRelationConfigurer} when Map key is an entity : it requires some cascading
@@ -278,7 +278,7 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 				(Key<Table, KID>) keyIdColumnsProjectInAssociationTable,
 				primaryKey,
 				(bean, input) -> inMemoryRelationHolder.storeEntity(bean.getId().getId(), keyEntityPersister.getId(input), input),
-				null, ROOT_STRATEGY_NAME, true, false);
+				null, ROOT_JOIN_NAME, true, false);
 		
 		relationRecordPersister.joinAsMany(
 				sourcePersister,
@@ -286,7 +286,7 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 				keyValueRecordToSourceForeignKey,
 				relationFixer,
 				null,
-				ROOT_STRATEGY_NAME,
+                ROOT_JOIN_NAME,
 				true,
 				originalMapRelation.isFetchSeparately());
 	}

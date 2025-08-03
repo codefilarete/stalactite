@@ -42,7 +42,7 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.function.Functions.NullProofFunction;
 
-import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
 import static org.codefilarete.tool.Nullable.nullable;
 
 /**
@@ -346,14 +346,14 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 				(Key<Table, KID>) keyIdColumnsProjectInAssociationTable,
 				keyTablePrimaryKey,
 				(bean, input) -> inMemoryRelationHolder.storeKeyEntity(bean.getId().getId(), bean.getKey(), input),
-				null, ROOT_STRATEGY_NAME, true, false);
+				null, ROOT_JOIN_NAME, true, false);
 		
 		PrimaryKey<?, VID> valueTablePrimaryKey = valueEntityPersister.getMainTable().getPrimaryKey();
 		valueEntityPersister.joinAsMany(relationRecordPersister,
 				(Key<Table, VID>) valueIdColumnsProjectInAssociationTable,
 				valueTablePrimaryKey,
 				(bean, input) -> inMemoryRelationHolder.storeValueEntity(bean.getId().getId(), bean.getValue(), input),
-				null, ROOT_STRATEGY_NAME, true, false);
+				null, ROOT_JOIN_NAME, true, false);
 		
 		relationRecordPersister.joinAsMany(
 				sourcePersister,
@@ -361,7 +361,7 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 				keyValueRecordToSourceForeignKey,
 				relationFixer,
 				null,
-				ROOT_STRATEGY_NAME,
+                ROOT_JOIN_NAME,
 				true,
 				originalMapRelation.isFetchSeparately());
 	}

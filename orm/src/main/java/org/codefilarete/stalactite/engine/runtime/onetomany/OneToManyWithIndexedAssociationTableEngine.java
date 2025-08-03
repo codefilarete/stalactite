@@ -12,7 +12,6 @@ import java.util.stream.Stream;
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.diff.IndexedDiff;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
-import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecordPersister;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
@@ -36,7 +35,7 @@ import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.PairIterator;
 
-import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
 import static org.codefilarete.tool.Nullable.nullable;
 import static org.codefilarete.tool.collection.Iterables.first;
 import static org.codefilarete.tool.collection.Iterables.minus;
@@ -106,7 +105,7 @@ public class OneToManyWithIndexedAssociationTableEngine<
 
 	private void addIndexSelection(boolean loadSeparately) {
 		// we join on the association table and add bean association in memory
-		String associationTableJoinNodeName = sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_STRATEGY_NAME,
+		String associationTableJoinNodeName = sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_JOIN_NAME,
 				associationPersister.getMainTable().getOneSideKey(),
 				associationPersister.getMainTable().getOneSideForeignKey(),
 				JoinType.OUTER,

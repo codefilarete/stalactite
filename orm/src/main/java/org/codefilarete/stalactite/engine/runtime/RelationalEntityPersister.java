@@ -66,7 +66,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * @param beanRelationFixer setter that fix relation of this instance onto source persister instance, expected to manage collection instantiation
 	 * @param duplicateIdentifierProvider a function that computes the relation identifier
 	 * @param joinName parent join node name on which join must be added,
-	 * not always {@link EntityJoinTree#ROOT_STRATEGY_NAME} in particular in one-to-many with association table
+	 * not always {@link EntityJoinTree#ROOT_JOIN_NAME} in particular in one-to-many with association table
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
 	 * @param loadSeparately indicator to make the target entities loaded in a separate query
 	 */
@@ -95,7 +95,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * @param beanRelationFixer setter that fix relation of this instance onto source persister instance, expected to manage collection instantiation
 	 * @param duplicateIdentifierProvider a function that computes the relation identifier
 	 * @param joinName parent join node name on which join must be added,
-	 * not always {@link EntityJoinTree#ROOT_STRATEGY_NAME} in particular in one-to-many with association table
+	 * not always {@link EntityJoinTree#ROOT_JOIN_NAME} in particular in one-to-many with association table
 	 * @param selectableColumns columns to be added to SQL select clause
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
 	 * @param loadSeparately indicator to make the target entities loaded in a separate query

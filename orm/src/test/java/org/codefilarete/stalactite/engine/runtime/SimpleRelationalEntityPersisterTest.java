@@ -792,7 +792,7 @@ class SimpleRelationalEntityPersisterTest {
 			
 			// we add a copier onto a another table
 			persister = new BeanPersister<>(totoClassMappingStrategy, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
-			testInstance.getEntityJoinTree().addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
+			testInstance.getEntityJoinTree().addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME,
 															 new EntityMappingAdapter<>(persister.getMapping()),
 															 leftJoinColumn, rightJoinColumn, null, JoinType.INNER, Toto::merge, Collections.emptySet());
 			testInstance.getPersisterListener().addInsertListener(new InsertListener<Toto>() {

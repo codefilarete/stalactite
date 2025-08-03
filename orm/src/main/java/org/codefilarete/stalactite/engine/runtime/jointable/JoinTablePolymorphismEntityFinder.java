@@ -39,7 +39,7 @@ import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.KeepOrderMap;
 
-import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
 
 /**
  * @author Guillaume Mary
@@ -67,7 +67,7 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 		// sub entities persisters will be used to create entities
 		persisterPerSubclass.forEach((type, persister) -> {
 			String mergeJoin = result.addMergeJoin(
-					ROOT_STRATEGY_NAME,
+                    ROOT_JOIN_NAME,
 					new EntityMergerAdapter<>(persister.<T>getMapping()),
 					mainPersister.getMainTable().getPrimaryKey(),
 					persister.getMainTable().getPrimaryKey(),
@@ -84,7 +84,7 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 			persister.getEntityJoinTree().projectTo(result, mergeJoin);
 		});
 		// we project main persister tree to keep its relations
-		mainEntityJoinTree.projectTo(result, ROOT_STRATEGY_NAME);
+		mainEntityJoinTree.projectTo(result, ROOT_JOIN_NAME);
 		return result;
 	}
 	

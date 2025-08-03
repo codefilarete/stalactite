@@ -100,7 +100,7 @@ class ExtraTableConfigurer<C, I, T extends Table<T>> {
 				identification,
 				mainPersister.getClassToPersist(),
 				null);
-		mainPersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
+		mainPersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_JOIN_NAME,
 				new EntityMergerAdapter<>(extratableClassMapping),
 				mainPersister.getMainTable().getPrimaryKey(),
 				extraTable.getPrimaryKey(),
