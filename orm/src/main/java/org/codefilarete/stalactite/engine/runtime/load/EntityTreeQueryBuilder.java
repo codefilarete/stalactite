@@ -12,10 +12,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.Consum
 import org.codefilarete.stalactite.query.model.From;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.QueryStatement.PseudoColumn;
-import org.codefilarete.stalactite.query.model.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
@@ -24,7 +21,6 @@ import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReaderRegistry;
 import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.Strings;
 import org.codefilarete.tool.VisibleForTesting;
@@ -105,7 +101,7 @@ public class EntityTreeQueryBuilder<C> {
 	 */
 	@VisibleForTesting
 	Duo<Fromable, IdentityHashMap<Selectable<?>, Selectable<?>>> cloneTable(JoinNode joinNode) {
-		return EntityJoinTree.cloneTable(joinNode);
+		return EntityJoinTree.cloneTable(joinNode.getTable());
 	}
 	
 	// Simple class that helps to add columns to select

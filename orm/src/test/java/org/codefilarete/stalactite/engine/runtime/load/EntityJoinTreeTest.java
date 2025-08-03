@@ -11,7 +11,10 @@ import java.util.function.Function;
 import org.assertj.core.presentation.StandardRepresentation;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.QueryEase;
+import org.codefilarete.stalactite.query.model.QueryStatement.PseudoColumn;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
@@ -52,8 +55,8 @@ class EntityJoinTreeTest {
 		ClassMapping totoMappingMock = buildMappingStrategyMock("Toto");
 		Table totoTable = totoMappingMock.getTargetTable();
 		Column<Table, Long> tataIdColumn = totoTable.addColumn("tataId", long.class);
-		Column<Table, Long> dummyColumn = totoTable.addColumn("dummyColumn", long.class);
 		Table tataTable = new Table("Tata");
+		Column<Table, Long> dummyColumn = tataTable.addColumn("dummyColumn", long.class);
 		tataTable.addColumn("id", long.class).primaryKey();
 		EntityJoinTree totoEntityJoinTree = new EntityJoinTree(totoMappingMock);
 		String relationJoinName = totoEntityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME,
@@ -76,19 +79,27 @@ class EntityJoinTreeTest {
 		// Toto.tataId = Tata.id (X)
 		// to
 		// Tutu.id (Root)
-		AbstractJoinNode tataJoinInTutu = EntityJoinTree.cloneNodeForParent(tataJoinInToto, tutuEntityJoinTree.getRoot(), ((Table) tutuEntityJoinTree.getRoot().getTable()).getPrimaryKey());
+		PrimaryKey<?, Object> targetJoinLink = ((Table<?>) tutuEntityJoinTree.getRoot().getTable()).getPrimaryKey();
+		AbstractJoinNode<?, ?, ?, ?> tataJoinInTutu = EntityJoinTree.cloneNodeForParent(tataJoinInToto, tutuEntityJoinTree.getRoot(), targetJoinLink);
 
 		// Then we should get:
 		// Tutu.id (Root)
-		// Tutu.tataId = Tata.id (X clone)
+		// Tutu.id = Tata.id (X clone)
 		Table tutuTable = (Table) tutuEntityJoinTree.getRoot().getTable();
 		assertThat(tataJoinInTutu.getParent()).isSameAs(tutuEntityJoinTree.getRoot());
-		assertThat(tataJoinInTutu.getLeftJoinLink()).isSameAs(((Table<?>) tutuEntityJoinTree.getRoot().getTable()).getPrimaryKey());
+		assertThat(tataJoinInTutu.getLeftJoinLink()).isSameAs(targetJoinLink);
 		assertThat(tutuEntityJoinTree.getRoot().getJoins()).hasSize(1);
 		assertThat(tutuEntityJoinTree.getRoot().getJoins().get(0)).isInstanceOf(RelationJoinNode.class);
 		// we check that the cloned node has the same left join link as the original one
 		assertThat(tataJoinInTutu.getLeftJoinLink()).isSameAs(tutuTable.getPrimaryKey());
-		assertThat(tataJoinInTutu.getRightJoinLink()).isSameAs(tataTable.getPrimaryKey());
+		// right table must be cloned ...
+		assertThat(tataJoinInTutu.getTable()).isNotSameAs(tataTable);
+		// ... and its columns must be the same as the original one
+		Function<Selectable, String> getExpression = Selectable::getExpression;
+		Function<Selectable, Class> getJavaType = Selectable::getJavaType;
+		assertThat(tataJoinInTutu.getRightJoinLink().getColumns())
+				.usingElementComparator(Predicates.toComparator(Predicates.and(getExpression, getExpression).and(Predicates.and(getJavaType, getJavaType))))
+				.isEqualTo(tataTable.getPrimaryKey().getColumns());
 
 		// we check that the join is well-formed
 		Function<AbstractJoinNode, Collection<Column>> getLeftJoinColumns = joinNode -> joinNode.getLeftJoinLink().getColumns();
@@ -102,7 +113,22 @@ class EntityJoinTreeTest {
 		// we check that the join has the right attributes
 		assertThat(tataJoinInTutu.getJoinType()).isEqualTo(tataJoinInToto.getJoinType());
 		assertThat(tataJoinInTutu.getTableAlias()).isEqualTo(tataJoinInToto.getTableAlias());
-		assertThat(tataJoinInTutu.getColumnsToSelect()).isEqualTo(tataJoinInToto.getColumnsToSelect());
+		// selectable columns must be cloned ...
+		assertThat(tataJoinInTutu.getColumnsToSelect())
+				.usingElementComparator(Predicates.toComparator(Predicates.and(getExpression, getExpression).and(Predicates.and(getJavaType, getJavaType))))
+				.isEqualTo(tataJoinInToto.getColumnsToSelect());
+		// ... but different from the original one
+		assertThat(tataJoinInTutu.getColumnsToSelect()).extracting(EntityJoinTreeTest::getOwner).isNotSameAs(tataTable);
+	}
+	
+	static Fromable getOwner(Selectable<?> selectable) {
+		if (selectable instanceof Column) {
+			return ((Column<?, ?>) selectable).getOwner();
+		} else if (selectable instanceof PseudoColumn) {
+			return ((PseudoColumn) selectable).getOwner();
+		} else {
+			throw new IllegalArgumentException("Selectable " + selectable + " is not a JoinLink or a Key");
+		}
 	}
 	
 	@Test
