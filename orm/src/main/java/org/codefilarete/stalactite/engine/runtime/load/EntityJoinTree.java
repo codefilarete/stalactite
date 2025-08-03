@@ -81,7 +81,8 @@ public class EntityJoinTree<C, I> {
 	 */
 	private final NodeKeyGenerator indexKeyGenerator = new NodeKeyGenerator();
 	
-	private final Set<Table> tablesToBeExcludedFromDDL = Collections.newIdentitySet();
+	// because Table doesn't implement an hashCode and because we may have clone in JoinNodes, we use a smart TreeSet to avoid duplicates
+	private final Set<Table<?>> tablesToBeExcludedFromDDL = new TreeSet<>(COMPARATOR_ON_SCHEMA_AND_NAME);
 	
 	public EntityJoinTree(EntityMapping<C, I, ?> entityMapping) {
 		this(new EntityInflater.EntityMappingAdapter<>(entityMapping), entityMapping.getTargetTable());
@@ -333,7 +334,7 @@ public class EntityJoinTree<C, I> {
 	 * @return all joins tables of this tree
 	 */
 	public Set<Table<?>> giveTables() {
-		// because Table implements an hashCode on their name, we can use an HashSet to avoid duplicates
+		// because Table doesn't implement an hashCode and because we may have clone in JoinNodes, we use a smart TreeSet to avoid duplicates
 		Set<Table<?>> result = new TreeSet<>(COMPARATOR_ON_SCHEMA_AND_NAME);
 		result.add((Table<?>) root.getTable());
 		foreachJoin(node -> {
@@ -524,15 +525,28 @@ public class EntityJoinTree<C, I> {
 	 * @param fromable the table to cloned
 	 * @return a copy (on name and columns) of given join table
 	 */
-	static Duo<Fromable, IdentityHashMap<Selectable<?>, Selectable<?>>> cloneTable(Fromable fromable) {
+	static Duo<Fromable, IdentityHashMap<? extends Selectable<?>, ? extends Selectable<?>>> cloneTable(Fromable fromable) {
 		if (fromable instanceof Table) {
-			Table table = new Table(fromable.getName());
-			IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = new IdentityHashMap<>(table.getColumns().size());
+			Table<?> table = (Table<?>) fromable;
+			Table tableClone = new Table(fromable.getName());
+			IdentityHashMap<Column<?, ?>, Column<?, ?>> columnClones = new IdentityHashMap<>(tableClone.getColumns().size());
 			(((Table<?>) fromable).getColumns()).forEach(column -> {
-				Column clone = table.addColumn(column.getName(), column.getJavaType(), column.getSize());
+				Column clone = tableClone.addColumn(column.getName(), column.getJavaType(), column.getSize());
 				columnClones.put(column, clone);
 			});
-			return new Duo<>(table, columnClones);
+			
+			// Propagating primary key because right tables are used to generate schema, and at this stage they lack primary key.
+			// Note that foreign keys will be added through the tree building process when appending joins, so we don't need to clone them here
+			if (table.getPrimaryKey() != null) {
+				Key<?, ?> primaryKey = table.getPrimaryKey();
+				Key.KeyBuilder<Fromable, Object> primaryKeyBuilder = Key.from(tableClone);
+				primaryKey.getColumns().forEach(column -> {
+					// we can cast to JoinLink because we're already dealing with JoinLink since we are in JoinNode
+					Column<?, ?> clonedColumn = columnClones.get(column);
+					clonedColumn.primaryKey();
+				});
+			}
+			return new Duo<>(tableClone, columnClones);
 		} else if (fromable instanceof PseudoTable) {
 			PseudoTable pseudoTable = new PseudoTable(((PseudoTable) fromable).getQueryStatement(), fromable.getName());
 			IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = new IdentityHashMap<>(pseudoTable.getColumns().size());
@@ -560,7 +574,7 @@ public class EntityJoinTree<C, I> {
 	public static AbstractJoinNode<?, ?, ?, ?> cloneNodeForParent(AbstractJoinNode<?, ?, ?, ?> node, JoinNode parent, Key leftColumn) {
 		AbstractJoinNode nodeCopy;
 		if (node instanceof RelationJoinNode) {
-			Duo<Fromable, IdentityHashMap<Selectable<?>, Selectable<?>>> tableClone = cloneTable(node.getTable());
+			Duo<Fromable, IdentityHashMap<? extends Selectable<?>, ? extends Selectable<?>>> tableClone = cloneTable(node.getTable());
 			// Build a new Key using the cloned table and the corresponding cloned columns
 			Key.KeyBuilder<Fromable, Object> rightJoinLinkBuilder = Key.from(tableClone.getLeft());
 			Set<? extends JoinLink<?, ?>> columns = node.getRightJoinLink().getColumns();
@@ -583,7 +597,7 @@ public class EntityJoinTree<C, I> {
 					((RelationJoinNode) node).getBeanRelationFixer(),
 					((RelationJoinNode) node).getRelationIdentifierProvider());
 		} else if (node instanceof MergeJoinNode) {
-			Duo<Fromable, IdentityHashMap<Selectable<?>, Selectable<?>>> tableClone = cloneTable(node.getTable());
+			Duo<Fromable, IdentityHashMap<? extends Selectable<?>, ? extends Selectable<?>>> tableClone = cloneTable(node.getTable());
 			// Build a new Key using the cloned table and the corresponding cloned columns
 			Key.KeyBuilder<Fromable, Object> rightJoinLinkBuilder = Key.from(tableClone.getLeft());
 			Set<? extends JoinLink<?, ?>> columns = node.getRightJoinLink().getColumns();
@@ -604,7 +618,7 @@ public class EntityJoinTree<C, I> {
 					((MergeJoinNode) node).getMerger(),
 					columnsToSelect);
 		} else if (node instanceof PassiveJoinNode) {
-			Duo<Fromable, IdentityHashMap<Selectable<?>, Selectable<?>>> tableClone = cloneTable(node.getTable());
+			Duo<Fromable, IdentityHashMap<? extends Selectable<?>, ? extends Selectable<?>>> tableClone = cloneTable(node.getTable());
 			// Build a new Key using the cloned table and the corresponding cloned columns
 			Key.KeyBuilder<Fromable, Object> rightJoinLinkBuilder = Key.from(tableClone.getLeft());
 			Set<? extends JoinLink<?, ?>> columns = node.getRightJoinLink().getColumns();

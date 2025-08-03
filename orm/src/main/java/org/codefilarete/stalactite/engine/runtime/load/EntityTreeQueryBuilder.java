@@ -71,7 +71,7 @@ public class EntityTreeQueryBuilder<C> {
 		
 		// initialization of the From clause with the very first table
 		JoinRoot<C, Object, ?> joinRoot = this.tree.getRoot();
-		Duo<Fromable, IdentityHashMap<Selectable<?>, Selectable<?>>> rootClone = cloneTable(joinRoot);
+		Duo<Fromable, IdentityHashMap<? extends Selectable<?>, ? extends Selectable<?>>> rootClone = cloneTable(joinRoot);
 		Fromable rootTableClone = rootClone.getLeft();
 		columnClones.putAll(rootClone.getRight());
 		tableClonePerJoinNode.put(joinRoot, rootTableClone);
@@ -80,7 +80,7 @@ public class EntityTreeQueryBuilder<C> {
 		
 		// completing from clause
 		this.tree.foreachJoin(join -> {
-			Duo<Fromable, IdentityHashMap<Selectable<?>, Selectable<?>>> joinClone = cloneTable(join);
+			Duo<Fromable, IdentityHashMap<? extends Selectable<?>, ? extends Selectable<?>>> joinClone = cloneTable(join);
 			tableClonePerJoinNode.put(join, joinClone.getLeft());
 			columnClones.putAll(joinClone.getRight());
 		});
@@ -100,7 +100,7 @@ public class EntityTreeQueryBuilder<C> {
 	 * @return a copy (on name and columns) of given join table
 	 */
 	@VisibleForTesting
-	Duo<Fromable, IdentityHashMap<Selectable<?>, Selectable<?>>> cloneTable(JoinNode joinNode) {
+	Duo<Fromable, IdentityHashMap<? extends Selectable<?>, ? extends Selectable<?>>> cloneTable(JoinNode joinNode) {
 		return EntityJoinTree.cloneTable(joinNode.getTable());
 	}
 	
