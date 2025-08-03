@@ -2,10 +2,13 @@ package org.codefilarete.stalactite.engine.runtime.load;
 
 import javax.annotation.Nullable;
 
+import java.util.Set;
+
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.PassiveJoinNode.PassiveJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Reflections;
@@ -25,7 +28,17 @@ public class MergeJoinNode<C, T1 extends Fromable, T2 extends Fromable, I> exten
 						 JoinType joinType,
 						 @Nullable String tableAlias,
 						 EntityMerger<C> merger) {
-		super(parent, leftJoinColumn, rightJoinColumn, joinType, merger.getSelectableColumns(), tableAlias);
+		this(parent, leftJoinColumn, rightJoinColumn, joinType, tableAlias, merger, merger.getSelectableColumns());
+	}
+	
+	public MergeJoinNode(JoinNode<?, T1> parent,
+						 Key<T1, I> leftJoinColumn,
+						 Key<T2, I> rightJoinColumn,
+						 JoinType joinType,
+						 @Nullable String tableAlias,
+						 EntityMerger<C> merger,
+						 Set<Selectable<?>> selectableColumns) {
+		super(parent, leftJoinColumn, rightJoinColumn, joinType, selectableColumns, tableAlias);
 		this.merger = merger;
 	}
 	

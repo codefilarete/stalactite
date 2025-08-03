@@ -574,21 +574,20 @@ public class EntityJoinTree<C, I> {
 	 * @param leftColumn columns to be used as the left key of the new node
 	 * @return a copy of given node, put as child of parent, using leftColumn
 	 */
-	public static AbstractJoinNode cloneNodeForParent(AbstractJoinNode node, JoinNode parent, Key leftColumn) {
+	public static AbstractJoinNode<?, ?, ?, ?> cloneNodeForParent(AbstractJoinNode<?, ?, ?, ?> node, JoinNode parent, Key leftColumn) {
 		AbstractJoinNode nodeCopy;
 		if (node instanceof RelationJoinNode) {
 			Duo<Fromable, IdentityHashMap<Selectable<?>, Selectable<?>>> tableClone = cloneTable(node.getTable());
 			// Build a new Key using the cloned table and the corresponding cloned columns
 			Key.KeyBuilder<Fromable, Object> rightJoinLinkBuilder = Key.from(tableClone.getLeft());
-			Set<JoinLink<Fromable, Object>> columns = node.getRightJoinLink().getColumns();
-			for (JoinLink<Fromable, Object> column : columns) {
+			Set<? extends JoinLink<?, ?>> columns = node.getRightJoinLink().getColumns();
+			for (JoinLink<?, ?> column : columns) {
 				// Note that we can cast to JoinLink because we're already dealing with JoinLink since we are in JoinNode
 				JoinLink<Fromable, Object> clonedColumn = (JoinLink<Fromable, Object>) tableClone.getRight().get(column);
 				rightJoinLinkBuilder.addColumn(clonedColumn);
 			}
-			Set<Selectable<?>> columnsToSelect = (Set<Selectable<?>>) node.getColumnsToSelect().stream()
-					.map(column -> tableClone.getRight().get(column))
-					.collect(Collectors.toCollection(KeepOrderSet::new));
+			// We must use cloned columns to select, not the original ones
+			Set<Selectable<?>> columnsToSelect = Iterables.collect(node.getColumnsToSelect(), column -> tableClone.getRight().get(column), KeepOrderSet::new);
 			
 			nodeCopy = new RelationJoinNode(
 					parent,
@@ -601,13 +600,26 @@ public class EntityJoinTree<C, I> {
 					((RelationJoinNode) node).getBeanRelationFixer(),
 					((RelationJoinNode) node).getRelationIdentifierProvider());
 		} else if (node instanceof MergeJoinNode) {
+			Duo<Fromable, IdentityHashMap<Selectable<?>, Selectable<?>>> tableClone = cloneTable(node.getTable());
+			// Build a new Key using the cloned table and the corresponding cloned columns
+			Key.KeyBuilder<Fromable, Object> rightJoinLinkBuilder = Key.from(tableClone.getLeft());
+			Set<? extends JoinLink<?, ?>> columns = node.getRightJoinLink().getColumns();
+			for (JoinLink<?, ?> column : columns) {
+				// Note that we can cast to JoinLink because we're already dealing with JoinLink since we are in JoinNode
+				JoinLink<Fromable, Object> clonedColumn = (JoinLink<Fromable, Object>) tableClone.getRight().get(column);
+				rightJoinLinkBuilder.addColumn(clonedColumn);
+			}
+			// We must use cloned columns to select, not the original ones
+			KeepOrderSet<Selectable<?>> columnsToSelect = Iterables.collect(node.getColumnsToSelect(), column -> tableClone.getRight().get(column), KeepOrderSet::new);
+			
 			nodeCopy = new MergeJoinNode(
 					parent,
 					leftColumn,
-					node.getRightJoinLink(),
+					rightJoinLinkBuilder.build(),
 					node.getJoinType(),
 					node.getTableAlias(),
-					((MergeJoinNode) node).getMerger());
+					((MergeJoinNode) node).getMerger(),
+					columnsToSelect);
 		} else if (node instanceof PassiveJoinNode) {
 			nodeCopy = new PassiveJoinNode(
 					parent,
