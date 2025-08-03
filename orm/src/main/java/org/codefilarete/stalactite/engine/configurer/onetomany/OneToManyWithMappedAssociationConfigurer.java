@@ -226,7 +226,8 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 													  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 													  @Nullable BiConsumer<TRGT, SRC> reverseSetter) {
 		MappedManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDefinition = new MappedManyRelationDescriptor<>(
-				associationConfiguration.getCollectionGetter()::get, associationConfiguration.getSetter()::set,
+				associationConfiguration.getCollectionGetter(),
+				associationConfiguration.getSetter()::set,
 				associationConfiguration.getCollectionFactory(), reverseSetter, reverseColumn);
 		mappedAssociationEngine = new OneToManyWithMappedAssociationEngine(
 				targetPersister,
@@ -250,7 +251,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 		}
 		
 		IndexedMappedManyRelationDescriptor<SRC, TRGT, C, SRCID, TRGTID> manyRelationDefinition = new IndexedMappedManyRelationDescriptor<>(
-				associationConfiguration.getCollectionGetter()::get,
+				associationConfiguration.getCollectionGetter(),
 				associationConfiguration.getSetter()::set,
 				associationConfiguration.getCollectionFactory(),
 				reverseSetter,

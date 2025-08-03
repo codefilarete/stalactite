@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
@@ -193,27 +194,29 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	
 	@Override
 	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																					 Key<T1, JOINID> leftColumn,
-																					 Key<T2, JOINID> rightColumn,
-																					 String rightTableAlias,
-																					 BeanRelationFixer<SRC, C> beanRelationFixer,
-																					 boolean optional,
-																					 boolean loadSeparately) {
-		return delegate.joinAsOne(sourcePersister, leftColumn, rightColumn, rightTableAlias, beanRelationFixer, optional, loadSeparately);
+																							 Accessor<SRC, C> propertyAccessor,
+																							 Key<T1, JOINID> leftColumn,
+																							 Key<T2, JOINID> rightColumn,
+																							 String rightTableAlias,
+																							 BeanRelationFixer<SRC, C> beanRelationFixer,
+																							 boolean optional,
+																							 boolean loadSeparately) {
+		return delegate.joinAsOne(sourcePersister, propertyAccessor, leftColumn, rightColumn, rightTableAlias, beanRelationFixer, optional, loadSeparately);
 	}
 	
 	@Override
-	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
+	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsMany(String joinName,
+																							  RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																							  Accessor<SRC, ?> propertyAccessor,
 																							  Key<T1, JOINID> leftColumn,
 																							  Key<T2, JOINID> rightColumn,
 																							  BeanRelationFixer<SRC, C> beanRelationFixer,
 																							  @Nullable Function<ColumnedRow, Object> duplicateIdentifierProvider,
-																							  String joinName,
 																							  Set<? extends Column<T2, ?>> selectableColumns,
 																							  boolean optional,
 																							  boolean loadSeparately) {
-		return delegate.joinAsMany(sourcePersister, leftColumn, rightColumn, beanRelationFixer, duplicateIdentifierProvider,
-				joinName, selectableColumns, optional, loadSeparately);
+		return delegate.joinAsMany(joinName, sourcePersister, propertyAccessor, leftColumn, rightColumn, beanRelationFixer,
+				duplicateIdentifierProvider, selectableColumns, optional, loadSeparately);
 	}
 	
 	@Override

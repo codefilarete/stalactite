@@ -113,17 +113,16 @@ public class OneToManyWithIndexedAssociationTableEngine<
 				associationPersister.getMainTable().getColumns());
 		
 		// we add target subgraph joins to main persister
-		String rightEntityJoinName = targetPersister.joinAsMany(sourcePersister,
-				associationPersister.getMainTable().getManySideForeignKey(),
-				associationPersister.getMainTable().getManySideKey(), manyRelationDescriptor.getRelationFixer(),
-				columnedRow -> {
+		String rightEntityJoinName = targetPersister.joinAsMany(associationTableJoinNodeName, sourcePersister, manyRelationDescriptor.getCollectionProvider(),
+				associationPersister.getMainTable().getManySideForeignKey(), associationPersister.getMainTable().getManySideKey(),
+				manyRelationDescriptor.getRelationFixer(), columnedRow -> {
 					TRGTID identifier = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(columnedRow);
 					// indexColumn column value is took on join of association table, not target table, so we have to grab it
 					JoinNode<IndexedAssociationRecord, Fromable> join = (JoinNode<IndexedAssociationRecord, Fromable>) sourcePersister.getEntityJoinTree().getJoin(associationTableJoinNodeName);
 					ColumnedRow rowDecoder = EntityTreeInflater.currentContext().getDecoder(join);
 					Integer targetEntityIndex = rowDecoder.get(indexColumn);
 					return identifier + "-" + targetEntityIndex;
-				}, associationTableJoinNodeName, true, loadSeparately);
+				}, true, loadSeparately);
 		
 		// Implementation note: we keep the object indexes and put the sorted entities in a temporary Collection, then add them all to the target List
 		RowTransformer<IndexedAssociationRecord> associationRecordProvider = associationPersister.getMapping().getRowTransformer();

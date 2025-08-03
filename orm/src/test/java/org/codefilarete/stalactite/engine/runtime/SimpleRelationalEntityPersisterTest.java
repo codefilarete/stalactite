@@ -19,6 +19,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.engine.EntityPersister;
@@ -793,8 +794,8 @@ class SimpleRelationalEntityPersisterTest {
 			// we add a copier onto a another table
 			persister = new BeanPersister<>(totoClassMappingStrategy, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
 			testInstance.getEntityJoinTree().addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME,
-															 new EntityMappingAdapter<>(persister.getMapping()),
-															 leftJoinColumn, rightJoinColumn, null, JoinType.INNER, Toto::merge, Collections.emptySet());
+															 new EntityMappingAdapter<>(persister.getMapping()), mock(Accessor.class),
+                    leftJoinColumn, rightJoinColumn, null, JoinType.INNER, Toto::merge, Collections.emptySet());
 			testInstance.getPersisterListener().addInsertListener(new InsertListener<Toto>() {
 				@Override
 				public void afterInsert(Iterable<? extends Toto> entities) {

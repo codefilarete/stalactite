@@ -10,6 +10,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 
 import static org.codefilarete.tool.bean.Objects.preventNull;
@@ -27,7 +28,7 @@ public class IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C extends 
 	 * @param collectionFactory collection factory
 	 * @param reverseSetter
 	 */
-	public IndexedAssociationTableManyRelationDescriptor(Function<SRC, C> collectionGetter,
+	public IndexedAssociationTableManyRelationDescriptor(Accessor<SRC, C> collectionGetter,
 														 BiConsumer<SRC, C> collectionSetter,
 														 Supplier<C> collectionFactory,
 														 @Nullable BiConsumer<TRGT, SRC> reverseSetter,

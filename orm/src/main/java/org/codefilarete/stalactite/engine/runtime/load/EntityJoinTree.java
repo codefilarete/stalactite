@@ -14,11 +14,11 @@ import java.util.TreeSet;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.bidimap.DualLinkedHashBidiMap;
 import org.apache.commons.collections4.bidimap.UnmodifiableBidiMap;
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.AbstractTransformer;
@@ -68,7 +68,7 @@ public class EntityJoinTree<C, I> {
 	/**
 	 * A mapping between a name and a join to find them when we want to join one with another new one
 	 * 
-	 * @see #addRelationJoin(String, EntityInflater, Key, Key, String, JoinType, BeanRelationFixer, Set)
+	 * @see #addRelationJoin(String, EntityInflater, Accessor, Key, Key, String, JoinType, BeanRelationFixer, Set)
 	 * @see #indexKeyGenerator
 	 */
 	// Implemented as a LinkedHashMap to keep order only for debugging purpose
@@ -121,6 +121,7 @@ public class EntityJoinTree<C, I> {
 	 * @param <ID> type of joined values
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
 	 * @param inflater the strategy of the mapped bean. Used to give {@link Column}s and {@link RowTransformer}
+	 * @param propertyAccessor accessor to the property of this persister's entity from the source entity type
 	 * @param leftJoinColumn the {@link Column} (of a previously registered join) to be joined with {@code rightJoinColumn}
 	 * @param rightJoinColumn the {@link Column} to be joined with {@code leftJoinColumn}
 	 * @param rightTableAlias optional alias for right table, if null table name will be used
@@ -131,19 +132,20 @@ public class EntityJoinTree<C, I> {
 	 */
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelationJoin(String leftStrategyName,
 																					  EntityInflater<U, ID> inflater,
+																					  Accessor<?, ?> propertyAccessor,
 																					  Key<T1, ID> leftJoinColumn,
 																					  Key<T2, ID> rightJoinColumn,
 																					  String rightTableAlias,
 																					  JoinType joinType,
 																					  BeanRelationFixer<C, U> beanRelationFixer,
 																					  Set<? extends Column<T2, ?>> additionalSelectableColumns) {
-		return addRelationJoin(leftStrategyName, inflater, leftJoinColumn, rightJoinColumn, rightTableAlias, joinType, beanRelationFixer, additionalSelectableColumns, null);
+		return addRelationJoin(leftStrategyName, inflater, propertyAccessor, leftJoinColumn, rightJoinColumn, rightTableAlias, joinType, beanRelationFixer, additionalSelectableColumns, null);
 	}
 	
 	/**
 	 * Adds a join to this select.
 	 * Use for one-to-one or one-to-many cases when join is used to describe a related bean.
-	 * Difference with {@link #addRelationJoin(String, EntityInflater, Key, Key, String, JoinType, BeanRelationFixer, Set)} is last
+	 * Difference with {@link #addRelationJoin(String, EntityInflater, Accessor, Key, Key, String, JoinType, BeanRelationFixer, Set)} is last
 	 * parameter : an optional function which computes an identifier of a relation between 2 entities, this is required to prevent from fulfilling
 	 * twice the relation when SQL returns several times same identifier (when at least 2 collections are implied). By default this function is
 	 * made of parentEntityId + childEntityId and can be overwritten here (in particular when relation is a List, entity index is added to computation).
@@ -155,6 +157,7 @@ public class EntityJoinTree<C, I> {
 	 * @param <ID> type of joined values
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
 	 * @param inflater the strategy of the mapped bean. Used to give {@link Column}s and {@link RowTransformer}
+	 * @param propertyAccessor accessor to the property of this persister's entity from the source entity type   
 	 * @param leftJoinColumn the {@link Column} (of a previously registered join) to be joined with {@code rightJoinColumn}
 	 * @param rightJoinColumn the {@link Column} to be joined with {@code leftJoinColumn}
 	 * @param rightTableAlias optional alias for right table, if null table name will be used
@@ -167,23 +170,24 @@ public class EntityJoinTree<C, I> {
 	 */
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID, JOINTYPE> String addRelationJoin(String leftStrategyName,
 																								EntityInflater<U, ID> inflater,
+																								Accessor<?, ?> propertyAccessor,
 																								Key<T1, JOINTYPE> leftJoinColumn,
 																								Key<T2, JOINTYPE> rightJoinColumn,
 																								@Nullable String rightTableAlias,
 																								JoinType joinType,
-																								BeanRelationFixer<C, U> beanRelationFixer,
+																								BeanRelationFixer<?, U> beanRelationFixer,
 																								Set<? extends Column<T2, ?>> additionalSelectableColumns,
 																								@Nullable Function<ColumnedRow, Object> relationIdentifierProvider) {
 		return this.addJoin(leftStrategyName, parent -> new RelationJoinNode<>(
 				(JoinNode<?, T1>) (JoinNode) parent,
+				propertyAccessor,
 				leftJoinColumn,
 				rightJoinColumn,
 				joinType,
 				new KeepOrderSet<>(Collections.cat(inflater.getSelectableColumns(), additionalSelectableColumns)),
 				rightTableAlias,
 				inflater,
-				beanRelationFixer,
-				relationIdentifierProvider));
+				beanRelationFixer, relationIdentifierProvider));
 	}
 	
 	
@@ -315,7 +319,7 @@ public class EntityJoinTree<C, I> {
 	
 	/**
 	 * Gives a particular node of the joins graph by its name. Joins graph name are given in return of
-	 * {@link #addRelationJoin(String, EntityInflater, Key, Key, String, JoinType, BeanRelationFixer, Set)}.
+	 * {@link #addRelationJoin(String, EntityInflater, Accessor, Key, Key, String, JoinType, BeanRelationFixer, Set)}.
 	 * When {@link #ROOT_JOIN_NAME} is given, {@link #getRoot()} will be used, meanwhile, be aware that using this method to retreive root node
 	 * is not the recommended way : prefer usage of {@link #getRoot()} to prevent exposure of {@link #ROOT_JOIN_NAME}
 	 *
@@ -588,14 +592,14 @@ public class EntityJoinTree<C, I> {
 			
 			nodeCopy = new RelationJoinNode(
 					parent,
+					((RelationJoinNode<?, ?, ?, ?, ?>) node).getPropertyAccessor(),
 					leftColumn,
 					rightJoinLinkBuilder.build(),
 					node.getJoinType(),
 					columnsToSelect,
 					node.getTableAlias(),
 					((RelationJoinNode) node).getEntityInflater(),
-					((RelationJoinNode) node).getBeanRelationFixer(),
-					((RelationJoinNode) node).getRelationIdentifierProvider());
+					((RelationJoinNode) node).getBeanRelationFixer(), ((RelationJoinNode) node).getRelationIdentifierProvider());
 		} else if (node instanceof MergeJoinNode) {
 			Duo<Fromable, IdentityHashMap<? extends Selectable<?>, ? extends Selectable<?>>> tableClone = cloneTable(node.getTable());
 			// Build a new Key using the cloned table and the corresponding cloned columns

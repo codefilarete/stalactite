@@ -119,7 +119,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 				dialect,
 				connectionConfiguration);
 		ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor = new ManyRelationDescriptor<>(
-				associationConfiguration.getCollectionGetter()::get,
+				associationConfiguration.getCollectionGetter(),
 				associationConfiguration.getSetter()::set,
 				associationConfiguration.getCollectionFactory(),
 				associationConfiguration.getOneToManyRelation().getReverseLink());
@@ -164,7 +164,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 						dialect,
 						connectionConfiguration);
 		IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDescriptor = new IndexedAssociationTableManyRelationDescriptor<>(
-				associationConfiguration.getCollectionGetter()::get,
+				associationConfiguration.getCollectionGetter(),
 				associationConfiguration.getSetter()::set,
 				associationConfiguration.getCollectionFactory(),
 				associationConfiguration.getOneToManyRelation().getReverseLink(),

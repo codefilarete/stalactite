@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.DeleteExecutor;
 import org.codefilarete.stalactite.engine.EntityPersister;
@@ -281,6 +282,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 	
 	@Override
 	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																							 Accessor<SRC, C> propertyAccessor,
 																							 Key<T1, JOINID> leftColumn,
 																							 Key<T2, JOINID> rightColumn,
 																							 String rightTableAlias,
@@ -300,6 +302,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			return join(
 					sourcePersister.getEntityJoinTree(),
                     ROOT_JOIN_NAME,
+					propertyAccessor,
 					leftColumn,
 					rightColumn,
 					beanRelationFixer);
@@ -307,12 +310,13 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 	}
 	
 	@Override
-	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
+	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsMany(String joinName,
+																							  RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																							  Accessor<SRC, ?> propertyAccessor,
 																							  Key<T1, JOINID> leftColumn,
 																							  Key<T2, JOINID> rightColumn,
 																							  BeanRelationFixer<SRC, C> beanRelationFixer,
 																							  @Nullable Function<ColumnedRow, Object> duplicateIdentifierProvider,
-																							  String joinName,
 																							  Set<? extends Column<T2, ?>> selectableColumns,
 																							  boolean optional,
 																							  boolean loadSeparately) {
@@ -354,6 +358,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			return join(
 					sourcePersister.getEntityJoinTree(),
 					joinName,
+					propertyAccessor,
 					leftColumn,
 					rightColumn,
 					beanRelationFixer);
@@ -375,6 +380,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 	private <SRC, SRCID, T1 extends Table<T1>, T2 extends Table<T2>, JOINCOLTYPE> String join(
 			EntityJoinTree<SRC, SRCID> entityJoinTree,
 			String leftStrategyName,
+			Accessor<SRC, ?> propertyAccessor,
 			Key<T1, JOINCOLTYPE> leftJoinColumn,
 			Key<T2, JOINCOLTYPE> rightJoinColumn,
 			BeanRelationFixer<SRC, C> beanRelationFixer) {
@@ -431,6 +437,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			TablePerClassPolymorphicRelationJoinNode<C, T1, JOINCOLTYPE, I> relationJoinNode = new TablePerClassPolymorphicRelationJoinNode<>(
 					(JoinNode<SRC, T1>) (JoinNode) parent,
 					subPersistersUnion,
+					propertyAccessor,
 					leftJoinColumn,
 					rightJoinColumn,
 					JoinType.OUTER,

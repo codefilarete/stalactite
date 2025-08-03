@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
@@ -30,6 +31,8 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 	/** The right part of the join */
 	private final EntityInflater<C, I> entityInflater;
 	
+	private final Accessor<?, ?> propertyAccessor;
+	
 	/** Relation fixer for instances of this strategy on owning strategy entities */
 	private final BeanRelationFixer<Object, C> beanRelationFixer;
 	
@@ -37,37 +40,45 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 	private final Function<ColumnedRow, ?> relationIdentifierProvider;
 	
 	RelationJoinNode(JoinNode<?, T1> parent,
+					 Accessor<?, C> propertyAccessor,
 					 JoinLink<T1, JOINTYPE> leftJoinColumn,
 					 JoinLink<T2, JOINTYPE> rightJoinColumn,
 					 JoinType joinType,
-					 Set<? extends Selectable<?>> columnsToSelect,	// Of T2
+					 Set<? extends Selectable<?>> columnsToSelect,    // Of T2
 					 @Nullable String tableAlias,
 					 EntityInflater<C, I> entityInflater,
 					 BeanRelationFixer<?, C> beanRelationFixer,
 					 @Nullable Function<ColumnedRow, ?> relationIdentifierProvider) {
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias);
 		this.entityInflater = entityInflater;
+		this.propertyAccessor = propertyAccessor;
 		this.beanRelationFixer = (BeanRelationFixer<Object, C>) beanRelationFixer;
 		this.relationIdentifierProvider = relationIdentifierProvider;
 	}
 	
 	RelationJoinNode(JoinNode<?, T1> parent,
+					 Accessor<?, ?> propertyAccessor,
 					 Key<T1, JOINTYPE> leftJoinColumn,
 					 Key<T2, JOINTYPE> rightJoinColumn,
 					 JoinType joinType,
-					 Set<? extends Selectable<?>> columnsToSelect,	// Of T2
+					 Set<? extends Selectable<?>> columnsToSelect,    // Of T2
 					 @Nullable String tableAlias,
 					 EntityInflater<C, I> entityInflater,
 					 BeanRelationFixer<?, C> beanRelationFixer,
 					 @Nullable Function<ColumnedRow, ?> relationIdentifierProvider) {
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias);
 		this.entityInflater = entityInflater;
+		this.propertyAccessor = propertyAccessor;
 		this.beanRelationFixer = (BeanRelationFixer<Object, C>) beanRelationFixer;
 		this.relationIdentifierProvider = relationIdentifierProvider;
 	}
 	
 	public EntityInflater<C, ?> getEntityInflater() {
 		return entityInflater;
+	}
+	
+	public Accessor<?, ?> getPropertyAccessor() {
+		return propertyAccessor;
 	}
 	
 	public Class<C> getEntityType() {

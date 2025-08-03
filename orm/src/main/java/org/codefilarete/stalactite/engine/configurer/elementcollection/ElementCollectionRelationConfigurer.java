@@ -117,7 +117,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 				elementCollectionRelation.getCollectionFactory(),
 				BeanRelationFixer.giveCollectionFactory((Class<C>) collectionProviderDefinition.getMemberType()));
 		addSelectCascade(sourcePersister, collectionPersister, sourcePK, elementCollectionMapping.reverseForeignKey,
-				elementCollectionRelation.getCollectionProvider().toMutator()::set, collectionAccessor::get,
+				elementCollectionRelation.getCollectionProvider().toMutator()::set, collectionAccessor,
 				collectionFactory);
 		
 		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
@@ -286,18 +286,18 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 								  PrimaryKey<?, I> sourcePK,
 								  ForeignKey<?, ?, I> elementRecordToSourceForeignKey,
 								  BiConsumer<SRC, C> collectionSetter,
-								  Function<SRC, C> collectionGetter,
+								  Accessor<SRC, C> collectionGetter,
 								  Supplier<C> collectionFactory) {
 		// a particular collection fixer that gets raw values (elements) from ElementRecord
 		// because elementRecordPersister manages ElementRecord, so it gives them as input of the relation,
 		// hence an adaption is needed to "convert" it
 		BeanRelationFixer<SRC, ElementRecord<TRGT, I>> relationFixer = BeanRelationFixer.ofAdapter(
 				collectionSetter,
-				collectionGetter,
+				collectionGetter::get,
 				collectionFactory,
 				(bean, input, collection) -> collection.add(input.getElement()));	// element value is taken from ElementRecord
 		
-		elementRecordPersister.joinAsMany(sourcePersister, sourcePK, elementRecordToSourceForeignKey, relationFixer, null, EntityJoinTree.ROOT_JOIN_NAME, true, false);
+		elementRecordPersister.joinAsMany(EntityJoinTree.ROOT_JOIN_NAME, sourcePersister, collectionGetter, sourcePK, elementRecordToSourceForeignKey, relationFixer, null, true, false);
 	}
 	
 	private Function<SRC, Collection<ElementRecord<TRGT, I>>> collectionProvider(Accessor<SRC, C> collectionAccessor,

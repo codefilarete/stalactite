@@ -68,13 +68,13 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		// we add target subgraph joins to main persister
 		Set<Column<RIGHTTABLE, ?>> columnsToSelect = new HashSet<>(targetPersister.<RIGHTTABLE>getMainTable().getPrimaryKey().getColumns());
 		columnsToSelect.add(indexColumn);
-		String joinNodeName = targetPersister.joinAsMany(sourcePersister, sourcePrimaryKey, (Key<RIGHTTABLE, SRCID>) manyRelationDescriptor.getReverseColumn(), manyRelationDescriptor.getRelationFixer(),
+		String joinNodeName = targetPersister.joinAsMany(EntityJoinTree.ROOT_JOIN_NAME, sourcePersister, manyRelationDescriptor.getCollectionProvider(), sourcePrimaryKey, (Key<RIGHTTABLE, SRCID>) manyRelationDescriptor.getReverseColumn(),
+				manyRelationDescriptor.getRelationFixer(),
 				(columnedRow) -> {
 					TRGTID identifier = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(columnedRow);
 					Integer targetEntityIndex = columnedRow.get(indexColumn);
 					return identifier + "-" + targetEntityIndex;
 				},
-				EntityJoinTree.ROOT_JOIN_NAME,
 				columnsToSelect,
 				true,
 				loadSeparately);

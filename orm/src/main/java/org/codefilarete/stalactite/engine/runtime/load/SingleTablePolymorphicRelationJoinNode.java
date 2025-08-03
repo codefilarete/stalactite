@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
@@ -43,6 +44,7 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 
 	private final Column<T2, DTYPE> discriminatorColumn;
 	
 	public SingleTablePolymorphicRelationJoinNode(JoinNode<?, T1> parent,
+												  Accessor<?, ?> propertyAccessor,
 												  Key<T1, JOINCOLTYPE> leftJoinColumn,
 												  Key<T2, JOINCOLTYPE> rightJoinColumn,
 												  JoinType joinType,
@@ -53,7 +55,7 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 
 												  Column<T2, DTYPE> discriminatorColumn,
 												  Set<ConfiguredRelationalPersister<? extends C, I>> subPersisters,
 												  SingleTablePolymorphism<C, DTYPE> polymorphismPolicy) {
-		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias, entityInflater, beanRelationFixer, null);
+		super(parent, propertyAccessor, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias, entityInflater, beanRelationFixer, null);
 		this.discriminatorColumn = discriminatorColumn;
 		this.subPersisters = subPersisters;
 		this.polymorphismPolicy = polymorphismPolicy;

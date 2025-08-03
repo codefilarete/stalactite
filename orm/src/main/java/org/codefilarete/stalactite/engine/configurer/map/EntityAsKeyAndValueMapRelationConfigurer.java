@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
@@ -311,12 +312,12 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 									PrimaryKey<?, SRCID> sourcePK,
 									ForeignKey<?, ?, SRCID> keyValueRecordToSourceForeignKey,
 									BiConsumer<SRC, MM> mapSetter,
-									Function<SRC, MM> mapGetter,
+									Accessor<SRC, MM> mapGetter,
 									Supplier<MM> mapFactory) {
 		
 		BeanRelationFixer<SRC, KeyValueRecord<KID, VID, SRCID>> relationFixer = BeanRelationFixer.ofMapAdapter(
 				mapSetter,
-				mapGetter,
+				mapGetter::get,
 				mapFactory,
 				(bean, input, map) -> {
 					inMemoryRelationHolder.storeRelation(input.getId().getId(), input.getKey(), input.getValue());
@@ -341,28 +342,35 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 				},
 				null, associationTableJoinNodeName, true, false);
 		 */
-		PrimaryKey<?, KID> keyTablePrimaryKey = keyEntityPersister.getMainTable().getPrimaryKey();
-		keyEntityPersister.joinAsMany(relationRecordPersister,
-				(Key<Table, KID>) keyIdColumnsProjectInAssociationTable,
-				keyTablePrimaryKey,
-				(bean, input) -> inMemoryRelationHolder.storeKeyEntity(bean.getId().getId(), bean.getKey(), input),
-				null, ROOT_JOIN_NAME, true, false);
-		
-		PrimaryKey<?, VID> valueTablePrimaryKey = valueEntityPersister.getMainTable().getPrimaryKey();
-		valueEntityPersister.joinAsMany(relationRecordPersister,
-				(Key<Table, VID>) valueIdColumnsProjectInAssociationTable,
-				valueTablePrimaryKey,
-				(bean, input) -> inMemoryRelationHolder.storeValueEntity(bean.getId().getId(), bean.getValue(), input),
-				null, ROOT_JOIN_NAME, true, false);
+		keyEntityPersister.joinAsMany(ROOT_JOIN_NAME,
+				relationRecordPersister,
+				Accessors.accessorByMethodReference(KeyValueRecord::getKey),
+                (Key<Table, KID>) keyIdColumnsProjectInAssociationTable,
+				(PrimaryKey<?, KID>) keyEntityPersister.getMainTable().<KID>getPrimaryKey(),
+                (bean, input) -> inMemoryRelationHolder.storeKeyEntity(bean.getId().getId(), bean.getKey(), input),
+				null,
+				true,
+				false);
+
+		valueEntityPersister.joinAsMany(ROOT_JOIN_NAME,
+				relationRecordPersister,
+				Accessors.accessorByMethodReference(KeyValueRecord::getValue),
+                (Key<Table, VID>) valueIdColumnsProjectInAssociationTable,
+				(PrimaryKey<?, VID>) valueEntityPersister.getMainTable().<VID>getPrimaryKey(),
+                (bean, input) -> inMemoryRelationHolder.storeValueEntity(bean.getId().getId(), bean.getValue(), input),
+				null,
+				true,
+				false);
 		
 		relationRecordPersister.joinAsMany(
+				ROOT_JOIN_NAME,
 				sourcePersister,
+				mapGetter,
 				sourcePK,
 				keyValueRecordToSourceForeignKey,
 				relationFixer,
 				null,
-                ROOT_JOIN_NAME,
-				true,
+                true,
 				originalMapRelation.isFetchSeparately());
 	}
 	

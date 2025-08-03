@@ -139,7 +139,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 				mapRelation.getMapFactory(),
 				BeanRelationFixer.giveMapFactory((Class<M>) mapProviderDefinition.getMemberType()));
 		addSelectCascade(sourcePersister, relationRecordPersister, sourcePK, reverseForeignKey,
-				mapRelation.getMapProvider().toMutator()::set, collectionAccessor::get,
+				mapRelation.getMapProvider().toMutator()::set, collectionAccessor,
 				collectionFactory);
 	}
 	
@@ -269,25 +269,26 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 									PrimaryKey<?, ID> sourcePK,
 									ForeignKey<?, ?, ID> keyValueRecordToSourceForeignKey,
 									BiConsumer<SRC, M> mapSetter,
-									Function<SRC, M> mapGetter,
+									Accessor<SRC, M> mapGetter,
 									Supplier<M> mapFactory) {
 		// a particular Map fixer that gets raw values (Map entries) from KeyValueRecord
 		// because elementRecordPersister manages KeyValueRecord, so it gives them as input of the relation,
 		// hence an adaption is needed to "convert" it
 		BeanRelationFixer<SRC, KeyValueRecord<K, V, ID>> relationFixer = BeanRelationFixer.ofMapAdapter(
 				mapSetter,
-				mapGetter,
+				mapGetter::get,
 				mapFactory,
 				(bean, input, map) -> map.put(input.getKey(), input.getValue()));
 		
 		relationRecordPersister.joinAsMany(
-				sourcePersister,
-				sourcePK,
-				keyValueRecordToSourceForeignKey,
-				relationFixer,
-				null,
 				EntityJoinTree.ROOT_JOIN_NAME,
-				true,
+				sourcePersister,
+				mapGetter,
+                sourcePK,
+                keyValueRecordToSourceForeignKey,
+                relationFixer,
+                null,
+                true,
 				mapRelation.isFetchSeparately());
 	}
 	

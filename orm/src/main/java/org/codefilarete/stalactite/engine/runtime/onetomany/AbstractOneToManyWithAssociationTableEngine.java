@@ -97,9 +97,9 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				JoinType.OUTER, Collections.emptySet());
 		
 		// we add target subgraph joins to main persister
-		targetPersister.joinAsMany(sourcePersister, associationPersister.getMainTable().getManySideForeignKey(),
-				associationPersister.getMainTable().getManySideKey(), manyRelationDescriptor.getRelationFixer(),
-				null, associationTableJoinNodeName, true, loadSeparately);
+		targetPersister.joinAsMany(associationTableJoinNodeName, sourcePersister, manyRelationDescriptor.getCollectionProvider(),
+				associationPersister.getMainTable().getManySideForeignKey(), associationPersister.getMainTable().getManySideKey(),
+				manyRelationDescriptor.getRelationFixer(), null, true, loadSeparately);
 		
 		// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
 		// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity

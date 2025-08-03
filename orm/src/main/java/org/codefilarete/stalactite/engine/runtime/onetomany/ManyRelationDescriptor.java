@@ -6,6 +6,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.bean.Objects;
 
@@ -19,7 +20,7 @@ public class ManyRelationDescriptor<I, O, C extends Collection<O>> {
 	/** Empty setter for applying source entity to target entity (reverse side) */
 	protected static final BiConsumer NOOP_REVERSE_SETTER = (o, i) -> {};
 	
-	private final Function<I, C> collectionGetter;
+	private final Accessor<I, C> collectionProvider;
 	
 	private final BiConsumer<I, C> collectionSetter;
 	
@@ -30,36 +31,41 @@ public class ManyRelationDescriptor<I, O, C extends Collection<O>> {
 	protected BeanRelationFixer<I, O> relationFixer;
 	
 	/**
-	 * @param collectionGetter collection accessor
+	 * @param collectionProvider collection accessor
 	 * @param collectionSetter collection setter
 	 * @param collectionFactory collection factory
 	 * @param reverseSetter
 	 */
-	public ManyRelationDescriptor(Function<I, C> collectionGetter,
+	public ManyRelationDescriptor(Accessor<I, C> collectionProvider,
 								  BiConsumer<I, C> collectionSetter,
 								  Supplier<C> collectionFactory,
 								  @Nullable BiConsumer<O, I> reverseSetter) {
-		this(collectionGetter, collectionSetter, collectionFactory, reverseSetter, BeanRelationFixer.of(
+		this(collectionProvider,
 				collectionSetter,
-				collectionGetter,
 				collectionFactory,
-				Objects.preventNull(reverseSetter, (BiConsumer<O, I>) NOOP_REVERSE_SETTER)));
+				reverseSetter,
+				BeanRelationFixer.of(collectionSetter, collectionProvider::get, collectionFactory, Objects.preventNull(reverseSetter, (BiConsumer<O, I>) NOOP_REVERSE_SETTER))
+		);
 	}
 	
-	public ManyRelationDescriptor(Function<I, C> collectionGetter,
+	public ManyRelationDescriptor(Accessor<I, C> collectionProvider,
 								  BiConsumer<I, C> collectionSetter,
 								  Supplier<C> collectionFactory,
 								  BiConsumer<O, I> reverseSetter,
 								  BeanRelationFixer<I, O> relationFixer) {
-		this.collectionGetter = collectionGetter;
+		this.collectionProvider = collectionProvider;
 		this.collectionSetter = collectionSetter;
 		this.collectionFactory = collectionFactory;
 		this.reverseSetter = reverseSetter;
 		this.relationFixer = relationFixer;
 	}
+
+	public Accessor<I, C> getCollectionProvider() {
+		return collectionProvider;
+	}
 	
 	public Function<I, C> getCollectionGetter() {
-		return collectionGetter;
+		return collectionProvider::get;
 	}
 	
 	public BiConsumer<I, C> getCollectionSetter() {

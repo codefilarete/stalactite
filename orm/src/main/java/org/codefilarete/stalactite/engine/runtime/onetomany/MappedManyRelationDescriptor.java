@@ -28,7 +28,7 @@ public class MappedManyRelationDescriptor<SRC, TRGT, C extends Collection<TRGT>,
 	 * 		or {@link Function} took from an {@link Accessor}
 	 * @param reverseColumn column owning relation
 	 */
-	public MappedManyRelationDescriptor(Function<SRC, C> collectionGetter,
+	public MappedManyRelationDescriptor(Accessor<SRC, C> collectionGetter,
 										BiConsumer<SRC, C> collectionSetter,
 										Supplier<C> collectionFactory,
 										@Nullable BiConsumer<TRGT, SRC> reverseSetter,

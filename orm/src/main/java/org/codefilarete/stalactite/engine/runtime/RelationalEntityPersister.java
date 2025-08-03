@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.EntityPersister;
@@ -37,6 +38,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * @param <T1> left table type
 	 * @param <T2> right table type
 	 * @param sourcePersister source that needs this instance joins
+	 * @param propertyAccessor accessor to the property of this persister's entity from the source entity type
 	 * @param leftColumn left part of the join, expected to be one of source table
 	 * @param rightColumn right part of the join, expected to be one of current instance table
 	 * @param rightTableAlias optional alias for right table, if null table name will be used
@@ -46,12 +48,13 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * @return the created join name, then it could be found in sourcePersister#getEntityJoinTree
 	 */
 	<SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																			  Key<T1, JOINID> leftColumn,
-																			  Key<T2, JOINID> rightColumn,
-																			  String rightTableAlias,
-																			  BeanRelationFixer<SRC, C> beanRelationFixer,
-																			  boolean optional,
-																			  boolean loadSeparately);
+																					  Accessor<SRC, C> propertyAccessor,
+																					  Key<T1, JOINID> leftColumn,
+																					  Key<T2, JOINID> rightColumn,
+																					  String rightTableAlias,
+																					  BeanRelationFixer<SRC, C> beanRelationFixer,
+																					  boolean optional,
+																					  boolean loadSeparately);
 	
 	/**
 	 * Called to join this instance with given persister. For this method, current instance is considered as the "right part" of the relation.
@@ -61,6 +64,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * @param <T1> left table type
 	 * @param <T2> right table type
 	 * @param sourcePersister source that needs this instance joins
+	 * @param propertyAccessor accessor to the property of this persister's entity from the source entity type
 	 * @param leftColumn left part of the join, expected to be one of source table
 	 * @param rightColumn right part of the join, expected to be one of current instance table
 	 * @param beanRelationFixer setter that fix relation of this instance onto source persister instance, expected to manage collection instantiation
@@ -70,16 +74,17 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
 	 * @param loadSeparately indicator to make the target entities loaded in a separate query
 	 */
-	default <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
+	default <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsMany(String joinName,
+																							   RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																							   Accessor<SRC, ?> propertyAccessor,
 																							   Key<T1, JOINID> leftColumn,
 																							   Key<T2, JOINID> rightColumn,
 																							   BeanRelationFixer<SRC, C> beanRelationFixer,
 																							   @Nullable Function<ColumnedRow, Object> duplicateIdentifierProvider,
-																							   String joinName,
 																							   boolean optional,
 																							   boolean loadSeparately) {
-		return joinAsMany(sourcePersister, leftColumn, rightColumn, beanRelationFixer, duplicateIdentifierProvider,
-				joinName, Collections.emptySet(), optional, loadSeparately);
+		return joinAsMany(joinName, sourcePersister, propertyAccessor, leftColumn, rightColumn, beanRelationFixer,
+				duplicateIdentifierProvider, Collections.emptySet(), optional, loadSeparately);
 	}
 	
 	/**
@@ -90,6 +95,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * @param <T1> left table type
 	 * @param <T2> right table type
 	 * @param sourcePersister source that needs this instance joins
+	 * @param propertyAccessor accessor to the property of this persister's entity from the source entity type
 	 * @param leftColumn left part of the join, expected to be one of source table
 	 * @param rightColumn right part of the join, expected to be one of current instance table
 	 * @param beanRelationFixer setter that fix relation of this instance onto source persister instance, expected to manage collection instantiation
@@ -100,12 +106,13 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
 	 * @param loadSeparately indicator to make the target entities loaded in a separate query
 	 */
-	<SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
+	<SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsMany(String joinName,
+																					   RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																					   Accessor<SRC, ?> propertyAccessor,
 																					   Key<T1, JOINID> leftColumn,
 																					   Key<T2, JOINID> rightColumn,
 																					   BeanRelationFixer<SRC, C> beanRelationFixer,
 																					   @Nullable Function<ColumnedRow, Object> duplicateIdentifierProvider,
-																					   String joinName,
 																					   Set<? extends Column<T2, ?>> selectableColumns,
 																					   boolean optional,
 																					   boolean loadSeparately);

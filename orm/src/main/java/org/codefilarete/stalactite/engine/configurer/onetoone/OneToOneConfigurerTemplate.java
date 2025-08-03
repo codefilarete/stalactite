@@ -126,7 +126,7 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 			BeanRelationFixer<SRC, TRGT> beanRelationFixer,
 			boolean loadSeparately) {
 		// we add target subgraph joins to the one that was created
-		targetPersister.joinAsOne(sourcePersister, leftKey, rightKey, tableAlias, beanRelationFixer, oneToOneRelation.isNullable(), loadSeparately);
+		targetPersister.joinAsOne(sourcePersister, oneToOneRelation.getTargetProvider(), leftKey, rightKey, tableAlias, beanRelationFixer, oneToOneRelation.isNullable(), loadSeparately);
 		
 		// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
 		// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity

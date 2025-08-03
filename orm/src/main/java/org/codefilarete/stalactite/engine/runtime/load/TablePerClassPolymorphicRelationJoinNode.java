@@ -4,6 +4,7 @@ import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
@@ -42,6 +43,7 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 	
 	public TablePerClassPolymorphicRelationJoinNode(JoinNode<?, T1> parent,
 													Union subPersistersUnion,
+													Accessor<?, ?> propertyAccessor,
 													Key<T1, JOINCOLTYPE> leftJoinColumn,
 													Key<?, JOINCOLTYPE> rightJoinColumn,
 													JoinType joinType,
@@ -50,7 +52,7 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 													EntityInflater<C, I> entityInflater,
 													BeanRelationFixer<Object, C> beanRelationFixer,
 													Union.PseudoColumn<Integer> discriminatorColumn) {
-		super(parent, leftJoinColumn, (Key) rightJoinColumn, joinType, columnsToSelect, tableAlias, entityInflater, beanRelationFixer, null);
+		super(parent, propertyAccessor, leftJoinColumn, (Key) rightJoinColumn, joinType, columnsToSelect, tableAlias, entityInflater, beanRelationFixer, null);
 		this.pseudoTable = subPersistersUnion.asPseudoTable(getTableAlias());
 		this.discriminatorColumn = discriminatorColumn;
 	}

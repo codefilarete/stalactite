@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
@@ -35,6 +36,7 @@ public class JoinTablePolymorphicRelationJoinNode<C, T1 extends Table, T2 extend
 	private final Set<SubPersister<? extends C>> subPersisters = new HashSet<>();
 	
 	public JoinTablePolymorphicRelationJoinNode(JoinNode<?, T1> parent,
+												Accessor<?, ?> propertyAccessor,
 												Key<T1, JOINTYPE> leftJoinColumn,
 												Key<T2, JOINTYPE> rightJoinColumn,
 												JoinType joinType,
@@ -43,7 +45,7 @@ public class JoinTablePolymorphicRelationJoinNode<C, T1 extends Table, T2 extend
 												EntityInflater<C, I> entityInflater,
 												BeanRelationFixer<Object, C> beanRelationFixer,
 												@Nullable Function<ColumnedRow, ?> relationIdentifierProvider) {
-		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias, entityInflater, beanRelationFixer, relationIdentifierProvider);
+		super(parent, propertyAccessor, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias, entityInflater, beanRelationFixer, relationIdentifierProvider);
 	}
 	
 	@Override

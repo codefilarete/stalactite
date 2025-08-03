@@ -12,6 +12,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -29,7 +30,7 @@ public class IndexedMappedManyRelationDescriptor<SRC, TRGT, C extends Collection
 	/** Column that stores index value, owned by reverse side table (table of targetPersister) */
 	private final Column<Table, Integer> indexingColumn;
 	
-	public IndexedMappedManyRelationDescriptor(Function<SRC, C> collectionGetter,
+	public IndexedMappedManyRelationDescriptor(Accessor<SRC, C> collectionGetter,
 											   BiConsumer<SRC, C> collectionSetter,
 											   Supplier<C> collectionFactory,
 											   @Nullable BiConsumer<TRGT, SRC> reverseSetter,

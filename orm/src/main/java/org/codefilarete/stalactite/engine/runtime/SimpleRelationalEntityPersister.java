@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
@@ -35,8 +36,8 @@ import org.slf4j.LoggerFactory;
  * Persister that registers relations of entities joined on "foreign key = primary key".
  * This does not handle inheritance nor entities mapped on several tables, it focuses on select part : a main table is defined by
  * {@link ClassMapping} passed to constructor which then it can be added to some other {@link RelationalEntityPersister} thanks to
- * {@link RelationalEntityPersister#joinAsMany(RelationalEntityPersister, Key, Key, BeanRelationFixer, Function, String, boolean, boolean)} and
- * {@link RelationalEntityPersister#joinAsOne(RelationalEntityPersister, Key, Key, String, BeanRelationFixer, boolean, boolean)}.
+ * {@link RelationalEntityPersister#joinAsMany(String, RelationalEntityPersister, Accessor, Key, Key, BeanRelationFixer, Function, boolean, boolean)} and
+ * {@link RelationalEntityPersister#joinAsOne(RelationalEntityPersister, Accessor, Key, Key, String, BeanRelationFixer, boolean, boolean)}.
  * 
  * Entity load is defined by a select that joins all tables, each {@link ClassMapping} is called to complete
  * entity loading.
@@ -199,6 +200,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	 */
 	@Override
 	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																							 Accessor<SRC, C> propertyAccessor,
 																							 Key<T1, JOINID> leftColumn,
 																							 Key<T2, JOINID> rightColumn,
 																							 String rightTableAlias,
@@ -210,15 +212,15 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 		EntityMappingAdapter<C, I, T> strategy = new EntityMappingAdapter<>(getMapping());
 		String createdJoinNodeName = sourcePersister.getEntityJoinTree().addRelationJoin(
 				EntityJoinTree.ROOT_JOIN_NAME,
-				// because joinAsOne can be called in either case of owned-relation or reversly-owned-relation, generics can't be set correctly,
+				// because joinAsOne can be called in either case of owned relation or reversely owned relation, generics can't be set correctly,
 				// so we simply cast first argument
 				(EntityInflater) strategy,
+				propertyAccessor,
 				leftColumn,
 				rightColumn,
 				rightTableAlias,
 				optional ? JoinType.OUTER : JoinType.INNER,
-				beanRelationFixer,
-				Collections.emptySet());
+				beanRelationFixer, Collections.emptySet());
 		
 		copyRootJoinsTo(sourcePersister.getEntityJoinTree(), createdJoinNodeName);
 		
@@ -229,20 +231,21 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	 * Implementation for simple one-to-many cases : we add our joins to given persister
 	 */
 	@Override
-	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
+	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsMany(String joinName,
+																							  RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																							  Accessor<SRC, ?> propertyAccessor,
 																							  Key<T1, JOINID> leftColumn,
 																							  Key<T2, JOINID> rightColumn,
 																							  BeanRelationFixer<SRC, C> beanRelationFixer,
 																							  @Nullable Function<ColumnedRow, Object> relationIdentifierProvider,
-																							  String joinName,
 																							  Set<? extends Column<T2, ?>> selectableColumns,
 																							  boolean optional,
 																							  boolean loadSeparately) {
 		
-		EntityMappingAdapter<C, I, T> strategy = new EntityMappingAdapter<>(getMapping());
 		String createdJoinNodeName = sourcePersister.getEntityJoinTree().addRelationJoin(
 				joinName,
-				strategy,
+				new EntityMappingAdapter<>(getMapping()),
+				propertyAccessor,
 				leftColumn,
 				rightColumn,
 				null,

@@ -293,7 +293,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 					connectionConfiguration);
 
 			ManyRelationDescriptor<SRC, TRGT, C1> manyRelationDescriptor = new ManyRelationDescriptor<>(
-					associationConfiguration.getCollectionGetter()::get,
+					associationConfiguration.getCollectionGetter(),
 					associationConfiguration.getSetter()::set,
 					associationConfiguration.getCollectionFactory(),
 					buildReverseCombiner(targetPersister.getClassToPersist()));
@@ -346,7 +346,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 							connectionConfiguration);
 
 			IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C1, SRCID> manyRelationDescriptor = new IndexedAssociationTableManyRelationDescriptor<>(
-					associationConfiguration.getCollectionGetter()::get,
+					associationConfiguration.getCollectionGetter(),
 					associationConfiguration.getSetter()::set,
 					associationConfiguration.getCollectionFactory(),
 					buildReverseCombiner(targetPersister.getClassToPersist()),

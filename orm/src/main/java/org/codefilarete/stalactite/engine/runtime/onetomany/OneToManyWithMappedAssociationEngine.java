@@ -143,8 +143,8 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	public <T1 extends Table<T1>, T2 extends Table<T2>> void addSelectCascade(Key<T1, SRCID> sourcePrimaryKey,
 																			  boolean loadSeparately) {
 		// we add target subgraph joins to main persister
-		targetPersister.joinAsMany(sourcePersister, sourcePrimaryKey, (Key<T2, SRCID>) manyRelationDescriptor.getReverseColumn(), manyRelationDescriptor.getRelationFixer(),
-				null, EntityJoinTree.ROOT_JOIN_NAME, true, loadSeparately);
+		targetPersister.joinAsMany(EntityJoinTree.ROOT_JOIN_NAME, sourcePersister, manyRelationDescriptor.getCollectionProvider(), sourcePrimaryKey, (Key<T2, SRCID>) manyRelationDescriptor.getReverseColumn(),
+				manyRelationDescriptor.getRelationFixer(), null, true, loadSeparately);
 		
 		// we must trigger subgraph event on loading of our own graph, this is mainly for event that initializes things because given ids
 		// are not those of their entity

@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.ConsumerNode;
@@ -81,19 +82,23 @@ class EntityTreeInflaterTest {
 		String joinName = entityJoinTree.addRelationJoin(
 				EntityJoinTree.ROOT_JOIN_NAME,
 				rightEntityInflater,
-				leftTablePk,
-				rightTableFkToLeftTable,
-				null,
-				JoinType.OUTER,
-				relationFixer, Collections.emptySet());
+				mock(Accessor.class),
+                leftTablePk,
+                rightTableFkToLeftTable,
+                null,
+                JoinType.OUTER,
+				relationFixer,
+				Collections.emptySet());
 		entityJoinTree.addRelationJoin(
 				joinName,
 				rightMostEntityInflater,
-				rightTablePk,
-				rightMostTableFkToRightTable,
-				null,
-				JoinType.OUTER,
-				Mockito.mock(BeanRelationFixer.class), Collections.emptySet());
+				mock(Accessor.class),
+                rightTablePk,
+                rightMostTableFkToRightTable,
+                null,
+                JoinType.OUTER,
+				Mockito.mock(BeanRelationFixer.class),
+				Collections.emptySet());
 		
 		EntityTreeQuery<Country> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree, new DefaultDialect().getColumnBinderRegistry()).buildSelectQuery();
 		EntityTreeInflater testInstance = entityTreeQuery.getInflater();

@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
@@ -243,12 +244,12 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 									PrimaryKey<?, SRCID> sourcePK,
 									ForeignKey<?, ?, SRCID> keyValueRecordToSourceForeignKey,
 									BiConsumer<SRC, MM> mapSetter,
-									Function<SRC, MM> mapGetter,
+									Accessor<SRC, MM> mapGetter,
 									Supplier<MM> mapFactory) {
 		
 		BeanRelationFixer<SRC, KeyValueRecord<KID, V, SRCID>> relationFixer = BeanRelationFixer.ofMapAdapter(
 				mapSetter,
-				mapGetter,
+				mapGetter::get,
 				mapFactory,
 				(bean, input, map) -> {
 					inMemoryRelationHolder.storeRelation(sourcePersister.getId(bean), input.getKey(), input.getValue());
@@ -273,21 +274,21 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 				},
 				null, associationTableJoinNodeName, true, false);
 		 */
-		PrimaryKey<?, KID> primaryKey = keyEntityPersister.getMainTable().getPrimaryKey();
-		keyEntityPersister.joinAsMany(relationRecordPersister,
-				(Key<Table, KID>) keyIdColumnsProjectInAssociationTable,
-				primaryKey,
-				(bean, input) -> inMemoryRelationHolder.storeEntity(bean.getId().getId(), keyEntityPersister.getId(input), input),
-				null, ROOT_JOIN_NAME, true, false);
+		keyEntityPersister.joinAsMany(ROOT_JOIN_NAME,
+				relationRecordPersister,
+				Accessors.accessorByMethodReference(KeyValueRecord::getKey),
+                (Key<Table, KID>) keyIdColumnsProjectInAssociationTable,
+				(PrimaryKey<?, KID>) keyEntityPersister.getMainTable().<KID>getPrimaryKey(),
+                (bean, input) -> inMemoryRelationHolder.storeEntity(bean.getId().getId(), keyEntityPersister.getId(input), input), null, true, false);
 		
 		relationRecordPersister.joinAsMany(
+				ROOT_JOIN_NAME,
 				sourcePersister,
+				mapGetter,
 				sourcePK,
 				keyValueRecordToSourceForeignKey,
 				relationFixer,
 				null,
-                ROOT_JOIN_NAME,
-				true,
-				originalMapRelation.isFetchSeparately());
+                true, originalMapRelation.isFetchSeparately());
 	}
 }
