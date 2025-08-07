@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import org.codefilarete.reflection.AccessorChain;
@@ -16,6 +17,9 @@ import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
+import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.tool.collection.Iterables;
 import org.slf4j.Logger;
@@ -31,6 +35,21 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractPolymorphismPersister<C, I>
 		extends PersisterListenerWrapper<C, I>
 		implements ConfiguredRelationalPersister<C, I>, PolymorphicPersister<C>, AdvancedEntityPersister<C, I> {
+	
+	public static AbstractPolymorphismPersister<?, ?> lookupForPolymorphicPersister(ConfiguredRelationalPersister<?, ?> targetPersister) {
+		if (targetPersister instanceof AbstractPolymorphismPersister) {
+			return (AbstractPolymorphismPersister<?, ?>) targetPersister;
+		} else if (targetPersister instanceof PersisterWrapper) {
+			ConfiguredRelationalPersister<?, ?> deepestDelegate = ((PersisterWrapper<?, ?>) targetPersister).getDeepestDelegate();
+			if (deepestDelegate instanceof AbstractPolymorphismPersister) {
+				return (AbstractPolymorphismPersister<?, ?>) deepestDelegate;
+			} else {
+				return null;
+			}
+		} else {
+			return null;
+		}
+	}
 	
 	protected final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 	
@@ -57,6 +76,9 @@ public abstract class AbstractPolymorphismPersister<C, I>
 	public Map<Class<C>, ConfiguredRelationalPersister<C, I>> getSubEntitiesPersisters() {
 		return subEntitiesPersisters;
 	}
+
+	public abstract <LEFTTABLE extends Table<LEFTTABLE>, SUBTABLE extends Table<SUBTABLE>, JOINTYPE>
+	void propagateMappedAssociationToSubTables(Key<SUBTABLE, JOINTYPE> foreignKey, PrimaryKey<LEFTTABLE, JOINTYPE> leftPrimaryKey, BiFunction<Key<SUBTABLE, JOINTYPE>, PrimaryKey<LEFTTABLE, JOINTYPE>, String> foreignKeyNamingFunction);
 	
 	@Override
 	public Set<C> doSelect(Iterable<I> ids) {

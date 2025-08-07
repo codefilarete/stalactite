@@ -78,25 +78,23 @@ class EntityJoinTreeTest {
 		// Tutu.id (Root)
 		ClassMapping tutuMappingMock = buildMappingStrategyMock("Tutu");
 		EntityJoinTree tutuEntityJoinTree = new EntityJoinTree(tutuMappingMock);
-		((Table) tutuEntityJoinTree.getRoot().getTable()).addColumn("id", long.class).primaryKey();
+		Table<?> tutuTable = (Table<?>) tutuEntityJoinTree.getRoot().getTable();
+		tutuTable.addColumn("id", long.class).primaryKey();
 
 		// When we clone:
 		// Toto.tataId = Tata.id (X)
 		// to
 		// Tutu.id (Root)
-		PrimaryKey<?, Object> targetJoinLink = ((Table<?>) tutuEntityJoinTree.getRoot().getTable()).getPrimaryKey();
+		PrimaryKey<?, Object> targetJoinLink = tutuTable.getPrimaryKey();
 		AbstractJoinNode<?, ?, ?, ?> tataJoinInTutu = EntityJoinTree.cloneNodeForParent(tataJoinInToto, tutuEntityJoinTree.getRoot(), targetJoinLink);
 
 		// Then we should get:
 		// Tutu.id (Root)
 		// Tutu.id = Tata.id (X clone)
-		Table tutuTable = (Table) tutuEntityJoinTree.getRoot().getTable();
-		assertThat(tataJoinInTutu.getParent()).isSameAs(tutuEntityJoinTree.getRoot());
-		assertThat(tataJoinInTutu.getLeftJoinLink()).isSameAs(targetJoinLink);
+		assertThat(tataJoinInTutu.getLeftJoinLink()).isNotSameAs(targetJoinLink);
+		assertThat(tataJoinInTutu.getLeftJoinLink()).usingRecursiveComparison().isEqualTo(targetJoinLink);
 		assertThat(tutuEntityJoinTree.getRoot().getJoins()).hasSize(1);
 		assertThat(tutuEntityJoinTree.getRoot().getJoins().get(0)).isInstanceOf(RelationJoinNode.class);
-		// we check that the cloned node has the same left join link as the original one
-		assertThat(tataJoinInTutu.getLeftJoinLink()).isSameAs(tutuTable.getPrimaryKey());
 		// right table must be cloned ...
 		assertThat(tataJoinInTutu.getTable()).isNotSameAs(tataTable);
 		// ... and its columns must be the same as the original one
@@ -118,13 +116,10 @@ class EntityJoinTreeTest {
 		// we check that the join has the right attributes
 		assertThat(tataJoinInTutu.getJoinType()).isEqualTo(tataJoinInToto.getJoinType());
 		assertThat(tataJoinInTutu.getTableAlias()).isEqualTo(tataJoinInToto.getTableAlias());
-		// selectable columns must be cloned ...
+		// selectable columns must be the same (to let them be available as key in ColumnedRow, thus, making them accessible by end user)
 		assertThat(tataJoinInTutu.getColumnsToSelect())
 				.usingElementComparator(Predicates.toComparator(Predicates.and(getExpression, getExpression).and(Predicates.and(getJavaType, getJavaType))))
 				.isEqualTo(tataJoinInToto.getColumnsToSelect());
-		// ... but different from the original one
-		assertThat(tataJoinInTutu.getColumnsToSelect())
-				.allSatisfy(column -> assertThat(EntityJoinTreeTest.getOwner(column)).isNotSameAs(tataTable));
 	}
 
 	@Test
@@ -154,25 +149,24 @@ class EntityJoinTreeTest {
 		// Tutu.id (Root)
 		ClassMapping tutuMappingMock = buildMappingStrategyMock("Tutu");
 		EntityJoinTree tutuEntityJoinTree = new EntityJoinTree(tutuMappingMock);
-		((Table) tutuEntityJoinTree.getRoot().getTable()).addColumn("id", long.class).primaryKey();
+		Table tutuTable = (Table) tutuEntityJoinTree.getRoot().getTable();
+		tutuTable.addColumn("id", long.class).primaryKey();
 
 		// When we clone:
 		// Toto.tataId = Tata.id (X)
 		// to
 		// Tutu.id (Root)
-		PrimaryKey<?, Object> targetJoinLink = ((Table<?>) tutuEntityJoinTree.getRoot().getTable()).getPrimaryKey();
+		PrimaryKey<?, Object> targetJoinLink = tutuTable.getPrimaryKey();
 		AbstractJoinNode<?, ?, ?, ?> tataJoinInTutu = EntityJoinTree.cloneNodeForParent(tataJoinInToto, tutuEntityJoinTree.getRoot(), targetJoinLink);
 
 		// Then we should get:
 		// Tutu.id (Root)
 		// Tutu.id = Tata.id (X clone)
-		Table tutuTable = (Table) tutuEntityJoinTree.getRoot().getTable();
 		assertThat(tataJoinInTutu.getParent()).isSameAs(tutuEntityJoinTree.getRoot());
-		assertThat(tataJoinInTutu.getLeftJoinLink()).isSameAs(targetJoinLink);
+		assertThat(tataJoinInTutu.getLeftJoinLink()).isNotSameAs(targetJoinLink);
+		assertThat(tataJoinInTutu.getLeftJoinLink()).usingRecursiveComparison().isEqualTo(targetJoinLink);
 		assertThat(tutuEntityJoinTree.getRoot().getJoins()).hasSize(1);
 		assertThat(tutuEntityJoinTree.getRoot().getJoins().get(0)).isInstanceOf(MergeJoinNode.class);
-		// we check that the cloned node has the same left join link as the original one
-		assertThat(tataJoinInTutu.getLeftJoinLink()).isSameAs(tutuTable.getPrimaryKey());
 		// right table must be cloned ...
 		assertThat(tataJoinInTutu.getTable()).isNotSameAs(tataTable);
 		// ... and its columns must be the same as the original one
@@ -194,13 +188,10 @@ class EntityJoinTreeTest {
 		// we check that the join has the right attributes
 		assertThat(tataJoinInTutu.getJoinType()).isEqualTo(tataJoinInToto.getJoinType());
 		assertThat(tataJoinInTutu.getTableAlias()).isEqualTo(tataJoinInToto.getTableAlias());
-		// selectable columns must be cloned ...
+		// selectable columns must be the same (to let them be available as key in ColumnedRow, thus, making them accessible by end user)
 		assertThat(tataJoinInTutu.getColumnsToSelect())
 				.usingElementComparator(Predicates.toComparator(Predicates.and(getExpression, getExpression).and(Predicates.and(getJavaType, getJavaType))))
 				.isEqualTo(tataJoinInToto.getColumnsToSelect());
-		// ... but different from the original one
-		assertThat(tataJoinInTutu.getColumnsToSelect())
-		    .allSatisfy(column -> assertThat(EntityJoinTreeTest.getOwner(column)).isNotSameAs(tataTable));
 	}
 
 	@Test
@@ -228,7 +219,8 @@ class EntityJoinTreeTest {
 		// Tutu.id (Root)
 		ClassMapping tutuMappingMock = buildMappingStrategyMock("Tutu");
 		EntityJoinTree tutuEntityJoinTree = new EntityJoinTree(tutuMappingMock);
-		((Table) tutuEntityJoinTree.getRoot().getTable()).addColumn("id", long.class).primaryKey();
+		Table tutuTable = (Table) tutuEntityJoinTree.getRoot().getTable();
+		tutuTable.addColumn("id", long.class).primaryKey();
 
 		// When we clone:
 		// Toto.tataId = Tata.id (X)
@@ -240,13 +232,11 @@ class EntityJoinTreeTest {
 		// Then we should get:
 		// Tutu.id (Root)
 		// Tutu.id = Tata.id (X clone)
-		Table tutuTable = (Table) tutuEntityJoinTree.getRoot().getTable();
 		assertThat(tataJoinInTutu.getParent()).isSameAs(tutuEntityJoinTree.getRoot());
-		assertThat(tataJoinInTutu.getLeftJoinLink()).isSameAs(targetJoinLink);
+		assertThat(tataJoinInTutu.getLeftJoinLink()).isNotSameAs(targetJoinLink);
+		assertThat(tataJoinInTutu.getLeftJoinLink()).usingRecursiveComparison().isEqualTo(targetJoinLink);
 		assertThat(tutuEntityJoinTree.getRoot().getJoins()).hasSize(1);
 		assertThat(tutuEntityJoinTree.getRoot().getJoins().get(0)).isInstanceOf(PassiveJoinNode.class);
-		// we check that the cloned node has the same left join link as the original one
-		assertThat(tataJoinInTutu.getLeftJoinLink()).isSameAs(tutuTable.getPrimaryKey());
 		// right table must be cloned ...
 		assertThat(tataJoinInTutu.getTable()).isNotSameAs(tataTable);
 		// ... and its columns must be the same as the original one
@@ -268,13 +258,10 @@ class EntityJoinTreeTest {
 		// we check that the join has the right attributes
 		assertThat(tataJoinInTutu.getJoinType()).isEqualTo(tataJoinInToto.getJoinType());
 		assertThat(tataJoinInTutu.getTableAlias()).isEqualTo(tataJoinInToto.getTableAlias());
-		// selectable columns must be cloned ...
+		// selectable columns must be the same (to let them be available as key in ColumnedRow, thus, making them accessible by end user)
 		assertThat(tataJoinInTutu.getColumnsToSelect())
 				.usingElementComparator(Predicates.toComparator(Predicates.and(getExpression, getExpression).and(Predicates.and(getJavaType, getJavaType))))
 				.isEqualTo(tataJoinInToto.getColumnsToSelect());
-		// ... but different from the original one
-		assertThat(tataJoinInTutu.getColumnsToSelect())
-				.allSatisfy(column -> assertThat(EntityJoinTreeTest.getOwner(column)).isNotSameAs(tataTable));
 	}
 	
 	static Fromable getOwner(Selectable<?> selectable) {

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Guillaume Mary
@@ -14,14 +15,18 @@ import static org.mockito.Mockito.mock;
 class AbstractJoinNodeTest {
 	
 	@Test
-	void getTree() {
-		EntityJoinTree<Object, Object> tree = new EntityJoinTree<>(null, null);
+	void addingANodeToAnotherOne_treeOfNewNodeIsTheSameAsTheOneItIsAttachedTo() {
+		EntityJoinTree<Object, Object> tree = new EntityJoinTree<>(mock(EntityInflater.class), new Table<>("toto"));
 		assertThat(tree.getRoot().getTree()).isSameAs(tree);
 		
-		RelationJoinNode<Object, Table, Table, Object, Object> node1 = new RelationJoinNode<>(tree.getRoot(), mock(Accessor.class), (JoinLink) mock(JoinLink.class), (JoinLink) mock(JoinLink.class), null, null, null, null, null, null);
+		JoinLink rightJoinLinkMock1 = mock(JoinLink.class);
+		when(rightJoinLinkMock1.getOwner()).thenReturn(new Table<>("tata"));
+		RelationJoinNode<Object, Table, Table, Object, Object> node1 = new RelationJoinNode<>(tree.getRoot(), mock(Accessor.class), mock(JoinLink.class), rightJoinLinkMock1, null, null, null, null, null, null);
 		assertThat(node1.getTree()).isSameAs(tree);
 		
-		RelationJoinNode<Object, Table, Table, Object, Object> node2 = new RelationJoinNode<>(node1, mock(Accessor.class) , (JoinLink) mock(JoinLink.class), (JoinLink) mock(JoinLink.class), null, null, null, null, null, null);
+		JoinLink rightJoinLinkMock2 = mock(JoinLink.class);
+		when(rightJoinLinkMock2.getOwner()).thenReturn(new Table<>("titi"));
+		RelationJoinNode<Object, Table, Table, Object, Object> node2 = new RelationJoinNode<>(node1, mock(Accessor.class) , mock(JoinLink.class), rightJoinLinkMock2, null, null, null, null, null, null);
 		assertThat(node2.getTree()).isSameAs(tree);
 		
 	}

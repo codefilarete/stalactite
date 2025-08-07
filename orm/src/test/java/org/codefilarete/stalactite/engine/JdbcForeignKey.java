@@ -62,4 +62,15 @@ class JdbcForeignKey {
 				", targetColumnName='" + targetColumnName + '\'' +
 				'}';
 	}
+	
+	@Override
+	public String toString() {
+		return "JdbcForeignKey{" +
+				"name='" + name + '\'' +
+				", srcTableName='" + srcTableName + '\'' +
+				", srcColumnName='" + srcColumnName + '\'' +
+				", targetTableName='" + targetTableName + '\'' +
+				", targetColumnName='" + targetColumnName + '\'' +
+				'}';
+	}
 }

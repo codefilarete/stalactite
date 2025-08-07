@@ -50,18 +50,11 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 					 EntityInflater<C, I> entityInflater,
 					 BeanRelationFixer<?, C> beanRelationFixer,
 					 @Nullable Function<ColumnedRow, ?> relationIdentifierProvider) {
-		this(parent,
-				propertyAccessor,
-				Key.ofSingleColumn(leftJoinColumn),
-				Key.ofSingleColumn(rightJoinColumn),
-				joinType,
-				columnsToSelect,
-				tableAlias,
-				entityInflater,
-				beanRelationFixer,
-				relationIdentifierProvider,
-				new IdentityHashMap<>()
-		);
+		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias);
+		this.entityInflater = entityInflater;
+		this.propertyAccessor = propertyAccessor;
+		this.beanRelationFixer = (BeanRelationFixer<Object, C>) beanRelationFixer;
+		this.relationIdentifierProvider = relationIdentifierProvider;
 	}
 	
 	RelationJoinNode(JoinNode<?, T1> parent,

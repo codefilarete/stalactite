@@ -3,9 +3,11 @@ package org.codefilarete.stalactite.engine;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -54,6 +56,7 @@ import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.exception.Exceptions;
 import org.codefilarete.tool.function.Functions;
 import org.codefilarete.trace.ObjectPrinterBuilder;
 import org.codefilarete.trace.ObjectPrinterBuilder.ObjectPrinter;
@@ -575,37 +578,6 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		assertThat(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruck.getId()))).containsExactlyInAnyOrder(dummyCarModified, dummyTruckModified);
 	}
 	
-	@Test
-	void build_joinedTables_oneToManyWithMappedAssociation_eachSubclassRedeclaresSameAssociation_throwsException() {
-		FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleMappingBuilder = entityBuilder(Vehicle.class, LONG_TYPE)
-				.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
-				.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
-						.addSubClass(subentityBuilder(Car.class)
-								.map(Car::getModel)
-								.mapOneToMany(Car::getWheels, entityBuilder(Wheel.class, String.class)
-										// please note that we use an already-assigned policy because it requires entities to be marked
-										// as persisted after select, so we test also select listener of relation
-										.mapKey(Wheel::getSerialNumber, alreadyAssigned(Wheel::markAsPersisted, Wheel::isPersisted))
-										.map(Wheel::getModel)).mappedBy(Wheel::setVehicle))
-						.addSubClass(subentityBuilder(Truck.class)
-								.map(Truck::getColor)
-								.mapOneToMany(Truck::getWheels, entityBuilder(Wheel.class, String.class)
-										// please note that we use an already-assigned policy because it requires entities to be marked
-										// as persisted after select, so we test also select listener of relation
-										.mapKey(Wheel::getSerialNumber, alreadyAssigned(Wheel::markAsPersisted, Wheel::isPersisted))
-										.map(Wheel::getModel)).mappedBy(Wheel::setVehicle))
-				);
-		
-		PersistenceContext persistenceContext5 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
-		assertThatCode(() -> vehicleMappingBuilder.build(persistenceContext5))
-				// Note that Exception type is not so important nor message actually : this test shows that this
-				// feature is not supported, but it's difficult to check in code therefore we don't throw an UnsupportedOperationException
-				.hasMessage("A foreign key with same source columns but different referenced columns already exist :"
-						+ " 'FK_Wheel_vehicleId_Car_id' <Wheel.vehicleId -> Car.id>"
-						+ " vs wanted new one"
-						+ " 'FK_Wheel_vehicleId_Truck_id' <Wheel.vehicleId -> Truck.id>");
-	}
-	
 	static Object[][] crud_polymorphism_subClassHasElementCollection() {
 		PersistenceContext persistenceContext1 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
 		PersistenceContext persistenceContext2 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
@@ -1042,7 +1014,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	}
 	
 	@Nested
-	class JoinTableWithOneToOne {
+	class OneToJoinTable {
 		
 		@Test
 		void oneSubClass() {
@@ -1052,10 +1024,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
 							.mapKey(Engine::getId, ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
-					.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
-							.addSubClass(subentityBuilder(Car.class)
-									.map(Car::getModel)
-									.map(Car::getColor)))
+							.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
+									.addSubClass(subentityBuilder(Car.class)
+											.map(Car::getModel)
+											.map(Car::getColor)))
 					.build(persistenceContext);
 			
 			// Schema contains main and children tables
@@ -1115,14 +1087,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
 							.mapKey(Engine::getId, ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
-					.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
-							.addSubClass(subentityBuilder(Car.class)
-									.map(Car::getId)
-									.map(Car::getModel)
-									.map(Car::getColor))
-							.addSubClass(subentityBuilder(Truck.class)
-									.map(Truck::getId)
-									.map(Truck::getColor)))
+							.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
+									.addSubClass(subentityBuilder(Car.class)
+											.map(Car::getId)
+											.map(Car::getModel)
+											.map(Car::getColor))
+									.addSubClass(subentityBuilder(Truck.class)
+											.map(Truck::getId)
+											.map(Truck::getColor)))
 					.build(persistenceContext);
 			
 			// Schema contains main and children tables
@@ -1222,11 +1194,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
 							.mapKey(Engine::getId, ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
-					.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
-							.addSubClass(subentityBuilder(Car.class)
-									.map(Car::getModel))
-							.addSubClass(subentityBuilder(Truck.class)
-									))
+							.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
+									.addSubClass(subentityBuilder(Car.class)
+											.map(Car::getModel))
+									.addSubClass(subentityBuilder(Truck.class)
+											))
 					.build(persistenceContext);
 			
 			// Schema contains main and children tables
@@ -1326,10 +1298,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
 							.mapKey(Engine::getId, ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
-					.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
-							.addSubClass(subentityBuilder(Car.class)
-									.map(Car::getModel)
-									.map(Car::getColor)))
+							.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
+									.addSubClass(subentityBuilder(Car.class)
+											.map(Car::getModel)
+											.map(Car::getColor)))
 					.build(persistenceContext);
 			
 			// DML tests
@@ -1403,7 +1375,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	}
 	
 	@Nested
-	class TablePerClassWithOneToOne {
+	class OneToTablePerClass {
 		
 		@Test
 		void oneSubClass() {
@@ -1413,11 +1385,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
 							.mapKey(Engine::getId, ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
-					.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
-							.addSubClass(subentityBuilder(Car.class)
-									.map(Car::getId)
-									.map(Car::getModel)
-									.map(Car::getColor)))
+							.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
+									.addSubClass(subentityBuilder(Car.class)
+											.map(Car::getId)
+											.map(Car::getModel)
+											.map(Car::getColor)))
 					.build(persistenceContext);
 			
 			// Schema contains children tables
@@ -1477,12 +1449,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
 							.mapKey(Engine::getId, ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
-					.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
-							.addSubClass(subentityBuilder(Car.class)
-									.map(Car::getModel)
-									.map(Car::getColor))
-							.addSubClass(subentityBuilder(Truck.class)
-									.map(Truck::getColor)))
+							.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
+									.addSubClass(subentityBuilder(Car.class)
+											.map(Car::getModel)
+											.map(Car::getColor))
+									.addSubClass(subentityBuilder(Truck.class)
+											.map(Truck::getColor)))
 					.build(persistenceContext);
 
 			// Schema contains children tables
@@ -1567,11 +1539,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
 							.mapKey(Engine::getId, ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
-					.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
-							.addSubClass(subentityBuilder(Car.class)
-									.map(Car::getModel))
-							.addSubClass(subentityBuilder(Truck.class)
-									))
+							.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
+									.addSubClass(subentityBuilder(Car.class)
+											.map(Car::getModel))
+									.addSubClass(subentityBuilder(Truck.class)
+											))
 					.build(persistenceContext);
 
 			// Schema contains children tables
@@ -1660,10 +1632,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
 							.mapKey(Engine::getId, ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
-					.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
-							.addSubClass(subentityBuilder(Car.class)
-									.map(Car::getModel)
-									.map(Car::getColor)))
+							.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
+									.addSubClass(subentityBuilder(Car.class)
+											.map(Car::getModel)
+											.map(Car::getColor)))
 					.build(persistenceContext);
 			
 			// DML tests
@@ -2458,7 +2430,125 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	class OneToPolymorphicMany {
 		
 		@Test
-		void oneToTablePerClass_crud_ownedByReverseSide_foreignKeysAreCreated() throws SQLException {
+		void oneToJoinTable_crud_ownedByReverseSide_foreignKeysAreCreated() {
+			
+			FluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
+					embeddableBuilder(Country.class)
+							.map(Country::getName)
+							.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
+									.map(Timestamp::getCreationDate)
+									.map(Timestamp::getModificationDate));
+			
+			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
+					entityBuilder(City.class, LONG_TYPE)
+							.mapKey(City::getId, ALREADY_ASSIGNED)
+							.map(City::getName)
+							.mapPolymorphism(PolymorphismPolicy.<City>joinTable()
+									.addSubClass(subentityBuilder(Village.class)
+											.map(Village::getBarCount))
+									.addSubClass(subentityBuilder(Town.class)
+											.map(Town::getDiscotecCount))
+							);
+			
+			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
+					.mapKey(Country::getId, ALREADY_ASSIGNED)
+					.mapOneToMany(Country::getCities, cityConfiguration)
+					.mappedBy(City::getCountry)
+					.cascading(RelationMode.ALL)
+					.mapSuperClass(timestampedPersistentBeanMapping)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
+			Set<String> tables = Arrays.asSet("VILLAGE", "TOWN", "CITY");
+			List<JdbcForeignKey> foundForeignKeys = new ArrayList<>();
+			tables.forEach(tableName -> {
+				try {
+					ResultSetIterator<JdbcForeignKey> fkVillageIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData()
+							.getImportedKeys(null, null, tableName)) {
+						@Override
+						public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+							return new JdbcForeignKey(
+									rs.getString("FK_NAME"),
+									rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+									rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+							);
+						}
+					};
+					foundForeignKeys.addAll(Iterables.asList(() -> fkVillageIterator));
+				} catch (SQLException e) {
+					throw Exceptions.asRuntimeException(e);
+				}
+			});
+			assertThat(foundForeignKeys).usingRecursiveFieldByFieldElementComparator().containsExactlyInAnyOrder(
+					new JdbcForeignKey("FK_VILLAGE_ID_CITY_ID", "VILLAGE", "ID", "CITY", "ID"),
+					new JdbcForeignKey("FK_TOWN_ID_CITY_ID", "TOWN", "ID", "CITY", "ID"),
+					new JdbcForeignKey("FK_CITY_COUNTRYID_COUNTRY_ID", "CITY", "COUNTRYID", "COUNTRY", "ID")
+			);
+		}
+		
+		@Test
+		void oneToSingleTable_crud_ownedByReverseSide_foreignKeysAreCreated() {
+			
+			FluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
+					embeddableBuilder(Country.class)
+							.map(Country::getName)
+							.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
+									.map(Timestamp::getCreationDate)
+									.map(Timestamp::getModificationDate));
+			
+			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
+					entityBuilder(City.class, LONG_TYPE)
+							.mapKey(City::getId, ALREADY_ASSIGNED)
+							.map(City::getName)
+							.mapPolymorphism(PolymorphismPolicy.<City>singleTable()
+									.addSubClass(subentityBuilder(Village.class)
+											.map(Village::getBarCount), "VILLAGE")
+									.addSubClass(subentityBuilder(Town.class)
+											.map(Town::getDiscotecCount), "TOWN")
+							);
+			
+			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
+					.mapKey(Country::getId, ALREADY_ASSIGNED)
+					.mapOneToMany(Country::getCities, cityConfiguration)
+					.mappedBy(City::getCountry)
+					.cascading(RelationMode.ALL)
+					.mapSuperClass(timestampedPersistentBeanMapping)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
+			Set<String> tables = Arrays.asSet("VILLAGE", "TOWN", "CITY");
+			List<JdbcForeignKey> foundForeignKeys = new ArrayList<>();
+			tables.forEach(tableName -> {
+				try {
+					ResultSetIterator<JdbcForeignKey> fkVillageIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData()
+							.getImportedKeys(null, null, tableName)) {
+						@Override
+						public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+							return new JdbcForeignKey(
+									rs.getString("FK_NAME"),
+									rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+									rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+							);
+						}
+					};
+					foundForeignKeys.addAll(Iterables.asList(() -> fkVillageIterator));
+				} catch (SQLException e) {
+					throw Exceptions.asRuntimeException(e);
+				}
+			});
+			assertThat(foundForeignKeys).usingRecursiveFieldByFieldElementComparator().containsExactlyInAnyOrder(
+					new JdbcForeignKey("FK_CITY_COUNTRYID_COUNTRY_ID", "CITY", "COUNTRYID", "COUNTRY", "ID")
+			);
+		}
+		
+		@Test
+		void oneToTablePerClass_crud_ownedByReverseSide_foreignKeysAreCreated() {
 			
 			FluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
 					embeddableBuilder(Country.class)
@@ -2490,35 +2580,30 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			ddlDeployer.deployDDL();
 			
 			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
-			ResultSetIterator<JdbcForeignKey> fkVillageIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData()
-					.getImportedKeys(null, null, "VILLAGE")) {
-				@Override
-				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
-					return new JdbcForeignKey(
-							rs.getString("FK_NAME"),
-							rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
-							rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
-					);
+			Set<String> tables = Arrays.asSet("VILLAGE", "TOWN", "CITY");
+			List<JdbcForeignKey> foundForeignKeys = new ArrayList<>();
+			tables.forEach(tableName -> {
+				try {
+					ResultSetIterator<JdbcForeignKey> fkVillageIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData()
+							.getImportedKeys(null, null, tableName)) {
+						@Override
+						public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+							return new JdbcForeignKey(
+									rs.getString("FK_NAME"),
+									rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+									rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+							);
+						}
+					};
+					foundForeignKeys.addAll(Iterables.asList(() -> fkVillageIterator));
+				} catch (SQLException e) {
+					throw Exceptions.asRuntimeException(e);
 				}
-			};
-			JdbcForeignKey foundForeignKey = Iterables.first(fkVillageIterator);
-			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_VILLAGE_COUNTRYID_COUNTRY_ID", "VILLAGE", "COUNTRYID", "COUNTRY", "ID");
-			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
-			
-			ResultSetIterator<JdbcForeignKey> fkTownIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData()
-					.getImportedKeys(null, null, "TOWN")) {
-				@Override
-				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
-					return new JdbcForeignKey(
-							rs.getString("FK_NAME"),
-							rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
-							rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
-					);
-				}
-			};
-			foundForeignKey = Iterables.first(fkTownIterator);
-			expectedForeignKey = new JdbcForeignKey("FK_TOWN_COUNTRYID_COUNTRY_ID", "TOWN", "COUNTRYID", "COUNTRY", "ID");
-			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
+			});
+			assertThat(foundForeignKeys).usingRecursiveFieldByFieldElementComparator().containsExactlyInAnyOrder(
+					new JdbcForeignKey("FK_VILLAGE_COUNTRYID_COUNTRY_ID", "VILLAGE", "COUNTRYID", "COUNTRY", "ID"),
+					new JdbcForeignKey("FK_TOWN_COUNTRYID_COUNTRY_ID", "TOWN", "COUNTRYID", "COUNTRY", "ID")
+			);
 		}
 			
 		@Test

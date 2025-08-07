@@ -57,6 +57,8 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 	protected void configure(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		determineForeignKeyColumns(targetPersister);
 		assignAssociationEngine(targetPersister);
+		
+		mappedAssociationEngine.propagateMappedAssociationToSubTables(this.foreignKey);
 		mappedAssociationEngine.addSelectCascade(associationConfiguration.getLeftPrimaryKey(), loadSeparately);
 		addWriteCascades(mappedAssociationEngine, targetPersister);
 	}
@@ -151,35 +153,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 			};
 		} // else : no reverse side mapped, this case can't happen since OneToManyWithMappedAssociationConfigurer is only
 		// invoked when reverse side is mapped (see OneToManyRelation.isOwnedByReverseSide())
-		
-		
-		// adding foreign key constraint
-		// NB: we ask it to targetPersister because it may be polymorphic or complex (ie contains several tables) so it knows better how to do it
 		foreignKey = foreignKeyBuilder.build();
-		if (relation.isTargetTablePerClassPolymorphic()) {
-			// table-per-class case : we add a foreign key between each table of subentity and source primary key
-			targetPersister.giveImpliedTables().forEach(table -> {
-				propagateForeignKeyToSubTable((Table) table);
-			});
-		} else {
-			if (!(relation.isSourceTablePerClassPolymorphic())) {
-				mainTargetTable.addForeignKey(associationConfiguration.getForeignKeyNamingStrategy()::giveName,
-						foreignKey, associationConfiguration.getLeftPrimaryKey());
-			}   // else source is table-per-class: FK should be from right side (owner) to the several left sides, which is not possible
-				// because database vendors don't allow adding several FK on same source columns to different targets
-		}
-		
-	}
-	
-	private <SUBTABLE extends Table<SUBTABLE>> void propagateForeignKeyToSubTable(SUBTABLE subTable) {
-		KeyBuilder<SUBTABLE, SRCID> projectedKeyBuilder = Key.from(subTable);
-		((Set<Column<RIGHTTABLE, ?>>) foreignKey.getColumns()).forEach(column -> {
-			projectedKeyBuilder.addColumn(subTable.addColumn(column.getName(), column.getJavaType(), column.getSize()));
-		});
-		// necessary cast due to projectedKey unknown exact Table type
-		Key<SUBTABLE, SRCID> projectedKey = projectedKeyBuilder.build();
-		ForeignKeyNamingStrategy foreignKeyNamingStrategy = associationConfiguration.getForeignKeyNamingStrategy();
-		subTable.addForeignKey(foreignKeyNamingStrategy::giveName, projectedKey, associationConfiguration.getLeftPrimaryKey());
 	}
 	
 	void assignAssociationEngine(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
@@ -234,8 +208,8 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 				manyRelationDefinition,
 				associationConfiguration.getSrcPersister(),
 				mappedReverseColumns,
-				reverseColumnsValueProvider
-		);
+				reverseColumnsValueProvider,
+				associationConfiguration.getForeignKeyNamingStrategy());
 	}
 	
 	private void assignEngineForIndexedAssociation(@Nullable BiConsumer<TRGT, SRC> reverseSetter,
@@ -265,7 +239,8 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 				associationConfiguration.getSrcPersister(),
 				mappedReverseColumns,
 				indexingColumn,
-				reverseColumnsValueProvider
+				reverseColumnsValueProvider,
+				associationConfiguration.getForeignKeyNamingStrategy()
 		);
 	}
 }

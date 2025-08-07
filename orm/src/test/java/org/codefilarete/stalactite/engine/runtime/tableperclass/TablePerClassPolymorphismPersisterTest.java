@@ -545,7 +545,8 @@ class TablePerClassPolymorphismPersisterTest {
 			verify(preparedStatement, times(1)).executeQuery();
 			verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"select Toto.id as " + idAlias
+					"select"
+							+ " Toto.id as " + idAlias
 							+ ", Toto.x as " + xAlias
 							+ ", Toto.q as " + qAlias
 							+ ", Toto.DISCRIMINATOR as " + totoDTYPEAlias

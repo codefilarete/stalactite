@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -104,6 +105,21 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 	@Override
 	public void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister) {
 		criteriaSupport.registerRelation(relation, persister);
+	}
+
+	@Override
+	public <LEFTTABLE extends Table<LEFTTABLE>, SUBTABLE extends Table<SUBTABLE>, JOINTYPE> void propagateMappedAssociationToSubTables(
+			Key<SUBTABLE, JOINTYPE> foreignKey,
+			PrimaryKey<LEFTTABLE, JOINTYPE> leftPrimaryKey,
+			BiFunction<Key<SUBTABLE, JOINTYPE>, PrimaryKey<LEFTTABLE, JOINTYPE>, String> foreignKeyNamingFunction) {
+		SUBTABLE mainTable = mainPersister.getMainTable();
+		Key.KeyBuilder<SUBTABLE, JOINTYPE> projectedKeyBuilder = Key.from(mainTable);
+		((Set<Column<SUBTABLE, ?>>) foreignKey.getColumns()).forEach(column -> {
+			projectedKeyBuilder.addColumn(mainTable.addColumn(column.getName(), column.getJavaType(), column.getSize()));
+		});
+		Key<SUBTABLE, JOINTYPE> projectedKey = projectedKeyBuilder.build();
+		mainPersister.getEntityJoinTree().addPassiveJoin(EntityJoinTree.ROOT_JOIN_NAME, foreignKey, projectedKey, EntityJoinTree.JoinType.INNER, java.util.Collections.emptySet());
+		mainTable.addForeignKey(foreignKeyNamingFunction, projectedKey, leftPrimaryKey);
 	}
 	
 	@Override

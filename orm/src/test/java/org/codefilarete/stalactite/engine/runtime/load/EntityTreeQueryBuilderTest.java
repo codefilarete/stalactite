@@ -266,12 +266,12 @@ class EntityTreeQueryBuilderTest {
 		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter(tataMappingMock), mock(Accessor.class), totoPrimaryKey, tataPrimaryKey, null, INNER, null, Collections.emptySet());
 		entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingAdapter(tutuMappingMock), mock(Accessor.class), tataPrimaryKey, tutuPrimaryKey, null, INNER, null, Collections.emptySet());
 		
-		IdentityMap<Table, Fromable> tableCloneMap = new IdentityMap<>();
+		IdentityHashMap<Selectable, Selectable> tableCloneMap = new IdentityHashMap<>();
 		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree, new ColumnBinderRegistry()) {
 			@Override
 			Duo<Fromable, IdentityHashMap<Selectable, Selectable>> cloneTable(JoinNode joinNode) {
 				Duo<Fromable, IdentityHashMap<Selectable, Selectable>> tableClone = super.cloneTable(joinNode);
-				tableCloneMap.put((Table) joinNode.getTable(), tableClone.getLeft());
+				tableCloneMap.putAll(tableClone.getRight());
 				return tableClone;
 			}
 		};
@@ -297,8 +297,8 @@ class EntityTreeQueryBuilderTest {
 				.add(tutuPKColumn, "Tata_Tutu_id")
 				.add(tutuNameColumn, "Tata_Tutu_name");
 		
-		Map<Column, String> expectedColumnClones = new HashMap<>();
-		expectedAliases.forEach((column, value) -> expectedColumnClones.put(tableCloneMap.get(column.getTable()).findColumn(column.getName()), value));
+		Map<Selectable, String> expectedColumnClones = new HashMap<>();
+		expectedAliases.forEach((column, value) -> expectedColumnClones.put(tableCloneMap.get(column), value));
 		
 		assertThat(entityTreeQuery.getColumnAliases()).isEqualTo(expectedColumnClones);
 	}
@@ -333,12 +333,12 @@ class EntityTreeQueryBuilderTest {
 		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter(tataMappingMock), mock(Accessor.class), tataFK, tataPrimaryKey, null, INNER, null, Collections.emptySet());
 		entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter(tutuMappingMock), mock(Accessor.class), tutuFK, tutuPrimaryKey, null, OUTER, null, Collections.emptySet());
 		
-		IdentityMap<Table, Fromable> tableCloneMap = new IdentityMap<>();
+		IdentityHashMap<Selectable, Selectable> tableCloneMap = new IdentityHashMap<>();
 		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree, new ColumnBinderRegistry()) {
 			@Override
 			Duo<Fromable, IdentityHashMap<Selectable, Selectable>> cloneTable(JoinNode joinNode) {
 				Duo<Fromable, IdentityHashMap<Selectable, Selectable>> tableClone = super.cloneTable(joinNode);
-				tableCloneMap.put((Table) joinNode.getTable(), tableClone.getLeft());
+				tableCloneMap.putAll(tableClone.getRight());
 				return tableClone;
 			}
 		};
@@ -368,9 +368,8 @@ class EntityTreeQueryBuilderTest {
 				.add(tutuPKColumn, "Tutu_id")
 				.add(tutuNameColumn, "Tutu_name");
 		
-		Map<Column, String> expectedColumnClones = new HashMap<>();
-		expectedAliases.forEach((column, value) -> expectedColumnClones.put(tableCloneMap.get(column.getTable()).findColumn(column.getName()), value));
-		
+		Map<Selectable, String> expectedColumnClones = new HashMap<>();
+		expectedAliases.forEach((column, value) -> expectedColumnClones.put(tableCloneMap.get(column), value));
 		
 		assertThat(entityTreeQuery.getColumnAliases()).isEqualTo(expectedColumnClones);
 	}
@@ -410,12 +409,12 @@ class EntityTreeQueryBuilderTest {
 		String tutuAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingAdapter(tutuMappingMock), mock(Accessor.class), tataPrimaryKey, tutuPrimaryKey, null, INNER, null, Collections.emptySet());
 		String titiAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter(titiMappingMock), mock(Accessor.class), totoPrimaryKey, titiPrimaryKey, null, INNER, null, Collections.emptySet());
 		
-		IdentityMap<Table, Fromable> tableCloneMap = new IdentityMap<>();
+		IdentityHashMap<Selectable, Selectable> tableCloneMap = new IdentityHashMap<>();
 		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree, new ColumnBinderRegistry()) {
 			@Override
 			Duo<Fromable, IdentityHashMap<Selectable, Selectable>> cloneTable(JoinNode joinNode) {
 				Duo<Fromable, IdentityHashMap<Selectable, Selectable>> tableClone = super.cloneTable(joinNode);
-				tableCloneMap.put((Table) joinNode.getTable(), tableClone.getLeft());
+				tableCloneMap.putAll(tableClone.getRight());
 				return tableClone;
 			}
 		};
@@ -445,8 +444,8 @@ class EntityTreeQueryBuilderTest {
 				.add(titiPKColumn, "Titi_id")
 				.add(titiNameColumn, "Titi_name");
 		
-		Map<Column, String> expectedColumnClones = new HashMap<>();
-		expectedAliases.forEach((column, value) -> expectedColumnClones.put(tableCloneMap.get(column.getTable()).findColumn(column.getName()), value));
+		Map<Selectable, String> expectedColumnClones = new HashMap<>();
+		expectedAliases.forEach((column, value) -> expectedColumnClones.put(tableCloneMap.get(column), value));
 		
 		assertThat(entityTreeQuery.getColumnAliases()).isEqualTo(expectedColumnClones);
 	}

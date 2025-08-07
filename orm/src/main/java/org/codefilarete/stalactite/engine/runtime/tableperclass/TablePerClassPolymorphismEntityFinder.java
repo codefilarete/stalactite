@@ -101,10 +101,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	 */
 	private SingleLoadEntityJoinTree<C, I> buildSingleLoadEntityJoinTree() {
 		Union union = new Union();
-		Set<Selectable<?>> allColumnsInHierarchy = Arrays.asList(mainPersister)
-				.stream().flatMap(persister -> ((Table<?>) persister.getMainTable()).getColumns().stream())
-				.map(column -> new SimpleSelectable<>(column.getExpression(), column.getJavaType()))
-				.collect(Collectors.toCollection(KeepOrderSet::new));
+		Set<Column<T, ?>> allColumnsInHierarchy = mainPersister.<T>getMainTable().getColumns();
 		
 		Map<String, ConfiguredRelationalPersister<C, I>> discriminatorPerSubPersister = new HashMap<>();
 		persisterPerSubclass.forEach((subEntityType, subEntityPersister) -> {
@@ -120,17 +117,16 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 					subQueryColumns.put(Operators.cast((String) null, pseudoColumn.getJavaType()), pseudoColumn.getExpression());
 				}
 			});
-			String discriminatorExpression = "'" + discriminatorValue + "'";
+			subQueryColumns.put(new SimpleSelectable<>("'" + discriminatorValue + "'", String.class), DISCRIMINATOR_ALIAS);
 			Query query = QueryEase.
 					select(subQueryColumns)
-					.add(discriminatorExpression, String.class).as(DISCRIMINATOR_ALIAS)
 					.from(subEntityPersister.getMainTable())
 					.getQuery();
 			union.getQueries().add(query);
-			query.getColumns().stream()
-					.filter(column -> !column.getExpression().equals(discriminatorExpression))
-					.forEach(column -> union.registerColumn(column.getExpression(), column.getJavaType(), subQueryColumns.get(column)));
 			discriminatorPerSubPersister.put(discriminatorValue, subEntityPersister);
+		});
+		allColumnsInHierarchy.forEach(column -> {
+			union.registerColumn(column.getExpression(), column.getJavaType(), column.getName());
 		});
 		union.registerColumn(DISCRIMINATOR_COLUMN.getExpression(), String.class, DISCRIMINATOR_ALIAS);
 		
@@ -398,7 +394,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 		}
 	}
 	
-	private static class SingleLoadEntityJoinTree<C, I> extends EntityJoinTree<C, I> {
+	static class SingleLoadEntityJoinTree<C, I> extends EntityJoinTree<C, I> {
 		
 		private final IdentityHashMap<Column<?, ?>, Selectable<?>> mainColumnToPseudoColumn = new IdentityHashMap<>();
 		

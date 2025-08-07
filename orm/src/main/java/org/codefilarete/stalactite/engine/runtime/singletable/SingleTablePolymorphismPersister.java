@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -43,7 +44,7 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
-import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
+import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
@@ -111,6 +112,21 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 	@Override
 	public void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister) {
 		criteriaSupport.registerRelation(relation, persister);
+	}
+
+	@Override
+	public <LEFTTABLE extends Table<LEFTTABLE>, SUBTABLE extends Table<SUBTABLE>, JOINTYPE> void propagateMappedAssociationToSubTables(
+			Key<SUBTABLE, JOINTYPE> foreignKey,
+			PrimaryKey<LEFTTABLE, JOINTYPE> leftPrimaryKey,
+			BiFunction<Key<SUBTABLE, JOINTYPE>, PrimaryKey<LEFTTABLE, JOINTYPE>, String> foreignKeyNamingFunction) {
+		SUBTABLE subTable = mainPersister.getMainTable();
+		Key.KeyBuilder<SUBTABLE, JOINTYPE> projectedKeyBuilder = Key.from(subTable);
+		((Set<Column<SUBTABLE, ?>>) foreignKey.getColumns()).forEach(column -> {
+			projectedKeyBuilder.addColumn(subTable.addColumn(column.getName(), column.getJavaType(), column.getSize()));
+		});
+		Key<SUBTABLE, JOINTYPE> projectedKey = projectedKeyBuilder.build();
+		mainPersister.getEntityJoinTree().addPassiveJoin(EntityJoinTree.ROOT_JOIN_NAME, foreignKey, projectedKey, EntityJoinTree.JoinType.INNER, java.util.Collections.emptySet());
+		subTable.addForeignKey(foreignKeyNamingFunction, projectedKey, leftPrimaryKey);
 	}
 	
 	@Override
@@ -310,18 +326,6 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 					polymorphismPolicy,
 					(Column<T2, DTYPE>) discriminatorColumn);
 		}
-	}
-	
-	private <MAINTABLE extends Table<MAINTABLE>, SUBTABLE extends Table<SUBTABLE>, JOINID> KeyBuilder<SUBTABLE, Object>
-	projectPrimaryKey(Key<MAINTABLE, JOINID> rightColumn, ConfiguredRelationalPersister<? extends C, I> subPersister) {
-		EntityMapping<? extends C, I, SUBTABLE> subTypeMapping = subPersister.getMapping();
-		KeyBuilder<SUBTABLE, Object> reverseKey = Key.from(subTypeMapping.getTargetTable());
-		rightColumn.getColumns().forEach(col -> {
-			Column<SUBTABLE, ?> column = subTypeMapping.getTargetTable().addColumn(col.getExpression(), col.getJavaType());
-			subTypeMapping.addShadowColumnSelect(column);
-			reverseKey.addColumn(column);
-		});
-		return reverseKey;
 	}
 	
 	private <SRC, SRCID, U extends C, T1 extends Table<T1>, T2 extends Table<T2>, ID, JOINCOLTYPE> String join(

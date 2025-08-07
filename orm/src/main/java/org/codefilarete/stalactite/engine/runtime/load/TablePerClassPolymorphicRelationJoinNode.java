@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.runtime.load;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Set;
 
 import org.codefilarete.reflection.Accessor;
@@ -9,6 +10,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.ForkJoinRowConsumer;
+import org.codefilarete.stalactite.query.model.QueryStatement;
 import org.codefilarete.stalactite.query.model.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.Union;
@@ -36,10 +38,22 @@ import static org.codefilarete.tool.Nullable.nullable;
  */
 public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, JOINCOLTYPE, I> extends RelationJoinNode<C, T1, PseudoTable, JOINCOLTYPE, I> {
 	
+	private static IdentityHashMap<Selectable<?>, Selectable<?>> collectColumnClones(Key<?, ?> rightJoinLink, Set<? extends Selectable<?>> columnsToSelect) {
+		IdentityHashMap<Selectable<?>, Selectable<?>> result = new IdentityHashMap<>();
+		rightJoinLink.getTable().getColumns().forEach(column -> {
+			result.put(column, column);
+		});
+		columnsToSelect.forEach(column -> {
+			result.put(column, column);
+		});
+		return result;
+	}
+	
 	private final Set<SubPersisterAndDiscriminator<? extends C>> subPersisters = new HashSet<>();
 	
 	private final PseudoTable pseudoTable;
 	private final Union.PseudoColumn<Integer> discriminatorColumn;
+	private final Key<PseudoTable, JOINCOLTYPE> pseudoRightJoinLink;
 	
 	public TablePerClassPolymorphicRelationJoinNode(JoinNode<?, T1> parent,
 													Union subPersistersUnion,
@@ -52,14 +66,31 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 													EntityInflater<C, I> entityInflater,
 													BeanRelationFixer<Object, C> beanRelationFixer,
 													Union.PseudoColumn<Integer> discriminatorColumn) {
-		super(parent, propertyAccessor, leftJoinColumn, (Key) rightJoinColumn, joinType, columnsToSelect, tableAlias, entityInflater, beanRelationFixer, null);
+		super(parent, propertyAccessor, leftJoinColumn, (Key) rightJoinColumn, joinType, columnsToSelect, tableAlias, entityInflater, beanRelationFixer, null,
+				collectColumnClones(rightJoinColumn, columnsToSelect));
 		this.pseudoTable = subPersistersUnion.asPseudoTable(getTableAlias());
+		super.getOriginalColumnsToLocalOnes().clear();
+		super.getOriginalColumnsToLocalOnes().putAll(collectColumnClones(rightJoinColumn, pseudoTable.getColumns()));
 		this.discriminatorColumn = discriminatorColumn;
+		// rebuilding the right join link to make it match the union table, because the given one has columns from the abstract (parent) entity
+		// which doesn't have a matching / existing table
+		Key.KeyBuilder<PseudoTable, JOINCOLTYPE> pseudoRightJoinLinkBuilder = Key.from(pseudoTable);
+		rightJoinColumn.getColumns()
+				.forEach(column -> {
+					QueryStatement.PseudoColumn pseudoColumn1 = Iterables.find(pseudoTable.getColumns(), pseudoColumn -> pseudoColumn.getExpression().equals(column.getExpression()));
+					pseudoRightJoinLinkBuilder.addColumn(pseudoColumn1);
+				});
+		this.pseudoRightJoinLink = pseudoRightJoinLinkBuilder.build();
 	}
 	
 	@Override
 	public PseudoTable getRightTable() {
 		return pseudoTable;
+	}
+	
+	@Override
+	public Key<PseudoTable, JOINCOLTYPE> getRightJoinLink() {
+		return pseudoRightJoinLink;
 	}
 	
 	/**

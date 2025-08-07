@@ -149,18 +149,10 @@ public class EntityTreeQueryBuilder<C> {
 				String tableAlias = aliasBuilder.buildTableAlias(join);
 				addColumnsToSelect(join, tableAlias);
 				// we look for the cloned equivalent column of the original ones (from join node)
-				KeyBuilder<Fromable, JOINTYPE> leftJoinLinkClone = Key.from(tablePerJoinNode.get(join.getParent()));
-				join.getLeftJoinLink().getColumns().forEach(column -> {
-					leftJoinLinkClone.addColumn(tablePerJoinNode.get(join.getParent()).findColumn(column.getExpression()));
-				});
-				Key<Fromable, JOINTYPE> leftJoinColumn = leftJoinLinkClone.build();
-				
-				Fromable tableClone = tablePerJoinNode.get(join);
-				KeyBuilder<Fromable, JOINTYPE> rightJoinLinkClone = Key.from(tablePerJoinNode.get(join));
-				join.getRightJoinLink().getColumns().forEach(column -> {
-					rightJoinLinkClone.addColumn(tableClone.findColumn(column.getExpression()));
-				});
-				Key<Fromable, JOINTYPE> rightJoinColumn = rightJoinLinkClone.build();
+				Key<Fromable, JOINTYPE> leftJoinColumn = (Key<Fromable, JOINTYPE>) join.getLeftJoinLink();
+				Key<Fromable, JOINTYPE> rightJoinColumn = (Key<Fromable, JOINTYPE>) join.getRightJoinLink();
+				Fromable tableClone = join.getRightTable();
+				targetFrom.setAlias(tableClone, tableAlias);
 				switch (join.getJoinType()) {
 					case INNER:
 						targetFrom.innerJoin(leftJoinColumn, rightJoinColumn);
@@ -169,20 +161,13 @@ public class EntityTreeQueryBuilder<C> {
 						targetFrom.leftOuterJoin(leftJoinColumn, rightJoinColumn);
 						break;
 				}
-				
-				targetFrom.setAlias(tableClone, tableAlias);
 			});
 		}
 		
 		private <T1 extends Fromable> void addColumnsToSelect(JoinNode<?, T1> joinNode, String tableAlias) {
 			Set<Selectable<?>> selectableColumns = joinNode.getColumnsToSelect();
 			for (Selectable<?> selectableColumn : selectableColumns) {
-				Fromable nodeTable = tablePerJoinNode.get(joinNode);
-				Selectable<?> columnClone = nodeTable.findColumn(selectableColumn.getExpression());
-				if (columnClone == null) {
-					throw new IllegalArgumentException("Column '" + selectableColumn.getExpression() + "' not found in table "
-							+ nodeTable.getAbsoluteName());
-				}
+				Selectable<?> columnClone = joinNode.getOriginalColumnsToLocalOnes().get(selectableColumn); 
 				String alias = aliasBuilder.buildColumnAlias(tableAlias, selectableColumn);
 				query.select(columnClone, alias);
 				// we link the column alias to the binder so it will be easy to read the ResultSet
