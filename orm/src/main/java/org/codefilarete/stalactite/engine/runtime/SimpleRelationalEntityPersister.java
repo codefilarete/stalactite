@@ -89,7 +89,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 		this.persister = persister;
 		this.entityJoinTree = new EntityJoinTree<>(new EntityMappingAdapter<>(persister.getMapping()), persister.getMapping().getTargetTable());
 		this.dialect = dialect;
-		this.entityFinder = new EntityGraphSelector<>(entityJoinTree, persister.getConnectionProvider(), dialect);
+		this.entityFinder = new RelationalEntityFinder<>(entityJoinTree, persister.getConnectionProvider(), dialect);
 		this.criteriaSupport = new EntityCriteriaSupport<>(entityJoinTree);
 		
 		if (persister.getMapping().getIdMapping().getIdentifierInsertionManager() instanceof AlreadyAssignedIdentifierManager) {
@@ -103,7 +103,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	
 	@Override
 	public Selectable<?> getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
-		return criteriaSupport.getRootConfiguration().giveColumn(accessorChain);
+		return criteriaSupport.getAggregateColumnMapping().giveColumn(accessorChain);
 	}
 	
 	@Override

@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.engine.runtime;
 
-import javax.annotation.Nullable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,7 +21,6 @@ import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
-import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
@@ -36,7 +34,6 @@ import org.codefilarete.stalactite.engine.runtime.load.JoinRoot;
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.TablePerClassRootJoinNode;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
-import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
@@ -67,7 +64,7 @@ import static org.codefilarete.stalactite.query.model.LogicalOperator.OR;
  * Implementation of {@link EntityCriteria}
  * 
  * @author Guillaume Mary
- * @see EntityGraphNode#collectPropertiesMapping() 
+ * @see AggregateAccessPointToColumnMapping#collectPropertiesMapping() 
  */
 public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, EntityCriteriaSupport<C>>, ConfiguredEntityCriteria {
 	
@@ -76,8 +73,8 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	
 	private final EntityCriteriaSupport<C> parent;
 	
-	/** Root of the property-mapping graph representation. Must be completed with {@link EntityGraphNode#collectPropertiesMapping()} */
-	private final EntityGraphNode<C> rootConfiguration;
+	/** Root of the property-mapping graph representation. Must be completed with {@link AggregateAccessPointToColumnMapping#collectPropertiesMapping()} */
+	private final AggregateAccessPointToColumnMapping<C> aggregateColumnMapping;
 	
 	private boolean hasCollectionCriteria;
 	
@@ -87,7 +84,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	 * persister build mechanism. This is done at this late stage to let the whole algorithm fill the tree and make all the relations available.
 	 * Hence, this avoids registering the relations manually. However, this implies that this constructor depends on {@link PersisterBuilderContext#CURRENT}
 	 * which means that it must be filled when calling this constructor.
-	 * Relations will be collected through {@link EntityGraphNode#collectPropertiesMapping()}.
+	 * Relations will be collected through {@link AggregateAccessPointToColumnMapping#collectPropertiesMapping()}.
 	 * 
 	 * @param tree tree to lookup for properties through the registered joinNodeNames
 	 */
@@ -104,7 +101,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	 *                                       persister build cycle, which make it depend on {@link PersisterBuilderContext#CURRENT}
 	 */
 	EntityCriteriaSupport(EntityJoinTree<C, ?> tree, boolean withImmediatePropertiesCollect) {
-		this(new EntityGraphNode<>(tree, withImmediatePropertiesCollect));
+		this(new AggregateAccessPointToColumnMapping<>(tree, withImmediatePropertiesCollect));
 	}
 	
 	/**
@@ -115,21 +112,21 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	 * @param source an already-configured {@link EntityCriteriaSupport}
 	 */
 	public EntityCriteriaSupport(EntityCriteriaSupport<C> source) {
-		this(source.rootConfiguration);
+		this(source.aggregateColumnMapping);
 	}
 	
-	private EntityCriteriaSupport(EntityGraphNode<C> source) {
-		this.rootConfiguration = source;
+	private EntityCriteriaSupport(AggregateAccessPointToColumnMapping<C> source) {
+		this.aggregateColumnMapping = source;
 		this.parent = null;
 	}
 	
-	private EntityCriteriaSupport(EntityGraphNode<C> source, EntityCriteriaSupport<C> parent) {
-		this.rootConfiguration = source;
+	private EntityCriteriaSupport(AggregateAccessPointToColumnMapping<C> source, EntityCriteriaSupport<C> parent) {
+		this.aggregateColumnMapping = source;
 		this.parent = parent;
 	}
 	
-	public EntityGraphNode<C> getRootConfiguration() {
-		return rootConfiguration;
+	public AggregateAccessPointToColumnMapping<C> getAggregateColumnMapping() {
+		return aggregateColumnMapping;
 	}
 	
 	public <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, List<? extends ValueAccessPoint<?>> accessPointChain, ConditionalOperator<O, ?> condition) {
@@ -139,7 +136,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	}
 	
 	void appendAsCriterion(LogicalOperator logicalOperator, List<? extends ValueAccessPoint<?>> accessPointChain, ConditionalOperator<?, ?> condition) {
-		Selectable<?> column = rootConfiguration.giveColumn(accessPointChain);
+		Selectable<?> column = aggregateColumnMapping.giveColumn(accessPointChain);
 		criteria.add(new ColumnCriterion(logicalOperator, column, condition));
 		if (criteria.getOperator() == null) {
 			criteria.setOperator(logicalOperator);
@@ -173,7 +170,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	
 	@Override
 	public EntityCriteriaSupport<C> beginNested() {
-		EntityCriteriaSupport<C> abstractCriteria = new EntityCriteriaSupport<>(this.rootConfiguration, this);
+		EntityCriteriaSupport<C> abstractCriteria = new EntityCriteriaSupport<>(this.aggregateColumnMapping, this);
 		// because we start a nested condition, we cast the argument as an AbstractCriterion, else (casting to CriteriaChain) would create a not
 		// nested condition (without parentheses)
 		this.criteria.add((AbstractCriterion) abstractCriteria.criteria);
@@ -219,11 +216,11 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	}
 	
 	/**
-	 * Represents a bean mapping : its simple or embedded properties bound to columns, and its relations which are themselves a mapping between
-	 * a method (as a generic {@link ValueAccessPoint}) and another {@link EntityGraphNode}
+	 * Maps the aggregate property accessors points to their column: relations are taken into account, that's the main benefit of it.
+	 * Thus, anyone can get the column behind an accessor chain.
+	 * The mapping is collected through the {@link EntityJoinTree} by looking for {@link RelationJoinNode} (algorithm is more complex).
 	 */
-	//EntityPropertiesToTreeJoinNode
-	public static class EntityGraphNode<C> {
+	public static class AggregateAccessPointToColumnMapping<C> {
 		
 		/**
 		 * Owned properties mapping
@@ -234,17 +231,11 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 		 */
 		private final Map<List<? extends ValueAccessPoint<?>>, Selectable<?>> propertyToColumn = new AccessorToColumnMap();
 		
-		private final Class<?> entityClass;
-		
 		private final EntityJoinTree<C, ?> tree;
 		
-		/** Relations mapping : one-to-one or one-to-many */
-		private final ValueAccessPointMap<C, RelationalEntityPersister<?, ?>> relations = new ValueAccessPointMap<>();
-		
 		@VisibleForTesting
-		EntityGraphNode(EntityJoinTree<C, ?> tree, boolean withImmediatePropertiesCollect) {
+		AggregateAccessPointToColumnMapping(EntityJoinTree<C, ?> tree, boolean withImmediatePropertiesCollect) {
 			this.tree = tree;
-			this.entityClass = tree.getRoot().getEntityInflater().getEntityType();
 			
 			if (withImmediatePropertiesCollect) {
 				collectPropertiesMapping();
@@ -416,7 +407,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 			};
 			accessPointAsString.ccat(valueAccessPoints, " > ");
 			return new MappingConfigurationException("Error while looking for column of " + accessPointAsString
-					+ " : it is not declared in mapping of " + Reflections.toString(this.entityClass));
+					+ " : it is not declared in mapping of " + Reflections.toString(this.tree.getRoot().getEntityInflater().getEntityType()));
 		}
 		
 	}

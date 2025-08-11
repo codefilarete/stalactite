@@ -120,7 +120,7 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 	
 	@Override
 	public Selectable<?> getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
-		return criteriaSupport.getRootConfiguration().giveColumn(accessorChain);
+		return criteriaSupport.getAggregateColumnMapping().giveColumn(accessorChain);
 	}
 	
 	@Override

@@ -118,7 +118,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 
 	@Override
 	public Selectable<?> getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
-		return criteriaSupport.getRootConfiguration().giveColumn(accessorChain);
+		return criteriaSupport.getAggregateColumnMapping().giveColumn(accessorChain);
 	}
 	
 	@Override

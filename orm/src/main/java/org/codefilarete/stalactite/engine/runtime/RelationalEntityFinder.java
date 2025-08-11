@@ -62,7 +62,7 @@ import static org.codefilarete.tool.bean.Objects.preventNull;
  * @author Guillaume Mary
  * @see EntityFinder#select(ConfiguredEntityCriteria, Consumer, Consumer, Map)
  */
-public class EntityGraphSelector<C, I, T extends Table<T>> implements EntityFinder<C, I> {
+public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityFinder<C, I> {
 	
 	private static final String PRIMARY_KEY_ALIAS = "rootId";
 	
@@ -76,9 +76,9 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntityFind
 	
 	private SQLOperationListener<?> operationListener;
 	
-	public EntityGraphSelector(EntityJoinTree<C, I> entityJoinTree,
-							   ConnectionProvider connectionProvider,
-							   Dialect dialect) {
+	public RelationalEntityFinder(EntityJoinTree<C, I> entityJoinTree,
+								  ConnectionProvider connectionProvider,
+								  Dialect dialect) {
 		this.entityJoinTree = entityJoinTree;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
@@ -95,10 +95,10 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntityFind
 		});
 	}
 	
-	public EntityGraphSelector(EntityJoinTree<C, I> entityJoinTree,
-							   ConnectionProvider connectionProvider,
-							   Dialect dialect,
-							   boolean withImmediateQueryBuild) {
+	public RelationalEntityFinder(EntityJoinTree<C, I> entityJoinTree,
+								  ConnectionProvider connectionProvider,
+								  Dialect dialect,
+								  boolean withImmediateQueryBuild) {
 		this.entityJoinTree = entityJoinTree;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;

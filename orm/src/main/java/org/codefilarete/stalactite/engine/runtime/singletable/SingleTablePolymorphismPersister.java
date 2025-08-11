@@ -131,7 +131,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 	
 	@Override
 	public Selectable<?> getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
-		return criteriaSupport.getRootConfiguration().giveColumn(accessorChain);
+		return criteriaSupport.getAggregateColumnMapping().giveColumn(accessorChain);
 	}
 	
 	@Override

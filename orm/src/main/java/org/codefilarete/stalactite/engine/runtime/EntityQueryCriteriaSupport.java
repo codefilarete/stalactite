@@ -178,7 +178,7 @@ public class EntityQueryCriteriaSupport<C, I> {
 				orderByAdapter.set(orderByClause -> {
 					KeepOrderSet<OrderByItem> orderBy = queryPageSupport.getOrderBy();
 					orderBy.forEach(duo -> {
-						Selectable column = entityCriteriaSupport.getRootConfiguration().giveColumn(duo.getProperty());
+						Selectable column = entityCriteriaSupport.getAggregateColumnMapping().giveColumn(duo.getProperty());
 						orderByClause.add(
 								duo.isIgnoreCase()
 										? Operators.lowerCase(column)

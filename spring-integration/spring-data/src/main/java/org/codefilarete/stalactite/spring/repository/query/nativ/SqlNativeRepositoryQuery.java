@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
-import org.codefilarete.stalactite.engine.runtime.EntityGraphSelector;
+import org.codefilarete.stalactite.engine.runtime.RelationalEntityFinder;
 import org.codefilarete.stalactite.spring.repository.query.AbstractRepositoryQuery;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -22,7 +22,7 @@ public class SqlNativeRepositoryQuery<C> extends AbstractRepositoryQuery {
 	private final String sql;
 	private final Accumulator<C, ?, ?> accumulator;
 	private final Dialect dialect;
-	private final EntityGraphSelector<C, ?, ?> entityGraphSelector;
+	private final RelationalEntityFinder<C, ?, ?> relationalEntityFinder;
 	
 	public SqlNativeRepositoryQuery(NativeQueryMethod queryMethod,
 									String sql,
@@ -49,7 +49,7 @@ public class SqlNativeRepositoryQuery<C> extends AbstractRepositoryQuery {
 		// Note that at this stage we can afford to ask for immediate Query creation because we are at a high layer (Spring Data Query discovery) and
 		// persister are supposed to be finalized and up-to-date (containing the whole entity aggregate graph), that why we pass "true" as argument
 		// TODO: support polymorphic use cases by using EntityFinders found through entityPersister
-		this.entityGraphSelector = new EntityGraphSelector<>(
+		this.relationalEntityFinder = new RelationalEntityFinder<>(
 				entityPersister.getEntityJoinTree(),
 				connectionProvider,
 				dialect,
@@ -67,7 +67,7 @@ public class SqlNativeRepositoryQuery<C> extends AbstractRepositoryQuery {
 	@Override
 	public Object execute(Object[] parameters) {
 		ParametersParameterAccessor accessor = new ParametersParameterAccessor(queryMethod.getParameters(), parameters);
-		return accumulator.collect(entityGraphSelector.selectFromQueryBean(sql, getValues(accessor), bindParameters(accessor)));
+		return accumulator.collect(relationalEntityFinder.selectFromQueryBean(sql, getValues(accessor), bindParameters(accessor)));
 	}
 	
 	private Map<String, PreparedStatementWriter<?>> bindParameters(ParametersParameterAccessor accessor) {
