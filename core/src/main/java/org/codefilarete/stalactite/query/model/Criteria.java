@@ -16,30 +16,6 @@ import org.codefilarete.tool.collection.Iterables;
  */
 public class Criteria<SELF extends Criteria<SELF>> extends AbstractCriterion implements CriteriaChain<SELF> {
 	
-	/**
-	 * Replaces all {@link Column}s in given condition (source) by its match in <code>columnClones</code>.
-	 * This is done by cloning {@link ColumnCriterion} in source, and then pushed them in <code>target</code>.
-	 * 
-	 * Made to handle {@link Column} clones and aliases at query time.
-	 * 
-	 * @param source container of {@link Column} that must be replaced by the ones in columnClones
-	 * @param target container where to push the criteria clones
-	 * @param columnClones mapping between use columns and the ones of the query (the one with aliases), usually a {@link IdentityHashMap}
-	 */
-	// TODO: to remove ? seems to be merely used or in cycle
-	public static void copy(Iterable<AbstractCriterion> source, CriteriaChain target, Function<Selectable<?>, Selectable<?>> columnClones) {
-		source.forEach(criterion -> {
-			if (criterion instanceof ColumnCriterion) {
-				ColumnCriterion columnCriterion = (ColumnCriterion) criterion;
-				target.add(criterion.getOperator(), columnCriterion.copyFor(columnClones.apply(columnCriterion.getColumn())));
-			} else if (criterion instanceof Criteria) {
-				target.add(criterion.getOperator(), ((Criteria<?>) criterion).copyFor(columnClones));
-			} else {
-				target.add(criterion);
-			}
-		});
-	}
-	
 	/** Criteria, ClosedCriteria */
 	protected List<AbstractCriterion> conditions = new ArrayList<>();
 
@@ -96,8 +72,7 @@ public class Criteria<SELF extends Criteria<SELF>> extends AbstractCriterion imp
 		if (criteria instanceof Criteria) {
 			toAdd = (Criteria) criteria;
 		} else {
-			toAdd = new Criteria();
-			copy(criteria, toAdd, Function.identity());
+			toAdd = new Criteria(criteria);
 		}
 		toAdd.setOperator(logicalOperator);
 		this.conditions.add(toAdd);
@@ -122,12 +97,5 @@ public class Criteria<SELF extends Criteria<SELF>> extends AbstractCriterion imp
 	@Override
 	public Iterator<AbstractCriterion> iterator() {
 		return this.conditions.iterator();
-	}
-	
-	public Criteria copyFor(Function<Selectable<?>, Selectable<?>> columnClones) {
-		Criteria<SELF> result = new Criteria<>();
-		result.setOperator(this.getOperator());
-		copy(conditions, result, columnClones);
-		return result;
 	}
 }
