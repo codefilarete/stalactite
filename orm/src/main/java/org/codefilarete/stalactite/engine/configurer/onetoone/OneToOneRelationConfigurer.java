@@ -6,7 +6,6 @@ import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
-import org.codefilarete.stalactite.engine.configurer.RelationConfigurer.GraphLoadingRelationRegisterer;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -75,18 +74,12 @@ public class OneToOneRelationConfigurer<C, I> {
 				currentBuilderContext.addBuildLifeCycleListener(cycleSolver);
 			}
 			cycleSolver.addCycleSolver(relationName, configurer);
-			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
-			currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<C, I, TRGT>(targetMappingConfiguration.getEntityType(),
-					oneToOneRelation.getTargetProvider(), sourcePersister.getClassToPersist(), null));
 		} else {
 			// please note that even if no table is found in configuration, build(..) will create one
 			Table targetTable = nullable(oneToOneRelation.getTargetTable()).getOr(nullable(oneToOneRelation.getReverseColumn()).map(Column::getTable).get());
 			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = new PersisterBuilderImpl<>(targetMappingConfiguration)
 					.build(dialect, connectionConfiguration, targetTable);
-			String relationJoinNodeName = configurer.configure(relationName, targetPersister, oneToOneRelation.isFetchSeparately());
-			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
-			currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<C, I, TRGT>(targetMappingConfiguration.getEntityType(),
-					oneToOneRelation.getTargetProvider(), sourcePersister.getClassToPersist(), relationJoinNodeName));
+			configurer.configure(relationName, targetPersister, oneToOneRelation.isFetchSeparately());
 		}
 		
 	}

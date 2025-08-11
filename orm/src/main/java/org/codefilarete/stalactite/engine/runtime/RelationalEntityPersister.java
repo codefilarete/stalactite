@@ -170,12 +170,6 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	ExecutableEntityQueryCriteria<C, ?> selectWhere();
 	
 	/**
-	 * Register a relation to another persister. Made to make {@link #selectWhere(SerializableFunction, ConditionalOperator)} methods working.
-	 * Called at a very late stage of persister configuration when all persisters are available. 
-	 */
-	void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister, @Nullable String relationJoinNodeName);
-	
-	/**
 	 * Gives the column on which the last element of the given accessor chain is persisted.
 	 * The first element of the given accessor chain is expected to match a property of this persister.
 	 * The lookup will go down the tree / graph of persistence.

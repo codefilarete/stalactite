@@ -1,15 +1,10 @@
 package org.codefilarete.stalactite.engine.configurer;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Map;
 
-import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
-import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
-import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.RelationalMappingConfiguration;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostInitializer;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
@@ -165,38 +160,6 @@ public class RelationConfigurer<C, I> {
 				);
 				mapRelationConfigurer.configure();
 			}
-		}
-	}
-	
-	/**
-	 * Small container aimed at lazily registering a relation into source persister so it can be targeted by {@link EntityCriteria}
-	 * 
-	 * @param <TRGT> relation entity type
-	 */
-	public static class GraphLoadingRelationRegisterer<C, I, TRGT> extends PostInitializer<TRGT> {
-		
-		private final ReversibleAccessor<C, ?> targetEntityAccessor;
-		private final Class<C> sourceEntityType;
-		@Nullable
-		private final String relationJoinNodeName;
-		
-		public GraphLoadingRelationRegisterer(Class<TRGT> targetEntityType,
-											  ReversibleAccessor<C, ?> targetEntityAccessor,
-											  Class<C> sourceEntityType,
-											  @Nullable String relationJoinNodeName) {
-			super(targetEntityType);
-			this.targetEntityAccessor = targetEntityAccessor;
-			this.sourceEntityType = sourceEntityType;
-			this.relationJoinNodeName = relationJoinNodeName;
-		}
-		
-		@Override
-		public void consume(ConfiguredRelationalPersister<TRGT, ?> targetPersister) {
-			// we must dynamically retrieve the persister into the registry because sourcePersister might not be the
-			// final / registered one in particular in case of polymorphism
-			PersisterRegistry persisterRegistry = PersisterBuilderContext.CURRENT.get().getPersisterRegistry();
-			ConfiguredRelationalPersister<C, I> registeredSourcePersister = ((ConfiguredRelationalPersister<C, I>) persisterRegistry.getPersister(sourceEntityType));
-			registeredSourcePersister.registerRelation(targetEntityAccessor, targetPersister, relationJoinNodeName);
 		}
 	}
 }

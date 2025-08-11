@@ -25,8 +25,6 @@ import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
-import org.codefilarete.stalactite.engine.configurer.RelationConfigurer.GraphLoadingRelationRegisterer;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
@@ -114,25 +112,9 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 		Supplier<C> collectionFactory = preventNull(
 				elementCollectionRelation.getCollectionFactory(),
 				BeanRelationFixer.giveCollectionFactory((Class<C>) collectionProviderDefinition.getMemberType()));
-		String relationJoinNodeName = addSelectCascade(sourcePersister, collectionPersister, sourcePK, elementCollectionMapping.reverseForeignKey,
+		addSelectCascade(sourcePersister, collectionPersister, sourcePK, elementCollectionMapping.reverseForeignKey,
 				elementCollectionRelation.getCollectionProvider().toMutator()::set, collectionAccessor,
 				collectionFactory);
-		
-		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
-		
-		// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
-		currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<SRC, I, TRGT>(elementCollectionRelation.getComponentType(),
-				elementCollectionRelation.getCollectionProvider(), sourcePersister.getClassToPersist(), relationJoinNodeName) {
-			
-			@Override
-			public void consume(ConfiguredRelationalPersister<TRGT, ?> targetPersister) {
-				// targetPersister is not the one we need: its owning class one's (see constructor) whereas
-				// we need the one created by the configure() method above because it manages the relation through
-				// the generic ElementRecord which can't be found in the PersisterRegistry.
-				// Note that we could have used BuildLifeCycleListener directly but I prefer using GraphLoadingRelationRegisterer to clarify the intention
-				super.consume((ConfiguredRelationalPersister) collectionPersister);
-			}
-		});
 	}
 	
 	private <SRCTABLE extends Table<SRCTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>> ElementCollectionMapping<SRCTABLE, COLLECTIONTABLE>

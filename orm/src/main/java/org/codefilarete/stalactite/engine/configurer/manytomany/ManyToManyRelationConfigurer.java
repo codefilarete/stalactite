@@ -21,7 +21,6 @@ import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.configurer.IndexedAssociationRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
-import org.codefilarete.stalactite.engine.configurer.RelationConfigurer.GraphLoadingRelationRegisterer;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation.MappedByConfiguration;
 import org.codefilarete.stalactite.engine.configurer.onetomany.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
@@ -125,19 +124,12 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 				currentBuilderContext.addBuildLifeCycleListener(cycleSolver);
 			}
 			cycleSolver.addCycleSolver(relationName, configurer);
-			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
-			currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<>(targetMappingConfiguration.getEntityType(),
-					manyToManyRelation.getCollectionAccessor(), sourcePersister.getClassToPersist(), null));
 		} else {
 			// NB: even if no table is found in configuration, build(..) will create one
 			Table targetTable = associationConfiguration.getManyToManyRelation().getTargetTable();
 			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = new PersisterBuilderImpl<>(targetMappingConfiguration)
 					.build(dialect, connectionConfiguration, targetTable);
-			
-			String relationJoinNodeName = configurer.configure(targetPersister, associationConfiguration.getManyToManyRelation().isFetchSeparately());
-			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
-			currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<>(targetMappingConfiguration.getEntityType(),
-					manyToManyRelation.getCollectionAccessor(), sourcePersister.getClassToPersist(), relationJoinNodeName));
+			configurer.configure(targetPersister, associationConfiguration.getManyToManyRelation().isFetchSeparately());
 		}
 	}
 	

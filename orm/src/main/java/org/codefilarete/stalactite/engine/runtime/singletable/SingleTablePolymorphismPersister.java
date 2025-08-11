@@ -115,11 +115,6 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 	}
 	
 	@Override
-	public void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister, @Nullable String relationJoinNodeName) {
-		criteriaSupport.registerRelation(relation, persister, relationJoinNodeName);
-	}
-
-	@Override
 	public <LEFTTABLE extends Table<LEFTTABLE>, SUBTABLE extends Table<SUBTABLE>, JOINTYPE> void propagateMappedAssociationToSubTables(
 			Key<SUBTABLE, JOINTYPE> foreignKey,
 			PrimaryKey<LEFTTABLE, JOINTYPE> leftPrimaryKey,

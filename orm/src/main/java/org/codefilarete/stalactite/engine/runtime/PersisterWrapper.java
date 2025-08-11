@@ -59,11 +59,6 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	}
 	
 	@Override
-	public void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister, @Nullable String relationJoinNodeName) {
-		this.delegate.registerRelation(relation, persister, relationJoinNodeName);
-	}
-	
-	@Override
 	public Selectable<?> getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
 		return delegate.getColumn(accessorChain);
 	}

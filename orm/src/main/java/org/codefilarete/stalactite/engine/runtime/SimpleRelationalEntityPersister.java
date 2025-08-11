@@ -183,11 +183,6 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 		return persister.getClassToPersist();
 	}
 	
-	@Override
-	public void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister, String relationJoinNodeName) {
-		criteriaSupport.registerRelation(relation, persister, relationJoinNodeName);
-	}
-	
 	/**
 	 * Implementation for simple one-to-one cases : we add our joins to given persister
 	 * 

@@ -67,7 +67,7 @@ import static org.codefilarete.stalactite.query.model.LogicalOperator.OR;
  * Implementation of {@link EntityCriteria}
  * 
  * @author Guillaume Mary
- * @see #registerRelation(ValueAccessPoint, ConfiguredRelationalPersister, String) 
+ * @see EntityGraphNode#collectPropertiesMapping() 
  */
 public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, EntityCriteriaSupport<C>>, ConfiguredEntityCriteria {
 	
@@ -76,7 +76,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	
 	private final EntityCriteriaSupport<C> parent;
 	
-	/** Root of the property-mapping graph representation. Might be completed with {@link #registerRelation(ValueAccessPoint, ConfiguredRelationalPersister, String)} */
+	/** Root of the property-mapping graph representation. Must be completed with {@link EntityGraphNode#collectPropertiesMapping()} */
 	private final EntityGraphNode<C> rootConfiguration;
 	
 	private boolean hasCollectionCriteria;
@@ -87,7 +87,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	 * persister build mechanism. This is done at this late stage to let the whole algorithm fill the tree and make all the relations available.
 	 * Hence, this avoids registering the relations manually. However, this implies that this constructor depends on {@link PersisterBuilderContext#CURRENT}
 	 * which means that it must be filled when calling this constructor.
-	 * Relations must be registered through {@link #registerRelation(ValueAccessPoint, ConfiguredRelationalPersister, String)}.
+	 * Relations will be collected through {@link EntityGraphNode#collectPropertiesMapping()}.
 	 * 
 	 * @param tree tree to lookup for properties through the registered joinNodeNames
 	 */
@@ -130,17 +130,6 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	
 	public EntityGraphNode<C> getRootConfiguration() {
 		return rootConfiguration;
-	}
-	
-	/**
-	 * Adds a simple relation to the root of the property-mapping graph representation.
-	 * 
-	 * @param relation the representation of the method that gives access to the value, shouldn't be a chain of accessor
-	 * @param persister the persister of related entities
-	 * @param relationJoinNodeName    
-	 */
-	public void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister, @Nullable String relationJoinNodeName) {
-		rootConfiguration.registerRelation(relation, persister, relationJoinNodeName);
 	}
 	
 	public <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, List<? extends ValueAccessPoint<?>> accessPointChain, ConditionalOperator<O, ?> condition) {
@@ -391,27 +380,6 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 				});
 			}
 			return propertyToColumn;
-		}
-		
-		public boolean hasCollectionProperty() {
-			return Stream.concat(propertyToColumn.keySet().stream().flatMap(Collection::stream), relations.keySet().stream())
-					.anyMatch(valueAccessPoint -> Iterable.class.isAssignableFrom(AccessorDefinition.giveDefinition(valueAccessPoint).getMemberType()));
-		}
-		
-		/**
-		 * Adds a {@link ClassMapping} as a relation of this node
-		 * 
-		 * @param relationProvider the accessor that gives access to a bean mapped by the {@link ClassMapping}
-		 * @param persister a {@link ClassMapping}
-		 */
-		@VisibleForTesting
-		void registerRelation(ValueAccessPoint<C> relationProvider, ConfiguredRelationalPersister<?, ?> persister, @Nullable String relationJoinNodeName) {
-			// the relation may already be present as a simple property because mapping strategy needs its column for insertion for example, but we
-			// won't need it anymore. Note that it should be removed when propertyToColumn is populated but we don't have the relation information
-			// at this time
-//			propertyToColumn.remove(Arrays.asList(relationProvider));
-//			relations.put(relationProvider, persister);
-//			relationToJoinNode.put(relationProvider, tree.getJoin(relationJoinNodeName));
 		}
 		
 		/**
