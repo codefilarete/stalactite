@@ -41,7 +41,6 @@ class DerivedQueriesWithoutMappedCollectionWithTablePerClassPolymorphismTest ext
 					.mapOneToOne(Republic::getPresident, entityBuilder(Person.class, LONG_TYPE)
 							.mapKey(Person::getId, IdentifierPolicy.<Person, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
 							.map(Person::getName)
-							.mapCollection(Person::getNicknames, String.class)
 							.mapOneToOne(Person::getVehicle, entityBuilder(Vehicle.class, LONG_TYPE)
 									.mapKey(Vehicle::getId, IdentifierPolicy.<Vehicle, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
 									.map(Vehicle::getColor)))

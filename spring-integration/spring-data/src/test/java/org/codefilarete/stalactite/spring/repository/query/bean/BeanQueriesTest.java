@@ -120,26 +120,26 @@ public class BeanQueriesTest {
 		@BeanQuery
 		public ExecutableEntityQuery<Republic, ?> findEuropeanMember(EntityPersister<Republic, Identifier<Long>> countryPersister) {
 			return countryPersister.selectWhere(Republic::isEuMember, eq(true))
-					.and(AccessorChain.chain(Republic::getPresident, Person::getName), equalsArgNamed("presidentName", String.class));
+					.and(AccessorChain.fromMethodReferences(Republic::getPresident, Person::getName), equalsArgNamed("presidentName", String.class));
 		}
 		
 		@BeanQuery(method = "findEuropeanCountryForPresident")
 		public ExecutableEntityQuery<Republic, ?> anOverrideOfFindEuropeanMemberWithPresidentName(EntityPersister<Republic, Identifier<Long>> countryPersister) {
 			return countryPersister.selectWhere(Republic::isEuMember, eq(true))
-					.and(AccessorChain.chain(Republic::getPresident, Person::getName), equalsArgNamed("presidentName", String.class));
+					.and(AccessorChain.fromMethodReferences(Republic::getPresident, Person::getName), equalsArgNamed("presidentName", String.class));
 		}
 
 		@BeanQuery(method = "findEuropeanCountryForPresident", repositoryClass = AnotherBeanQueriesRepository.class)
 		public ExecutableEntityQuery<Republic, ?> anotherOverrideOfFindEuropeanMemberWithPresidentName(EntityPersister<Republic, Identifier<Long>> countryPersister) {
 			// this one retrieves non-EU members to help checking it is really invoked
 			return countryPersister.selectWhere(Republic::isEuMember, eq(false))
-					.and(AccessorChain.chain(Republic::getPresident, Person::getName), equalsArgNamed("presidentName", String.class));
+					.and(AccessorChain.fromMethodReferences(Republic::getPresident, Person::getName), equalsArgNamed("presidentName", String.class));
 		}
 
 		@BeanQuery(method = "findEuropeanMemberWithPresidentName")
 		public ExecutableEntityQuery<Republic, ?> aMethodThatDoesntMatchAnyRepositoryMethodName(EntityPersister<Republic, Identifier<Long>> countryPersister) {
 			return countryPersister.selectWhere(Republic::isEuMember, eq(true))
-					.and(AccessorChain.chain(Republic::getPresident, Person::getName), equalsArgNamed("presidentName", String.class));
+					.and(AccessorChain.fromMethodReferences(Republic::getPresident, Person::getName), equalsArgNamed("presidentName", String.class));
 		}
 
 		@Bean

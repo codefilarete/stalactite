@@ -53,7 +53,6 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.emptySet;
 import static org.codefilarete.tool.Nullable.nullable;
 
 /**
@@ -79,23 +78,18 @@ public class EntityQueryCriteriaSupport<C, I> {
 	
 	private final EntityQueryPageSupport<C> queryPageSupport;
 	
-	private final PersisterListenerCollection<C, I> persisterListener;
-	
-	public EntityQueryCriteriaSupport(EntityCriteriaSupport<C> source, EntityFinder<C, I> entityFinder, PersisterListenerCollection<C, I> persisterListener) {
+	public EntityQueryCriteriaSupport(EntityFinder<C, I> entityFinder, EntityCriteriaSupport<C> source) {
 		this.entityFinder = entityFinder;
 		this.entityCriteriaSupport = new EntityCriteriaSupport<>(source);
 		this.queryPageSupport = new EntityQueryPageSupport<>();
-		this.persisterListener = persisterListener;
 	}
 	
 	private EntityQueryCriteriaSupport(EntityFinder<C, I> entityFinder,
 									   EntityCriteriaSupport<C> entityCriteriaSupport,
-									   EntityQueryPageSupport<C> queryPageSupport,
-									   PersisterListenerCollection<C, I> persisterListener) {
+									   EntityQueryPageSupport<C> queryPageSupport) {
 		this.entityFinder = entityFinder;
 		this.entityCriteriaSupport = entityCriteriaSupport;
 		this.queryPageSupport = queryPageSupport;
-		this.persisterListener = persisterListener;
 	}
 	
 	/**
@@ -106,7 +100,7 @@ public class EntityQueryCriteriaSupport<C, I> {
 	 * @return a merge of this instance with given page options
 	 */
 	public EntityQueryCriteriaSupport<C, I> copyFor(EntityQueryPageSupport<C> otherPageSupport) {
-		return new EntityQueryCriteriaSupport<>(entityFinder, entityCriteriaSupport, queryPageSupport.merge(otherPageSupport), persisterListener);
+		return new EntityQueryCriteriaSupport<>(entityFinder, entityCriteriaSupport, queryPageSupport.merge(otherPageSupport));
 	}
 	
 	public EntityCriteriaSupport<C> getEntityCriteriaSupport() {
@@ -156,22 +150,20 @@ public class EntityQueryCriteriaSupport<C, I> {
 		Holder<Consumer<org.codefilarete.stalactite.query.model.OrderByChain<?>>> orderByAdapter = new Holder<>();
 		Supplier<Set<C>> entityLoader = () -> {
 			if (queryPageSupport.getLimit() != null) {
-				if (entityCriteriaSupport.getRootConfiguration().hasCollectionProperty()) {
+				if (entityCriteriaSupport.hasCollectionCriteria()) {
 					throw new UnsupportedOperationException("Can't limit query when entity graph contains Collection relations");
 				}
 			}
 		
-			return persisterListener.doWithSelectListener(emptySet(), () ->
-					entityFinder.select(
+			return entityFinder.select(
 							entityCriteriaSupport,
 							orderByAdapter.get(),
-							limitAware -> nullable(queryPageSupport.getLimit()).invoke(limit -> limitAware.limit(limit.getCount(), limit.getOffset())), values)
-			);
+							limitAware -> nullable(queryPageSupport.getLimit()).invoke(limit -> limitAware.limit(limit.getCount(), limit.getOffset())), values);
 		};
 		return (Accumulator<C, Collection<C>, R> accumulatorParam) -> {
 			if (entityCriteriaSupport.hasCollectionCriteria() && !queryPageSupport.getOrderBy().isEmpty()) {
-				// a collection property in criteria will trigger a 2 phases load (ids, then entities)
-				// which is no compatible with an SQL "order by" clause, therefore we sort the result in memory
+				// a collection property in criteria will trigger a 2-phases load (ids, then entities)
+				// which is no compatible with an SQL "order by" clause, therefore, we sort the result in memory
 				// and we don't ask for SQL "order by" because it's useless
 				orderByAdapter.set(orderByClause -> {});
 				// Note that we must wrap this creation in an if statement due to that entities don't implement Comparable, we avoid a

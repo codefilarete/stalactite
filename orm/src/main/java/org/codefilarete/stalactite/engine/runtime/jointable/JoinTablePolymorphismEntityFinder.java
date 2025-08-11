@@ -10,8 +10,9 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildLifeCycleListener;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphicEntityFinder;
-import org.codefilarete.stalactite.engine.runtime.ColumnCloneAwareOrderBy;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
@@ -23,10 +24,15 @@ import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
+import org.codefilarete.stalactite.query.model.GroupBy;
+import org.codefilarete.stalactite.query.model.Having;
+import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.LimitAware;
+import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.query.model.OrderByChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -46,8 +52,8 @@ import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROO
  */
 public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends AbstractPolymorphicEntityFinder<C, I, T> {
 	
-	private final T mainTable;
 	private final SingleLoadEntityJoinTree<C, I> singleLoadEntityJoinTree;
+	private Query query;
 	
 	public JoinTablePolymorphismEntityFinder(
 			ConfiguredRelationalPersister<C, I> mainPersister,
@@ -55,8 +61,31 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 			ConnectionProvider connectionProvider,
 			Dialect dialect) {
 		super(mainPersister, persisterPerSubclass, connectionProvider, dialect);
-		this.mainTable = (T) mainPersister.getMainTable();
 		this.singleLoadEntityJoinTree = buildSingleLoadEntityJoinTree(mainPersister);
+		
+		// made for optimization (to avoid creating multiple times the query) but also to avoid adding several times the polymorphic JoinNode consumers
+		// to itself by calling several time the "toConsumer(..)" method that usually calls some "add" method, which declares duplicates of consumers,
+		// which, at the very end, implies an exception during the aggregate inflation phase : "Can't find consumer node"
+		PersisterBuilderContext.CURRENT.get().addBuildLifeCycleListener(new BuildLifeCycleListener() {
+			@Override
+			public void afterBuild() {
+			}
+			
+			@Override
+			public void afterAllBuild() {
+				buildQuery();
+			}
+		});
+	}
+	
+	private void buildQuery() {
+		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(singleLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
+		query = entityTreeQuery.getQuery();
+	}
+	
+	@Override
+	public EntityJoinTree<C, I> getEntityJoinTree() {
+		return singleLoadEntityJoinTree;
 	}
 	
 	private SingleLoadEntityJoinTree<C, I> buildSingleLoadEntityJoinTree(ConfiguredRelationalPersister<C, I> mainPersister) {
@@ -102,22 +131,18 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 	@Override
 	public Set<C> selectIn2Phases(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
 		LOGGER.debug("Finding entities in 2-phases query with criteria {}", where);
-		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(mainEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
-		Query query = entityTreeQuery.getQuery();
-		persisterPerSubclass.values().forEach(subclassPersister -> {
-			query.getFrom().leftOuterJoin(mainTable.getPrimaryKey(), subclassPersister.getMainTable().getPrimaryKey());
-			((T) subclassPersister.getMainTable()).getPrimaryKey().getColumns().forEach(column -> {
-				query.select(column, column.getAlias());
-			});
-		});
 		
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), entityTreeQuery.getColumnClones());
+		// we clone the query to avoid polluting the instance one, else, from select(..) to select(..), we append the criteria at the end of it,
+		// which makes the query usually returning no data (because of the condition mix)
+		Query queryClone = new Query(query.getSelectDelegate(), query.getFromDelegate(), new Where(), new GroupBy(), new Having(), new OrderBy(), new Limit());
+		
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone, where.getCriteria());
 		
 		// selecting ids and their entity type
 		Map<Selectable<?>, ResultSetReader<?>> columnReaders = new HashMap<>();
-		query.getColumns().forEach((selectable) -> columnReaders.put(selectable, dialect.getColumnBinderRegistry().getBinder((Column) selectable)));
-		orderByClauseConsumer.accept(new ColumnCloneAwareOrderBy(query.orderBy(), entityTreeQuery.getColumnClones()));
-		limitAwareConsumer.accept(query.orderBy());
+		queryClone.getColumns().forEach((selectable) -> columnReaders.put(selectable, dialect.getColumnBinderRegistry().getBinder((Column) selectable)));
+		orderByClauseConsumer.accept(queryClone.orderBy());
+		limitAwareConsumer.accept(queryClone.orderBy());
 		
 		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>()), columnReaders, query.getAliases());
 		

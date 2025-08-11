@@ -99,8 +99,8 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 	}
 	
 	@Override
-	public void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister) {
-		criteriaSupport.registerRelation(relation, persister);
+	public void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister, @Nullable String relationJoinNodeName) {
+		criteriaSupport.registerRelation(relation, persister, relationJoinNodeName);
 	}
 	
 	@Override
@@ -122,7 +122,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 	}
 
 	@Override
-	public Column getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
+	public Selectable<?> getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
 		return criteriaSupport.getRootConfiguration().giveColumn(accessorChain);
 	}
 	

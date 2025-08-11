@@ -5,12 +5,14 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.LimitAware;
 import org.codefilarete.stalactite.query.model.OrderByChain;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.result.Accumulator;
+import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
 
 /**
  * Contract that defines the methods to load an entity graph conditionally on some property criteria coming
@@ -22,7 +24,7 @@ public interface EntityFinder<C, I> {
 	
 	/**
 	 * Loads some entities that match given criteria.
-	 *
+	 * 
 	 * <strong>
 	 * Please note that the whole graph of matching entities is loaded: collections are fully loaded with all their
 	 * elements, even those that don't match the criteria.
@@ -56,4 +58,8 @@ public interface EntityFinder<C, I> {
 							  boolean distinct,
 							  Consumer<OrderByChain<?>> orderByClauseConsumer,
 							  Consumer<LimitAware<?>> limitAwareConsumer);
+	
+	EntityJoinTree<C, I> getEntityJoinTree();
+	
+	void setOperationListener(SQLOperationListener<?> operationListener);
 }

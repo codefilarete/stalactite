@@ -30,7 +30,7 @@ import org.codefilarete.tool.collection.Maps;
  * @param <T> relation table type
  * @author Guillaume Mary
  */
-class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<KeyValueRecord<K, V, I>, RecordId<K, I>, T> {
+public class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<KeyValueRecord<K, V, I>, RecordId<K, I>, T> {
 	
 	KeyValueRecordMapping(T targetTable,
 						  Map<? extends ReversibleAccessor<KeyValueRecord<K, V, I>, ?>, Column<T, ?>> propertyToColumn,
@@ -49,7 +49,7 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 	 * - {@link KeyValueRecord#getKey()}
 	 */
 	@VisibleForTesting
-	static class KeyValueRecordIdMapping<K, I, T extends Table<T>> extends ComposedIdMapping<KeyValueRecord<K, ?, I>, RecordId<K, I>> {
+	public static class KeyValueRecordIdMapping<K, I, T extends Table<T>> extends ComposedIdMapping<KeyValueRecord<K, ?, I>, RecordId<K, I>> {
 		
 		private KeyValueRecordIdMapping(
 				RecordIdAssembler recordIdAssembler) {
@@ -89,7 +89,7 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 			return entity.isNew();
 		}
 		
-		private static class KeyValueRecordIdAccessor<K, I> implements IdAccessor<KeyValueRecord<K, ?, I>, RecordId<K, I>> {
+		public static class KeyValueRecordIdAccessor<K, I> implements IdAccessor<KeyValueRecord<K, ?, I>, RecordId<K, I>> {
 			
 			@Override
 			public RecordId<K, I> getId(KeyValueRecord<K, ?, I> associationRecord) {

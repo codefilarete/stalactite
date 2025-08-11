@@ -799,7 +799,9 @@ class TablePerClassPolymorphismPersisterTest {
 							+ ", TotoB.x as " + xAlias
 							+ ", TotoB.q as " + qAlias
 							+ ", 'TotoB' as " + totoDTYPEAlias + " from TotoB)"
-							+ " as Toto where Toto.q = ?",
+							+ " as Toto"
+							+ " left outer join TotoA as TotoA on Toto.id = TotoA.id left outer join TotoB as TotoB on Toto.id = TotoB.id"
+							+ " where Toto.q = ?",
 					"select Toto.id as " + totoIdAlias
 							+ ", Toto.x as " + totoXAlias
 							+ ", Toto.q as Toto_q"

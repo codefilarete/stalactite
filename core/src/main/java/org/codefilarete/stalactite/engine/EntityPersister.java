@@ -1,12 +1,15 @@
 package org.codefilarete.stalactite.engine;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.listener.PersisterListener;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
@@ -178,12 +181,12 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 */
 	default <O> ExecutableEntityQuery<C, ?> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
-		return selectWhere().and(getter, operator);
+		return selectWhere(AccessorChain.fromMethodReference(getter).getAccessors(), operator);
 	}
 	
 	/**
 	 * Creates a query which criteria target mapped properties.
-	 * Please note that whole bean graph is loaded, not only entities that satisfies criteria.
+	 * Please note that the whole bean graph is loaded, not only entities that satisfy criteria.
 	 * Raises an exception if targeted property is not mapped as a persisted one (transient).
 	 *
 	 * @param setter a property accessor
@@ -192,12 +195,12 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 */
 	default <O> ExecutableEntityQuery<C, ?> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
-		return selectWhere().and(setter, operator);
+		return selectWhere(Arrays.asList(Accessors.mutatorByMethodReference(setter)), operator);
 	}
 	
 	/**
 	 * Variation of {@link #selectWhere(SerializableFunction, ConditionalOperator)} with a criteria on property of a property
-	 * Please note that whole bean graph is loaded, not only entities that satisfies criteria.
+	 * Please note that whole bean graph is loaded, not only entities that satisfy criteria.
 	 * Raises an exception if targeted property is not mapped as a persisted one (transient).
 	 *
 	 * @param getter1 a property accessor
@@ -207,12 +210,12 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 */
 	default <O, A> ExecutableEntityQuery<C, ?> selectWhere(SerializableFunction<C, A> getter1, SerializableFunction<A, O> getter2, ConditionalOperator<O, ?> operator) {
-		return selectWhere(AccessorChain.chain(getter1, getter2), operator);
+		return selectWhere(AccessorChain.fromMethodReferences(getter1, getter2).getAccessors(), operator);
 	}
 	
 	/**
 	 * Creates a query which criteria target mapped properties.
-	 * Please note that whole bean graph is loaded, not only entities that satisfies criteria.
+	 * Please note that the whole bean graph is loaded, not only entities that satisfy criteria.
 	 * Raises an exception if targeted property is not mapped as a persisted one (transient).
 	 *
 	 * @param accessorChain a property accessor
@@ -220,13 +223,13 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @param <O> value type returned by property accessor
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 */
-	default <O> ExecutableEntityQuery<C, ?> selectWhere(AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
+	default <O> ExecutableEntityQuery<C, ?> selectWhere(List<? extends ValueAccessPoint<?>> accessorChain, ConditionalOperator<O, ?> operator) {
 		return selectWhere().and(accessorChain, operator);
 	}
 	
 	/**
 	 * Creates a query which criteria target mapped properties.
-	 * Please note that whole bean graph is loaded, not only entities that satisfies criteria.
+	 * Please note that the whole bean graph is loaded, not only entities that satisfy criteria.
 	 *
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 */
@@ -290,7 +293,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 */
 	default <O, A> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableFunction<C, A> getter1, SerializableFunction<A, O> getter2, ConditionalOperator<O, ?> operator) {
-		return selectProjectionWhere(selectAdapter, AccessorChain.chain(getter1, getter2), operator);
+		return selectProjectionWhere(selectAdapter, AccessorChain.fromMethodReferences(getter1, getter2).getAccessors(), operator);
 	}
 	
 	/**
@@ -309,7 +312,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @param <O> value type returned by property accessor
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 */
-	default <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter, AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
+	default <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter, List<? extends ValueAccessPoint<?>> accessorChain, ConditionalOperator<O, ?> operator) {
 		return selectProjectionWhere(selectAdapter).and(accessorChain, operator);
 	};
 	
@@ -434,9 +437,25 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 		 */
 		<A, B> SELF and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator);
 		
-		<O> SELF and(AccessorChain<C, O> getter, ConditionalOperator<O, ?> operator);
+		default <O> SELF and(ValueAccessPoint<C> accessor, ConditionalOperator<O, ?> operator) {
+			if (accessor instanceof AccessorChain) {
+				return and(((AccessorChain<?, ?>) accessor).getAccessors(), operator);
+			} else {
+				return and(Arrays.asList(accessor), operator);
+			}
+		}
 		
-		<O> SELF or(AccessorChain<C, O> getter, ConditionalOperator<O, ?> operator);
+		default <O> SELF or(ValueAccessPoint<C> accessor, ConditionalOperator<O, ?> operator) {
+			if (accessor instanceof AccessorChain) {
+				return or(((AccessorChain<?, ?>) accessor).getAccessors(), operator);
+			} else {
+				return or(Arrays.asList(accessor), operator);
+			}
+		}
+		
+		<O> SELF and(List<? extends ValueAccessPoint<?>> accessors, ConditionalOperator<O, ?> operator);
+		
+		<O> SELF or(List<? extends ValueAccessPoint<?>> accessors, ConditionalOperator<O, ?> operator);
 	}
 	
 	

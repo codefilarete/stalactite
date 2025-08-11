@@ -26,6 +26,7 @@ public class Criteria<SELF extends Criteria<SELF>> extends AbstractCriterion imp
 	 * @param target container where to push the criteria clones
 	 * @param columnClones mapping between use columns and the ones of the query (the one with aliases), usually a {@link IdentityHashMap}
 	 */
+	// TODO: to remove ? seems to be merely used or in cycle
 	public static void copy(Iterable<AbstractCriterion> source, CriteriaChain target, Function<Selectable<?>, Selectable<?>> columnClones) {
 		source.forEach(criterion -> {
 			if (criterion instanceof ColumnCriterion) {
@@ -63,7 +64,6 @@ public class Criteria<SELF extends Criteria<SELF>> extends AbstractCriterion imp
 	
 	/**
 	 * Adds a criterion to this chain.
-	 * Made public for special dedicated usage
 	 * 
 	 * @param condition any criteria 
 	 * @return this
@@ -73,14 +73,20 @@ public class Criteria<SELF extends Criteria<SELF>> extends AbstractCriterion imp
 		this.conditions.add(condition);
 		return (SELF) this;
 	}
-
+	
 	@Override
-	public SELF add(LogicalOperator logicalOperator, Column column, CharSequence condition) {
+	public SELF add(Iterable<AbstractCriterion> criteria) {
+		criteria.forEach(this.conditions::add);
+		return (SELF) this;
+	}
+	
+	@Override
+	public SELF add(LogicalOperator logicalOperator, Selectable<?> column, CharSequence condition) {
 		return add(new ColumnCriterion(logicalOperator, column, condition));
 	}
 	
 	@Override
-	public SELF add(LogicalOperator logicalOperator, Column column, ConditionalOperator condition) {
+	public SELF add(LogicalOperator logicalOperator, Selectable<?> column, ConditionalOperator<?, ?> condition) {
 		return add(new ColumnCriterion(logicalOperator, column, condition));
 	}
 	

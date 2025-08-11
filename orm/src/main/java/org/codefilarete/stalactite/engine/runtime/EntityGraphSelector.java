@@ -11,6 +11,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildLifeCycleListener;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
@@ -20,11 +22,16 @@ import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.query.model.GroupBy;
+import org.codefilarete.stalactite.query.model.Having;
+import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.LimitAware;
+import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.query.model.OrderByChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -35,6 +42,7 @@ import org.codefilarete.stalactite.sql.result.ColumnedRowIterator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
+import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
 import org.codefilarete.stalactite.sql.statement.SQLStatement;
 import org.codefilarete.stalactite.sql.statement.StringParamedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
@@ -49,8 +57,7 @@ import static org.codefilarete.tool.bean.Objects.preventNull;
 /**
  * Class aimed at loading an entity graph which is selected by some criteria on some properties coming from a {@link CriteriaChain}.
  * 
- * Implemented as a light version of {@link EntityMappingTreeSelectExecutor} focused on {@link EntityCriteriaSupport},
- * hence it is based on {@link EntityJoinTree} to build the bean graph.
+ * Implementation is based on {@link EntityJoinTree} to build the query and the entity graph.
  * 
  * @author Guillaume Mary
  * @see EntityFinder#select(ConfiguredEntityCriteria, Consumer, Consumer, Map)
@@ -65,12 +72,51 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntityFind
 	
 	private final Dialect dialect;
 	
+	private EntityTreeQuery<C> entityTreeQuery;
+	
+	private SQLOperationListener<?> operationListener;
+	
 	public EntityGraphSelector(EntityJoinTree<C, I> entityJoinTree,
 							   ConnectionProvider connectionProvider,
 							   Dialect dialect) {
 		this.entityJoinTree = entityJoinTree;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
+		
+		PersisterBuilderContext.CURRENT.get().addBuildLifeCycleListener(new BuildLifeCycleListener() {
+			@Override
+			public void afterBuild() {
+			}
+			
+			@Override
+			public void afterAllBuild() {
+				buildQuery();
+			}
+		});
+	}
+	
+	public EntityGraphSelector(EntityJoinTree<C, I> entityJoinTree,
+							   ConnectionProvider connectionProvider,
+							   Dialect dialect,
+							   boolean withImmediateQueryBuild) {
+		this.entityJoinTree = entityJoinTree;
+		this.connectionProvider = connectionProvider;
+		this.dialect = dialect;
+		this.entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();;
+	}
+	
+	private void buildQuery() {
+		entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
+	}
+	
+	@Override
+	public void setOperationListener(SQLOperationListener<?> operationListener) {
+		this.operationListener = operationListener;
+	}
+	
+	@Override
+	public EntityJoinTree<C, I> getEntityJoinTree() {
+		return entityJoinTree;
 	}
 	
 	public Set<C> selectFromQueryBean(String sql, Map<String, Object> values) {
@@ -86,8 +132,6 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntityFind
 	
 	public Set<C> selectFromQueryBean(String sql, Map<String, Object> values, Map<String, PreparedStatementWriter<?>> parameterBinders) {
 		// we use EntityTreeQueryBuilder to get the inflater, please note that it also build the default Query
-		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry())
-				.buildSelectQuery();
 		EntityTreeInflater<C> inflater = entityTreeQuery.getInflater();
 		
 		// computing SQL readers from dialect binder registry
@@ -120,11 +164,19 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntityFind
 						 Consumer<OrderByChain<?>> orderByClauseConsumer,
 						 Consumer<LimitAware<?>> limitAwareConsumer,
 						 Map<String, Object> valuesPerParam) {
-		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
-		Query query = entityTreeQuery.getQuery();
 		
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), entityTreeQuery.getColumnClones());
-		ColumnCloneAwareOrderBy cloneAwareOrderBy = new ColumnCloneAwareOrderBy(query.orderBy(), entityTreeQuery.getColumnClones());
+		// we clone the query to avoid polluting the instance one, else, from select(..) to select(..), we append the criteria at the end of it,
+		// which makes the query usually returning no data (because of the condition mix)
+		Query queryClone = new Query(
+				entityTreeQuery.getQuery().getSelectDelegate(),
+				entityTreeQuery.getQuery().getFromDelegate(),
+				new Where(),
+				new GroupBy(),
+				new Having(),
+				new OrderBy(),
+				new Limit());
+		
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone, where.getCriteria());
 		
 		// When the condition contains some criteria on a collection, the ResultSet contains only data matching it,
 		// then the graph is a partial view of the real entity. Therefore, when the condition contains some Collection criteria
@@ -132,13 +184,13 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntityFind
 		// according to the ids
 		if (where.hasCollectionCriteria()) {
 			// First phase: selecting ids (made by clearing selected elements for performance issue)
-			KeepOrderMap<Selectable<?>, String> columns = query.getSelectDelegate().clear();
+			KeepOrderMap<Selectable<?>, String> columns = queryClone.getSelectDelegate().clear();
 			Column<T, I> pk = (Column<T, I>) Iterables.first(((Table) entityJoinTree.getRoot().getTable()).getPrimaryKey().getColumns());
-			query.select(pk, PRIMARY_KEY_ALIAS);
+			queryClone.select(pk, PRIMARY_KEY_ALIAS);
 			Map<Column<?, ?>, String> aliases = Maps.asMap(pk, PRIMARY_KEY_ALIAS);
 			Map<Column<?, ?>, ResultSetReader<?>> columnReaders = Maps.asMap(pk, dialect.getColumnBinderRegistry().getBinder(pk));
-			orderByClauseConsumer.accept(cloneAwareOrderBy);
-			limitAwareConsumer.accept(query.orderBy());
+			orderByClauseConsumer.accept(queryClone.orderBy());
+			limitAwareConsumer.accept(queryClone.orderBy());
 			Set<I> ids = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>()), columnReaders, aliases);
 			
 			if (ids.isEmpty()) {
@@ -146,10 +198,10 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntityFind
 				return Collections.emptySet();
 			} else {
 				// Second phase : selecting elements by main table pk (adding necessary columns)
-				query.getSelectDelegate().remove(pk);    // previous pk selection removal
-				columns.forEach(query::select);
-				query.getWhereDelegate().clear();
-				query.where(pk, in(ids));
+				queryClone.getSelectDelegate().remove(pk);    // previous pk selection removal
+				columns.forEach(queryClone::select);
+				queryClone.getWhereDelegate().clear();
+				queryClone.where(pk, in(ids));
 				
 				PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(valuesPerParam);
 				return new InternalExecutor(entityTreeQuery).execute(preparedSQL);
@@ -157,8 +209,8 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntityFind
 		} else {
 			// The condition doesn't have a criteria on a collection property (*-to-many): the load can be done with one query because the SQL criteria
 			// doesn't make a subset of the entity graph
-			orderByClauseConsumer.accept(cloneAwareOrderBy);
-			limitAwareConsumer.accept(query.orderBy());
+			orderByClauseConsumer.accept(queryClone.orderBy());
+			limitAwareConsumer.accept(queryClone.orderBy());
 			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(valuesPerParam);
 			return new InternalExecutor(entityTreeQuery).execute(preparedSQL);
 		}
@@ -186,7 +238,7 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntityFind
 		orderByClauseConsumer.accept(query.getQuery().orderBy());
 		
 		
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where, entityTreeQuery.getColumnClones());
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where);
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
 		selectAdapter.accept(query.getSelectDelegate());
@@ -228,8 +280,11 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntityFind
 			this.columnAliases = columnAliases;
 		}
 		
-		protected Set<C> execute(SQLStatement<?> query) {
-			try (ReadOperation<?> readOperation = dialect.getReadOperationFactory().createInstance(query, connectionProvider)) {
+		protected <ParamType> Set<C> execute(SQLStatement<ParamType> query) {
+			try (ReadOperation<ParamType> readOperation = dialect.getReadOperationFactory().createInstance(query, connectionProvider)) {
+				readOperation.setListener((SQLOperationListener<ParamType>) operationListener);
+				// Note that setValues must be done after operationListener set
+				readOperation.setValues(query.getValues());
 				return transform(readOperation);
 			} catch (RuntimeException e) {
 				throw new SQLExecutionException(query.getSQL(), e);

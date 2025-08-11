@@ -13,7 +13,11 @@ import org.codefilarete.stalactite.sql.result.ColumnedRow;
  */
 public interface EntityInflater<C, I> {
 	
-	Class<C> getEntityType();
+	EntityMapping<C, I, ?> getEntityMapping();
+	
+	default Class<C> getEntityType() {
+		return getEntityMapping().getClassToPersist();
+	}
 	
 	I giveIdentifier(ColumnedRow row);
 	
@@ -38,8 +42,8 @@ public interface EntityInflater<C, I> {
 		}
 		
 		@Override
-		public Class<C> getEntityType() {
-			return this.delegate.getClassToPersist();
+		public EntityMapping<C, I, ?> getEntityMapping() {
+			return delegate;
 		}
 		
 		@Override

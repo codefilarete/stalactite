@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -17,7 +16,6 @@ import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorChain.ValueInitializerOnNullValue;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
@@ -116,7 +114,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 		Supplier<C> collectionFactory = preventNull(
 				elementCollectionRelation.getCollectionFactory(),
 				BeanRelationFixer.giveCollectionFactory((Class<C>) collectionProviderDefinition.getMemberType()));
-		addSelectCascade(sourcePersister, collectionPersister, sourcePK, elementCollectionMapping.reverseForeignKey,
+		String relationJoinNodeName = addSelectCascade(sourcePersister, collectionPersister, sourcePK, elementCollectionMapping.reverseForeignKey,
 				elementCollectionRelation.getCollectionProvider().toMutator()::set, collectionAccessor,
 				collectionFactory);
 		
@@ -124,7 +122,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 		
 		// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
 		currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<SRC, I, TRGT>(elementCollectionRelation.getComponentType(),
-				elementCollectionRelation.getCollectionProvider(), sourcePersister.getClassToPersist()) {
+				elementCollectionRelation.getCollectionProvider(), sourcePersister.getClassToPersist(), relationJoinNodeName) {
 			
 			@Override
 			public void consume(ConfiguredRelationalPersister<TRGT, ?> targetPersister) {
@@ -187,7 +185,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 			
 			Map<ReversibleAccessor<ElementRecord<TRGT, I>, Object>, Column<COLLECTIONTABLE, Object>> projectedColumnMap = new HashMap<>();
 			columnMapping.forEach((propertyAccessor, column) -> {
-				AccessorChain<ElementRecord<TRGT, I>, Object> accessorChain = AccessorChain.chainNullSafe(Arrays.asList(ElementRecord.ELEMENT_ACCESSOR, propertyAccessor), (accessor, valueType) -> {
+				AccessorChain<ElementRecord<TRGT, I>, Object> accessorChain = AccessorChain.fromAccessorsWithNullSafe(Arrays.asList(ElementRecord.ELEMENT_ACCESSOR, propertyAccessor), (accessor, valueType) -> {
 					if (accessor == ElementRecord.ELEMENT_ACCESSOR) {
 						// on getElement(), bean type can't be deduced by reflection due to generic type erasure : default mechanism returns Object
 						// so we have to specify our bean type, else a simple Object is instantiated which throws a ClassCastException further
@@ -281,13 +279,13 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 		sourcePersister.addDeleteListener(new DeleteTargetEntitiesBeforeDeleteCascader<>(wrapperPersister, collectionProviderAsPersistedInstances));
 	}
 	
-	private void addSelectCascade(ConfiguredRelationalPersister<SRC, I> sourcePersister,
-								  RelationalEntityPersister<ElementRecord<TRGT, I>, ElementRecord<TRGT, I>> elementRecordPersister,
-								  PrimaryKey<?, I> sourcePK,
-								  ForeignKey<?, ?, I> elementRecordToSourceForeignKey,
-								  BiConsumer<SRC, C> collectionSetter,
-								  Accessor<SRC, C> collectionGetter,
-								  Supplier<C> collectionFactory) {
+	private String addSelectCascade(ConfiguredRelationalPersister<SRC, I> sourcePersister,
+									RelationalEntityPersister<ElementRecord<TRGT, I>, ElementRecord<TRGT, I>> elementRecordPersister,
+									PrimaryKey<?, I> sourcePK,
+									ForeignKey<?, ?, I> elementRecordToSourceForeignKey,
+									BiConsumer<SRC, C> collectionSetter,
+									Accessor<SRC, C> collectionGetter,
+									Supplier<C> collectionFactory) {
 		// a particular collection fixer that gets raw values (elements) from ElementRecord
 		// because elementRecordPersister manages ElementRecord, so it gives them as input of the relation,
 		// hence an adaption is needed to "convert" it
@@ -297,7 +295,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 				collectionFactory,
 				(bean, input, collection) -> collection.add(input.getElement()));	// element value is taken from ElementRecord
 		
-		elementRecordPersister.joinAsMany(EntityJoinTree.ROOT_JOIN_NAME, sourcePersister, collectionGetter, sourcePK, elementRecordToSourceForeignKey, relationFixer, null, true, false);
+		return elementRecordPersister.joinAsMany(EntityJoinTree.ROOT_JOIN_NAME, sourcePersister, collectionGetter, sourcePK, elementRecordToSourceForeignKey, relationFixer, null, true, false);
 	}
 	
 	private Function<SRC, Collection<ElementRecord<TRGT, I>>> collectionProvider(Accessor<SRC, C> collectionAccessor,
@@ -332,11 +330,6 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 		
 		public ElementRecordPersister(ClassMapping<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>, T> elementRecordMapping, Dialect dialect, ConnectionConfiguration connectionConfiguration) {
 			super(elementRecordMapping, dialect, connectionConfiguration);
-		}
-		
-		@Override
-		public Column getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
-			return Iterables.first(getMapping().getSelectableColumns());
 		}
 	}
 	

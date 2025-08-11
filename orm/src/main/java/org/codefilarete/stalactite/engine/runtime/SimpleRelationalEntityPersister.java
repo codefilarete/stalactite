@@ -2,25 +2,38 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.PersistExecutor;
+import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecordMapping.KeyValueRecordIdMapping;
+import org.codefilarete.stalactite.engine.configurer.map.RecordId;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
+import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
+import org.codefilarete.stalactite.mapping.IdMapping;
+import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.query.EntityFinder;
+import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Select;
+import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.operator.In;
+import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
@@ -29,6 +42,7 @@ import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,8 +75,9 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	private final EntityFinder<C, I> entityFinder;
 	/** Support for defining entity criteria on {@link #selectWhere()} */
 	private final EntityCriteriaSupport<C> criteriaSupport;
-	private final EntityMappingTreeSelectExecutor<C, I, T> selectGraphExecutor;
 	private final PersistExecutor<C> persistExecutor;
+	private final EntityJoinTree<C, I> entityJoinTree;
+	protected final Dialect dialect;
 	
 	public SimpleRelationalEntityPersister(ClassMapping<C, I, T> mainMappingStrategy,
 										   Dialect dialect,
@@ -72,9 +87,11 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	
 	public SimpleRelationalEntityPersister(BeanPersister<C, I, T> persister, Dialect dialect, ConnectionConfiguration connectionConfiguration) {
 		this.persister = persister;
-		this.criteriaSupport = new EntityCriteriaSupport<>(persister.getMapping());
-		this.selectGraphExecutor = newSelectExecutor(persister.getMapping(), connectionConfiguration.getConnectionProvider(), dialect);
-		this.entityFinder = newEntitySelectExecutor(dialect);
+		this.entityJoinTree = new EntityJoinTree<>(new EntityMappingAdapter<>(persister.getMapping()), persister.getMapping().getTargetTable());
+		this.dialect = dialect;
+		this.entityFinder = new EntityGraphSelector<>(entityJoinTree, persister.getConnectionProvider(), dialect);
+		this.criteriaSupport = new EntityCriteriaSupport<>(entityJoinTree);
+		
 		if (persister.getMapping().getIdMapping().getIdentifierInsertionManager() instanceof AlreadyAssignedIdentifierManager) {
 			// we redirect all invocations to ourselves because targeted methods invoke their listeners
 			this.persistExecutor = new AlreadyAssignedIdentifierPersistExecutor<>(this);
@@ -84,31 +101,9 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 		}
 	}
 	
-	protected EntityMappingTreeSelectExecutor<C, I, T> newSelectExecutor(EntityMapping<C, I, T> mappingStrategy,
-																		 ConnectionProvider connectionProvider,
-																		 Dialect dialect) {
-		return new EntityMappingTreeSelectExecutor<>(mappingStrategy, dialect, connectionProvider);
-	}
-	
-	protected EntityFinder<C, I> newEntitySelectExecutor(Dialect dialect) {
-		return new EntityGraphSelector<>(
-				getEntityJoinTree(),
-				persister.getConnectionProvider(),
-				dialect);
-	}
-	
 	@Override
-	public Column getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
+	public Selectable<?> getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
 		return criteriaSupport.getRootConfiguration().giveColumn(accessorChain);
-	}
-	
-	/**
-	 * Gives access to the select executor for further manipulations on {@link EntityJoinTree} for advanced usage
-	 * 
-	 * @return the executor for whole entity graph loading
-	 */
-	public EntityMappingTreeSelectExecutor<C, I, T> getEntityMappingTreeSelectExecutor() {
-		return this.selectGraphExecutor;
 	}
 	
 	@Override
@@ -129,8 +124,8 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 		return persister.getUpdateExecutor();
 	}
 	
-	public EntityMappingTreeSelectExecutor<C, I, T> getSelectExecutor() {
-		return this.selectGraphExecutor;
+	public EntityFinder<C, I> getSelectExecutor() {
+		return this.entityFinder;
 	}
 	
 	public DeleteExecutor<C, I, T> getDeleteExecutor() {
@@ -139,7 +134,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	
 	@Override
 	public EntityJoinTree<C, I> getEntityJoinTree() {
-		return getEntityMappingTreeSelectExecutor().getEntityJoinTree();
+		return this.entityJoinTree;
 	}
 	
 	@Override
@@ -159,7 +154,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	
 	@Override
 	public EntityQueryCriteriaSupport<C, I> newCriteriaSupport() {
-		return new EntityQueryCriteriaSupport<>(criteriaSupport, entityFinder, getPersisterListener());
+		return new EntityQueryCriteriaSupport<>(entityFinder, criteriaSupport);
 	}
 	
 	@Override
@@ -189,8 +184,8 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	}
 	
 	@Override
-	public void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister) {
-		criteriaSupport.registerRelation(relation, persister);
+	public void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister, String relationJoinNodeName) {
+		criteriaSupport.registerRelation(relation, persister, relationJoinNodeName);
 	}
 	
 	/**
@@ -279,7 +274,43 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	@Override
 	protected Set<C> doSelect(Iterable<I> ids) {
 		LOGGER.debug("selecting entities {}", ids);
-		return selectGraphExecutor.select(ids);
+		// Note that executor emits select listener events
+		IdMapping<C, I> idMapping = persister.getMapping().getIdMapping();
+		if (idMapping.getIdentifierAssembler() instanceof ComposedIdentifierAssembler) {
+			// && dialect.supportTupleIn
+			Map<? extends Column<?, ?>, ?> columnValues = ((ComposedIdentifierAssembler<I, ?>) idMapping.getIdentifierAssembler()).getColumnValues(ids);
+			TupleIn tupleIn = TupleIn.transformBeanColumnValuesToTupleInValues(Iterables.size(ids), columnValues);
+			EntityQueryCriteriaSupport<C, I> newCriteriaSupport = newCriteriaSupport();
+			newCriteriaSupport.getEntityCriteriaSupport().getCriteria().and(tupleIn);
+			return newCriteriaSupport.wrapIntoExecutable().execute(Accumulators.toSet());
+		} else {
+			// TODO: make ColumnBinderRegistry supports column clones: if column binder is defined / overwritten, then its binder is not taken into account
+			// due to column clones (almost sure)
+			ReversibleAccessor<C, I> criteriaAccessor;
+			if (idMapping.getIdAccessor() instanceof AccessorWrapperIdAccessor) {
+				criteriaAccessor = ((AccessorWrapperIdAccessor<C, I>) idMapping.getIdAccessor()).getIdAccessor();
+			} else if (idMapping.getIdAccessor() instanceof KeyValueRecordIdMapping.KeyValueRecordIdAccessor) {
+				PropertyAccessor<RecordId, ?> accessor = Accessors.accessor(RecordId::getId);
+				criteriaAccessor = (ReversibleAccessor<C, I>) accessor;
+			} else {
+				throw new UnsupportedOperationException("Unsupported id accessor type: " + idMapping.getIdAccessor().getClass());
+			}
+			In<I> in = Operators.in();
+			Set<C> result = new HashSet<>();
+			ExecutableEntityQuery<C, ?> executableEntityQuery = selectWhere().and(criteriaAccessor, in);
+			Iterables.forEachChunk(
+					ids,
+					dialect.getInOperatorMaxSize(),
+					chunks -> {},
+					chunkSize -> null,	// no particular initialization to do
+					(context, chunk) -> {
+						in.setValue(chunk);
+						result.addAll(executableEntityQuery.execute(Accumulators.toSet()));
+					},
+					context -> {}
+			);
+			return result;
+		}
 	}
 	
 	@Override

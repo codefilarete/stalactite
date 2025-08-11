@@ -515,8 +515,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			verify(insertListenerMock).beforeInsert(Arrays.asList(dummyCar));
 			verify(insertListenerMock).afterInsert(Arrays.asList(dummyCar));
 			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
-			// 2 times for: usual select listening and already-assigned after-select call
-			verify(selectListenerMock, times(2)).afterSelect(Collections.emptySet());	// empty set because entities were deleted earlier
+			verify(selectListenerMock, times(1)).afterSelect(Collections.emptySet());	// empty set because entities were deleted earlier
 			
 			clearInvocations(selectListenerMock);
 			dummyCar.setModel("Peugeot");
@@ -524,17 +523,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			verify(updateListenerMock).beforeUpdate(any(), eq(true));
 			verify(updateListenerMock).afterUpdate(any(), eq(true));
 			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
-			verify(selectListenerMock).beforeSelect(Collections.emptySet());
-			// 2 times for: usual select listening and already-assigned after-select call
 			dummyCar.setModel("Renault");	// we set back previous value to match verify(..)
-			verify(selectListenerMock, times(2)).afterSelect(Arrays.asHashSet(dummyCar));
+			verify(selectListenerMock, times(1)).afterSelect(Arrays.asHashSet(dummyCar));
 			
 			// select test
 			clearInvocations(selectListenerMock);
 			AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
 			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(new PersistedIdentifier<>(1L)));
-			// 2 times for: usual select listening and already-assigned after-select call
-			verify(selectListenerMock, times(2)).afterSelect(Arrays.asHashSet(loadedCar));
+			verify(selectListenerMock, times(1)).afterSelect(Arrays.asHashSet(loadedCar));
 		}
 	}
 	
@@ -880,8 +876,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			verify(insertListenerMock).beforeInsert(Arrays.asList(dummyCar));
 			verify(insertListenerMock).afterInsert(Arrays.asList(dummyCar));
 			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
-			// 2 times for: usual select listening and already-assigned after-select call
-			verify(selectListenerMock, times(2)).afterSelect(Collections.emptySet());	// empty set because entities were deleted earlier
+			verify(selectListenerMock, times(1)).afterSelect(Collections.emptySet());	// empty set because entities were deleted earlier
 			
 			clearInvocations(selectListenerMock);
 			dummyCar.setModel("Peugeot");
@@ -889,17 +884,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			verify(updateListenerMock).beforeUpdate(any(), eq(true));
 			verify(updateListenerMock).afterUpdate(any(), eq(true));
 			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
-			verify(selectListenerMock).beforeSelect(Collections.emptySet());
-			// 2 times for: usual select listening and already-assigned after-select call
 			dummyCar.setModel("Renault");	// we set back previous value to match verify(..)
-			verify(selectListenerMock, times(2)).afterSelect(Arrays.asHashSet(dummyCar));
+			verify(selectListenerMock, times(1)).afterSelect(Arrays.asHashSet(dummyCar));
 			
 			// select test
 			clearInvocations(selectListenerMock);
 			AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
 			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(new PersistedIdentifier<>(1L)));
-			// 2 times for: usual select listening and already-assigned after-select call
-			verify(selectListenerMock, times(2)).afterSelect(Arrays.asHashSet(loadedCar));
+			verify(selectListenerMock, times(1)).afterSelect(Arrays.asHashSet(loadedCar));
 		}
 	}
 	
@@ -1215,8 +1207,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			verify(insertListenerMock).beforeInsert(Arrays.asList(dummyCar));
 			verify(insertListenerMock).afterInsert(Arrays.asList(dummyCar));
 			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
-			// 2 times for: usual select listening and already-assigned after-select call
-			verify(selectListenerMock, times(2)).afterSelect(Collections.emptySet());	// empty set because entities were deleted earlier
+			verify(selectListenerMock, times(1)).afterSelect(Collections.emptySet());	// empty set because entities were deleted earlier
 			
 			clearInvocations(selectListenerMock);
 			dummyCar.setModel("Peugeot");
@@ -1224,17 +1215,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			verify(updateListenerMock).beforeUpdate(any(), eq(true));
 			verify(updateListenerMock).afterUpdate(any(), eq(true));
 			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
-			verify(selectListenerMock).beforeSelect(Collections.emptySet());
-			// 2 times for: usual select listening and already-assigned after-select call
 			dummyCar.setModel("Renault");	// we set back previous value to match verify(..)
-			verify(selectListenerMock, times(2)).afterSelect(Arrays.asHashSet(dummyCar));
+			verify(selectListenerMock, times(1)).afterSelect(Arrays.asHashSet(dummyCar));
 			
 			// select test
 			clearInvocations(selectListenerMock);
 			AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
 			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(new PersistedIdentifier<>(1L)));
-			// 2 times for: usual select listening and already-assigned after-select call
-			verify(selectListenerMock, times(2)).afterSelect(Arrays.asHashSet(loadedCar));
+			verify(selectListenerMock, times(1)).afterSelect(Arrays.asHashSet(loadedCar));
 		}
 	}
 	

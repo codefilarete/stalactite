@@ -71,12 +71,12 @@ public class EntityMappingWrapper<C, I, T extends Table<T>> implements EntityMap
 	}
 	
 	@Override
-	public Map<Column<T, ?>, Object> getVersionedKeyValues(C c) {
+	public Map<Column<T, ?>, ?> getVersionedKeyValues(C c) {
 		return delegate.getVersionedKeyValues(c);
 	}
 	
 	@Override
-	public Map<ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> getEmbeddedBeanStrategies() {
+	public Map<ReversibleAccessor<C, ?>, EmbeddedBeanMapping<?, T>> getEmbeddedBeanStrategies() {
 		return delegate.getEmbeddedBeanStrategies();
 	}
 	

@@ -8,18 +8,20 @@ import java.util.function.Function;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
+import org.codefilarete.tool.collection.Arrays;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
@@ -129,38 +131,41 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 */
 	<E, ID> void copyRootJoinsTo(EntityJoinTree<E, ID> entityJoinTree, String joinName);
 	
+	/**
+	 * Overridden for a more accurate return type.
+	 * {@inheritDoc}
+	 */
 	default <O> ExecutableEntityQueryCriteria<C, ?> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
-		return selectWhere().and(getter, operator);
-	}
-	
-	default <O> ExecutableEntityQueryCriteria<C, ?> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
-		return selectWhere().and(setter, operator);
-	}
-	
-	default <O, A> ExecutableEntityQueryCriteria<C, ?> selectWhere(SerializableFunction<C, A> getter1, SerializableFunction<A, O> getter2, ConditionalOperator<O, ?> operator) {
-		return selectWhere(AccessorChain.chain(getter1, getter2), operator);
+		return selectWhere(AccessorChain.fromMethodReference(getter).getAccessors(), operator);
 	}
 	
 	/**
-	 * Creates a query which criteria target mapped properties.
-	 * Please note that whole bean graph is loaded, not only entities that satisfies criteria.
-	 *
-	 * @param accessorChain a property accessor
-	 * @param operator criteria for the property
-	 * @param <O> value type returned by property accessor
-	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
-	 * @throws Exception if the column matching targeted property can't be found in entity mapping
+	 * Overridden for a more accurate return type.
+	 * {@inheritDoc}
 	 */
-	default <O> ExecutableEntityQueryCriteria<C, ?> selectWhere(AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
+	default <O> ExecutableEntityQueryCriteria<C, ?> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
+		return selectWhere(Arrays.asList(Accessors.mutatorByMethodReference(setter)), operator);
+	}
+	
+	/**
+	 * Overridden for a more accurate return type.
+	 * {@inheritDoc}
+	 */
+	default <O, A> ExecutableEntityQueryCriteria<C, ?> selectWhere(SerializableFunction<C, A> getter1, SerializableFunction<A, O> getter2, ConditionalOperator<O, ?> operator) {
+		return selectWhere(AccessorChain.fromMethodReferences(getter1, getter2).getAccessors(), operator);
+	}
+	
+	/**
+	 * Overridden for a more accurate return type.
+	 * {@inheritDoc}
+	 */
+	default <O> ExecutableEntityQueryCriteria<C, ?> selectWhere(List<? extends ValueAccessPoint<?>> accessorChain, ConditionalOperator<O, ?> operator) {
 		return selectWhere().and(accessorChain, operator);
 	}
 	
 	/**
-	 * Creates a query which criteria target mapped properties.
-	 * Please note that whole bean graph is loaded, not only entities that satisfies criteria.
-	 *
-	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
-	 * @throws Exception if the column matching targeted property can't be found in entity mapping
+	 * Overridden for a more accurate return type.
+	 * {@inheritDoc}
 	 */
 	ExecutableEntityQueryCriteria<C, ?> selectWhere();
 	
@@ -168,7 +173,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * Register a relation to another persister. Made to make {@link #selectWhere(SerializableFunction, ConditionalOperator)} methods working.
 	 * Called at a very late stage of persister configuration when all persisters are available. 
 	 */
-	void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister);
+	void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister, @Nullable String relationJoinNodeName);
 	
 	/**
 	 * Gives the column on which the last element of the given accessor chain is persisted.
@@ -176,9 +181,9 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * The lookup will go down the tree / graph of persistence.
 	 * 
 	 * @param accessorChain a suite of accessor describing a property of current persisted class
-	 * @return the column matching the property, will throw an exception if a property of the chain is not mapped or found by this persister
+	 * @return the column matching the property, it will throw an exception if a property of the chain is not mapped or found by this persister
 	 */
-	Column getColumn(List<? extends ValueAccessPoint<?>> accessorChain);
+	Selectable<?> getColumn(List<? extends ValueAccessPoint<?>> accessorChain);
 	
 	/**
 	 * Mashup between {@link EntityCriteria} and {@link ExecutableQuery} to make an {@link EntityCriteria} executable

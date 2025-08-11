@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine.configurer;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Map;
 
@@ -176,11 +177,17 @@ public class RelationConfigurer<C, I> {
 		
 		private final ReversibleAccessor<C, ?> targetEntityAccessor;
 		private final Class<C> sourceEntityType;
+		@Nullable
+		private final String relationJoinNodeName;
 		
-		public GraphLoadingRelationRegisterer(Class<TRGT> targetEntityType, ReversibleAccessor<C, ?> targetEntityAccessor, Class<C> sourceEntityType) {
+		public GraphLoadingRelationRegisterer(Class<TRGT> targetEntityType,
+											  ReversibleAccessor<C, ?> targetEntityAccessor,
+											  Class<C> sourceEntityType,
+											  @Nullable String relationJoinNodeName) {
 			super(targetEntityType);
 			this.targetEntityAccessor = targetEntityAccessor;
 			this.sourceEntityType = sourceEntityType;
+			this.relationJoinNodeName = relationJoinNodeName;
 		}
 		
 		@Override
@@ -189,8 +196,7 @@ public class RelationConfigurer<C, I> {
 			// final / registered one in particular in case of polymorphism
 			PersisterRegistry persisterRegistry = PersisterBuilderContext.CURRENT.get().getPersisterRegistry();
 			ConfiguredRelationalPersister<C, I> registeredSourcePersister = ((ConfiguredRelationalPersister<C, I>) persisterRegistry.getPersister(sourceEntityType));
-			registeredSourcePersister.registerRelation(targetEntityAccessor, targetPersister);
-			
+			registeredSourcePersister.registerRelation(targetEntityAccessor, targetPersister, relationJoinNodeName);
 		}
 	}
 }

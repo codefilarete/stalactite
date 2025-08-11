@@ -75,16 +75,19 @@ public class OneToOneRelationConfigurer<C, I> {
 				currentBuilderContext.addBuildLifeCycleListener(cycleSolver);
 			}
 			cycleSolver.addCycleSolver(relationName, configurer);
+			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
+			currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<C, I, TRGT>(targetMappingConfiguration.getEntityType(),
+					oneToOneRelation.getTargetProvider(), sourcePersister.getClassToPersist(), null));
 		} else {
 			// please note that even if no table is found in configuration, build(..) will create one
 			Table targetTable = nullable(oneToOneRelation.getTargetTable()).getOr(nullable(oneToOneRelation.getReverseColumn()).map(Column::getTable).get());
 			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = new PersisterBuilderImpl<>(targetMappingConfiguration)
 					.build(dialect, connectionConfiguration, targetTable);
-			configurer.configure(relationName, targetPersister, oneToOneRelation.isFetchSeparately());
+			String relationJoinNodeName = configurer.configure(relationName, targetPersister, oneToOneRelation.isFetchSeparately());
+			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
+			currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<C, I, TRGT>(targetMappingConfiguration.getEntityType(),
+					oneToOneRelation.getTargetProvider(), sourcePersister.getClassToPersist(), relationJoinNodeName));
 		}
-		// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
-		currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<C, I, TRGT>(targetMappingConfiguration.getEntityType(),
-				oneToOneRelation.getTargetProvider(), sourcePersister.getClassToPersist()));
 		
 	}
 }

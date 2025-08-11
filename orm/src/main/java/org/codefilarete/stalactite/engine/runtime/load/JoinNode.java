@@ -27,7 +27,7 @@ public interface JoinNode<C, T extends Fromable> {
 	 * 
 	 * @return joins associated to this node
 	 */
-	ReadOnlyList<AbstractJoinNode> getJoins();
+	ReadOnlyList<AbstractJoinNode<?, ?, ?, ?>> getJoins();
 	
 	void add(AbstractJoinNode node);
 	

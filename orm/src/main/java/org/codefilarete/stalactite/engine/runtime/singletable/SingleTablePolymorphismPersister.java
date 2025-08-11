@@ -110,8 +110,13 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 	}
 	
 	@Override
-	public void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister) {
-		criteriaSupport.registerRelation(relation, persister);
+	public EntityJoinTree<C, I> getEntityJoinTree() {
+		return ((SingleTablePolymorphismEntityFinder) entityFinder).getEntityJoinTree();
+	}
+	
+	@Override
+	public void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister, @Nullable String relationJoinNodeName) {
+		criteriaSupport.registerRelation(relation, persister, relationJoinNodeName);
 	}
 
 	@Override
@@ -130,7 +135,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 	}
 	
 	@Override
-	public Column getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
+	public Selectable<?> getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
 		return criteriaSupport.getRootConfiguration().giveColumn(accessorChain);
 	}
 	

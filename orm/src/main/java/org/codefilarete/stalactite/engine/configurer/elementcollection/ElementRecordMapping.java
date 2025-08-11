@@ -23,7 +23,7 @@ import org.codefilarete.tool.collection.Maps;
  * Class mapping dedicated to {@link ElementRecord}. Very close to {@link org.codefilarete.stalactite.engine.configurer.AssociationRecordMapping}
  * in its principle.
  */
-class ElementRecordMapping<C, I, T extends Table<T>> extends ClassMapping<ElementRecord<C, I>, ElementRecord<C, I>, T> {
+public class ElementRecordMapping<C, I, T extends Table<T>> extends ClassMapping<ElementRecord<C, I>, ElementRecord<C, I>, T> {
 	
 	<LEFTTABLE extends Table<LEFTTABLE>> ElementRecordMapping(T targetTable,
 															  Column<T, C> elementColumn,
@@ -51,7 +51,7 @@ class ElementRecordMapping<C, I, T extends Table<T>> extends ClassMapping<Elemen
 	 * - {@link ElementRecord#getId()}
 	 * - {@link ElementRecord#getElement()}
 	 */
-	private static class ElementRecordIdMapping<C, I, T extends Table<T>> extends ComposedIdMapping<ElementRecord<C, I>, ElementRecord<C, I>> {
+	public static class ElementRecordIdMapping<C, I, T extends Table<T>> extends ComposedIdMapping<ElementRecord<C, I>, ElementRecord<C, I>> {
 		
 		public <LEFTTABLE extends Table<LEFTTABLE>> ElementRecordIdMapping(
 				T targetTable,
@@ -111,7 +111,7 @@ class ElementRecordMapping<C, I, T extends Table<T>> extends ClassMapping<Elemen
 		 * @param <TRGT> embedded bean type
 		 * @param <ID> source identifier type
 		 */
-		private static class DefaultElementRecordIdentifierAssembler<TRGT, ID, T extends Table<T>> extends ComposedIdentifierAssembler<ElementRecord<TRGT, ID>, T> {
+		public static class DefaultElementRecordIdentifierAssembler<TRGT, ID, T extends Table<T>> extends ComposedIdentifierAssembler<ElementRecord<TRGT, ID>, T> {
 			
 			private final Column<T, TRGT> elementColumn;
 			private final IdentifierAssembler<ID, ?> sourceIdentifierAssembler;
@@ -125,6 +125,14 @@ class ElementRecordMapping<C, I, T extends Table<T>> extends ClassMapping<Elemen
 				this.elementColumn = elementColumn;
 				this.sourceIdentifierAssembler = sourceIdentifierAssembler;
 				this.primaryKeyForeignColumnMapping = (Map) primaryKeyForeignColumnMapping;
+			}
+			
+			public Column<T, TRGT> getElementColumn() {
+				return elementColumn;
+			}
+			
+			public IdentifierAssembler<ID, ?> getSourceIdentifierAssembler() {
+				return sourceIdentifierAssembler;
 			}
 			
 			@Override
@@ -162,7 +170,7 @@ class ElementRecordMapping<C, I, T extends Table<T>> extends ClassMapping<Elemen
 		 * @param <TRGT> embedded bean type
 		 * @param <ID> source identifier type
 		 */
-		private static class ElementRecordIdentifierAssembler<TRGT, ID, T extends Table<T>> extends ComposedIdentifierAssembler<ElementRecord<TRGT, ID>, T> {
+		public static class ElementRecordIdentifierAssembler<TRGT, ID, T extends Table<T>> extends ComposedIdentifierAssembler<ElementRecord<TRGT, ID>, T> {
 			
 			private final EmbeddedClassMapping<ElementRecord<TRGT, ID>, T> elementMapping;
 			private final IdentifierAssembler<ID, ?> sourceIdentifierAssembler;
@@ -177,6 +185,10 @@ class ElementRecordMapping<C, I, T extends Table<T>> extends ClassMapping<Elemen
 				this.elementMapping = elementMapping;
 				this.sourceIdentifierAssembler = sourceIdentifierAssembler;
 				this.primaryKeyForeignColumnMapping = (Map) primaryKeyForeignColumnMapping;
+			}
+			
+			public EmbeddedClassMapping<ElementRecord<TRGT, ID>, T> getElementMapping() {
+				return elementMapping;
 			}
 			
 			@Override

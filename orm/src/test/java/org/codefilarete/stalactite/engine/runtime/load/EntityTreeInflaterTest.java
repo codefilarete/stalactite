@@ -145,7 +145,7 @@ class EntityTreeInflaterTest {
 		consumerNode111.addConsumer(consumerNode1111);
 		
 		
-		EntityTreeInflater<Root> testInstance = new EntityTreeInflater<>(consumerRoot, null);
+		EntityTreeInflater<Root> testInstance = new EntityTreeInflater<>(consumerRoot);
 		List<List<Object>> entityStackHistory = new ArrayList<>();
 		testInstance.foreachNode(Arrays.asList(consumerRoot), new NodeVisitor(root) {
 			@Override
@@ -200,7 +200,7 @@ class EntityTreeInflaterTest {
 		consumerNode111.addConsumer(consumerNode1111);
 		
 		
-		EntityTreeInflater<Root> testInstance = new EntityTreeInflater<>(consumerRoot, null);
+		EntityTreeInflater<Root> testInstance = new EntityTreeInflater<>(consumerRoot);
 		List<List<Object>> entityStackHistory = new ArrayList<>();
 		testInstance.foreachNode(Arrays.asList(consumerRoot), new NodeVisitor(root) {
 			@Override

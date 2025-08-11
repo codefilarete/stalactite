@@ -14,7 +14,6 @@ import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleMutator;
-import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.onetomany.IndexedMappedManyRelationDescriptor;
@@ -54,13 +53,14 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 	}
 	
 	@Override
-	protected void configure(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	protected String configure(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		determineForeignKeyColumns(targetPersister);
 		assignAssociationEngine(targetPersister);
 		
 		mappedAssociationEngine.propagateMappedAssociationToSubTables(this.foreignKey);
-		mappedAssociationEngine.addSelectCascade(associationConfiguration.getLeftPrimaryKey(), loadSeparately);
+		String relationJoinNodeName = mappedAssociationEngine.addSelectCascade(associationConfiguration.getLeftPrimaryKey(), loadSeparately);
 		addWriteCascades(mappedAssociationEngine, targetPersister);
+		return relationJoinNodeName;
 	}
 	
 	protected void determineForeignKeyColumns(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {

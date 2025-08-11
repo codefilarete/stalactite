@@ -28,7 +28,7 @@ abstract class OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, C extends C
 		this.loadSeparately = loadSeparately;
 	}
 	
-	protected abstract void configure(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister);
+	protected abstract String configure(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister);
 	
 	public abstract CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(String tableAlias,
 																					   ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,

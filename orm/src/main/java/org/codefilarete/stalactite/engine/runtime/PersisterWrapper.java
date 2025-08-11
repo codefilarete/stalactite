@@ -20,6 +20,7 @@ import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.query.model.Select;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -58,12 +59,12 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	}
 	
 	@Override
-	public void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister) {
-		this.delegate.registerRelation(relation, persister);
+	public void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister, @Nullable String relationJoinNodeName) {
+		this.delegate.registerRelation(relation, persister, relationJoinNodeName);
 	}
 	
 	@Override
-	public Column getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
+	public Selectable<?> getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
 		return delegate.getColumn(accessorChain);
 	}
 	

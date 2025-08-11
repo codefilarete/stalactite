@@ -73,7 +73,7 @@ public class OneToManyWithIndexedAssociationTableEngine<
 	}
 	
 	@Override
-	public void addSelectCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister, boolean loadSeparately) {
+	public String addSelectCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister, boolean loadSeparately) {
 		addIndexSelection(loadSeparately);
 		
 		// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
@@ -101,6 +101,7 @@ public class OneToManyWithIndexedAssociationTableEngine<
 				targetSelectListener.onSelectError(Collections.emptyList(), exception);
 			}
 		});
+		return null;
 	}
 
 	private void addIndexSelection(boolean loadSeparately) {

@@ -101,8 +101,8 @@ class EntityGraphSelectorTest {
 		Connection connectionMock = mock(Connection.class);
 		when(connectionProvider.giveConnection()).thenReturn(connectionMock);
 		when(connectionMock.prepareStatement(any())).thenReturn(preparedStatement);
-
-		EntityGraphSelector<Toto, Integer, ?> testInstance = new EntityGraphSelector<>(entityJoinTree, connectionProvider, new DefaultDialect());
+		
+		EntityGraphSelector<Toto, Integer, ?> testInstance = new EntityGraphSelector<>(entityJoinTree, connectionProvider, new DefaultDialect(), true);
 		
 		Set<Toto> totos = testInstance.selectFromQueryBean("select Toto.id as Toto_id, Tata.id as Tata_id from Toto inner join Tata on Toto.id = Tata.id" +
 				" where Toto.id = :toto_id", Maps.asMap("toto_id", 7));

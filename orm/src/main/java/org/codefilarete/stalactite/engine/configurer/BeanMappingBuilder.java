@@ -148,7 +148,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 				throw new NotImplementedException(Reflections.toString(valueAccessPoint.getClass()) + " is unknown from chain creation algorithm");
 			}
 		});
-		return AccessorChain.chainNullSafe(
+		return AccessorChain.fromAccessorsWithNullSafe(
 				finalAccessors,
 				// this can look superfluous but fills the gap of instantiating right bean when configuration is a subtype of inset accessor,
 				// case which is allowed by signature of embed(..) method : it accepts "? extend T" as parameter type of given configuration
@@ -365,7 +365,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 					if (accessorPath.size() == 1) {
 						mappingPrefix = accessorPath.peek();
 					} else {
-						mappingPrefix = AccessorChain.chainNullSafe(new ArrayList<>(accessorPath));
+						mappingPrefix = AccessorChain.fromAccessorsWithNullSafe(new ArrayList<>(accessorPath));
 					}
 				}
 				BeanMappingConfiguration<?> superClassConfiguration = configuration.getMappedSuperClassConfiguration();
@@ -399,7 +399,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 					accessors = new ArrayList<>(accessorPath);
 					accessors.add(accessor);
 				}
-				prefix = AccessorChain.chainNullSafe(
+				prefix = AccessorChain.fromAccessorsWithNullSafe(
 						accessors,
 						// this can look superfluous but fills the gap of instantiating right bean when configuration is a subtype of inset accessor,
 						// case which is allowed by signature of embed(..) method : it accepts "? extend T" as parameter type of given configuration

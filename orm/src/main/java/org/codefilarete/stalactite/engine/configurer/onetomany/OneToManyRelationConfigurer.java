@@ -107,15 +107,18 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			}
 			String relationName = AccessorDefinition.giveDefinition(oneToManyRelation.getCollectionProvider()).getName();
 			cycleSolver.addCycleSolver(relationName, configurer);
+			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
+			currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<>(targetMappingConfiguration.getEntityType(),
+					oneToManyRelation.getCollectionProvider(), sourcePersister.getClassToPersist(), null));
 		} else {
 			Table targetTable = determineTargetTable(oneToManyRelation);
 			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = new PersisterBuilderImpl<>(targetMappingConfiguration)
 					.build(dialect, connectionConfiguration, targetTable);
-			configurer.configure(targetPersister);
+			String relationJoinNodeName = configurer.configure(targetPersister);
+			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
+			currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<>(targetMappingConfiguration.getEntityType(),
+					oneToManyRelation.getCollectionProvider(), sourcePersister.getClassToPersist(), relationJoinNodeName));
 		}
-		// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
-		currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<>(targetMappingConfiguration.getEntityType(),
-				oneToManyRelation.getCollectionProvider(), sourcePersister.getClassToPersist()));
 	}
 	
 	private Table determineTargetTable(OneToManyRelation<SRC, TRGT, TRGTID, ?> oneToManyRelation) {

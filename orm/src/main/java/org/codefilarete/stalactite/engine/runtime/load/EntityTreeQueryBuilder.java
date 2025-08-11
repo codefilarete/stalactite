@@ -15,7 +15,6 @@ import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
-import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
@@ -57,10 +56,7 @@ public class EntityTreeQueryBuilder<C> {
 		// for them, which causes issue while setting criteria value (column is not found by database driver)
 		IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = new IdentityHashMap<>();
 		
-		// Table clones storage per their initial node to manage several occurrences of the same table in the query
-		Map<JoinNode, Fromable> tableClonePerJoinNode = new HashMap<>();
-		
-		ResultHelper resultHelper = new ResultHelper(query, parameterBinderProvider, aliasBuilder, selectParameterBinders, tableClonePerJoinNode);
+		ResultHelper resultHelper = new ResultHelper(query, parameterBinderProvider, aliasBuilder, selectParameterBinders);
 		
 		/* In the following algorithm, node tables will be cloned and applied a unique alias to manage the presence of twice the same table in different
 		 * nodes. This happens when the tree contains sibling relations (like person->firstHouse and person->secondaryHouse), or, in a more general way,
@@ -71,24 +67,17 @@ public class EntityTreeQueryBuilder<C> {
 		
 		// initialization of the From clause with the very first table
 		JoinRoot<C, Object, ?> joinRoot = this.tree.getRoot();
-		Duo<Fromable, IdentityHashMap<? extends Selectable<?>, ? extends Selectable<?>>> rootClone = cloneTable(joinRoot);
-		Fromable rootTableClone = rootClone.getLeft();
-		columnClones.putAll(rootClone.getRight());
-		tableClonePerJoinNode.put(joinRoot, rootTableClone);
-		query.getFromDelegate().setRoot(rootTableClone);
-		resultHelper.addColumnsToSelect(joinRoot, aliasBuilder.buildTableAlias(joinRoot));
+		columnClones.putAll(joinRoot.getOriginalColumnsToLocalOnes());
+		query.getFromDelegate().setRoot(joinRoot.getTable());
+		resultHelper.addColumnsToSelectClause(joinRoot, aliasBuilder.buildTableAlias(joinRoot));
 		
 		// completing from clause
 		this.tree.foreachJoin(join -> {
-			Duo<Fromable, IdentityHashMap<? extends Selectable<?>, ? extends Selectable<?>>> joinClone = cloneTable(join);
-			tableClonePerJoinNode.put(join, joinClone.getLeft());
-			columnClones.putAll(joinClone.getRight());
+			columnClones.putAll(join.getOriginalColumnsToLocalOnes());
 		});
 		resultHelper.applyJoinTree(this.tree);
 		
-		EntityTreeInflater<C> entityTreeInflater = new EntityTreeInflater<>(
-				resultHelper.buildConsumerTree(tree),
-				tableClonePerJoinNode);
+		EntityTreeInflater<C> entityTreeInflater = new EntityTreeInflater<>(resultHelper.buildConsumerTree(tree));
 		
 		return new EntityTreeQuery<>(query, selectParameterBinders, entityTreeInflater, columnClones);
 	}
@@ -118,23 +107,14 @@ public class EntityTreeQueryBuilder<C> {
 		// Made IdentityMap to support presence of same table multiple times in query, in particular for cycling bean graph (tables are cloned)
 		private final IdentityMap<Selectable<?>, String> columnAliases = new IdentityMap<>();
 		
-		// Table clones storage per their initial node to manage several occurrence of same table in query
-		private final Map<JoinNode, Fromable> tablePerJoinNode;
-		
 		private ResultHelper(Query query,
 							 ResultSetReaderRegistry parameterBinderProvider,
 							 AliasBuilder aliasBuilder,
-							 Map<? extends Selectable<?>, ? extends ResultSetReader<?>> selectParameterBinders,
-							 Map<JoinNode, Fromable> tablePerJoinNode) {
+							 Map<? extends Selectable<?>, ? extends ResultSetReader<?>> selectParameterBinders) {
 			this.parameterBinderProvider = parameterBinderProvider;
 			this.aliasBuilder = aliasBuilder;
 			this.query = query;
 			this.selectParameterBinders = (Map<Selectable<?>, ResultSetReader<?>>) selectParameterBinders;
-			this.tablePerJoinNode = tablePerJoinNode;
-		}
-		
-		public IdentityMap<Selectable<?>, String> getColumnAliases() {
-			return columnAliases;
 		}
 		
 		/**
@@ -147,7 +127,7 @@ public class EntityTreeQueryBuilder<C> {
 			From targetFrom = query.getFromDelegate();
 			tree.foreachJoin(join -> {
 				String tableAlias = aliasBuilder.buildTableAlias(join);
-				addColumnsToSelect(join, tableAlias);
+				addColumnsToSelectClause(join, tableAlias);
 				// we look for the cloned equivalent column of the original ones (from join node)
 				Key<Fromable, JOINTYPE> leftJoinColumn = (Key<Fromable, JOINTYPE>) join.getLeftJoinLink();
 				Key<Fromable, JOINTYPE> rightJoinColumn = (Key<Fromable, JOINTYPE>) join.getRightJoinLink();
@@ -164,7 +144,7 @@ public class EntityTreeQueryBuilder<C> {
 			});
 		}
 		
-		private <T1 extends Fromable> void addColumnsToSelect(JoinNode<?, T1> joinNode, String tableAlias) {
+		private <T1 extends Fromable> void addColumnsToSelectClause(JoinNode<?, T1> joinNode, String tableAlias) {
 			Set<Selectable<?>> selectableColumns = joinNode.getColumnsToSelect();
 			for (Selectable<?> selectableColumn : selectableColumns) {
 				Selectable<?> columnClone = joinNode.getOriginalColumnsToLocalOnes().get(selectableColumn); 
@@ -213,8 +193,6 @@ public class EntityTreeQueryBuilder<C> {
 		
 		private final EntityTreeInflater<C> entityTreeInflater;
 		
-		private final IdentityHashMap<Selectable<?>, Selectable<?>> columnClones;
-		
 		private EntityTreeQuery(Query query,
 								Map<Selectable<?>, ParameterBinder<?>> selectParameterBinders,
 								EntityTreeInflater<C> entityTreeInflater,
@@ -222,7 +200,6 @@ public class EntityTreeQueryBuilder<C> {
 			this.selectParameterBinders = selectParameterBinders;
 			this.query = query;
 			this.entityTreeInflater = entityTreeInflater;
-			this.columnClones = columnClones;
 		}
 		
 		public Query getQuery() {
@@ -241,15 +218,6 @@ public class EntityTreeQueryBuilder<C> {
 			return entityTreeInflater;
 		}
 		
-		/**
-		 * Gives the mapping between original {@link Column} of {@link Table} in joins and {@link Column} of cloned
-		 * {@link Table}s.
-		 * Made to allow external users to find the internal column (cloned one) for their original one
-		 * @return the mapping between original {@link Column} of {@link Table} in joins and {@link Column} of cloned {@link Table}s.
-		 */
-		public Map<Selectable<?>, Selectable<?>> getColumnClones() {
-			return columnClones;
-		}
 	}
 	
 	private static class AliasBuilder {

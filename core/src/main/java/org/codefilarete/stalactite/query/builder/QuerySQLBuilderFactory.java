@@ -1,7 +1,6 @@
 package org.codefilarete.stalactite.query.builder;
 
 import java.util.Collections;
-import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.stalactite.query.builder.FromSQLBuilderFactory.FromSQLBuilder;
@@ -9,8 +8,7 @@ import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.Funct
 import org.codefilarete.stalactite.query.builder.SQLAppender.SubSQLAppender;
 import org.codefilarete.stalactite.query.builder.SelectSQLBuilderFactory.SelectSQLBuilder;
 import org.codefilarete.stalactite.query.builder.WhereSQLBuilderFactory.WhereSQLBuilder;
-import org.codefilarete.stalactite.query.model.AbstractCriterion;
-import org.codefilarete.stalactite.query.model.Criteria;
+import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.GroupBy;
 import org.codefilarete.stalactite.query.model.Having;
 import org.codefilarete.stalactite.query.model.Limit;
@@ -121,16 +119,9 @@ public class QuerySQLBuilderFactory {
 		return dmlNameProviderFactory;
 	}
 	
-	public QuerySQLBuilder queryBuilder(Query query, Iterable<AbstractCriterion> where) {
+	public QuerySQLBuilder queryBuilder(Query query, CriteriaChain<?> where) {
 		if (where.iterator().hasNext()) {    // prevents from empty where causing malformed SQL
-			query.getWhere().and(where);
-		}
-		return queryBuilder(query);
-	}
-	
-	public QuerySQLBuilder queryBuilder(Query query, Iterable<AbstractCriterion> where, Map<? extends Selectable<?>, ? extends Selectable<?>> columnClones) {
-		if (where.iterator().hasNext()) {    // prevents from empty where causing malformed SQL
-			Criteria.copy(where, query.getWhere(), columnClones::get);
+			query.getWhere().add(where);
 		}
 		return queryBuilder(query);
 	}

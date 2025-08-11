@@ -10,22 +10,19 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
-import org.codefilarete.tool.collection.Arrays;
 import org.springframework.core.ResolvableType;
 import org.springframework.data.relational.repository.query.RelationalParameters;
 import org.springframework.data.relational.repository.query.RelationalParameters.RelationalParameter;
 import org.springframework.data.repository.query.ParametersParameterAccessor;
-import org.springframework.data.repository.query.RepositoryQuery;
 
 public class SqlNativeRepositoryQuery<C> extends AbstractRepositoryQuery {
 	
 	private static final String PARAMETER_NEEDS_TO_BE_NAMED = "For queries with named parameters you need to provide names for method parameters. Use @Param for query method parameters, or when on Java 8+ use the javac flag -parameters.";
 	
 	private final String sql;
-	private final AdvancedEntityPersister<C, ?> entityPersister;
 	private final Accumulator<C, ?, ?> accumulator;
 	private final Dialect dialect;
-	private final ConnectionProvider connectionProvider;
+	private final EntityGraphSelector<C, ?, ?> entityGraphSelector;
 	
 	public SqlNativeRepositoryQuery(NativeQueryMethod queryMethod,
 									String sql,
@@ -35,10 +32,8 @@ public class SqlNativeRepositoryQuery<C> extends AbstractRepositoryQuery {
 									ConnectionProvider connectionProvider) {
 		super(queryMethod);
 		this.sql = sql;
-		this.entityPersister = entityPersister;
 		this.accumulator = accumulator;
 		this.dialect = dialect;
-		this.connectionProvider = connectionProvider;
 		
 		if (queryMethod.isSliceQuery()) {
 			throw new UnsupportedOperationException(
@@ -49,6 +44,16 @@ public class SqlNativeRepositoryQuery<C> extends AbstractRepositoryQuery {
 			throw new UnsupportedOperationException(
 					"Page queries are not supported using string-based queries. Offending method: " + queryMethod);
 		}
+		
+		// We need an entity finder on which we can bind our native query. For now we only support simple cases, not polymorphic ones.
+		// Note that at this stage we can afford to ask for immediate Query creation because we are at a high layer (Spring Data Query discovery) and
+		// persister are supposed to be finalized and up-to-date (containing the whole entity aggregate graph), that why we pass "true" as argument
+		// TODO: support polymorphic use cases by using EntityFinders found through entityPersister
+		this.entityGraphSelector = new EntityGraphSelector<>(
+				entityPersister.getEntityJoinTree(),
+				connectionProvider,
+				dialect,
+				true);
 		
 		// TODO: when upgrading to Spring Data 3.x.y, add an assertion on Limit parameter presence as it's done in StringBasedJdbcQuery
 		// https://github.com/spring-projects/spring-data-relational/blob/main/spring-data-jdbc/src/main/java/org/springframework/data/jdbc/repository/query/StringBasedJdbcQuery.java#L176
@@ -61,11 +66,6 @@ public class SqlNativeRepositoryQuery<C> extends AbstractRepositoryQuery {
 	
 	@Override
 	public Object execute(Object[] parameters) {
-		EntityGraphSelector<C, ?, ?> entityGraphSelector = new EntityGraphSelector<>(
-				entityPersister.getEntityJoinTree(),
-				connectionProvider,
-				dialect);
-		
 		ParametersParameterAccessor accessor = new ParametersParameterAccessor(queryMethod.getParameters(), parameters);
 		return accumulator.collect(entityGraphSelector.selectFromQueryBean(sql, getValues(accessor), bindParameters(accessor)));
 	}

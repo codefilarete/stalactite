@@ -31,7 +31,7 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<C, T> {
 	private final T table;
 	
 	/** Joins */
-	private final List<AbstractJoinNode> joins = new ArrayList<>();
+	private final List<AbstractJoinNode<?, ?, ?, ?>> joins = new ArrayList<>();
 	
 	@Nullable
 	private String tableAlias;
@@ -95,7 +95,7 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<C, T> {
 	}
 	
 	@Override
-	public ReadOnlyList<AbstractJoinNode> getJoins() {
+	public ReadOnlyList<AbstractJoinNode<?, ?, ?, ?>> getJoins() {
 		return new ReadOnlyList<>(joins);
 	}
 	
@@ -112,10 +112,10 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<C, T> {
 	
 	@Override
 	public RootJoinRowConsumer<C> toConsumer(JoinNode<C, T> joinNode) {
-		return new JoinRootRowConsumer<>(this, entityInflater);
+		return new JoinRootRowConsumer(this, entityInflater);
 	}
 	
-	public static class JoinRootRowConsumer<C, I> implements RootJoinRowConsumer<C> {
+	public class JoinRootRowConsumer implements RootJoinRowConsumer<C> {
 
 		private final JoinRoot<C, ?, ?> joinNode;
 		private final Class<C> entityType;
@@ -140,11 +140,14 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<C, T> {
 		@Override
 		public C createRootInstance(ColumnedRow row, TreeInflationContext context) {
 			Object identifier = identifierDecoder.apply(row);
-			if (identifier == null) {
-				return null;
-			} else {
-				return context.giveEntityFromCache(entityType, identifier, () -> entityBuilder.transform(row));
+			C result = null;
+			if (identifier != null) {
+				result = context.giveEntityFromCache(entityType, identifier, () -> entityBuilder.transform(row));
 			}
+			if (getConsumptionListener() != null) {
+				getConsumptionListener().onNodeConsumption(result, row);
+			}
+			return result;
 		}
 		
 		/**

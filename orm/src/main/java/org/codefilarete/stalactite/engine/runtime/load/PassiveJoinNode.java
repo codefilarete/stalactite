@@ -51,7 +51,7 @@ public class PassiveJoinNode<C, T1 extends Fromable, T2 extends Fromable, I> ext
 	
 	@Override
 	public JoinRowConsumer toConsumer(JoinNode<C, T2> joinNode) {
-		return new PassiveJoinRowConsumer(getConsumptionListener(), joinNode);
+		return new PassiveJoinRowConsumer(getConsumptionListener());
 	}
 	
 	public class PassiveJoinRowConsumer implements JoinRowConsumer {
@@ -59,12 +59,9 @@ public class PassiveJoinNode<C, T1 extends Fromable, T2 extends Fromable, I> ext
 		/** Optional listener of ResultSet decoding */
 		@Nullable
 		private final EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
-		/** Used when transformerListener is not null */
-		private final JoinNode<C, ?> joinNode;
 		
-		public PassiveJoinRowConsumer(@Nullable EntityTreeJoinNodeConsumptionListener<C> consumptionListener, JoinNode<C, ?> joinNode) {
+		public PassiveJoinRowConsumer(@Nullable EntityTreeJoinNodeConsumptionListener<C> consumptionListener) {
 			this.consumptionListener = consumptionListener;
-			this.joinNode = joinNode;
 		}
 
 		@Override

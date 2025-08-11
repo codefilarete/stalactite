@@ -725,10 +725,12 @@ class JoinTablePolymorphismPersisterTest {
 							+ "Toto.x as " + totoXAlias
 							+ ", Toto.q as Toto_q"
 							+ ", Toto.id as " + idAlias
+							+ ", TotoA.a as " + totoAAlias
 							+ ", TotoA.id as " + totoAIdAlias
+							+ ", TotoB.b as " + totoBAlias
 							+ ", TotoB.id as " + totoBIdAlias
-							+ " from Toto left outer join TotoA on Toto.id = TotoA.id"
-							+ " left outer join TotoB on Toto.id = TotoB.id"
+							+ " from Toto left outer join TotoA as TotoA on Toto.id = TotoA.id"
+							+ " left outer join TotoB as TotoB on Toto.id = TotoB.id"
 							+ " where Toto.q = ?",
 					"select "
 							+ "Toto.x as " + totoXAlias

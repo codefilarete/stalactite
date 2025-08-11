@@ -41,13 +41,22 @@ public interface CriteriaChain<SELF extends CriteriaChain<SELF>> extends Iterabl
 		return add(OR, columns);
 	}
 	
-	SELF add(LogicalOperator logicalOperator, Column column, CharSequence condition);
+	SELF add(LogicalOperator logicalOperator, Selectable<?> column, CharSequence condition);
 	
-	SELF add(LogicalOperator logicalOperator, Column column, ConditionalOperator condition);
+	SELF add(LogicalOperator logicalOperator, Selectable<?> column, ConditionalOperator<?, ?> condition);
 	
 	SELF add(LogicalOperator logicalOperator, CriteriaChain<?> criteria);
 	
 	SELF add(LogicalOperator logicalOperator, Object... columns);
 	
 	SELF add(AbstractCriterion condition);
+	
+	// TODO: add methods to nest a condition
+	
+	/**
+	 * Adds the given criteria to this chain by simply appending it to the end of the chain.
+	 * @param criteria the condition to be added to this chain
+	 * @return this
+	 */
+	SELF add(Iterable<AbstractCriterion> criteria);
 }

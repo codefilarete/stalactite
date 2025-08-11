@@ -38,6 +38,7 @@ import org.codefilarete.stalactite.engine.runtime.load.PolymorphicMergeJoinRowCo
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -103,8 +104,8 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 	}
 	
 	@Override
-	public void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister) {
-		criteriaSupport.registerRelation(relation, persister);
+	public void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister, @Nullable String relationJoinNodeName) {
+		criteriaSupport.registerRelation(relation, persister, relationJoinNodeName);
 	}
 
 	@Override
@@ -123,7 +124,7 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 	}
 	
 	@Override
-	public Column getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
+	public Selectable<?> getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
 		return criteriaSupport.getRootConfiguration().giveColumn(accessorChain);
 	}
 	

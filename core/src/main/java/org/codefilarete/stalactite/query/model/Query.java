@@ -35,29 +35,38 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 	private final GroupBy groupByDelegate;
 	private final FluentHavingClause having;
 	private final Having havingDelegate;
-	private final OrderBy orderByDelegate;
 	private final FluentOrderByClause orderBy;
-	private final Limit limitDelegate;
+	private final OrderBy orderByDelegate;
 	private final FluentLimitClause limit;
-	private final FluentUnionClause fluentUnionClause;
+	private final Limit limitDelegate;
 	
 	public Query() {
 		this(null);
 	}
 	
 	public Query(Fromable rootTable) {
-		this.selectDelegate = new Select();
+		this(new Select(), new From(rootTable), new Where(), new GroupBy(), new Having(), new OrderBy(), new Limit()); 
+	}
+	
+	public Query(Select selectDelegate,
+				 From fromDelegate,
+				 Where whereDelegate,
+				 GroupBy groupByDelegate,
+				 Having havingDelegate,
+				 OrderBy orderByDelegate,
+				 Limit limitDelegate) {
+		this.selectDelegate = selectDelegate;
 		this.select = new MethodReferenceDispatcher()
-				.redirect(SelectChain.class, selectDelegate, true)
+				.redirect(SelectChain.class, this.selectDelegate, true)
 				.redirect((SerializableTriFunction<FluentSelectClause, String, Class, FluentSelectClauseAliasableExpression>)
 						FluentSelectClause::add, new BiFunction<String, Class, FluentSelectClauseAliasableExpression>() {
 					@Override
 					public FluentSelectClauseAliasableExpression apply(String s, Class aClass) {
-						AliasableExpression<Select> add = selectDelegate.add(s, aClass);
+						AliasableExpression<Select> add = Query.this.selectDelegate.add(s, aClass);
 						return new MethodDispatcher()
 								.redirect(Aliasable.class, alias -> {
 									add.as(alias);
-									return null;    // we don't care about returned object since proxy is returned
+									return null;    // we don't care about the returned object since the proxy is returned
 								}, true)
 								.fallbackOn(select)
 								.build(FluentSelectClauseAliasableExpression.class);
@@ -66,18 +75,18 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 				.redirect(FromAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.build(FluentSelectClause.class);
-		this.fromDelegate = new From(rootTable);
+		this.fromDelegate = fromDelegate;
 		this.from = new MethodDispatcher()
-				.redirect(JoinChain.class, fromDelegate, true)
+				.redirect(JoinChain.class, this.fromDelegate, true)
 				.redirect(WhereAware.class, this)
 				.redirect(GroupByAware.class, this)
 				.redirect(OrderByAware.class, this)
 				.redirect(LimitAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.build(FluentFromClause.class);
-		this.whereDelegate = new Where();
+		this.whereDelegate = whereDelegate;
 		this.where = new MethodDispatcher()
-				.redirect(CriteriaChain.class, whereDelegate, true)
+				.redirect(CriteriaChain.class, this.whereDelegate, true)
 				.redirect(Iterable.class, whereDelegate)
 				.redirect(GroupByAware.class, this)
 				.redirect(OrderByAware.class, this)
@@ -85,40 +94,36 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 				.redirect(QueryProvider.class, this)
 				.redirect(UnionAware.class, this)
 				.build(FluentWhereClause.class);
-		this.groupByDelegate = new GroupBy();
+		this.groupByDelegate = groupByDelegate;
 		this.groupBy = new MethodDispatcher()
-				.redirect(GroupByChain.class, groupByDelegate, true)
+				.redirect(GroupByChain.class, this.groupByDelegate, true)
 				.redirect(HavingAware.class, this)
 				.redirect(OrderByAware.class, this)
 				.redirect(LimitAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.redirect(UnionAware.class, this)
 				.build(FluentGroupByClause.class);
-		this.havingDelegate = new Having();
+		this.havingDelegate = havingDelegate;
 		this.having = new MethodDispatcher()
-				.redirect(CriteriaChain.class, havingDelegate, true)
+				.redirect(CriteriaChain.class, this.havingDelegate, true)
 				.redirect(OrderByAware.class, this)
 				.redirect(LimitAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.redirect(UnionAware.class, this)
 				.build(FluentHavingClause.class);
-		this.orderByDelegate = new OrderBy();
+		this.orderByDelegate = orderByDelegate;
 		this.orderBy = new MethodDispatcher()
-				.redirect(OrderByChain.class, orderByDelegate, true)
+				.redirect(OrderByChain.class, this.orderByDelegate, true)
 				.redirect(LimitAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.redirect(UnionAware.class, this)
 				.build(FluentOrderByClause.class);
-		this.limitDelegate = new Limit();
+		this.limitDelegate = limitDelegate;
 		this.limit = new MethodDispatcher()
-				.redirect(LimitChain.class, limitDelegate, true)
+				.redirect(LimitChain.class, this.limitDelegate, true)
 				.redirect(QueryProvider.class, this)
 				.redirect(UnionAware.class, this)
 				.build(FluentLimitClause.class);
-		this.fluentUnionClause = new MethodDispatcher()
-				.redirect(QueryProvider.class, this)
-				.redirect(UnionAware.class, this)
-				.build(FluentUnionClause.class);
 	}
 	
 	public FluentSelectClause getSelect() {
@@ -417,10 +422,6 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 	}
 	
 	public interface FluentLimitClause extends LimitChain<FluentLimitClause>, UnionAware, QueryProvider<Query> {
-		
-	}
-	
-	public interface FluentUnionClause extends UnionAware, QueryProvider<Union> {
 		
 	}
 }

@@ -10,8 +10,9 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildLifeCycleListener;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphicEntityFinder;
-import org.codefilarete.stalactite.engine.runtime.ColumnCloneAwareOrderBy;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
@@ -21,10 +22,15 @@ import org.codefilarete.stalactite.engine.runtime.load.SingleTableRootJoinNode;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
+import org.codefilarete.stalactite.query.model.GroupBy;
+import org.codefilarete.stalactite.query.model.Having;
+import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.LimitAware;
+import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.query.model.OrderByChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -53,6 +59,7 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 	private final Column<T, DTYPE> discriminatorColumn;
 	private final SingleTablePolymorphism<C, DTYPE> polymorphismPolicy;
 	private final EntityJoinTree<C, I> singleLoadEntityJoinTree;
+	private Query query;
 	
 	public SingleTablePolymorphismEntityFinder(ConfiguredRelationalPersister<C, I> mainPersister,
 											   Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
@@ -65,6 +72,30 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 		this.discriminatorColumn = discriminatorColumn;
 		this.polymorphismPolicy = polymorphismPolicy;
 		this.singleLoadEntityJoinTree = buildSingleLoadEntityJoinTree(mainPersister, persisterPerSubclass);
+		
+		// made for optimization (to avoid creating multiple times the query) but also to avoid adding several times the polymorphic JoinNode consumers
+		// to itself by calling several time the "toConsumer(..)" method that usually calls some "add" method, which declares duplicates of consumers,
+		// which, at the very end, implies an exception during the aggregate inflation phase : "Can't find consumer node"
+		PersisterBuilderContext.CURRENT.get().addBuildLifeCycleListener(new BuildLifeCycleListener() {
+			@Override
+			public void afterBuild() {
+			}
+			
+			@Override
+			public void afterAllBuild() {
+				buildQuery();
+			}
+		});
+	}
+	
+	private void buildQuery() {
+		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(singleLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
+		query = entityTreeQuery.getQuery();
+	}
+	
+	@Override
+	public EntityJoinTree<C, I> getEntityJoinTree() {
+		return singleLoadEntityJoinTree;
 	}
 	
 	private SingleLoadEntityJoinTree<C, I, DTYPE> buildSingleLoadEntityJoinTree(ConfiguredRelationalPersister<C, I> mainPersister, Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass) {
@@ -97,25 +128,26 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 	@Override
 	public Set<C> selectIn2Phases(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
 		LOGGER.debug("Finding entities in 2-phases query with criteria {}", where);
-		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(mainEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
-		Query query = entityTreeQuery.getQuery();
 		
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), entityTreeQuery.getColumnClones());
+		// we clone the query to avoid polluting the instance one, else, from select(..) to select(..), we append the criteria at the end of it,
+		// which makes the query usually returning no data (because of the condition mix)
+		Query queryClone = new Query(query.getSelectDelegate(), query.getFromDelegate(), new Where(), new GroupBy(), new Having(), new OrderBy(), new Limit());
+		
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone, where.getCriteria());
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
-		query.getSelectDelegate().clear();
+		queryClone.getSelectDelegate().clear();
 		PrimaryKey<T, I> pk = ((T) mainEntityJoinTree.getRoot().getTable()).getPrimaryKey();
-		pk.getColumns().forEach(column -> query.select(column, column.getAlias()));
-		query.select(discriminatorColumn, DISCRIMINATOR_ALIAS);
+		pk.getColumns().forEach(column -> queryClone.select(column, column.getAlias()));
+		queryClone.select(discriminatorColumn, DISCRIMINATOR_ALIAS);
 		
 		// selecting ids and their entity type
 		Map<Selectable<?>, ResultSetReader<?>> columnReaders = new HashMap<>();
-		Map<Selectable<?>, String> aliases = query.getAliases();
-		query.getColumns().forEach(selectable -> columnReaders.put(selectable, dialect.getColumnBinderRegistry().getBinder((Column) selectable)));
-		orderByClauseConsumer.accept(new ColumnCloneAwareOrderBy(query.orderBy(), entityTreeQuery.getColumnClones()));
-		limitAwareConsumer.accept(query.orderBy());
+		queryClone.getColumns().forEach(selectable -> columnReaders.put(selectable, dialect.getColumnBinderRegistry().getBinder((Column) selectable)));
+		orderByClauseConsumer.accept(queryClone.orderBy());
+		limitAwareConsumer.accept(queryClone.orderBy());
 		
-		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>()), columnReaders, query.getAliases());
+		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>()), columnReaders, queryClone.getAliases());
 		
 		// Second phase : selecting entities by delegating it to each subclass loader
 		// It will generate 1 query per found subclass, made as this :

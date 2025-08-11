@@ -36,7 +36,7 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 	private final JoinNode<?, T1> parent;
 	
 	/** Joins */
-	private final List<AbstractJoinNode> joins = new ArrayList<>();
+	private final List<AbstractJoinNode<?, ?, ?, ?>> joins = new ArrayList<>();
 	
 	@Nullable
 	protected String tableAlias;
@@ -147,7 +147,7 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 	}
 
 	@Override
-	public ReadOnlyList<AbstractJoinNode> getJoins() {
+	public ReadOnlyList<AbstractJoinNode<?, ?, ?, ?>> getJoins() {
 		return new ReadOnlyList<>(joins);
 	}
 	

@@ -49,10 +49,11 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 	}
 	
 	@Override
-	protected void configure(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	protected String configure(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, ? extends AssociationRecord, ?> associationTableEngine = prepare(targetPersister);
-		associationTableEngine.addSelectCascade(associationConfiguration.getSrcPersister(), loadSeparately);
+		String relationJoinNodeName = associationTableEngine.addSelectCascade(associationConfiguration.getSrcPersister(), loadSeparately);
 		addWriteCascades(associationTableEngine, targetPersister);
+		return relationJoinNodeName;
 	}
 	
 	private AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, ?, ?> prepare(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {

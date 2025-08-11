@@ -45,13 +45,13 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 	private final EntityCriteriaSupport<C> entityCriteriaSupport;
 	
 	/** Support for {@link EntityCriteria} query execution */
-	private final EntityFinder<C, I> entitySelector;
+	private final EntityFinder<C, I> entityFinder;
 	
 	private final Consumer<Select> selectAdapter;
 	
 	public ProjectionQueryCriteriaSupport(EntityCriteriaSupport<C> source, EntityFinder<C, I> entityFinder, Consumer<Select> selectAdapter) {
 		this.entityCriteriaSupport = new EntityCriteriaSupport<>(source);
-		this.entitySelector = entityFinder;
+		this.entityFinder = entityFinder;
 		this.selectAdapter = selectAdapter;
 	}
 	
@@ -74,7 +74,7 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 			EntityCriteriaSupport<C> localCriteriaSupport,
 			ExecutableProjectionQuerySupport<C> querySugarSupport) {
 		return (Accumulator<? super Function<? extends Selectable, Object>, Object, R> accumulator) ->
-				entitySelector.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria(), querySugarSupport.isDistinct(),
+				entityFinder.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria(), querySugarSupport.isDistinct(),
 						orderByClause -> {},
 						limitAware -> nullable(querySugarSupport.getLimit()).invoke(limit -> limitAware.limit(limit.getCount(), limit.getOffset())));
 	}

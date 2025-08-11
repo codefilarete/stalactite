@@ -64,8 +64,10 @@ public abstract class AbstractPolymorphismPersister<C, I>
 											EntityFinder<C, I> entityFinder) {
 		this.mainPersister = mainPersister;
 		this.subEntitiesPersisters = (Map<Class<C>, ConfiguredRelationalPersister<C, I>>) subEntitiesPersisters;
-		this.criteriaSupport = new EntityCriteriaSupport<>(mainPersister.getMapping());
 		this.entityFinder = entityFinder;
+		// We base our criteria support on the EntityFinder tree because it is complete (with all aggregate joins) thus, end user can express some query
+		// on any of the aggregate properties, which wouldn't be the case with mainPersister.getEntityJoinTree() because it contains only common properties
+		this.criteriaSupport = new EntityCriteriaSupport<>(entityFinder.getEntityJoinTree());
 		if (mainPersister.getMapping().getIdMapping().getIdentifierInsertionManager() instanceof AlreadyAssignedIdentifierManager) {
 			this.persistExecutor = new AlreadyAssignedIdentifierPersistExecutor<>(this);
 		} else {
@@ -105,7 +107,7 @@ public abstract class AbstractPolymorphismPersister<C, I>
 	
 	@Override
 	public EntityQueryCriteriaSupport<C, I> newCriteriaSupport() {
-		return new EntityQueryCriteriaSupport<>(criteriaSupport, entityFinder, getPersisterListener());
+		return new EntityQueryCriteriaSupport<>(entityFinder, criteriaSupport);
 	}
 	
 	@Override

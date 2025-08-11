@@ -47,9 +47,9 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 		this.oneToOneRelation = oneToOneRelation;
 	}
 	
-	public void configure(String tableAlias,
-						  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
-						  boolean loadSeparately) {
+	public String configure(String tableAlias,
+							ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
+							boolean loadSeparately) {
 		assertConfigurationIsSupported();
 		
 		// Finding joined columns
@@ -58,8 +58,9 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 		
 		BeanRelationFixer<SRC, TRGT> beanRelationFixer = determineRelationFixer();
 		
-		addSelectJoin(tableAlias, targetPersister, foreignKeyColumns.getLeft(), foreignKeyColumns.getRight(), beanRelationFixer, loadSeparately);
+		String relationJoinNodeName = addSelectJoin(tableAlias, targetPersister, foreignKeyColumns.getLeft(), foreignKeyColumns.getRight(), beanRelationFixer, loadSeparately);
 		addWriteCascades(targetPersister);
+		return relationJoinNodeName;
 	}
 	
 	public CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(String tableAlias,
@@ -118,7 +119,7 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 	
 	protected abstract void addDeleteCascade(ConfiguredPersister<TRGT, TRGTID> targetPersister, boolean orphanRemoval);
 	
-	protected void addSelectJoin(
+	protected String addSelectJoin(
 			String tableAlias,
 			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 			Key<LEFTTABLE, JOINID> leftKey,
@@ -126,7 +127,7 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 			BeanRelationFixer<SRC, TRGT> beanRelationFixer,
 			boolean loadSeparately) {
 		// we add target subgraph joins to the one that was created
-		targetPersister.joinAsOne(sourcePersister, oneToOneRelation.getTargetProvider(), leftKey, rightKey, tableAlias, beanRelationFixer, oneToOneRelation.isNullable(), loadSeparately);
+		String joinNodeName = targetPersister.joinAsOne(sourcePersister, oneToOneRelation.getTargetProvider(), leftKey, rightKey, tableAlias, beanRelationFixer, oneToOneRelation.isNullable(), loadSeparately);
 		
 		// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
 		// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity
@@ -152,6 +153,7 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 				targetSelectListener.onSelectError(Collections.emptyList(), exception);
 			}
 		});
+		return joinNodeName;
 	}
 	
 	abstract protected void addSelectIn2Phases(

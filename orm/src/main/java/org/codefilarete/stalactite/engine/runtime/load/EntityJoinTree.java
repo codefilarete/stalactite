@@ -110,7 +110,8 @@ public class EntityJoinTree<C, I> {
 	 *
 	 * @return an unmodifiable version of the internal mapping (because its maintenance responsibility falls to current class)
 	 */
-	BidiMap<String, JoinNode> getJoinIndex() {
+	@VisibleForTesting
+	public BidiMap<String, JoinNode> getJoinIndex() {
 		return UnmodifiableBidiMap.unmodifiableBidiMap(joinIndex);
 	}
 	

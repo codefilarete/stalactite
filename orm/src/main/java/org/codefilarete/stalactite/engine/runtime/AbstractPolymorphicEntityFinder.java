@@ -35,6 +35,7 @@ import org.codefilarete.stalactite.sql.result.ColumnedRowIterator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
+import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.collection.Iterables;
 import org.slf4j.Logger;
@@ -61,6 +62,8 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 	private final AccessorChain<C, I> entityIdAccessor;
 	private final EntityMapping<C, I, T> mainMapping;
 	
+	private SQLOperationListener<?> operationListener;
+	
 	protected AbstractPolymorphicEntityFinder(
 			ConfiguredRelationalPersister<C, I> mainPersister,
 			Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
@@ -74,6 +77,11 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 		this.mainMapping = mainPersister.getMapping();
 		AccessorWrapperIdAccessor<C, I> idAccessor = (AccessorWrapperIdAccessor<C, I>) mainMapping.getIdMapping().getIdAccessor();
 		this.entityIdAccessor = new AccessorChain<>(idAccessor.getIdAccessor());
+	}
+	
+	@Override
+	public void setOperationListener(SQLOperationListener<?> operationListener) {
+		this.operationListener = operationListener;
 	}
 	
 	@Override
@@ -94,7 +102,10 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 	protected EntityCriteriaSupport<C> newWhereIdClause(Iterable<I> ids) {
 		// Because we only need the id in the where clause, we don't need persister's EntityCriteriaSupport that contains all
 		// the potential criteria on relations, hence we can instantiate a new one for our local need
-		return new EntityCriteriaSupport<>(mainMapping)
+		// TODO: try to remove this method because it is done each time a load in 2-phases is done but it is costly due to EntityCriteriaSupport
+		// which scans the tree properties. Moreover, it seems a bit superfluous: only a an access to the where is necessary, actually the EntityCriteriaSupport
+		// seems present to only retrieve the entityIdAccessor column
+		return new EntityCriteriaSupport<>(mainEntityJoinTree, true)
 				.and(entityIdAccessor, Operators.in(ids));
 	}
 	
@@ -116,14 +127,15 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 										   ConnectionProvider connectionProvider) {
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
-		orderByClauseConsumer.accept(new ColumnCloneAwareOrderBy(query.orderBy(), entityTreeQuery.getColumnClones()));
+		orderByClauseConsumer.accept(query.orderBy());
 		limitAwareConsumer.accept(query.orderBy());
 		
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), entityTreeQuery.getColumnClones());
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria());
 		
 		EntityTreeInflater<C> inflater = entityTreeQuery.getInflater();
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>());
 		try (ReadOperation<Integer> readOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
+			readOperation.setListener((SQLOperationListener<Integer>) operationListener);
 			ResultSet resultSet = readOperation.execute();
 			// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
 			Iterator<? extends ColumnedRow> rowIterator = new ColumnedRowIterator(resultSet, entityTreeQuery.getSelectParameterBinders(), entityTreeQuery.getColumnAliases());
@@ -136,11 +148,11 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 	@Override
 	public <R, O> R selectProjection(Consumer<Select> selectAdapter, Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator, CriteriaChain where,
 									 boolean distinct, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
-		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.mainEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
+		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(getEntityJoinTree(), dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		query.getSelectDelegate().setDistinct(distinct);
 		
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where, entityTreeQuery.getColumnClones());
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where);
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
 		selectAdapter.accept(query.getSelectDelegate());

@@ -36,7 +36,7 @@ public interface EntityMapping<C, I, T extends Table<T>> extends Mapping<C, T>, 
 	
 	Iterable<Column<T, ?>> getVersionedKeys();
 	
-	Map<Column<T, ?>, Object> getVersionedKeyValues(C c);
+	Map<Column<T, ?>, ?> getVersionedKeyValues(C c);
 	
-	Map<ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> getEmbeddedBeanStrategies();
+	Map<ReversibleAccessor<C, ?>, EmbeddedBeanMapping<?, T>> getEmbeddedBeanStrategies();
 }

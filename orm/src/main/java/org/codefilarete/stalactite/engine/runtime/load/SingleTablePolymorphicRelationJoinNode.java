@@ -103,7 +103,7 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 
 						this);
 				// primary key null means no entity => nothing to do
 				if (context.isTreatedOrAppend(eventuallyApplied)) {
-					C rightEntity = (C) context.giveEntityFromCache(getEntityType(), rightIdentifier, () -> rowIdentifier.rowConsumer.createInstance(row));
+					C rightEntity = context.giveEntityFromCache(getEntityType(), rightIdentifier, () -> rowIdentifier.rowConsumer.createInstance(row));
 					getBeanRelationFixer().apply(parentJoinEntity, rightEntity);
 					if (getConsumptionListener() != null) {
 						getConsumptionListener().onNodeConsumption(rightEntity, row);

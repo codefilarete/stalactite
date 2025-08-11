@@ -65,12 +65,12 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	}
 	
 	@Override
-	public <T1 extends Table<T1>, T2 extends Table<T2>> void addSelectCascade(Key<T1, SRCID> sourcePrimaryKey,
-																			  boolean loadSeparately) {
+	public <T1 extends Table<T1>, T2 extends Table<T2>> String addSelectCascade(Key<T1, SRCID> sourcePrimaryKey,
+																				boolean loadSeparately) {
 		// we add target subgraph joins to main persister
 		Set<Column<RIGHTTABLE, ?>> columnsToSelect = new HashSet<>(targetPersister.<RIGHTTABLE>getMainTable().getPrimaryKey().getColumns());
 		columnsToSelect.add(indexColumn);
-		String joinNodeName = targetPersister.joinAsMany(EntityJoinTree.ROOT_JOIN_NAME, sourcePersister, manyRelationDescriptor.getCollectionProvider(), sourcePrimaryKey, (Key<RIGHTTABLE, SRCID>) manyRelationDescriptor.getReverseColumn(),
+		String relationJoinNodeName = targetPersister.joinAsMany(EntityJoinTree.ROOT_JOIN_NAME, sourcePersister, manyRelationDescriptor.getCollectionProvider(), sourcePrimaryKey, (Key<RIGHTTABLE, SRCID>) manyRelationDescriptor.getReverseColumn(),
 				manyRelationDescriptor.getRelationFixer(),
 				(columnedRow) -> {
 					TRGTID identifier = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(columnedRow);
@@ -81,7 +81,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				true,
 				loadSeparately);
 		
-		addIndexSelection(joinNodeName);
+		addIndexSelection(relationJoinNodeName);
 		
 		// we must trigger subgraph event on loading of our own graph, this is mainly for event that initializes things because given ids
 		// are not those of their entity
@@ -108,6 +108,8 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				targetSelectListener.onSelectError(Collections.emptyList(), exception);
 			}
 		});
+		
+		return relationJoinNodeName;
 	}
 	
 	private void addIndexSelection(String joinNodeName) {

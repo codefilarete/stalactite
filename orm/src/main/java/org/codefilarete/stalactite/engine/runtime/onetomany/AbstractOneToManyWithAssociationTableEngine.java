@@ -88,7 +88,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 		return manyRelationDescriptor;
 	}
 	
-	public void addSelectCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister, boolean loadSeparately) {
+	public String addSelectCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister, boolean loadSeparately) {
 		
 		// we join on the association table and add bean association in memory
 		String associationTableJoinNodeName = sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_JOIN_NAME,
@@ -97,7 +97,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				JoinType.OUTER, Collections.emptySet());
 		
 		// we add target subgraph joins to main persister
-		targetPersister.joinAsMany(associationTableJoinNodeName, sourcePersister, manyRelationDescriptor.getCollectionProvider(),
+		String relationJoinNodeName = targetPersister.joinAsMany(associationTableJoinNodeName, sourcePersister, manyRelationDescriptor.getCollectionProvider(),
 				associationPersister.getMainTable().getManySideForeignKey(), associationPersister.getMainTable().getManySideKey(),
 				manyRelationDescriptor.getRelationFixer(), null, true, loadSeparately);
 		
@@ -126,6 +126,8 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				targetSelectListener.onSelectError(Collections.emptyList(), exception);
 			}
 		});
+		
+		return relationJoinNodeName;
 	}
 	
 	public void addInsertCascade(boolean maintainAssociationOnly, ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {

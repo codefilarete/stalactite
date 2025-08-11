@@ -26,7 +26,6 @@ import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.EntityCa
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.Nullable;
@@ -67,21 +66,13 @@ public class EntityTreeInflater<C> {
 	 * building
 	 */
 	private final ConsumerNode consumerRoot;
-
-	/**
-	 * Mapping between tree {@link JoinNode}s and their table clones (left ones)
-	 * Used to look for caller {@link Column} data in {@link ColumnedRow}
-	 */
-	private final Map<JoinNode, Fromable> tableClonePerJoinNode;
-
+	
 	/**
 	 * Constructor with necessary elements
 	 * @param consumerRoot top level row consumer, the one that will compute root instances
-	 * @param tableClonePerJoinNode mapping between join nodes and their table clone
 	 */
-	EntityTreeInflater(ConsumerNode consumerRoot, Map<JoinNode, Fromable> tableClonePerJoinNode) {
+	EntityTreeInflater(ConsumerNode consumerRoot) {
 		this.consumerRoot = consumerRoot;
-		this.tableClonePerJoinNode = tableClonePerJoinNode;
 	}
 	
 	/**
@@ -91,7 +82,7 @@ public class EntityTreeInflater<C> {
 	 * @return a set of root beans, built from given rows by asking internal strategy joins to instantiate and complete them
 	 */
 	public Set<C> transform(Iterable<? extends ColumnedRow> rows, int resultSize) {
-		return ThreadLocals.doWithThreadLocal(CURRENT_CONTEXT, () -> new TreeInflationContext(tableClonePerJoinNode), (Function<EntityTreeInflater.TreeInflationContext, Set<C>>) context ->
+		return ThreadLocals.doWithThreadLocal(CURRENT_CONTEXT, TreeInflationContext::new, (Function<EntityTreeInflater.TreeInflationContext, Set<C>>) context ->
 						transform(rows, resultSize, context));
 	}
 	
@@ -321,7 +312,7 @@ public class EntityTreeInflater<C> {
 	
 	/**
 	 * Container for information used during {@link Row} transformation as a bean graph.
-	 * Accessible from {@link EntityTreeInflater#currentContext()} during its lifecycle :
+	 * Accessible from {@link EntityTreeInflater#currentContext()} during its lifecycle:
 	 * - instanced at beginning of {@link Row} transformation ({@link EntityTreeInflater#transform(Iterable, int)}
 	 * - dropped at the end of the method
 	 * 
@@ -342,17 +333,13 @@ public class EntityTreeInflater<C> {
 		 * @see #getDecoder
 		 */
 		private ColumnedRow currentRow;
-
-		private final Map<JoinNode, Fromable> tableClonePerJoinNode;
 		
-		@VisibleForTesting
-		TreeInflationContext(Map<JoinNode, Fromable> tableClonePerJoinNode) {
-			this(new BasicEntityCache(), tableClonePerJoinNode);
+		private TreeInflationContext() {
+			this(new BasicEntityCache());
 		}
 		
-		public TreeInflationContext(EntityCache entityCache, Map<JoinNode, Fromable> tableClonePerJoinNode) {
+		public TreeInflationContext(EntityCache entityCache) {
 			this.entityCache = entityCache;
-			this.tableClonePerJoinNode = tableClonePerJoinNode;
 		}
 		
 		private TreeInflationContext setCurrentRow(ColumnedRow currentRow) {
@@ -369,7 +356,7 @@ public class EntityTreeInflater<C> {
 		 * @see EntityTreeQueryBuilder#cloneTable(JoinNode)  table clone mechanism.
 		 */
 		 public ColumnedRow getDecoder(JoinNode<?, ?> joinNode) {
-			Fromable table = tableClonePerJoinNode.get(joinNode);
+			Fromable table = joinNode.getTable();
 			return new ColumnedRow() {
 				@Override
 				public <E> E get(Selectable<E> key) {
