@@ -50,12 +50,6 @@ public class EntityTreeQueryBuilder<C> {
 		Query query = new Query();
 		Map<Selectable<?>, ParameterBinder<?>> selectParameterBinders = new HashMap<>();
 		
-		// Mapping between original Column of table in joins and Column of cloned tables. Not perfect but made to solve
-		// issue with entity graph load with criteria (EntityPersister.selectWhere(..)) containing Columns
-		// (ColumnCriterion) because they come from user which is one of source table, hence table aliases are not found
-		// for them, which causes issue while setting criteria value (column is not found by database driver)
-		IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = new IdentityHashMap<>();
-		
 		ResultHelper resultHelper = new ResultHelper(query, parameterBinderProvider, aliasBuilder, selectParameterBinders);
 		
 		/* In the following algorithm, node tables will be cloned and applied a unique alias to manage the presence of twice the same table in different
@@ -67,19 +61,15 @@ public class EntityTreeQueryBuilder<C> {
 		
 		// initialization of the From clause with the very first table
 		JoinRoot<C, Object, ?> joinRoot = this.tree.getRoot();
-		columnClones.putAll(joinRoot.getOriginalColumnsToLocalOnes());
 		query.getFromDelegate().setRoot(joinRoot.getTable());
 		resultHelper.addColumnsToSelectClause(joinRoot, aliasBuilder.buildTableAlias(joinRoot));
 		
 		// completing from clause
-		this.tree.foreachJoin(join -> {
-			columnClones.putAll(join.getOriginalColumnsToLocalOnes());
-		});
 		resultHelper.applyJoinTree(this.tree);
 		
 		EntityTreeInflater<C> entityTreeInflater = new EntityTreeInflater<>(resultHelper.buildConsumerTree(tree));
 		
-		return new EntityTreeQuery<>(query, selectParameterBinders, entityTreeInflater, columnClones);
+		return new EntityTreeQuery<>(query, selectParameterBinders, entityTreeInflater);
 	}
 	
 	/**
@@ -195,8 +185,7 @@ public class EntityTreeQueryBuilder<C> {
 		
 		private EntityTreeQuery(Query query,
 								Map<Selectable<?>, ParameterBinder<?>> selectParameterBinders,
-								EntityTreeInflater<C> entityTreeInflater,
-								IdentityHashMap<Selectable<?>, Selectable<?>> columnClones) {
+								EntityTreeInflater<C> entityTreeInflater) {
 			this.selectParameterBinders = selectParameterBinders;
 			this.query = query;
 			this.entityTreeInflater = entityTreeInflater;
