@@ -242,13 +242,13 @@ public class QuerySQLBuilderFactory {
 			}
 			
 			OrderBy orderBy = query.getOrderByDelegate();
-			if (!orderBy.getColumns().isEmpty()) {
+			if (orderBy != null && !orderBy.getColumns().isEmpty()) {
 				sqlWrapper.cat(" order by ");
 				cat(orderBy, sqlWrapper);
 			}
 			
 			Limit limit = query.getLimitDelegate();
-			if (limit.getCount() != null) {
+			if (limit != null && limit.getCount() != null) {
 				sqlWrapper.cat(" limit ");
 				sqlWrapper.catValue(new ValuedVariable<>(limit.getCount()));
 				if (limit.getOffset() != null) {

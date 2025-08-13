@@ -60,7 +60,7 @@ import static org.codefilarete.tool.bean.Objects.preventNull;
  * Implementation is based on {@link EntityJoinTree} to build the query and the entity graph.
  * 
  * @author Guillaume Mary
- * @see EntityFinder#select(ConfiguredEntityCriteria, Consumer, Consumer, Map)
+ * @see EntityFinder#select(ConfiguredEntityCriteria, OrderBy, Limit, Map) 
  */
 public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityFinder<C, I> {
 	
@@ -73,6 +73,8 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 	private final Dialect dialect;
 	
 	private EntityTreeQuery<C> entityTreeQuery;
+	
+	private Query query;
 	
 	private SQLOperationListener<?> operationListener;
 	
@@ -107,6 +109,7 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 	
 	private void buildQuery() {
 		entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
+		query = entityTreeQuery.getQuery();
 	}
 	
 	@Override
@@ -161,8 +164,8 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 	 */
 	@Override
 	public Set<C> select(ConfiguredEntityCriteria where,
-						 Consumer<OrderByChain<?>> orderByClauseConsumer,
-						 Consumer<LimitAware<?>> limitAwareConsumer,
+						 OrderBy orderBy,
+						 Limit limit,
 						 Map<String, Object> valuesPerParam) {
 		
 		// we clone the query to avoid polluting the instance one, else, from select(..) to select(..), we append the criteria at the end of it,
@@ -173,8 +176,8 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 				new Where(),
 				new GroupBy(),
 				new Having(),
-				new OrderBy(),
-				new Limit());
+				orderBy,
+				limit);
 		
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone, where.getCriteria());
 		
@@ -189,8 +192,6 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 			queryClone.select(pk, PRIMARY_KEY_ALIAS);
 			Map<Column<?, ?>, String> aliases = Maps.asMap(pk, PRIMARY_KEY_ALIAS);
 			Map<Column<?, ?>, ResultSetReader<?>> columnReaders = Maps.asMap(pk, dialect.getColumnBinderRegistry().getBinder(pk));
-			orderByClauseConsumer.accept(queryClone.orderBy());
-			limitAwareConsumer.accept(queryClone.orderBy());
 			Set<I> ids = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>()), columnReaders, aliases);
 			
 			if (ids.isEmpty()) {
@@ -209,8 +210,6 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 		} else {
 			// The condition doesn't have a criteria on a collection property (*-to-many): the load can be done with one query because the SQL criteria
 			// doesn't make a subset of the entity graph
-			orderByClauseConsumer.accept(queryClone.orderBy());
-			limitAwareConsumer.accept(queryClone.orderBy());
 			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(valuesPerParam);
 			return new InternalExecutor(entityTreeQuery).execute(preparedSQL);
 		}
@@ -229,25 +228,20 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 	@Override
 	public <R, O> R selectProjection(Consumer<Select> selectAdapter,
 									 Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator,
-									 CriteriaChain where,
+									 ConfiguredEntityCriteria where,
 									 boolean distinct,
-									 Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
-		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
-		Query query = entityTreeQuery.getQuery();
-		query.getSelectDelegate().setDistinct(distinct);
-		orderByClauseConsumer.accept(query.getQuery().orderBy());
-		
-		
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where);
+									 OrderBy orderBy,
+									 Limit limit) {
+		Query queryClone = new Query(new Select(), query.getFromDelegate(), new Where(), new GroupBy(), new Having(), orderBy, limit);
+		queryClone.getSelectDelegate().setDistinct(distinct);
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone, where.getCriteria());
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
-		selectAdapter.accept(query.getSelectDelegate());
-		Map<Selectable<?>, String> aliases = query.getAliases();
-		
-		Map<Selectable<?>, ResultSetReader<?>> columnReaders = Iterables.map(query.getColumns(), Function.identity(), selectable -> dialect.getColumnBinderRegistry().getBinder(selectable.getJavaType()));
+		selectAdapter.accept(queryClone.getSelectDelegate());
+		Map<Selectable<?>, ResultSetReader<?>> columnReaders = Iterables.map(queryClone.getColumns(), Function.identity(), selectable -> dialect.getColumnBinderRegistry().getBinder(selectable.getJavaType()));
 		
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>());
-		return readProjection(preparedSQL, columnReaders, query.getAliases(), accumulator);
+		return readProjection(preparedSQL, columnReaders, queryClone.getAliases(), accumulator);
 	}
 	
 	private <R, O> R readProjection(PreparedSQL preparedSQL, Map<Selectable<?>, ResultSetReader<?>> columnReaders, Map<Selectable<?>, String> aliases, Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator) {

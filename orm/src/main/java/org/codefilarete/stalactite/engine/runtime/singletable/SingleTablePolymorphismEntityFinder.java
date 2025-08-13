@@ -29,6 +29,7 @@ import org.codefilarete.stalactite.query.model.LimitAware;
 import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.query.model.OrderByChain;
 import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
@@ -60,6 +61,7 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 	private final SingleTablePolymorphism<C, DTYPE> polymorphismPolicy;
 	private final EntityJoinTree<C, I> singleLoadEntityJoinTree;
 	private Query query;
+	private EntityTreeQuery<C> entityTreeQuery;
 	
 	public SingleTablePolymorphismEntityFinder(ConfiguredRelationalPersister<C, I> mainPersister,
 											   Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
@@ -89,8 +91,13 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 	}
 	
 	private void buildQuery() {
-		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(singleLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
+		entityTreeQuery = new EntityTreeQueryBuilder<>(singleLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		query = entityTreeQuery.getQuery();
+	}
+	
+	@Override
+	protected Query getAggregateQueryTemplate() {
+		return query;
 	}
 	
 	@Override
@@ -115,28 +122,31 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 	}
 	
 	@Override
-	public Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
+	public Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where, OrderBy orderBy, Limit limit) {
 		LOGGER.debug("Finding entities in a single query with criteria {}", where);
 		if (hasSubPolymorphicPersister) {
 			LOGGER.debug("Single query was asked but due to sub-polymorphism the query is made in 2 phases");
-			return selectIn2Phases(where, orderByClauseConsumer, limitAwareConsumer);
+			return selectIn2Phases(where, orderBy, limit);
 		} else {
-			return super.selectWithSingleQuery(where, orderByClauseConsumer, limitAwareConsumer, singleLoadEntityJoinTree, dialect, connectionProvider);
+			Where add = new Where<>();
+			add.add(query.getWhereDelegate().getConditions());
+			add.add(where.getCriteria());
+			Query queryClone = new Query(query.getSelectDelegate(), query.getFromDelegate(), add, new GroupBy(), new Having(), orderBy, limit);
+			return super.selectWithSingleQuery(queryClone, entityTreeQuery, dialect, connectionProvider);
 		}
 	}
 	
 	@Override
-	public Set<C> selectIn2Phases(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
+	public Set<C> selectIn2Phases(ConfiguredEntityCriteria where, OrderBy orderBy, Limit limit) {
 		LOGGER.debug("Finding entities in 2-phases query with criteria {}", where);
 		
 		// we clone the query to avoid polluting the instance one, else, from select(..) to select(..), we append the criteria at the end of it,
 		// which makes the query usually returning no data (because of the condition mix)
-		Query queryClone = new Query(query.getSelectDelegate(), query.getFromDelegate(), new Where(), new GroupBy(), new Having(), new OrderBy(), new Limit());
+		Query queryClone = new Query(new Select(), query.getFromDelegate(), new Where(), new GroupBy(), new Having(), orderBy, limit);
 		
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone, where.getCriteria());
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
-		queryClone.getSelectDelegate().clear();
 		PrimaryKey<T, I> pk = ((T) mainEntityJoinTree.getRoot().getTable()).getPrimaryKey();
 		pk.getColumns().forEach(column -> queryClone.select(column, column.getAlias()));
 		queryClone.select(discriminatorColumn, DISCRIMINATOR_ALIAS);
@@ -144,8 +154,6 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 		// selecting ids and their entity type
 		Map<Selectable<?>, ResultSetReader<?>> columnReaders = new HashMap<>();
 		queryClone.getColumns().forEach(selectable -> columnReaders.put(selectable, dialect.getColumnBinderRegistry().getBinder((Column) selectable)));
-		orderByClauseConsumer.accept(queryClone.orderBy());
-		limitAwareConsumer.accept(queryClone.orderBy());
 		
 		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>()), columnReaders, queryClone.getAliases());
 		
@@ -162,8 +170,8 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 			return result;
 		} else {
 			return selectWithSingleQuery(newWhereIdClause(ids),
-					orderByChain -> { /* No order by since we are in a Collection criteria, sort we'll be made downstream in memory see EntityCriteriaSupport#wrapGraphload() */},
-					limitAware -> { /* No limit since we already have limited our result through the selection of the ids */});
+					new OrderBy() /* No order by since we are in a Collection criteria, sort we'll be made downstream in memory see EntityCriteriaSupport#wrapGraphload() */,
+					new Limit() /* No limit since we already have limited our result through the selection of the ids */);
 		}
 	}
 	

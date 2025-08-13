@@ -38,6 +38,7 @@ import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.Nullable;
@@ -59,7 +60,7 @@ import static org.codefilarete.tool.Nullable.nullable;
  * <ul>
  * Class aimed at handling entity query configuration and execution triggering :
  * <li>query configuration will be done by redirecting {@link CriteriaChain} methods to an {@link EntityQueryCriteriaSupport}.</li>
- * <li>execution triggering calls {@link EntityFinder#select(ConfiguredEntityCriteria, Consumer, Consumer, Map)}
+ * <li>execution triggering calls {@link EntityFinder#select(ConfiguredEntityCriteria, OrderBy, Limit, Map)}
  * and wraps it into {@link PersisterListenerCollection#doWithSelectListener(Iterable, ThrowingExecutable)}</li>
  * </ul>
  * 
@@ -147,50 +148,47 @@ public class EntityQueryCriteriaSupport<C, I> {
 	}
 	
 	public <R> Function<Accumulator<C, Collection<C>, R>, R> wrapGraphLoad(Map<String, Object> values) {
-		Holder<Consumer<org.codefilarete.stalactite.query.model.OrderByChain<?>>> orderByAdapter = new Holder<>();
-		Supplier<Set<C>> entityLoader = () -> {
-			if (queryPageSupport.getLimit() != null) {
-				if (entityCriteriaSupport.hasCollectionCriteria()) {
-					throw new UnsupportedOperationException("Can't limit query when entity graph contains Collection relations");
-				}
-			}
-		
-			return entityFinder.select(
-							entityCriteriaSupport,
-							orderByAdapter.get(),
-							limitAware -> nullable(queryPageSupport.getLimit()).invoke(limit -> limitAware.limit(limit.getCount(), limit.getOffset())), values);
-		};
-		return (Accumulator<C, Collection<C>, R> accumulatorParam) -> {
-			if (entityCriteriaSupport.hasCollectionCriteria() && !queryPageSupport.getOrderBy().isEmpty()) {
-				// a collection property in criteria will trigger a 2-phases load (ids, then entities)
-				// which is no compatible with an SQL "order by" clause, therefore, we sort the result in memory
-				// and we don't ask for SQL "order by" because it's useless
-				orderByAdapter.set(orderByClause -> {});
-				// Note that we must wrap this creation in an if statement due to that entities don't implement Comparable, we avoid a
-				// ClassCastException of the addAll(..) operation
+		if (queryPageSupport.getLimit() != null && entityCriteriaSupport.hasCollectionCriteria()) {
+			throw new UnsupportedOperationException("Can't limit query when entity graph contains Collection relations");
+		}
+		if (entityCriteriaSupport.hasCollectionCriteria() && !queryPageSupport.getOrderBy().isEmpty()) {
+			// a collection property in criteria will trigger a 2-phases load (ids, then entities)
+			// which is no compatible with an SQL "order by" clause, therefore, we sort the result in memory
+			// and we don't ask for SQL "order by" because it's useless
+			// Note that we must wrap this creation in an if statement due to that entities don't implement Comparable, we avoid a
+			// ClassCastException of the addAll(..) operation
+			return (Accumulator<C, Collection<C>, R> accumulatorParam) -> {
 				LOGGER.debug("Sorting loaded entities in memory");
-				Set<C> loadedEntities = entityLoader.get();
+				Set<C> loadedEntities = entityFinder.select(
+						entityCriteriaSupport,
+						new OrderBy(),
+						queryPageSupport.getLimit(), values);
 				TreeSet<C> sortedResult = new TreeSet<>(buildComparator(queryPageSupport.getOrderBy()));
 				sortedResult.addAll(loadedEntities);
 				return accumulatorParam.collect(sortedResult);
-			} else {
-				// single query
-				orderByAdapter.set(orderByClause -> {
-					KeepOrderSet<OrderByItem> orderBy = queryPageSupport.getOrderBy();
-					orderBy.forEach(duo -> {
-						Selectable column = entityCriteriaSupport.getAggregateColumnMapping().giveColumn(duo.getProperty());
-						orderByClause.add(
-								duo.isIgnoreCase()
-										? Operators.lowerCase(column)
-										: column,
-								duo.getDirection() == Order.ASC
-										? org.codefilarete.stalactite.query.model.OrderByChain.Order.ASC
-										: org.codefilarete.stalactite.query.model.OrderByChain.Order.DESC);
-					});
+			};
+		} else {
+			// single query
+			return (Accumulator<C, Collection<C>, R> accumulatorParam) -> {
+				OrderBy orderBy = new OrderBy();
+				queryPageSupport.getOrderBy().forEach(duo -> {
+					Selectable column = entityCriteriaSupport.getAggregateColumnMapping().giveColumn(duo.getProperty());
+					orderBy.add(
+							duo.isIgnoreCase()
+									? Operators.lowerCase(column)
+									: column,
+							duo.getDirection() == Order.ASC
+									? org.codefilarete.stalactite.query.model.OrderByChain.Order.ASC
+									: org.codefilarete.stalactite.query.model.OrderByChain.Order.DESC);
 				});
-				return accumulatorParam.collect(entityLoader.get());
-			}
-		};
+				Set<C> select = entityFinder.select(
+						entityCriteriaSupport,
+						orderBy,
+						queryPageSupport.getLimit(),
+						values);
+				return accumulatorParam.collect(select);
+			};
+		}
 	}
 	
 	@VisibleForTesting

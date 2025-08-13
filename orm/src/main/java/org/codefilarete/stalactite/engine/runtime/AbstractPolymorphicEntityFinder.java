@@ -12,20 +12,21 @@ import java.util.stream.Collectors;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
-import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
-import org.codefilarete.stalactite.query.model.CriteriaChain;
-import org.codefilarete.stalactite.query.model.LimitAware;
+import org.codefilarete.stalactite.query.model.GroupBy;
+import org.codefilarete.stalactite.query.model.Having;
+import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.Operators;
-import org.codefilarete.stalactite.query.model.OrderByChain;
+import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -85,19 +86,19 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 	}
 	
 	@Override
-	public Set<C> select(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer, Map<String, Object> valuesPerParam) {
+	public Set<C> select(ConfiguredEntityCriteria where, OrderBy orderBy, Limit limit, Map<String, Object> valuesPerParam) {
 		if (where.hasCollectionCriteria()) {
-			return selectIn2Phases(where, orderByClauseConsumer, limitAwareConsumer);
+			return selectIn2Phases(where, orderBy, limit);
 		} else {
-			return selectWithSingleQuery(where, orderByClauseConsumer, limitAwareConsumer);
+			return selectWithSingleQuery(where, orderBy, limit);
 		}
 	}
 	
-	public abstract Set<C> selectIn2Phases(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer);
+	public abstract Set<C> selectIn2Phases(ConfiguredEntityCriteria where, OrderBy orderBy, Limit limit);
 	
-	public abstract Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where,
-								 Consumer<OrderByChain<?>> orderByClauseConsumer,
-								 Consumer<LimitAware<?>> limitAwareConsumer);
+	public abstract Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where, OrderBy orderBy, Limit limit);
+	
+	protected abstract Query getAggregateQueryTemplate();
 	
 	protected EntityCriteriaSupport<C> newWhereIdClause(Iterable<I> ids) {
 		// Because we only need the id in the where clause, we don't need persister's EntityCriteriaSupport that contains all
@@ -111,26 +112,18 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 	
 	/**
 	 * A reusable method that execute query build from give {@link EntityJoinTree} with query clauses given as argument
-	 * @param where the conditions to apply to the entity query
-	 * @param orderByClauseConsumer an adapter of the order by clause
-	 * @param limitAwareConsumer an adapter of the limit clause
-	 * @param entityJoinTree the tree representing entity joins
+	 * @param queryClone the {@link Query} to execute
+	 * @param entityTreeQuery the tree representing the way to build the final aggregate
 	 * @param dialect the dialect helping to get the right adaption layer to the database
 	 * @param connectionProvider the connection provider
 	 * @return a {@link Set} of loaded entities according to given criteria
 	 */
-	protected Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where,
-										   Consumer<OrderByChain<?>> orderByClauseConsumer,
-										   Consumer<LimitAware<?>> limitAwareConsumer,
-										   EntityJoinTree<C, I> entityJoinTree,
+	protected Set<C> selectWithSingleQuery(Query queryClone,
+										   EntityTreeQuery<C> entityTreeQuery,
 										   Dialect dialect,
 										   ConnectionProvider connectionProvider) {
-		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
-		Query query = entityTreeQuery.getQuery();
-		orderByClauseConsumer.accept(query.orderBy());
-		limitAwareConsumer.accept(query.orderBy());
 		
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria());
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone);
 		
 		EntityTreeInflater<C> inflater = entityTreeQuery.getInflater();
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>());
@@ -146,20 +139,21 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 	}
 	
 	@Override
-	public <R, O> R selectProjection(Consumer<Select> selectAdapter, Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator, CriteriaChain where,
-									 boolean distinct, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
-		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(getEntityJoinTree(), dialect.getColumnBinderRegistry()).buildSelectQuery();
-		Query query = entityTreeQuery.getQuery();
-		query.getSelectDelegate().setDistinct(distinct);
-		
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where);
+	public <R, O> R selectProjection(Consumer<Select> selectAdapter,
+									 Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator,
+									 ConfiguredEntityCriteria where,
+									 boolean distinct,
+									 OrderBy orderBy,
+									 Limit limit) {
+		Query queryClone = new Query(new Select(), getAggregateQueryTemplate().getFromDelegate(), new Where(), new GroupBy(), new Having(), orderBy, limit);
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone, where.getCriteria());
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
-		selectAdapter.accept(query.getSelectDelegate());
-		Map<Selectable<?>, ResultSetReader<?>> columnReaders = Iterables.map(query.getColumns(), Function.identity(), selectable -> dialect.getColumnBinderRegistry().getBinder(selectable.getJavaType()));
+		selectAdapter.accept(queryClone.getSelectDelegate());
+		Map<Selectable<?>, ResultSetReader<?>> columnReaders = Iterables.map(queryClone.getColumns(), Function.identity(), selectable -> dialect.getColumnBinderRegistry().getBinder(selectable.getJavaType()));
 		
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>());
-		return readProjection(preparedSQL, columnReaders, query.getAliases(), accumulator);
+		return readProjection(preparedSQL, columnReaders, queryClone.getAliases(), accumulator);
 	}
 	
 	protected <R, O> R readProjection(PreparedSQL preparedSQL, Map<Selectable<?>, ResultSetReader<?>> columnReaders, Map<Selectable<?>, String> aliases, Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator) {

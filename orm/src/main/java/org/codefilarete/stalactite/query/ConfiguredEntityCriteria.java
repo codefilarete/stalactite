@@ -1,11 +1,13 @@
 package org.codefilarete.stalactite.query;
 
-import java.util.function.Consumer;
+import java.util.Map;
 
 import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.query.model.Limit;
+import org.codefilarete.stalactite.query.model.OrderBy;
 
 /**
- * Interface to describe necessary inputs of {@link EntityFinder#select(ConfiguredEntityCriteria, Consumer, Consumer, java.util.Map)}.
+ * Interface to describe the necessary inputs of {@link EntityFinder#select(ConfiguredEntityCriteria, OrderBy, Limit, Map)}.
  * 
  * @author Guillaume Mary
  */

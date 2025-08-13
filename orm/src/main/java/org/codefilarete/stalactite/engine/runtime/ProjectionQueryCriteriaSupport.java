@@ -13,21 +13,21 @@ import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
 import org.codefilarete.stalactite.engine.EntityPersister.LimitAware;
 import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain;
+import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.ExecutableProjection;
 import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Limit;
+import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.result.Accumulator;
-import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-
-import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * <ul>
@@ -73,10 +73,23 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 			Consumer<Select> selectAdapter,
 			EntityCriteriaSupport<C> localCriteriaSupport,
 			ExecutableProjectionQuerySupport<C> querySugarSupport) {
-		return (Accumulator<? super Function<? extends Selectable, Object>, Object, R> accumulator) ->
-				entityFinder.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria(), querySugarSupport.isDistinct(),
-						orderByClause -> {},
-						limitAware -> nullable(querySugarSupport.getLimit()).invoke(limit -> limitAware.limit(limit.getCount(), limit.getOffset())));
+		return (Accumulator<? super Function<? extends Selectable, Object>, Object, R> accumulator) -> {
+			OrderBy orderBy = new OrderBy();
+			querySugarSupport.getOrderBy().forEach(duo -> {
+				Selectable column = entityCriteriaSupport.getAggregateColumnMapping().giveColumn(duo.getProperty());
+				orderBy.add(
+						duo.isIgnoreCase()
+								? Operators.lowerCase(column)
+								: column,
+						duo.getDirection() == Order.ASC
+								? org.codefilarete.stalactite.query.model.OrderByChain.Order.ASC
+								: org.codefilarete.stalactite.query.model.OrderByChain.Order.DESC);
+			});
+			
+			return entityFinder.selectProjection(selectAdapter, accumulator, localCriteriaSupport, querySugarSupport.isDistinct(),
+					orderBy,
+					querySugarSupport.getLimit());
+		};
 	}
 	
 	/**
@@ -88,6 +101,8 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 		
 		private boolean distinct;
 		private Limit limit;
+		private final KeepOrderSet<OrderByItem> orderBy = new KeepOrderSet<>();
+		
 		
 		public boolean isDistinct() {
 			return distinct;
@@ -97,10 +112,12 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 			distinct = true;
 		}
 		
-		private final KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy = new KeepOrderSet<>();
-		
 		public Limit getLimit() {
 			return limit;
+		}
+		
+		public KeepOrderSet<OrderByItem> getOrderBy() {
+			return orderBy;
 		}
 		
 		@Override
@@ -117,20 +134,45 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 		
 		@Override
 		public ExecutableProjectionQuerySupport<C> orderBy(SerializableFunction<C, ?> getter, Order order) {
-			orderBy.add(new Duo<>(Arrays.asList(new AccessorByMethodReference<>(getter)), order));
+			orderBy.add(new OrderByItem(Arrays.asList(new AccessorByMethodReference<>(getter)), order, false));
 			return this;
 		}
 		
 		@Override
 		public ExecutableProjectionQuerySupport<C> orderBy(SerializableBiConsumer<C, ?> setter, Order order) {
-			orderBy.add(new Duo<>(Arrays.asList(new MutatorByMethodReference<>(setter)), order));
+			orderBy.add(new OrderByItem(Arrays.asList(new MutatorByMethodReference<>(setter)), order, false));
 			return this;
 		}
 		
 		@Override
 		public ExecutableProjectionQuerySupport<C> orderBy(AccessorChain<C, ?> getter, Order order) {
-			orderBy.add(new Duo<>(getter.getAccessors(), order));
+			orderBy.add(new OrderByItem(getter.getAccessors(), order, false));
 			return this;
+		}
+		
+		public static class OrderByItem {
+			
+			private final List<? extends ValueAccessPoint<?>> property;
+			private final Order direction;
+			private final boolean ignoreCase;
+			
+			public OrderByItem(List<? extends ValueAccessPoint<?>> property, Order direction, boolean ignoreCase) {
+				this.property = property;
+				this.direction = direction;
+				this.ignoreCase = ignoreCase;
+			}
+			
+			public List<? extends ValueAccessPoint<?>> getProperty() {
+				return property;
+			}
+			
+			public Order getDirection() {
+				return direction;
+			}
+			
+			public boolean isIgnoreCase() {
+				return ignoreCase;
+			}
 		}
 	}
 }

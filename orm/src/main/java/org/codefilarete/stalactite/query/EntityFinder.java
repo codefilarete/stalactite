@@ -7,8 +7,8 @@ import java.util.function.Function;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
-import org.codefilarete.stalactite.query.model.LimitAware;
-import org.codefilarete.stalactite.query.model.OrderByChain;
+import org.codefilarete.stalactite.query.model.Limit;
+import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.result.Accumulator;
@@ -32,14 +32,14 @@ public interface EntityFinder<C, I> {
 	 * </strong>
 	 *
 	 * @param where some criteria for aggregate selection
-	 * @param orderByClauseConsumer
-	 * @param limitAwareConsumer
+	 * @param orderBy the order-by clause to apply to the final query
+	 * @param limit the limit clause to apply to the final query
 	 * @param valuesPerParam values presents in criteria per their name, may be empty
 	 * @return entities that match criteria
 	 */
 	Set<C> select(ConfiguredEntityCriteria where,
-				  Consumer<OrderByChain<?>> orderByClauseConsumer,
-				  Consumer<LimitAware<?>> limitAwareConsumer,
+				  OrderBy orderBy,
+				  Limit limit,
 				  Map<String, Object> valuesPerParam);
 	
 	/**
@@ -48,16 +48,17 @@ public interface EntityFinder<C, I> {
 	 * @param selectAdapter the {@link Select} clause modifier
 	 * @param accumulator the aggregator of the projection
 	 * @param where some criteria for aggregate selection
-	 * @param distinct
-	 * @param limitAwareConsumer
+	 * @param distinct either to add or not the "distinct" keyword to the select clause
+	 * @param orderBy the order-by clause to apply to the final query
+	 * @param limit the limit clause to apply to the final query
 	 * @return entities that match criteria
 	 */
 	<R, O> R selectProjection(Consumer<Select> selectAdapter,
 							  Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator,
-							  CriteriaChain where,
+							  ConfiguredEntityCriteria where,
 							  boolean distinct,
-							  Consumer<OrderByChain<?>> orderByClauseConsumer,
-							  Consumer<LimitAware<?>> limitAwareConsumer);
+							  OrderBy orderBy,
+							  Limit limit);
 	
 	EntityJoinTree<C, I> getEntityJoinTree();
 	
