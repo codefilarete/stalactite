@@ -45,10 +45,8 @@ public class SqlNativeRepositoryQuery<C> extends AbstractRepositoryQuery {
 					"Page queries are not supported using string-based queries. Offending method: " + queryMethod);
 		}
 		
-		// We need an entity finder on which we can bind our native query. For now we only support simple cases, not polymorphic ones.
 		// Note that at this stage we can afford to ask for immediate Query creation because we are at a high layer (Spring Data Query discovery) and
-		// persister are supposed to be finalized and up-to-date (containing the whole entity aggregate graph), that why we pass "true" as argument
-		// TODO: support polymorphic use cases by using EntityFinders found through entityPersister
+		// persister is supposed to be finalized and up-to-date (containing the whole entity aggregate graph), that why we pass "true" as argument
 		this.relationalEntityFinder = new RelationalEntityFinder<>(
 				entityPersister.getEntityJoinTree(),
 				connectionProvider,
