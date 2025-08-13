@@ -15,31 +15,33 @@ import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildLifeCycleListener;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphicEntityFinder;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
-import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
-import org.codefilarete.stalactite.engine.runtime.load.JoinRoot;
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.TablePerClassRootJoinNode;
-import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
+import org.codefilarete.stalactite.query.model.GroupBy;
+import org.codefilarete.stalactite.query.model.Having;
+import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.LimitAware;
 import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.query.model.OrderByChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryEase;
 import org.codefilarete.stalactite.query.model.QueryStatement.PseudoTable;
+import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.Selectable.SimpleSelectable;
 import org.codefilarete.stalactite.query.model.Union;
+import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -51,7 +53,6 @@ import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.VisibleForTesting;
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
@@ -71,9 +72,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	private final Map<String, Class> discriminatorValues;
 	private final SingleLoadEntityJoinTree<C, I> singleLoadEntityJoinTree;
 	private Query query;
-	
-	// TODO : to remove
-	private final PhasedEntityJoinTree<C, I> phasedLoadEntityJoinTree;
+	private EntityTreeQuery<C> entityTreeQuery;
 	
 	public TablePerClassPolymorphismEntityFinder(
 			ConfiguredRelationalPersister<C, I> mainPersister,
@@ -91,7 +90,25 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 			discriminatorValues.put(subEntityType.getSimpleName(), subEntityType);
 		});
 		this.singleLoadEntityJoinTree = buildSingleLoadEntityJoinTree();
-		this.phasedLoadEntityJoinTree = build2PhasesLoadEntityJoinTree();
+		
+		// made for optimization (to avoid creating multiple times the query) but also to avoid adding several times the polymorphic JoinNode consumers
+		// to itself by calling several time the "toConsumer(..)" method that usually calls some "add" method, which declares duplicates of consumers,
+		// which, at the very end, implies an exception during the aggregate inflation phase : "Can't find consumer node"
+		PersisterBuilderContext.CURRENT.get().addBuildLifeCycleListener(new BuildLifeCycleListener() {
+			@Override
+			public void afterBuild() {
+			}
+			
+			@Override
+			public void afterAllBuild() {
+				buildQuery();
+			}
+		});
+	}
+	
+	private void buildQuery() {
+		entityTreeQuery = new EntityTreeQueryBuilder<>(singleLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
+		query = entityTreeQuery.getQuery();
 	}
 	
 	@Override
@@ -168,46 +185,6 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 		});
 	}
 	
-	/**
-	 * Creates an {@link EntityJoinTree} which main Table is actually a Union clause made of sub-entities tables
-	 * @return an appropriate {@link EntityJoinTree}
-	 */
-	private PhasedEntityJoinTree<C, I> build2PhasesLoadEntityJoinTree() {
-		Map<String, String> aliasPerColumnName = Iterables.map(mainTable.getColumns(), Column::getName, Column::getName);
-		Union union = new Union();
-		persisterPerSubclass.forEach((subEntityType, subEntityPersister) -> {
-			String discriminatorValue = subEntityType.getSimpleName();
-			Query subQuery = this.<T>buildSubConfigurationQuery(discriminatorValue, mainTable, subEntityPersister.getMainTable(), aliasPerColumnName);
-			union.getQueries().add(subQuery);
-			subQuery.getColumns()
-					.stream().filter(column -> !column.getExpression().equals(discriminatorValue))
-					.forEach(column -> union.registerColumn(column.getExpression(), column.getJavaType()));
-		});
-		
-		// Note that it's very important to use main table name to mimic virtual main table else joins (below) won't work
-		PseudoTable pseudoTable = union.asPseudoTable(mainTable.getName());
-		// we add joins to the union clause
-		PhasedEntityJoinTree<C, I> result = new PhasedEntityJoinTree<>(pseudoTable, mainTable);
-		mainEntityJoinTree.projectTo(result, ROOT_JOIN_NAME);
-		return result;
-	}
-	
-	private <SUBTABLE extends Table<SUBTABLE>> Query buildSubConfigurationQuery(String discriminatorValue,
-																				T mainTable,
-																				SUBTABLE subEntityTable,
-																				Map<String, String> aliasPerColumnName) {
-		Map<Column<SUBTABLE, ?>, String> aliasPerColumn = Iterables.map(mainTable.getColumns(),
-				// we keep only common columns
-				column -> subEntityTable.getColumn(column.getName()),
-				c -> aliasPerColumnName.get(c.getName()),
-				KeepOrderMap::new);
-		return QueryEase.
-				select(aliasPerColumn)
-				.add("'" + discriminatorValue + "'", String.class).as(DISCRIMINATOR_ALIAS)
-				.from(subEntityTable)
-				.getQuery();
-	}
-	
 	@Override
 	public Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
 		LOGGER.debug("Finding entities in a single query with criteria {}", where);
@@ -220,16 +197,15 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	}
 	
 	private Set<C> localSelectWithSingleQuery(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
-		// Condition doesn't have criteria on a collection property (*-to-many) : the load can be done with one query because the SQL criteria
-		// doesn't make a subset of the entity graph
-		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(singleLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
-		Query query = entityTreeQuery.getQuery();
+		// we clone the query to avoid polluting the instance one, else, from select(..) to select(..), we append the criteria at the end of it,
+		// which makes the query usually returning no data (because of the condition mix)
+		Query queryClone = new Query(query.getSelectDelegate(), query.getFromDelegate(), new Where(), new GroupBy(), new Having(), new OrderBy(), new Limit());
 		
 		// we add union columns
-		orderByClauseConsumer.accept(query.orderBy());
-		limitAwareConsumer.accept(query.orderBy());
+		orderByClauseConsumer.accept(queryClone.orderBy());
+		limitAwareConsumer.accept(queryClone.orderBy());
 		// since criteria is passed to union subqueries, we don't need it into the entire query
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria());
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone, where.getCriteria());
 		EntityTreeInflater<C> inflater = entityTreeQuery.getInflater();
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>());
 		try (ReadOperation<Integer> readOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
@@ -245,23 +221,24 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	@Override
 	public Set<C> selectIn2Phases(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
 		LOGGER.debug("Finding entities in 2-phases query with criteria {}", where);
-		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(singleLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
-		Query query = entityTreeQuery.getQuery();
+		// we clone the query to avoid polluting the instance one, else, from select(..) to select(..), we append the criteria at the end of it,
+		// which makes the query usually returning no data (because of the condition mix)
+		// Note that we don't need to clone the select clause because we register the columns weed need some lines below
+		Query queryClone = new Query(new Select(), query.getFromDelegate(), new Where(), new GroupBy(), new Having(), new OrderBy(), new Limit());
 		
 		// since criteria is passed to union subqueries, we don't need it into the entire query
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria());
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone, where.getCriteria());
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
-		query.getSelectDelegate().clear();
 		mainTable.getPrimaryKey().getColumns().forEach(pkColumn -> {
 			Selectable<?> column = mainEntityJoinTree.getRoot().getTable().findColumn(pkColumn.getName());
-			query.select(column, pkColumn.getName());
+			queryClone.select(column, pkColumn.getName());
 		});
-		query.select(DISCRIMINATOR_COLUMN, DISCRIMINATOR_ALIAS);
+		queryClone.select(DISCRIMINATOR_COLUMN, DISCRIMINATOR_ALIAS);
 		
 		// selecting ids and their entity type
 		Map<Selectable<?>, ResultSetReader<?>> columnReaders = new HashMap<>();
-		query.getColumns().forEach((selectable) -> {
+		queryClone.getColumns().forEach((selectable) -> {
 			ResultSetReader<?> reader;
 			if (selectable instanceof Column) {
 				reader = dialect.getColumnBinderRegistry().getReader((Column) selectable);
@@ -270,10 +247,12 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 			}
 			columnReaders.put(selectable, reader);
 		});
-		orderByClauseConsumer.accept(query.orderBy());
-		limitAwareConsumer.accept(query.orderBy());
+		columnReaders.put(DISCRIMINATOR_COLUMN, dialect.getColumnBinderRegistry().getBinder(DISCRIMINATOR_COLUMN.getJavaType()));
 		
-		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>()), columnReaders, query.getAliases());
+		orderByClauseConsumer.accept(queryClone.orderBy());
+		limitAwareConsumer.accept(queryClone.orderBy());
+		
+		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>()), columnReaders, queryClone.getAliases());
 		
 		// Second phase : selecting entities by delegating it to each subclass loader
 		// It will generate 1 query per found subclass, made as this :
@@ -313,61 +292,6 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 			return idsPerSubclass;
 		} catch (RuntimeException e) {
 			throw new SQLExecutionException(preparedSQL.getSQL(), e);
-		}
-	}
-	
-	private static class PhasedEntityJoinTree<C, I> extends EntityJoinTree<C, I> {
-		
-		private final IdentityHashMap<Column<?, ?>, Selectable<?>> mainColumnToPseudoColumn = new IdentityHashMap<>();
-		
-		private PhasedEntityJoinTree(PseudoTable pseudoTable, Table mainTable) {
-			super(
-					// There's no need to have a working EntityInflater here because the PhasedEntityJoinTree
-					// is not used to inflate the entities (it's done by dedicated select from sub-entities)
-					new EntityInflater<C, I>() {
-						@Override
-						public EntityMapping<C, I, ?> getEntityMapping() {
-							return null;
-						}
-						
-						@Override
-						public Class<C> getEntityType() {
-							return null;
-						}
-						
-						@Override
-						public I giveIdentifier(ColumnedRow row) {
-							return null;
-						}
-						
-						@Override
-						public RowTransformer<C> getRowTransformer() {
-							// we can afford to return null because the copy is not used
-							return null;
-						}
-						
-						@Override
-						public Set<Selectable<?>> getSelectableColumns() {
-							return (Set) pseudoTable.getColumns();
-						}
-					}, pseudoTable);
-			// Building a mapping between main persister columns and those of union
-			// this will allow us to lookup for main persister columns values in final ResultSet
-			pseudoTable.getColumns().forEach(pseudoColumn -> {
-				Column column = mainTable.findColumn(pseudoColumn.getExpression());
-				if (column != null) {
-					mainColumnToPseudoColumn.put(column, pseudoColumn);
-				}
-			});
-		}
-		
-		@Override
-		public JoinRoot<C, I, PseudoTable> getRoot() {
-			return (JoinRoot<C, I, PseudoTable>) super.getRoot();
-		}
-		
-		public IdentityHashMap<Column<?, ?>, Selectable<?>> getMainColumnToPseudoColumn() {
-			return mainColumnToPseudoColumn;
 		}
 	}
 	
