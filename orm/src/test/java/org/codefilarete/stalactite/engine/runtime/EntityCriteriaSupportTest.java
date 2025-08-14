@@ -24,7 +24,7 @@ import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifie
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
-import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
+import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.LogicalOperator;
 import org.codefilarete.stalactite.query.model.Operators;
@@ -149,7 +149,7 @@ class EntityCriteriaSupportTest {
 			
 			IdMapping<Person, Identifier<Long>> idMapping = mock(IdMapping.class);
 			when(entityMappingMock.getIdMapping()).thenReturn(idMapping);
-			when(idMapping.<T>getIdentifierAssembler()).thenReturn(new SimpleIdentifierAssembler<>(idColumn));
+			when(idMapping.<T>getIdentifierAssembler()).thenReturn(new SingleIdentifierAssembler<>(idColumn));
 			when(idMapping.getIdAccessor()).thenReturn(new AccessorWrapperIdAccessor<>(Accessors.accessor(Person::getId)));
 			
 			// When

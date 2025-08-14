@@ -22,7 +22,7 @@ import org.codefilarete.reflection.ReversibleMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
-import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
+import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -110,7 +110,7 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 			throw new UnsupportedOperationException("Accessor '" + AccessorDefinition.toString(identifierProperty)
 					+ "' is declared as identifier but mapped column " + identifierColumn + " is not the primary key of table");
 		}
-		this.idMapping = new SimpleIdMapping<>(identifierProperty, identifierInsertionManager, new SimpleIdentifierAssembler<>(identifierColumn));
+		this.idMapping = new SimpleIdMapping<>(identifierProperty, identifierInsertionManager, new SingleIdentifierAssembler<>(identifierColumn));
 		this.identifierSetByBeanFactory = false;
 		fillInsertableColumns();
 		fillUpdatableColumns();
@@ -484,7 +484,7 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 				C toReturn = mainMapping.getRowTransformer().transform(row);
 				// fixing identifier
 				// Note : this may be done twice in single column primary key case, because constructor expects that the column must be present in the
-				// mapping, then it is used by the SimpleIdentifierAssembler
+				// mapping, then it is used by the SingleIdentifierAssembler
 				if (!identifierSetByBeanFactory) {
 					setId(toReturn, getIdMapping().getIdentifierAssembler().assemble(row));
 				}

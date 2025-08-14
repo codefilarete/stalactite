@@ -3,14 +3,14 @@ package org.codefilarete.stalactite.mapping;
 import java.util.function.Function;
 
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
+import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
  * Entry point for single value (hence single-column primary key), as opposed to composed, about entity identifier mapping.
- * Will mainly delegate its work to an {@link IdAccessor}, an {@link IdentifierInsertionManager} and a {@link SimpleIdentifierAssembler}
+ * Will mainly delegate its work to an {@link IdAccessor}, an {@link IdentifierInsertionManager} and a {@link SingleIdentifierAssembler}
  * 
  * @author Guillaume Mary
  * @see ComposedIdMapping
@@ -23,7 +23,7 @@ public class SimpleIdMapping<C, I> implements IdMapping<C, I> {
 	
 	private final IsNewDeterminer<C> isNewDeterminer;
 	
-	private final SimpleIdentifierAssembler<I, ?> identifierMarshaller;
+	private final SingleIdentifierAssembler<I, ?> identifierMarshaller;
 	
 	/**
 	 * Main constructor
@@ -34,7 +34,7 @@ public class SimpleIdMapping<C, I> implements IdMapping<C, I> {
 	 */
 	public SimpleIdMapping(AccessorWrapperIdAccessor<C, I> idAccessor,
 						   IdentifierInsertionManager<C, I> identifierInsertionManager,
-						   SimpleIdentifierAssembler<I, ?> identifierMarshaller) {
+						   SingleIdentifierAssembler<I, ?> identifierMarshaller) {
 		this.idAccessor = idAccessor;
 		this.identifierInsertionManager = identifierInsertionManager;
 		this.identifierMarshaller = identifierMarshaller;
@@ -49,7 +49,7 @@ public class SimpleIdMapping<C, I> implements IdMapping<C, I> {
 	
 	public SimpleIdMapping(ReversibleAccessor<C, I> identifierAccessor,
 						   IdentifierInsertionManager<C, I> identifierInsertionManager,
-						   SimpleIdentifierAssembler identifierMarshaller) {
+						   SingleIdentifierAssembler identifierMarshaller) {
 		this(new AccessorWrapperIdAccessor<>(identifierAccessor), identifierInsertionManager, identifierMarshaller);
 	}
 	
@@ -69,8 +69,8 @@ public class SimpleIdMapping<C, I> implements IdMapping<C, I> {
 	}
 	
 	@Override
-	public <T extends Table<T>> SimpleIdentifierAssembler<I, T> getIdentifierAssembler() {
-		return (SimpleIdentifierAssembler<I, T>) identifierMarshaller;
+	public <T extends Table<T>> SingleIdentifierAssembler<I, T> getIdentifierAssembler() {
+		return (SingleIdentifierAssembler<I, T>) identifierMarshaller;
 	}
 	
 	/**

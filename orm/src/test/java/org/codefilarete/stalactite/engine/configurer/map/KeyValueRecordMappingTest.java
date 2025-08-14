@@ -10,7 +10,7 @@ import org.assertj.core.presentation.StandardRepresentation;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecordMapping.KeyValueRecordIdMapping.RecordIdAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
-import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
+import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
@@ -35,7 +35,7 @@ class KeyValueRecordMappingTest {
 			LEFTTABLE leftTable = (LEFTTABLE) new Table("leftTable");
 			Column<LEFTTABLE, Long> leftTableIdColumn = leftTable.addColumn("id", long.class);
 			Function<ColumnedRow, String> entryKeyAssembler = columnedRow -> columnedRow.get(entryKeyColumn);
-			IdentifierAssembler<Long, LEFTTABLE> sourceIdentifierAssembler = new SimpleIdentifierAssembler<>(leftTableIdColumn);
+			IdentifierAssembler<Long, LEFTTABLE> sourceIdentifierAssembler = new SingleIdentifierAssembler<>(leftTableIdColumn);
 			// Since we test assemble() method there's no need of columns mapping because they are used at insertion time
 			Map<Column<LEFTTABLE, ?>, Column<T, ?>> primaryKey2ForeignKeyMapping = Collections.emptyMap();
 			RecordIdAssembler<String, Long, T> testInstance = new RecordIdAssembler<>(
@@ -72,8 +72,8 @@ class KeyValueRecordMappingTest {
 			Column<LEFTTABLE, Long> leftTableIdColumn = leftTable.addColumn("id", long.class);
 			RIGHTTABLE rightTable = (RIGHTTABLE) new Table("rightTable");
 			Column<RIGHTTABLE, String> rightTableIdColumn = rightTable.addColumn("entryKey", String.class);
-			IdentifierAssembler<String, RIGHTTABLE> entryKeyIdentifierAssembler = new SimpleIdentifierAssembler<>(rightTableIdColumn);
-			IdentifierAssembler<Long, LEFTTABLE> sourceIdentifierAssembler = new SimpleIdentifierAssembler<>(leftTableIdColumn);
+			IdentifierAssembler<String, RIGHTTABLE> entryKeyIdentifierAssembler = new SingleIdentifierAssembler<>(rightTableIdColumn);
+			IdentifierAssembler<Long, LEFTTABLE> sourceIdentifierAssembler = new SingleIdentifierAssembler<>(leftTableIdColumn);
 			// Since we test assemble() method there's no need of columns mapping because they are used at insertion time
 			Map<Column<LEFTTABLE, ?>, Column<T, ?>> primaryKey2ForeignKeyMapping = Collections.emptyMap();
 			Map<Column<RIGHTTABLE, ?>, Column<T, ?>> rightTable2EntryKeyMapping = Collections.emptyMap();
@@ -108,7 +108,7 @@ class KeyValueRecordMappingTest {
 			LEFTTABLE leftTable = (LEFTTABLE) new Table("leftTable");
 			Column<LEFTTABLE, Long> leftTableIdColumn = leftTable.addColumn("id", long.class);
 			Function<ColumnedRow, String> entryKeyAssembler = columnedRow -> columnedRow.get(entryKeyColumn);
-			IdentifierAssembler<Long, LEFTTABLE> sourceIdentifierAssembler = new SimpleIdentifierAssembler<>(leftTableIdColumn);
+			IdentifierAssembler<Long, LEFTTABLE> sourceIdentifierAssembler = new SingleIdentifierAssembler<>(leftTableIdColumn);
 			Map<Column<LEFTTABLE, ?>, Column<T, ?>> primaryKey2ForeignKeyMapping = (Map) Maps.forHashMap(Column.class, Column.class)
 					.add(leftTableIdColumn, joinTableIdColumn);
 			RecordIdAssembler<String, Long, T> testInstance = new RecordIdAssembler<>(
@@ -152,7 +152,7 @@ class KeyValueRecordMappingTest {
 							.add(rightTableEntryKeyProp2Column, id.prop2);
 				}
 			};
-			IdentifierAssembler<Long, LEFTTABLE> sourceIdentifierAssembler = new SimpleIdentifierAssembler<>(leftTableIdColumn);
+			IdentifierAssembler<Long, LEFTTABLE> sourceIdentifierAssembler = new SingleIdentifierAssembler<>(leftTableIdColumn);
 			Map<Column<LEFTTABLE, ?>, Column<T, ?>> primaryKey2ForeignKeyMapping = (Map) Maps.forHashMap(Column.class, Column.class)
 					.add(leftTableIdColumn, joinTableIdColumn);
 			Map<Column<RIGHTTABLE, ?>, Column<T, ?>> rightTable2EntryKeyMapping = (Map) Maps.forHashMap(Column.class, Column.class)

@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -22,11 +21,11 @@ import org.codefilarete.tool.collection.Iterables;
  * @author Guillaume Mary
  * @see ComposedIdentifierAssembler
  */
-public class SimpleIdentifierAssembler<I, T extends Table<T>> implements IdentifierAssembler<I, T> {
+public class SingleIdentifierAssembler<I, T extends Table<T>> implements IdentifierAssembler<I, T> {
 	
 	private final Column<T, I> primaryKey;
 	
-	public SimpleIdentifierAssembler(Column<T, I> primaryKey) {
+	public SingleIdentifierAssembler(Column<T, I> primaryKey) {
 		this.primaryKey = primaryKey;
 	}
 	

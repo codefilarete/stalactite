@@ -5,17 +5,15 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.CompositeKeyIdentification;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
-import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
+import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -53,8 +51,8 @@ class AssociationRecordMappingTest {
 
 			AssociationRecordMapping<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, Integer, Integer> testInstance = new AssociationRecordMapping<>(
 					(ASSOCIATIONTABLE) associationTable,
-					new SimpleIdentifierAssembler<>(leftTableIdColumn),
-					new SimpleIdentifierAssembler<>(rightTableIdColumn));
+					new SingleIdentifierAssembler<>(leftTableIdColumn),
+					new SingleIdentifierAssembler<>(rightTableIdColumn));
 
 			Map<Column<ASSOCIATIONTABLE, ?>, ?> insertValues = testInstance.getInsertValues(new AssociationRecord(42, 666));
 			assertThat(insertValues.get(associationTable.getLeftIdentifierColumnMapping().get(leftTableIdColumn))).isEqualTo(42);

@@ -15,7 +15,7 @@ import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
-import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
+import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -56,9 +56,9 @@ public class AssociationRecordMapping<
 			SerializableFunction<AssociationRecord, Object> valueAccessor,
 			BiConsumer<AssociationRecord, Object> valueMutator) {
 		Map<ReversibleAccessor<AssociationRecord, Object>, Column<ASSOCIATIONTABLE, Object>> result = new HashMap<>();
-		if (identifierAssembler instanceof SimpleIdentifierAssembler) {
+		if (identifierAssembler instanceof SingleIdentifierAssembler) {
 			ReversibleAccessor<AssociationRecord, Object> reversibleAccessor = new PropertyAccessor<>(valueAccessor::apply, valueMutator::accept);
-			Column<TARGETTABLE, ID> column = ((SimpleIdentifierAssembler<ID, TARGETTABLE>) identifierAssembler).getColumn();
+			Column<TARGETTABLE, ID> column = ((SingleIdentifierAssembler<ID, TARGETTABLE>) identifierAssembler).getColumn();
 			Column<ASSOCIATIONTABLE, ID> associationtableColumn = (Column<ASSOCIATIONTABLE, ID>) identifierColumnMapping.get(column);
 			result.put(reversibleAccessor, (Column<ASSOCIATIONTABLE, Object>) associationtableColumn);
 		} else if (identifierAssembler instanceof DefaultComposedIdentifierAssembler) {

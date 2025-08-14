@@ -1,12 +1,10 @@
 package org.codefilarete.stalactite.mapping.id.assembly;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
@@ -18,7 +16,7 @@ import org.codefilarete.tool.collection.Iterables;
  *
  * @param <I> identifier type
  * @author Guillaume Mary
- * @see SimpleIdentifierAssembler
+ * @see SingleIdentifierAssembler
  */
 public abstract class ComposedIdentifierAssembler<I, T extends Table<T>> implements IdentifierAssembler<I, T> {
 	

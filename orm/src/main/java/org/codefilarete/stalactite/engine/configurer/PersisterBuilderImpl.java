@@ -77,7 +77,7 @@ import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
-import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
+import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
@@ -979,7 +979,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			idMappingStrategy = new ComposedIdMapping<>(idAccessor, (AlreadyAssignedIdentifierManager<E, I>) identifierInsertionManager, composedIdentifierAssembler);
 		} else {
 			idMappingStrategy = new SimpleIdMapping<>(idAccessor, identifierInsertionManager,
-					new SimpleIdentifierAssembler<>(first(primaryKey.getColumns())));
+					new SingleIdentifierAssembler<>(first(primaryKey.getColumns())));
 		}
 
 		Function<ColumnedRow, E> beanFactory;

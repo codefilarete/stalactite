@@ -37,7 +37,7 @@ import org.codefilarete.stalactite.engine.runtime.load.TablePerClassRootJoinNode
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
-import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
+import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.model.AbstractCriterion;
@@ -308,8 +308,8 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 				// we add the identifier and primary key because they are not in the property mapping 
 				IdentifierAssembler<?, ?> identifierAssembler = entityMapping.getIdMapping().getIdentifierAssembler();
 				// TODO: implement other types of identifier-assemblers
-				if (identifierAssembler instanceof SimpleIdentifierAssembler) {
-					Column idColumn = ((SimpleIdentifierAssembler) identifierAssembler).getColumn();
+				if (identifierAssembler instanceof SingleIdentifierAssembler) {
+					Column idColumn = ((SingleIdentifierAssembler) identifierAssembler).getColumn();
 					ReversibleAccessor idAccessor = ((AccessorWrapperIdAccessor) entityMapping.getIdMapping().getIdAccessor()).getIdAccessor();
 					propertyToColumn.put(Arrays.asList(idAccessor), joinNode.getOriginalColumnsToLocalOnes().get(pseudoTable.findColumn(idColumn.getExpression())));
 				}
@@ -356,8 +356,8 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 				// we add the identifier and primary key because they are not in the property mapping 
 				IdentifierAssembler<?, ?> identifierAssembler = entityMapping.getIdMapping().getIdentifierAssembler();
 				// TODO: implement other types of identifier-assemblers
-				if (identifierAssembler instanceof SimpleIdentifierAssembler) {
-					Column idColumn = ((SimpleIdentifierAssembler) identifierAssembler).getColumn();
+				if (identifierAssembler instanceof SingleIdentifierAssembler) {
+					Column idColumn = ((SingleIdentifierAssembler) identifierAssembler).getColumn();
 					ReversibleAccessor idAccessor = ((AccessorWrapperIdAccessor) entityMapping.getIdMapping().getIdAccessor()).getIdAccessor();
 					propertyToColumn.put(Arrays.asList(idAccessor), joinNode.getOriginalColumnsToLocalOnes().get(idColumn));
 				} else if (identifierAssembler instanceof DefaultComposedIdentifierAssembler) {
