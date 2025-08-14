@@ -102,11 +102,6 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	}
 	
 	@Override
-	public Selectable<?> getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
-		return criteriaSupport.getAggregateColumnMapping().giveColumn(accessorChain);
-	}
-	
-	@Override
 	public I getId(C entity) {
 		return this.persister.getId(entity);
 	}

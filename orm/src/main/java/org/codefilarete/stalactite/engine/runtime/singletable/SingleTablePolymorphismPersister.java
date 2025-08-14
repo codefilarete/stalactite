@@ -130,11 +130,6 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 	}
 	
 	@Override
-	public Selectable<?> getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
-		return criteriaSupport.getAggregateColumnMapping().giveColumn(accessorChain);
-	}
-	
-	@Override
 	public Set<Class<? extends C>> getSupportedEntityTypes() {
 		Set<Class<? extends C>> result = new HashSet<>();
 		this.subEntitiesPersisters.forEach((c, p) -> {

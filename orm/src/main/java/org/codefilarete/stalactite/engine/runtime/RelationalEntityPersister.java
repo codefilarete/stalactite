@@ -170,16 +170,6 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	ExecutableEntityQueryCriteria<C, ?> selectWhere();
 	
 	/**
-	 * Gives the column on which the last element of the given accessor chain is persisted.
-	 * The first element of the given accessor chain is expected to match a property of this persister.
-	 * The lookup will go down the tree / graph of persistence.
-	 * 
-	 * @param accessorChain a suite of accessor describing a property of current persisted class
-	 * @return the column matching the property, it will throw an exception if a property of the chain is not mapped or found by this persister
-	 */
-	Selectable<?> getColumn(List<? extends ValueAccessPoint<?>> accessorChain);
-	
-	/**
 	 * Mashup between {@link EntityCriteria} and {@link ExecutableQuery} to make an {@link EntityCriteria} executable
 	 * @param <C> type of object returned by query execution
 	 */

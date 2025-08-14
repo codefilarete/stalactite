@@ -115,11 +115,6 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			subTable.addForeignKey(foreignKeyNamingFunction, projectedKey, leftPrimaryKey);
 		});
 	}
-
-	@Override
-	public Selectable<?> getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
-		return criteriaSupport.getAggregateColumnMapping().giveColumn(accessorChain);
-	}
 	
 	@Override
 	public Set<Class<? extends C>> getSupportedEntityTypes() {

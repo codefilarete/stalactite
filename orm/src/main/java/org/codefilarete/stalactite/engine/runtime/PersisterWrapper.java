@@ -59,11 +59,6 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	}
 	
 	@Override
-	public Selectable<?> getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
-		return delegate.getColumn(accessorChain);
-	}
-	
-	@Override
 	public I getId(C entity) {
 		return delegate.getId(entity);
 	}
