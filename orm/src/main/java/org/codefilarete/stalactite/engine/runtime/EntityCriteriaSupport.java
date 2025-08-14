@@ -355,7 +355,6 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 				
 				// we add the identifier and primary key because they are not in the property mapping 
 				IdentifierAssembler<?, ?> identifierAssembler = entityMapping.getIdMapping().getIdentifierAssembler();
-				// TODO: implement other types of identifier-assemblers
 				if (identifierAssembler instanceof SingleIdentifierAssembler) {
 					Column idColumn = ((SingleIdentifierAssembler) identifierAssembler).getColumn();
 					ReversibleAccessor idAccessor = ((AccessorWrapperIdAccessor) entityMapping.getIdMapping().getIdAccessor()).getIdAccessor();

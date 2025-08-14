@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -19,6 +20,7 @@ import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.compositekey.House;
 import org.codefilarete.stalactite.engine.runtime.EntityCriteriaSupport.AggregateAccessPointToColumnMapping;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.engine.runtime.load.TablePerClassRootJoinNode;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
@@ -28,7 +30,10 @@ import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.LogicalOperator;
 import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.query.model.QueryEase;
+import org.codefilarete.stalactite.query.model.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.Selectable.SimpleSelectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -170,7 +175,6 @@ class EntityCriteriaSupportTest {
 			// Given
 			EntityMapping<House, House.HouseId, T> entityMappingMock = mock(EntityMapping.class);
 			T personTable = (T) new Table("House");
-			Column<T, House.HouseId> idColumn = personTable.addColumn("id", House.HouseId.class);
 			Column<T, String> nameColumn = personTable.addColumn("name", String.class);
 			Column<T, Long> versionColumn = personTable.addColumn("version", long.class);
 			Column<T, Integer> numberColumn = personTable.addColumn("number", int.class);
@@ -207,6 +211,52 @@ class EntityCriteriaSupportTest {
 			accessorToColumnMap.put(Arrays.asList(AccessorChain.fromMethodReference(House::getHouseId), AccessorChain.fromMethodReference(House.HouseId::getStreet)), streetColumn);
 			accessorToColumnMap.put(Arrays.asList(AccessorChain.fromMethodReference(House::getSurname)), nameColumn);
 			accessorToColumnMap.put(Arrays.asList(AccessorChain.fromMethodReference(House::getVersion)), versionColumn);
+			assertThat(result).isEqualTo(accessorToColumnMap);
+		}
+		
+		@Test
+		<T extends Table<T>> void tablePerClassRootJoinNode_withSimpleIdentifierMapping() {
+			// Given
+			EntityMapping<Person, Identifier<Long>, T> entityMappingMock = mock(EntityMapping.class);
+			T personTable = (T) new Table("Person");
+			Column<T, Identifier<Long>> idColumn = personTable.addColumn("id", Identifier.LONG_TYPE);
+			Column<T, String> nameColumn = personTable.addColumn("name", String.class);
+			Column<T, Long> versionColumn = personTable.addColumn("version", long.class);
+			Column<T, Long> discriminatorColumn = personTable.addColumn("DTYPE", long.class);
+			when(entityMappingMock.getTargetTable()).thenReturn(personTable);
+			when(entityMappingMock.getPropertyToColumn()).thenReturn(
+					Maps.forHashMap((Class<ReversibleAccessor<Person, ?>>) (Class) ReversibleAccessor.class, (Class<Column<T, ?>>) (Class) Column.class)
+							.add(Accessors.accessor(Person::getName), nameColumn)
+			);
+			when(entityMappingMock.getReadonlyPropertyToColumn()).thenReturn(
+					Maps.forHashMap((Class<ReversibleAccessor<Person, ?>>) (Class) ReversibleAccessor.class, (Class<Column<T, ?>>) (Class) Column.class)
+							.add(Accessors.accessor(Person::getVersion), versionColumn)
+			);
+			
+			IdMapping<Person, Identifier<Long>> idMapping = mock(IdMapping.class);
+			when(entityMappingMock.getIdMapping()).thenReturn(idMapping);
+			when(idMapping.<T>getIdentifierAssembler()).thenReturn(new SingleIdentifierAssembler<>(idColumn));
+			when(idMapping.getIdAccessor()).thenReturn(new AccessorWrapperIdAccessor<>(Accessors.accessor(Person::getId)));
+			
+			PseudoTable pseudoTable = new PseudoTable(QueryEase.select(idColumn, nameColumn, versionColumn).from(personTable).getQuery(), "dummyUnion");
+			ConfiguredRelationalPersister<Person, Identifier<Long>> rootPersisterMock = mock(ConfiguredRelationalPersister.class);
+			when(rootPersisterMock.<T>getMapping()).thenReturn(entityMappingMock);
+			
+			// When
+			EntityJoinTree<Person, Identifier<Long>> personTree = new EntityJoinTree<>(tree -> new TablePerClassRootJoinNode<>(tree,
+							rootPersisterMock,
+							Collections.emptyMap(),	// sub-persisters are not necessary for our test case
+							pseudoTable,
+							new SimpleSelectable<>("discriminatorColumn", String.class)));
+			AggregateAccessPointToColumnMapping<Person> testInstance = new AggregateAccessPointToColumnMapping<>(personTree, true);
+			Map<List<ValueAccessPoint<?>>, Selectable<?>> result = testInstance.collectPropertyMapping(personTree.getRoot(), new ArrayDeque<>());
+			
+			// Then
+			AccessorToColumnMap accessorToColumnMap = new AccessorToColumnMap();
+			// Note that discriminator is not present
+			accessorToColumnMap.put(Arrays.asList(AccessorChain.fromMethodReference(Person::getId)), pseudoTable.findColumn(idColumn.getName()));
+			accessorToColumnMap.put(Arrays.asList(AccessorChain.fromMethodReference(Person::getName)), pseudoTable.findColumn(nameColumn.getName()));
+			accessorToColumnMap.put(Arrays.asList(AccessorChain.fromMethodReference(Person::getVersion)), pseudoTable.findColumn(versionColumn.getName()));
 			assertThat(result).isEqualTo(accessorToColumnMap);
 		}
 	}

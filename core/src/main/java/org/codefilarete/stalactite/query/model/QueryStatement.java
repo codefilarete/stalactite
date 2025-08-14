@@ -33,7 +33,7 @@ public interface QueryStatement extends SelectablesPod {
 	}
 	
 	/**
-	 * Wrapper of {@link Query} and {@link Union} (as {@link QueryStatement}) to make them capable of being added to a From clause.
+	 * Wrapper of {@link Query} and {@link Union} (as {@link QueryStatement}) to make them capable of being added to a {@link From} clause.
 	 * 
 	 * @author Guillaume Mary
 	 */
