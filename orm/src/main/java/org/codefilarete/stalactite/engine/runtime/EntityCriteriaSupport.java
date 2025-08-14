@@ -23,6 +23,7 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
+import org.codefilarete.stalactite.engine.configurer.DefaultComposedIdentifierAssembler;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildLifeCycleListener;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRecordMapping;
@@ -280,7 +281,8 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 		 * Collect properties, read-only properties, and identifier column mapping from given {@link EntityMapping}
 		 * @param joinNode the node from which we can get a {@link EntityMapping} to collect all properties from
 		 */
-		private <E> Map<List<ValueAccessPoint<?>>, Selectable<?>> collectPropertyMapping(JoinNode<E, ?> joinNode, Deque<Accessor<?, ?>> accessorPath) {
+		@VisibleForTesting
+		<E> Map<List<ValueAccessPoint<?>>, Selectable<?>> collectPropertyMapping(JoinNode<E, ?> joinNode, Deque<Accessor<?, ?>> accessorPath) {
 			EntityInflater<E, ?> entityInflater;
 			if (joinNode instanceof RelationJoinNode) {
 				entityInflater = ((RelationJoinNode<E, ?, ?, ?, ?>) joinNode).getEntityInflater();
@@ -358,6 +360,11 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 					Column idColumn = ((SimpleIdentifierAssembler) identifierAssembler).getColumn();
 					ReversibleAccessor idAccessor = ((AccessorWrapperIdAccessor) entityMapping.getIdMapping().getIdAccessor()).getIdAccessor();
 					propertyToColumn.put(Arrays.asList(idAccessor), joinNode.getOriginalColumnsToLocalOnes().get(idColumn));
+				} else if (identifierAssembler instanceof DefaultComposedIdentifierAssembler) {
+					((DefaultComposedIdentifierAssembler<?, ?>) identifierAssembler).getMapping().forEach((idAccessor, idColumn) -> {;
+						ReversibleAccessor idAccessor2 = ((AccessorWrapperIdAccessor) entityMapping.getIdMapping().getIdAccessor()).getIdAccessor();
+						propertyToColumn.put(Arrays.asList(idAccessor2, idAccessor), joinNode.getOriginalColumnsToLocalOnes().get(idColumn));
+					});
 				}
 				
 				entityMapping.getEmbeddedBeanStrategies().forEach((k, v) ->
@@ -409,10 +416,19 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 			return new MappingConfigurationException("Error while looking for column of " + accessPointAsString
 					+ " : it is not declared in mapping of " + Reflections.toString(this.tree.getRoot().getEntityInflater().getEntityType()));
 		}
-		
 	}
-	
-	private static class AccessorToColumnMap extends HashedMap<List<? extends ValueAccessPoint<?>>, Selectable<?>> {
+
+	/**
+	 * Maps a {@link List} of {@link ValueAccessPoint} to a {@link Selectable} column.
+	 * Can be though as a duplicate of {@link org.codefilarete.reflection.ValueAccessPointMap}, but the goal is not the same: whereas
+	 * ValueAccessPointMap is used to map a single {@link ValueAccessPoint}, this class is intended to map a {@link List} of {@link ValueAccessPoint},
+	 * meaning that it may handle a {@link List} of {@link org.codefilarete.reflection.Mutator} or {@link Accessor}, or a mix of both, to fulfill the
+	 * external usage of declaring the query criteria according to accessor or mutator.
+	 * 
+	 * The implementation is a {@link HashedMap} that uses the {@link AccessorDefinition} of each {@link ValueAccessPoint} to compute the hashCode and equality.
+	 */
+	@VisibleForTesting
+	static class AccessorToColumnMap extends HashedMap<List<? extends ValueAccessPoint<?>>, Selectable<?>> {
 		
 		@Override
 		protected int hash(Object key) {

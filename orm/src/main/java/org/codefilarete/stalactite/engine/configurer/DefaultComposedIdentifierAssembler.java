@@ -31,16 +31,16 @@ import static org.codefilarete.tool.Reflections.PRIMITIVE_DEFAULT_VALUES;
 public class DefaultComposedIdentifierAssembler<I, T extends Table<T>> extends ComposedIdentifierAssembler<I, T> {
 
 	private final Function<ColumnedRow, I> keyFactory;
-	private final Map<ReversibleAccessor<I, Object>, Column<T, Object>> mapping;
+	private final Map<ReversibleAccessor<I, ?>, Column<T, ?>> mapping;
 	private final Map<Accessor<I, ?>, Column<T, ?>> compositeKeyReaders;
 	private final Map<Mutator<I, ?>, Column<T, ?>> compositeKeyWriters;
 	private final Constructor<I> defaultConstructor;
 	
 	public DefaultComposedIdentifierAssembler(T targetTable,
 											  Class<I> keyType,
-											  Map<? extends ReversibleAccessor<I, Object>, ? extends Column<T, Object>> mapping) {
+											  Map<? extends ReversibleAccessor<I, ?>, ? extends Column<T, ?>> mapping) {
 		super(targetTable);
-		this.mapping = (Map<ReversibleAccessor<I, Object>, Column<T, Object>>) mapping;
+		this.mapping = (Map<ReversibleAccessor<I, ?>, Column<T, ?>>) mapping;
 		this.defaultConstructor = Reflections.findConstructor(keyType);
 		// for now we only support no-arg constructor
 		if (defaultConstructor == null) {
@@ -100,7 +100,7 @@ public class DefaultComposedIdentifierAssembler<I, T extends Table<T>> extends C
 		
 		I result = keyFactory.apply(columnValueProvider);
 		mapping.forEach((setter, col) -> {
-			setter.toMutator().set(result, columnValueProvider.get((Selectable<Object>) col));
+			((ReversibleAccessor<I, Object>) setter).toMutator().set(result, columnValueProvider.get(col));
 		});
 		return result;
 	}

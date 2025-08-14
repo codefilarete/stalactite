@@ -110,10 +110,10 @@ class AssociationRecordMappingTest {
 					associationTable,
 					new DefaultComposedIdentifierAssembler<>(leftTable,
 							MavenProject.class,
-							(Map<? extends ReversibleAccessor<MavenProject, Object>, ? extends Column<LEFTTABLE, Object>>) (Map) leftMapping),
+							(Map<? extends ReversibleAccessor<MavenProject, ?>, ? extends Column<LEFTTABLE, ?>>) (Map) leftMapping),
 					new DefaultComposedIdentifierAssembler<>(rightTable,
 							MavenProject.class,
-							(Map<? extends ReversibleAccessor<MavenProject, Object>, ? extends Column<RIGHTTABLE, Object>>) (Map) rightMapping));
+							(Map<? extends ReversibleAccessor<MavenProject, ?>, ? extends Column<RIGHTTABLE, ?>>) (Map) rightMapping));
 
 			Map<Column<ASSOCIATIONTABLE, ?>, ?> insertValues = testInstance.getInsertValues(new AssociationRecord(
 					new MavenProject("a", "b", "c"),

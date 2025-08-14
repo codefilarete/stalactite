@@ -8,6 +8,10 @@ public class House {
 	
 	private HouseId houseId;
 	
+	private Long version;
+	
+	private String surname;
+	
 	private Person owner;
 	
 	public House() {
@@ -25,6 +29,14 @@ public class House {
 		return houseId;
 	}
 	
+	public Long getVersion() {
+		return version;
+	}
+
+	public String getSurname() {
+		return surname;
+	}
+
 	public Person getOwner() {
 		return owner;
 	}
