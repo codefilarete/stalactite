@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.runtime;
+package org.codefilarete.stalactite.engine.runtime.query;
 
 import java.util.Collection;
 import java.util.Comparator;
@@ -7,9 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.AbstractReflector;
@@ -30,7 +28,7 @@ import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain;
 import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
-import org.codefilarete.stalactite.engine.runtime.EntityQueryCriteriaSupport.EntityQueryPageSupport.OrderByItem;
+import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport.EntityQueryPageSupport.OrderByItem;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.ExecutableEntityQueryCriteria;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.EntityFinder;
@@ -45,7 +43,6 @@ import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.KeepOrderSet;
-import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.function.SerializableTriFunction;
 import org.codefilarete.tool.function.ThrowingExecutable;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;

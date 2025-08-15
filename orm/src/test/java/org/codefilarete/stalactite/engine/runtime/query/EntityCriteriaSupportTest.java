@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.runtime;
+package org.codefilarete.stalactite.engine.runtime.query;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -22,7 +22,9 @@ import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.compositekey.House;
-import org.codefilarete.stalactite.engine.runtime.EntityCriteriaSupport.AggregateAccessPointToColumnMapping;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
+import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport.AggregateAccessPointToColumnMapping;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
@@ -57,7 +59,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.engine.runtime.EntityCriteriaSupport.AccessorToColumnMap;
+import static org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport.AccessorToColumnMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 

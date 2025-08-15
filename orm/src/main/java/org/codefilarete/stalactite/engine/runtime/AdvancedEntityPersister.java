@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 
 /**
  * In the following, "public" means "for the very end-user".

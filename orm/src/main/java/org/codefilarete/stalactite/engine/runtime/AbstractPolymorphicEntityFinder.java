@@ -16,6 +16,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.En
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
+import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.GroupBy;

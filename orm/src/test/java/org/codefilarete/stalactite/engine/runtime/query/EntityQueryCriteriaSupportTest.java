@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.runtime;
+package org.codefilarete.stalactite.engine.runtime.query;
 
 import java.util.Comparator;
 import java.util.TreeSet;
@@ -8,7 +8,7 @@ import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
-import org.codefilarete.stalactite.engine.runtime.EntityQueryCriteriaSupport.EntityQueryPageSupport.OrderByItem;
+import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport.EntityQueryPageSupport.OrderByItem;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.KeepOrderSet;

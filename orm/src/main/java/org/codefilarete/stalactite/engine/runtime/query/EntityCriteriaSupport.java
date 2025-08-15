@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.runtime;
+package org.codefilarete.stalactite.engine.runtime.query;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -101,7 +101,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	 * @param withImmediatePropertiesCollect true if the properties should be collected immediately, false if they must be postponed to the end of
 	 *                                       persister build cycle, which make it depend on {@link PersisterBuilderContext#CURRENT}
 	 */
-	EntityCriteriaSupport(EntityJoinTree<C, ?> tree, boolean withImmediatePropertiesCollect) {
+	public EntityCriteriaSupport(EntityJoinTree<C, ?> tree, boolean withImmediatePropertiesCollect) {
 		this(new AggregateAccessPointToColumnMapping<>(tree, withImmediatePropertiesCollect));
 	}
 	
