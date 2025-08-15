@@ -2,12 +2,14 @@ package org.codefilarete.stalactite.engine.runtime.query;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.codefilarete.reflection.Accessor;
@@ -46,7 +48,7 @@ import org.codefilarete.tool.collection.Arrays;
  * Maps the aggregate property accessors points to their column: relations are taken into account, that's the main benefit of it.
  * Thus, anyone can get the column behind an accessor chain.
  * The mapping is collected through the {@link EntityJoinTree} by looking for {@link RelationJoinNode} and their {@link EntityMapping}
- * (actually the algorithm is more complex). 
+ * (actually the algorithm is more complex).
  */
 public class AggregateAccessPointToColumnMapping<C> {
 	
@@ -89,7 +91,7 @@ public class AggregateAccessPointToColumnMapping<C> {
 	
 	private void collectPropertiesMapping() {
 		Deque<Accessor<?, ?>> accessorPath = new ArrayDeque<>();
-		this.propertyToColumn.putAll(collectPropertyMapping(tree.getRoot(), accessorPath));
+		this.propertyToColumn.putAll(collectPropertiesMapping(tree.getRoot(), accessorPath));
 		Queue<AbstractJoinNode<?, ?, ?, ?>> stack = Collections.asLifoQueue(new ArrayDeque<>());
 		stack.addAll(tree.getRoot().getJoins());
 		while (!stack.isEmpty()) {
@@ -97,7 +99,7 @@ public class AggregateAccessPointToColumnMapping<C> {
 			if (abstractJoinNode instanceof RelationJoinNode) {
 				RelationJoinNode<?, ?, ?, ?, ?> relationJoinNode = (RelationJoinNode<?, ?, ?, ?, ?>) abstractJoinNode;
 				accessorPath.add(relationJoinNode.getPropertyAccessor());
-				Map<List<ValueAccessPoint<?>>, Selectable<?>> m = collectPropertyMapping(relationJoinNode, accessorPath);
+				Map<List<ValueAccessPoint<?>>, Selectable<?>> m = collectPropertiesMapping(relationJoinNode, accessorPath);
 				
 				this.propertyToColumn.putAll(m);
 				if (abstractJoinNode.getJoins().isEmpty()) {
@@ -114,103 +116,86 @@ public class AggregateAccessPointToColumnMapping<C> {
 	 *
 	 * @param joinNode the node from which we can get a {@link EntityMapping} to collect all properties from
 	 */
-	@VisibleForTesting
-	<E> Map<List<ValueAccessPoint<?>>, Selectable<?>> collectPropertyMapping(JoinNode<E, ?> joinNode, Deque<Accessor<?, ?>> accessorPath) {
+	private <E> Map<List<ValueAccessPoint<?>>, Selectable<?>> collectPropertiesMapping(JoinNode<E, ?> joinNode, Deque<Accessor<?, ?>> accessorPath) {
 		EntityInflater<E, ?> entityInflater;
-		if (joinNode instanceof RelationJoinNode) {
-			entityInflater = ((RelationJoinNode<E, ?, ?, ?, ?>) joinNode).getEntityInflater();
-		} else if (joinNode instanceof TablePerClassRootJoinNode) {
-			entityInflater = ((TablePerClassRootJoinNode<E, ?>) joinNode).getEntityInflater();
-			EntityMapping<E, ?, ?> entityMapping = entityInflater.getEntityMapping();
-			Map<List<ValueAccessPoint<?>>, Selectable<?>> propertyToColumn = new HashMap<>();
-			PseudoTable pseudoTable = ((TablePerClassRootJoinNode<E, ?>) joinNode).getTable();
-			
-			
-			Stream.concat(entityMapping.getPropertyToColumn().entrySet().stream(), entityMapping.getReadonlyPropertyToColumn().entrySet().stream())
-					.forEach((entry) -> {
-						ReversibleAccessor<E, ?> accessor = entry.getKey();
-						List<ValueAccessPoint<?>> key;
-						if (accessor instanceof AccessorChain) {
-							key = new ArrayList<>(((AccessorChain<?, ?>) accessor).getAccessors());
-						} else {
-							key = Arrays.asList(accessor);
-						}
-						propertyToColumn.put(key, joinNode.getOriginalColumnsToLocalOnes().get(pseudoTable.findColumn(entry.getValue().getExpression())));
-					});
-			
-			// we add the identifier and primary key because they are not in the property mapping 
-			IdentifierAssembler<?, ?> identifierAssembler = entityMapping.getIdMapping().getIdentifierAssembler();
-			// TODO: implement other types of identifier-assemblers
-			if (identifierAssembler instanceof SingleIdentifierAssembler) {
-				Column idColumn = ((SingleIdentifierAssembler) identifierAssembler).getColumn();
-				ReversibleAccessor idAccessor = ((AccessorWrapperIdAccessor) entityMapping.getIdMapping().getIdAccessor()).getIdAccessor();
-				propertyToColumn.put(Arrays.asList(idAccessor), joinNode.getOriginalColumnsToLocalOnes().get(pseudoTable.findColumn(idColumn.getExpression())));
+		if (joinNode instanceof JoinRoot) {
+			if (joinNode instanceof TablePerClassRootJoinNode) {
+				entityInflater = ((TablePerClassRootJoinNode<E, ?>) joinNode).getEntityInflater();
+				EntityMapping<E, ?, ?> entityMapping = entityInflater.getEntityMapping();
+				PseudoTable pseudoTable = ((TablePerClassRootJoinNode<E, ?>) joinNode).getTable();
+				// Because we have a Union (behind the pseudo table), there's no mapping with "original ones" (we are in table-per-class)
+				// so we provide a small column "adapter" that lookup for the columns in the union
+				return collectPropertiesMapping(entityMapping, joinNode.getOriginalColumnsToLocalOnes(), accessorPath, col -> pseudoTable.findColumn(col.getExpression()));
+			} else {
+				// non-polymorphic root, aka simple case
+				entityInflater = ((JoinRoot<E, ?, ?>) joinNode).getEntityInflater();
 			}
+		} else if (joinNode instanceof RelationJoinNode) {
+			entityInflater = ((RelationJoinNode<E, ?, ?, ?, ?>) joinNode).getEntityInflater();
 			
-			entityMapping.getEmbeddedBeanStrategies().forEach((k, v) ->
-					v.getPropertyToColumn().forEach((p, c) -> {
-						propertyToColumn.put(Arrays.asList(k), c);
-					})
-			);
-			
-			propertyToColumn.forEach((k, v) -> {
-				k.addAll(0, accessorPath);
-			});
-			return propertyToColumn;
-		} else if (joinNode instanceof JoinRoot) {
-			entityInflater = ((JoinRoot<E, ?, ?>) joinNode).getEntityInflater();
+			EntityMapping<E, ?, ?> entityMapping = entityInflater.getEntityMapping();
+			if (entityMapping instanceof ElementRecordMapping) {    // Collection mapping case
+				// TODO: handle complex key and value cases
+				List<ValueAccessPoint<?>> accessors = new ArrayList<>(accessorPath);
+				Map<List<ValueAccessPoint<?>>, Selectable<?>> propertyToColumn = new HashMap<>();
+				Stream.concat(entityMapping.getPropertyToColumn().entrySet().stream(), entityMapping.getReadonlyPropertyToColumn().entrySet().stream())
+						.forEach((entry) -> {
+							propertyToColumn.put(accessors, joinNode.getOriginalColumnsToLocalOnes().get(entry.getValue()));
+						});
+				return propertyToColumn;
+			}
 		} else {
 			// this should not happen because we master the node types that support getEntityInflater !
 			throw new UnsupportedOperationException("Unsupported join type " + Reflections.toString(joinNode.getClass()));
 		}
 		EntityMapping<E, ?, ?> entityMapping = entityInflater.getEntityMapping();
-		Map<List<ValueAccessPoint<?>>, Selectable<?>> propertyToColumn = new HashMap<>();
-		if (entityMapping instanceof ElementRecordMapping) {    // Collection mapping case
-			// TODO: handle complex key and value cases
-			List<ValueAccessPoint<?>> accessors = new ArrayList<>(accessorPath);
-			Stream.concat(entityMapping.getPropertyToColumn().entrySet().stream(), entityMapping.getReadonlyPropertyToColumn().entrySet().stream())
-					.forEach((entry) -> {
-						propertyToColumn.put(accessors, joinNode.getOriginalColumnsToLocalOnes().get(entry.getValue()));
-					});
-			
-		} else {
-			Stream.concat(entityMapping.getPropertyToColumn().entrySet().stream(), entityMapping.getReadonlyPropertyToColumn().entrySet().stream())
-					.forEach((entry) -> {
-						ReversibleAccessor<E, ?> accessor = entry.getKey();
-						List<ValueAccessPoint<?>> key;
-						if (accessor instanceof AccessorChain) {
-							key = new ArrayList<>(((AccessorChain<?, ?>) accessor).getAccessors());
-						} else {
-							key = Arrays.asList(accessor);
-						}
-						propertyToColumn.put(key, joinNode.getOriginalColumnsToLocalOnes().get(entry.getValue()));
-					});
-			
-			// we add the identifier and primary key because they are not in the property mapping 
-			IdentifierAssembler<?, ?> identifierAssembler = entityMapping.getIdMapping().getIdentifierAssembler();
-			if (identifierAssembler instanceof SingleIdentifierAssembler) {
-				Column idColumn = ((SingleIdentifierAssembler) identifierAssembler).getColumn();
-				ReversibleAccessor idAccessor = ((AccessorWrapperIdAccessor) entityMapping.getIdMapping().getIdAccessor()).getIdAccessor();
-				propertyToColumn.put(Arrays.asList(idAccessor), joinNode.getOriginalColumnsToLocalOnes().get(idColumn));
-			} else if (identifierAssembler instanceof DefaultComposedIdentifierAssembler) {
-				((DefaultComposedIdentifierAssembler<?, ?>) identifierAssembler).getMapping().forEach((idAccessor, idColumn) -> {
-					;
-					ReversibleAccessor idAccessor2 = ((AccessorWrapperIdAccessor) entityMapping.getIdMapping().getIdAccessor()).getIdAccessor();
-					propertyToColumn.put(Arrays.asList(idAccessor2, idAccessor), joinNode.getOriginalColumnsToLocalOnes().get(idColumn));
+		return collectPropertiesMapping(entityMapping, joinNode.getOriginalColumnsToLocalOnes(), accessorPath, Function.identity());
+	}
+	
+	private <E> Map<List<ValueAccessPoint<?>>, Selectable<?>> collectPropertiesMapping(EntityMapping<E, ?, ?> entityMapping,
+																					   Map<Selectable<?>, Selectable<?>> originalColumnsToClones,
+																					   Collection<Accessor<?, ?>> nodeAccessorPath,
+																					   Function<Selectable<?>, Selectable<?>> columnAdapter) {
+		Map<List<ValueAccessPoint<?>>, Selectable<?>> result = new HashMap<>();
+		
+		// Collecting basic direct properties
+		Stream.concat(entityMapping.getPropertyToColumn().entrySet().stream(), entityMapping.getReadonlyPropertyToColumn().entrySet().stream())
+				.forEach((entry) -> {
+					ReversibleAccessor<E, ?> accessor = entry.getKey();
+					List<ValueAccessPoint<?>> key;
+					if (accessor instanceof AccessorChain) {
+						key = new ArrayList<>(((AccessorChain<?, ?>) accessor).getAccessors());
+					} else {
+						key = Arrays.asList(accessor);
+					}
+					result.put(key, originalColumnsToClones.get(columnAdapter.apply(entry.getValue())));
 				});
-			}
-			
-			entityMapping.getEmbeddedBeanStrategies().forEach((k, v) ->
-					v.getPropertyToColumn().forEach((p, c) -> {
-						propertyToColumn.put(Arrays.asList(k), c);
-					})
-			);
-			
-			propertyToColumn.forEach((k, v) -> {
-				k.addAll(0, accessorPath);
+		
+		// collecting the identifier mapping (because they are not in the properties mapping) 
+		IdentifierAssembler<?, ?> identifierAssembler = entityMapping.getIdMapping().getIdentifierAssembler();
+		if (identifierAssembler instanceof SingleIdentifierAssembler) {
+			Column idColumn = ((SingleIdentifierAssembler) identifierAssembler).getColumn();
+			ReversibleAccessor idAccessor = ((AccessorWrapperIdAccessor) entityMapping.getIdMapping().getIdAccessor()).getIdAccessor();
+			result.put(Arrays.asList(idAccessor), originalColumnsToClones.get(columnAdapter.apply(idColumn)));
+		} else if (identifierAssembler instanceof DefaultComposedIdentifierAssembler) {
+			((DefaultComposedIdentifierAssembler<?, ?>) identifierAssembler).getMapping().forEach((idAccessor, idColumn) -> {
+				ReversibleAccessor accessorPrefix = ((AccessorWrapperIdAccessor) entityMapping.getIdMapping().getIdAccessor()).getIdAccessor();
+				result.put(Arrays.asList(accessorPrefix, idAccessor), originalColumnsToClones.get(columnAdapter.apply(idColumn)));
 			});
 		}
-		return propertyToColumn;
+		
+		// going deeper in embeddable properties to collect them
+		entityMapping.getEmbeddedBeanStrategies().forEach((k, v) ->
+				v.getPropertyToColumn().forEach((p, c) -> {
+					result.put(Arrays.asList(k), columnAdapter.apply(c));
+				})
+		);
+		
+		// adding the accessor prefix to all the found properties, to create an accessor available from the aggregate root
+		result.forEach((k, v) -> {
+			k.addAll(0, nodeAccessorPath);
+		});
+		return result;
 	}
 	
 	/**
