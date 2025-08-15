@@ -24,6 +24,7 @@ import org.codefilarete.stalactite.engine.configurer.DefaultComposedIdentifierAs
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildLifeCycleListener;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRecordMapping;
+import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecordMapping;
 import org.codefilarete.stalactite.engine.runtime.load.AbstractJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
@@ -133,14 +134,25 @@ public class AggregateAccessPointToColumnMapping<C> {
 		} else if (joinNode instanceof RelationJoinNode) {
 			entityInflater = ((RelationJoinNode<E, ?, ?, ?, ?>) joinNode).getEntityInflater();
 			
+			// Note about complex type handling: The goal of all this code is to suit the need of Spring Data and its derived queries. There are few
+			// reasons (for now) to adhere to any other framework or API (meanwhile we are open to do it, but for now, that's the status of the
+			// project), thus, because Spring-Data doesn't support complex type (in particular for Maps), we don't also.
+			// see Spring discussion about about Collection and Map here https://github.com/spring-projects/spring-data-commons/issues/2504
 			EntityMapping<E, ?, ?> entityMapping = entityInflater.getEntityMapping();
 			if (entityMapping instanceof ElementRecordMapping) {    // Collection mapping case
-				// TODO: handle complex key and value cases
 				List<ValueAccessPoint<?>> accessors = new ArrayList<>(accessorPath);
 				Map<List<ValueAccessPoint<?>>, Selectable<?>> propertyToColumn = new HashMap<>();
 				Stream.concat(entityMapping.getPropertyToColumn().entrySet().stream(), entityMapping.getReadonlyPropertyToColumn().entrySet().stream())
 						.forEach((entry) -> {
 							propertyToColumn.put(accessors, joinNode.getOriginalColumnsToLocalOnes().get(entry.getValue()));
+						});
+				return propertyToColumn;
+			} else if (entityMapping instanceof KeyValueRecordMapping) {    // Map mapping case
+				Map<List<ValueAccessPoint<?>>, Selectable<?>> propertyToColumn = new HashMap<>();
+				Stream.concat(entityMapping.getPropertyToColumn().entrySet().stream(), entityMapping.getReadonlyPropertyToColumn().entrySet().stream())
+						.forEach((entry) -> {
+							List<ValueAccessPoint<?>> accessorPrefix = new ArrayList<>(accessorPath);
+							propertyToColumn.put(accessorPrefix, joinNode.getOriginalColumnsToLocalOnes().get(entry.getValue()));
 						});
 				return propertyToColumn;
 			}

@@ -5,7 +5,6 @@ import java.util.Date;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.model.Color;
-import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Republic;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.spring.repository.StalactiteRepository;
@@ -94,6 +93,8 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Republic,
 	Republic findByStatesIdIn(Iterable<Identifier<Long>> ids);
 	
 	Republic findByPresidentNicknamesIn(Iterable<String> names);
+	
+	Set<Republic> findByPresidentPhoneNumbersIs(String phoneType);
 	
 	Republic findByTimestampCreationDateLessThan(Date date);
 	

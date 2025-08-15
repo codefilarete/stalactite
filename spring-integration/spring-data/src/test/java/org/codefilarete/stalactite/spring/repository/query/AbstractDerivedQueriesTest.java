@@ -20,6 +20,7 @@ import org.codefilarete.stalactite.spring.repository.query.DerivedQueriesReposit
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.tool.Dates;
 import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -156,7 +157,7 @@ abstract class AbstractDerivedQueriesTest {
 	}
 	
 	@Test
-	void oneToManyCriteria() {
+	void elementCollectionCriteria() {
 		Republic country1 = new Republic(42);
 		country1.setName("Toto");
 		country1.addState(new State(new PersistableIdentifier<>(100L)));
@@ -185,6 +186,46 @@ abstract class AbstractDerivedQueriesTest {
 		
 		loadedCountry = derivedQueriesRepository.findByPresidentNicknamesIn(Arrays.asList("John Do"));
 		assertThat(loadedCountry).isEqualTo(country1);
+	}
+	
+	@Test
+	void mapCriteria() {
+		Republic country1 = new Republic(42);
+		country1.setName("Toto");
+		country1.addState(new State(new PersistableIdentifier<>(100L)));
+		country1.addState(new State(new PersistableIdentifier<>(200L)));
+		Person president1 = new Person(666);
+		president1.setName("me");
+		president1.setPhoneNumbers(Maps.forHashMap(String.class, String.class)
+				.add("home", "01 11 11 11 11")
+				.add("work", "02 22 22 22 22")
+				.add("mobile", "03 33 33 33 33")
+		);
+		country1.setPresident(president1);
+		
+		Republic country2 = new Republic(43);
+		country2.setName("Toto");
+		Person president2 = new Person(237);
+		president2.setName("you");
+		president2.setPhoneNumbers(Maps.forHashMap(String.class, String.class)
+				.add("home", "04 44 44 44 44")
+				.add("work", "05 55 55 55 55")
+				.add("Matignon", "03 33 33 33 33")
+		);
+		country2.setPresident(president2);
+		
+		Vehicle vehicle = new Vehicle(1438L);
+		vehicle.setColor(new Color(123));
+		president1.setVehicle(vehicle);
+		
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+		
+		Set<Republic> loadedCountries;
+		loadedCountries = derivedQueriesRepository.findByPresidentPhoneNumbersIs("home");
+		assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
+		
+		loadedCountries = derivedQueriesRepository.findByPresidentPhoneNumbersIs("Matignon");
+		assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
 	}
 	
 	@Test

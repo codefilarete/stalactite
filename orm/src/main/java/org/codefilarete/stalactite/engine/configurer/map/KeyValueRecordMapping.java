@@ -32,7 +32,8 @@ import org.codefilarete.tool.collection.Maps;
  */
 public class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<KeyValueRecord<K, V, I>, RecordId<K, I>, T> {
 	
-	KeyValueRecordMapping(T targetTable,
+	@VisibleForTesting
+	public KeyValueRecordMapping(T targetTable,
 						  Map<? extends ReversibleAccessor<KeyValueRecord<K, V, I>, ?>, Column<T, ?>> propertyToColumn,
 						  KeyValueRecordIdMapping<K, I, T> idMapping) {
 		super((Class) KeyValueRecord.class,
