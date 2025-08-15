@@ -255,6 +255,11 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 			}
 		}
 		
+		@VisibleForTesting
+		Map<List<? extends ValueAccessPoint<?>>, Selectable<?>> getPropertyToColumn() {
+			return propertyToColumn;
+		}
+		
 		private void collectPropertiesMapping() {
 			Deque<Accessor<?, ?>> accessorPath = new ArrayDeque<>();
 			this.propertyToColumn.putAll(collectPropertyMapping(tree.getRoot(),accessorPath));

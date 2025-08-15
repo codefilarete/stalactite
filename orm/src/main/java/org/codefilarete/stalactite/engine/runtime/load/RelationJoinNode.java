@@ -20,6 +20,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.bean.Objects;
 
 /**
@@ -57,16 +58,17 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 		this.relationIdentifierProvider = relationIdentifierProvider;
 	}
 	
-	RelationJoinNode(JoinNode<?, T1> parent,
-					 Accessor<?, ?> propertyAccessor,
-					 Key<T1, JOINTYPE> leftJoinColumn,
-					 Key<T2, JOINTYPE> rightJoinColumn,
-					 JoinType joinType,
-					 Set<? extends Selectable<?>> columnsToSelect,    // Of T2
-					 @Nullable String tableAlias,
-					 EntityInflater<C, I> entityInflater,
-					 BeanRelationFixer<?, C> beanRelationFixer,
-					 @Nullable Function<ColumnedRow, ?> relationIdentifierProvider) {
+	@VisibleForTesting
+	public RelationJoinNode(JoinNode<?, T1> parent,
+							Accessor<?, ?> propertyAccessor,
+							Key<T1, JOINTYPE> leftJoinColumn,
+							Key<T2, JOINTYPE> rightJoinColumn,
+							JoinType joinType,
+							Set<? extends Selectable<?>> columnsToSelect,    // Of T2
+							@Nullable String tableAlias,
+							EntityInflater<C, I> entityInflater,
+							BeanRelationFixer<?, C> beanRelationFixer,
+							@Nullable Function<ColumnedRow, ?> relationIdentifierProvider) {
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias);
 		this.entityInflater = entityInflater;
 		this.propertyAccessor = propertyAccessor;

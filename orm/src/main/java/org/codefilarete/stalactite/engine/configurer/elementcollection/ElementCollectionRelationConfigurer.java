@@ -270,7 +270,10 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 									Supplier<C> collectionFactory) {
 		// a particular collection fixer that gets raw values (elements) from ElementRecord
 		// because elementRecordPersister manages ElementRecord, so it gives them as input of the relation,
-		// hence an adaption is needed to "convert" it
+		// hence an adaption is needed to "convert" it.
+		// Note that this code is wrongly typed: the relationFixer should be of <SRC, C> to access the property, whereas it is typed with
+		// ElementRecord<TRGT, I> to fulfill the adapter argument. There's a kind of magic here that make it works (generics type erasure, and wrong
+		// ofAdapter(..) type deduction by compiler to match the relationFixer variable.
 		BeanRelationFixer<SRC, ElementRecord<TRGT, I>> relationFixer = BeanRelationFixer.ofAdapter(
 				collectionSetter,
 				collectionGetter::get,

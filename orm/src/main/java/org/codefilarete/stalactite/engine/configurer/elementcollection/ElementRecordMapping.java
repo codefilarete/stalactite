@@ -17,6 +17,7 @@ import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
+import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Maps;
 
 /**
@@ -25,7 +26,8 @@ import org.codefilarete.tool.collection.Maps;
  */
 public class ElementRecordMapping<C, I, T extends Table<T>> extends ClassMapping<ElementRecord<C, I>, ElementRecord<C, I>, T> {
 	
-	<LEFTTABLE extends Table<LEFTTABLE>> ElementRecordMapping(T targetTable,
+	@VisibleForTesting
+	public <LEFTTABLE extends Table<LEFTTABLE>> ElementRecordMapping(T targetTable,
 															  Column<T, C> elementColumn,
 															  IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
 															  Map<Column<LEFTTABLE, ?>, Column<T, ?>> primaryKeyForeignColumnMapping) {

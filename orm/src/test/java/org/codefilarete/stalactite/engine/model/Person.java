@@ -109,6 +109,10 @@ public class Person implements Identified<Long> {
 		return nicknames;
 	}
 	
+	public void setNicknames(Set<String> nicknames) {
+		this.nicknames = nicknames;
+	}
+	
 	public void initNicknames() {
 		this.nicknames = new HashSet<>();
 	}
