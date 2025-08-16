@@ -208,9 +208,9 @@ abstract class AbstractDerivedQueriesTest {
 		Person president2 = new Person(237);
 		president2.setName("you");
 		president2.setPhoneNumbers(Maps.forHashMap(String.class, String.class)
-				.add("home", "04 44 44 44 44")
+				.add("home", "01 11 11 11 11")
 				.add("work", "05 55 55 55 55")
-				.add("Matignon", "03 33 33 33 33")
+				.add("Matignon", "06 66 66 66 66")
 		);
 		country2.setPresident(president2);
 		
@@ -221,10 +221,10 @@ abstract class AbstractDerivedQueriesTest {
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
 		Set<Republic> loadedCountries;
-		loadedCountries = derivedQueriesRepository.findByPresidentPhoneNumbersIs("home");
+		loadedCountries = derivedQueriesRepository.findByPresidentPhoneNumbersIs("01 11 11 11 11");
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
 		
-		loadedCountries = derivedQueriesRepository.findByPresidentPhoneNumbersIs("Matignon");
+		loadedCountries = derivedQueriesRepository.findByPresidentPhoneNumbersIs("06 66 66 66 66");
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
 	}
 	

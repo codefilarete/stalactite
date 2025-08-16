@@ -45,6 +45,9 @@ import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Arrays;
 
+import static org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRecord.ELEMENT_ACCESSOR;
+import static org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord.VALUE_ACCESSOR;
+
 /**
  * Maps the aggregate property accessors points to their column: relations are taken into account, that's the main benefit of it.
  * Thus, anyone can get the column behind an accessor chain.
@@ -137,24 +140,22 @@ public class AggregateAccessPointToColumnMapping<C> {
 			// Note about complex type handling: The goal of all this code is to suit the need of Spring Data and its derived queries. There are few
 			// reasons (for now) to adhere to any other framework or API (meanwhile we are open to do it, but for now, that's the status of the
 			// project), thus, because Spring-Data doesn't support complex type (in particular for Maps), we don't also.
-			// see Spring discussion about about Collection and Map here https://github.com/spring-projects/spring-data-commons/issues/2504
+			// see Spring discussion about Collection and Map here https://github.com/spring-projects/spring-data-commons/issues/2504
 			EntityMapping<E, ?, ?> entityMapping = entityInflater.getEntityMapping();
 			if (entityMapping instanceof ElementRecordMapping) {    // Collection mapping case
-				List<ValueAccessPoint<?>> accessors = new ArrayList<>(accessorPath);
-				Map<List<ValueAccessPoint<?>>, Selectable<?>> propertyToColumn = new HashMap<>();
-				Stream.concat(entityMapping.getPropertyToColumn().entrySet().stream(), entityMapping.getReadonlyPropertyToColumn().entrySet().stream())
-						.forEach((entry) -> {
-							propertyToColumn.put(accessors, joinNode.getOriginalColumnsToLocalOnes().get(entry.getValue()));
-						});
-				return propertyToColumn;
+				// Querying Collection is only possible on its values (obviously !)
+				Map<List<ValueAccessPoint<?>>, Selectable<?>> result = new HashMap<>();
+				Column<?, ?> mapValueColumn = entityMapping.getPropertyToColumn().get(ELEMENT_ACCESSOR);
+				List<ValueAccessPoint<?>> accessorPrefix = new ArrayList<>(accessorPath);
+				result.put(accessorPrefix, joinNode.getOriginalColumnsToLocalOnes().get(mapValueColumn));
+				return result;
 			} else if (entityMapping instanceof KeyValueRecordMapping) {    // Map mapping case
-				Map<List<ValueAccessPoint<?>>, Selectable<?>> propertyToColumn = new HashMap<>();
-				Stream.concat(entityMapping.getPropertyToColumn().entrySet().stream(), entityMapping.getReadonlyPropertyToColumn().entrySet().stream())
-						.forEach((entry) -> {
-							List<ValueAccessPoint<?>> accessorPrefix = new ArrayList<>(accessorPath);
-							propertyToColumn.put(accessorPrefix, joinNode.getOriginalColumnsToLocalOnes().get(entry.getValue()));
-						});
-				return propertyToColumn;
+				// Querying Map is only possible on its values
+				Map<List<ValueAccessPoint<?>>, Selectable<?>> result = new HashMap<>();
+				Column<?, ?> mapValueColumn = entityMapping.getPropertyToColumn().get(VALUE_ACCESSOR);
+				List<ValueAccessPoint<?>> accessorPrefix = new ArrayList<>(accessorPath);
+				result.put(accessorPrefix, joinNode.getOriginalColumnsToLocalOnes().get(mapValueColumn));
+				return result;
 			}
 		} else {
 			// this should not happen because we master the node types that support getEntityInflater !

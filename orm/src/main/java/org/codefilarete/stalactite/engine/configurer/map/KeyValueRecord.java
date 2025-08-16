@@ -18,7 +18,7 @@ public class KeyValueRecord<K, V, ID> {
 			KeyValueRecord::getKey,
 			KeyValueRecord::setKey);
 	
-	static final PropertyAccessor<KeyValueRecord<Object, Object, Object>, Object> VALUE_ACCESSOR = PropertyAccessor.fromMethodReference(
+	public static final PropertyAccessor<KeyValueRecord<Object, Object, Object>, Object> VALUE_ACCESSOR = PropertyAccessor.fromMethodReference(
 			KeyValueRecord::getValue,
 			KeyValueRecord::setValue);
 	

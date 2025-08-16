@@ -15,7 +15,7 @@ public class ElementRecord<TRGT, ID> {
 			ElementRecord::getId,
 			ElementRecord::setId);
 	
-	static final PropertyAccessor<ElementRecord<Object, Object>, Object> ELEMENT_ACCESSOR = PropertyAccessor.fromMethodReference(
+	public static final PropertyAccessor<ElementRecord<Object, Object>, Object> ELEMENT_ACCESSOR = PropertyAccessor.fromMethodReference(
 			ElementRecord::getElement,
 			ElementRecord::setElement);
 	
