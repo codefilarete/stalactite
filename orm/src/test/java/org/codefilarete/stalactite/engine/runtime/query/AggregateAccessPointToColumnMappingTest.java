@@ -289,7 +289,7 @@ class AggregateAccessPointToColumnMappingTest {
 		Column<T2, String> keyColumn = mapTable.addColumn("key", String.class);
 		Column<T2, String> valueColumn = mapTable.addColumn("value", String.class);
 		Key<T2, Identifier<Long>> rightJoinKey = Key.ofSingleColumn(mapIdColumn);
-		ReversibleAccessor<Person, Map<String, String>> phoneNumbersAccessor = new PropertyAccessor<>(accessorByMethodReference(Person::getPhoneNumbers), mutatorByMethodReference(Person::setPhoneNumbers));
+		PropertyAccessor<KeyValueRecord<Object, Object, Object>, Object> phoneNumbersAccessor = KeyValueRecord.VALUE_ACCESSOR;
 		Map<ReversibleAccessor<?, ?>, Column> propertiesMapping = new HashMap<>();
 		propertiesMapping.put(phoneNumbersAccessor, valueColumn);
 		EntityMapping<KeyValueRecord<String, String, Identifier<Long>>, RecordId<String, Identifier<Long>>, T2> mapMapping = new KeyValueRecordMapping<>(
@@ -313,7 +313,7 @@ class AggregateAccessPointToColumnMappingTest {
 		// we add a relation node to declare the collection
 		new RelationJoinNode<>(
 				(JoinNode<?, T1>) personTree.getRoot(),
-				phoneNumbersAccessor,
+				accessorByMethodReference(Person::getPhoneNumbers),
 				leftJoinKey,
 				rightJoinKey,
 				JoinType.OUTER,
