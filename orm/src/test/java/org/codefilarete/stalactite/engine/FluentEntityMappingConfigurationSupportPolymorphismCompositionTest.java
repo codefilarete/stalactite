@@ -307,7 +307,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 	}
 	
 	@Test
-	void tablePerClass_joinedTables_isNotSupported() {
+	void tablePerClass_joinedTables() {
 		EntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 				// mapped super class defines id
 				.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -386,7 +386,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 	}
 	
 	@Test
-	void tablePerClass_singleTable_isNotSupported() {
+	void tablePerClass_singleTable() {
 		EntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 				// mapped super class defines id
 				.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)

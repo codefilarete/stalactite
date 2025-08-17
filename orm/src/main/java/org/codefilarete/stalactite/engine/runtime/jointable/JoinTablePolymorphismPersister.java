@@ -337,7 +337,7 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 		
 		Holder<JoinTablePolymorphicRelationJoinNode<U, T1, T2, JOINID, ID>> createdJoinHolder = new Holder<>();
 		String relationJoinName = entityJoinTree.addJoin(leftStrategyName, parent -> {
-			JoinTablePolymorphicRelationJoinNode<U, T1, T2, JOINID, ID> polymorphicRelationJoinNode = new JoinTablePolymorphicRelationJoinNode<U, T1, T2, JOINID, ID>(
+			JoinTablePolymorphicRelationJoinNode<U, T1, T2, JOINID, ID> polymorphicRelationJoinNode = new JoinTablePolymorphicRelationJoinNode<>(
 					(JoinNode<SRC, T1>) (JoinNode) parent,
 					propertyAccessor,
 					leftJoinColumn,

@@ -47,9 +47,9 @@ public class PooledIdentifierProviderTest {
 		executorService.submit(new QueueConsumer(testInstance, result));
 		executorService.submit(new QueueConsumer(testInstance, result));
 		executorService.shutdown();
-		executorService.awaitTermination(10, TimeUnit.SECONDS);
+		executorService.awaitTermination(2, TimeUnit.SECONDS);
 		backgroundLoader.shutdown();
-		backgroundLoader.awaitTermination(2, TimeUnit.SECONDS);
+		backgroundLoader.awaitTermination(1, TimeUnit.SECONDS);
 		synchronized (result) {
 			// Sort to prevent from Thread precedence making pop() not done in ascending order
 			result.sort(Long::compareTo);
