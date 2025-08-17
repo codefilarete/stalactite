@@ -110,6 +110,8 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Republic,
 	
 	Set<Republic> findByNameLikeOrderByPresidentNameAsc(String code);
 	
+	Set<Republic> findTop2ByNameLikeOrderByPresidentNameAsc(String code);
+	
 	Set<Republic> findByLanguagesCodeIsOrderByPresidentNameAsc(String code);
 	
 	Republic findFirstByLanguagesCodeIs(String code);
@@ -125,6 +127,8 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Republic,
 	Set<NamesOnly> getByNameLikeOrderByName(String name);
 	
 	Set<NamesOnly> getByNameLikeOrderByPresidentNameAsc(String name);
+	
+	Set<NamesOnly> getTop2ByNameLikeOrderByPresidentNameAsc(String code);
 	
 	<T> Collection<T> getByName(String name, Class<T> type);
 	

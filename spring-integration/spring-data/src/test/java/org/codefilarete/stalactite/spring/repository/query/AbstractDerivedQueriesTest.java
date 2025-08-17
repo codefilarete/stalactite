@@ -93,6 +93,35 @@ abstract class AbstractDerivedQueriesTest {
 	}
 	
 	@Test
+	void projection_limit() {
+		Republic country1 = new Republic(42);
+		country1.setName("Toto");
+		Person president1 = new Person(666);
+		president1.setName("Me");
+		country1.setPresident(president1);
+		Republic country2 = new Republic(43);
+		country2.setName("Titi");
+		Person president2 = new Person(667);
+		president2.setName("John Do");
+		country2.setPresident(president2);
+		Republic country3 = new Republic(44);
+		country3.setName("Tata");
+		Person president3 = new Person(668);
+		president3.setName("Jane Do");
+		country3.setPresident(president3);
+		Republic country4 = new Republic(45);
+		country4.setName("Tonton");
+		Person president4 = new Person(669);
+		president4.setName("Saca do");
+		country4.setPresident(president4);
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
+		
+		Set<NamesOnly> loadedCountries;
+		loadedCountries = derivedQueriesRepository.getTop2ByNameLikeOrderByPresidentNameAsc("t");
+		assertThat(loadedCountries).extracting(NamesOnly::getName).containsExactly(country3.getName(), country2.getName());
+	}
+	
+	@Test
 	void projection_byExtraArgument() {
 		Republic country1 = new Republic(42);
 		country1.setName("Toto");
@@ -963,6 +992,38 @@ abstract class AbstractDerivedQueriesTest {
 		
 		Set<Republic> loadedCountries = derivedQueriesRepository.findByLanguagesCodeIsOrderByPresidentNameAsc(frFr.getCode());
 		assertThat(loadedCountries).containsExactly(country2, country3, country1);
+	}
+	
+	@Test
+	void limit() {
+		Republic country1 = new Republic(42);
+		country1.setName("Tonton");
+		Person president1 = new Person(666);
+		president1.setName("C");
+		country1.setPresident(president1);
+		
+		Republic country2 = new Republic(43);
+		country2.setName("Tintin");
+		Person president2 = new Person(237);
+		president2.setName("A");
+		country2.setPresident(president2);
+		
+		Republic country3 = new Republic(44);
+		country3.setName("Tantan");
+		Person president3 = new Person(123);
+		president3.setName("B");
+		country3.setPresident(president3);
+		
+		Republic country4 = new Republic(45);
+		country4.setName("Tata");
+		Person president4 = new Person(456);
+		president4.setName("me");
+		country4.setPresident(president4);
+		
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
+		
+		Set<Republic> loadedCountries = derivedQueriesRepository.findTop2ByNameLikeOrderByPresidentNameAsc("T%n");
+		assertThat(loadedCountries).containsExactly(country2, country3);
 	}
 	
 	@Test
