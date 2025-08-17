@@ -167,8 +167,8 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 	
 	@Override
 	public void doUpdate(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
-		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
-		// impacts but very difficult to measure
+		// Below we keep the order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
+		// impacts but it's very difficult to measure
 		Map<UpdateExecutor<C>, Set<Duo<C, C>>> entitiesPerType = new KeepOrderMap<>();
 		differencesIterable.forEach(payload ->
 				this.subEntitiesPersisters.values().forEach(persister -> {

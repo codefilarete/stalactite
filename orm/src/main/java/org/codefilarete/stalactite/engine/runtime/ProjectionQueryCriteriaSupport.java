@@ -16,6 +16,7 @@ import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain;
 import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.ExecutableProjection;
 import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
+import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
@@ -35,7 +36,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
  * <ul>
  * Class aimed at handling projection query configuration and execution triggering :
  * <li>query configuration will be done by redirecting {@link CriteriaChain} methods to an {@link EntityQueryCriteriaSupport}.</li>
- * <li>execution triggering calls {@link EntityFinder#selectProjection(Consumer, Accumulator, CriteriaChain, boolean, Consumer, Consumer)}</li>
+ * <li>execution triggering calls {@link EntityFinder#selectProjection(Consumer, Accumulator, ConfiguredEntityCriteria, boolean, OrderBy, Limit)}</li>
  * </ul>
  *
  * @param <C> entity type
@@ -51,9 +52,9 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 	
 	private final Consumer<Select> selectAdapter;
 	
-	public ProjectionQueryCriteriaSupport(EntityCriteriaSupport<C> source, EntityFinder<C, I> entityFinder, Consumer<Select> selectAdapter) {
-		this.entityCriteriaSupport = new EntityCriteriaSupport<>(source);
+	public ProjectionQueryCriteriaSupport(EntityFinder<C, I> entityFinder, Consumer<Select> selectAdapter) {
 		this.entityFinder = entityFinder;
+		this.entityCriteriaSupport = entityFinder.newCriteriaSupport().getEntityCriteriaSupport();
 		this.selectAdapter = selectAdapter;
 	}
 	

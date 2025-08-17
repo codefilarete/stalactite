@@ -79,17 +79,6 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 		this(new AggregateAccessPointToColumnMapping<>(tree, withImmediatePropertiesCollect));
 	}
 	
-	/**
-	 * Constructor that clones an instance.
-	 * Made because calling and(..), or(..) methods alter internal state of the criteria and can't be rolled back.
-	 * So, in order to create several criteria, this instance must be cloned.
-	 * 
-	 * @param source an already-configured {@link EntityCriteriaSupport}
-	 */
-	public EntityCriteriaSupport(EntityCriteriaSupport<C> source) {
-		this(source.aggregateColumnMapping);
-	}
-	
 	private EntityCriteriaSupport(AggregateAccessPointToColumnMapping<C> source) {
 		this.aggregateColumnMapping = source;
 		this.parent = null;
@@ -98,6 +87,16 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	private EntityCriteriaSupport(AggregateAccessPointToColumnMapping<C> source, EntityCriteriaSupport<C> parent) {
 		this.aggregateColumnMapping = source;
 		this.parent = parent;
+	}
+	
+	/**
+	 * Clones this instance.
+	 * Required because and(..) and or(..) methods irreversibly modify the criteria's internal state.
+	 * Cloning allows reuse without tampering with the original instance.
+	 * Note that aggregate properties scan is not done again: the copy reuses the one of the current instance.
+	 */
+	public EntityCriteriaSupport<C> copy() {
+		return new EntityCriteriaSupport<>(aggregateColumnMapping);
 	}
 	
 	public AggregateAccessPointToColumnMapping<C> getAggregateColumnMapping() {

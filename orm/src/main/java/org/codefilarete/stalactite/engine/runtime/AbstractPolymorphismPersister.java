@@ -57,7 +57,6 @@ public abstract class AbstractPolymorphismPersister<C, I>
 	
 	protected final Map<Class<C>, ConfiguredRelationalPersister<C, I>> subEntitiesPersisters;
 	protected final ConfiguredRelationalPersister<C, I> mainPersister;
-	protected final EntityCriteriaSupport<C> criteriaSupport;
 	protected final EntityFinder<C, I> entityFinder;
 	protected final PersistExecutor<C> persistExecutor;
 	
@@ -67,9 +66,6 @@ public abstract class AbstractPolymorphismPersister<C, I>
 		this.mainPersister = mainPersister;
 		this.subEntitiesPersisters = (Map<Class<C>, ConfiguredRelationalPersister<C, I>>) subEntitiesPersisters;
 		this.entityFinder = entityFinder;
-		// We base our criteria support on the EntityFinder tree because it is complete (with all aggregate joins) thus, end user can express some query
-		// on any of the aggregate properties, which wouldn't be the case with mainPersister.getEntityJoinTree() because it contains only common properties
-		this.criteriaSupport = new EntityCriteriaSupport<>(entityFinder.getEntityJoinTree());
 		if (mainPersister.getMapping().getIdMapping().getIdentifierInsertionManager() instanceof AlreadyAssignedIdentifierManager) {
 			this.persistExecutor = new AlreadyAssignedIdentifierPersistExecutor<>(this);
 		} else {
@@ -109,12 +105,12 @@ public abstract class AbstractPolymorphismPersister<C, I>
 	
 	@Override
 	public EntityQueryCriteriaSupport<C, I> newCriteriaSupport() {
-		return new EntityQueryCriteriaSupport<>(entityFinder, criteriaSupport);
+		return entityFinder.newCriteriaSupport();
 	}
 	
 	@Override
 	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter) {
-		ProjectionQueryCriteriaSupport<C, I> projectionSupport = new ProjectionQueryCriteriaSupport<>(criteriaSupport, entityFinder, selectAdapter);
+		ProjectionQueryCriteriaSupport<C, I> projectionSupport = new ProjectionQueryCriteriaSupport<>(entityFinder, selectAdapter);
 		return projectionSupport.wrapIntoExecutable();
 	}
 	

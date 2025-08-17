@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import java.sql.ResultSet;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -62,7 +63,6 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 	protected final Dialect dialect;
 	protected final boolean hasSubPolymorphicPersister;
 	private final AccessorChain<C, I> entityIdAccessor;
-	private final EntityMapping<C, I, T> mainMapping;
 	
 	private SQLOperationListener<?> operationListener;
 	
@@ -76,8 +76,7 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
 		this.hasSubPolymorphicPersister = Iterables.find(persisterPerSubclass.values(), subPersister -> subPersister instanceof AbstractPolymorphismPersister) != null;
-		this.mainMapping = mainPersister.getMapping();
-		AccessorWrapperIdAccessor<C, I> idAccessor = (AccessorWrapperIdAccessor<C, I>) mainMapping.getIdMapping().getIdAccessor();
+		AccessorWrapperIdAccessor<C, I> idAccessor = (AccessorWrapperIdAccessor<C, I>) mainPersister.<T>getMapping().getIdMapping().getIdAccessor();
 		this.entityIdAccessor = new AccessorChain<>(idAccessor.getIdAccessor());
 	}
 	
@@ -99,16 +98,28 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 	
 	public abstract Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where, OrderBy orderBy, Limit limit);
 	
-	protected abstract Query getAggregateQueryTemplate();
+	protected abstract EntityTreeQuery<C> getAggregateQueryTemplate();
 	
-	protected EntityCriteriaSupport<C> newWhereIdClause(Iterable<I> ids) {
-		// Because we only need the id in the where clause, we don't need persister's EntityCriteriaSupport that contains all
-		// the potential criteria on relations, hence we can instantiate a new one for our local need
-		// TODO: try to remove this method because it is done each time a load in 2-phases is done but it is costly due to EntityCriteriaSupport
-		// which scans the tree properties. Moreover, it seems a bit superfluous: only a an access to the where is necessary, actually the EntityCriteriaSupport
-		// seems present to only retrieve the entityIdAccessor column
-		return new EntityCriteriaSupport<>(mainEntityJoinTree, true)
-				.and(entityIdAccessor, Operators.in(ids));
+	/**
+	 * Method to avoid code duplication in subclasses.
+	 * This is used each time a load in 2-phases is done and the ids of the entities (that match user's conditions) have been retrieved from the
+	 * database.
+	 * @param ids the entity identifiers to be selected (may be empty)
+	 * @return a {@link Set} of entities loaded by the given identifiers
+	 */
+	protected Set<C> selectWithSingleQueryWhereIdIn(Iterable<I> ids) {
+		if (!Iterables.isEmpty(ids)) {
+			// the newCriteriaSupport() will create a copy of the main entity criteria, so we can modify it without affecting the main one
+			Query query = getAggregateQueryTemplate().getQuery();
+			EntityCriteriaSupport<C> and = newCriteriaSupport().getEntityCriteriaSupport().and(entityIdAccessor, Operators.in(ids));
+			Query queryClone = new Query(query.getSelectDelegate(), query.getFromDelegate(), new Where<>().add(and.getCriteria()), new GroupBy(), new Having(),
+					new OrderBy(), // No order-by since we are in a Collection criteria, sort we'll be made downstream in memory see EntityCriteriaSupport#wrapGraphload()
+					new Limit() // No limit since we already limited our result through the selection of the ids
+			);
+			return selectWithSingleQuery(queryClone, getAggregateQueryTemplate(), dialect, connectionProvider);
+		} else {
+			return Collections.emptySet();
+		}
 	}
 	
 	/**
@@ -146,8 +157,8 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 									 boolean distinct,
 									 OrderBy orderBy,
 									 Limit limit) {
-		Query queryClone = new Query(new Select(), getAggregateQueryTemplate().getFromDelegate(), new Where(), new GroupBy(), new Having(), orderBy, limit);
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone, where.getCriteria());
+		Query queryClone = new Query(new Select(), getAggregateQueryTemplate().getQuery().getFromDelegate(), new Where<>(where.getCriteria()), new GroupBy(), new Having(), orderBy, limit);
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone);
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
 		selectAdapter.accept(queryClone.getSelectDelegate());

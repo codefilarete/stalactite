@@ -18,6 +18,8 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
+import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
+import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
@@ -71,6 +73,7 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 	private final ConnectionProvider connectionProvider;
 	
 	private final Dialect dialect;
+	private final EntityCriteriaSupport<C> criteriaSupport;
 	
 	private EntityTreeQuery<C> entityTreeQuery;
 	
@@ -84,6 +87,7 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 		this.entityJoinTree = entityJoinTree;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
+		this.criteriaSupport = new EntityCriteriaSupport<>(this.entityJoinTree);
 		
 		PersisterBuilderContext.CURRENT.get().addBuildLifeCycleListener(new BuildLifeCycleListener() {
 			@Override
@@ -105,6 +109,7 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
 		this.entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();;
+		this.criteriaSupport = new EntityCriteriaSupport<>(this.entityJoinTree, withImmediateQueryBuild);
 	}
 	
 	private void buildQuery() {
@@ -120,6 +125,11 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 	@Override
 	public EntityJoinTree<C, I> getEntityJoinTree() {
 		return entityJoinTree;
+	}
+	
+	@Override
+	public EntityQueryCriteriaSupport<C, I> newCriteriaSupport() {
+		return new EntityQueryCriteriaSupport<>(this, criteriaSupport.copy());
 	}
 	
 	public Set<C> selectFromQueryBean(String sql, Map<String, Object> values) {
@@ -173,13 +183,13 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 		Query queryClone = new Query(
 				entityTreeQuery.getQuery().getSelectDelegate(),
 				entityTreeQuery.getQuery().getFromDelegate(),
-				new Where(),
+				new Where<>(where.getCriteria()),
 				new GroupBy(),
 				new Having(),
 				orderBy,
 				limit);
 		
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone, where.getCriteria());
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone);
 		
 		// When the condition contains some criteria on a collection, the ResultSet contains only data matching it,
 		// then the graph is a partial view of the real entity. Therefore, when the condition contains some Collection criteria
@@ -232,9 +242,9 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 									 boolean distinct,
 									 OrderBy orderBy,
 									 Limit limit) {
-		Query queryClone = new Query(new Select(), query.getFromDelegate(), new Where(), new GroupBy(), new Having(), orderBy, limit);
+		Query queryClone = new Query(new Select(), query.getFromDelegate(), new Where<>(where.getCriteria()), new GroupBy(), new Having(), orderBy, limit);
 		queryClone.getSelectDelegate().setDistinct(distinct);
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone, where.getCriteria());
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone);
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
 		selectAdapter.accept(queryClone.getSelectDelegate());

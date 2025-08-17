@@ -76,10 +76,9 @@ public class EntityQueryCriteriaSupport<C, I> {
 	
 	private final EntityQueryPageSupport<C> queryPageSupport;
 	
-	public EntityQueryCriteriaSupport(EntityFinder<C, I> entityFinder, EntityCriteriaSupport<C> source) {
-		this.entityFinder = entityFinder;
-		this.entityCriteriaSupport = new EntityCriteriaSupport<>(source);
-		this.queryPageSupport = new EntityQueryPageSupport<>();
+	public EntityQueryCriteriaSupport(EntityFinder<C, I> entityFinder,
+									  EntityCriteriaSupport<C> entityCriteriaSupport) {
+		this(entityFinder, entityCriteriaSupport, new EntityQueryPageSupport<>());
 	}
 	
 	private EntityQueryCriteriaSupport(EntityFinder<C, I> entityFinder,

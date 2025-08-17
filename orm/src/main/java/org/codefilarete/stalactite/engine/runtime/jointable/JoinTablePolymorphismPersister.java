@@ -92,8 +92,8 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 		this.mainTablePrimaryKey = mainTable.getPrimaryKey();
 		
 		Set<? extends Entry<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>>> subPersisterPerSubEntityType = subEntitiesPersisters.entrySet();
-		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
-		// impacts but very difficult to measure
+		// Below we keep the order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
+		// impacts but it's very difficult to measure
 		Map<Class<? extends C>, ConfiguredRelationalPersister<? extends C, I>> subclassSelectExecutors = Iterables.map(subPersisterPerSubEntityType, Entry::getKey,
 				Entry::getValue, KeepOrderMap::new);
 		this.subclassIdMappingStrategies = Iterables.map(subPersisterPerSubEntityType, Entry::getKey, e -> (IdMapping<C, I>) e.getValue().getMapping().getIdMapping());
@@ -160,8 +160,8 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 	public void doUpdate(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		mainPersister.update(differencesIterable, allColumnsStatement);
 		
-		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
-		// impacts but very difficult to measure
+		// Below we keep the order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
+		// impacts but it's very difficult to measure
 		Map<UpdateExecutor<C>, Set<Duo<C, C>>> entitiesPerType = new KeepOrderMap<>();
 		differencesIterable.forEach(payload ->
 				this.subEntitiesPersisters.values().forEach(persister -> {

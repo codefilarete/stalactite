@@ -7,7 +7,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
@@ -22,14 +21,14 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.En
 import org.codefilarete.stalactite.engine.runtime.load.JoinTableRootJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
+import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
+import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.GroupBy;
 import org.codefilarete.stalactite.query.model.Having;
 import org.codefilarete.stalactite.query.model.Limit;
-import org.codefilarete.stalactite.query.model.LimitAware;
 import org.codefilarete.stalactite.query.model.OrderBy;
-import org.codefilarete.stalactite.query.model.OrderByChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.Where;
@@ -53,6 +52,8 @@ import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROO
 public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends AbstractPolymorphicEntityFinder<C, I, T> {
 	
 	private final SingleLoadEntityJoinTree<C, I> singleLoadEntityJoinTree;
+	private final EntityCriteriaSupport<C> criteriaSupport;
+	
 	private Query query;
 	private EntityTreeQuery<C> entityTreeQuery;
 	
@@ -63,6 +64,7 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 			Dialect dialect) {
 		super(mainPersister, persisterPerSubclass, connectionProvider, dialect);
 		this.singleLoadEntityJoinTree = buildSingleLoadEntityJoinTree(mainPersister);
+		this.criteriaSupport = new EntityCriteriaSupport<>(singleLoadEntityJoinTree);
 		
 		// made for optimization (to avoid creating multiple times the query) but also to avoid adding several times the polymorphic JoinNode consumers
 		// to itself by calling several time the "toConsumer(..)" method that usually calls some "add" method, which declares duplicates of consumers,
@@ -85,13 +87,18 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 	}
 	
 	@Override
-	protected Query getAggregateQueryTemplate() {
-		return query;
+	protected EntityTreeQuery<C> getAggregateQueryTemplate() {
+		return entityTreeQuery;
 	}
 	
 	@Override
 	public EntityJoinTree<C, I> getEntityJoinTree() {
 		return singleLoadEntityJoinTree;
+	}
+	
+	@Override
+	public EntityQueryCriteriaSupport<C, I> newCriteriaSupport() {
+		return new EntityQueryCriteriaSupport<>(this, criteriaSupport.copy());
 	}
 	
 	private SingleLoadEntityJoinTree<C, I> buildSingleLoadEntityJoinTree(ConfiguredRelationalPersister<C, I> mainPersister) {
@@ -141,15 +148,15 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 		
 		// we clone the query to avoid polluting the instance one, else, from select(..) to select(..), we append the criteria at the end of it,
 		// which makes the query usually returning no data (because of the condition mix)
-		Query queryClone = new Query(query.getSelectDelegate(), query.getFromDelegate(), new Where(), new GroupBy(), new Having(), orderBy, limit);
+		Query queryClone = new Query(query.getSelectDelegate(), query.getFromDelegate(), new Where<>(where.getCriteria()), new GroupBy(), new Having(), orderBy, limit);
 		
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone, where.getCriteria());
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone);
 		
 		// selecting ids and their entity type
 		Map<Selectable<?>, ResultSetReader<?>> columnReaders = new HashMap<>();
 		queryClone.getColumns().forEach((selectable) -> columnReaders.put(selectable, dialect.getColumnBinderRegistry().getBinder((Column) selectable)));
 		
-		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>()), columnReaders, query.getAliases());
+		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>()), columnReaders, queryClone.getAliases());
 		
 		Set<I> ids = idsPerSubtype.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
 		
@@ -159,16 +166,13 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 			idsPerSubtype.forEach((k, v) -> result.addAll(persisterPerSubclass.get(k).select(v)));
 			return result;
 		} else {
-			return selectWithSingleQuery(newWhereIdClause(ids),
-					new OrderBy() /* No order by since we are in a Collection criteria, sort we'll be made downstream in memory see EntityCriteriaSupport#wrapGraphload() */,
-					new Limit() /* No limit since we already have limited our result through the selection of the ids */);
+			return selectWithSingleQueryWhereIdIn(ids);
 		}
-
 	}
 	
 	private Map<Class, Set<I>> readIds(PreparedSQL preparedSQL, Map<Selectable<?>, ResultSetReader<?>> columnReaders, Map<Selectable<?>, String> aliases) {
-		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
-		// impacts but very difficult to measure
+		// Below we keep the order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
+		// impacts but it's very difficult to measure
 		Map<Class, Set<I>> result = new KeepOrderMap<>();
 		try (ReadOperation<Integer> readOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();

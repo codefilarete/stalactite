@@ -6,6 +6,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.OrderBy;
@@ -61,6 +62,8 @@ public interface EntityFinder<C, I> {
 							  Limit limit);
 	
 	EntityJoinTree<C, I> getEntityJoinTree();
+	
+	EntityQueryCriteriaSupport<C, I> newCriteriaSupport();
 	
 	void setOperationListener(SQLOperationListener<?> operationListener);
 }

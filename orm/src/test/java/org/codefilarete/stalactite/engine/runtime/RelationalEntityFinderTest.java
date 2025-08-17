@@ -94,7 +94,7 @@ class RelationalEntityFinderTest {
 		// Given following tree:
 		// Toto.id = Tata.id (X)
 		EntityJoinTree<Toto, Integer> entityJoinTree = new EntityJoinTree<>(new EntityMappingAdapter<>(totoMapping), totoMapping.getTargetTable());
-		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter<>(tataMapping), mock(Accessor.class),
+		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter<>(tataMapping), Accessors.accessorByMethodReference(Toto::getTata),
                 totoPrimaryKey, tataPrimaryKey, null, INNER, Toto::setTata, Collections.emptySet());
 		
 		ConnectionProvider connectionProvider = Mockito.mock(ConnectionProvider.class);

@@ -148,12 +148,12 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	
 	@Override
 	public EntityQueryCriteriaSupport<C, I> newCriteriaSupport() {
-		return new EntityQueryCriteriaSupport<>(entityFinder, criteriaSupport);
+		return new EntityQueryCriteriaSupport<>(entityFinder, criteriaSupport.copy());
 	}
 	
 	@Override
 	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter) {
-		ProjectionQueryCriteriaSupport<C, I> projectionSupport = new ProjectionQueryCriteriaSupport<>(criteriaSupport, entityFinder, selectAdapter);
+		ProjectionQueryCriteriaSupport<C, I> projectionSupport = new ProjectionQueryCriteriaSupport<>(entityFinder, selectAdapter);
 		return projectionSupport.wrapIntoExecutable();
 	}
 	

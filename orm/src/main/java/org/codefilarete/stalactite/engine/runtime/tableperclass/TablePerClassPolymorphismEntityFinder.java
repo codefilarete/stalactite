@@ -24,6 +24,8 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.En
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.TablePerClassRootJoinNode;
+import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
+import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
@@ -71,6 +73,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	private final T mainTable;
 	private final Map<String, Class> discriminatorValues;
 	private final SingleLoadEntityJoinTree<C, I> singleLoadEntityJoinTree;
+	private final EntityCriteriaSupport<C> criteriaSupport;
 	private Query query;
 	private EntityTreeQuery<C> entityTreeQuery;
 	
@@ -90,6 +93,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 			discriminatorValues.put(subEntityType.getSimpleName(), subEntityType);
 		});
 		this.singleLoadEntityJoinTree = buildSingleLoadEntityJoinTree();
+		this.criteriaSupport = new EntityCriteriaSupport<>(singleLoadEntityJoinTree);
 		
 		// made for optimization (to avoid creating multiple times the query) but also to avoid adding several times the polymorphic JoinNode consumers
 		// to itself by calling several time the "toConsumer(..)" method that usually calls some "add" method, which declares duplicates of consumers,
@@ -112,13 +116,18 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	}
 	
 	@Override
-	protected Query getAggregateQueryTemplate() {
-		return query;
+	protected EntityTreeQuery<C> getAggregateQueryTemplate() {
+		return entityTreeQuery;
 	}
 	
 	@Override
 	public EntityJoinTree<C, I> getEntityJoinTree() {
 		return singleLoadEntityJoinTree;
+	}
+	
+	@Override
+	public EntityQueryCriteriaSupport<C, I> newCriteriaSupport() {
+		return new EntityQueryCriteriaSupport<>(this, criteriaSupport.copy());
 	}
 	
 	/**
@@ -204,10 +213,10 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	private Set<C> localSelectWithSingleQuery(ConfiguredEntityCriteria where, OrderBy orderBy, Limit limit) {
 		// we clone the query to avoid polluting the instance one, else, from select(..) to select(..), we append the criteria at the end of it,
 		// which makes the query usually returning no data (because of the condition mix)
-		Query queryClone = new Query(query.getSelectDelegate(), query.getFromDelegate(), new Where(), new GroupBy(), new Having(), orderBy, limit);
+		Query queryClone = new Query(query.getSelectDelegate(), query.getFromDelegate(), new Where<>(where.getCriteria()), new GroupBy(), new Having(), orderBy, limit);
 		
 		// since criteria is passed to union subqueries, we don't need it into the entire query
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone, where.getCriteria());
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone);
 		EntityTreeInflater<C> inflater = entityTreeQuery.getInflater();
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>());
 		try (ReadOperation<Integer> readOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
@@ -224,12 +233,12 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	public Set<C> selectIn2Phases(ConfiguredEntityCriteria where, OrderBy orderBy, Limit limit) {
 		LOGGER.debug("Finding entities in 2-phases query with criteria {}", where);
 		// we clone the query to avoid polluting the instance one, else, from select(..) to select(..), we append the criteria at the end of it,
-		// which makes the query usually returning no data (because of the condition mix)
-		// Note that we don't need to clone the select clause because we register the columns weed need some lines below
-		Query queryClone = new Query(new Select(), query.getFromDelegate(), new Where(), new GroupBy(), new Having(), orderBy, limit);
+		// which makes the query usually returning no data (because of the condition mix).
+		// Note that we don't need to clone the select clause because we register the columns that we need some lines below
+		Query queryClone = new Query(new Select(), query.getFromDelegate(), new Where<>(where.getCriteria()), new GroupBy(), new Having(), orderBy, limit);
 		
 		// since criteria is passed to union subqueries, we don't need it into the entire query
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone, where.getCriteria());
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone);
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
 		mainTable.getPrimaryKey().getColumns().forEach(pkColumn -> {
@@ -265,9 +274,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 			idsPerSubtype.forEach((k, v) -> result.addAll(persisterPerSubclass.get(k).select(v)));
 			return result;
 		} else {
-			return selectWithSingleQuery(newWhereIdClause(ids),
-					new OrderBy() /* No order by since we are in a Collection criteria, sort we'll be made downstream in memory see EntityCriteriaSupport#wrapGraphload() */,
-					new Limit() /* No limit since we already have limited our result through the selection of the ids */);
+			return selectWithSingleQueryWhereIdIn(ids);
 		}
 	}
 	
@@ -275,8 +282,8 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 		try (ReadOperation<Integer> closeableOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = closeableOperation.execute();
 			ColumnedRowIterator rowIterator = new ColumnedRowIterator(resultSet, columnReaders, aliases);
-			// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
-			// impacts but very difficult to measure
+			// Below we keep the order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
+			// impacts but it's very difficult to measure
 			Map<Class, Set<I>> idsPerSubclass = new KeepOrderMap<>();
 			rowIterator.forEachRemaining(row -> {
 				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the good one

@@ -119,13 +119,6 @@ public class QuerySQLBuilderFactory {
 		return dmlNameProviderFactory;
 	}
 	
-	public QuerySQLBuilder queryBuilder(Query query, Iterable<AbstractCriterion> where) {
-		if (where.iterator().hasNext()) {    // prevents from empty where causing malformed SQL
-			query.getWhere().add(where);
-		}
-		return queryBuilder(query);
-	}
-	
 	public QuerySQLBuilder queryBuilder(Query query) {
 		DMLNameProvider dmlNameProvider = dmlNameProviderFactory.build(query.getFromDelegate().getTableAliases()::get);
 		return new QuerySQLBuilder(query,
