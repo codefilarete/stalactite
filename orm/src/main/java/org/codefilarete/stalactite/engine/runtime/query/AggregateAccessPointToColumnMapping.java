@@ -88,6 +88,11 @@ public class AggregateAccessPointToColumnMapping<C> {
 		}
 	}
 	
+	public boolean hasCollectionProperty() {
+		return propertyToColumn.keySet().stream().flatMap(Collection::stream)
+				.anyMatch(valueAccessPoint -> Iterable.class.isAssignableFrom(AccessorDefinition.giveDefinition(valueAccessPoint).getMemberType()));
+	}
+	
 	@VisibleForTesting
 	Map<List<? extends ValueAccessPoint<?>>, Selectable<?>> getPropertyToColumn() {
 		return propertyToColumn;

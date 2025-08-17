@@ -93,35 +93,6 @@ abstract class AbstractDerivedQueriesTest {
 	}
 	
 	@Test
-	void projection_limit() {
-		Republic country1 = new Republic(42);
-		country1.setName("Toto");
-		Person president1 = new Person(666);
-		president1.setName("Me");
-		country1.setPresident(president1);
-		Republic country2 = new Republic(43);
-		country2.setName("Titi");
-		Person president2 = new Person(667);
-		president2.setName("John Do");
-		country2.setPresident(president2);
-		Republic country3 = new Republic(44);
-		country3.setName("Tata");
-		Person president3 = new Person(668);
-		president3.setName("Jane Do");
-		country3.setPresident(president3);
-		Republic country4 = new Republic(45);
-		country4.setName("Tonton");
-		Person president4 = new Person(669);
-		president4.setName("Saca do");
-		country4.setPresident(president4);
-		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
-		
-		Set<NamesOnly> loadedCountries;
-		loadedCountries = derivedQueriesRepository.getTop2ByNameLikeOrderByPresidentNameAsc("t");
-		assertThat(loadedCountries).extracting(NamesOnly::getName).containsExactly(country3.getName(), country2.getName());
-	}
-	
-	@Test
 	void projection_byExtraArgument() {
 		Republic country1 = new Republic(42);
 		country1.setName("Toto");
@@ -1022,8 +993,9 @@ abstract class AbstractDerivedQueriesTest {
 		
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
 		
-		Set<Republic> loadedCountries = derivedQueriesRepository.findTop2ByNameLikeOrderByPresidentNameAsc("T%n");
-		assertThat(loadedCountries).containsExactly(country2, country3);
+		assertThatCode(() -> derivedQueriesRepository.findTop2ByNameLikeOrderByPresidentNameAsc("T%n"))
+				.isInstanceOf(UnsupportedOperationException.class)
+				.hasMessage("Can't limit query when entity graph contains Collection relations");
 	}
 	
 	@Test

@@ -144,7 +144,7 @@ public class EntityQueryCriteriaSupport<C, I> {
 	}
 	
 	public <R> Function<Accumulator<C, Collection<C>, R>, R> wrapGraphLoad(Map<String, Object> values) {
-		if (queryPageSupport.getLimit() != null && entityCriteriaSupport.hasCollectionCriteria()) {
+		if (queryPageSupport.getLimit() != null && entityCriteriaSupport.hasCollectionProperty()) {
 			throw new UnsupportedOperationException("Can't limit query when entity graph contains Collection relations");
 		}
 		if (entityCriteriaSupport.hasCollectionCriteria() && !queryPageSupport.getOrderBy().isEmpty()) {

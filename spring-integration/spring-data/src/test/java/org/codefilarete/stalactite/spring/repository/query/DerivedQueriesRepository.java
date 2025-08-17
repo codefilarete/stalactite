@@ -128,8 +128,6 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Republic,
 	
 	Set<NamesOnly> getByNameLikeOrderByPresidentNameAsc(String name);
 	
-	Set<NamesOnly> getTop2ByNameLikeOrderByPresidentNameAsc(String code);
-	
 	<T> Collection<T> getByName(String name, Class<T> type);
 	
 	boolean existsByName(String name);

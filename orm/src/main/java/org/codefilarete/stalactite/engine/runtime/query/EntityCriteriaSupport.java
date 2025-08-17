@@ -181,6 +181,10 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 		return hasCollectionCriteria;
 	}
 	
+	public boolean hasCollectionProperty() {
+		return aggregateColumnMapping.hasCollectionProperty();
+	}
+	
 	@Override
 	public String toString() {
 		return Reflections.toString(getClass())
