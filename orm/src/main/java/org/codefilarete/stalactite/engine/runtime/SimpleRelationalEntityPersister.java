@@ -273,7 +273,6 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 			newCriteriaSupport.getEntityCriteriaSupport().getCriteria().and(tupleIn);
 			return newCriteriaSupport.wrapIntoExecutable().execute(Accumulators.toSet());
 		} else {
-			// TODO: make ColumnBinderRegistry supports column clones: if column binder is defined / overwritten, then its binder is not taken into account
 			// due to column clones (almost sure)
 			ReversibleAccessor<C, I> criteriaAccessor;
 			if (idMapping.getIdAccessor() instanceof AccessorWrapperIdAccessor) {
@@ -284,7 +283,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 			} else {
 				throw new UnsupportedOperationException("Unsupported id accessor type: " + idMapping.getIdAccessor().getClass());
 			}
-			In<I> in = Operators.in();
+			In<I> in = new In<>();
 			Set<C> result = new HashSet<>();
 			ExecutableEntityQuery<C, ?> executableEntityQuery = selectWhere().and(criteriaAccessor, in);
 			Iterables.forEachChunk(
