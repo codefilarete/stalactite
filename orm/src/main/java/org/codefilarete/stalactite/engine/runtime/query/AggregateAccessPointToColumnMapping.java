@@ -100,7 +100,10 @@ public class AggregateAccessPointToColumnMapping<C> {
 	
 	private void collectPropertiesMapping() {
 		Deque<Accessor<?, ?>> accessorPath = new ArrayDeque<>();
-		this.propertyToColumn.putAll(collectPropertiesMapping(tree.getRoot(), accessorPath));
+		Map<List<ValueAccessPoint<?>>, Selectable<?>> rootProperties = collectPropertiesMapping(tree.getRoot(), accessorPath);
+		rootProperties.forEach((valueAccessPoints, selectable) -> {
+			this.propertyToColumn.put(valueAccessPoints, tree.getRoot().getOriginalColumnsToLocalOnes().get(selectable));
+		});
 		Queue<AbstractJoinNode<?, ?, ?, ?>> stack = Collections.asLifoQueue(new ArrayDeque<>());
 		stack.addAll(tree.getRoot().getJoins());
 		while (!stack.isEmpty()) {
@@ -108,9 +111,10 @@ public class AggregateAccessPointToColumnMapping<C> {
 			if (abstractJoinNode instanceof RelationJoinNode) {
 				RelationJoinNode<?, ?, ?, ?, ?> relationJoinNode = (RelationJoinNode<?, ?, ?, ?, ?>) abstractJoinNode;
 				accessorPath.add(relationJoinNode.getPropertyAccessor());
-				Map<List<ValueAccessPoint<?>>, Selectable<?>> m = collectPropertiesMapping(relationJoinNode, accessorPath);
-				
-				this.propertyToColumn.putAll(m);
+				Map<List<ValueAccessPoint<?>>, Selectable<?>> joinNodeProperties = collectPropertiesMapping(relationJoinNode, accessorPath);
+				joinNodeProperties.forEach((valueAccessPoints, selectable) -> {
+					this.propertyToColumn.put(valueAccessPoints, relationJoinNode.getOriginalColumnsToLocalOnes().get(selectable));
+				});
 				if (abstractJoinNode.getJoins().isEmpty()) {
 					// no more joins, this is a leaf
 					accessorPath.removeLast();
@@ -134,7 +138,7 @@ public class AggregateAccessPointToColumnMapping<C> {
 				PseudoTable pseudoTable = ((TablePerClassRootJoinNode<E, ?>) joinNode).getTable();
 				// Because we have a Union (behind the pseudo table), there's no mapping with "original ones" (we are in table-per-class)
 				// so we provide a small column "adapter" that lookup for the columns in the union
-				return collectPropertiesMapping(entityMapping, joinNode.getOriginalColumnsToLocalOnes(), accessorPath, col -> pseudoTable.findColumn(col.getExpression()));
+				return collectPropertiesMapping(entityMapping, accessorPath, col -> pseudoTable.findColumn(col.getExpression()));
 			} else {
 				// non-polymorphic root, aka simple case
 				entityInflater = ((JoinRoot<E, ?, ?>) joinNode).getEntityInflater();
@@ -152,14 +156,14 @@ public class AggregateAccessPointToColumnMapping<C> {
 				Map<List<ValueAccessPoint<?>>, Selectable<?>> result = new HashMap<>();
 				Column<?, ?> mapValueColumn = entityMapping.getPropertyToColumn().get(ELEMENT_ACCESSOR);
 				List<ValueAccessPoint<?>> accessorPrefix = new ArrayList<>(accessorPath);
-				result.put(accessorPrefix, joinNode.getOriginalColumnsToLocalOnes().get(mapValueColumn));
+				result.put(accessorPrefix, mapValueColumn);
 				return result;
 			} else if (entityMapping instanceof KeyValueRecordMapping) {    // Map mapping case
 				// Querying Map is only possible on its values
 				Map<List<ValueAccessPoint<?>>, Selectable<?>> result = new HashMap<>();
 				Column<?, ?> mapValueColumn = entityMapping.getPropertyToColumn().get(VALUE_ACCESSOR);
 				List<ValueAccessPoint<?>> accessorPrefix = new ArrayList<>(accessorPath);
-				result.put(accessorPrefix, joinNode.getOriginalColumnsToLocalOnes().get(mapValueColumn));
+				result.put(accessorPrefix, mapValueColumn);
 				return result;
 			}
 		} else {
@@ -167,11 +171,10 @@ public class AggregateAccessPointToColumnMapping<C> {
 			throw new UnsupportedOperationException("Unsupported join type " + Reflections.toString(joinNode.getClass()));
 		}
 		EntityMapping<E, ?, ?> entityMapping = entityInflater.getEntityMapping();
-		return collectPropertiesMapping(entityMapping, joinNode.getOriginalColumnsToLocalOnes(), accessorPath, Function.identity());
+		return collectPropertiesMapping(entityMapping, accessorPath, Function.identity());
 	}
 	
 	private <E> Map<List<ValueAccessPoint<?>>, Selectable<?>> collectPropertiesMapping(EntityMapping<E, ?, ?> entityMapping,
-																					   Map<Selectable<?>, Selectable<?>> originalColumnsToClones,
 																					   Collection<Accessor<?, ?>> nodeAccessorPath,
 																					   Function<Selectable<?>, Selectable<?>> columnAdapter) {
 		Map<List<ValueAccessPoint<?>>, Selectable<?>> result = new HashMap<>();
@@ -186,7 +189,7 @@ public class AggregateAccessPointToColumnMapping<C> {
 					} else {
 						key = Arrays.asList(accessor);
 					}
-					result.put(key, originalColumnsToClones.get(columnAdapter.apply(entry.getValue())));
+					result.put(key, columnAdapter.apply(entry.getValue()));
 				});
 		
 		// collecting the identifier mapping (because they are not in the properties mapping) 
@@ -194,11 +197,11 @@ public class AggregateAccessPointToColumnMapping<C> {
 		if (identifierAssembler instanceof SingleIdentifierAssembler) {
 			Column idColumn = ((SingleIdentifierAssembler) identifierAssembler).getColumn();
 			ReversibleAccessor idAccessor = ((AccessorWrapperIdAccessor) entityMapping.getIdMapping().getIdAccessor()).getIdAccessor();
-			result.put(Arrays.asList(idAccessor), originalColumnsToClones.get(columnAdapter.apply(idColumn)));
+			result.put(Arrays.asList(idAccessor), columnAdapter.apply(idColumn));
 		} else if (identifierAssembler instanceof DefaultComposedIdentifierAssembler) {
 			((DefaultComposedIdentifierAssembler<?, ?>) identifierAssembler).getMapping().forEach((idAccessor, idColumn) -> {
 				ReversibleAccessor accessorPrefix = ((AccessorWrapperIdAccessor) entityMapping.getIdMapping().getIdAccessor()).getIdAccessor();
-				result.put(Arrays.asList(accessorPrefix, idAccessor), originalColumnsToClones.get(columnAdapter.apply(idColumn)));
+				result.put(Arrays.asList(accessorPrefix, idAccessor), columnAdapter.apply(idColumn));
 			});
 		}
 		
