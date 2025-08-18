@@ -4,8 +4,10 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.codefilarete.reflection.AbstractReflector;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.ValueAccessPoint;
@@ -16,6 +18,8 @@ import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain;
 import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.ExecutableProjection;
 import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
+import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport.EntityQueryPageSupport;
+import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport.EntityQueryPageSupport.OrderByItem;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
@@ -45,40 +49,68 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
  */
 public class ProjectionQueryCriteriaSupport<C, I> {
 	
-	private final EntityCriteriaSupport<C> entityCriteriaSupport;
 	
 	/** Support for {@link EntityCriteria} query execution */
 	private final EntityFinder<C, I> entityFinder;
 	
+	private final EntityCriteriaSupport<C> entityCriteriaSupport;
+	
+	private final ProjectionQueryPageSupport<C> queryPageSupport;
+	
 	private final Consumer<Select> selectAdapter;
 	
 	public ProjectionQueryCriteriaSupport(EntityFinder<C, I> entityFinder, Consumer<Select> selectAdapter) {
+		this(entityFinder, entityFinder.newCriteriaSupport().getEntityCriteriaSupport(), new ProjectionQueryPageSupport<>(), selectAdapter);
+	}
+	
+	public ProjectionQueryCriteriaSupport(EntityFinder<C, I> entityFinder, EntityCriteriaSupport<C> entityCriteriaSupport, Consumer<Select> selectAdapter) {
+		this(entityFinder, entityCriteriaSupport, new ProjectionQueryPageSupport<>(), selectAdapter);
+	}
+	
+	public ProjectionQueryCriteriaSupport(EntityFinder<C, I> entityFinder, EntityCriteriaSupport<C> entityCriteriaSupport, ProjectionQueryPageSupport<C> queryPageSupport, Consumer<Select> selectAdapter) {
 		this.entityFinder = entityFinder;
-		this.entityCriteriaSupport = entityFinder.newCriteriaSupport().getEntityCriteriaSupport();
+		this.entityCriteriaSupport = entityCriteriaSupport;
+		this.queryPageSupport = queryPageSupport;
 		this.selectAdapter = selectAdapter;
 	}
 	
+	/**
+	 * Makes a copy of this instance merged with given one
+	 * Made to handle Spring Data's different ways of sorting (should have been put closer to its usage, but was too complex)
+	 *
+	 * @param otherPageSupport some other paging options
+	 * @return a merge of this instance with given page options
+	 */
+	public ProjectionQueryCriteriaSupport<C, I> copyFor(ProjectionQueryPageSupport<C> otherPageSupport) {
+		return new ProjectionQueryCriteriaSupport<>(entityFinder, entityCriteriaSupport, queryPageSupport.merge(otherPageSupport), this.selectAdapter);
+	}
+	
+	public EntityCriteriaSupport<C> getEntityCriteriaSupport() {
+		return entityCriteriaSupport;
+	}
+	
+	public ProjectionQueryPageSupport<C> getQueryPageSupport() {
+		return queryPageSupport;
+	}
 	
 	public ExecutableProjectionQuery<C, ?> wrapIntoExecutable() {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
-		ExecutableProjectionQuerySupport<C> querySugarSupport = new ExecutableProjectionQuerySupport<>();
 		return methodDispatcher
 				.redirect((SerializableBiFunction<ExecutableProjection, Accumulator<? super Function<? extends Selectable, Object>, Object, Object>, Object>) ExecutableProjection::execute,
-						wrapProjectionLoad(selectAdapter, entityCriteriaSupport, querySugarSupport))
-				.redirect(OrderByChain.class, querySugarSupport)
-				.redirect(LimitAware.class, querySugarSupport)
-				.redirect((SerializableFunction<ExecutableProjection, ExecutableProjection>) ExecutableProjection::distinct, querySugarSupport::distinct)
+						wrapProjectionLoad(selectAdapter, entityCriteriaSupport))
+				.redirect(OrderByChain.class, queryPageSupport)
+				.redirect(LimitAware.class, queryPageSupport)
+				.redirect((SerializableFunction<ExecutableProjection, ExecutableProjection>) ExecutableProjection::distinct, queryPageSupport::distinct)
 				.redirect(EntityCriteria.class, entityCriteriaSupport, true)
 				.build((Class<ExecutableProjectionQuery<C, ?>>) (Class) ExecutableProjectionQuery.class);
 	}
 	
 	private <R> Function<Accumulator<? super Function<? extends Selectable, Object>, Object, R>, R> wrapProjectionLoad(
 			Consumer<Select> selectAdapter,
-			EntityCriteriaSupport<C> localCriteriaSupport,
-			ExecutableProjectionQuerySupport<C> querySugarSupport) {
+			EntityCriteriaSupport<C> localCriteriaSupport) {
 		return (Accumulator<? super Function<? extends Selectable, Object>, Object, R> accumulator) -> {
 			OrderBy orderBy = new OrderBy();
-			querySugarSupport.getOrderBy().forEach(duo -> {
+			queryPageSupport.getOrderBy().forEach(duo -> {
 				Selectable column = entityCriteriaSupport.getAggregateColumnMapping().giveColumn(duo.getProperty());
 				orderBy.add(
 						duo.isIgnoreCase()
@@ -89,9 +121,9 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 								: org.codefilarete.stalactite.query.model.OrderByChain.Order.DESC);
 			});
 			
-			return entityFinder.selectProjection(selectAdapter, accumulator, localCriteriaSupport, querySugarSupport.isDistinct(),
+			return entityFinder.selectProjection(selectAdapter, accumulator, localCriteriaSupport, queryPageSupport.isDistinct(),
 					orderBy,
-					querySugarSupport.getLimit());
+					queryPageSupport.getLimit());
 		};
 	}
 	
@@ -99,8 +131,8 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 	 * Simple class that stores options of the query
 	 * @author Guillaume Mary
 	 */
-	private static class ExecutableProjectionQuerySupport<C>
-			implements OrderByChain<C, ExecutableProjectionQuerySupport<C>>, LimitAware<ExecutableProjectionQuerySupport<C>> {
+	public static class ProjectionQueryPageSupport<C>
+			implements OrderByChain<C, ProjectionQueryPageSupport<C>>, LimitAware<ProjectionQueryPageSupport<C>> {
 		
 		private boolean distinct;
 		private Limit limit;
@@ -124,33 +156,71 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 		}
 		
 		@Override
-		public ExecutableProjectionQuerySupport<C> limit(int count) {
+		public ProjectionQueryPageSupport<C> limit(int count) {
 			limit = new Limit(count);
 			return this;
 		}
 		
 		@Override
-		public ExecutableProjectionQuerySupport<C> limit(int count, Integer offset) {
+		public ProjectionQueryPageSupport<C> limit(int count, Integer offset) {
 			limit = new Limit(count, offset);
 			return this;
 		}
 		
 		@Override
-		public ExecutableProjectionQuerySupport<C> orderBy(SerializableFunction<C, ?> getter, Order order) {
+		public ProjectionQueryPageSupport<C> orderBy(SerializableFunction<C, ?> getter, Order order) {
 			orderBy.add(new OrderByItem(Arrays.asList(new AccessorByMethodReference<>(getter)), order, false));
 			return this;
 		}
 		
 		@Override
-		public ExecutableProjectionQuerySupport<C> orderBy(SerializableBiConsumer<C, ?> setter, Order order) {
+		public ProjectionQueryPageSupport<C> orderBy(SerializableBiConsumer<C, ?> setter, Order order) {
 			orderBy.add(new OrderByItem(Arrays.asList(new MutatorByMethodReference<>(setter)), order, false));
 			return this;
 		}
 		
 		@Override
-		public ExecutableProjectionQuerySupport<C> orderBy(AccessorChain<C, ?> getter, Order order) {
+		public ProjectionQueryPageSupport<C> orderBy(AccessorChain<C, ?> getter, Order order) {
 			orderBy.add(new OrderByItem(getter.getAccessors(), order, false));
 			return this;
+		}
+		
+		public ProjectionQueryPageSupport<C> orderBy(AccessorChain<C, ?> getter, Order order, boolean ignoreCase) {
+			orderBy.add(new OrderByItem(getter.getAccessors(), order, ignoreCase));
+			getter.getAccessors().forEach(accessor -> assertAccessorIsNotIterable(accessor, AccessorDefinition.giveDefinition(accessor).getMemberType()));
+			return this;
+		}
+		
+		private void assertAccessorIsNotIterable(ValueAccessPoint valueAccessPoint, Class memberType) {
+			if (Iterable.class.isAssignableFrom(memberType)) {
+				throw new IllegalArgumentException("OrderBy clause on a Collection property is unsupported due to eventual inconsistency"
+						+ " with Collection nature : "
+						+ (valueAccessPoint instanceof AbstractReflector
+						? ((AbstractReflector<?>) valueAccessPoint).getDescription()
+						: AccessorDefinition.giveDefinition(valueAccessPoint)).toString());
+			}
+		}
+		
+		/**
+		 * Creates a copy of this instance by merging its options with another.
+		 * Made to handle Spring Data's different ways of sorting (should have been put closer to its usage, but was too complex) 
+		 *
+		 * @param other some other paging options
+		 * @return a merge of this instance with given one
+		 */
+		private ProjectionQueryPageSupport<C> merge(ProjectionQueryPageSupport<C> other) {
+			ProjectionQueryPageSupport<C> duplicate = new ProjectionQueryPageSupport<>();
+			// applying this instance's limit and orderBy options
+			if (this.getLimit() != null) {
+				duplicate.limit(this.getLimit().getCount(), this.getLimit().getOffset());
+			}
+			duplicate.orderBy.addAll(this.orderBy);
+			// adding other instance's limit and orderBy options (may overwrite info, but that's user responsibility, we can't do anything smart here)
+			if (other.getLimit() != null) {
+				duplicate.limit(other.getLimit().getCount(), other.getLimit().getOffset());
+			}
+			duplicate.orderBy.addAll(other.orderBy);
+			return duplicate;
 		}
 		
 		public static class OrderByItem {

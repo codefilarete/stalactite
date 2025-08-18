@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.spring.repository.query;
 
+import java.util.List;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.model.Republic;
@@ -30,5 +31,25 @@ public interface DerivedQueriesWithoutMappedCollectionRepository extends Stalact
 	Slice<Republic> searchByNameLikeOrderByIdAsc(String name, Pageable pageable);
 	
 	Slice<Republic> searchByNameLike(String name, Pageable pageable);
+	
+	Set<NamesOnly> getByNameLikeOrderByPresidentNameAsc(String code);
+	
+	Slice<NamesOnly> getByNameLikeOrderByPresidentNameAsc(String code, Pageable pageable);
+	
+	interface NamesOnly {
+		
+		String getName();
+		
+		//		@Value("#{target.president.name}")
+//		String getPresidentName();
+		
+		SimplePerson getPresident();
+		
+		interface SimplePerson {
+			
+			String getName();
+			
+		}
+	}
 	
 }

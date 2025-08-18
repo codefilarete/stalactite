@@ -346,6 +346,18 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 		
 		SELF set(String paramName, Object paramValue);
 		
+		/**
+		 * Overridden for a more accurate return type.
+		 * {@inheritDoc}
+		 */
+		ExecutableEntityQuery<C, SELF> beginNested();
+		
+		/**
+		 * Overridden for a more accurate return type.
+		 * {@inheritDoc}
+		 */
+		ExecutableEntityQuery<C, SELF> endNested();
+		
 	}
 	
 	/**

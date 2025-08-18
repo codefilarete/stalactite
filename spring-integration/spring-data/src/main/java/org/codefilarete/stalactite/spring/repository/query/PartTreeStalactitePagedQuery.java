@@ -2,9 +2,9 @@ package org.codefilarete.stalactite.spring.repository.query;
 
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
-import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -18,74 +18,55 @@ import org.springframework.data.support.PageableExecutionUtils;
 
 /**
  * Kind of {@link PartTreeStalactiteQuery} made for partial result query like {@link Slice} and {@link Page} ones.
- * Designed as a wrapper of {@link PartTreeStalactiteQuery} because its behavior is just a tweak of the real query.
+ * Designed as a wrapper of {@link StalactiteLimitRepositoryQuery} because its behavior is just a tweak of the real query.
  * 
  * @param <C>
  * @param <R>
+ * @param <P>
  * @author Guillaume Mary
  */
-public class PartTreeStalactitePagedQuery<C, R extends Slice<C>> implements RepositoryQuery {
+public class PartTreeStalactitePagedQuery<C, R extends Slice<P>, P> implements RepositoryQuery {
 	
-	private final PartTreeStalactiteQuery<C, List<C>> delegate;
-	private final BiFunction<StalactiteParametersParameterAccessor, List<C>, R> queryResultSlicer;
+	private final QueryMethod method;
+	private final AdvancedEntityPersister<C, ?> entityPersister;
+	private final PartTree tree;
+	private final StalactiteLimitRepositoryQuery<C, List<P>> delegate;
 	
 	public PartTreeStalactitePagedQuery(QueryMethod method,
 										AdvancedEntityPersister<C, ?> entityPersister,
-										PartTree tree) {
-		this.delegate = new PartTreeStalactiteQuery<>(method, entityPersister, tree, Accumulators.toList());
-		if (method.isSliceQuery()) {
-			this.queryResultSlicer = (accessor, result) -> {
-				int pageSize = 0;
-				Pageable pageable = accessor.getPageable();
-				if (pageable.isPaged()) {
-					pageSize = pageable.getPageSize();
-				}
-				boolean hasNext = pageable.isPaged() && result.size() > pageSize;
-				return (R) new SliceImpl<>(hasNext ? result.subList(0, pageSize) : result, pageable, hasNext);
-			};
-		} else if (method.isPageQuery()) {
-			PartTreeStalactiteProjection<C, Long> countQuery = PartTreeStalactiteProjection.forCount(method, entityPersister, tree);
-			this.queryResultSlicer = (accessor, result) -> (R) PageableExecutionUtils.getPage(result, accessor.getPageable(), () -> countQuery.execute(accessor.getValues()));
-		} else {
-			throw new IllegalArgumentException("Query is not pageable " + method);
-		}
+										PartTree tree,
+										StalactiteLimitRepositoryQuery<C, List<P>> delegate) {
+		this.method = method;
+		this.entityPersister = entityPersister;
+		this.tree = tree;
+		this.delegate = delegate;
 	}
 	
 	@Override
 	public R execute(Object[] parameters) {
-		StalactiteParametersParameterAccessor smartParameters = new StalactiteParametersParameterAccessor(getQueryMethod().getParameters(), parameters);
-		Pageable pageable = smartParameters.getPageable();
-		if (delegate.getQueryMethod().isSliceQuery() && pageable.getPageNumber() == 0) {
-			// The + 1 is a look-ahead tip to make the returned Slice eventually return true on hasNext()
-			delegate.query.executableEntityQuery.getQueryPageSupport().limit(pageable.getPageSize() + 1);
+		
+		QueryResultWindower<C, ?, R, P> queryResultWindower;
+		Supplier<List<P>> resultSupplier = () -> delegate.execute(parameters);
+		
+		if (getQueryMethod().isSliceQuery()) {
+			queryResultWindower = new SliceResultWindower<>(delegate, resultSupplier);
+		} else if (getQueryMethod().isPageQuery()) {
+			queryResultWindower = new PageResultWindower<>(delegate, new PartTreeStalactiteCountProjection<>(method, entityPersister, tree), resultSupplier);
 		} else {
-			// when the user asks for a page number (given Pageable is a Page instance or a Slice with page number) then we ask for the page number
-			delegate.query.executableEntityQuery.getQueryPageSupport().limit(pageable.getPageSize(), (int) pageable.getOffset());
+			// the result type might be a Collection or a single result
+			queryResultWindower = new QueryResultWindower<C, Object, R, P>(null, null, null) {
+				@Override
+				R adaptExecution(Object[] parameters) {
+					return (R) delegate.execute(parameters);
+				}
+			};
 		}
-		return queryResultSlicer.apply(smartParameters, delegate.execute(parameters));
+		
+		return queryResultWindower.adaptExecution(parameters);
 	}
 	
 	@Override
 	public QueryMethod getQueryMethod() {
 		return delegate.getQueryMethod();
-	}
-	
-	public static class StalactiteParametersParameterAccessor extends ParametersParameterAccessor {
-		
-		/**
-		 * Constructor matching super one.
-		 */
-		public StalactiteParametersParameterAccessor(Parameters<?, ?> parameters, Object[] values) {
-			super(parameters, values);
-		}
-		
-		/**
-		 * Overridden to make it public 
-		 * @return current method parameters values
-		 */
-		@Override
-		public Object[] getValues() {
-			return super.getValues();
-		}
 	}
 }

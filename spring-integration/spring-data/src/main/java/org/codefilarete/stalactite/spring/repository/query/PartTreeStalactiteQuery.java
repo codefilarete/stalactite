@@ -17,7 +17,6 @@ import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mapping.PropertyPath;
 import org.springframework.data.repository.query.ParameterAccessor;
-import org.springframework.data.repository.query.Parameters;
 import org.springframework.data.repository.query.ParametersParameterAccessor;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
@@ -37,7 +36,7 @@ import static org.codefilarete.tool.Nullable.nullable;
  * @param <C> entity type
  * @author Guillaume Mary
  */
-public class PartTreeStalactiteQuery<C, R> implements RepositoryQuery {
+public class PartTreeStalactiteQuery<C, R> implements StalactiteLimitRepositoryQuery<C, R> {
 	
 	protected final QueryMethod method;
 	protected final DerivedQuery<C> query;
@@ -49,7 +48,6 @@ public class PartTreeStalactiteQuery<C, R> implements RepositoryQuery {
 								   Accumulator<C, ? extends Collection<C>, R> accumulator) {
 		this.method = method;
 		this.accumulator = (Accumulator<C, Collection<C>, R>) accumulator;
-		Parameters<?, ?> parameters = method.getParameters();
 		
 		try {
 			this.query = new DerivedQuery<>(entityPersister, tree);
@@ -80,6 +78,7 @@ public class PartTreeStalactiteQuery<C, R> implements RepositoryQuery {
 		
 		// - isProjecting() is for case of return type is not domain one (nor a compound one by Collection or other)
 		// - hasDynamicProjection() is for case of method that gives the expected returned type as a last argument (or a compound one by Collection or other)
+		// TODO: the isProjection() check might be superfluous, to be removed
 		if (method.getResultProcessor().getReturnedType().isProjecting() || method.getParameters().hasDynamicProjection()) {
 			ParameterAccessor accessor = new ParametersParameterAccessor(method.getParameters(), parameters);
 			// withDynamicProjection() handles the 2 cases of the "if" (with some not obvious algorithm)
@@ -112,6 +111,16 @@ public class PartTreeStalactiteQuery<C, R> implements RepositoryQuery {
 	@Override
 	public QueryMethod getQueryMethod() {
 		return method;
+	}
+	
+	@Override
+	public void limit(int count) {
+		this.query.executableEntityQuery.getQueryPageSupport().limit(count);
+	}
+	
+	@Override
+	public void limit(int count, Integer offset) {
+		this.query.executableEntityQuery.getQueryPageSupport().limit(count, offset);
 	}
 	
 	static class DerivedQuery<T> extends AbstractDerivedQuery<T> {

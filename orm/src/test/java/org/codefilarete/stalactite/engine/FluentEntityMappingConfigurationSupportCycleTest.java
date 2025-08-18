@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.engine;
 
 import javax.sql.DataSource;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +22,6 @@ import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
-import org.codefilarete.stalactite.id.StatefulIdentifier;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
@@ -731,7 +729,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			List<Map<Integer, ?>> capturedValues = new ArrayList<>();
 			List<String> capturedSQL = new ArrayList<>();
-			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestDelegate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Integer>() {
+			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestDelegate())).getEntityFinder().setOperationListener(new SQLOperationListener<Integer>() {
 				@Override
 				public void onValuesSet(Map<Integer, ?> values) {
 					capturedValues.add(values);
@@ -830,7 +828,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			List<Map<Integer, ?>> capturedValues = new ArrayList<>();
 			List<String> capturedSQL = new ArrayList<>();
-			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestDelegate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Integer>() {
+			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestDelegate())).getEntityFinder().setOperationListener(new SQLOperationListener<Integer>() {
 				@Override
 				public void onValuesSet(Map<Integer, ?> values) {
 					capturedValues.add(values);
@@ -929,7 +927,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			List<Map<Integer, ?>> capturedValues = new ArrayList<>();
 			List<String> capturedSQL = new ArrayList<>();
-			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestDelegate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Integer>() {
+			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestDelegate())).getEntityFinder().setOperationListener(new SQLOperationListener<Integer>() {
 				@Override
 				public void onValuesSet(Map<Integer, ?> values) {
 					capturedValues.add(values);
@@ -1028,7 +1026,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			List<Map<Integer, ?>> capturedValues = new ArrayList<>();
 			List<String> capturedSQL = new ArrayList<>();
-			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestDelegate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Integer>() {
+			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestDelegate())).getEntityFinder().setOperationListener(new SQLOperationListener<Integer>() {
 				@Override
 				public void onValuesSet(Map<Integer, ?> values) {
 					capturedValues.add(values);
@@ -1186,7 +1184,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			List<Map<Integer, ?>> capturedValues = new ArrayList<>();
 			List<String> capturedSQL = new ArrayList<>();
-			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestDelegate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Integer>() {
+			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestDelegate())).getEntityFinder().setOperationListener(new SQLOperationListener<Integer>() {
 				@Override
 				public void onValuesSet(Map<Integer, ?> values) {
 					capturedValues.add(values);
@@ -1281,7 +1279,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			List<Map<Integer, ?>> capturedValues = new ArrayList<>();
 			List<String> capturedSQL = new ArrayList<>();
-			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestDelegate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Integer>() {
+			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestDelegate())).getEntityFinder().setOperationListener(new SQLOperationListener<Integer>() {
 				@Override
 				public void onValuesSet(Map<Integer, ?> values) {
 					capturedValues.add(values);

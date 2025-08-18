@@ -28,7 +28,6 @@ import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierM
 import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
-import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.operator.In;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
@@ -118,7 +117,8 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 		return persister.getUpdateExecutor();
 	}
 	
-	public EntityFinder<C, I> getSelectExecutor() {
+	@Override
+	public EntityFinder<C, I> getEntityFinder() {
 		return this.entityFinder;
 	}
 	
@@ -149,6 +149,11 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	@Override
 	public EntityQueryCriteriaSupport<C, I> newCriteriaSupport() {
 		return new EntityQueryCriteriaSupport<>(entityFinder, criteriaSupport.copy());
+	}
+	
+	@Override
+	public ProjectionQueryCriteriaSupport<C, I> newProjectionCriteriaSupport(Consumer<Select> selectAdapter) {
+		return new ProjectionQueryCriteriaSupport<>(entityFinder, newCriteriaSupport().getEntityCriteriaSupport(), selectAdapter);
 	}
 	
 	@Override

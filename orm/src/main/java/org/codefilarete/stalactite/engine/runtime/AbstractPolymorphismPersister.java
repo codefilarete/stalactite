@@ -73,6 +73,11 @@ public abstract class AbstractPolymorphismPersister<C, I>
 		}
 	}
 	
+	@Override
+	public EntityFinder<C, I> getEntityFinder() {
+		return entityFinder;
+	}
+	
 	public Map<Class<C>, ConfiguredRelationalPersister<C, I>> getSubEntitiesPersisters() {
 		return subEntitiesPersisters;
 	}
@@ -106,6 +111,10 @@ public abstract class AbstractPolymorphismPersister<C, I>
 	@Override
 	public EntityQueryCriteriaSupport<C, I> newCriteriaSupport() {
 		return entityFinder.newCriteriaSupport();
+	}
+	
+	public ProjectionQueryCriteriaSupport<C, I> newProjectionCriteriaSupport(Consumer<Select> selectAdapter) {
+		return new ProjectionQueryCriteriaSupport<>(entityFinder, newCriteriaSupport().getEntityCriteriaSupport(), selectAdapter);
 	}
 	
 	@Override
