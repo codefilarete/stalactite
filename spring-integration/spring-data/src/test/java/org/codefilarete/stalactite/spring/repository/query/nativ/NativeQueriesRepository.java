@@ -7,9 +7,10 @@ import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Republic;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.spring.repository.StalactiteRepository;
-import org.codefilarete.stalactite.spring.repository.query.DerivedQueriesRepository;
 import org.codefilarete.stalactite.spring.repository.query.NativeQuery;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -149,9 +150,14 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 	
 	long countByLanguagesCodeIs(String code);
 	
-	DerivedQueriesRepository.NamesOnly getByName(String name);
+	// projection tests
+	NamesOnly getByName(@Param("name") String name);
 	
-	<T> Collection<T> getByName(String name, Class<T> type);
+	<T> Collection<T> getByName(@Param("name") String name, Class<T> type);
+	
+	Set<NamesOnly> getByNameLikeOrderByPresidentNameAsc(String name);
+
+	Slice<NamesOnly> getByNameLikeOrderByPresidentNameAsc(String name, Pageable pageable);
 	
 	boolean existsByName(String name);
 	
@@ -159,10 +165,7 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 		
 		String getName();
 		
-		@Value("#{target.president.name}")
-		String getPresidentName();
-		
-		DerivedQueriesRepository.NamesOnly.SimplePerson getPresident();
+		SimplePerson getPresident();
 		
 		interface SimplePerson {
 			
@@ -171,4 +174,11 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 		}
 	}
 	
+	// This class should create a query that retrieves the whole aggregate because it has a @Value annotation
+	// Indeed, values required by the @Value annotations can't be known in advance, so the query must retrieve the whole aggregate
+	interface NamesOnlyWithValue extends NamesOnly {
+		
+		@Value("#{target.president.name + '-' + target.president.id.delegate}")
+		String getPresidentName();
+	}
 }

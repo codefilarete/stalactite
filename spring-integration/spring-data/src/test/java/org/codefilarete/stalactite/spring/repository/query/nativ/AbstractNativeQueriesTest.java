@@ -11,14 +11,17 @@ import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.spring.repository.config.EnableStalactiteRepositories;
-import org.codefilarete.stalactite.spring.repository.query.DerivedQueriesRepository.NamesOnly;
-import org.codefilarete.stalactite.spring.repository.query.DerivedQueriesRepository.NamesOnly.SimplePerson;
+import org.codefilarete.stalactite.spring.repository.query.nativ.NativeQueriesRepository.NamesOnly;
+import org.codefilarete.stalactite.spring.repository.query.nativ.NativeQueriesRepository.NamesOnly.SimplePerson;
+import org.codefilarete.stalactite.spring.repository.query.nativ.NativeQueriesRepository.NamesOnlyWithValue;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,7 +47,7 @@ abstract class AbstractNativeQueriesTest {
 	private NativeQueriesRepository derivedQueriesRepository;
 	
 	@Test
-	void projection() {
+	void projection_resultIsSingle() {
 		Republic country1 = new Republic(42);
 		country1.setName("Toto");
 		Person president1 = new Person(666);
@@ -56,7 +59,6 @@ abstract class AbstractNativeQueriesTest {
 		
 		NamesOnly loadedCountry = derivedQueriesRepository.getByName("Toto");
 		assertThat(loadedCountry.getName()).isEqualTo(country1.getName());
-		assertThat(loadedCountry.getPresidentName()).isEqualTo(country1.getPresident().getName());
 		assertThat(loadedCountry.getPresident().getName()).isEqualTo(country1.getPresident().getName());
 	}
 	
@@ -73,14 +75,80 @@ abstract class AbstractNativeQueriesTest {
 		president2.setName("Jane Do");
 		country2.setPresident(president2);
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
-		
-		Collection<NamesOnly> loadedCountries = derivedQueriesRepository.getByName("Toto", NamesOnly.class);
+
+		Collection<NamesOnlyWithValue> loadedCountries = derivedQueriesRepository.getByName("Toto", NamesOnlyWithValue.class);
 		assertThat(loadedCountries).extracting(NamesOnly::getName)
 				.containsExactlyInAnyOrder(country1.getName(), country2.getName());
-		assertThat(loadedCountries).extracting(NamesOnly::getPresidentName)
-				.containsExactlyInAnyOrder(country1.getPresident().getName(), country2.getPresident().getName());
+		assertThat(loadedCountries).extracting(NamesOnlyWithValue::getPresidentName)
+				.containsExactlyInAnyOrder(
+						country1.getPresident().getName() + "-" + country1.getPresident().getId().getDelegate(),
+						country2.getPresident().getName() + "-" + country2.getPresident().getId().getDelegate()
+				);
 		assertThat(loadedCountries).extracting(chain(NamesOnly::getPresident, SimplePerson::getName))
 				.containsExactlyInAnyOrder(country1.getPresident().getName(), country2.getPresident().getName());
+	}
+	
+	@Test
+	void projection_orderBy() {
+		Republic country1 = new Republic(42);
+		country1.setName("Toto");
+		Person president1 = new Person(666);
+		president1.setName("Me");
+		country1.setPresident(president1);
+		Republic country2 = new Republic(43);
+		country2.setName("Titi");
+		Person president2 = new Person(667);
+		president2.setName("John Do");
+		country2.setPresident(president2);
+		Republic country3 = new Republic(44);
+		country3.setName("Tata");
+		Person president3 = new Person(668);
+		president3.setName("Jane Do");
+		country3.setPresident(president3);
+		Republic country4 = new Republic(45);
+		country4.setName("Tonton");
+		Person president4 = new Person(669);
+		president4.setName("Saca do");
+		country4.setPresident(president4);
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
+
+		Set<NamesOnly> loadedNamesOnly1 = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("o");
+		assertThat(loadedNamesOnly1).extracting(NamesOnly::getName).containsExactly(country1.getName(), country4.getName());
+	}
+	
+	@Test
+	void projection_pageable() {
+		Republic country1 = new Republic(42);
+		country1.setName("Toto");
+		Person president1 = new Person(666);
+		president1.setName("Me");
+		country1.setPresident(president1);
+		Republic country2 = new Republic(43);
+		country2.setName("Titi");
+		Person president2 = new Person(667);
+		president2.setName("John Do");
+		country2.setPresident(president2);
+		Republic country3 = new Republic(44);
+		country3.setName("Tata");
+		Person president3 = new Person(668);
+		president3.setName("Jane Do");
+		country3.setPresident(president3);
+		Republic country4 = new Republic(45);
+		country4.setName("Tonton");
+		Person president4 = new Person(669);
+		president4.setName("Saca do");
+		country4.setPresident(president4);
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
+
+		PageRequest pageable = PageRequest.ofSize(3);
+		Slice<NamesOnly> loadedNamesOnly2;
+		loadedNamesOnly2 = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("t", pageable);
+		assertThat(loadedNamesOnly2).extracting(NamesOnly::getName)
+				.containsExactly(country3.getName(), country2.getName(), country1.getName());
+
+		loadedNamesOnly2 = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("t", pageable.next());
+		assertThat(loadedNamesOnly2).extracting(NamesOnly::getName)
+				.containsExactly(country4.getName());
 	}
 	
 	@Test
@@ -243,7 +311,7 @@ abstract class AbstractNativeQueriesTest {
 		assertThat(loadedCountries).isEqualTo(2);
 	}
 	
-	// simple Criteria tests from here. Can't use @Nested with Junit and inheritance :'(
+	// Hereafter are simple Criteria tests. We can't use @Nested with Junit and inheritance :'(
 	// (test fails by not getting enclosing class context which is Spring info here) 
 	
 	@Test

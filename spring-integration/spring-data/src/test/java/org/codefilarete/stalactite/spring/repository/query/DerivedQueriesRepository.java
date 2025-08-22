@@ -9,6 +9,8 @@ import org.codefilarete.stalactite.engine.model.Republic;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.spring.repository.StalactiteRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
@@ -122,26 +124,26 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Republic,
 	
 	long countDistinctByLanguagesCodeIs(String code);
 	
+	boolean existsByName(String name);
+
+	Set<Republic> findByNameOrDescription(String name, String description);
+
+	Set<Republic> findByNameOrDescriptionAndEuMemberOrPresidentName(String name, String description, boolean euMember, String presidentName);
+	
+	// projection tests
 	NamesOnly getByName(String name);
 	
+	<T> Collection<T> getByName(String name, Class<T> type);
+
 	Set<NamesOnly> getByNameLikeOrderByName(String name);
 	
 	Set<NamesOnly> getByNameLikeOrderByPresidentNameAsc(String name);
 	
-	<T> Collection<T> getByName(String name, Class<T> type);
-	
-	boolean existsByName(String name);
-	
-	Set<Republic> findByNameOrDescription(String name, String description);
-	
-	Set<Republic> findByNameOrDescriptionAndEuMemberOrPresidentName(String name, String description, boolean euMember, String presidentName);
+	Slice<NamesOnly> getByNameLikeOrderByPresidentNameAsc(String name, Pageable pageable);
 	
 	interface NamesOnly {
 		
 		String getName();
-		
-		@Value("#{target.president.name}")
-		String getPresidentName();
 		
 		SimplePerson getPresident();
 		
@@ -150,5 +152,13 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Republic,
 			String getName();
 			
 		}
+	}
+	
+	// This class should create a query that retrieves the whole aggregate because it has a @Value annotation
+	// Indeed, values required by the @Value annotations can't be known in advance, so the query must retrieve the whole aggregate
+	interface NamesOnlyWithValue extends NamesOnly {
+
+		@Value("#{target.president.name + '-' + target.president.id.delegate}")
+		String getPresidentName();
 	}
 }

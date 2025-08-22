@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.spring.repository.query;
 
 import javax.sql.DataSource;
-import java.util.List;
+import java.util.Collection;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.CurrentThreadTransactionalConnectionProvider;
@@ -37,8 +37,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
-import static org.codefilarete.stalactite.spring.repository.query.DerivedQueriesWithoutMappedCollectionRepository.*;
+import static org.codefilarete.stalactite.spring.repository.query.DerivedQueriesWithoutMappedCollectionRepository.NamesOnlyWithValue;
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
+import static org.codefilarete.tool.function.Functions.chain;
 import static org.springframework.data.domain.Sort.by;
 
 /**
@@ -89,7 +90,56 @@ abstract class AbstractDerivedQueriesWithoutMappedCollectionTest {
 	}
 	
 	@Test
-	void projection_limit() {
+	void projection_resultIsSingle() {
+		Republic country1 = new Republic(42);
+		country1.setName("Toto");
+		Person president1 = new Person(666);
+		president1.setName("John Do");
+		country1.setPresident(president1);
+		Republic country2 = new Republic(43);
+		country2.setName("Tata");
+		Person president2 = new Person(777);
+		president2.setName("Jane Do");
+		country2.setPresident(president2);
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+
+		// test case of a single result to ensure that the algorithm of projection handle it as well as collections
+		NamesOnly loadedCountries = derivedQueriesRepository.getByName("Tata");
+		assertThat(loadedCountries).extracting(NamesOnly::getName)
+				.isEqualTo(country2.getName());
+		assertThat(loadedCountries).extracting(chain(NamesOnly::getPresident, NamesOnly.SimplePerson::getName))
+				.isEqualTo(country2.getPresident().getName());
+	}
+	
+	@Test
+	void projection_byExtraArgument() {
+		Republic country1 = new Republic(42);
+		country1.setName("Toto");
+		Person president1 = new Person(666);
+		president1.setName("John Do");
+		country1.setPresident(president1);
+		Republic country2 = new Republic(43);
+		country2.setName("Toto");
+		Person president2 = new Person(777);
+		president2.setName("Jane Do");
+		country2.setPresident(president2);
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+
+		// case of a projection as a dynamic type as argument
+		Collection<NamesOnlyWithValue> loadedCountries = derivedQueriesRepository.getByName("Toto", NamesOnlyWithValue.class);
+		assertThat(loadedCountries).extracting(NamesOnly::getName)
+				.containsExactlyInAnyOrder(country1.getName(), country2.getName());
+		assertThat(loadedCountries).extracting(NamesOnlyWithValue::getPresidentName)
+				.containsExactlyInAnyOrder(
+						country1.getPresident().getName() + "-" + country1.getPresident().getId().getDelegate(),
+						country2.getPresident().getName() + "-" + country2.getPresident().getId().getDelegate()
+				);
+		assertThat(loadedCountries).extracting(chain(NamesOnly::getPresident, NamesOnly.SimplePerson::getName))
+				.containsExactlyInAnyOrder(country1.getPresident().getName(), country2.getPresident().getName());
+	}
+	
+	@Test
+	void projection_orderBy() {
 		Republic country1 = new Republic(42);
 		country1.setName("Toto");
 		Person president1 = new Person(666);
@@ -114,11 +164,41 @@ abstract class AbstractDerivedQueriesWithoutMappedCollectionTest {
 		
 		Set<NamesOnly> loadedNamesOnly1 = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("o");
 		assertThat(loadedNamesOnly1).extracting(NamesOnly::getName).containsExactly(country1.getName(), country4.getName());
+	}
+	
+	@Test
+	void projection_pageable() {
+		Republic country1 = new Republic(42);
+		country1.setName("Toto");
+		Person president1 = new Person(666);
+		president1.setName("Me");
+		country1.setPresident(president1);
+		Republic country2 = new Republic(43);
+		country2.setName("Titi");
+		Person president2 = new Person(667);
+		president2.setName("John Do");
+		country2.setPresident(president2);
+		Republic country3 = new Republic(44);
+		country3.setName("Tata");
+		Person president3 = new Person(668);
+		president3.setName("Jane Do");
+		country3.setPresident(president3);
+		Republic country4 = new Republic(45);
+		country4.setName("Tonton");
+		Person president4 = new Person(669);
+		president4.setName("Saca do");
+		country4.setPresident(president4);
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
 		
 		PageRequest pageable = PageRequest.ofSize(3);
-		Slice<NamesOnly> loadedNamesOnly2 = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("t", pageable);
+		Slice<NamesOnly> loadedNamesOnly2;
+		loadedNamesOnly2 = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("t", pageable);
 		assertThat(loadedNamesOnly2).extracting(NamesOnly::getName)
 				.containsExactly(country3.getName(), country2.getName(), country1.getName());
+
+		loadedNamesOnly2 = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("t", pageable.next());
+		assertThat(loadedNamesOnly2).extracting(NamesOnly::getName)
+				.containsExactly(country4.getName());
 	}
 	
 	@Test

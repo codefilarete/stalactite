@@ -1,10 +1,11 @@
 package org.codefilarete.stalactite.spring.repository.query;
 
+import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -14,7 +15,6 @@ import java.util.stream.Collectors;
 import org.codefilarete.reflection.AccessorByMember;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.ProjectionQueryCriteriaSupport;
@@ -25,6 +25,7 @@ import org.codefilarete.stalactite.query.model.LogicalOperator;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.result.Accumulator;
+import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Hanger.Holder;
@@ -54,13 +55,49 @@ import static org.codefilarete.tool.Nullable.nullable;
  */
 class PartTreeStalactiteProjection<C, R> implements StalactiteLimitRepositoryQuery<C, R> {
 	
+	/**
+	 * Fills given {@link Map} with some more {@link Map}s to create a hierarchic structure from the given dotted property name, e.g. "a.b.c" will
+	 * result in a map like:
+	 * <pre>{@code
+	 *   "a": {
+	 *     "b": {
+	 *       "c": value
+	 *     }
+	 *   }
+	 * }</pre>
+	 * If the given Map already contains data, then it will be filled without overriding the existing ones, e.g. given the above {@link Map}, if we
+	 * call this method with "a.b.d" and a value, then the resulting {@link Map} will be:
+	 * <pre>{@code
+	 *   "a": {
+	 *     "b": {
+	 *       "c": value
+	 *       "d": other_value
+	 *     }
+	 *   }
+	 * }</pre>	 *
+	 * @param dottedProperty the dotted property name
+	 * @param value the value to set at the leaf of the map
+	 * @param root the root map to build upon
+	 */
+	@VisibleForTesting
+	static void buildHierarchicMap(String dottedProperty, Object value, Map<String, Object> root) {
+		String[] parts = dottedProperty.split("\\.");
+		Map<String, Object> current = root;
+		// Navigate through all parts except the last one
+		int lengthMinus1 = parts.length - 1;
+		for (int i = 0; i < lengthMinus1; i++) {
+			current = (Map<String, Object>) current.computeIfAbsent(parts[i], k -> new HashMap<>());
+		}
+		// Set the value in the leaf Map
+		current.putIfAbsent(parts[lengthMinus1], value);
+	}
+
 	private final QueryMethod method;
 	private final AdvancedEntityPersister<C, ?> entityPersister;
 	private final PartTree tree;
-	private final Accumulator<Function<Selectable<Object>, Object>, List<Object[]>, List<Object[]>> accumulator;
+	private final Accumulator<Function<Selectable<Object>, Object>, List<Map<String, Object>>, List<Map<String, Object>>> accumulator;
 	private final DerivedQuery<C> query;
 	private final Consumer<Select> selectConsumer;
-	private Function<List<Object[]>, R> rowProjectionAdapter;
 	
 	public <O> PartTreeStalactiteProjection(
 			QueryMethod method,
@@ -80,12 +117,13 @@ class PartTreeStalactiteProjection<C, R> implements StalactiteLimitRepositoryQue
 				-> !domainType.isAssignableFrom(returnType) && !returnType.isAssignableFrom(domainType);
 		
 		EntityProjectionIntrospector entityProjectionIntrospector = EntityProjectionIntrospector.create(factory, predicate, new RelationalMappingContext());
-		EntityProjection<?, C> introspect = entityProjectionIntrospector.introspect(method.getReturnedObjectType(), entityPersister.getClassToPersist());
-		Set<List<ValueAccessPoint<?>>> propertiesAccessors = new LinkedHashSet<>();
+		EntityProjection<?, C> projectionTypeIntrospection = entityProjectionIntrospector.introspect(method.getReturnedObjectType(), entityPersister.getClassToPersist());
+		AggregateAccessPointToColumnMapping<C> aggregateColumnMapping = entityPersister.getEntityFinder().newCriteriaSupport().getEntityCriteriaSupport().getAggregateColumnMapping();
+		IdentityHashMap<Selectable<?>, PropertyPath> columnToProperties = new IdentityHashMap<>();
 		// there's a bug here: when property length is higher than 2 it contains an extra item which makes the whole algorithm broken (Spring bug)
-		introspect.forEachRecursive(propertyProjection -> {
+		projectionTypeIntrospection.forEachRecursive(projectionProperty -> {
 			AccessorChain accessorChain = new AccessorChain<>();
-			List<PropertyPath> collect = propertyProjection.getPropertyPath().stream().collect(Collectors.toList());
+			List<PropertyPath> collect = projectionProperty.getPropertyPath().stream().collect(Collectors.toList());
 			if (collect.size() >= 2) {
 				collect = Iterables.cutTail(collect);
 			}
@@ -94,47 +132,41 @@ class PartTreeStalactiteProjection<C, R> implements StalactiteLimitRepositoryQue
 					accessorChain.add(Accessors.accessor(propertyPath1.getOwningType().getType(), propertyPath1.getSegment(), propertyPath1.getType()));
 				});
 			});
-			propertiesAccessors.add(accessorChain.getAccessors());
+			Selectable<?> selectable = aggregateColumnMapping.giveColumn(accessorChain.getAccessors());
+			columnToProperties.put(selectable, projectionProperty.getPropertyPath());
 		});
 		
-		AggregateAccessPointToColumnMapping<C> aggregateColumnMapping = entityPersister.getEntityFinder().newCriteriaSupport().getEntityCriteriaSupport().getAggregateColumnMapping();
 		Holder<Select> selectHolder = new Holder<>();
 		this.selectConsumer = select -> {
 			select.clear();
 			selectHolder.set(select);
 			MutableInt aliasCounter = new MutableInt(0);
-			propertiesAccessors.forEach(property -> {
-				Selectable<?> selectable = aggregateColumnMapping.giveColumn(property);
-				select.add(selectable, "prop_" + aliasCounter.increment());
-			});
+			columnToProperties.keySet().forEach(selectable -> select.add(selectable, "prop_" + aliasCounter.increment()));
 		};
 		
-		// Note that for ResultProcessor need (at execution time), we must provide each row as either Object[] or Collection
-		// (see ResultProcessor.ProjectingConverter.getProjectionTarget)
-		// we chose to use Object[] for clarity: there are already many Collections in here, then using Object[] clarifies a bit for which usage we
-		// type the things
-		this.accumulator = new Accumulator<Function<Selectable<Object>, Object>, List<Object[]>, List<Object[]>>() {
+		// Note that, to suit Spring Data unmarshalling (in ResultProcessor), we must provide each row as a Map<String, Map<String, Map<String, ...>>>
+		// to mimic a hierarchic structure
+		this.accumulator = new Accumulator<Function<Selectable<Object>, Object>, List<Map<String, Object>>, List<Map<String, Object>>>() {
 			@Override
-			public Supplier<List<Object[]>> supplier() {
+			public Supplier<List<Map<String, Object>>> supplier() {
 				return LinkedList::new;
 			}
 			
 			@Override
-			public BiConsumer<List<Object[]>, Function<Selectable<Object>, Object>> aggregator() {
-				return (resultSet, selectableObjectFunction) -> {
+			public BiConsumer<List<Map<String, Object>>, Function<Selectable<Object>, Object>> aggregator() {
+				return (finalResult, databaseRowDataProvider) -> {
 					Select selectables = selectHolder.get();
 					KeepOrderSet<Selectable<?>> columns = selectables.getColumns();
-					Object[] row = new Object[columns.size()];
-					resultSet.add(row);
-					int i = 0;
+					Map<String, Object> row = new HashMap<>();
+					finalResult.add(row);
 					for (Selectable<?> selectable : columns) {
-						row[i++] = selectableObjectFunction.apply((Selectable<Object>) selectable);
+						buildHierarchicMap(columnToProperties.get(selectable).toDotPath(), databaseRowDataProvider.apply((Selectable<Object>) selectable), row);
 					}
 				};
 			}
 			
 			@Override
-			public Function<List<Object[]>, List<Object[]>> finisher() {
+			public Function<List<Map<String, Object>>, List<Map<String, Object>>> finisher() {
 				return Function.identity();
 			}
 		};
@@ -168,19 +200,23 @@ class PartTreeStalactiteProjection<C, R> implements StalactiteLimitRepositoryQue
 		
 		ProjectionQueryCriteriaSupport<C, ?> derivedQueryToUse = handleDynamicSort(parameters);
 		
-		QueryResultWindower<C, ?, R, Object[]> queryResultWindower;
-		Supplier<List<Object[]>> resultSupplier = () -> derivedQueryToUse.wrapIntoExecutable().execute(accumulator);
-		
+		Supplier<List<Map<String, Object>>> resultSupplier = () -> derivedQueryToUse.wrapIntoExecutable().execute(accumulator);
+
+		QueryResultWindower<C, ?, R, Map<String, Object>> queryResultWindower;
 		if (method.isSliceQuery()) {
 			queryResultWindower = new SliceResultWindower<>(this, resultSupplier);
 		} else if (method.isPageQuery()) {
 			queryResultWindower = new PageResultWindower<>(this, new PartTreeStalactiteCountProjection<>(method, entityPersister, tree), resultSupplier);
 		} else {
 			// the result type might be a Collection or a single result
-			queryResultWindower = new QueryResultWindower<C, Object, R, Object[]>(null, null, null) {
+			queryResultWindower = new QueryResultWindower<C, Object, R, Map<String, Object>>(null, null, null) {
 				@Override
 				R adaptExecution(Object[] parameters) {
-					return (R) derivedQueryToUse.wrapIntoExecutable().execute(accumulator);
+					if (method.isCollectionQuery()) {
+						return (R) resultSupplier.get();
+					} else {
+						return (R) resultSupplier.get().get(0);
+					}
 				}
 			};
 		}

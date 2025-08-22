@@ -1,11 +1,14 @@
 package org.codefilarete.stalactite.spring.repository.query;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.model.Republic;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.spring.repository.StalactiteRepository;
+import org.codefilarete.stalactite.spring.repository.query.nativ.NativeQueriesRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -13,6 +16,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 /**
+ * Repository of tests for orderBy and limit cases : both work only with a mapping that doesn't imply Collection property
+ * 
  * @author Guillaume Mary
  */
 @Repository
@@ -32,16 +37,18 @@ public interface DerivedQueriesWithoutMappedCollectionRepository extends Stalact
 	
 	Slice<Republic> searchByNameLike(String name, Pageable pageable);
 	
-	Set<NamesOnly> getByNameLikeOrderByPresidentNameAsc(String code);
+	// projection tests
+	NamesOnly getByName(String name);
 	
-	Slice<NamesOnly> getByNameLikeOrderByPresidentNameAsc(String code, Pageable pageable);
+	<T> Collection<T> getByName(String name, Class<T> type);
+	
+	Set<NamesOnly> getByNameLikeOrderByPresidentNameAsc(String name);
+	
+	Slice<NamesOnly> getByNameLikeOrderByPresidentNameAsc(String name, Pageable pageable);
 	
 	interface NamesOnly {
 		
 		String getName();
-		
-		//		@Value("#{target.president.name}")
-//		String getPresidentName();
 		
 		SimplePerson getPresident();
 		
@@ -50,6 +57,14 @@ public interface DerivedQueriesWithoutMappedCollectionRepository extends Stalact
 			String getName();
 			
 		}
+	}
+	
+	// This class should create a query that retrieves the whole aggregate because it has a @Value annotation
+	// Indeed, values required by the @Value annotations can't be known in advance, so the query must retrieve the whole aggregate
+	interface NamesOnlyWithValue extends NamesOnly {
+		
+		@Value("#{target.president.name + '-' + target.president.id.delegate}")
+		String getPresidentName();
 	}
 	
 }
