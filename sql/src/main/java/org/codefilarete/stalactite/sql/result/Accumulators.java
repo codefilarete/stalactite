@@ -44,7 +44,7 @@ public final class Accumulators {
 	 * @return an {@link Accumulator} which collects all the input elements into a {@code List}, in encounter order
 	 * @see #toUnmodifiableList() 
 	 */
-	public static <T> Accumulator<T, List<T>, List<T>> toList() {
+	public static <T> Accumulator<T, ? extends List<T>, List<T>> toList() {
 		return new CollectionSupport<>(ArrayList::new);
 	}
 	
@@ -54,7 +54,7 @@ public final class Accumulators {
 	 * @param <T> type of input elements
 	 * @return an {@link Accumulator} which collects all the input elements into a {@link List}, in encounter order
 	 */
-	public static <T> Accumulator<T, List<T>, List<T>> toUnmodifiableList() {
+	public static <T> Accumulator<T, ? extends List<T>, List<T>> toUnmodifiableList() {
 		return Accumulators.<T>toList().andThen(Collections::unmodifiableList);
 	}
 	
@@ -64,7 +64,7 @@ public final class Accumulators {
 	 * @param <T> type of input elements
 	 * @return an {@link Accumulator} which collects all the input elements into a {@link Set}, in encounter order
 	 */
-	public static <T> Accumulator<T, Set<T>, Set<T>> toSet() {
+	public static <T> Accumulator<T, ? extends Set<T>, Set<T>> toSet() {
 		return new CollectionSupport<>(HashSet::new);
 	}
 	
@@ -74,7 +74,7 @@ public final class Accumulators {
 	 * @param <T> type of input elements
 	 * @return an {@link Accumulator} which collects all the input elements into a {@link Set}, in encounter order
 	 */
-	public static <T> Accumulator<T, Set<T>, Set<T>> toUnmodifiableSet() {
+	public static <T> Accumulator<T, ? extends Set<T>, Set<T>> toUnmodifiableSet() {
 		return Accumulators.<T>toSet().andThen(Collections::unmodifiableSet);
 	}
 	

@@ -1,8 +1,8 @@
 package org.codefilarete.stalactite.spring.repository.query;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 
 import org.codefilarete.reflection.AccessorByMember;
 import org.codefilarete.reflection.AccessorChain;
@@ -13,10 +13,14 @@ import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport.EntityQueryPageSupport;
 import org.codefilarete.stalactite.query.model.LogicalOperator;
-import org.codefilarete.stalactite.sql.result.Accumulator;
+import org.codefilarete.stalactite.spring.repository.query.projection.CollectionProjectionEngine;
+import org.codefilarete.stalactite.spring.repository.query.projection.PagedProjectionEngine;
+import org.codefilarete.stalactite.spring.repository.query.projection.ProjectionEngine;
+import org.codefilarete.stalactite.spring.repository.query.projection.SingleProjectionEngine;
+import org.codefilarete.stalactite.spring.repository.query.projection.SlicedProjectionEngine;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mapping.PropertyPath;
-import org.springframework.data.repository.query.ParameterAccessor;
 import org.springframework.data.repository.query.ParametersParameterAccessor;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
@@ -38,16 +42,17 @@ import static org.codefilarete.tool.Nullable.nullable;
  */
 public class PartTreeStalactiteQuery<C, R> implements StalactiteLimitRepositoryQuery<C, R> {
 	
-	protected final QueryMethod method;
+	private final QueryMethod method;
 	protected final DerivedQuery<C> query;
-	protected final Accumulator<C, Collection<C>, R> accumulator;
-	
+	private final AdvancedEntityPersister<C, ?> entityPersister;
+	private final PartTree tree;
+
 	public PartTreeStalactiteQuery(QueryMethod method,
 								   AdvancedEntityPersister<C, ?> entityPersister,
-								   PartTree tree,
-								   Accumulator<C, ? extends Collection<C>, R> accumulator) {
+								   PartTree tree) {
 		this.method = method;
-		this.accumulator = (Accumulator<C, Collection<C>, R>) accumulator;
+		this.entityPersister = entityPersister;
+		this.tree = tree;
 		
 		try {
 			this.query = new DerivedQuery<>(entityPersister, tree);
@@ -73,19 +78,28 @@ public class PartTreeStalactiteQuery<C, R> implements StalactiteLimitRepositoryQ
 	public R execute(Object[] parameters) {
 		query.criteriaChain.consume(parameters);
 		
-		EntityQueryCriteriaSupport<C, ?> derivedQueryToUse = handleDynamicSort(parameters);
-		R result = derivedQueryToUse.<R>wrapGraphLoad(new HashMap<>()).apply(accumulator);
+		R adaptation = buildResultWindower().adapt(() -> handleDynamicSort(parameters).<List<C>>wrapGraphLoad(new HashMap<>()).apply(Accumulators.toList())).apply(parameters);
 		
-		// - isProjecting() is for case of return type is not domain one (nor a compound one by Collection or other)
 		// - hasDynamicProjection() is for case of method that gives the expected returned type as a last argument (or a compound one by Collection or other)
-		// TODO: the isProjection() check might be superfluous, to be removed
-		if (method.getResultProcessor().getReturnedType().isProjecting() || method.getParameters().hasDynamicProjection()) {
-			ParameterAccessor accessor = new ParametersParameterAccessor(method.getParameters(), parameters);
-			// withDynamicProjection() handles the 2 cases of the "if" (with some not obvious algorithm)
-			return method.getResultProcessor().withDynamicProjection(accessor).processResult(result);
+		if (method.getParameters().hasDynamicProjection()) {
+			return method.getResultProcessor().withDynamicProjection(new ParametersParameterAccessor(method.getParameters(), parameters)).processResult(adaptation);
 		} else {
-			return result;
+			return method.getResultProcessor().processResult(adaptation);
 		}
+	}
+
+	private ProjectionEngine<R, C> buildResultWindower() {
+		ProjectionEngine<?, C> result;
+		if (method.isPageQuery()) {
+			result = new PagedProjectionEngine<>(this, new PartTreeStalactiteCountProjection<>(method, entityPersister, tree));
+		} else if (method.isSliceQuery()) {
+			result = new SlicedProjectionEngine<>(this);
+		} else if (method.isCollectionQuery()) {
+			result = new CollectionProjectionEngine<>();
+		} else {
+			result = new SingleProjectionEngine<>();
+		}
+		return (ProjectionEngine<R, C>) result;
 	}
 	
 	private EntityQueryCriteriaSupport<C, ?> handleDynamicSort(Object[] parameters) {

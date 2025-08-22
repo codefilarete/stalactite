@@ -31,7 +31,7 @@ class AccumulatorsTest {
 	
 	@Test
 	void toList() {
-		Accumulator<Person, List<Person>, List<Person>> testInstance = Accumulators.toList();
+		Accumulator<Person, ? extends List<Person>, List<Person>> testInstance = Accumulators.toList();
 		Person titi = new Person("titi");
 		Person tata = new Person("tata");
 		Person toto = new Person("toto");
@@ -41,7 +41,7 @@ class AccumulatorsTest {
 	
 	@Test
 	void toUnmodifiableList() {
-		Accumulator<Person, List<Person>, List<Person>> testInstance = Accumulators.toUnmodifiableList();
+		Accumulator<Person, ? extends List<Person>, List<Person>> testInstance = Accumulators.toUnmodifiableList();
 		Person titi = new Person("titi");
 		Person tata = new Person("tata");
 		Person toto = new Person("toto");
@@ -52,7 +52,7 @@ class AccumulatorsTest {
 	
 	@Test
 	void toSet() {
-		Accumulator<Person, Set<Person>, Set<Person>> testInstance = Accumulators.toSet();
+		Accumulator<Person, ? extends Set<Person>, Set<Person>> testInstance = Accumulators.toSet();
 		Person titi = new Person("titi");
 		Person tata = new Person("tata");
 		Person toto = new Person("toto");
@@ -62,7 +62,7 @@ class AccumulatorsTest {
 	
 	@Test
 	void toUnmodifiableSet() {
-		Accumulator<Person, Set<Person>, Set<Person>> testInstance = Accumulators.toUnmodifiableSet();
+		Accumulator<Person, ? extends Set<Person>, Set<Person>> testInstance = Accumulators.toUnmodifiableSet();
 		Person titi = new Person("titi");
 		Person tata = new Person("tata");
 		Person toto = new Person("toto");

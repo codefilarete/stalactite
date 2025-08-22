@@ -1,17 +1,8 @@
 package org.codefilarete.stalactite.spring.repository.query;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
-import org.codefilarete.stalactite.sql.result.Accumulator;
-import org.codefilarete.stalactite.sql.result.Accumulators;
-import org.springframework.data.domain.Slice;
 import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.repository.core.NamedQueries;
 import org.springframework.data.repository.core.RepositoryMetadata;
@@ -62,36 +53,7 @@ public class CreateQueryLookupStrategy<T> implements QueryLookupStrategy {
 			// se https://docs.spring.io/spring-data/jpa/reference/repositories/projections.html
 			return new PartTreeStalactiteProjection<>(queryMethod, entityPersister, partTree, factory);
 		} else {
-			if (queryMethod.isPageQuery() || queryMethod.isSliceQuery()) {
-				return createPageableQuery(queryMethod, partTree);
-			} else {
-				Accumulator<T, ?, ?> accumulator = queryMethod.isCollectionQuery()
-						? (Accumulator) Accumulators.toKeepingOrderSet()
-						: (Accumulator) Accumulators.getFirstUnique();
-				return new PartTreeStalactiteQuery<>(queryMethod, entityPersister, partTree, (Accumulator<T, ? extends Collection<T>, ?>) accumulator);
-			}
+			return new PartTreeStalactiteQuery<>(queryMethod, entityPersister, partTree);
 		}
-	}
-	
-	private <R extends Slice<P>, P> PartTreeStalactitePagedQuery<T, R, P> createPageableQuery(QueryMethod queryMethod, PartTree partTree) {
-		Accumulator<T, Collection<T>, List<P>> accumulator1 = new Accumulator<T, Collection<T>, List<P>>() {
-			@Override
-			public Supplier<Collection<T>> supplier() {
-				return ArrayList::new;
-			}
-			
-			@Override
-			public BiConsumer<Collection<T>, T> aggregator() {
-				return Collection::add;
-			}
-			
-			@Override
-			public Function<Collection<T>, List<P>> finisher() {
-				return cs -> (List<P>) cs;
-			}
-		};
-		PartTreeStalactiteQuery<T, List<P>> tListPartTreeStalactiteQuery = new PartTreeStalactiteQuery<>(queryMethod, entityPersister, partTree, accumulator1);
-		return new PartTreeStalactitePagedQuery<>(queryMethod, entityPersister, partTree,
-				tListPartTreeStalactiteQuery);
 	}
 }

@@ -219,8 +219,8 @@ public class PartTreeStalactiteProjection<C, R> implements StalactiteLimitReposi
 		}
 	}
 
-	private ProjectionEngine<R> buildResultWindower() {
-		ProjectionEngine<?> result;
+	private ProjectionEngine<R, Map<String, Object>> buildResultWindower() {
+		ProjectionEngine<?, Map<String, Object>> result;
 		if (method.isPageQuery()) {
 			result = new PagedProjectionEngine<>(this, new PartTreeStalactiteCountProjection<>(method, entityPersister, tree));
 		} else if (method.isSliceQuery()) {
@@ -230,7 +230,7 @@ public class PartTreeStalactiteProjection<C, R> implements StalactiteLimitReposi
 		} else {
 			result = new SingleProjectionEngine<>();
 		}
-		return (ProjectionEngine<R>) result;
+		return (ProjectionEngine<R, Map<String, Object>>) result;
 	}
 	
 	protected Supplier<List<Map<String, Object>>> buildQueryExecutor(Object[] parameters) {

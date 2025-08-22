@@ -112,7 +112,7 @@ public class EntityQueryCriteriaSupport<C, I> {
 		Map<String, Object> values = new HashMap<>();
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
-				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, Collection<C>, Object>, Object>) ExecutableQuery::execute,
+				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, ? extends Collection<C>, Object>, Object>) ExecutableQuery::execute,
 						wrapGraphLoad(values))
 				.redirect((SerializableTriFunction<ExecutableEntityQuery<?, ?>, String, Object, Object>) ExecutableEntityQuery::set,
 						// Don't use "values::put" because its signature returns previous value, which means it is a Function
@@ -143,7 +143,7 @@ public class EntityQueryCriteriaSupport<C, I> {
 		
 	}
 	
-	public <R> Function<Accumulator<C, Collection<C>, R>, R> wrapGraphLoad(Map<String, Object> values) {
+	public <R> Function<Accumulator<C, ? extends Collection<C>, R>, R> wrapGraphLoad(Map<String, Object> values) {
 		if (queryPageSupport.getLimit() != null && entityCriteriaSupport.hasCollectionProperty()) {
 			throw new UnsupportedOperationException("Can't limit query when entity graph contains Collection relations");
 		}
@@ -153,7 +153,7 @@ public class EntityQueryCriteriaSupport<C, I> {
 			// and we don't ask for SQL "order by" because it's useless
 			// Note that we must wrap this creation in an if statement due to that entities don't implement Comparable, we avoid a
 			// ClassCastException of the addAll(..) operation
-			return (Accumulator<C, Collection<C>, R> accumulatorParam) -> {
+			return (Accumulator<C, ? extends Collection<C>, R> accumulatorParam) -> {
 				LOGGER.debug("Sorting loaded entities in memory");
 				Set<C> loadedEntities = entityFinder.select(
 						entityCriteriaSupport,
@@ -165,7 +165,7 @@ public class EntityQueryCriteriaSupport<C, I> {
 			};
 		} else {
 			// single query
-			return (Accumulator<C, Collection<C>, R> accumulatorParam) -> {
+			return (Accumulator<C, ? extends Collection<C>, R> accumulatorParam) -> {
 				OrderBy orderBy = new OrderBy();
 				queryPageSupport.getOrderBy().forEach(duo -> {
 					Selectable column = entityCriteriaSupport.getAggregateColumnMapping().giveColumn(duo.getProperty());

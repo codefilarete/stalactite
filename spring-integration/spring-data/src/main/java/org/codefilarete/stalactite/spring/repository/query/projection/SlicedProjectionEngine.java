@@ -1,14 +1,13 @@
 package org.codefilarete.stalactite.spring.repository.query.projection;
 
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.spring.repository.query.StalactiteLimitRepositoryQuery;
 import org.springframework.data.domain.Slice;
 
-public class SlicedProjectionEngine<C, R> implements ProjectionEngine<Slice<R>> {
+public class SlicedProjectionEngine<C, R, I> implements ProjectionEngine<Slice<R>, I> {
 
 	private final StalactiteLimitRepositoryQuery<C, ?> delegate;
 
@@ -17,8 +16,8 @@ public class SlicedProjectionEngine<C, R> implements ProjectionEngine<Slice<R>> 
 	}
 
 	@Override
-	public Function<Object[], Slice<R>> adapt(Supplier<List<Map<String, Object>>> resultSupplier) {
-		return new SliceResultWindower<C, Slice<R>, Map<String, Object>>(delegate, resultSupplier)::adaptExecution;
+	public Function<Object[], Slice<R>> adapt(Supplier<List<I>> resultSupplier) {
+		return new SliceResultWindower<C, Slice<R>, I>(delegate, resultSupplier)::adaptExecution;
 	}
 
 }

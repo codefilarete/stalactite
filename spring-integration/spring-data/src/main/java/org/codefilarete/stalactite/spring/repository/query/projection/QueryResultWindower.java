@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-import org.codefilarete.stalactite.spring.repository.query.PartTreeStalactiteLimitingQuery.StalactiteParametersParameterAccessor;
 import org.codefilarete.stalactite.spring.repository.query.PartTreeStalactiteProjection;
+import org.codefilarete.stalactite.spring.repository.query.projection.PartTreeStalactiteLimitingQuery.StalactiteParametersParameterAccessor;
 import org.codefilarete.stalactite.spring.repository.query.PartTreeStalactiteQuery;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteLimitRepositoryQuery;
 import org.springframework.data.domain.Pageable;

@@ -1,9 +1,11 @@
 package org.codefilarete.stalactite.spring.repository.query;
 
+import java.util.HashMap;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
+import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
@@ -25,7 +27,17 @@ class PartTreeStalactiteDelete<C> implements RepositoryQuery {
 	private final EntityPersister<C, ?> entityPersister;
 	
 	public PartTreeStalactiteDelete(QueryMethod queryMethod, AdvancedEntityPersister<C, ?> entityPersister, PartTree partTree) {
-		this.partTreeQuery = new PartTreeStalactiteQuery<>(queryMethod, entityPersister, partTree, Accumulators.toSet());
+		this.partTreeQuery = new PartTreeStalactiteQuery<C, Set<C>>(queryMethod, entityPersister, partTree) {
+			
+			@Override
+			public Set<C> execute(Object[] parameters) {
+				query.criteriaChain.consume(parameters);
+				// no sort nor order-by are taken into account here because we are here to delete the loaded instances, thus it's unnecessary to keep
+				// such information
+				EntityQueryCriteriaSupport<C, ?> derivedQueryToUse = query.executableEntityQuery;
+				return derivedQueryToUse.<Set<C>>wrapGraphLoad(new HashMap<>()).apply(Accumulators.toSet());
+			}
+		};
 		this.queryMethod = queryMethod;
 		this.entityPersister = entityPersister;
 	}
