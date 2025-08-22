@@ -1,20 +1,17 @@
 package org.codefilarete.stalactite.spring.repository.query;
 
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
+import org.codefilarete.stalactite.spring.repository.query.projection.PageResultWindower;
+import org.codefilarete.stalactite.spring.repository.query.projection.QueryResultWindower;
+import org.codefilarete.stalactite.spring.repository.query.projection.SliceResultWindower;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
-import org.springframework.data.domain.SliceImpl;
-import org.springframework.data.repository.query.Parameters;
-import org.springframework.data.repository.query.ParametersParameterAccessor;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
 import org.springframework.data.repository.query.parser.PartTree;
-import org.springframework.data.support.PageableExecutionUtils;
 
 /**
  * Kind of {@link PartTreeStalactiteQuery} made for partial result query like {@link Slice} and {@link Page} ones.
@@ -45,7 +42,7 @@ public class PartTreeStalactitePagedQuery<C, R extends Slice<P>, P> implements R
 	@Override
 	public R execute(Object[] parameters) {
 		
-		QueryResultWindower<C, ?, R, P> queryResultWindower;
+		QueryResultWindower<C, R, P> queryResultWindower;
 		Supplier<List<P>> resultSupplier = () -> delegate.execute(parameters);
 		
 		if (getQueryMethod().isSliceQuery()) {
@@ -54,9 +51,9 @@ public class PartTreeStalactitePagedQuery<C, R extends Slice<P>, P> implements R
 			queryResultWindower = new PageResultWindower<>(delegate, new PartTreeStalactiteCountProjection<>(method, entityPersister, tree), resultSupplier);
 		} else {
 			// the result type might be a Collection or a single result
-			queryResultWindower = new QueryResultWindower<C, Object, R, P>(null, null, null) {
+			queryResultWindower = new QueryResultWindower<C, R, P>(null, null, null) {
 				@Override
-				R adaptExecution(Object[] parameters) {
+				public R adaptExecution(Object[] parameters) {
 					return (R) delegate.execute(parameters);
 				}
 			};

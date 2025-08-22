@@ -1,22 +1,22 @@
-package org.codefilarete.stalactite.spring.repository.query;
+package org.codefilarete.stalactite.spring.repository.query.projection;
 
 import java.util.List;
 import java.util.function.Supplier;
 
+import org.codefilarete.stalactite.spring.repository.query.StalactiteLimitRepositoryQuery;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.SliceImpl;
 
 /**
  * {@link QueryResultWindower} dedicated to {@link org.springframework.data.domain.Slice} result.
  * @param <C>
- * @param <I>
  * @param <R>
  * @param <P>
  * @author Guillaume Mary
  */
-class SliceResultWindower<C, I, R, P> extends QueryResultWindower<C, I, R, P> {
-	
-	SliceResultWindower(StalactiteLimitRepositoryQuery<C, I> delegate,
+public class SliceResultWindower<C, R, P> extends QueryResultWindower<C, R, P> {
+
+	public SliceResultWindower(StalactiteLimitRepositoryQuery<C, ?> delegate,
 						Supplier<List<P>> resultSupplier) {
 		super(delegate,
 				(accessor, result) -> {

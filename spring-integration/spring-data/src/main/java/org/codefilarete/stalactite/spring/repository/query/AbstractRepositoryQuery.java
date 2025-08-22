@@ -28,7 +28,7 @@ public abstract class AbstractRepositoryQuery implements RepositoryQuery {
 		return queryMethod;
 	}
 
-	protected Map<String, Object> getValues(ParametersParameterAccessor accessor) {
+	public Map<String, Object> getValues(ParametersParameterAccessor accessor) {
 		Map<String, Object> result = new HashMap<>();
 		for (Parameter bindableParameter : queryMethod.getParameters().getBindableParameters()) {
 			String parameterName = bindableParameter.getName().orElseThrow(() -> new IllegalStateException(PARAMETER_NEEDS_TO_BE_NAMED));

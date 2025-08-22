@@ -1,10 +1,13 @@
-package org.codefilarete.stalactite.spring.repository.query;
+package org.codefilarete.stalactite.spring.repository.query.projection;
 
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.spring.repository.query.PartTreeStalactiteLimitingQuery.StalactiteParametersParameterAccessor;
+import org.codefilarete.stalactite.spring.repository.query.PartTreeStalactiteProjection;
+import org.codefilarete.stalactite.spring.repository.query.PartTreeStalactiteQuery;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteLimitRepositoryQuery;
 import org.springframework.data.domain.Pageable;
 
 /**
@@ -21,13 +24,13 @@ import org.springframework.data.domain.Pageable;
  * @see PageResultWindower
  * @see SliceResultWindower
  */
-abstract class QueryResultWindower<C, I, R, P> {
+public abstract class QueryResultWindower<C, R, P> {
 	
-	private final StalactiteLimitRepositoryQuery<C, I> delegate;
+	private final StalactiteLimitRepositoryQuery<C, ?> delegate;
 	protected final BiFunction<StalactiteParametersParameterAccessor, List<P>, R> queryResultSlicer;
 	private final Supplier<List<P>> resultSupplier;
 	
-	public QueryResultWindower(StalactiteLimitRepositoryQuery<C, I> delegate,
+	public QueryResultWindower(StalactiteLimitRepositoryQuery<C, ?> delegate,
 							   BiFunction<StalactiteParametersParameterAccessor, List<P>, R> queryResultSlicer,
 							   Supplier<List<P>> resultSupplier) {
 		this.delegate = delegate;
@@ -35,7 +38,7 @@ abstract class QueryResultWindower<C, I, R, P> {
 		this.resultSupplier = resultSupplier;
 	}
 	
-	R adaptExecution(Object[] parameters) {
+	public R adaptExecution(Object[] parameters) {
 		StalactiteParametersParameterAccessor smartParameters = new StalactiteParametersParameterAccessor(delegate.getQueryMethod().getParameters(), parameters);
 		// windowing requires adapting the query to append a limit clause
 		adaptLimit(smartParameters);

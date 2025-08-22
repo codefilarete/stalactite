@@ -68,7 +68,7 @@ public class SqlNativeRepositoryQuery<C> extends AbstractRepositoryQuery {
 		return accumulator.collect(relationalEntityFinder.selectFromQueryBean(sql, getValues(accessor), bindParameters(accessor)));
 	}
 	
-	private Map<String, PreparedStatementWriter<?>> bindParameters(ParametersParameterAccessor accessor) {
+	Map<String, PreparedStatementWriter<?>> bindParameters(ParametersParameterAccessor accessor) {
 		Map<String, PreparedStatementWriter<?>> result = new HashMap<>();
 		RelationalParameters bindableParameters = getQueryMethod().getParameters().getBindableParameters();
 		

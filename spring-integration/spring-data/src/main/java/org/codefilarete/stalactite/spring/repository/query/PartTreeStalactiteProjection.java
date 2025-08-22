@@ -24,12 +24,16 @@ import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.model.LogicalOperator;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.spring.repository.query.projection.CollectionProjectionEngine;
+import org.codefilarete.stalactite.spring.repository.query.projection.PagedProjectionEngine;
+import org.codefilarete.stalactite.spring.repository.query.projection.ProjectionEngine;
+import org.codefilarete.stalactite.spring.repository.query.projection.SingleProjectionEngine;
+import org.codefilarete.stalactite.spring.repository.query.projection.SlicedProjectionEngine;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Hanger.Holder;
-import org.codefilarete.tool.trace.MutableInt;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mapping.PropertyPath;
 import org.springframework.data.projection.EntityProjection;
@@ -53,7 +57,7 @@ import static org.codefilarete.tool.Nullable.nullable;
  * @param <C> entity type
  * @author Guillaume Mary
  */
-class PartTreeStalactiteProjection<C, R> implements StalactiteLimitRepositoryQuery<C, R> {
+public class PartTreeStalactiteProjection<C, R> implements StalactiteLimitRepositoryQuery<C, R> {
 	
 	/**
 	 * Fills given {@link Map} with some more {@link Map}s to create a hierarchic structure from the given dotted property name, e.g. "a.b.c" will
@@ -80,7 +84,7 @@ class PartTreeStalactiteProjection<C, R> implements StalactiteLimitRepositoryQue
 	 * @param root the root map to build upon
 	 */
 	@VisibleForTesting
-	static void buildHierarchicMap(String dottedProperty, Object value, Map<String, Object> root) {
+	protected static void buildHierarchicMap(String dottedProperty, Object value, Map<String, Object> root) {
 		String[] parts = dottedProperty.split("\\.");
 		Map<String, Object> current = root;
 		// Navigate through all parts except the last one
@@ -99,6 +103,9 @@ class PartTreeStalactiteProjection<C, R> implements StalactiteLimitRepositoryQue
 	private final DerivedQuery<C> query;
 	private final Consumer<Select> selectConsumer;
 	
+	protected final Map<Selectable<?>, String> aliases = new HashMap<>();
+	protected final IdentityHashMap<Selectable<?>, PropertyPath> columnToProperties = new IdentityHashMap<>();
+
 	public <O> PartTreeStalactiteProjection(
 			QueryMethod method,
 			AdvancedEntityPersister<C, ?> entityPersister,
@@ -119,7 +126,6 @@ class PartTreeStalactiteProjection<C, R> implements StalactiteLimitRepositoryQue
 		EntityProjectionIntrospector entityProjectionIntrospector = EntityProjectionIntrospector.create(factory, predicate, new RelationalMappingContext());
 		EntityProjection<?, C> projectionTypeIntrospection = entityProjectionIntrospector.introspect(method.getReturnedObjectType(), entityPersister.getClassToPersist());
 		AggregateAccessPointToColumnMapping<C> aggregateColumnMapping = entityPersister.getEntityFinder().newCriteriaSupport().getEntityCriteriaSupport().getAggregateColumnMapping();
-		IdentityHashMap<Selectable<?>, PropertyPath> columnToProperties = new IdentityHashMap<>();
 		// there's a bug here: when property length is higher than 2 it contains an extra item which makes the whole algorithm broken (Spring bug)
 		projectionTypeIntrospection.forEachRecursive(projectionProperty -> {
 			AccessorChain accessorChain = new AccessorChain<>();
@@ -134,14 +140,17 @@ class PartTreeStalactiteProjection<C, R> implements StalactiteLimitRepositoryQue
 			});
 			Selectable<?> selectable = aggregateColumnMapping.giveColumn(accessorChain.getAccessors());
 			columnToProperties.put(selectable, projectionProperty.getPropertyPath());
+			String alias = projectionProperty.getPropertyPath().toDotPath().replace('.', '_');
+			aliases.put(selectable, alias);
 		});
 		
 		Holder<Select> selectHolder = new Holder<>();
 		this.selectConsumer = select -> {
 			select.clear();
 			selectHolder.set(select);
-			MutableInt aliasCounter = new MutableInt(0);
-			columnToProperties.keySet().forEach(selectable -> select.add(selectable, "prop_" + aliasCounter.increment()));
+			columnToProperties.keySet().forEach(selectable -> {
+				select.add(selectable, aliases.get(selectable));
+			});
 		};
 		
 		// Note that, to suit Spring Data unmarshalling (in ResultProcessor), we must provide each row as a Map<String, Map<String, Map<String, ...>>>
@@ -198,30 +207,9 @@ class PartTreeStalactiteProjection<C, R> implements StalactiteLimitRepositoryQue
 	public R execute(Object[] parameters) {
 		query.criteriaChain.consume(parameters);
 		
-		ProjectionQueryCriteriaSupport<C, ?> derivedQueryToUse = handleDynamicSort(parameters);
-		
-		Supplier<List<Map<String, Object>>> resultSupplier = () -> derivedQueryToUse.wrapIntoExecutable().execute(accumulator);
+		Supplier<List<Map<String, Object>>> resultSupplier = buildQueryExecutor(parameters);
 
-		QueryResultWindower<C, ?, R, Map<String, Object>> queryResultWindower;
-		if (method.isSliceQuery()) {
-			queryResultWindower = new SliceResultWindower<>(this, resultSupplier);
-		} else if (method.isPageQuery()) {
-			queryResultWindower = new PageResultWindower<>(this, new PartTreeStalactiteCountProjection<>(method, entityPersister, tree), resultSupplier);
-		} else {
-			// the result type might be a Collection or a single result
-			queryResultWindower = new QueryResultWindower<C, Object, R, Map<String, Object>>(null, null, null) {
-				@Override
-				R adaptExecution(Object[] parameters) {
-					if (method.isCollectionQuery()) {
-						return (R) resultSupplier.get();
-					} else {
-						return (R) resultSupplier.get().get(0);
-					}
-				}
-			};
-		}
-		
-		R adaptation = queryResultWindower.adaptExecution(parameters);
+		R adaptation = buildResultWindower().adapt(resultSupplier).apply(parameters);
 		
 		// - hasDynamicProjection() is for case of method that gives the expected returned type as a last argument (or a compound one by Collection or other)
 		if (method.getParameters().hasDynamicProjection()) {
@@ -229,6 +217,24 @@ class PartTreeStalactiteProjection<C, R> implements StalactiteLimitRepositoryQue
 		} else {
 			return method.getResultProcessor().processResult(adaptation);
 		}
+	}
+
+	private ProjectionEngine<R> buildResultWindower() {
+		ProjectionEngine<?> result;
+		if (method.isPageQuery()) {
+			result = new PagedProjectionEngine<>(this, new PartTreeStalactiteCountProjection<>(method, entityPersister, tree));
+		} else if (method.isSliceQuery()) {
+			result = new SlicedProjectionEngine<>(this);
+		} else if (method.isCollectionQuery()) {
+			result = new CollectionProjectionEngine<>();
+		} else {
+			result = new SingleProjectionEngine<>();
+		}
+		return (ProjectionEngine<R>) result;
+	}
+	
+	protected Supplier<List<Map<String, Object>>> buildQueryExecutor(Object[] parameters) {
+		return () -> handleDynamicSort(parameters).wrapIntoExecutable().execute(accumulator);
 	}
 	
 	private ProjectionQueryCriteriaSupport<C, ?> handleDynamicSort(Object[] parameters) {
