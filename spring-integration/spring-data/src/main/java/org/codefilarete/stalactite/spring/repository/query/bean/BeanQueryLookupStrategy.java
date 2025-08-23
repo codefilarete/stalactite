@@ -11,6 +11,7 @@ import javax.annotation.Nullable;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
 import org.codefilarete.stalactite.spring.repository.StalactiteRepository;
 import org.codefilarete.stalactite.spring.repository.query.BeanQuery;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.tool.Reflections;
@@ -45,7 +46,7 @@ public class BeanQueryLookupStrategy<C> implements QueryLookupStrategy {
 	public RepositoryQuery resolveQuery(Method method, RepositoryMetadata metadata, ProjectionFactory factory, NamedQueries namedQueries) {
 		ExecutableEntityQuery<C, ?> executableEntityQuery = findSQL(method);
 		if (executableEntityQuery != null) {
-			BeanQueryMethod queryMethod = new BeanQueryMethod(method, metadata, factory);
+			StalactiteQueryMethod queryMethod = new StalactiteQueryMethod(method, metadata, factory);
 			Accumulator<C, ?, ?> accumulator = queryMethod.isCollectionQuery()
 					? (Accumulator) Accumulators.toKeepingOrderSet()
 					: (Accumulator) Accumulators.getFirstUnique();

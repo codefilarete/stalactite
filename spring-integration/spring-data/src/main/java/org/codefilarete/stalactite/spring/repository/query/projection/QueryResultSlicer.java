@@ -7,11 +7,11 @@ import java.util.function.Supplier;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteLimitRepositoryQuery;
 import org.springframework.data.domain.Slice;
 
-public class SlicedProjectionEngine<C, R, I> implements ProjectionEngine<Slice<R>, I> {
+public class QueryResultSlicer<C, R, I> implements QueryResultReducer<Slice<R>, I> {
 
 	private final StalactiteLimitRepositoryQuery<C, ?> delegate;
 
-	public SlicedProjectionEngine(StalactiteLimitRepositoryQuery<C, ?> delegate) {
+	public QueryResultSlicer(StalactiteLimitRepositoryQuery<C, ?> delegate) {
 		this.delegate = delegate;
 	}
 

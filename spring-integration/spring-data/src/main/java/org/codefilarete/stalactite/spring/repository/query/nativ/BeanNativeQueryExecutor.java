@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityFinder;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
 import org.codefilarete.stalactite.spring.repository.query.projection.StalactiteParametersParameterAccessor;
 import org.codefilarete.stalactite.sql.Dialect;
 
@@ -14,10 +15,10 @@ public class BeanNativeQueryExecutor<C> extends AbstractNativeQueryExecutor<List
 	private final String sql;
 	private final RelationalEntityFinder<C, ?, ?> relationalEntityFinder;
 
-	public BeanNativeQueryExecutor(NativeQueryMethod method,
-                                   String sql,
+	public BeanNativeQueryExecutor(StalactiteQueryMethod method,
+								   String sql,
 								   RelationalEntityFinder<C, ?, ?> relationalEntityFinder,
-                                   Dialect dialect) {
+								   Dialect dialect) {
 		super(method, dialect);
 		this.sql = sql;
 		this.relationalEntityFinder = relationalEntityFinder;

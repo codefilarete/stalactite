@@ -13,6 +13,7 @@ import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
 import org.codefilarete.stalactite.spring.repository.query.projection.StalactiteParametersParameterAccessor;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -38,7 +39,7 @@ public class TupleNativeQueryExecutor extends AbstractNativeQueryExecutor<List<M
 	private final String sql;
 	private final ConnectionProvider connectionProvider;
 
-	public TupleNativeQueryExecutor(NativeQueryMethod method,
+	public TupleNativeQueryExecutor(StalactiteQueryMethod method,
 									String sql,
 									Dialect dialect,
 									ConnectionProvider connectionProvider,

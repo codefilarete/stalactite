@@ -13,11 +13,11 @@ import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport.EntityQueryPageSupport;
 import org.codefilarete.stalactite.query.model.LogicalOperator;
-import org.codefilarete.stalactite.spring.repository.query.projection.CollectionProjectionEngine;
-import org.codefilarete.stalactite.spring.repository.query.projection.PagedProjectionEngine;
-import org.codefilarete.stalactite.spring.repository.query.projection.ProjectionEngine;
-import org.codefilarete.stalactite.spring.repository.query.projection.SingleProjectionEngine;
-import org.codefilarete.stalactite.spring.repository.query.projection.SlicedProjectionEngine;
+import org.codefilarete.stalactite.spring.repository.query.projection.QueryResultCollectioner;
+import org.codefilarete.stalactite.spring.repository.query.projection.QueryResultPager;
+import org.codefilarete.stalactite.spring.repository.query.projection.QueryResultReducer;
+import org.codefilarete.stalactite.spring.repository.query.projection.QueryResultSingler;
+import org.codefilarete.stalactite.spring.repository.query.projection.QueryResultSlicer;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mapping.PropertyPath;
@@ -88,18 +88,18 @@ public class PartTreeStalactiteQuery<C, R> implements StalactiteLimitRepositoryQ
 		}
 	}
 
-	private ProjectionEngine<R, C> buildResultWindower() {
-		ProjectionEngine<?, C> result;
+	private QueryResultReducer<R, C> buildResultWindower() {
+		QueryResultReducer<?, C> result;
 		if (method.isPageQuery()) {
-			result = new PagedProjectionEngine<>(this, new PartTreeStalactiteCountProjection<>(method, entityPersister, tree));
+			result = new QueryResultPager<>(this, new PartTreeStalactiteCountProjection<>(method, entityPersister, tree));
 		} else if (method.isSliceQuery()) {
-			result = new SlicedProjectionEngine<>(this);
+			result = new QueryResultSlicer<>(this);
 		} else if (method.isCollectionQuery()) {
-			result = new CollectionProjectionEngine<>();
+			result = new QueryResultCollectioner<>();
 		} else {
-			result = new SingleProjectionEngine<>();
+			result = new QueryResultSingler<>();
 		}
-		return (ProjectionEngine<R, C>) result;
+		return (QueryResultReducer<R, C>) result;
 	}
 	
 	private EntityQueryCriteriaSupport<C, ?> handleDynamicSort(Object[] parameters) {

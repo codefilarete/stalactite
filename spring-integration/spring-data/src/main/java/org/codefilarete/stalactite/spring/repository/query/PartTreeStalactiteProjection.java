@@ -21,11 +21,11 @@ import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.model.LogicalOperator;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.spring.repository.query.projection.CollectionProjectionEngine;
-import org.codefilarete.stalactite.spring.repository.query.projection.PagedProjectionEngine;
-import org.codefilarete.stalactite.spring.repository.query.projection.ProjectionEngine;
-import org.codefilarete.stalactite.spring.repository.query.projection.SingleProjectionEngine;
-import org.codefilarete.stalactite.spring.repository.query.projection.SlicedProjectionEngine;
+import org.codefilarete.stalactite.spring.repository.query.projection.QueryResultCollectioner;
+import org.codefilarete.stalactite.spring.repository.query.projection.QueryResultPager;
+import org.codefilarete.stalactite.spring.repository.query.projection.QueryResultReducer;
+import org.codefilarete.stalactite.spring.repository.query.projection.QueryResultSingler;
+import org.codefilarete.stalactite.spring.repository.query.projection.QueryResultSlicer;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -187,18 +187,18 @@ public class PartTreeStalactiteProjection<C, R> implements StalactiteLimitReposi
 		}
 	}
 
-	private ProjectionEngine<R, Map<String, Object>> buildResultWindower() {
-		ProjectionEngine<?, Map<String, Object>> result;
+	private QueryResultReducer<R, Map<String, Object>> buildResultWindower() {
+		QueryResultReducer<?, Map<String, Object>> result;
 		if (method.isPageQuery()) {
-			result = new PagedProjectionEngine<>(this, new PartTreeStalactiteCountProjection<>(method, entityPersister, tree));
+			result = new QueryResultPager<>(this, new PartTreeStalactiteCountProjection<>(method, entityPersister, tree));
 		} else if (method.isSliceQuery()) {
-			result = new SlicedProjectionEngine<>(this);
+			result = new QueryResultSlicer<>(this);
 		} else if (method.isCollectionQuery()) {
-			result = new CollectionProjectionEngine<>();
+			result = new QueryResultCollectioner<>();
 		} else {
-			result = new SingleProjectionEngine<>();
+			result = new QueryResultSingler<>();
 		}
-		return (ProjectionEngine<R, Map<String, Object>>) result;
+		return (QueryResultReducer<R, Map<String, Object>>) result;
 	}
 	
 	protected Supplier<List<Map<String, Object>>> buildQueryExecutor(Object[] parameters) {

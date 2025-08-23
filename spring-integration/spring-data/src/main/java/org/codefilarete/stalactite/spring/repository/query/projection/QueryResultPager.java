@@ -9,19 +9,19 @@ import org.codefilarete.stalactite.spring.repository.query.PartTreeStalactiteCou
 import org.codefilarete.stalactite.spring.repository.query.StalactiteLimitRepositoryQuery;
 import org.springframework.data.domain.Page;
 
-public class PagedProjectionEngine<C, R, I> implements ProjectionEngine<Page<R>, I> {
+public class QueryResultPager<C, R, I> implements QueryResultReducer<Page<R>, I> {
 
 	private final StalactiteLimitRepositoryQuery<C, ?> delegate;
 	private final Function<Object[], LongSupplier> countSupplier;
 
-	public PagedProjectionEngine(StalactiteLimitRepositoryQuery<C, ?> delegate,
-								 LongSupplier countSupplier) {
+	public QueryResultPager(StalactiteLimitRepositoryQuery<C, ?> delegate,
+							LongSupplier countSupplier) {
 		this.delegate = delegate;
 		this.countSupplier = (parameters) -> countSupplier;
 	}
 
-	public PagedProjectionEngine(StalactiteLimitRepositoryQuery<C, ?> delegate,
-								 PartTreeStalactiteCountProjection<C> countQuery) {
+	public QueryResultPager(StalactiteLimitRepositoryQuery<C, ?> delegate,
+							PartTreeStalactiteCountProjection<C> countQuery) {
 		this.delegate = delegate;
 		this.countSupplier = (parameters) -> {
 					StalactiteParametersParameterAccessor smartParameters = new StalactiteParametersParameterAccessor(delegate.getQueryMethod().getParameters(), parameters);

@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class CollectionProjectionEngine<R, I> implements ProjectionEngine<Collection<R>, I> {
+public class QueryResultCollectioner<R, I> implements QueryResultReducer<Collection<R>, I> {
 
-	public CollectionProjectionEngine() {
+	public QueryResultCollectioner() {
 	}
 
 	@Override

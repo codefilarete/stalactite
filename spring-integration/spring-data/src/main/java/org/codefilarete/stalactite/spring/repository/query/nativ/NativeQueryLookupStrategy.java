@@ -9,10 +9,9 @@ import java.util.TreeMap;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.spring.repository.query.NativeQueries;
 import org.codefilarete.stalactite.spring.repository.query.NativeQuery;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.result.Accumulator;
-import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.Strings;
@@ -57,10 +56,7 @@ public class NativeQueryLookupStrategy<C> implements QueryLookupStrategy {
 		if (nativeQueryAnnotation != null) {
 			String sql = nativeQueryAnnotation.value();
 			String sqlCount = nativeQueryAnnotation.countQuery();
-			NativeQueryMethod nativeQueryMethod = new NativeQueryMethod(method, metadata, factory);
-			Accumulator<C, ?, ?> accumulator = nativeQueryMethod.isCollectionQuery()
-					? (Accumulator) Accumulators.toKeepingOrderSet()
-					: (Accumulator) Accumulators.getFirstUnique();
+			StalactiteQueryMethod nativeQueryMethod = new StalactiteQueryMethod(method, metadata, factory);
 			
 			return new SqlNativeRepositoryQuery<>(
 					nativeQueryMethod,

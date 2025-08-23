@@ -6,9 +6,9 @@ import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.sql.result.Accumulators;
 
-public class SingleProjectionEngine<R, I> implements ProjectionEngine<R, I> {
+public class QueryResultSingler<R, I> implements QueryResultReducer<R, I> {
 
-	public SingleProjectionEngine() {
+	public QueryResultSingler() {
 	}
 
 	@Override

@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.spring.repository.query.bean;
 
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
 import org.codefilarete.stalactite.spring.repository.query.AbstractRepositoryQuery;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
 import org.codefilarete.stalactite.spring.repository.query.projection.StalactiteParametersParameterAccessor;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 
@@ -10,7 +11,7 @@ public class BeanRepositoryQuery<C> extends AbstractRepositoryQuery {
 	private final ExecutableEntityQuery<C, ?> sql;
 	private final Accumulator<C, ?, ?> accumulator;
 	
-	public BeanRepositoryQuery(BeanQueryMethod queryMethod,
+	public BeanRepositoryQuery(StalactiteQueryMethod queryMethod,
 							   ExecutableEntityQuery<C, ?> sql,
 							   Accumulator<C, ?, ?> accumulator) {
 		super(queryMethod);
