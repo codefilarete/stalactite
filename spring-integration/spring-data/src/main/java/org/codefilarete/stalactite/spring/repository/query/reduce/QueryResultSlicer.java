@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.spring.repository.query.projection;
+package org.codefilarete.stalactite.spring.repository.query.reduce;
 
 import java.util.List;
 import java.util.function.Function;

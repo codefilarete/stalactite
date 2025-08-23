@@ -7,7 +7,7 @@ import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityFinder;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
-import org.codefilarete.stalactite.spring.repository.query.projection.StalactiteParametersParameterAccessor;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteParametersParameterAccessor;
 import org.codefilarete.stalactite.sql.Dialect;
 
 public class BeanNativeQueryExecutor<C> extends AbstractNativeQueryExecutor<List<C>, C> {

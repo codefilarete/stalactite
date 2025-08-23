@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
-import org.codefilarete.stalactite.spring.repository.query.projection.StalactiteParametersParameterAccessor;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteParametersParameterAccessor;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.springframework.core.ResolvableType;

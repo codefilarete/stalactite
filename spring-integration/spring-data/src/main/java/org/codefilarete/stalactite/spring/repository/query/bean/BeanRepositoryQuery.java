@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.spring.repository.query.bean;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
 import org.codefilarete.stalactite.spring.repository.query.AbstractRepositoryQuery;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
-import org.codefilarete.stalactite.spring.repository.query.projection.StalactiteParametersParameterAccessor;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteParametersParameterAccessor;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 
 public class BeanRepositoryQuery<C> extends AbstractRepositoryQuery {

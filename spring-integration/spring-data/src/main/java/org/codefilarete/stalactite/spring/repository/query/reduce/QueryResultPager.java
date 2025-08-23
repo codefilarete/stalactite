@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.spring.repository.query.projection;
+package org.codefilarete.stalactite.spring.repository.query.reduce;
 
 import java.util.List;
 import java.util.function.Function;
@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.spring.repository.query.PartTreeStalactiteCountProjection;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteLimitRepositoryQuery;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteParametersParameterAccessor;
 import org.springframework.data.domain.Page;
 
 public class QueryResultPager<C, R, I> implements QueryResultReducer<Page<R>, I> {

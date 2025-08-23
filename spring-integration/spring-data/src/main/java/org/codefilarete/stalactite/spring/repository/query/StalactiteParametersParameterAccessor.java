@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.spring.repository.query.projection;
+package org.codefilarete.stalactite.spring.repository.query;
 
 import java.util.HashMap;
 import java.util.Map;
