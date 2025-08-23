@@ -76,15 +76,21 @@ abstract class AbstractNativeQueriesTest {
 		country2.setPresident(president2);
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 
-		Collection<NamesOnlyWithValue> loadedCountries = derivedQueriesRepository.getByName("Toto", NamesOnlyWithValue.class);
-		assertThat(loadedCountries).extracting(NamesOnly::getName)
+		Collection<NamesOnlyWithValue> loadedProjectionWithValueAnnotation = derivedQueriesRepository.getByName("Toto", NamesOnlyWithValue.class);
+		assertThat(loadedProjectionWithValueAnnotation).extracting(NamesOnly::getName)
 				.containsExactlyInAnyOrder(country1.getName(), country2.getName());
-		assertThat(loadedCountries).extracting(NamesOnlyWithValue::getPresidentName)
+		assertThat(loadedProjectionWithValueAnnotation).extracting(NamesOnlyWithValue::getPresidentName)
 				.containsExactlyInAnyOrder(
 						country1.getPresident().getName() + "-" + country1.getPresident().getId().getDelegate(),
 						country2.getPresident().getName() + "-" + country2.getPresident().getId().getDelegate()
 				);
-		assertThat(loadedCountries).extracting(chain(NamesOnly::getPresident, SimplePerson::getName))
+		assertThat(loadedProjectionWithValueAnnotation).extracting(chain(NamesOnly::getPresident, SimplePerson::getName))
+				.containsExactlyInAnyOrder(country1.getPresident().getName(), country2.getPresident().getName());
+
+		Collection<NamesOnly> loadedProjectionWithoutValueAnnotation = derivedQueriesRepository.getByName("Toto", NamesOnly.class);
+		assertThat(loadedProjectionWithoutValueAnnotation).extracting(NamesOnly::getName)
+				.containsExactlyInAnyOrder(country1.getName(), country2.getName());
+		assertThat(loadedProjectionWithoutValueAnnotation).extracting(chain(NamesOnly::getPresident, SimplePerson::getName))
 				.containsExactlyInAnyOrder(country1.getPresident().getName(), country2.getPresident().getName());
 	}
 	
@@ -141,14 +147,19 @@ abstract class AbstractNativeQueriesTest {
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
 
 		PageRequest pageable = PageRequest.ofSize(3);
-		Slice<NamesOnly> loadedNamesOnly2;
-		loadedNamesOnly2 = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("t", pageable);
-		assertThat(loadedNamesOnly2).extracting(NamesOnly::getName)
+		Slice<NamesOnly> loadedNamesOnly;
+		loadedNamesOnly = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("t", pageable);
+		assertThat(loadedNamesOnly).extracting(NamesOnly::getName)
 				.containsExactly(country3.getName(), country2.getName(), country1.getName());
 
-		loadedNamesOnly2 = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("t", pageable.next());
-		assertThat(loadedNamesOnly2).extracting(NamesOnly::getName)
+		loadedNamesOnly = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("t", pageable.next());
+		assertThat(loadedNamesOnly).extracting(NamesOnly::getName)
 				.containsExactly(country4.getName());
+		
+		// Page type return test
+		loadedNamesOnly = derivedQueriesRepository.getByNameLikeOrderByPresidentNameDesc("t", pageable);
+		assertThat(loadedNamesOnly).extracting(NamesOnly::getName)
+				.containsExactly(country4.getName(), country1.getName(), country2.getName());
 	}
 	
 	@Test

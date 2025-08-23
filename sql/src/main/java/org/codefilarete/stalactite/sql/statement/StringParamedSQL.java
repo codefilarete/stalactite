@@ -38,6 +38,10 @@ public class StringParamedSQL extends ExpandableStatement<String> {
 		this.parsedSQL = parsedSQL;
 	}
 	
+	public ParsedSQL getParsedSQL() {
+		return parsedSQL;
+	}
+	
 	@Override
 	public void setValues(Map<String, ?> values) {
 		super.setValues(values);

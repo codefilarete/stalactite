@@ -9,8 +9,6 @@ import org.codefilarete.stalactite.spring.repository.query.PartTreeStalactiteCou
 import org.codefilarete.stalactite.spring.repository.query.StalactiteLimitRepositoryQuery;
 import org.springframework.data.domain.Page;
 
-import static org.codefilarete.stalactite.spring.repository.query.projection.PartTreeStalactiteLimitingQuery.StalactiteParametersParameterAccessor;
-
 public class PagedProjectionEngine<C, R, I> implements ProjectionEngine<Page<R>, I> {
 
 	private final StalactiteLimitRepositoryQuery<C, ?> delegate;

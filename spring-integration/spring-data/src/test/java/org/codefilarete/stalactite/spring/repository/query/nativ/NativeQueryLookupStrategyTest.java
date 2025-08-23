@@ -6,12 +6,14 @@ import org.codefilarete.stalactite.spring.repository.query.NativeQueries;
 import org.codefilarete.stalactite.spring.repository.query.NativeQuery;
 import org.codefilarete.stalactite.sql.Dialect.DialectSupport;
 import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver.DatabaseSignet;
+import org.codefilarete.tool.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.codefilarete.tool.Nullable.nullable;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 class NativeQueryLookupStrategyTest {
@@ -25,8 +27,8 @@ class NativeQueryLookupStrategyTest {
 				new DialectSupport(
 						compatibility, null, null, null, null, null, null, null, null, null, 0, null, null, false),
 				null);
-		String foundSQL = testInstance.findSQL(QueryAnnotationHolderClass.class.getDeclaredMethod("methodWithOneQuery_withoutSignet"));
-		assertThat(foundSQL).isEqualTo("any SQL");
+		NativeQuery foundSQL = testInstance.findSQL(QueryAnnotationHolderClass.class.getDeclaredMethod("methodWithOneQuery_withoutSignet"));
+		assertThat(foundSQL.value()).isEqualTo("any SQL");
 	}
 	
 	static Iterable<Arguments> findSQL_withOneQueryOnMethod() {
@@ -47,8 +49,8 @@ class NativeQueryLookupStrategyTest {
 				new DialectSupport(
 						compatibility, null, null, null, null, null, null, null, null, null, 0, null, null, false),
 				null);
-		String foundSQL = testInstance.findSQL(QueryAnnotationHolderClass.class.getDeclaredMethod("methodWithOneQuery_withSignet"));
-		assertThat(foundSQL).isEqualTo(expectedSQL);
+		NativeQuery foundSQL = testInstance.findSQL(QueryAnnotationHolderClass.class.getDeclaredMethod("methodWithOneQuery_withSignet"));
+		assertThat(nullable(foundSQL).map(NativeQuery::value)).extracting(Nullable::get).isEqualTo(expectedSQL);
 	}
 	
 	static Iterable<Arguments> findSQL_withSeveralQueriesOnMethod() {
@@ -72,8 +74,8 @@ class NativeQueryLookupStrategyTest {
 				new DialectSupport(
 						compatibility, null, null, null, null, null, null, null, null, null, 0, null, null, false),
 				null);
-		String foundSQL = testInstance.findSQL(QueryAnnotationHolderClass.class.getDeclaredMethod("methodWithSeveralQueries"));
-		assertThat(foundSQL).isEqualTo(expectedSQL);
+		NativeQuery foundSQL = testInstance.findSQL(QueryAnnotationHolderClass.class.getDeclaredMethod("methodWithSeveralQueries"));
+		assertThat(nullable(foundSQL).map(NativeQuery::value)).extracting(Nullable::get).isEqualTo(expectedSQL);
 	}
 	
 	static class QueryAnnotationHolderClass {

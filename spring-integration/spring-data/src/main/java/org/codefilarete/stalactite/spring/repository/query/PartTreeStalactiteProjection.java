@@ -1,7 +1,6 @@
 package org.codefilarete.stalactite.spring.repository.query;
 
 import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -10,7 +9,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.AccessorByMember;
 import org.codefilarete.reflection.AccessorChain;
@@ -19,7 +17,6 @@ import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.ProjectionQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.ProjectionQueryCriteriaSupport.ProjectionQueryPageSupport;
-import org.codefilarete.stalactite.engine.runtime.query.AggregateAccessPointToColumnMapping;
 import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.model.LogicalOperator;
 import org.codefilarete.stalactite.query.model.Select;
@@ -31,16 +28,11 @@ import org.codefilarete.stalactite.spring.repository.query.projection.SingleProj
 import org.codefilarete.stalactite.spring.repository.query.projection.SlicedProjectionEngine;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.VisibleForTesting;
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mapping.PropertyPath;
-import org.springframework.data.projection.EntityProjection;
-import org.springframework.data.projection.EntityProjectionIntrospector;
-import org.springframework.data.projection.EntityProjectionIntrospector.ProjectionPredicate;
 import org.springframework.data.projection.ProjectionFactory;
-import org.springframework.data.relational.core.mapping.RelationalMappingContext;
 import org.springframework.data.repository.query.ParametersParameterAccessor;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
@@ -84,7 +76,7 @@ public class PartTreeStalactiteProjection<C, R> implements StalactiteLimitReposi
 	 * @param root the root map to build upon
 	 */
 	@VisibleForTesting
-	protected static void buildHierarchicMap(String dottedProperty, Object value, Map<String, Object> root) {
+	public static void buildHierarchicMap(String dottedProperty, Object value, Map<String, Object> root) {
 		String[] parts = dottedProperty.split("\\.");
 		Map<String, Object> current = root;
 		// Navigate through all parts except the last one
@@ -103,10 +95,7 @@ public class PartTreeStalactiteProjection<C, R> implements StalactiteLimitReposi
 	private final DerivedQuery<C> query;
 	private final Consumer<Select> selectConsumer;
 	
-	protected final Map<Selectable<?>, String> aliases = new HashMap<>();
-	protected final IdentityHashMap<Selectable<?>, PropertyPath> columnToProperties = new IdentityHashMap<>();
-
-	public <O> PartTreeStalactiteProjection(
+	public PartTreeStalactiteProjection(
 			QueryMethod method,
 			AdvancedEntityPersister<C, ?> entityPersister,
 			PartTree tree,
@@ -115,41 +104,16 @@ public class PartTreeStalactiteProjection<C, R> implements StalactiteLimitReposi
 		this.entityPersister = entityPersister;
 		this.tree = tree;
 		
-		// The projection is closed: it means there's not @Value on the interface, so we can use Spring property introspector to look up for
-		// properties to select in the query
-		// If the projection is open (any method as a @Value on it), then, because Spring can't know in advance which field will be required to
-		// evaluate the @Value expression, we must retrieve the whole aggregate as entities.
-		// se https://docs.spring.io/spring-data/jpa/reference/repositories/projections.html
-		ProjectionPredicate predicate = (returnType, domainType)
-				-> !domainType.isAssignableFrom(returnType) && !returnType.isAssignableFrom(domainType);
-		
-		EntityProjectionIntrospector entityProjectionIntrospector = EntityProjectionIntrospector.create(factory, predicate, new RelationalMappingContext());
-		EntityProjection<?, C> projectionTypeIntrospection = entityProjectionIntrospector.introspect(method.getReturnedObjectType(), entityPersister.getClassToPersist());
-		AggregateAccessPointToColumnMapping<C> aggregateColumnMapping = entityPersister.getEntityFinder().newCriteriaSupport().getEntityCriteriaSupport().getAggregateColumnMapping();
-		// there's a bug here: when property length is higher than 2 it contains an extra item which makes the whole algorithm broken (Spring bug)
-		projectionTypeIntrospection.forEachRecursive(projectionProperty -> {
-			AccessorChain accessorChain = new AccessorChain<>();
-			List<PropertyPath> collect = projectionProperty.getPropertyPath().stream().collect(Collectors.toList());
-			if (collect.size() >= 2) {
-				collect = Iterables.cutTail(collect);
-			}
-			collect.forEach(propertyPath -> {
-				propertyPath.forEach(propertyPath1 -> {
-					accessorChain.add(Accessors.accessor(propertyPath1.getOwningType().getType(), propertyPath1.getSegment(), propertyPath1.getType()));
-				});
-			});
-			Selectable<?> selectable = aggregateColumnMapping.giveColumn(accessorChain.getAccessors());
-			columnToProperties.put(selectable, projectionProperty.getPropertyPath());
-			String alias = projectionProperty.getPropertyPath().toDotPath().replace('.', '_');
-			aliases.put(selectable, alias);
-		});
+		ProjectionTypeInformationExtractor<C> projectionTypeInformationExtractor = new ProjectionTypeInformationExtractor<>(factory, entityPersister);
+		// Extracting the Selectable and PropertyPath from the aggregate
+		projectionTypeInformationExtractor.extract(method.getReturnedObjectType());
 		
 		Holder<Select> selectHolder = new Holder<>();
 		this.selectConsumer = select -> {
 			select.clear();
 			selectHolder.set(select);
-			columnToProperties.keySet().forEach(selectable -> {
-				select.add(selectable, aliases.get(selectable));
+			projectionTypeInformationExtractor.getColumnToProperties().keySet().forEach(selectable -> {
+				select.add(selectable, projectionTypeInformationExtractor.getAliases().get(selectable));
 			});
 		};
 		
@@ -169,7 +133,11 @@ public class PartTreeStalactiteProjection<C, R> implements StalactiteLimitReposi
 					Map<String, Object> row = new HashMap<>();
 					finalResult.add(row);
 					for (Selectable<?> selectable : columns) {
-						buildHierarchicMap(columnToProperties.get(selectable).toDotPath(), databaseRowDataProvider.apply((Selectable<Object>) selectable), row);
+						buildHierarchicMap(
+								projectionTypeInformationExtractor.getColumnToProperties().get(selectable).toDotPath(),
+								databaseRowDataProvider.apply((Selectable<Object>) selectable),
+								row
+						);
 					}
 				};
 			}

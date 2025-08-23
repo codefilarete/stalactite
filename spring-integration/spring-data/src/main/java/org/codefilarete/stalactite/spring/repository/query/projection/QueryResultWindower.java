@@ -5,7 +5,6 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.spring.repository.query.PartTreeStalactiteProjection;
-import org.codefilarete.stalactite.spring.repository.query.projection.PartTreeStalactiteLimitingQuery.StalactiteParametersParameterAccessor;
 import org.codefilarete.stalactite.spring.repository.query.PartTreeStalactiteQuery;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteLimitRepositoryQuery;
 import org.springframework.data.domain.Pageable;
@@ -17,7 +16,6 @@ import org.springframework.data.domain.Pageable;
  * is a bit complex (with callback, handler, etc.), thus it should be used with caution.
  * 
  * @param <C>
- * @param <I>
  * @param <R>
  * @param <P>
  * @author Guillaume Mary

@@ -9,6 +9,7 @@ import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.spring.repository.StalactiteRepository;
 import org.codefilarete.stalactite.spring.repository.query.NativeQuery;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.repository.query.Param;
@@ -153,14 +154,7 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 	// projection tests
 	@NativeQuery(value = "select"
 			+ " R.name as Republic_name,"
-//			+ " R.euMember as Republic_euMember,"
-//			+ " R.id as Republic_id,"
 			+ " P.name as president_name"
-//			+ " P.id as president_id,"
-//			+ " V.color as president_vehicle_color,"
-//			+ " V.id as president_vehicle_id,"
-//			+ " L.code as Country_languages_Language_code,"
-//			+ " L.id as Country_languages_Language_id"
 			+ " from Republic as R"
 			+ " left outer join Person as P on R.presidentId = P.id"
 			+ " left outer join Country_languages as Country_languages on R.id = Country_languages.republic_id"
@@ -168,17 +162,20 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 			+ " left outer join Language as L on Country_languages.languages_id = L.id"
 			+ " where R.name = :name")
 	NamesOnly getByName(@Param("name") String name);
-
+	
+	// we create a native query that collects all the columns to build the whole aggregate but the caller will decide of the result
+	//- if the result is a NamesOnlyWithValue projection, all column are required because it has a @Value annotation
+	//- if the result is a NamesOnly projection, then the collector will only need the 2 columns necessary to build the NamesOnly projection
 	@NativeQuery(value = "select"
 			+ " R.name as Republic_name,"
-//			+ " R.euMember as Republic_euMember,"
-//			+ " R.id as Republic_id,"
-			+ " P.name as president_name"
-//			+ " P.id as president_id,"
-//			+ " V.color as president_vehicle_color,"
-//			+ " V.id as president_vehicle_id,"
-//			+ " L.code as Country_languages_Language_code,"
-//			+ " L.id as Country_languages_Language_id"
+			+ " R.euMember as Republic_euMember,"
+			+ " R.id as Republic_id,"
+			+ " P.name as president_name,"
+			+ " P.id as president_id,"
+			+ " V.color as president_vehicle_color,"
+			+ " V.id as president_vehicle_id,"
+			+ " L.code as Country_languages_Language_code,"
+			+ " L.id as Country_languages_Language_id"
 			+ " from Republic as R"
 			+ " left outer join Person as P on R.presidentId = P.id"
 			+ " left outer join Country_languages as Country_languages on R.id = Country_languages.republic_id"
@@ -187,9 +184,50 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 			+ " where R.name = :name")
 	<T> Collection<T> getByName(@Param("name") String name, Class<T> type);
 	
-	Set<NamesOnly> getByNameLikeOrderByPresidentNameAsc(String name);
+	@NativeQuery(value = "select"
+			+ " R.name as Republic_name,"
+			+ " P.name as president_name"
+			+ " from Republic as R"
+			+ " left outer join Person as P on R.presidentId = P.id"
+			+ " left outer join Country_languages as Country_languages on R.id = Country_languages.republic_id"
+			+ " left outer join Vehicle as V on P.vehicleId = V.id"
+			+ " left outer join Language as L on Country_languages.languages_id = L.id"
+			+ " where R.name like concat('%', :name, '%')"
+			+ " order by president_name asc")
+	Set<NamesOnly> getByNameLikeOrderByPresidentNameAsc(@Param("name") String name);
 
-	Slice<NamesOnly> getByNameLikeOrderByPresidentNameAsc(String name, Pageable pageable);
+	@NativeQuery(value = "select"
+			+ " R.name as Republic_name,"
+			+ " P.name as president_name"
+			+ " from Republic as R"
+			+ " left outer join Person as P on R.presidentId = P.id"
+			+ " left outer join Country_languages as Country_languages on R.id = Country_languages.republic_id"
+			+ " left outer join Vehicle as V on P.vehicleId = V.id"
+			+ " left outer join Language as L on Country_languages.languages_id = L.id"
+			+ " where R.name like concat('%', :name, '%')"
+			+ " order by president_name asc"
+	)
+	Slice<NamesOnly> getByNameLikeOrderByPresidentNameAsc(@Param("name") String name, @Param("pageable") Pageable pageable);
+	
+	@NativeQuery(value = "select"
+			+ " R.name as Republic_name,"
+			+ " P.name as president_name"
+			+ " from Republic as R"
+			+ " left outer join Person as P on R.presidentId = P.id"
+			+ " left outer join Country_languages as Country_languages on R.id = Country_languages.republic_id"
+			+ " left outer join Vehicle as V on P.vehicleId = V.id"
+			+ " left outer join Language as L on Country_languages.languages_id = L.id"
+			+ " where R.name like concat('%', :name, '%')"
+			+ " order by president_name desc",
+			countQuery = "select count(R.id)"
+					+ " from Republic as R"
+					+ " left outer join Person as P on R.presidentId = P.id"
+					+ " left outer join Country_languages as Country_languages on R.id = Country_languages.republic_id"
+					+ " left outer join Vehicle as V on P.vehicleId = V.id"
+					+ " left outer join Language as L on Country_languages.languages_id = L.id"
+					+ " where R.name like concat('%', :name, '%')"
+	)
+	Page<NamesOnly> getByNameLikeOrderByPresidentNameDesc(@Param("name") String name, @Param("pageable") Pageable pageable);
 	
 	boolean existsByName(String name);
 	

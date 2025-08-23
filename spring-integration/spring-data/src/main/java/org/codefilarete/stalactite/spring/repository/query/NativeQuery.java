@@ -27,6 +27,11 @@ public @interface NativeQuery {
 	String value() default "";
 
 	/**
+	 * Defines the SQL count query to be executed when the annotated method return type is a {@link org.springframework.data.domain.Page}.
+	 */
+	String countQuery() default "";
+
+	/**
 	 * Database vendor compatibility of current query. Default is empty which means that it will be applied to all
 	 * databases
 	 */

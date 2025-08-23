@@ -10,6 +10,7 @@ import org.springframework.data.support.PageableExecutionUtils;
 
 /**
  * {@link QueryResultWindower} dedicated to {@link org.springframework.data.domain.Page} result.
+ * 
  * @param <C>
  * @param <R>
  * @param <P>
@@ -18,17 +19,17 @@ import org.springframework.data.support.PageableExecutionUtils;
 public class PageResultWindower<C, R, P> extends QueryResultWindower<C, R, P> {
 	
 	public PageResultWindower(StalactiteLimitRepositoryQuery<C, ?> delegate,
-					   PartTreeStalactiteCountProjection<C> countQuery,
-					   Supplier<List<P>> resultSupplier) {
+							  PartTreeStalactiteCountProjection<C> countQuery,
+							  Supplier<List<P>> resultSupplier) {
 		super(delegate,
 				(accessor, result)
 						-> (R) PageableExecutionUtils.getPage(result, accessor.getPageable(), () -> countQuery.execute(accessor.getValues())),
 				resultSupplier);
 	}
-
+	
 	public PageResultWindower(StalactiteLimitRepositoryQuery<C, ?> delegate,
-					   LongSupplier countQuery,
-					   Supplier<List<P>> resultSupplier) {
+							  LongSupplier countQuery,
+							  Supplier<List<P>> resultSupplier) {
 		super(delegate,
 				(accessor, result)
 						-> (R) PageableExecutionUtils.getPage(result, accessor.getPageable(), countQuery),

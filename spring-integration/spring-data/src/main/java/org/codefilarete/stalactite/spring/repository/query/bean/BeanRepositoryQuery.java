@@ -2,8 +2,8 @@ package org.codefilarete.stalactite.spring.repository.query.bean;
 
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
 import org.codefilarete.stalactite.spring.repository.query.AbstractRepositoryQuery;
+import org.codefilarete.stalactite.spring.repository.query.projection.StalactiteParametersParameterAccessor;
 import org.codefilarete.stalactite.sql.result.Accumulator;
-import org.springframework.data.repository.query.ParametersParameterAccessor;
 
 public class BeanRepositoryQuery<C> extends AbstractRepositoryQuery {
 	
@@ -33,9 +33,9 @@ public class BeanRepositoryQuery<C> extends AbstractRepositoryQuery {
 	
 	@Override
 	public Object execute(Object[] parameters) {
-		ParametersParameterAccessor accessor = new ParametersParameterAccessor(queryMethod.getParameters(), parameters);
+		StalactiteParametersParameterAccessor accessor = new StalactiteParametersParameterAccessor(method.getParameters(), parameters);
 		
-		getValues(accessor).forEach(sql::set);
+		accessor.getNamedValues().forEach(sql::set);
 		
 		return sql.execute(accumulator);
 	}
