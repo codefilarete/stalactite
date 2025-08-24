@@ -26,7 +26,7 @@ class PartTreeStalactiteDelete<C> implements RepositoryQuery {
 	private final QueryMethod queryMethod;
 	private final EntityPersister<C, ?> entityPersister;
 	
-	public PartTreeStalactiteDelete(QueryMethod queryMethod, AdvancedEntityPersister<C, ?> entityPersister, PartTree partTree) {
+	public PartTreeStalactiteDelete(StalactiteQueryMethod queryMethod, AdvancedEntityPersister<C, ?> entityPersister, PartTree partTree) {
 		this.partTreeQuery = new PartTreeStalactiteQuery<C, Set<C>>(queryMethod, entityPersister, partTree) {
 			
 			@Override

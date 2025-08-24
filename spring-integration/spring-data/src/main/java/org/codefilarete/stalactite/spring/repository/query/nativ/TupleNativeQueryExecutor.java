@@ -15,7 +15,7 @@ import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.spring.repository.query.AbstractQueryExecutor;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
-import org.codefilarete.stalactite.spring.repository.query.StalactiteParametersParameterAccessor;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethodInvocationParameters;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -58,7 +58,7 @@ public class TupleNativeQueryExecutor extends AbstractQueryExecutor<List<Map<Str
 	@Override
 	public Supplier<List<Map<String, Object>>> buildQueryExecutor(Object[] parameters) {
 		return () -> {
-			StalactiteParametersParameterAccessor accessor = new StalactiteParametersParameterAccessor(method.getParameters(), parameters);
+			StalactiteQueryMethodInvocationParameters accessor = new StalactiteQueryMethodInvocationParameters(method, parameters);
 			Map<String, Object> values = accessor.getNamedValues();
 			
 			Map<String, PreparedStatementWriter<?>> parameterBinders = bindParameters(accessor);

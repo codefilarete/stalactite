@@ -3,25 +3,34 @@ package org.codefilarete.stalactite.spring.repository.query;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.codefilarete.stalactite.query.model.Limit;
+import org.codefilarete.stalactite.spring.repository.query.reduce.LimitHandler;
 import org.codefilarete.tool.collection.Arrays;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.query.Parameter;
 import org.springframework.data.repository.query.Parameters;
 import org.springframework.data.repository.query.ParametersParameterAccessor;
 
 /**
  * An enhanced version of {@link ParametersParameterAccessor} for Stalactite framework need.
- * 
+ *
  * @author Guillaume Mary
  */
-public class StalactiteParametersParameterAccessor extends ParametersParameterAccessor {
+public class StalactiteQueryMethodInvocationParameters extends ParametersParameterAccessor implements LimitHandler {
 
-	public static final String PARAMETER_NEEDS_TO_BE_NAMED = "For queries with named parameters you need to provide names for method parameters. Use @Param for query method parameters, or when on Java 8+ use the javac flag -parameters.";
+	public static final String PARAMETER_NEEDS_TO_BE_NAMED = "For queries with named parameters you need to provide names for method parameters."
+			+ " Use @Param for query method parameters, or when on Java 8+ use the javac flag -parameters.";
+	
+//	private final StalactiteQueryMethod method;
+	
+	private Limit limit;
 	
 	/**
 	 * Constructor matching super one.
 	 */
-	public StalactiteParametersParameterAccessor(Parameters<?, ?> parameters, Object[] values) {
-		super(parameters, values);
+	public StalactiteQueryMethodInvocationParameters(StalactiteQueryMethod method, Object[] values) {
+		super(method.getParameters(), values);
+//		this.method = method;
 	}
 
 	/**
@@ -67,4 +76,33 @@ public class StalactiteParametersParameterAccessor extends ParametersParameterAc
 		}
 		return result;
 	}
+	
+	public void setLimit(Limit limit) {
+		this.limit = limit;
+	}
+	
+	public Limit getLimit() {
+		return limit;
+	}
+	
+	@Override
+	public void limit(int count) {
+		setLimit(new Limit(count));
+	}
+	
+	@Override
+	public void limit(int count, Integer offset) {
+		setLimit(new Limit(count, offset));
+	}
+//
+//	private Limit getLimit() {
+//		Pageable pageable = getPageable();
+//		if (method.isSliceQuery() && pageable.getPageNumber() == 0) {
+//			// The + 1 is a look-ahead tip to make the returned Slice eventually return true on hasNext()
+//			return new Limit(pageable.getPageSize() + 1);
+//		} else {
+//			// when the user asks for a page number (given Pageable is a Page instance or a Slice with page number) then we ask for the page number
+//			return new Limit(pageable.getPageSize(), (int) pageable.getOffset());
+//		}
+//	}
 }

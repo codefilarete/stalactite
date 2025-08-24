@@ -25,7 +25,7 @@ public abstract class AbstractQueryExecutor<C extends Collection<R>, R> implemen
 		RelationalParameters bindableParameters = method.getParameters().getBindableParameters();
 
 		for (RelationalParameters.RelationalParameter bindableParameter : bindableParameters) {
-			String parameterName = bindableParameter.getName().orElseThrow(() -> new IllegalStateException(StalactiteParametersParameterAccessor.PARAMETER_NEEDS_TO_BE_NAMED));
+			String parameterName = bindableParameter.getName().orElseThrow(() -> new IllegalStateException(StalactiteQueryMethodInvocationParameters.PARAMETER_NEEDS_TO_BE_NAMED));
 
 			Object value = accessor.getBindableValue(bindableParameter.getIndex());
 

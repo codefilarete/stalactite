@@ -13,6 +13,7 @@ import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport.EntityQueryPageSupport;
 import org.codefilarete.stalactite.query.model.LogicalOperator;
+import org.codefilarete.stalactite.spring.repository.query.reduce.LimitHandler;
 import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultCollectioner;
 import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultPager;
 import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultReducer;
@@ -40,14 +41,14 @@ import static org.codefilarete.tool.Nullable.nullable;
  * @param <C> entity type
  * @author Guillaume Mary
  */
-public class PartTreeStalactiteQuery<C, R> implements StalactiteLimitRepositoryQuery<C, R> {
+public class PartTreeStalactiteQuery<C, R> implements StalactiteRepositoryQuery<C, R> {
 	
-	private final QueryMethod method;
+	private final StalactiteQueryMethod method;
 	protected final DerivedQuery<C> query;
 	private final AdvancedEntityPersister<C, ?> entityPersister;
 	private final PartTree tree;
 
-	public PartTreeStalactiteQuery(QueryMethod method,
+	public PartTreeStalactiteQuery(StalactiteQueryMethod method,
 								   AdvancedEntityPersister<C, ?> entityPersister,
 								   PartTree tree) {
 		this.method = method;
@@ -91,9 +92,29 @@ public class PartTreeStalactiteQuery<C, R> implements StalactiteLimitRepositoryQ
 	private QueryResultReducer<R, C> buildResultWindower() {
 		QueryResultReducer<?, C> result;
 		if (method.isPageQuery()) {
-			result = new QueryResultPager<>(this, new PartTreeStalactiteCountProjection<>(method, entityPersister, tree));
+			result = new QueryResultPager<>(this, new LimitHandler() {
+				@Override
+				public void limit(int count) {
+					PartTreeStalactiteQuery.this.query.executableEntityQuery.getQueryPageSupport().limit(count);
+				}
+				
+				@Override
+				public void limit(int count, Integer offset) {
+					PartTreeStalactiteQuery.this.query.executableEntityQuery.getQueryPageSupport().limit(count, offset);
+				}
+			}, new PartTreeStalactiteCountProjection<>(method, entityPersister, tree));
 		} else if (method.isSliceQuery()) {
-			result = new QueryResultSlicer<>(this);
+			result = new QueryResultSlicer<>(this, new LimitHandler() {
+				@Override
+				public void limit(int count) {
+					PartTreeStalactiteQuery.this.query.executableEntityQuery.getQueryPageSupport().limit(count);
+				}
+				
+				@Override
+				public void limit(int count, Integer offset) {
+					PartTreeStalactiteQuery.this.query.executableEntityQuery.getQueryPageSupport().limit(count, offset);
+				}
+			});
 		} else if (method.isCollectionQuery()) {
 			result = new QueryResultCollectioner<>();
 		} else {
@@ -123,18 +144,8 @@ public class PartTreeStalactiteQuery<C, R> implements StalactiteLimitRepositoryQ
 	}
 	
 	@Override
-	public QueryMethod getQueryMethod() {
+	public StalactiteQueryMethod getQueryMethod() {
 		return method;
-	}
-	
-	@Override
-	public void limit(int count) {
-		this.query.executableEntityQuery.getQueryPageSupport().limit(count);
-	}
-	
-	@Override
-	public void limit(int count, Integer offset) {
-		this.query.executableEntityQuery.getQueryPageSupport().limit(count, offset);
 	}
 	
 	static class DerivedQuery<T> extends AbstractDerivedQuery<T> {

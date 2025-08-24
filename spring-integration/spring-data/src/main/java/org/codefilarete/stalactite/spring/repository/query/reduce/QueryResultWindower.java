@@ -6,8 +6,8 @@ import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.spring.repository.query.PartTreeStalactiteProjection;
 import org.codefilarete.stalactite.spring.repository.query.PartTreeStalactiteQuery;
-import org.codefilarete.stalactite.spring.repository.query.StalactiteLimitRepositoryQuery;
-import org.codefilarete.stalactite.spring.repository.query.StalactiteParametersParameterAccessor;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethodInvocationParameters;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteRepositoryQuery;
 import org.springframework.data.domain.Pageable;
 
 /**
@@ -25,34 +25,32 @@ import org.springframework.data.domain.Pageable;
  */
 public abstract class QueryResultWindower<C, R, P> {
 	
-	private final StalactiteLimitRepositoryQuery<C, ?> delegate;
-	protected final BiFunction<StalactiteParametersParameterAccessor, List<P>, R> queryResultSlicer;
+	private final StalactiteRepositoryQuery<C, ?> delegate;
+	protected final LimitHandler limitHandler;
+	private final BiFunction<StalactiteQueryMethodInvocationParameters, List<P>, R> queryResultSlicer;
 	private final Supplier<List<P>> resultSupplier;
 	
-	public QueryResultWindower(StalactiteLimitRepositoryQuery<C, ?> delegate,
-							   BiFunction<StalactiteParametersParameterAccessor, List<P>, R> queryResultSlicer,
+	public QueryResultWindower(StalactiteRepositoryQuery<C, ?> delegate,
+							   LimitHandler limitHandler,
+							   BiFunction<StalactiteQueryMethodInvocationParameters, List<P>, R> queryResultSlicer,
 							   Supplier<List<P>> resultSupplier) {
 		this.delegate = delegate;
+		this.limitHandler = limitHandler;
 		this.queryResultSlicer = queryResultSlicer;
 		this.resultSupplier = resultSupplier;
 	}
 	
 	public R adaptExecution(Object[] parameters) {
-		StalactiteParametersParameterAccessor smartParameters = new StalactiteParametersParameterAccessor(delegate.getQueryMethod().getParameters(), parameters);
+		StalactiteQueryMethodInvocationParameters invocationParameters = new StalactiteQueryMethodInvocationParameters(delegate.getQueryMethod(), parameters);
 		// windowing requires adapting the query to append a limit clause
-		adaptLimit(smartParameters);
+		adaptLimit(invocationParameters);
 		List<P> delegateResult = resultSupplier.get();
-		return queryResultSlicer.apply(smartParameters, delegateResult);
+		return queryResultSlicer.apply(invocationParameters, delegateResult);
 	}
 	
-	private void adaptLimit(StalactiteParametersParameterAccessor smartParameters) {
-		Pageable pageable = smartParameters.getPageable();
-		if (delegate.getQueryMethod().isSliceQuery() && pageable.getPageNumber() == 0) {
-			// The + 1 is a look-ahead tip to make the returned Slice eventually return true on hasNext()
-			delegate.limit(pageable.getPageSize() + 1);
-		} else {
-			// when the user asks for a page number (given Pageable is a Page instance or a Slice with page number) then we ask for the page number
-			delegate.limit(pageable.getPageSize(), (int) pageable.getOffset());
-		}
+	protected void adaptLimit(StalactiteQueryMethodInvocationParameters invocationParameters) {
+		Pageable pageable = invocationParameters.getPageable();
+		// when the user asks for a page number (given Pageable is a Page instance or a Slice with page number) then we ask for the page number
+		limitHandler.limit(pageable.getPageSize(), (int) pageable.getOffset());
 	}
 }

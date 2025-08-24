@@ -12,11 +12,12 @@ import java.util.function.Supplier;
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
+import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.spring.repository.query.AbstractQueryExecutor;
 import org.codefilarete.stalactite.spring.repository.query.AbstractRepositoryQuery;
 import org.codefilarete.stalactite.spring.repository.query.BeanQuery;
-import org.codefilarete.stalactite.spring.repository.query.StalactiteParametersParameterAccessor;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethodInvocationParameters;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.result.Accumulator;
@@ -55,15 +56,16 @@ public class BeanRepositoryQuery<C, R> extends AbstractRepositoryQuery<C, R> {
 	}
 	
 	@Override
-	protected AbstractQueryExecutor<List<Object>, Object> buildQueryExecutor(StalactiteParametersParameterAccessor accessor) {
+	protected AbstractQueryExecutor<List<Object>, Object> buildQueryExecutor(StalactiteQueryMethodInvocationParameters invocationParameters) {
 		return new AbstractQueryExecutor<List<Object>, Object>(getQueryMethod(), dialect) {
 			@Override
 			public Supplier<List<Object>> buildQueryExecutor(Object[] parameters) {
 				return () -> {
-					if (getLimit() != null) {
-						entityQuery.limit(getLimit().getCount(), getLimit().getOffset());
+					Limit limit = invocationParameters.getLimit();
+					if (limit != null) {
+						entityQuery.limit(limit.getCount(), limit.getOffset());
 					}
-					accessor.getNamedValues().forEach(entityQuery::set);
+					invocationParameters.getNamedValues().forEach(entityQuery::set);
 					return (List<Object>) entityQuery.execute(Accumulators.toList());
 				};
 			}
@@ -71,7 +73,7 @@ public class BeanRepositoryQuery<C, R> extends AbstractRepositoryQuery<C, R> {
 	}
 	
 	@Override
-	protected LongSupplier buildCountSupplier(StalactiteParametersParameterAccessor accessor, Map<String, PreparedStatementWriter<?>> bindParameters) {
+	protected LongSupplier buildCountSupplier(StalactiteQueryMethodInvocationParameters invocationParameters, Map<String, PreparedStatementWriter<?>> bindParameters) {
 		if (countQuery == null) {
 			MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
 			Executable countQueryAccessor = methodReferenceCapturer.findExecutable(BeanQuery::counterBean);
@@ -83,7 +85,7 @@ public class BeanRepositoryQuery<C, R> extends AbstractRepositoryQuery<C, R> {
 			countQuery.selectInspector(select -> {
 				countSelectable.set((Selectable<Long>) Iterables.first(select));
 			});
-			accessor.getNamedValues().forEach(countQuery::set);
+			invocationParameters.getNamedValues().forEach(countQuery::set);
 			return countQuery.execute(new Accumulator<Function<Selectable<Long>, Long>, MutableLong, Long>() {
 				@Override
 				public Supplier<MutableLong> supplier() {

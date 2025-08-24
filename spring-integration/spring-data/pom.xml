@@ -33,14 +33,15 @@
 			<groupId>org.springframework.data</groupId>
 			<artifactId>spring-data-relational</artifactId>
 			<version>${spring-data-relational.version}</version>
-			<!-- we don't force our version of Spring since this module needs little from it, so it's let to the "caller" to provided it -->
+			<!-- we don't force our version of Spring since this module needs little from it, so it's let to the "caller" to provide it -->
+			<!-- For unknown reason, the "provided" scope started to make the build fail while running the tests of spring-autoconfigure module -->
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-jdbc</artifactId>
 			<version>${spring.version}</version>
-			<!-- we don't force our version of Spring since this module needs little from it, so it's let to the "caller" to provided it -->
+			<!-- we don't force our version of Spring since this module needs little from it, so it's let to the "caller" to provide it -->
 			<scope>provided</scope>
 		</dependency>
 		<dependency>

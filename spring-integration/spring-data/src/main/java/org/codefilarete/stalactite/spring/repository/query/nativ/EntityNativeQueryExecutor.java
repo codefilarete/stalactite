@@ -7,7 +7,7 @@ import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityFinder;
 import org.codefilarete.stalactite.spring.repository.query.AbstractQueryExecutor;
-import org.codefilarete.stalactite.spring.repository.query.StalactiteParametersParameterAccessor;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethodInvocationParameters;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
 import org.codefilarete.stalactite.sql.Dialect;
 
@@ -34,7 +34,7 @@ public class EntityNativeQueryExecutor<C> extends AbstractQueryExecutor<List<C>,
 
 	@Override
 	public Supplier<List<C>> buildQueryExecutor(Object[] parameters) {
-		StalactiteParametersParameterAccessor accessor = new StalactiteParametersParameterAccessor(method.getParameters(), parameters);
+		StalactiteQueryMethodInvocationParameters accessor = new StalactiteQueryMethodInvocationParameters(method, parameters);
 		
 		return () -> {
 			Set<C> cs = relationalEntityFinder.selectFromQueryBean(sql, accessor.getNamedValues(), bindParameters(accessor));

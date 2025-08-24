@@ -18,7 +18,7 @@ import org.codefilarete.stalactite.spring.repository.query.AbstractRepositoryQue
 import org.codefilarete.stalactite.spring.repository.query.NativeQuery;
 import org.codefilarete.stalactite.spring.repository.query.ProjectionTypeInformationExtractor;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
-import org.codefilarete.stalactite.spring.repository.query.StalactiteParametersParameterAccessor;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethodInvocationParameters;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
@@ -74,23 +74,23 @@ public class SqlNativeRepositoryQuery<C, R> extends AbstractRepositoryQuery<C, R
 	}
 	
 	@Override
-	protected AbstractQueryExecutor<List<Object>, Object> buildQueryExecutor(StalactiteParametersParameterAccessor accessor) {
+	protected AbstractQueryExecutor<List<Object>, Object> buildQueryExecutor(StalactiteQueryMethodInvocationParameters invocationParameters) {
 		// Note that if the query is a projection then the result List must contain Map<String, Object> else it must contain entities
 		AbstractQueryExecutor<List<Object>, Object> queryExecutor;
 		
-		if (method.getParameters().hasDynamicProjection() && factory.getProjectionInformation(accessor.getDynamicProjectionType()).isClosed()
+		if (method.getParameters().hasDynamicProjection() && factory.getProjectionInformation(invocationParameters.getDynamicProjectionType()).isClosed()
 			|| getQueryMethod().getResultProcessor().getReturnedType().isProjecting()) {
 			
 			// Extracting the Selectable and PropertyPath from the projection type
 			if (method.getParameters().hasDynamicProjection())
-				this.projectionTypeInformationExtractor.extract(accessor.getDynamicProjectionType());
+				this.projectionTypeInformationExtractor.extract(invocationParameters.getDynamicProjectionType());
 			else {
 				this.projectionTypeInformationExtractor.extract(method.getReturnedObjectType());
 			}
 			IdentityHashMap<Selectable<?>, String> aliases = projectionTypeInformationExtractor.getAliases();
 			IdentityHashMap<Selectable<?>, PropertyPath> columnToProperties = projectionTypeInformationExtractor.getColumnToProperties();
 			
-			queryExecutor = (AbstractQueryExecutor) new TupleNativeQueryExecutor(getQueryMethod(), sql, dialect, connectionProvider, aliases, columnToProperties, this::getLimit);
+			queryExecutor = (AbstractQueryExecutor) new TupleNativeQueryExecutor(getQueryMethod(), sql, dialect, connectionProvider, aliases, columnToProperties, invocationParameters::getLimit);
 		} else {
 			queryExecutor = (AbstractQueryExecutor) new EntityNativeQueryExecutor<>(getQueryMethod(), sql, relationalEntityFinder, dialect);
 		}
@@ -98,7 +98,7 @@ public class SqlNativeRepositoryQuery<C, R> extends AbstractRepositoryQuery<C, R
 	}
 	
 	@Override
-	protected LongSupplier buildCountSupplier(StalactiteParametersParameterAccessor accessor, Map<String, PreparedStatementWriter<?>> bindParameters) {
+	protected LongSupplier buildCountSupplier(StalactiteQueryMethodInvocationParameters invocationParameters, Map<String, PreparedStatementWriter<?>> bindParameters) {
 		return () -> {
 			if (sqlCount == null || sqlCount.isEmpty()) {
 				MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
@@ -106,7 +106,7 @@ public class SqlNativeRepositoryQuery<C, R> extends AbstractRepositoryQuery<C, R
 				throw new IllegalStateException("Count query is mandatory for paged queries, please provide one through " + Reflections.toString(countQueryAccessor));
 			}
 			StringParamedSQL query = new StringParamedSQL(sqlCount, bindParameters);
-			query.setValues(accessor.getNamedValues());
+			query.setValues(invocationParameters.getNamedValues());
 			
 			try (ReadOperation<?> readOperation = dialect.getReadOperationFactory().createInstance(query, connectionProvider)) {
 //					readOperation.setListener((SQLOperation.SQLOperationListener<ParamType>) operationListener);

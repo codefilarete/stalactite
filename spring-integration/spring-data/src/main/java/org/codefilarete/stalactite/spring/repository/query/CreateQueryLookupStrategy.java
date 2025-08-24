@@ -7,7 +7,6 @@ import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.repository.core.NamedQueries;
 import org.springframework.data.repository.core.RepositoryMetadata;
 import org.springframework.data.repository.query.QueryLookupStrategy;
-import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
 import org.springframework.data.repository.query.parser.PartTree;
 
@@ -31,8 +30,7 @@ public class CreateQueryLookupStrategy<T> implements QueryLookupStrategy {
 										ProjectionFactory factory,
 										NamedQueries namedQueries) {
 		PartTree partTree = new PartTree(method.getName(), entityPersister.getClassToPersist());
-		QueryMethod queryMethod = new QueryMethod(method, metadata, factory);
-		
+		StalactiteQueryMethod queryMethod = new StalactiteQueryMethod(method, metadata, factory);
 		
 		new QueryMethodValidator(partTree, queryMethod).validate();
 		if (partTree.isDelete()) {

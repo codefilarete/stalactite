@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultCollectioner;
 import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultPager;
 import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultReducer;
@@ -21,10 +20,9 @@ import org.springframework.data.repository.query.ResultProcessor;
  * Parent class of some {@link RepositoryQuery} to share some code
  * @author Guillaume Mary
  */
-public abstract class AbstractRepositoryQuery<C, R> implements StalactiteLimitRepositoryQuery<C, R> {
+public abstract class AbstractRepositoryQuery<C, R> implements StalactiteRepositoryQuery<C, R> {
 
 	protected final StalactiteQueryMethod method;
-	private Limit limit;
 	
 	public AbstractRepositoryQuery(StalactiteQueryMethod method) {
 		this.method = method;
@@ -35,23 +33,9 @@ public abstract class AbstractRepositoryQuery<C, R> implements StalactiteLimitRe
 		return method;
 	}
 	
-	public Limit getLimit() {
-		return limit;
-	}
-	
-	@Override
-	public void limit(int count) {
-		limit = new Limit(count);
-	}
-	
-	@Override
-	public void limit(int count, Integer offset) {
-		limit = new Limit(count, offset);
-	}
-	
 	@Override
 	public R execute(Object[] parameters) {
-		StalactiteParametersParameterAccessor accessor = new StalactiteParametersParameterAccessor(method.getParameters(), parameters);
+		StalactiteQueryMethodInvocationParameters accessor = new StalactiteQueryMethodInvocationParameters(method, parameters);
 		AbstractQueryExecutor<List<Object>, Object> queryExecutor = buildQueryExecutor(accessor);
 		Supplier<List<Object>> resultSupplier = queryExecutor.buildQueryExecutor(parameters);
 		
@@ -63,19 +47,20 @@ public abstract class AbstractRepositoryQuery<C, R> implements StalactiteLimitRe
 		return resultProcessor.processResult(adaptation);
 	}
 	
-	protected abstract AbstractQueryExecutor<List<Object>, Object> buildQueryExecutor(StalactiteParametersParameterAccessor accessor);
+	protected abstract AbstractQueryExecutor<List<Object>, Object> buildQueryExecutor(StalactiteQueryMethodInvocationParameters invocationParameters);
 	
-	protected <ROW> QueryResultReducer<R, ROW> buildResultReducer(StalactiteParametersParameterAccessor accessor, Map<String, PreparedStatementWriter<?>> bindParameters) {
+	protected <ROW> QueryResultReducer<R, ROW> buildResultReducer(StalactiteQueryMethodInvocationParameters invocationParameters,
+																  Map<String, PreparedStatementWriter<?>> bindParameters) {
 		QueryResultReducer<?, C> result;
 		switch (method.getQueryMethodReturnType()) {
 			case COLLECTION:
 				result = new QueryResultCollectioner<>();
 				break;
 			case PAGE:
-				result = new QueryResultPager<>(this, buildCountSupplier(accessor, bindParameters));
+				result = new QueryResultPager<>(this, invocationParameters, buildCountSupplier(invocationParameters, bindParameters));
 				break;
 			case SLICE:
-				result = new QueryResultSlicer<>(this);
+				result = new QueryResultSlicer<>(this, invocationParameters);
 				break;
 //			case STREAM:
 //				result = new QueryResultStreamer<>(this);
@@ -92,7 +77,7 @@ public abstract class AbstractRepositoryQuery<C, R> implements StalactiteLimitRe
 		return (QueryResultReducer<R, ROW>) result;
 	}
 	
-	protected abstract LongSupplier buildCountSupplier(StalactiteParametersParameterAccessor accessor, Map<String, PreparedStatementWriter<?>> bindParameters);
+	protected abstract LongSupplier buildCountSupplier(StalactiteQueryMethodInvocationParameters accessor, Map<String, PreparedStatementWriter<?>> bindParameters);
 	
 	
 	protected ResultProcessor buildResultProcessor(Object[] parameters) {

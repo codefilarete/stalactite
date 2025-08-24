@@ -21,6 +21,7 @@ import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.model.LogicalOperator;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.spring.repository.query.reduce.LimitHandler;
 import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultCollectioner;
 import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultPager;
 import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultReducer;
@@ -49,7 +50,7 @@ import static org.codefilarete.tool.Nullable.nullable;
  * @param <C> entity type
  * @author Guillaume Mary
  */
-public class PartTreeStalactiteProjection<C, R> implements StalactiteLimitRepositoryQuery<C, R> {
+public class PartTreeStalactiteProjection<C, R> implements StalactiteRepositoryQuery<C, R> {
 	
 	/**
 	 * Fills given {@link Map} with some more {@link Map}s to create a hierarchic structure from the given dotted property name, e.g. "a.b.c" will
@@ -88,7 +89,7 @@ public class PartTreeStalactiteProjection<C, R> implements StalactiteLimitReposi
 		current.putIfAbsent(parts[lengthMinus1], value);
 	}
 
-	private final QueryMethod method;
+	private final StalactiteQueryMethod method;
 	private final AdvancedEntityPersister<C, ?> entityPersister;
 	private final PartTree tree;
 	private final Accumulator<Function<Selectable<Object>, Object>, List<Map<String, Object>>, List<Map<String, Object>>> accumulator;
@@ -96,7 +97,7 @@ public class PartTreeStalactiteProjection<C, R> implements StalactiteLimitReposi
 	private final Consumer<Select> selectConsumer;
 	
 	public PartTreeStalactiteProjection(
-			QueryMethod method,
+			StalactiteQueryMethod method,
 			AdvancedEntityPersister<C, ?> entityPersister,
 			PartTree tree,
 			ProjectionFactory factory) {
@@ -190,9 +191,29 @@ public class PartTreeStalactiteProjection<C, R> implements StalactiteLimitReposi
 	private QueryResultReducer<R, Map<String, Object>> buildResultWindower() {
 		QueryResultReducer<?, Map<String, Object>> result;
 		if (method.isPageQuery()) {
-			result = new QueryResultPager<>(this, new PartTreeStalactiteCountProjection<>(method, entityPersister, tree));
+			result = new QueryResultPager<>(this, new LimitHandler() {
+				@Override
+				public void limit(int count) {
+					PartTreeStalactiteProjection.this.query.executableProjectionQuery.getQueryPageSupport().limit(count);
+				}
+				
+				@Override
+				public void limit(int count, Integer offset) {
+					PartTreeStalactiteProjection.this.query.executableProjectionQuery.getQueryPageSupport().limit(count, offset);
+				}
+			}, new PartTreeStalactiteCountProjection<>(method, entityPersister, tree));
 		} else if (method.isSliceQuery()) {
-			result = new QueryResultSlicer<>(this);
+			result = new QueryResultSlicer<>(this, new LimitHandler() {
+				@Override
+				public void limit(int count) {
+					PartTreeStalactiteProjection.this.query.executableProjectionQuery.getQueryPageSupport().limit(count);
+				}
+				
+				@Override
+				public void limit(int count, Integer offset) {
+					PartTreeStalactiteProjection.this.query.executableProjectionQuery.getQueryPageSupport().limit(count, offset);
+				}
+			});
 		} else if (method.isCollectionQuery()) {
 			result = new QueryResultCollectioner<>();
 		} else {
@@ -228,18 +249,8 @@ public class PartTreeStalactiteProjection<C, R> implements StalactiteLimitReposi
 	}
 	
 	@Override
-	public QueryMethod getQueryMethod() {
+	public StalactiteQueryMethod getQueryMethod() {
 		return method;
-	}
-	
-	@Override
-	public void limit(int count) {
-		this.query.executableProjectionQuery.getQueryPageSupport().limit(count);
-	}
-	
-	@Override
-	public void limit(int count, Integer offset) {
-		this.query.executableProjectionQuery.getQueryPageSupport().limit(count, offset);
 	}
 	
 	private class DerivedQuery<T> extends AbstractDerivedQuery<T> {

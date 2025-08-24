@@ -17,6 +17,19 @@
 			<artifactId>spring-data</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+
+        <!--
+         This dependency is a duplicate from spring-date module, but without it, the build fails while running tests
+         with "NoClassDefFoundError: org/springframework/data/relational/repository/query/RelationalParameters" (Maven 3.9.9).
+         This problem appeared with no reason after some code rework in spring-data module.
+        -->
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-relational</artifactId>
+            <version>${spring-data-relational.version}</version>
+            <!-- we don't force our version of Spring since this module needs little from it, so it's let to the "caller" to provide it -->
+            <scope>provided</scope>
+        </dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-autoconfigure</artifactId>
