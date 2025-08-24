@@ -136,7 +136,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * {@inheritDoc}
 	 */
 	default <O> ExecutableEntityQueryCriteria<C, ?> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
-		return selectWhere(AccessorChain.fromMethodReference(getter).getAccessors(), operator);
+		return selectWhere(AccessorChain.fromMethodReference(getter), operator);
 	}
 	
 	/**
@@ -152,7 +152,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * {@inheritDoc}
 	 */
 	default <O, A> ExecutableEntityQueryCriteria<C, ?> selectWhere(SerializableFunction<C, A> getter1, SerializableFunction<A, O> getter2, ConditionalOperator<O, ?> operator) {
-		return selectWhere(AccessorChain.fromMethodReferences(getter1, getter2).getAccessors(), operator);
+		return selectWhere(AccessorChain.fromMethodReferences(getter1, getter2), operator);
 	}
 	
 	/**
@@ -160,6 +160,14 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * {@inheritDoc}
 	 */
 	default <O> ExecutableEntityQueryCriteria<C, ?> selectWhere(List<? extends ValueAccessPoint<?>> accessorChain, ConditionalOperator<O, ?> operator) {
+		return selectWhere().and(accessorChain, operator);
+	}
+	
+	/**
+	 * Overridden for a more accurate return type.
+	 * {@inheritDoc}
+	 */
+	default <O> ExecutableEntityQueryCriteria<C, ?> selectWhere(AccessorChain<C, ?> accessorChain, ConditionalOperator<O, ?> operator) {
 		return selectWhere().and(accessorChain, operator);
 	}
 	

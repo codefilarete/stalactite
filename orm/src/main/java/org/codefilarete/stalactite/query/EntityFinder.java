@@ -25,7 +25,7 @@ public interface EntityFinder<C, I> {
 	
 	/**
 	 * Loads some entities that match given criteria.
-	 * 
+	 *
 	 * <strong>
 	 * Please note that the whole graph of matching entities is loaded: collections are fully loaded with all their
 	 * elements, even those that don't match the criteria.
@@ -33,20 +33,21 @@ public interface EntityFinder<C, I> {
 	 * </strong>
 	 *
 	 * @param where some criteria for aggregate selection
+	 * @param values values presents in criteria per their name, may be empty
 	 * @param orderBy the order-by clause to apply to the final query
 	 * @param limit the limit clause to apply to the final query
-	 * @param valuesPerParam values presents in criteria per their name, may be empty
 	 * @return entities that match criteria
 	 */
 	Set<C> select(ConfiguredEntityCriteria where,
+				  Map<String, Object> values,
 				  OrderBy orderBy,
-				  Limit limit,
-				  Map<String, Object> valuesPerParam);
+				  Limit limit);
 	
 	/**
 	 * Loads a projection that matches given criteria.
 	 *
 	 * @param selectAdapter the {@link Select} clause modifier
+	 * @param values query parameter values
 	 * @param accumulator the aggregator of the projection
 	 * @param where some criteria for aggregate selection
 	 * @param distinct either to add or not the "distinct" keyword to the select clause
@@ -55,6 +56,7 @@ public interface EntityFinder<C, I> {
 	 * @return entities that match criteria
 	 */
 	<R, O> R selectProjection(Consumer<Select> selectAdapter,
+							  Map<String, Object> values,
 							  Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator,
 							  ConfiguredEntityCriteria where,
 							  boolean distinct,

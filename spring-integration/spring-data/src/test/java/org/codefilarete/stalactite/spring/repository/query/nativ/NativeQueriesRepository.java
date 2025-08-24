@@ -207,7 +207,7 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 			+ " where R.name like concat('%', :name, '%')"
 			+ " order by president_name asc"
 	)
-	Slice<NamesOnly> getByNameLikeOrderByPresidentNameAsc(@Param("name") String name, @Param("pageable") Pageable pageable);
+	Slice<NamesOnly> getByNameLikeOrderByPresidentNameAsc(@Param("name") String name, Pageable pageable);
 	
 	@NativeQuery(value = "select"
 			+ " R.name as Republic_name,"
@@ -227,7 +227,7 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 					+ " left outer join Language as L on Country_languages.languages_id = L.id"
 					+ " where R.name like concat('%', :name, '%')"
 	)
-	Page<NamesOnly> getByNameLikeOrderByPresidentNameDesc(@Param("name") String name, @Param("pageable") Pageable pageable);
+	Page<NamesOnly> getByNameLikeOrderByPresidentNameDesc(@Param("name") String name, Pageable pageable);
 	
 	boolean existsByName(String name);
 	

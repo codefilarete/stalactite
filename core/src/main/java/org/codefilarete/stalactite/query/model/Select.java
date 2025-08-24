@@ -16,9 +16,19 @@ import org.codefilarete.tool.reflect.MethodDispatcher;
 public class Select implements FluentSelect<Select> {
 	
 	/** Items in select and their aliases (null value means no alias) */
-	private final KeepOrderMap<Selectable<?>, String> columns = new KeepOrderMap<>();
+	private final KeepOrderMap<Selectable<?>, String> columns;
 	
-	private boolean distinct = false;
+	private boolean distinct;
+	
+	public Select() {
+		this.columns = new KeepOrderMap<>();
+		this.distinct = false;
+	}
+	
+	public Select(Select another) {
+		this.columns = new KeepOrderMap<>(another.columns);
+		this.distinct = another.distinct;
+	}
 	
 	public Map<Selectable<?>, String> getColumnPerAlias() {
 		return columns;

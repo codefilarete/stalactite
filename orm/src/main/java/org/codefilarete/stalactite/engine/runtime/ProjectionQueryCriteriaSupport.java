@@ -1,6 +1,8 @@
 package org.codefilarete.stalactite.engine.runtime;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -18,8 +20,6 @@ import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain;
 import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.ExecutableProjection;
 import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
-import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport.EntityQueryPageSupport;
-import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport.EntityQueryPageSupport.OrderByItem;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
@@ -32,6 +32,7 @@ import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.KeepOrderSet;
+import org.codefilarete.tool.function.SerializableTriFunction;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
@@ -57,7 +58,7 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 	
 	private final ProjectionQueryPageSupport<C> queryPageSupport;
 	
-	private final Consumer<Select> selectAdapter;
+	private Consumer<Select> selectAdapter;
 	
 	public ProjectionQueryCriteriaSupport(EntityFinder<C, I> entityFinder, Consumer<Select> selectAdapter) {
 		this(entityFinder, entityFinder.newCriteriaSupport().getEntityCriteriaSupport(), new ProjectionQueryPageSupport<>(), selectAdapter);
@@ -67,7 +68,10 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 		this(entityFinder, entityCriteriaSupport, new ProjectionQueryPageSupport<>(), selectAdapter);
 	}
 	
-	public ProjectionQueryCriteriaSupport(EntityFinder<C, I> entityFinder, EntityCriteriaSupport<C> entityCriteriaSupport, ProjectionQueryPageSupport<C> queryPageSupport, Consumer<Select> selectAdapter) {
+	public ProjectionQueryCriteriaSupport(EntityFinder<C, I> entityFinder,
+										  EntityCriteriaSupport<C> entityCriteriaSupport,
+										  ProjectionQueryPageSupport<C> queryPageSupport,
+										  Consumer<Select> selectAdapter) {
 		this.entityFinder = entityFinder;
 		this.entityCriteriaSupport = entityCriteriaSupport;
 		this.queryPageSupport = queryPageSupport;
@@ -94,20 +98,31 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 	}
 	
 	public ExecutableProjectionQuery<C, ?> wrapIntoExecutable() {
+		Map<String, Object> values = new HashMap<>();
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
 				.redirect((SerializableBiFunction<ExecutableProjection, Accumulator<? super Function<? extends Selectable, Object>, Object, Object>, Object>) ExecutableProjection::execute,
-						wrapProjectionLoad(selectAdapter, entityCriteriaSupport))
-				.redirect(OrderByChain.class, queryPageSupport)
-				.redirect(LimitAware.class, queryPageSupport)
+						wrapProjectionLoad(values))
+				.redirect((SerializableTriFunction<ExecutableProjectionQuery<?, ?>, String, Object, Object>) ExecutableProjectionQuery::set,
+						// Don't use "values::put" because its signature returns previous value, which means it is a Function
+						// and dispatch to redirect(..) that takes a Function as argument, which, at runtime,
+						// will create some ClassCastException due to incompatible type between ExecutableEntityQuery
+						// and values contained in the Map (because ExecutableEntityQuery::set returns ExecutableEntityQuery)
+						(s, object) -> { values.put(s, object); }
+				)
+				.redirect(OrderByChain.class, queryPageSupport, true)
+				.redirect(LimitAware.class, queryPageSupport, true)
 				.redirect((SerializableFunction<ExecutableProjection, ExecutableProjection>) ExecutableProjection::distinct, queryPageSupport::distinct)
+				.redirect((SerializableBiConsumer<ExecutableProjection, Consumer<Select>>) ExecutableProjection::selectInspector,
+						selectAdapter -> {
+					this.selectAdapter = this.selectAdapter.andThen(select -> selectAdapter.accept(new Select(select)));
+				})
 				.redirect(EntityCriteria.class, entityCriteriaSupport, true)
 				.build((Class<ExecutableProjectionQuery<C, ?>>) (Class) ExecutableProjectionQuery.class);
 	}
 	
 	private <R> Function<Accumulator<? super Function<? extends Selectable, Object>, Object, R>, R> wrapProjectionLoad(
-			Consumer<Select> selectAdapter,
-			EntityCriteriaSupport<C> localCriteriaSupport) {
+			Map<String, Object> values) {
 		return (Accumulator<? super Function<? extends Selectable, Object>, Object, R> accumulator) -> {
 			OrderBy orderBy = new OrderBy();
 			queryPageSupport.getOrderBy().forEach(duo -> {
@@ -121,7 +136,7 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 								: org.codefilarete.stalactite.query.model.OrderByChain.Order.DESC);
 			});
 			
-			return entityFinder.selectProjection(selectAdapter, accumulator, localCriteriaSupport, queryPageSupport.isDistinct(),
+			return entityFinder.selectProjection(selectAdapter, values, accumulator, entityCriteriaSupport, queryPageSupport.isDistinct(),
 					orderBy,
 					queryPageSupport.getLimit());
 		};

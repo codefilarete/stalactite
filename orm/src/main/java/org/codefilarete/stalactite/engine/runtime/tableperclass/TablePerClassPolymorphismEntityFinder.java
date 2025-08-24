@@ -8,7 +8,6 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
@@ -32,10 +31,8 @@ import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQL
 import org.codefilarete.stalactite.query.model.GroupBy;
 import org.codefilarete.stalactite.query.model.Having;
 import org.codefilarete.stalactite.query.model.Limit;
-import org.codefilarete.stalactite.query.model.LimitAware;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.OrderBy;
-import org.codefilarete.stalactite.query.model.OrderByChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryEase;
 import org.codefilarete.stalactite.query.model.QueryStatement.PseudoTable;
@@ -200,11 +197,11 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	}
 	
 	@Override
-	public Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where, OrderBy orderBy, Limit limit) {
+	public Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where, Map<String, Object> values, OrderBy orderBy, Limit limit) {
 		LOGGER.debug("Finding entities in a single query with criteria {}", where);
 		if (hasSubPolymorphicPersister) {
 			LOGGER.debug("Single query was asked but due to sub-polymorphism the query is made in 2 phases");
-			return selectIn2Phases(where, orderBy, limit);
+			return selectIn2Phases(where, values, orderBy, limit);
 		} else {
 			return localSelectWithSingleQuery(where, orderBy, limit);
 		}
@@ -230,7 +227,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	}
 	
 	@Override
-	public Set<C> selectIn2Phases(ConfiguredEntityCriteria where, OrderBy orderBy, Limit limit) {
+	public Set<C> selectIn2Phases(ConfiguredEntityCriteria where, Map<String, Object> values, OrderBy orderBy, Limit limit) {
 		LOGGER.debug("Finding entities in 2-phases query with criteria {}", where);
 		// we clone the query to avoid polluting the instance one, else, from select(..) to select(..), we append the criteria at the end of it,
 		// which makes the query usually returning no data (because of the condition mix).
@@ -260,7 +257,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 		});
 		columnReaders.put(DISCRIMINATOR_COLUMN, dialect.getColumnBinderRegistry().getBinder(DISCRIMINATOR_COLUMN.getJavaType()));
 		
-		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>()), columnReaders, queryClone.getAliases());
+		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(values), columnReaders, queryClone.getAliases());
 		
 		// Second phase : selecting entities by delegating it to each subclass loader
 		// It will generate 1 query per found subclass, made as this :

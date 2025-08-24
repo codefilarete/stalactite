@@ -13,6 +13,7 @@ import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.spring.repository.query.AbstractQueryExecutor;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteParametersParameterAccessor;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
@@ -31,7 +32,7 @@ import org.springframework.data.mapping.PropertyPath;
 
 import static org.codefilarete.stalactite.spring.repository.query.PartTreeStalactiteProjection.buildHierarchicMap;
 
-public class TupleNativeQueryExecutor extends AbstractNativeQueryExecutor<List<Map<String, Object>>, Map<String, Object>> {
+public class TupleNativeQueryExecutor extends AbstractQueryExecutor<List<Map<String, Object>>, Map<String, Object>> {
 
 	private final IdentityHashMap<Selectable<?>, String> expectedAliasesInNativeQuery;
 	private final IdentityHashMap<Selectable<?>, PropertyPath> columnToProperties;

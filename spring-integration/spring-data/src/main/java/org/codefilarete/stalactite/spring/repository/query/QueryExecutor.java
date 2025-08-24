@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.spring.repository.query.nativ;
+package org.codefilarete.stalactite.spring.repository.query;
 
 import java.util.Collection;
 import java.util.function.Supplier;

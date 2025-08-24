@@ -57,7 +57,7 @@ import static org.codefilarete.tool.Nullable.nullable;
  * <ul>
  * Class aimed at handling entity query configuration and execution triggering :
  * <li>query configuration will be done by redirecting {@link CriteriaChain} methods to an {@link EntityQueryCriteriaSupport}.</li>
- * <li>execution triggering calls {@link EntityFinder#select(ConfiguredEntityCriteria, OrderBy, Limit, Map)}
+ * <li>execution triggering calls {@link EntityFinder#select(ConfiguredEntityCriteria, Map, OrderBy, Limit)}
  * and wraps it into {@link PersisterListenerCollection#doWithSelectListener(Iterable, ThrowingExecutable)}</li>
  * </ul>
  * 
@@ -157,8 +157,9 @@ public class EntityQueryCriteriaSupport<C, I> {
 				LOGGER.debug("Sorting loaded entities in memory");
 				Set<C> loadedEntities = entityFinder.select(
 						entityCriteriaSupport,
+						values,
 						new OrderBy(),
-						queryPageSupport.getLimit(), values);
+						queryPageSupport.getLimit());
 				TreeSet<C> sortedResult = new TreeSet<>(buildComparator(queryPageSupport.getOrderBy()));
 				sortedResult.addAll(loadedEntities);
 				return accumulatorParam.collect(sortedResult);
@@ -179,9 +180,10 @@ public class EntityQueryCriteriaSupport<C, I> {
 				});
 				Set<C> select = entityFinder.select(
 						entityCriteriaSupport,
+						values,
 						orderBy,
-						queryPageSupport.getLimit(),
-						values);
+						queryPageSupport.getLimit()
+				);
 				return accumulatorParam.collect(select);
 			};
 		}

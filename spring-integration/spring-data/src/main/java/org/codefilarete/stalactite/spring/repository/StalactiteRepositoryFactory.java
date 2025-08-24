@@ -81,10 +81,12 @@ public class StalactiteRepositoryFactory extends RepositoryFactorySupport {
 			case CREATE:
 				return Optional.of(new CreateQueryLookupStrategy<>(entityPersister));
 			case USE_DECLARED_QUERY:
-				return Optional.of(new NativeQueryLookupStrategy<>(entityPersister, dialect, connectionProvider));
+				return Optional.of(new FirstMatchingQueryLookupStrategy(
+						new BeanQueryLookupStrategy<>(beanFactory, dialect),
+						new NativeQueryLookupStrategy<>(entityPersister, dialect, connectionProvider)));
 			case CREATE_IF_NOT_FOUND:
-				return Optional.of(new CreateIfNotFoundQueryLookupStrategy(
-						new BeanQueryLookupStrategy<>(beanFactory),
+				return Optional.of(new FirstMatchingQueryLookupStrategy(
+						new BeanQueryLookupStrategy<>(beanFactory, dialect),
 						new NativeQueryLookupStrategy<>(entityPersister, dialect, connectionProvider),
 						new CreateQueryLookupStrategy<>(entityPersister)));
 			default:
@@ -100,16 +102,16 @@ public class StalactiteRepositoryFactory extends RepositoryFactorySupport {
 	 * @author Oliver Gierke
 	 * @author Thomas Darimont
 	 */
-	private static class CreateIfNotFoundQueryLookupStrategy implements QueryLookupStrategy {
+	private static class FirstMatchingQueryLookupStrategy implements QueryLookupStrategy {
 		
 		private final Iterable<QueryLookupStrategy> lookupStrategies;
 		
 		/**
-		 * Creates a new {@link CreateIfNotFoundQueryLookupStrategy}.
+		 * Creates a new {@link FirstMatchingQueryLookupStrategy}.
 		 *
 		 * @param lookupStrategies must not be {@literal null}.
 		 */
-		public CreateIfNotFoundQueryLookupStrategy(QueryLookupStrategy... lookupStrategies) {
+		public FirstMatchingQueryLookupStrategy(QueryLookupStrategy... lookupStrategies) {
 			this.lookupStrategies = Arrays.asSet(lookupStrategies);
 		}
 		

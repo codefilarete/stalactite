@@ -16,8 +16,9 @@ public interface AnotherBeanQueriesRepository extends StalactiteRepository<Repub
 
 	// overridden by StalactiteRepositoryContextConfiguration.findEuropeanMember
 	// because it is marked by @BeanQuery (without method name)
-	Set<Republic> findEuropeanMember(@Param("presidentName") String presidentName);
+	Republic findEuropeanMember(@Param("presidentName") String presidentName);
 	
+	// could be in conflict with BeanQueriesRepository.findEuropeanCountryForPresident if @BeanQuery wasn't specifying the target
 	// overridden by StalactiteRepositoryContextConfiguration.anotherOverrideOfFindEuropeanMemberWithPresidentName
 	// because it is marked by @BeanQuery(method = "findEuropeanCountryForPresident", repositoryClass = AnotherBeanQueriesRepository.class)
 	Set<Republic> findEuropeanCountryForPresident(@Param("presidentName") String presidentName);

@@ -131,19 +131,19 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 	}
 	
 	@Override
-	public Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where, OrderBy orderBy, Limit limit) {
+	public Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where, Map<String, Object> values, OrderBy orderBy, Limit limit) {
 		LOGGER.debug("Finding entities in a single query with criteria {}", where);
 		if (hasSubPolymorphicPersister) {
 			LOGGER.debug("Single query was asked but due to sub-polymorphism the query is made in 2 phases");
-			return selectIn2Phases(where, orderBy, limit);
+			return selectIn2Phases(where, values, orderBy, limit);
 		} else {
 			Query queryClone = new Query(query.getSelectDelegate(), query.getFromDelegate(), new Where<>().add(where.getCriteria()), new GroupBy(), new Having(), orderBy, limit);
-			return super.selectWithSingleQuery(queryClone, entityTreeQuery, dialect, connectionProvider);
+			return super.selectWithSingleQuery(queryClone, values, entityTreeQuery, dialect, connectionProvider);
 		}
 	}
 	
 	@Override
-	public Set<C> selectIn2Phases(ConfiguredEntityCriteria where, OrderBy orderBy, Limit limit) {
+	public Set<C> selectIn2Phases(ConfiguredEntityCriteria where, Map<String, Object> values, OrderBy orderBy, Limit limit) {
 		LOGGER.debug("Finding entities in 2-phases query with criteria {}", where);
 		
 		// we clone the query to avoid polluting the instance one, else, from select(..) to select(..), we append the criteria at the end of it,
@@ -156,7 +156,7 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 		Map<Selectable<?>, ResultSetReader<?>> columnReaders = new HashMap<>();
 		queryClone.getColumns().forEach((selectable) -> columnReaders.put(selectable, dialect.getColumnBinderRegistry().getBinder((Column) selectable)));
 		
-		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>()), columnReaders, queryClone.getAliases());
+		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(values), columnReaders, queryClone.getAliases());
 		
 		Set<I> ids = idsPerSubtype.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
 		

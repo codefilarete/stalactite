@@ -40,29 +40,34 @@ import org.springframework.core.annotation.AliasFor;
 @Target({ ElementType.METHOD })
 @Bean
 public @interface BeanQuery {
-
+	
 	/**
 	 * Bean names. Will be used to match the methods to override
 	 * @return the bean names
 	 */
 	@AliasFor(value = "name", annotation = Bean.class)
 	String[] value() default {};
-
+	
 	/**
 	 * Bean names. Will be used to match the methods to override
 	 * @return the bean names
 	 */
 	@AliasFor(value = "value", annotation = Bean.class)
 	String[] name() default {};
-
+	
 	/**
-	 * Method name to be overridden
+	 * Repository method name whose query must be overridden.
 	 */
 	String method() default "";
-
+	
+	/**
+	 * Repository method name whose query must be overridden.
+	 */
+	String counterBean() default "";
+	
 	/**
 	 * Repository class name declaring the method to override. Made to overcome the existence of 2 methods with same
 	 * names but in 2 different class names. Without it, the method to override would be ambiguous.
 	 */
-	Class<? extends StalactiteRepository> repositoryClass() default StalactiteRepository.class; 
+	Class<? extends StalactiteRepository> repositoryClass() default StalactiteRepository.class;
 }

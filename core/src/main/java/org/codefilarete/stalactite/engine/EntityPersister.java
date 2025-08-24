@@ -171,7 +171,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	}
 	
 	/**
-	 * Creates a query which criteria target mapped properties.
+	 * Creates a query with some criteria based on some properties.
 	 * Please note that the whole bean graph is loaded, not only entities that satisfy criteria.
 	 * Raises an exception if the targeted property is not mapped as a persisted one (transient).
 	 *
@@ -181,11 +181,11 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 */
 	default <O> ExecutableEntityQuery<C, ?> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
-		return selectWhere(AccessorChain.fromMethodReference(getter).getAccessors(), operator);
+		return selectWhere(AccessorChain.fromMethodReference(getter), operator);
 	}
 	
 	/**
-	 * Creates a query which criteria target mapped properties.
+	 * Creates a query with some criteria based on some properties.
 	 * Please note that the whole bean graph is loaded, not only entities that satisfy criteria.
 	 * Raises an exception if targeted property is not mapped as a persisted one (transient).
 	 *
@@ -210,11 +210,11 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 */
 	default <O, A> ExecutableEntityQuery<C, ?> selectWhere(SerializableFunction<C, A> getter1, SerializableFunction<A, O> getter2, ConditionalOperator<O, ?> operator) {
-		return selectWhere(AccessorChain.fromMethodReferences(getter1, getter2).getAccessors(), operator);
+		return selectWhere(AccessorChain.fromMethodReferences(getter1, getter2), operator);
 	}
 	
 	/**
-	 * Creates a query which criteria target mapped properties.
+	 * Creates a query with some criteria based on some properties.
 	 * Please note that the whole bean graph is loaded, not only entities that satisfy criteria.
 	 * Raises an exception if targeted property is not mapped as a persisted one (transient).
 	 *
@@ -225,6 +225,20 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 */
 	default <O> ExecutableEntityQuery<C, ?> selectWhere(List<? extends ValueAccessPoint<?>> accessorChain, ConditionalOperator<O, ?> operator) {
 		return selectWhere().and(accessorChain, operator);
+	}
+	
+	/**
+	 * Creates a query with some criteria based on some properties.
+	 * Please note that the whole bean graph is loaded, not only entities that satisfy criteria.
+	 * Raises an exception if targeted property is not mapped as a persisted one (transient).
+	 *
+	 * @param accessorChain a property accessor
+	 * @param operator criteria for the property
+	 * @param <O> value type returned by property accessor
+	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
+	 */
+	default <O> ExecutableEntityQuery<C, ?> selectWhere(AccessorChain<C, ?> accessorChain, ConditionalOperator<O, ?> operator) {
+		return selectWhere(accessorChain.getAccessors(), operator);
 	}
 	
 	/**
@@ -366,6 +380,19 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 */
 	interface ExecutableProjectionQuery<C, SELF extends ExecutableProjectionQuery<C, SELF>> extends EntityCriteria<C, SELF>, ExecutableProjection, FluentOrderByClause<C, SELF> {
 		
+		SELF set(String paramName, Object paramValue);
+		
+		/**
+		 * Overridden for a more accurate return type.
+		 * {@inheritDoc}
+		 */
+		ExecutableProjectionQuery<C, SELF> beginNested();
+		
+		/**
+		 * Overridden for a more accurate return type.
+		 * {@inheritDoc}
+		 */
+		ExecutableProjectionQuery<C, SELF> endNested();
 	}
 	
 	/**

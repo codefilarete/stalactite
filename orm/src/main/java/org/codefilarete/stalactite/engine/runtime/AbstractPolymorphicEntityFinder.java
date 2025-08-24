@@ -15,7 +15,6 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
-import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.EntityFinder;
@@ -86,17 +85,17 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 	}
 	
 	@Override
-	public Set<C> select(ConfiguredEntityCriteria where, OrderBy orderBy, Limit limit, Map<String, Object> valuesPerParam) {
+	public Set<C> select(ConfiguredEntityCriteria where, Map<String, Object> values, OrderBy orderBy, Limit limit) {
 		if (where.hasCollectionCriteria()) {
-			return selectIn2Phases(where, orderBy, limit);
+			return selectIn2Phases(where, values, orderBy, limit);
 		} else {
-			return selectWithSingleQuery(where, orderBy, limit);
+			return selectWithSingleQuery(where, values, orderBy, limit);
 		}
 	}
 	
-	public abstract Set<C> selectIn2Phases(ConfiguredEntityCriteria where, OrderBy orderBy, Limit limit);
+	public abstract Set<C> selectIn2Phases(ConfiguredEntityCriteria where, Map<String, Object> values, OrderBy orderBy, Limit limit);
 	
-	public abstract Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where, OrderBy orderBy, Limit limit);
+	public abstract Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where, Map<String, Object> values, OrderBy orderBy, Limit limit);
 	
 	protected abstract EntityTreeQuery<C> getAggregateQueryTemplate();
 	
@@ -116,7 +115,7 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 					new OrderBy(), // No order-by since we are in a Collection criteria, sort we'll be made downstream in memory see EntityCriteriaSupport#wrapGraphload()
 					new Limit() // No limit since we already limited our result through the selection of the ids
 			);
-			return selectWithSingleQuery(queryClone, getAggregateQueryTemplate(), dialect, connectionProvider);
+			return selectWithSingleQuery(queryClone, new HashMap<>(), getAggregateQueryTemplate(), dialect, connectionProvider);
 		} else {
 			return Collections.emptySet();
 		}
@@ -125,12 +124,14 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 	/**
 	 * A reusable method that execute query build from give {@link EntityJoinTree} with query clauses given as argument
 	 * @param queryClone the {@link Query} to execute
+	 * @param values values per named placeholder
 	 * @param entityTreeQuery the tree representing the way to build the final aggregate
 	 * @param dialect the dialect helping to get the right adaption layer to the database
 	 * @param connectionProvider the connection provider
 	 * @return a {@link Set} of loaded entities according to given criteria
 	 */
 	protected Set<C> selectWithSingleQuery(Query queryClone,
+										   Map<String, Object> values,
 										   EntityTreeQuery<C> entityTreeQuery,
 										   Dialect dialect,
 										   ConnectionProvider connectionProvider) {
@@ -138,7 +139,7 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone);
 		
 		EntityTreeInflater<C> inflater = entityTreeQuery.getInflater();
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>());
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(values);
 		try (ReadOperation<Integer> readOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
 			readOperation.setListener((SQLOperationListener<Integer>) operationListener);
 			ResultSet resultSet = readOperation.execute();
@@ -152,6 +153,7 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 	
 	@Override
 	public <R, O> R selectProjection(Consumer<Select> selectAdapter,
+									 Map<String, Object> values,
 									 Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator,
 									 ConfiguredEntityCriteria where,
 									 boolean distinct,

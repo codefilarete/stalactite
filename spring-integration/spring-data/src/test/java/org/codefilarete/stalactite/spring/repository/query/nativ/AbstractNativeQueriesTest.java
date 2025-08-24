@@ -118,8 +118,8 @@ abstract class AbstractNativeQueriesTest {
 		country4.setPresident(president4);
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
 
-		Set<NamesOnly> loadedNamesOnly1 = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("o");
-		assertThat(loadedNamesOnly1).extracting(NamesOnly::getName).containsExactly(country1.getName(), country4.getName());
+		Set<NamesOnly> loadedNamesOnly = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("o");
+		assertThat(loadedNamesOnly).extracting(NamesOnly::getName).containsExactly(country1.getName(), country4.getName());
 	}
 	
 	@Test

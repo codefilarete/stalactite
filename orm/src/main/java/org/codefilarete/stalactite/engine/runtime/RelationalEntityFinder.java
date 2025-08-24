@@ -27,9 +27,7 @@ import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.GroupBy;
 import org.codefilarete.stalactite.query.model.Having;
 import org.codefilarete.stalactite.query.model.Limit;
-import org.codefilarete.stalactite.query.model.LimitAware;
 import org.codefilarete.stalactite.query.model.OrderBy;
-import org.codefilarete.stalactite.query.model.OrderByChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
@@ -62,7 +60,7 @@ import static org.codefilarete.tool.bean.Objects.preventNull;
  * Implementation is based on {@link EntityJoinTree} to build the query and the entity graph.
  * 
  * @author Guillaume Mary
- * @see EntityFinder#select(ConfiguredEntityCriteria, OrderBy, Limit, Map) 
+ * @see EntityFinder#select(ConfiguredEntityCriteria, Map, OrderBy, Limit)
  */
 public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityFinder<C, I> {
 	
@@ -174,9 +172,9 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 	 */
 	@Override
 	public Set<C> select(ConfiguredEntityCriteria where,
+						 Map<String, Object> valuesPerParam,
 						 OrderBy orderBy,
-						 Limit limit,
-						 Map<String, Object> valuesPerParam) {
+						 Limit limit) {
 		
 		// we clone the query to avoid polluting the instance one, else, from select(..) to select(..), we append the criteria at the end of it,
 		// which makes the query usually returning no data (because of the condition mix)
@@ -237,6 +235,7 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 	
 	@Override
 	public <R, O> R selectProjection(Consumer<Select> selectAdapter,
+									 Map<String, Object> values,
 									 Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator,
 									 ConfiguredEntityCriteria where,
 									 boolean distinct,
@@ -250,11 +249,14 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 		selectAdapter.accept(queryClone.getSelectDelegate());
 		Map<Selectable<?>, ResultSetReader<?>> columnReaders = Iterables.map(queryClone.getColumns(), Function.identity(), selectable -> dialect.getColumnBinderRegistry().getBinder(selectable.getJavaType()));
 		
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>());
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(values);
 		return readProjection(preparedSQL, columnReaders, queryClone.getAliases(), accumulator);
 	}
 	
-	private <R, O> R readProjection(PreparedSQL preparedSQL, Map<Selectable<?>, ResultSetReader<?>> columnReaders, Map<Selectable<?>, String> aliases, Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator) {
+	private <R, O> R readProjection(PreparedSQL preparedSQL,
+									Map<Selectable<?>, ResultSetReader<?>> columnReaders,
+									Map<Selectable<?>, String> aliases,
+									Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator) {
 		try (ReadOperation<Integer> closeableOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
 			ColumnedRowIterator rowIterator = new ColumnedRowIterator(closeableOperation.execute(), columnReaders, aliases);
 			return accumulator.collect(Iterables.stream(rowIterator).map(row -> (Function<Selectable<O>, O>) row::get).collect(Collectors.toList()));

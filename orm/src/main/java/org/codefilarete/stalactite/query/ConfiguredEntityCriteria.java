@@ -7,7 +7,7 @@ import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.OrderBy;
 
 /**
- * Interface to describe the necessary inputs of {@link EntityFinder#select(ConfiguredEntityCriteria, OrderBy, Limit, Map)}.
+ * Interface to describe the necessary inputs of {@link EntityFinder#select(ConfiguredEntityCriteria, Map, OrderBy, Limit)}.
  * 
  * @author Guillaume Mary
  */
