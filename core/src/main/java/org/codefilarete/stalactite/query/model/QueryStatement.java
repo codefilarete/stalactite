@@ -96,7 +96,7 @@ public interface QueryStatement extends SelectablesPod {
 		}
 	}
 	
-	class PseudoColumn<O> implements Selectable<O>, JoinLink<Fromable, O> {
+	class PseudoColumn<O> implements JoinLink<Fromable, O> {
 		
 		private final SelectablesPod owner;	// Union or Query
 		
