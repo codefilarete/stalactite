@@ -80,14 +80,10 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	public SimpleRelationalEntityPersister(ClassMapping<C, I, T> mainMappingStrategy,
 										   Dialect dialect,
 										   ConnectionConfiguration connectionConfiguration) {
-		this(new BeanPersister<>(mainMappingStrategy, dialect, connectionConfiguration), dialect, connectionConfiguration);
-	}
-	
-	public SimpleRelationalEntityPersister(BeanPersister<C, I, T> persister, Dialect dialect, ConnectionConfiguration connectionConfiguration) {
-		this.persister = persister;
+		this.persister = new BeanPersister<>(mainMappingStrategy, dialect, connectionConfiguration);
 		this.entityJoinTree = new EntityJoinTree<>(new EntityMappingAdapter<>(persister.getMapping()), persister.getMapping().getTargetTable());
 		this.dialect = dialect;
-		this.entityFinder = new RelationalEntityFinder<>(entityJoinTree, persister.getConnectionProvider(), dialect);
+		this.entityFinder = new RelationalEntityFinder<>(entityJoinTree, this, persister.getConnectionProvider(), dialect);
 		this.criteriaSupport = new EntityCriteriaSupport<>(entityJoinTree);
 		
 		if (persister.getMapping().getIdMapping().getIdentifierInsertionManager() instanceof AlreadyAssignedIdentifierManager) {
@@ -278,7 +274,6 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 			newCriteriaSupport.getEntityCriteriaSupport().getCriteria().and(tupleIn);
 			return newCriteriaSupport.wrapIntoExecutable().execute(Accumulators.toSet());
 		} else {
-			// due to column clones (almost sure)
 			ReversibleAccessor<C, I> criteriaAccessor;
 			if (idMapping.getIdAccessor() instanceof AccessorWrapperIdAccessor) {
 				criteriaAccessor = ((AccessorWrapperIdAccessor<C, I>) idMapping.getIdAccessor()).getIdAccessor();

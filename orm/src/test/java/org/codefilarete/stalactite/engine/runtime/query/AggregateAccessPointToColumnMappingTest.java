@@ -36,6 +36,7 @@ import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
+import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.QueryEase;
 import org.codefilarete.stalactite.query.model.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.model.Selectable;
@@ -84,7 +85,7 @@ class AggregateAccessPointToColumnMappingTest {
 		// When
 		EntityJoinTree<Person, Identifier<Long>> personTree = new EntityJoinTree<>(entityMappingMock);
 		AggregateAccessPointToColumnMapping<Person> testInstance = new AggregateAccessPointToColumnMapping<>(personTree, true);
-		Map<List<? extends ValueAccessPoint<?>>, Selectable<?>> result = testInstance.getPropertyToColumn();
+		Map<List<? extends ValueAccessPoint<?>>, JoinLink<?, ?>> result = testInstance.getPropertyToColumn();
 		
 		// Then
 		AccessorToColumnMap accessorToColumnMap = new AccessorToColumnMap();
@@ -127,7 +128,7 @@ class AggregateAccessPointToColumnMappingTest {
 		// When
 		EntityJoinTree<House, House.HouseId> personTree = new EntityJoinTree<>(entityMappingMock);
 		AggregateAccessPointToColumnMapping<House> testInstance = new AggregateAccessPointToColumnMapping<>(personTree, true);
-		Map<List<? extends ValueAccessPoint<?>>, Selectable<?>> result = testInstance.getPropertyToColumn();
+		Map<List<? extends ValueAccessPoint<?>>, JoinLink<?, ?>> result = testInstance.getPropertyToColumn();
 		
 		// Then
 		AccessorToColumnMap accessorToColumnMap = new AccessorToColumnMap();
@@ -173,7 +174,7 @@ class AggregateAccessPointToColumnMappingTest {
 				pseudoTable,
 				new SimpleSelectable<>("discriminatorColumn", String.class)));
 		AggregateAccessPointToColumnMapping<Person> testInstance = new AggregateAccessPointToColumnMapping<>(personTree, true);
-		Map<List<? extends ValueAccessPoint<?>>, Selectable<?>> result = testInstance.getPropertyToColumn();
+		Map<List<? extends ValueAccessPoint<?>>, JoinLink<?, ?>> result = testInstance.getPropertyToColumn();
 		
 		// Then
 		AccessorToColumnMap accessorToColumnMap = new AccessorToColumnMap();

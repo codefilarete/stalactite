@@ -102,7 +102,10 @@ class RelationalEntityFinderTest {
 		when(connectionProvider.giveConnection()).thenReturn(connectionMock);
 		when(connectionMock.prepareStatement(any())).thenReturn(preparedStatement);
 		
-		RelationalEntityFinder<Toto, Integer, ?> testInstance = new RelationalEntityFinder<>(entityJoinTree, connectionProvider, new DefaultDialect(), true);
+		AdvancedEntityPersister advancedEntityPersisterMock = mock(AdvancedEntityPersister.class);
+		when(advancedEntityPersisterMock.getEntityJoinTree()).thenReturn(entityJoinTree);
+		when(advancedEntityPersisterMock.getMapping()).thenReturn(totoMapping);
+		RelationalEntityFinder<Toto, Integer, ?> testInstance = new RelationalEntityFinder<>(advancedEntityPersisterMock, connectionProvider, new DefaultDialect(), true);
 		
 		Set<Toto> totos = testInstance.selectFromQueryBean("select Toto.id as Toto_id, Tata.id as Tata_id from Toto inner join Tata on Toto.id = Tata.id" +
 				" where Toto.id = :toto_id", Maps.asMap("toto_id", 7));

@@ -89,6 +89,10 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 		return new ProjectionQueryCriteriaSupport<>(entityFinder, entityCriteriaSupport, queryPageSupport.merge(otherPageSupport), this.selectAdapter);
 	}
 	
+	public ProjectionQueryCriteriaSupport<C, I> copyFor(Consumer<Select> selectAdapter) {
+		return new ProjectionQueryCriteriaSupport<>(entityFinder, entityCriteriaSupport, queryPageSupport, selectAdapter);
+	}
+	
 	public EntityCriteriaSupport<C> getEntityCriteriaSupport() {
 		return entityCriteriaSupport;
 	}
@@ -136,7 +140,7 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 								: org.codefilarete.stalactite.query.model.OrderByChain.Order.DESC);
 			});
 			
-			return entityFinder.selectProjection(selectAdapter, values, accumulator, entityCriteriaSupport, queryPageSupport.isDistinct(),
+		return entityFinder.selectProjection(selectAdapter, values, accumulator, entityCriteriaSupport, queryPageSupport.isDistinct(),
 					orderBy,
 					queryPageSupport.getLimit());
 		};

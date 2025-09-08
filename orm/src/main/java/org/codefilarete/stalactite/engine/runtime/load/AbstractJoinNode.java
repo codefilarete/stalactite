@@ -44,7 +44,7 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 	@Nullable
 	private EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
 
-	private final IdentityHashMap<Selectable<?>, Selectable<?>> originalColumnsToLocalOnes;
+	private final IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> originalColumnsToLocalOnes;
 
 	protected AbstractJoinNode(JoinNode<?, T1> parent,
 							   JoinLink<T1, JOINTYPE> leftJoinLink,
@@ -71,7 +71,7 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 		this.originalColumnsToLocalOnes = new IdentityHashMap<>();
 		rightJoinLink.getTable().getColumns().forEach(column -> {
 			// we clone columns to avoid side effects on the original query
-			this.originalColumnsToLocalOnes.put(column, column);
+			this.originalColumnsToLocalOnes.put((JoinLink<?, ?>) column, (JoinLink<?, ?>) column);
 		});
 	}
 
@@ -92,7 +92,7 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 							   JoinType joinType,
 							   Set<? extends Selectable<?>> columnsToSelect,	// From T2
 							   @Nullable String tableAlias,
-							   IdentityHashMap<Selectable<?>, Selectable<?>> originalColumnsToLocalOnes) {
+							   IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> originalColumnsToLocalOnes) {
 		this.parent = parent;
 		this.leftJoinLink = leftJoinLink;
 		this.rightJoinLink = rightJoinLink;
@@ -142,7 +142,7 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 	}
 	
 	@Override
-	public IdentityHashMap<Selectable<?>, Selectable<?>> getOriginalColumnsToLocalOnes() {
+	public IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> getOriginalColumnsToLocalOnes() {
 		return originalColumnsToLocalOnes;
 	}
 

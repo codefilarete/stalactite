@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildLifeCycleListener;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
@@ -48,10 +49,8 @@ import org.codefilarete.stalactite.sql.statement.StringParamedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.Maps;
 
-import static org.codefilarete.stalactite.query.model.Operators.in;
 import static org.codefilarete.tool.bean.Objects.preventNull;
 
 /**
@@ -69,9 +68,10 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 	private final EntityJoinTree<C, I> entityJoinTree;
 	
 	private final ConnectionProvider connectionProvider;
-	
+
 	private final Dialect dialect;
 	private final EntityCriteriaSupport<C> criteriaSupport;
+	private SelectExecutor<C, I> selectExecutor;
 	
 	private EntityTreeQuery<C> entityTreeQuery;
 	
@@ -80,11 +80,14 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 	private SQLOperationListener<?> operationListener;
 	
 	public RelationalEntityFinder(EntityJoinTree<C, I> entityJoinTree,
+								  SelectExecutor<C, I> selectExecutor,
 								  ConnectionProvider connectionProvider,
 								  Dialect dialect) {
 		this.entityJoinTree = entityJoinTree;
+		this.selectExecutor = selectExecutor;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
+		this.entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();;
 		this.criteriaSupport = new EntityCriteriaSupport<>(this.entityJoinTree);
 		
 		PersisterBuilderContext.CURRENT.get().addBuildLifeCycleListener(new BuildLifeCycleListener() {
@@ -99,11 +102,11 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 		});
 	}
 	
-	public RelationalEntityFinder(EntityJoinTree<C, I> entityJoinTree,
+	public RelationalEntityFinder(AdvancedEntityPersister<C, I> mainPersister,
 								  ConnectionProvider connectionProvider,
 								  Dialect dialect,
 								  boolean withImmediateQueryBuild) {
-		this.entityJoinTree = entityJoinTree;
+		this.entityJoinTree = mainPersister.getEntityJoinTree();
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
 		this.entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();;
@@ -176,26 +179,23 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 						 OrderBy orderBy,
 						 Limit limit) {
 		
-		// we clone the query to avoid polluting the instance one, else, from select(..) to select(..), we append the criteria at the end of it,
-		// which makes the query usually returning no data (because of the condition mix)
-		Query queryClone = new Query(
-				entityTreeQuery.getQuery().getSelectDelegate(),
-				entityTreeQuery.getQuery().getFromDelegate(),
-				new Where<>(where.getCriteria()),
-				new GroupBy(),
-				new Having(),
-				orderBy,
-				limit);
-		
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone);
-		
 		// When the condition contains some criteria on a collection, the ResultSet contains only data matching it,
 		// then the graph is a partial view of the real entity. Therefore, when the condition contains some Collection criteria
 		// we must load the graph in 2 phases: a first lookup for ids matching the result, and a second phase that loads the entity graph
 		// according to the ids
 		if (where.hasCollectionCriteria()) {
+			Query queryClone = new Query(
+					new Select(),
+					entityTreeQuery.getQuery().getFromDelegate(),
+					new Where<>(where.getCriteria()),
+					new GroupBy(),
+					new Having(),
+					orderBy,
+					limit);
+			
+			QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone);
+			
 			// First phase: selecting ids (made by clearing selected elements for performance issue)
-			KeepOrderMap<Selectable<?>, String> columns = queryClone.getSelectDelegate().clear();
 			Column<T, I> pk = (Column<T, I>) Iterables.first(((Table) entityJoinTree.getRoot().getTable()).getPrimaryKey().getColumns());
 			queryClone.select(pk, PRIMARY_KEY_ALIAS);
 			Map<Column<?, ?>, String> aliases = Maps.asMap(pk, PRIMARY_KEY_ALIAS);
@@ -206,18 +206,24 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 				// No result found, we must stop here because request below doesn't support in(..) without values (SQL error from database)
 				return Collections.emptySet();
 			} else {
-				// Second phase : selecting elements by main table pk (adding necessary columns)
-				queryClone.getSelectDelegate().remove(pk);    // previous pk selection removal
-				columns.forEach(queryClone::select);
-				queryClone.getWhereDelegate().clear();
-				queryClone.where(pk, in(ids));
-				
-				PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(valuesPerParam);
-				return new InternalExecutor(entityTreeQuery).execute(preparedSQL);
+				// Second phase : selecting elements by found identifiers
+				return selectExecutor.select(ids);
 			}
 		} else {
 			// The condition doesn't have a criteria on a collection property (*-to-many): the load can be done with one query because the SQL criteria
 			// doesn't make a subset of the entity graph
+			// We clone the query to avoid polluting the instance one, else, from select(..) to select(..), we append the criteria at the end of it,
+			// which makes the query usually returning no data (because of the condition mix)
+			Query queryClone = new Query(
+					new Select(entityTreeQuery.getQuery().getSelectDelegate()),
+					entityTreeQuery.getQuery().getFromDelegate(),
+					new Where<>(where.getCriteria()),
+					new GroupBy(),
+					new Having(),
+					orderBy,
+					limit);
+			
+			QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone);
 			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(valuesPerParam);
 			return new InternalExecutor(entityTreeQuery).execute(preparedSQL);
 		}

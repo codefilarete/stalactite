@@ -11,6 +11,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeIn
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.RootJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Reflections;
@@ -39,7 +40,7 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<C, T> {
 	@Nullable
 	private EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
 
-	private final IdentityHashMap<Selectable<?>, Selectable<?>> columnClones;
+	private final IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> columnClones;
 	
 	public JoinRoot(EntityJoinTree<C, I> tree, EntityInflater<C, I> entityInflater, T table) {
 		this.tree = tree;
@@ -48,15 +49,15 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<C, T> {
 		this.columnClones = new IdentityHashMap<>();
 		table.getColumns().forEach(column -> {
 			// we clone columns to avoid side effects on the original query
-			this.columnClones.put(column, column);
+			this.columnClones.put((JoinLink<?, ?>) column, (JoinLink<?, ?>) column);
 		});
 	}
 	
-	public JoinRoot(EntityJoinTree<C, I> tree, EntityInflater<C, I> entityInflater, T table, IdentityHashMap<Selectable<?>, Selectable<?>> columnClones) {
+	public JoinRoot(EntityJoinTree<C, I> tree, EntityInflater<C, I> entityInflater, T table, IdentityHashMap<? extends JoinLink<?, ?>, ? extends JoinLink<?, ?>> columnClones) {
 		this.tree = tree;
 		this.entityInflater = entityInflater;
 		this.table = table;
-		this.columnClones = columnClones;
+		this.columnClones = (IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>>) columnClones;
 	}
 	
 	public EntityInflater<C, I> getEntityInflater() {
@@ -75,7 +76,7 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<C, T> {
 	}
 	
 	@Override
-	public IdentityHashMap<Selectable<?>, Selectable<?>> getOriginalColumnsToLocalOnes() {
+	public IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> getOriginalColumnsToLocalOnes() {
 		return columnClones;
 	}
 

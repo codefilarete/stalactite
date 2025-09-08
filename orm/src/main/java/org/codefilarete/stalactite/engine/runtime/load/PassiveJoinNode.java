@@ -45,7 +45,7 @@ public class PassiveJoinNode<C, T1 extends Fromable, T2 extends Fromable, I> ext
 					JoinType joinType,
 					Set<? extends Selectable<?>> columnsToSelect,	// of T2
 					@Nullable String tableAlias,
-					IdentityHashMap<Selectable<?>, Selectable<?>> columnClones) {
+					IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> columnClones) {
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias, columnClones);
 	}
 	

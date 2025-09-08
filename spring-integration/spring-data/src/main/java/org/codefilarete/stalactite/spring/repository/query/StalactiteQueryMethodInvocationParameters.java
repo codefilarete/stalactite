@@ -5,8 +5,11 @@ import java.util.Map;
 
 import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.spring.repository.query.reduce.LimitHandler;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.tool.collection.Arrays;
-import org.springframework.data.domain.Pageable;
+import org.springframework.core.ResolvableType;
+import org.springframework.data.relational.repository.query.RelationalParameters;
 import org.springframework.data.repository.query.Parameter;
 import org.springframework.data.repository.query.Parameters;
 import org.springframework.data.repository.query.ParametersParameterAccessor;
@@ -21,7 +24,7 @@ public class StalactiteQueryMethodInvocationParameters extends ParametersParamet
 	public static final String PARAMETER_NEEDS_TO_BE_NAMED = "For queries with named parameters you need to provide names for method parameters."
 			+ " Use @Param for query method parameters, or when on Java 8+ use the javac flag -parameters.";
 	
-//	private final StalactiteQueryMethod method;
+	private final StalactiteQueryMethod method;
 	
 	private Limit limit;
 	
@@ -30,7 +33,7 @@ public class StalactiteQueryMethodInvocationParameters extends ParametersParamet
 	 */
 	public StalactiteQueryMethodInvocationParameters(StalactiteQueryMethod method, Object[] values) {
 		super(method.getParameters(), values);
-//		this.method = method;
+		this.method = method;
 	}
 
 	/**
@@ -77,6 +80,31 @@ public class StalactiteQueryMethodInvocationParameters extends ParametersParamet
 		return result;
 	}
 	
+	public Map<String, PreparedStatementWriter<?>> bindParameters(Dialect dialect) {
+		Map<String, PreparedStatementWriter<?>> result = new HashMap<>();
+		RelationalParameters bindableParameters = method.getParameters().getBindableParameters();
+		
+		for (RelationalParameters.RelationalParameter bindableParameter : bindableParameters) {
+			String parameterName = bindableParameter.getName().orElseThrow(() -> new IllegalStateException(StalactiteQueryMethodInvocationParameters.PARAMETER_NEEDS_TO_BE_NAMED));
+			
+			Object value = getBindableValue(bindableParameter.getIndex());
+			
+			Class<?> valueType;
+			if (value instanceof Iterable) {
+				ResolvableType resolvableType = bindableParameter.getResolvableType();
+				valueType = resolvableType.getGeneric(0).resolve();
+			} else if (value.getClass().isArray()) {
+				valueType = value.getClass().getComponentType();
+			} else {
+				valueType = value.getClass();
+			}
+			PreparedStatementWriter<?> writer = dialect.getColumnBinderRegistry().getWriter(valueType);
+			result.put(parameterName, writer);
+		}
+		
+		return result;
+	}
+	
 	public void setLimit(Limit limit) {
 		this.limit = limit;
 	}
@@ -94,15 +122,4 @@ public class StalactiteQueryMethodInvocationParameters extends ParametersParamet
 	public void limit(int count, Integer offset) {
 		setLimit(new Limit(count, offset));
 	}
-//
-//	private Limit getLimit() {
-//		Pageable pageable = getPageable();
-//		if (method.isSliceQuery() && pageable.getPageNumber() == 0) {
-//			// The + 1 is a look-ahead tip to make the returned Slice eventually return true on hasNext()
-//			return new Limit(pageable.getPageSize() + 1);
-//		} else {
-//			// when the user asks for a page number (given Pageable is a Page instance or a Slice with page number) then we ask for the page number
-//			return new Limit(pageable.getPageSize(), (int) pageable.getOffset());
-//		}
-//	}
 }

@@ -193,7 +193,7 @@ public class EntityJoinTree<C, I> {
 																								Set<? extends Column<T2, ?>> additionalSelectableColumns,
 																								@Nullable Function<ColumnedRow, Object> relationIdentifierProvider) {
 		return this.addJoin(leftStrategyName, parent -> {
-			Duo<T2, IdentityHashMap<Selectable<?>, Selectable<?>>> tableClone = cloneTable(rightJoinColumn.getTable());
+			Duo<T2, IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>>> tableClone = cloneTable(rightJoinColumn.getTable());
 			// Build a new Key using the cloned table and the corresponding cloned columns
 			Key.KeyBuilder<T2, JOINTYPE> rightJoinLinkBuilder = Key.from(tableClone.getLeft());
 			Set<? extends JoinLink<?, ?>> columns = rightJoinColumn.getColumns();
@@ -205,7 +205,7 @@ public class EntityJoinTree<C, I> {
 			
 			// We create the column mapping from the original node column to the cloned columns, not from the table clone ones.
 			// This allows keeping the original columns in the map (user's one), which is necessary for caller to decode the result set 
-			IdentityHashMap<Selectable<?>, Selectable<?>> originalColumnsToClones = tableClone.getRight();
+			IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> originalColumnsToClones = tableClone.getRight();
 			
 			return new RelationJoinNode<U, T1, T2, JOINTYPE, ID>(
 					(JoinNode) parent,
@@ -578,13 +578,13 @@ public class EntityJoinTree<C, I> {
 	 * @param fromable the table to clone
 	 * @return a copy (on name and columns) of given join table
 	 */
-	static <T extends Fromable> Duo<T, IdentityHashMap<Selectable<?>, Selectable<?>>> cloneTable(T fromable) {
+	static <T extends Fromable> Duo<T, IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>>> cloneTable(T fromable) {
 		if (fromable instanceof Table) {
 			Table<?> table = (Table<?>) fromable;
 			Table tableClone = new Table(fromable.getName());
-			IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = new IdentityHashMap<>(tableClone.getColumns().size());
+			IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> columnClones = new IdentityHashMap<>(tableClone.getColumns().size());
 			(((Table<?>) fromable).getColumns()).forEach(column -> {
-				Column clone = tableClone.addColumn(column.getName(), column.getJavaType(), column.getSize());
+				Column<?, ?> clone = tableClone.addColumn(column.getName(), column.getJavaType(), column.getSize());
 				columnClones.put(column, clone);
 			});
 			
@@ -601,7 +601,7 @@ public class EntityJoinTree<C, I> {
 			return new Duo<>((T) tableClone, columnClones);
 		} else if (fromable instanceof PseudoTable) {
 			PseudoTable pseudoTable = new PseudoTable(((PseudoTable) fromable).getQueryStatement(), fromable.getName());
-			IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = new IdentityHashMap<>(pseudoTable.getColumns().size());
+			IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> columnClones = new IdentityHashMap<>(pseudoTable.getColumns().size());
 			(((PseudoTable) fromable).getColumns()).forEach(column -> {
 				// we can only have Union in From clause, no sub-query, because of table-per-class polymorphism, so we can cast to Union
 				PseudoColumn<?> clone = ((Union) pseudoTable.getQueryStatement()).registerColumn(column.getExpression(), column.getJavaType());
@@ -646,7 +646,7 @@ public class EntityJoinTree<C, I> {
 	 * @return a copy of given node, put as child of parent, using leftColumn
 	 */
 	public static AbstractJoinNode<?, ?, ?, ?> cloneNodeForParent(AbstractJoinNode<?, ?, ?, ?> node, JoinNode parent, Key<?, ?> leftJoinColumn) {
-		Duo<Fromable, IdentityHashMap<Selectable<?>, Selectable<?>>> tableClone = cloneTable(node.getTable());
+		Duo<Fromable, IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>>> tableClone = cloneTable(node.getTable());
 		// Build a new Key using the cloned table and the corresponding cloned columns
 		Key.KeyBuilder<Fromable, Object> rightJoinLinkBuilder = Key.from(tableClone.getLeft());
 		Set<? extends JoinLink<?, ?>> columns = node.getRightJoinLink().getColumns();
@@ -657,7 +657,7 @@ public class EntityJoinTree<C, I> {
 		}
 		// We create the column mapping from the original node column to the cloned columns, not from the table clone ones.
 		// This allows keeping the original columns in the map (user's one), which is necessary for caller to decode the result set 
-		IdentityHashMap<Selectable<?>, Selectable<?>> originalColumnsToClones = Maps.innerJoinOnValuesAndKeys(node.getOriginalColumnsToLocalOnes(), tableClone.getRight(), IdentityHashMap::new);
+		IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> originalColumnsToClones = Maps.innerJoinOnValuesAndKeys(node.getOriginalColumnsToLocalOnes(), tableClone.getRight(), IdentityHashMap::new);
 		
 		Key.KeyBuilder<Fromable, ?> leftJoinLinkBuilder = mimicKey(leftJoinColumn, parent.getTable());
 		

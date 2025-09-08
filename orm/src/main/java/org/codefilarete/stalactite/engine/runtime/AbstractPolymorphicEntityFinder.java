@@ -166,7 +166,7 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 		selectAdapter.accept(queryClone.getSelectDelegate());
 		Map<Selectable<?>, ResultSetReader<?>> columnReaders = Iterables.map(queryClone.getColumns(), Function.identity(), selectable -> dialect.getColumnBinderRegistry().getBinder(selectable.getJavaType()));
 		
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>());
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(values);
 		return readProjection(preparedSQL, columnReaders, queryClone.getAliases(), accumulator);
 	}
 	

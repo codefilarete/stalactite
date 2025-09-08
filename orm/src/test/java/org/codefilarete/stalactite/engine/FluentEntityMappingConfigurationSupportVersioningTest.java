@@ -3,10 +3,14 @@ package org.codefilarete.stalactite.engine;
 import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.assertj.core.data.TemporalOffset;
+import org.assertj.core.data.TemporalUnitWithinOffset;
+import org.assertj.core.internal.Conditions;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.id.Identifier;
@@ -152,7 +156,14 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		
 		// the reloaded version should be up to date
 		Country dummyCountryClone2 = countryPersister.select(dummyCountry.getId());
-		assertThat(dummyCountryClone2.getModificationDate()).isEqualTo(nowHistory.get(1));
+
+		// Since Java 9 LocalDateTime.now() changed its precision : when available by OS it takes nanosecond precision,
+		// (https://bugs.openjdk.java.net/browse/JDK-8068730)
+		// this implies a comparison failure because many databases don't store nanosecond by default (with SQL TIMESTAMP type, which is the default
+		// in DefaultTypeMapping), therefore the LocalDateTime read by binder doesn't contain nanoseconds, so when it is compared to original value
+		// (which contains nanos) it fails. To overcome this problem we consider not using LocalDateTime.now(), and taking the loss of precision
+		// in the test
+		assertThat(dummyCountryClone2.getModificationDate()).isCloseTo(nowHistory.get(1), new TemporalUnitWithinOffset(1000, ChronoUnit.NANOS));
 		
 		// another update should upgraded the entity again
 		dummyCountryClone2.setName("Tutu");

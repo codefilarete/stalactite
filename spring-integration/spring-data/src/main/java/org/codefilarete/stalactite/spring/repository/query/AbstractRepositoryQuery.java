@@ -39,7 +39,7 @@ public abstract class AbstractRepositoryQuery<C, R> implements StalactiteReposit
 		AbstractQueryExecutor<List<Object>, Object> queryExecutor = buildQueryExecutor(accessor);
 		Supplier<List<Object>> resultSupplier = queryExecutor.buildQueryExecutor(parameters);
 		
-		R adaptation = buildResultReducer(accessor, queryExecutor.bindParameters(accessor))
+		R adaptation = buildResultReducer(accessor)
 				.adapt(resultSupplier)
 				.apply(parameters);
 		
@@ -49,15 +49,14 @@ public abstract class AbstractRepositoryQuery<C, R> implements StalactiteReposit
 	
 	protected abstract AbstractQueryExecutor<List<Object>, Object> buildQueryExecutor(StalactiteQueryMethodInvocationParameters invocationParameters);
 	
-	protected <ROW> QueryResultReducer<R, ROW> buildResultReducer(StalactiteQueryMethodInvocationParameters invocationParameters,
-																  Map<String, PreparedStatementWriter<?>> bindParameters) {
+	protected <ROW> QueryResultReducer<R, ROW> buildResultReducer(StalactiteQueryMethodInvocationParameters invocationParameters) {
 		QueryResultReducer<?, C> result;
 		switch (method.getQueryMethodReturnType()) {
 			case COLLECTION:
 				result = new QueryResultCollectioner<>();
 				break;
 			case PAGE:
-				result = new QueryResultPager<>(this, invocationParameters, buildCountSupplier(invocationParameters, bindParameters));
+				result = new QueryResultPager<>(this, invocationParameters, buildCountSupplier(invocationParameters));
 				break;
 			case SLICE:
 				result = new QueryResultSlicer<>(this, invocationParameters);
@@ -77,7 +76,7 @@ public abstract class AbstractRepositoryQuery<C, R> implements StalactiteReposit
 		return (QueryResultReducer<R, ROW>) result;
 	}
 	
-	protected abstract LongSupplier buildCountSupplier(StalactiteQueryMethodInvocationParameters accessor, Map<String, PreparedStatementWriter<?>> bindParameters);
+	protected abstract LongSupplier buildCountSupplier(StalactiteQueryMethodInvocationParameters accessor);
 	
 	
 	protected ResultProcessor buildResultProcessor(Object[] parameters) {

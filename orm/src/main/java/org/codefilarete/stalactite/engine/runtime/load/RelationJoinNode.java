@@ -86,7 +86,7 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 					 EntityInflater<C, I> entityInflater,
 					 BeanRelationFixer<?, C> beanRelationFixer,
 					 @Nullable Function<ColumnedRow, ?> relationIdentifierProvider,
-					 IdentityHashMap<Selectable<?>, Selectable<?>> columnClones) {
+					 IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> columnClones) {
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias, columnClones);
 		this.entityInflater = entityInflater;
 		this.propertyAccessor = propertyAccessor;

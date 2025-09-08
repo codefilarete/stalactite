@@ -8,6 +8,7 @@ import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.query.AggregateAccessPointToColumnMapping;
+import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.tool.collection.Iterables;
 import org.springframework.data.mapping.PropertyPath;
@@ -16,17 +17,23 @@ import org.springframework.data.projection.EntityProjectionIntrospector;
 import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.relational.core.mapping.RelationalMappingContext;
 
+/**
+ * Helper class to provide the {@link Selectable}s necessary to build some projection instance from a database query (native or not).
+ * The columns are taken from the aggregate type.
+ *
+ * @param <C> the aggregate (root entity) type
+ * @author Guillaume Mary
+ */
 public class ProjectionTypeInformationExtractor<C> {
-
-	private IdentityHashMap<Selectable<?>, String> aliases = new IdentityHashMap<>();
-	private IdentityHashMap<Selectable<?>, PropertyPath> columnToProperties = new IdentityHashMap<>();
+	
 	private final AggregateAccessPointToColumnMapping<C> aggregateColumnMapping;
 	private final EntityProjectionIntrospector entityProjectionIntrospector;
 	private final Class<C> aggregateType;
-
+	
 	/**
 	 * Initiates an instance capable of collecting aliases and their matching property of the aggregate of the given entityPersister
-	 * @param factory 
+	 *
+	 * @param factory
 	 * @param entityPersister
 	 */
 	public ProjectionTypeInformationExtractor(ProjectionFactory factory, AdvancedEntityPersister<C, ?> entityPersister) {
@@ -35,30 +42,22 @@ public class ProjectionTypeInformationExtractor<C> {
 		// If the projection is open (any method as a @Value on it), then, because Spring can't know in advance which field will be required to
 		// evaluate the @Value expression, we must retrieve the whole aggregate as entities.
 		// se https://docs.spring.io/spring-data/jpa/reference/repositories/projections.html
-		EntityProjectionIntrospector.ProjectionPredicate predicate = (returnType, domainType)
-				-> !domainType.isAssignableFrom(returnType) && !returnType.isAssignableFrom(domainType);
-
-		this.entityProjectionIntrospector = EntityProjectionIntrospector.create(factory, predicate, new RelationalMappingContext());
+		EntityProjectionIntrospector.ProjectionPredicate isProjectionTest = (returnType, domainType)
+				-> (!domainType.isAssignableFrom(returnType) && !returnType.isAssignableFrom(domainType));
+		
+		this.entityProjectionIntrospector = EntityProjectionIntrospector.create(factory, isProjectionTest, new RelationalMappingContext());
 		this.aggregateColumnMapping = entityPersister.getEntityFinder().newCriteriaSupport().getEntityCriteriaSupport().getAggregateColumnMapping();
 		this.aggregateType = entityPersister.getClassToPersist();
 	}
-
-	public IdentityHashMap<Selectable<?>, String> getAliases() {
-		return aliases;
-	}
-
-	public IdentityHashMap<Selectable<?>, PropertyPath> getColumnToProperties() {
-		return columnToProperties;
-	}
-
+	
 	/**
-	 * Extracts the {@link Selectable} and {@link PropertyPath} from the {@link ProjectionFactory} and {@link AdvancedEntityPersister} construction time.
-	 * The result is stored in {@link #columnToProperties} and {@link #aliases}.
+	 * Extracts the {@link JoinLink} and {@link PropertyPath} from the {@link ProjectionFactory} and {@link AdvancedEntityPersister} of construction time.
+	 * @param projectionTypeToIntrospect the projection type to introspect
+	 * @return a map of {@link JoinLink} to {@link PropertyPath}
 	 */
-	public void extract(Class<?> projectionTypeToIntrospect) {
-		aliases = new IdentityHashMap<>();
-		columnToProperties = new IdentityHashMap<>();
-
+	public IdentityHashMap<JoinLink<?, ?>, PropertyPath> extract(Class<?> projectionTypeToIntrospect) {
+		IdentityHashMap<JoinLink<?, ?>, PropertyPath> columnToProperties = new IdentityHashMap<>();
+		
 		EntityProjection<?, C> projectionTypeIntrospection = entityProjectionIntrospector.introspect(projectionTypeToIntrospect, aggregateType);
 		projectionTypeIntrospection.forEachRecursive(projectionProperty -> {
 			AccessorChain accessorChain = new AccessorChain<>();
@@ -72,10 +71,13 @@ public class ProjectionTypeInformationExtractor<C> {
 					accessorChain.add(Accessors.accessor(propertyPath1.getOwningType().getType(), propertyPath1.getSegment(), propertyPath1.getType()));
 				});
 			});
-			Selectable<?> selectable = aggregateColumnMapping.giveColumn(accessorChain.getAccessors());
-			columnToProperties.put(selectable, projectionProperty.getPropertyPath());
-			String alias = projectionProperty.getPropertyPath().toDotPath().replace('.', '_');
-			aliases.put(selectable, alias);
+			try {
+				JoinLink<?, ?> selectable = aggregateColumnMapping.giveColumn(accessorChain.getAccessors());
+				columnToProperties.put(selectable, projectionProperty.getPropertyPath());
+			} catch (RuntimeException e) {
+				// MADE TO AVOID Error while looking for column of o.c.s.e.m.Republic.getPrimeMinister() : it is not declared in mapping of o.c.s.e.m.Republic
+			}
 		});
+		return columnToProperties;
 	}
 }

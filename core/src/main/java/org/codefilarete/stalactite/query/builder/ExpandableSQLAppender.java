@@ -304,10 +304,11 @@ public class ExpandableSQLAppender implements SQLAppender {
 		// Computing parameter binders for each "?" index
 		Map<Integer, PreparedStatementWriter<?>> placeholderBinders = new HashMap<>();
 		Map<Integer, Object> placeholderValues = new HashMap<>();
-		mergedValues.forEach((paramName, value) -> {
-			ExpandableParameter expandableParameter = expandableSQL.getExpandableParameters().get(paramName);
-			if (expandableParameter == null) {
-				throw new BindingException("No parameter found in SQL for value named '" + paramName + "' : " + placeholderSql);
+		expandableSQL.getExpandableParameters().forEach((paramName, expandableParameter) -> {
+			Object value = mergedValues.get(paramName);
+			if (value == null && !mergedValues.containsKey(paramName)) {
+				// value not given at all (null or not)
+				throw new BindingException("No value given for parameter named '" + paramName + "' : " + placeholderSql);
 			}
 			int[] markIndexes = expandableParameter.getMarkIndexes();
 			for (int markIndex : markIndexes) {

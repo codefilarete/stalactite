@@ -60,13 +60,13 @@ public abstract class AbstractDerivedQuery<T> {
 				operator = new Greater<>().equals();
 				break;
 			case NOT_LIKE:
-				operator = new Like<>(true, true).not();
+				operator = new Like<>(false, false).not();
 				if (ignoreCase) {
 					operator = ((Like) operator).ignoringCase();
 				}
 				break;
 			case LIKE:
-				operator = new Like<>(true, true);
+				operator = new Like<>(false, false);
 				if (ignoreCase) {
 					operator = ((Like) operator).ignoringCase();
 				}

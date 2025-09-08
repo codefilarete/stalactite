@@ -11,6 +11,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.spring.repository.query.AbstractQueryExecutor;
@@ -34,8 +35,8 @@ import static org.codefilarete.stalactite.spring.repository.query.PartTreeStalac
 
 public class TupleNativeQueryExecutor extends AbstractQueryExecutor<List<Map<String, Object>>, Map<String, Object>> {
 
-	private final IdentityHashMap<Selectable<?>, String> expectedAliasesInNativeQuery;
-	private final IdentityHashMap<Selectable<?>, PropertyPath> columnToProperties;
+	private final IdentityHashMap<JoinLink<?, ?>, String> expectedAliasesInNativeQuery;
+	private final IdentityHashMap<JoinLink<?, ?>, PropertyPath> columnToProperties;
 	private final Supplier<Limit> limitSupplier;
 	private final String sql;
 	private final ConnectionProvider connectionProvider;
@@ -44,8 +45,8 @@ public class TupleNativeQueryExecutor extends AbstractQueryExecutor<List<Map<Str
 									String sql,
 									Dialect dialect,
 									ConnectionProvider connectionProvider,
-									IdentityHashMap<Selectable<?>, String> expectedAliasesInNativeQuery,
-									IdentityHashMap<Selectable<?>, PropertyPath> columnToProperties,
+									IdentityHashMap<JoinLink<?, ?>, String> expectedAliasesInNativeQuery,
+									IdentityHashMap<JoinLink<?, ?>, PropertyPath> columnToProperties,
 									Supplier<Limit> limitSupplier) {
 		super(method, dialect);
 		this.sql = sql;
@@ -61,7 +62,7 @@ public class TupleNativeQueryExecutor extends AbstractQueryExecutor<List<Map<Str
 			StalactiteQueryMethodInvocationParameters accessor = new StalactiteQueryMethodInvocationParameters(method, parameters);
 			Map<String, Object> values = accessor.getNamedValues();
 			
-			Map<String, PreparedStatementWriter<?>> parameterBinders = bindParameters(accessor);
+			Map<String, PreparedStatementWriter<?>> parameterBinders = accessor.bindParameters(dialect);
 			String sqlToExecute = sql;
 			// Taking pageable parameter into account: at first glance we could have thought that asking the user to add some "limit" and "offset"
 			// clauses to its SQL was sufficient, but it's not due to the offset clause that is actually optional. Indeed, the offset is only required
@@ -110,7 +111,7 @@ public class TupleNativeQueryExecutor extends AbstractQueryExecutor<List<Map<Str
 						return (finalResult, databaseRowDataProvider) -> {
 							Map<String, Object> row = new HashMap<>();
 							finalResult.add(row);
-							for (Entry<Selectable<?>, PropertyPath> entry : columnToProperties.entrySet()) {
+							for (Entry<JoinLink<?, ?>, PropertyPath> entry : columnToProperties.entrySet()) {
 								buildHierarchicMap(entry.getValue().toDotPath(), databaseRowDataProvider.get(entry.getKey()), row);
 							}
 						};

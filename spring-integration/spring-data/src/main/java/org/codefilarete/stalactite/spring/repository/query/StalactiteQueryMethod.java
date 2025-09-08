@@ -10,7 +10,7 @@ import org.springframework.data.util.Lazy;
 
 public class StalactiteQueryMethod extends QueryMethod {
 	
-	/** Shadow of super field "method" because its accessor package-prive */
+	/** Shadow of super field "method" because its accessor is package-private */
 	private final Method method;
 	
 	private final Lazy<QueryMethodReturnType> queryMethodReturnType;
@@ -47,7 +47,16 @@ public class StalactiteQueryMethod extends QueryMethod {
 	public QueryMethodReturnType getQueryMethodReturnType() {
 		return queryMethodReturnType.get();
 	}
-	
+
+	/**
+	 * Implemented to make super method accessible outside of Spring Data package
+	 * {@inheritDoc}
+	 */
+	@Override
+	public Class<?> getDomainClass() {
+		return super.getDomainClass();
+	}
+
 	/**
 	 * Implemented to make super method accessible outside of Spring Data package
 	 * @return the original JDK method underlying this instance

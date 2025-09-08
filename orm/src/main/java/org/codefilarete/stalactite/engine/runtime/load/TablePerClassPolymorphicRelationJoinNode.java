@@ -10,6 +10,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.ForkJoinRowConsumer;
+import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.QueryStatement;
 import org.codefilarete.stalactite.query.model.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.model.Selectable;
@@ -38,10 +39,10 @@ import static org.codefilarete.tool.Nullable.nullable;
  */
 public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, JOINCOLTYPE, I> extends RelationJoinNode<C, T1, PseudoTable, JOINCOLTYPE, I> {
 	
-	private static IdentityHashMap<Selectable<?>, Selectable<?>> collectColumnClones(Key<?, ?> rightJoinLink, Set<? extends Selectable<?>> columnsToSelect) {
-		IdentityHashMap<Selectable<?>, Selectable<?>> result = new IdentityHashMap<>();
+	private static IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> collectColumnClones(Key<?, ?> rightJoinLink, Set<? extends JoinLink<?, ?>> columnsToSelect) {
+		IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> result = new IdentityHashMap<>();
 		rightJoinLink.getTable().getColumns().forEach(column -> {
-			result.put(column, column);
+			result.put((JoinLink<?, ?>) column, (JoinLink<?, ?>) column);
 		});
 		columnsToSelect.forEach(column -> {
 			result.put(column, column);
@@ -61,7 +62,7 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 													Key<T1, JOINCOLTYPE> leftJoinColumn,
 													Key<?, JOINCOLTYPE> rightJoinColumn,
 													JoinType joinType,
-													Set<? extends Selectable<?>> columnsToSelect,
+													Set<? extends JoinLink<?, ?>> columnsToSelect,
 													@Nullable String tableAlias,
 													EntityInflater<C, I> entityInflater,
 													BeanRelationFixer<Object, C> beanRelationFixer,

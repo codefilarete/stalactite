@@ -37,7 +37,7 @@ public class EntityNativeQueryExecutor<C> extends AbstractQueryExecutor<List<C>,
 		StalactiteQueryMethodInvocationParameters accessor = new StalactiteQueryMethodInvocationParameters(method, parameters);
 		
 		return () -> {
-			Set<C> cs = relationalEntityFinder.selectFromQueryBean(sql, accessor.getNamedValues(), bindParameters(accessor));
+			Set<C> cs = relationalEntityFinder.selectFromQueryBean(sql, accessor.getNamedValues(), accessor.bindParameters(dialect));
 			return new ArrayList<>(cs);
 		};
 	}

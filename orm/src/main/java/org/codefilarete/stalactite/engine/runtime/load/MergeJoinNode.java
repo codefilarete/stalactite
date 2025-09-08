@@ -9,6 +9,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.PassiveJoinNode.PassiveJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
@@ -50,7 +51,7 @@ public class MergeJoinNode<C, T1 extends Fromable, T2 extends Fromable, I> exten
 						 @Nullable String tableAlias,
 						 EntityMerger<C> merger,
 						 Set<Selectable<?>> selectableColumns,
-						 IdentityHashMap<Selectable<?>, Selectable<?>> columnClones) {
+						 IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> columnClones) {
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, selectableColumns, tableAlias, columnClones);
 		this.merger = merger;
 	}

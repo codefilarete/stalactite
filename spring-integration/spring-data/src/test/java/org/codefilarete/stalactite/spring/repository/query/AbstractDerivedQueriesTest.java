@@ -6,6 +6,7 @@ import java.time.Month;
 import java.util.Collection;
 import java.util.Set;
 
+import org.codefilarete.stalactite.engine.model.AbstractCountry;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Language;
 import org.codefilarete.stalactite.engine.model.Person;
@@ -83,6 +84,10 @@ abstract class AbstractDerivedQueriesTest {
 				);
 		assertThat(loadedCountries).extracting(chain(NamesOnly::getPresident, SimplePerson::getName))
 				.containsExactlyInAnyOrder(country1.getPresident().getName(), country2.getPresident().getName());
+
+		// special case where argument is the actual domain type or one super-type
+		Collection<AbstractCountry> loadedEntities = derivedQueriesRepository.getByName("Toto", AbstractCountry.class);
+		assertThat(loadedEntities).containsExactlyInAnyOrder(country1, country2);
 	}
 	
 	@Test
@@ -110,13 +115,13 @@ abstract class AbstractDerivedQueriesTest {
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
 		
 		Set<NamesOnly> loadedCountries;
-		loadedCountries = derivedQueriesRepository.getByNameLikeOrderByName("o");
+		loadedCountries = derivedQueriesRepository.getByNameLikeOrderByName("%o%");
 		assertThat(loadedCountries).extracting(NamesOnly::getName).containsExactly(country4.getName(), country1.getName());
 		
-		loadedCountries = derivedQueriesRepository.getByNameLikeOrderByName("t");
+		loadedCountries = derivedQueriesRepository.getByNameLikeOrderByName("%t%");
 		assertThat(loadedCountries).extracting(NamesOnly::getName).containsExactly(country3.getName(), country2.getName(), country4.getName(), country1.getName());
 		
-		loadedCountries = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("t");
+		loadedCountries = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("%t%");
 		assertThat(loadedCountries).extracting(NamesOnly::getName).containsExactly(country3.getName(), country2.getName(), country1.getName(), country4.getName());
 	}
 	
@@ -146,11 +151,11 @@ abstract class AbstractDerivedQueriesTest {
 	
 		PageRequest pageable = PageRequest.ofSize(3);
 		Slice<NamesOnly> loadedNamesOnly2;
-		loadedNamesOnly2 = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("t", pageable);
+		loadedNamesOnly2 = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("%t%", pageable);
 		assertThat(loadedNamesOnly2).extracting(NamesOnly::getName)
 				.containsExactly(country3.getName(), country2.getName(), country1.getName());
 
-		loadedNamesOnly2 = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("t", pageable.next());
+		loadedNamesOnly2 = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("%t%", pageable.next());
 		assertThat(loadedNamesOnly2).extracting(NamesOnly::getName)
 				.containsExactly(country4.getName());
 	}
@@ -559,7 +564,7 @@ abstract class AbstractDerivedQueriesTest {
 		country2.setDescription("a keyword contained in the description");
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Set<Republic> loadedCountries = derivedQueriesRepository.findByDescriptionLike("keyword");
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByDescriptionLike("%keyword%");
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
 	}
 	
@@ -575,7 +580,7 @@ abstract class AbstractDerivedQueriesTest {
 		country4.setName("Tonton");
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
 		
-		Set<Republic> loadedCountries = derivedQueriesRepository.findByNameLikeIgnoreCase("O");
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByNameLikeIgnoreCase("%O%");
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country4);
 		
 	}
@@ -588,7 +593,7 @@ abstract class AbstractDerivedQueriesTest {
 		country2.setDescription("a keyword contained in the description");
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Set<Republic> loadedCountries = derivedQueriesRepository.findByDescriptionNotLike("contained");
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByDescriptionNotLike("%contained%");
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1);
 	}
 	
@@ -605,7 +610,7 @@ abstract class AbstractDerivedQueriesTest {
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
 		
 		
-		Set<Republic> loadedCountries = derivedQueriesRepository.findByNameNotLikeIgnoreCase("O");
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByNameNotLikeIgnoreCase("%O%");
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country2, country3);
 	}
 	
@@ -795,10 +800,10 @@ abstract class AbstractDerivedQueriesTest {
 		
 		Set<Republic> loadedCountries;
 
-		loadedCountries = derivedQueriesRepository.findByNameLike("t", Sort.by("name"));
+		loadedCountries = derivedQueriesRepository.findByNameLike("%t%", Sort.by("name"));
 		assertThat(loadedCountries).containsExactly(country2, country1, country3);
 
-		loadedCountries = derivedQueriesRepository.findByNameLike("t", Sort.by(Sort.Order.by("name").ignoreCase()));
+		loadedCountries = derivedQueriesRepository.findByNameLike("%t%", Sort.by(Sort.Order.by("name").ignoreCase()));
 		assertThat(loadedCountries).containsExactly(country3, country1, country2);
 	}
 	
@@ -826,10 +831,10 @@ abstract class AbstractDerivedQueriesTest {
 		
 		Set<Republic> loadedCountries;
 		
-		loadedCountries = derivedQueriesRepository.findByLanguagesCodeLike("_", Sort.by("name"));
+		loadedCountries = derivedQueriesRepository.findByLanguagesCodeLike("%_%", Sort.by("name"));
 		assertThat(loadedCountries).containsExactly(country2, country1, country3);
 		
-		loadedCountries = derivedQueriesRepository.findByLanguagesCodeLike("_", Sort.by(Sort.Order.by("name").ignoreCase()));
+		loadedCountries = derivedQueriesRepository.findByLanguagesCodeLike("%_%", Sort.by(Sort.Order.by("name").ignoreCase()));
 		assertThat(loadedCountries).containsExactly(country3, country1, country2);
 	}
 	
@@ -849,7 +854,7 @@ abstract class AbstractDerivedQueriesTest {
 		
 		Set<Republic> loadedCountries;
 		
-		loadedCountries = derivedQueriesRepository.findByNameIgnoreCaseAndDescriptionLike("toTO", "contained");
+		loadedCountries = derivedQueriesRepository.findByNameIgnoreCaseAndDescriptionLike("toTO", "%contained%");
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
 	}
 	
@@ -869,7 +874,7 @@ abstract class AbstractDerivedQueriesTest {
 		
 		Set<Republic> loadedCountries;
 		
-		loadedCountries = derivedQueriesRepository.findByNameAndDescriptionLikeAllIgnoreCase("toTO", "CoNtAINed");
+		loadedCountries = derivedQueriesRepository.findByNameAndDescriptionLikeAllIgnoreCase("toTO", "%CoNtAINed%");
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
 	}
 	

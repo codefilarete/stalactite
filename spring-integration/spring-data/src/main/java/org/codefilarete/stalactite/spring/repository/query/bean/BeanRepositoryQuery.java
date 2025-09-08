@@ -73,7 +73,7 @@ public class BeanRepositoryQuery<C, R> extends AbstractRepositoryQuery<C, R> {
 	}
 	
 	@Override
-	protected LongSupplier buildCountSupplier(StalactiteQueryMethodInvocationParameters invocationParameters, Map<String, PreparedStatementWriter<?>> bindParameters) {
+	protected LongSupplier buildCountSupplier(StalactiteQueryMethodInvocationParameters invocationParameters) {
 		if (countQuery == null) {
 			MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
 			Executable countQueryAccessor = methodReferenceCapturer.findExecutable(BeanQuery::counterBean);

@@ -37,6 +37,7 @@ import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
+import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -63,7 +64,7 @@ public class AggregateAccessPointToColumnMapping<C> {
 	 * - {@link PropertyAccessor} (for exemple) whereas getColumn() will get
 	 * - {@link AccessorByMethodReference} which are quite different but should be compared.
 	 */
-	private final Map<List<? extends ValueAccessPoint<?>>, Selectable<?>> propertyToColumn = new AccessorToColumnMap();
+	private final Map<List<? extends ValueAccessPoint<?>>, JoinLink<?, ?>> propertyToColumn = new AccessorToColumnMap();
 	
 	private final EntityJoinTree<C, ?> tree;
 	
@@ -94,7 +95,7 @@ public class AggregateAccessPointToColumnMapping<C> {
 	}
 	
 	@VisibleForTesting
-	Map<List<? extends ValueAccessPoint<?>>, Selectable<?>> getPropertyToColumn() {
+	public Map<List<? extends ValueAccessPoint<?>>, JoinLink<?, ?>> getPropertyToColumn() {
 		return propertyToColumn;
 	}
 	
@@ -229,9 +230,9 @@ public class AggregateAccessPointToColumnMapping<C> {
 	 * @param valueAccessPoints chain of accessors to a property that has a matching column
 	 * @return the found column, throws an exception if not found
 	 */
-	public Selectable<?> giveColumn(List<? extends ValueAccessPoint<?>> valueAccessPoints) {
+	public JoinLink<?, ?> giveColumn(List<? extends ValueAccessPoint<?>> valueAccessPoints) {
 		// looking among current properties
-		Selectable<?> column = this.propertyToColumn.get(valueAccessPoints);
+		JoinLink<?, ?> column = this.propertyToColumn.get(valueAccessPoints);
 		if (column != null) {
 			return column;
 		} else {

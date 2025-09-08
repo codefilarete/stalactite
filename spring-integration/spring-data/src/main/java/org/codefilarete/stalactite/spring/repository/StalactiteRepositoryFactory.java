@@ -79,7 +79,7 @@ public class StalactiteRepositoryFactory extends RepositoryFactorySupport {
 
 		switch (Objects.preventNull(key, Key.CREATE_IF_NOT_FOUND)) {
 			case CREATE:
-				return Optional.of(new CreateQueryLookupStrategy<>(entityPersister));
+				return Optional.of(new CreateQueryLookupStrategy<>(entityPersister, dialect));
 			case USE_DECLARED_QUERY:
 				return Optional.of(new FirstMatchingQueryLookupStrategy(
 						new BeanQueryLookupStrategy<>(beanFactory, dialect),
@@ -88,7 +88,7 @@ public class StalactiteRepositoryFactory extends RepositoryFactorySupport {
 				return Optional.of(new FirstMatchingQueryLookupStrategy(
 						new BeanQueryLookupStrategy<>(beanFactory, dialect),
 						new NativeQueryLookupStrategy<>(entityPersister, dialect, connectionProvider),
-						new CreateQueryLookupStrategy<>(entityPersister)));
+						new CreateQueryLookupStrategy<>(entityPersister, dialect)));
 			default:
 				throw new IllegalArgumentException(String.format("Unsupported query lookup strategy %s!", key));
 		}
