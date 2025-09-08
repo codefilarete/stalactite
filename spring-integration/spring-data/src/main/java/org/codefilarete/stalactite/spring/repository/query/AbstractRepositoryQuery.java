@@ -1,17 +1,21 @@
 package org.codefilarete.stalactite.spring.repository.query;
 
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultCollectioner;
 import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultPager;
 import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultReducer;
 import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultSingler;
 import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultSlicer;
-import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.collection.Iterables;
 import org.springframework.data.repository.query.ParametersParameterAccessor;
 import org.springframework.data.repository.query.RepositoryQuery;
 import org.springframework.data.repository.query.ResultProcessor;
@@ -21,6 +25,14 @@ import org.springframework.data.repository.query.ResultProcessor;
  * @author Guillaume Mary
  */
 public abstract class AbstractRepositoryQuery<C, R> implements StalactiteRepositoryQuery<C, R> {
+	
+	protected static IdentityHashMap<JoinLink<?, ?>, String> buildAliases(IdentityHashMap<? extends JoinLink<?, ?>, ? extends AccessorChain<?, ?>> columnToProperties) {
+		return Iterables.map(
+				columnToProperties.entrySet(),
+				Map.Entry::getKey,
+				entry -> AccessorDefinition.giveDefinition(entry.getValue()).getName().replace('.', '_'),
+				IdentityHashMap::new);
+	}
 
 	protected final StalactiteQueryMethod method;
 	

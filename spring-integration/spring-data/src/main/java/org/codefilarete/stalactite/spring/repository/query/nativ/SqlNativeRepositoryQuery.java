@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.LongSupplier;
 
+import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityFinder;
@@ -16,7 +17,7 @@ import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.spring.repository.query.AbstractQueryExecutor;
 import org.codefilarete.stalactite.spring.repository.query.AbstractRepositoryQuery;
 import org.codefilarete.stalactite.spring.repository.query.NativeQuery;
-import org.codefilarete.stalactite.spring.repository.query.ProjectionTypeInformationExtractor;
+import org.codefilarete.stalactite.spring.repository.query.ProjectionMappingFinder;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethodInvocationParameters;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
@@ -26,8 +27,6 @@ import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.statement.StringParamedSQL;
 import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.collection.Iterables;
-import org.springframework.data.mapping.PropertyPath;
 import org.springframework.data.projection.ProjectionFactory;
 
 public class SqlNativeRepositoryQuery<C, R> extends AbstractRepositoryQuery<C, R> {
@@ -43,7 +42,7 @@ public class SqlNativeRepositoryQuery<C, R> extends AbstractRepositoryQuery<C, R
 	private final Dialect dialect;
 	private final ConnectionProvider connectionProvider;
 	private final RelationalEntityFinder<C, ?, ?> relationalEntityFinder;
-	private final ProjectionTypeInformationExtractor<C> projectionTypeInformationExtractor;
+	private final ProjectionMappingFinder<C> projectionMappingFinder;
 	
 	public SqlNativeRepositoryQuery(StalactiteQueryMethod queryMethod,
 									String sql,
@@ -59,7 +58,7 @@ public class SqlNativeRepositoryQuery<C, R> extends AbstractRepositoryQuery<C, R
 		this.dialect = dialect;
 		this.connectionProvider = connectionProvider;
 		
-		this.projectionTypeInformationExtractor = new ProjectionTypeInformationExtractor<>(factory, entityPersister);
+		this.projectionMappingFinder = new ProjectionMappingFinder<>(factory, entityPersister);
 		
 		// Note that at this stage we can afford to ask for immediate Query creation because we are at a high layer (Spring Data Query discovery) and
 		// persister is supposed to be finalized and up-to-date (containing the whole entity aggregate graph), that why we pass "true" as argument
@@ -85,10 +84,10 @@ public class SqlNativeRepositoryQuery<C, R> extends AbstractRepositoryQuery<C, R
 			Class<?> projectionType = method.getParameters().hasDynamicProjection()
 					? invocationParameters.getDynamicProjectionType()
 					: method.getReturnedObjectType();
-			IdentityHashMap<JoinLink<?, ?>, PropertyPath> columnToProperties = this.projectionTypeInformationExtractor.extract(projectionType);
+			IdentityHashMap<JoinLink<?, ?>, AccessorChain<C, ?>> columnToProperties = this.projectionMappingFinder.lookup(projectionType);
 			// Building aliases. The way we build them has no impact on other algorithms, they could be random, but for debugging and clarity purpose
 			// we generate them as closest as possible to the property name
-			IdentityHashMap<JoinLink<?, ?>, String> aliases = Iterables.map(columnToProperties.entrySet(), Map.Entry::getKey, entry -> entry.getValue().toDotPath().replace('.', '_'), IdentityHashMap::new);
+			IdentityHashMap<JoinLink<?, ?>, String> aliases = buildAliases(columnToProperties);
 			
 			queryExecutor = (AbstractQueryExecutor) new TupleNativeQueryExecutor(getQueryMethod(), sql, dialect, connectionProvider, aliases, columnToProperties, invocationParameters::getLimit);
 		} else {

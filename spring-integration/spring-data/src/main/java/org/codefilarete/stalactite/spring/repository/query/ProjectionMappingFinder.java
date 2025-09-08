@@ -1,8 +1,6 @@
 package org.codefilarete.stalactite.spring.repository.query;
 
 import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.Accessors;
@@ -10,8 +8,8 @@ import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.query.AggregateAccessPointToColumnMapping;
 import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.tool.collection.Iterables;
 import org.springframework.data.mapping.PropertyPath;
+import org.springframework.data.mapping.context.MappingContext;
 import org.springframework.data.projection.EntityProjection;
 import org.springframework.data.projection.EntityProjectionIntrospector;
 import org.springframework.data.projection.ProjectionFactory;
@@ -24,7 +22,7 @@ import org.springframework.data.relational.core.mapping.RelationalMappingContext
  * @param <C> the aggregate (root entity) type
  * @author Guillaume Mary
  */
-public class ProjectionTypeInformationExtractor<C> {
+public class ProjectionMappingFinder<C> {
 	
 	private final AggregateAccessPointToColumnMapping<C> aggregateColumnMapping;
 	private final EntityProjectionIntrospector entityProjectionIntrospector;
@@ -36,48 +34,54 @@ public class ProjectionTypeInformationExtractor<C> {
 	 * @param factory
 	 * @param entityPersister
 	 */
-	public ProjectionTypeInformationExtractor(ProjectionFactory factory, AdvancedEntityPersister<C, ?> entityPersister) {
+	public ProjectionMappingFinder(ProjectionFactory factory, AdvancedEntityPersister<C, ?> entityPersister) {
 		// The projection is closed: it means there's not @Value on the interface, so we can use Spring property introspector to look up for
 		// properties to select in the query
 		// If the projection is open (any method as a @Value on it), then, because Spring can't know in advance which field will be required to
 		// evaluate the @Value expression, we must retrieve the whole aggregate as entities.
 		// se https://docs.spring.io/spring-data/jpa/reference/repositories/projections.html
 		EntityProjectionIntrospector.ProjectionPredicate isProjectionTest = (returnType, domainType)
-				-> (!domainType.isAssignableFrom(returnType) && !returnType.isAssignableFrom(domainType));
+				-> !returnType.isAssignableFrom(domainType);
 		
-		this.entityProjectionIntrospector = EntityProjectionIntrospector.create(factory, isProjectionTest, new RelationalMappingContext());
+		// We create a dumb MappingContext (un-typed) to "just make it work". I'm unsure about the way it works, but implementing it is a bit
+		// complex for Stalactite due to the need to have PersistentEntity which requires also some concepts like PreferredConstructor or InstanceCreatorMetadata
+		// => to be implemented if this dumb implementation is unsufficient
+		MappingContext mappingContext = new RelationalMappingContext();
+		this.entityProjectionIntrospector = EntityProjectionIntrospector.create(factory, isProjectionTest, mappingContext);
 		this.aggregateColumnMapping = entityPersister.getEntityFinder().newCriteriaSupport().getEntityCriteriaSupport().getAggregateColumnMapping();
 		this.aggregateType = entityPersister.getClassToPersist();
 	}
 	
 	/**
 	 * Extracts the {@link JoinLink} and {@link PropertyPath} from the {@link ProjectionFactory} and {@link AdvancedEntityPersister} of construction time.
+	 * The algorithm is based on Spring property introspection to make us match the way it detects the properties of a projection. Thus, we are much more
+	 * compatible with Spring Data than if we re-invent the wheel. Meanwhile, the will to re-invent it is very tempting because the algorithm is unclear,
+	 * not well-documented, with a lot of closed / private classes.
+	 *
 	 * @param projectionTypeToIntrospect the projection type to introspect
 	 * @return a map of {@link JoinLink} to {@link PropertyPath}
 	 */
-	public IdentityHashMap<JoinLink<?, ?>, PropertyPath> extract(Class<?> projectionTypeToIntrospect) {
-		IdentityHashMap<JoinLink<?, ?>, PropertyPath> columnToProperties = new IdentityHashMap<>();
+	public IdentityHashMap<JoinLink<?, ?>, AccessorChain<C, ?>> lookup(Class<?> projectionTypeToIntrospect) {
+		IdentityHashMap<JoinLink<?, ?>, AccessorChain<C, ?>> result = new IdentityHashMap<>();
 		
 		EntityProjection<?, C> projectionTypeIntrospection = entityProjectionIntrospector.introspect(projectionTypeToIntrospect, aggregateType);
 		projectionTypeIntrospection.forEachRecursive(projectionProperty -> {
-			AccessorChain accessorChain = new AccessorChain<>();
-			List<PropertyPath> collect = projectionProperty.getPropertyPath().stream().collect(Collectors.toList());
-			// there's a bug here: when property length is higher than 2 it contains an extra item which makes the whole algorithm broken (Spring bug ?)
-			if (collect.size() >= 2) {
-				collect = Iterables.cutTail(collect);
-			}
-			collect.forEach(propertyPath -> {
-				propertyPath.forEach(propertyPath1 -> {
-					accessorChain.add(Accessors.accessor(propertyPath1.getOwningType().getType(), propertyPath1.getSegment(), propertyPath1.getType()));
-				});
-			});
+			AccessorChain accessorChain = convertToAccessorChain(projectionProperty.getPropertyPath());
 			try {
 				JoinLink<?, ?> selectable = aggregateColumnMapping.giveColumn(accessorChain.getAccessors());
-				columnToProperties.put(selectable, projectionProperty.getPropertyPath());
+				result.put(selectable, accessorChain);
 			} catch (RuntimeException e) {
 				// MADE TO AVOID Error while looking for column of o.c.s.e.m.Republic.getPrimeMinister() : it is not declared in mapping of o.c.s.e.m.Republic
 			}
 		});
-		return columnToProperties;
+		return result;
+	}
+	
+	private AccessorChain<?, ?> convertToAccessorChain(PropertyPath propertyPath2) {
+		AccessorChain<?, ?> result = new AccessorChain<>();
+		propertyPath2.forEach(propertyPath -> {
+			result.add(Accessors.accessor(propertyPath.getOwningType().getType(), propertyPath.getSegment(), propertyPath.getType()));
+		});
+		return result;
 	}
 }

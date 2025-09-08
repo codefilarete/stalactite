@@ -16,7 +16,6 @@ import org.codefilarete.stalactite.query.model.operator.IsNull;
 import org.codefilarete.stalactite.query.model.operator.Lesser;
 import org.codefilarete.stalactite.query.model.operator.Like;
 import org.codefilarete.tool.collection.Arrays;
-import org.springframework.data.mapping.PropertyPath;
 import org.springframework.data.repository.query.parser.Part.Type;
 
 /**
@@ -174,7 +173,7 @@ public abstract class AbstractDerivedQuery<T> {
 		}
 	}
 	
-	protected <O> AccessorChain<T, O> convertToAccessorChain(PropertyPath property) {
+	protected <O> AccessorChain<T, O> convertToAccessorChain(org.springframework.data.mapping.PropertyPath property) {
 		List<Accessor<?, ?>> accessorChain = new ArrayList<>();
 		property.forEach(path ->
 				accessorChain.add(Accessors.accessor(path.getOwningType().getType(), path.getSegment())));

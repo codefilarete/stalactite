@@ -11,6 +11,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.Selectable;
@@ -29,14 +30,13 @@ import org.codefilarete.stalactite.sql.statement.StringParamedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
-import org.springframework.data.mapping.PropertyPath;
 
 import static org.codefilarete.stalactite.spring.repository.query.PartTreeStalactiteProjection.buildHierarchicMap;
 
 public class TupleNativeQueryExecutor extends AbstractQueryExecutor<List<Map<String, Object>>, Map<String, Object>> {
 
 	private final IdentityHashMap<JoinLink<?, ?>, String> expectedAliasesInNativeQuery;
-	private final IdentityHashMap<JoinLink<?, ?>, PropertyPath> columnToProperties;
+	private final IdentityHashMap<JoinLink<?, ?>, AccessorChain<?, ?>> columnToProperties;
 	private final Supplier<Limit> limitSupplier;
 	private final String sql;
 	private final ConnectionProvider connectionProvider;
@@ -45,14 +45,14 @@ public class TupleNativeQueryExecutor extends AbstractQueryExecutor<List<Map<Str
 									String sql,
 									Dialect dialect,
 									ConnectionProvider connectionProvider,
-									IdentityHashMap<JoinLink<?, ?>, String> expectedAliasesInNativeQuery,
-									IdentityHashMap<JoinLink<?, ?>, PropertyPath> columnToProperties,
+									IdentityHashMap<? extends JoinLink<?, ?>, String> expectedAliasesInNativeQuery,
+									IdentityHashMap<? extends JoinLink<?, ?>, ? extends AccessorChain<?, ?>> columnToProperties,
 									Supplier<Limit> limitSupplier) {
 		super(method, dialect);
 		this.sql = sql;
 		this.connectionProvider = connectionProvider;
-		this.expectedAliasesInNativeQuery = expectedAliasesInNativeQuery;
-		this.columnToProperties = columnToProperties;
+		this.expectedAliasesInNativeQuery = (IdentityHashMap<JoinLink<?, ?>, String>) expectedAliasesInNativeQuery;
+		this.columnToProperties = (IdentityHashMap<JoinLink<?, ?>, AccessorChain<?, ?>>) columnToProperties;
 		this.limitSupplier = limitSupplier;
 	}
 
@@ -111,8 +111,8 @@ public class TupleNativeQueryExecutor extends AbstractQueryExecutor<List<Map<Str
 						return (finalResult, databaseRowDataProvider) -> {
 							Map<String, Object> row = new HashMap<>();
 							finalResult.add(row);
-							for (Entry<JoinLink<?, ?>, PropertyPath> entry : columnToProperties.entrySet()) {
-								buildHierarchicMap(entry.getValue().toDotPath(), databaseRowDataProvider.get(entry.getKey()), row);
+							for (Entry<JoinLink<?, ?>, AccessorChain<?, ?>> entry : columnToProperties.entrySet()) {
+								buildHierarchicMap(entry.getValue(), databaseRowDataProvider.get(entry.getKey()), row);
 							}
 						};
 					}

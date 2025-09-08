@@ -12,8 +12,10 @@ import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMember;
 import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
 import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
@@ -38,9 +40,7 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.tool.VisibleForTesting;
-import org.codefilarete.tool.collection.Iterables;
 import org.springframework.data.domain.Sort.Direction;
-import org.springframework.data.mapping.PropertyPath;
 import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.repository.query.Parameter;
 import org.springframework.data.repository.query.parser.Part;
@@ -76,19 +76,22 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 	 * @param root the root map to build upon
 	 */
 	@VisibleForTesting
-	public static void buildHierarchicMap(String dottedProperty, Object value, Map<String, Object> root) {
-		String[] parts = dottedProperty.split("\\.");
+	public static void buildHierarchicMap(AccessorChain<?, ?> dottedProperty, Object value, Map<String, Object> root) {
 		Map<String, Object> current = root;
 		// Navigate through all parts except the last one
-		int lengthMinus1 = parts.length - 1;
+		int lengthMinus1 = dottedProperty.getAccessors().size() - 1;
 		for (int i = 0; i < lengthMinus1; i++) {
-			current = (Map<String, Object>) current.computeIfAbsent(parts[i], k -> new HashMap<>());
+			Accessor<?, ?> accessor = dottedProperty.getAccessors().get(i);
+			String propertyName = AccessorDefinition.giveDefinition(accessor).getName();
+			current = (Map<String, Object>) current.computeIfAbsent(propertyName, k -> new HashMap<>());
 		}
 		// Set the value in the leaf Map
-		current.putIfAbsent(parts[lengthMinus1], value);
+		Accessor<?, ?> lastAccessor = dottedProperty.getAccessors().get(lengthMinus1);
+		String propertyName = AccessorDefinition.giveDefinition(lastAccessor).getName();
+		current.putIfAbsent(propertyName, value);
 	}
 	
-	private final ProjectionTypeInformationExtractor<C> projectionTypeInformationExtractor;
+	private final ProjectionMappingFinder<C> projectionMappingFinder;
 	private final AdvancedEntityPersister<C, ?> entityPersister;
 	private final PartTree partTree;
 	private final ProjectionFactory factory;
@@ -108,9 +111,9 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 		this.dialect = dialect;
 		
 		this.countQuery = new PartTreeStalactiteCountProjection<>(method, entityPersister, partTree);
-		this.projectionTypeInformationExtractor = new ProjectionTypeInformationExtractor<>(factory, entityPersister);
+		this.projectionMappingFinder = new ProjectionMappingFinder<>(factory, entityPersister);
 		
-		this.projectionTypeInformationExtractor.extract(method.getDomainClass());
+		this.projectionMappingFinder.lookup(method.getDomainClass());
 		this.projectionCriteriaAppender = new ProjectionCriteriaAppender(partTree, entityPersister);
 	}
 	
@@ -118,13 +121,13 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 	protected AbstractQueryExecutor<List<Object>, Object> buildQueryExecutor(StalactiteQueryMethodInvocationParameters invocationParameters) {
 		// Extracting the Selectable and PropertyPath from the projection type
 		boolean runProjectionQuery;
-		IdentityHashMap<JoinLink<?, ?>, PropertyPath> propertiesColumns;
+		IdentityHashMap<JoinLink<?, ?>, AccessorChain<C, ?>> propertiesColumns;
 		if (method.getParameters().hasDynamicProjection()) {
-			propertiesColumns = this.projectionTypeInformationExtractor.extract(invocationParameters.getDynamicProjectionType());
+			propertiesColumns = this.projectionMappingFinder.lookup(invocationParameters.getDynamicProjectionType());
 			runProjectionQuery = factory.getProjectionInformation(invocationParameters.getDynamicProjectionType()).isClosed()
 					&& !invocationParameters.getDynamicProjectionType().isAssignableFrom(entityPersister.getClassToPersist());
 		} else {
-			propertiesColumns = this.projectionTypeInformationExtractor.extract(method.getReturnedObjectType());
+			propertiesColumns = this.projectionMappingFinder.lookup(method.getReturnedObjectType());
 			runProjectionQuery = factory.getProjectionInformation(method.getReturnedObjectType()).isClosed();
 		}
 		if (runProjectionQuery) {
@@ -224,9 +227,8 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 	
 	private AbstractQueryExecutor<List<Object>, Object> createClosedProjectionExecutor(
 			StalactiteQueryMethodInvocationParameters invocationParameters,
-			IdentityHashMap<JoinLink<?, ?>, PropertyPath> columnToProperties) {
-//		IdentityHashMap<JoinLink<?, ?>, PropertyPath> columnToProperties = projectionTypeInformationExtractor.getColumnToProperties();
-		IdentityHashMap<Selectable<?>, String> aliases = Iterables.map(columnToProperties.entrySet(), Entry::getKey, entry -> entry.getValue().toDotPath().replace('.', '_'), IdentityHashMap::new);
+			IdentityHashMap<JoinLink<?, ?>, AccessorChain<C, ?>> columnToProperties) {
+		IdentityHashMap<JoinLink<?, ?>, String> aliases = buildAliases(columnToProperties);
 		
 		ProjectionQueryCriteriaSupport<C, ?> actualProjectionQueryCriteriaSupport = projectionCriteriaAppender.executableEntityQuery.copyFor(select -> {
 			select.clear();
@@ -245,8 +247,8 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 				return (finalResult, databaseRowDataProvider) -> {
 					Map<String, Object> row = new HashMap<>();
 					finalResult.add(row);
-					for (Entry<JoinLink<?, ?>, PropertyPath> entry : columnToProperties.entrySet()) {
-						buildHierarchicMap(entry.getValue().toDotPath(), databaseRowDataProvider.apply((Selectable<Object>) entry.getKey()), row);
+					for (Entry<JoinLink<?, ?>, AccessorChain<C, ?>> entry : columnToProperties.entrySet()) {
+						buildHierarchicMap(entry.getValue(), databaseRowDataProvider.apply((Selectable<Object>) entry.getKey()), row);
 					}
 				};
 			}
@@ -324,7 +326,7 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 		
 		private void appendSort(PartTree tree, AdvancedEntityPersister<C, ?> entityPersister) {
 			tree.getSort().iterator().forEachRemaining(order -> {
-				PropertyPath propertyPath = PropertyPath.from(order.getProperty(), entityPersister.getClassToPersist());
+				org.springframework.data.mapping.PropertyPath propertyPath = org.springframework.data.mapping.PropertyPath.from(order.getProperty(), entityPersister.getClassToPersist());
 				AccessorChain<C, Object> orderProperty = convertToAccessorChain(propertyPath);
 				executableEntityQuery.getQueryPageSupport()
 						.orderBy(orderProperty, order.getDirection() == Direction.ASC ? Order.ASC : Order.DESC, order.isIgnoreCase());
@@ -376,7 +378,7 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 		
 		private void appendSort(PartTree tree, AdvancedEntityPersister<C, ?> entityPersister) {
 			tree.getSort().iterator().forEachRemaining(order -> {
-				PropertyPath propertyPath = PropertyPath.from(order.getProperty(), entityPersister.getClassToPersist());
+				org.springframework.data.mapping.PropertyPath propertyPath = org.springframework.data.mapping.PropertyPath.from(order.getProperty(), entityPersister.getClassToPersist());
 				AccessorChain<C, Object> orderProperty = convertToAccessorChain(propertyPath);
 				executableEntityQuery.getQueryPageSupport()
 						.orderBy(orderProperty, order.getDirection() == Direction.ASC ? Order.ASC : Order.DESC, order.isIgnoreCase());
