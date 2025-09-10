@@ -16,6 +16,10 @@ import org.codefilarete.stalactite.query.model.operator.IsNull;
 import org.codefilarete.stalactite.query.model.operator.Lesser;
 import org.codefilarete.stalactite.query.model.operator.Like;
 import org.codefilarete.tool.collection.Arrays;
+import org.springframework.data.domain.Sort.Order;
+import org.springframework.data.mapping.PropertyPath;
+import org.springframework.data.repository.query.parser.Part;
+import org.springframework.data.repository.query.parser.Part.IgnoreCaseType;
 import org.springframework.data.repository.query.parser.Part.Type;
 
 /**
@@ -26,13 +30,22 @@ import org.springframework.data.repository.query.parser.Part.Type;
  */
 public abstract class AbstractDerivedQuery<T> {
 	
-	protected final CriteriaChain criteriaChain;
+	protected final CriteriaChain condition;
 	
-	public AbstractDerivedQuery() {
-		this.criteriaChain = new CriteriaChain(new ArrayList<>());
+	private final Class<T> entityType;
+	
+	public AbstractDerivedQuery(Class<T> entityType) {
+		this.entityType = entityType;
+		this.condition = new CriteriaChain(new ArrayList<>());
 	}
 	
-	protected Criterion convertToCriterion(Type type, boolean ignoreCase) {
+	public Criterion append(Part part) {
+		Criterion criterion = convertToCriterion(part.getType(), part.shouldIgnoreCase() != IgnoreCaseType.NEVER);
+		this.condition.criteria.add(criterion);
+		return criterion;
+	}
+
+	private Criterion convertToCriterion(Type type, boolean ignoreCase) {
 		ConditionalOperator<?, ?> operator = null;
 		switch (type) {
 			case BETWEEN:
@@ -130,50 +143,24 @@ public abstract class AbstractDerivedQuery<T> {
 		} else {
 			// Adapting result depending on kind of operator was instantiated
 			if (operator instanceof Between) {
-				return new Criterion(operator, 2) {
-					@Override
-					public Object convert(Object[] arguments, int argumentIndex) {
-						return new Between.Interval<>(arguments[argumentIndex], arguments[argumentIndex + 1]);
-					}
-				};
+				return new BetweenCriterion((Between<?>) operator);
 			} else if (operator instanceof In || operator instanceof InIgnoreCase) {
-				return new Criterion(operator, 2) {
-					@Override
-					public Object convert(Object[] arguments, int argumentIndex) {
-						Object argument = arguments[argumentIndex];
-						if (argument instanceof Object[]) {
-							// converting varargs to an Iterable because it's what's expected by "In" class as value
-							return Arrays.asList((Object[]) argument);
-						} else {
-							return argument;
-						}
-					}
-				};
+				return new InCriterion(operator);
 			} else if (operator instanceof IsNull) {
-				return new Criterion(operator, 0) {
-					@Override
-					public void setValue(Object[] arguments, int argumentIndex) {
-						// IsNull doesn't set any value (at least it does nothing)
-						// moreover default behavior will throw exception due to argument position computation:
-						// findByNameIsNull() has no arg => arguments is empty making arguments[0] throws an IndexOutOfBoundsException 
-					}
-				};
+				return new IsNullCriterion((IsNull) operator);
 			} else if (type == Type.TRUE || type == Type.FALSE) {
-				return new Criterion(operator, 0) {
-					@Override
-					public void setValue(Object[] arguments, int argumentIndex) {
-						// TRUE and FALSE don't set any value
-						// moreover default behavior will throw exception due to argument position computation:
-						// findByNameIsNull() has no arg => arguments is empty making arguments[0] throws an IndexOutOfBoundsException 
-					}
-				};
+				return new BooleanCriterion(operator);
 			} else {
 				return new Criterion(operator);
 			}
 		}
 	}
 	
-	protected <O> AccessorChain<T, O> convertToAccessorChain(org.springframework.data.mapping.PropertyPath property) {
+	protected <O> AccessorChain<T, O> convertToAccessorChain(Order property) {
+		return this.convertToAccessorChain(PropertyPath.from(property.getProperty(), entityType));
+	}
+	
+	protected <O> AccessorChain<T, O> convertToAccessorChain(PropertyPath property) {
 		List<Accessor<?, ?>> accessorChain = new ArrayList<>();
 		property.forEach(path ->
 				accessorChain.add(Accessors.accessor(path.getOwningType().getType(), path.getSegment())));
@@ -187,22 +174,22 @@ public abstract class AbstractDerivedQuery<T> {
 	 * @author Guillaume Mary
 	 * @see CriteriaChain
 	 */
-	protected static class Criterion {
+	public static class Criterion {
 		
-		protected final ConditionalOperator<Object, Object> operator;
-		private final int argumentCount;
+		protected final ConditionalOperator<Object, Object> condition;
+		protected final int argumentCount;
 		
-		private Criterion(ConditionalOperator<?, ?> operator) {
-			this(operator, 1);
+		private Criterion(ConditionalOperator<?, ?> condition) {
+			this(condition, 1);
 		}
 		
-		public Criterion(ConditionalOperator<?, ?> operator, int argumentCount) {
-			this.operator = (ConditionalOperator<Object, Object>) operator;
+		public Criterion(ConditionalOperator<?, ?> condition, int argumentCount) {
+			this.condition = (ConditionalOperator<Object, Object>) condition;
 			this.argumentCount = argumentCount;
 		}
 		
 		public void setValue(Object[] arguments, int argumentIndex) {
-			this.operator.setValue(convert(arguments, argumentIndex));
+			this.condition.setValue(convert(arguments, argumentIndex));
 		}
 		
 		protected Object convert(Object[] arguments, int argumentIndex) {
@@ -230,6 +217,62 @@ public abstract class AbstractDerivedQuery<T> {
 				criterion.setValue(arguments, argumentIndex);
 				argumentIndex += criterion.argumentCount;
 			}
+		}
+	}
+	
+	private static class BetweenCriterion extends Criterion {
+		
+		public BetweenCriterion(Between<?> operator) {
+			super(operator, 2);
+		}
+
+		@Override
+		public Object convert(Object[] arguments, int argumentIndex) {
+			return new Between.Interval<>(arguments[argumentIndex], arguments[argumentIndex + 1]);
+		}
+	}
+
+	private static class IsNullCriterion extends Criterion {
+		
+		public IsNullCriterion(IsNull operator) {
+			super(operator, 0);
+		}
+
+		@Override
+		public void setValue(Object[] arguments, int argumentIndex) {
+			// IsNull doesn't set any value (at least it does nothing)
+			// moreover default behavior will throw exception due to argument position computation:
+			// findByNameIsNull() has no arg => arguments is empty making arguments[0] throws an IndexOutOfBoundsException 
+		}
+	}
+
+	private static class InCriterion extends Criterion {
+		public InCriterion(ConditionalOperator<?, ?> operator) {
+			super(operator, 2);
+		}
+
+		@Override
+		public Object convert(Object[] arguments, int argumentIndex) {
+			Object argument = arguments[argumentIndex];
+			if (argument instanceof Object[]) {
+				// converting varargs to an Iterable because it's what's expected by "In" class as value
+				return Arrays.asList((Object[]) argument);
+			} else {
+				return argument;
+			}
+		}
+	}
+
+	private static class BooleanCriterion extends Criterion {
+		public BooleanCriterion(ConditionalOperator<?, ?> operator) {
+			super(operator, 0);
+		}
+
+		@Override
+		public void setValue(Object[] arguments, int argumentIndex) {
+			// TRUE and FALSE don't set any value
+			// moreover default behavior will throw exception due to argument position computation:
+			// findByNameIsNull() has no arg => arguments is empty making arguments[0] throws an IndexOutOfBoundsException 
 		}
 	}
 }

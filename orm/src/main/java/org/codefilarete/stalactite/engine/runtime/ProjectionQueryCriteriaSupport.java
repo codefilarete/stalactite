@@ -41,7 +41,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
  * <ul>
  * Class aimed at handling projection query configuration and execution triggering :
  * <li>query configuration will be done by redirecting {@link CriteriaChain} methods to an {@link EntityQueryCriteriaSupport}.</li>
- * <li>execution triggering calls {@link EntityFinder#selectProjection(Consumer, Accumulator, ConfiguredEntityCriteria, boolean, OrderBy, Limit)}</li>
+ * <li>execution triggering calls {@link EntityFinder#selectProjection(Consumer, Map, Accumulator, ConfiguredEntityCriteria, boolean, OrderBy, Limit)}</li>
  * </ul>
  *
  * @param <C> entity type
@@ -204,6 +204,7 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 			return this;
 		}
 		
+		@Override
 		public ProjectionQueryPageSupport<C> orderBy(AccessorChain<C, ?> getter, Order order, boolean ignoreCase) {
 			orderBy.add(new OrderByItem(getter.getAccessors(), order, ignoreCase));
 			getter.getAccessors().forEach(accessor -> assertAccessorIsNotIterable(accessor, AccessorDefinition.giveDefinition(accessor).getMemberType()));

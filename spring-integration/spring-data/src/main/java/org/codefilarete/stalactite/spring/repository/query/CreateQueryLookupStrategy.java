@@ -38,7 +38,7 @@ public class CreateQueryLookupStrategy<T> implements QueryLookupStrategy {
 		
 		new QueryMethodValidator(partTree, queryMethod).validate();
 		if (partTree.isDelete()) {
-			return new PartTreeStalactiteDelete<>(queryMethod, entityPersister, partTree);
+			return new PartTreeStalactiteDelete<>(queryMethod, entityPersister, partTree, dialect);
 		} else if (partTree.isCountProjection()) {
 			return new PartTreeStalactiteCountProjection<>(queryMethod, entityPersister, partTree);
 		} else if (partTree.isExistsProjection()) {
@@ -54,7 +54,7 @@ public class CreateQueryLookupStrategy<T> implements QueryLookupStrategy {
 			// se https://docs.spring.io/spring-data/jpa/reference/repositories/projections.html
 			return new PartTreeStalactiteProjection<>(queryMethod, entityPersister, partTree, factory, dialect);
 		} else {
-			return new PartTreeStalactiteQuery<>(queryMethod, entityPersister, partTree);
+			return new PartTreeStalactiteQuery<>(queryMethod, entityPersister, partTree, dialect);
 		}
 	}
 }

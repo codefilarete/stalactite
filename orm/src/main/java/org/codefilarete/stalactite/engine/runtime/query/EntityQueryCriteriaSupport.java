@@ -285,6 +285,7 @@ public class EntityQueryCriteriaSupport<C, I> {
 			return orderBy(getter, order, false);
 		}
 		
+		@Override
 		public EntityQueryPageSupport<C> orderBy(AccessorChain<C, ?> getter, Order order, boolean ignoreCase) {
 			orderBy.add(new OrderByItem(getter.getAccessors(), order, ignoreCase));
 			getter.getAccessors().forEach(accessor -> assertAccessorIsNotIterable(accessor, AccessorDefinition.giveDefinition(accessor).getMemberType()));

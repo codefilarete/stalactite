@@ -1,12 +1,12 @@
 package org.codefilarete.stalactite.spring.repository.query;
 
-import java.util.HashMap;
-import java.util.Set;
+import java.util.Collection;
 
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
-import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
-import org.codefilarete.stalactite.sql.result.Accumulators;
+import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultCollectioner;
+import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultReducer;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
 import org.springframework.data.repository.query.parser.PartTree;
@@ -22,20 +22,16 @@ import org.springframework.data.repository.query.parser.PartTree;
  */
 class PartTreeStalactiteDelete<C> implements RepositoryQuery {
 	
-	private final PartTreeStalactiteQuery<C, Set<C>> partTreeQuery;
+	private final PartTreeStalactiteQuery<C, Collection<C>> partTreeQuery;
 	private final QueryMethod queryMethod;
-	private final EntityPersister<C, ?> entityPersister;
+	private final AdvancedEntityPersister<C, ?> entityPersister;
 	
-	public PartTreeStalactiteDelete(StalactiteQueryMethod queryMethod, AdvancedEntityPersister<C, ?> entityPersister, PartTree partTree) {
-		this.partTreeQuery = new PartTreeStalactiteQuery<C, Set<C>>(queryMethod, entityPersister, partTree) {
-			
+	public PartTreeStalactiteDelete(StalactiteQueryMethod queryMethod, AdvancedEntityPersister<C, ?> entityPersister, PartTree partTree, Dialect dialect) {
+		this.partTreeQuery = new PartTreeStalactiteQuery<C, Collection<C>>(queryMethod, entityPersister, partTree, dialect) {
+
 			@Override
-			public Set<C> execute(Object[] parameters) {
-				query.criteriaChain.consume(parameters);
-				// no sort nor order-by are taken into account here because we are here to delete the loaded instances, thus it's unnecessary to keep
-				// such information
-				EntityQueryCriteriaSupport<C, ?> derivedQueryToUse = query.executableEntityQuery;
-				return derivedQueryToUse.<Set<C>>wrapGraphLoad(new HashMap<>()).apply(Accumulators.toSet());
+			protected <ROW> QueryResultReducer<Collection<C>, ROW> buildResultReducer(StalactiteQueryMethodInvocationParameters invocationParameters) {
+				return new QueryResultCollectioner<>();
 			}
 		};
 		this.queryMethod = queryMethod;
@@ -44,7 +40,7 @@ class PartTreeStalactiteDelete<C> implements RepositoryQuery {
 	
 	@Override
 	public Integer execute(Object[] parameters) {
-		Set<C> execute = partTreeQuery.execute(parameters);
+		Collection<C> execute = partTreeQuery.execute(parameters);
 		if (execute == null || execute.isEmpty()) {
 			return 0;
 		} else {

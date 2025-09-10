@@ -23,7 +23,6 @@ import org.codefilarete.tool.trace.MutableLong;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
 import org.springframework.data.repository.query.parser.Part;
-import org.springframework.data.repository.query.parser.Part.IgnoreCaseType;
 import org.springframework.data.repository.query.parser.PartTree;
 import org.springframework.data.repository.query.parser.PartTree.OrPart;
 
@@ -83,7 +82,7 @@ public class PartTreeStalactiteCountProjection<C> implements RepositoryQuery {
 	
 	@Override
 	public Long execute(Object[] parameters) {
-		query.criteriaChain.consume(parameters);
+		query.condition.consume(parameters);
 		return query.executableProjectionQuery.wrapIntoExecutable().execute(accumulator);
 	}
 	
@@ -99,6 +98,7 @@ public class PartTreeStalactiteCountProjection<C> implements RepositoryQuery {
 		private EntityCriteriaSupport<C> currentSupport;
 		
 		DerivedQuery(AdvancedEntityPersister<C, ?> entityPersister, PartTree tree) {
+			super(entityPersister.getClassToPersist());
 			this.executableProjectionQuery = entityPersister.newProjectionCriteriaSupport(selectConsumer);
 			tree.forEach(this::append);
 		}
@@ -122,10 +122,9 @@ public class PartTreeStalactiteCountProjection<C> implements RepositoryQuery {
 		
 		private void append(Part part, LogicalOperator orOrAnd) {
 			AccessorChain<C, Object> getter = convertToAccessorChain(part.getProperty());
-			Criterion criterion = convertToCriterion(part.getType(), part.shouldIgnoreCase() != IgnoreCaseType.NEVER);
+			Criterion criterion = append(part);
 			
-			this.currentSupport.add(orOrAnd, getter.getAccessors(), criterion.operator);
-			super.criteriaChain.criteria.add(criterion);
+			this.currentSupport.add(orOrAnd, getter.getAccessors(), criterion.condition);
 		}
 	}
 }

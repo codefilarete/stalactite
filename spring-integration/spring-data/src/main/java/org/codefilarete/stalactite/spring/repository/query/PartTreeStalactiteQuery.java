@@ -1,193 +1,110 @@
 package org.codefilarete.stalactite.spring.repository.query;
 
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 import org.codefilarete.reflection.AccessorByMember;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
-import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
+import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.ExecutableEntityQueryCriteria;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport.EntityQueryPageSupport;
-import org.codefilarete.stalactite.query.model.LogicalOperator;
-import org.codefilarete.stalactite.spring.repository.query.reduce.LimitHandler;
-import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultCollectioner;
-import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultPager;
-import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultReducer;
-import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultSingler;
-import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultSlicer;
+import org.codefilarete.stalactite.query.model.Limit;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.springframework.data.domain.Sort.Direction;
-import org.springframework.data.mapping.PropertyPath;
-import org.springframework.data.repository.query.ParametersParameterAccessor;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
-import org.springframework.data.repository.query.parser.Part;
-import org.springframework.data.repository.query.parser.Part.IgnoreCaseType;
 import org.springframework.data.repository.query.parser.PartTree;
-import org.springframework.data.repository.query.parser.PartTree.OrPart;
-import org.springframework.lang.Nullable;
-
-import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * {@link RepositoryQuery} for Stalactite. Inspired by {@link org.springframework.data.jpa.repository.query.PartTreeJpaQuery}.
  * The parsing of the {@link QueryMethod} is made by Spring {@link PartTree}, hence this class only iterates over parts
  * to create a Stalactite query.
- * 
+ *
  * @param <C> entity type
  * @author Guillaume Mary
  */
-public class PartTreeStalactiteQuery<C, R> implements StalactiteRepositoryQuery<C, R> {
+public class PartTreeStalactiteQuery<C, R> extends AbstractRepositoryQuery<C, R> {
 	
-	private final StalactiteQueryMethod method;
-	protected final DerivedQuery<C> query;
 	private final AdvancedEntityPersister<C, ?> entityPersister;
-	private final PartTree tree;
-
+	private final PartTree partTree;
+	private final Dialect dialect;
+	private final PartTreeStalactiteCountProjection<C> countQuery;
+	
 	public PartTreeStalactiteQuery(StalactiteQueryMethod method,
 								   AdvancedEntityPersister<C, ?> entityPersister,
-								   PartTree tree) {
-		this.method = method;
+								   PartTree partTree,
+								   Dialect dialect) {
+		super(method);
 		this.entityPersister = entityPersister;
-		this.tree = tree;
-		
-		try {
-			this.query = new DerivedQuery<>(entityPersister, tree);
-			// Applying sort if necessary
-			if (tree.getSort().isSorted()) {
-				tree.getSort().iterator().forEachRemaining(order -> {
-					PropertyPath propertyPath = PropertyPath.from(order.getProperty(), entityPersister.getClassToPersist());
-					AccessorChain<C, Object> orderProperty = query.convertToAccessorChain(propertyPath);
-					query.executableEntityQuery.getQueryPageSupport()
-							.orderBy(orderProperty, order.getDirection() == Direction.ASC ? Order.ASC : Order.DESC, order.isIgnoreCase());
-				});
-			}
-			// Applying limit if necessary
-			nullable(tree.getMaxResults()).invoke(query.executableEntityQuery.getQueryPageSupport()::limit);
-		} catch (RuntimeException o_O) {
-			throw new IllegalArgumentException(
-					String.format("Failed to create query for method %s! %s", method, o_O.getMessage()), o_O);
-		}
+		this.partTree = partTree;
+		this.dialect = dialect;
+		this.countQuery = new PartTreeStalactiteCountProjection<>(method, entityPersister, partTree);
 	}
 	
 	@Override
-	@Nullable
-	public R execute(Object[] parameters) {
-		query.criteriaChain.consume(parameters);
-		
-		R adaptation = buildResultWindower().adapt(() -> handleDynamicSort(parameters).<List<C>>wrapGraphLoad(new HashMap<>()).apply(Accumulators.toList())).apply(parameters);
-		
-		// - hasDynamicProjection() is for case of method that gives the expected returned type as a last argument (or a compound one by Collection or other)
-		if (method.getParameters().hasDynamicProjection()) {
-			return method.getResultProcessor().withDynamicProjection(new ParametersParameterAccessor(method.getParameters(), parameters)).processResult(adaptation);
-		} else {
-			return method.getResultProcessor().processResult(adaptation);
-		}
-	}
-
-	private QueryResultReducer<R, C> buildResultWindower() {
-		QueryResultReducer<?, C> result;
-		if (method.isPageQuery()) {
-			result = new QueryResultPager<>(this, new LimitHandler() {
-				@Override
-				public void limit(int count) {
-					PartTreeStalactiteQuery.this.query.executableEntityQuery.getQueryPageSupport().limit(count);
-				}
-				
-				@Override
-				public void limit(int count, Integer offset) {
-					PartTreeStalactiteQuery.this.query.executableEntityQuery.getQueryPageSupport().limit(count, offset);
-				}
-			}, new PartTreeStalactiteCountProjection<>(method, entityPersister, tree));
-		} else if (method.isSliceQuery()) {
-			result = new QueryResultSlicer<>(this, new LimitHandler() {
-				@Override
-				public void limit(int count) {
-					PartTreeStalactiteQuery.this.query.executableEntityQuery.getQueryPageSupport().limit(count);
-				}
-				
-				@Override
-				public void limit(int count, Integer offset) {
-					PartTreeStalactiteQuery.this.query.executableEntityQuery.getQueryPageSupport().limit(count, offset);
-				}
-			});
-		} else if (method.isCollectionQuery()) {
-			result = new QueryResultCollectioner<>();
-		} else {
-			result = new QueryResultSingler<>();
-		}
-		return (QueryResultReducer<R, C>) result;
+	protected AbstractQueryExecutor<List<Object>, Object> buildQueryExecutor(StalactiteQueryMethodInvocationParameters invocationParameters) {
+		return new AbstractQueryExecutor<List<Object>, Object>(method, dialect) {
+			
+			@Override
+			public Supplier<List<Object>> buildQueryExecutor(Object[] parameters) {
+				return () -> {
+					EntityQueryCriteriaSupport<C, ?> executableEntityQuery = entityPersister.newCriteriaSupport();
+					ToCriteriaPartTreeTransformer<C> criteriaAppender = new ToCriteriaPartTreeTransformer<>(
+							partTree,
+							entityPersister.getClassToPersist(),
+							executableEntityQuery.getEntityCriteriaSupport(),
+							executableEntityQuery.getQueryPageSupport(),
+							executableEntityQuery.getQueryPageSupport());
+					criteriaAppender.condition.consume(parameters);
+					
+					ExecutableEntityQueryCriteria<C, ?> executableEntityQueryCriteria = handleDynamicParameters(invocationParameters, executableEntityQuery);
+					
+					List<C> adaptation = executableEntityQueryCriteria.execute(Accumulators.toList());
+					return method.getResultProcessor().processResult(adaptation);
+				};
+			}
+		};
 	}
 	
-	private EntityQueryCriteriaSupport<C, ?> handleDynamicSort(Object[] parameters) {
+	private ExecutableEntityQueryCriteria<C, ?> handleDynamicParameters(StalactiteQueryMethodInvocationParameters invocationParameters,
+																		EntityQueryCriteriaSupport<C, ?> defaultExecutableEntityQuery) {
 		EntityQueryCriteriaSupport<C, ?> derivedQueryToUse;
-		ParametersParameterAccessor parameterHelper = new ParametersParameterAccessor(getQueryMethod().getParameters(), parameters);
 		// following code will manage both Sort as an argument, and Sort in a Pageable because getSort() handle both
-		if (parameterHelper.getSort().isSorted()) {
-			DerivedQuery<C> derivedQuery = new DerivedQuery<>(query.executableEntityQuery);
+		if (invocationParameters.getSort().isSorted()) {
 			Class<?> declaringClass = getQueryMethod().getEntityInformation().getJavaType();
 			// Spring Sort class supports only first-level properties, in-depth ones seems not to be definable,
-			// therefore we create AccessorChain of only one property 
-			parameterHelper.getSort().stream().forEachOrdered(order -> {
+			// therefore we create AccessorChain of only one property
+			EntityQueryPageSupport<C> dynamicSortSupport = new EntityQueryPageSupport<>();
+			invocationParameters.getSort().stream().forEachOrdered(order -> {
 				AccessorByMember<?, ?, ?> accessor = Accessors.accessor(declaringClass, order.getProperty());
-				derivedQuery.dynamicSortSupport.orderBy(new AccessorChain<>(accessor), order.getDirection() == Direction.ASC ? Order.ASC : Order.DESC, order.isIgnoreCase());
+				dynamicSortSupport.orderBy(new AccessorChain<>(accessor),
+						order.getDirection() == Direction.ASC ? Order.ASC : Order.DESC,
+						order.isIgnoreCase());
 			});
-			derivedQueryToUse = derivedQuery.executableEntityQuery.copyFor(derivedQuery.dynamicSortSupport);
+			derivedQueryToUse = defaultExecutableEntityQuery.copyFor(dynamicSortSupport);
 		} else {
-			derivedQueryToUse = query.executableEntityQuery;
+			derivedQueryToUse = defaultExecutableEntityQuery;
 		}
-		return derivedQueryToUse;
+		ExecutableEntityQueryCriteria<C, ?> result = derivedQueryToUse.wrapIntoExecutable();
+		Limit limit = invocationParameters.getLimit();
+		if (limit != null) {
+			result.limit(limit.getCount(), limit.getOffset());
+		}
+		return result;
+	}
+	
+	@Override
+	protected LongSupplier buildCountSupplier(StalactiteQueryMethodInvocationParameters accessor) {
+		return () -> countQuery.execute(accessor.getValues());
 	}
 	
 	@Override
 	public StalactiteQueryMethod getQueryMethod() {
 		return method;
-	}
-	
-	static class DerivedQuery<T> extends AbstractDerivedQuery<T> {
-		
-		protected final EntityQueryCriteriaSupport<T, ?> executableEntityQuery;
-		
-		protected final EntityQueryPageSupport<T> dynamicSortSupport = new EntityQueryPageSupport<>();
-		
-		protected EntityCriteriaSupport<T> currentSupport;
-		
-		private DerivedQuery(AdvancedEntityPersister<T, ?> entityPersister, PartTree tree) {
-			this.executableEntityQuery = entityPersister.newCriteriaSupport();
-			tree.forEach(this::append);
-		}
-		
-		private DerivedQuery(EntityQueryCriteriaSupport<T, ?> executableEntityQuery) {
-			this.executableEntityQuery = executableEntityQuery;
-		}
-		
-		private void append(OrPart part) {
-			this.currentSupport = this.executableEntityQuery.getEntityCriteriaSupport();
-			boolean nested = false;
-			if (part.stream().count() > 1) {	// "if" made to avoid extra parenthesis (can be considered superfluous)
-				nested = true;
-				this.currentSupport = currentSupport.beginNested();
-			}
-			Iterator<Part> iterator = part.iterator();
-			if (iterator.hasNext()) {
-				append(iterator.next(), LogicalOperator.OR);
-			}
-			iterator.forEachRemaining(p -> this.append(p, LogicalOperator.AND));
-			if (nested) {	// "if" made to avoid extra parenthesis (can be considered superfluous)
-				this.currentSupport = currentSupport.endNested();
-			}
-		}
-		
-		private void append(Part part, LogicalOperator orOrAnd) {
-			AccessorChain<T, Object> getter = convertToAccessorChain(part.getProperty());
-			Criterion criterion = convertToCriterion(part.getType(), part.shouldIgnoreCase() != IgnoreCaseType.NEVER);
-			
-			this.currentSupport.add(orOrAnd, getter.getAccessors(), criterion.operator);
-			super.criteriaChain.criteria.add(criterion);
-		}
 	}
 }

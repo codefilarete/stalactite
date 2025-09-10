@@ -518,6 +518,8 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 		
 		SELF orderBy(AccessorChain<C, ?> getter, Order order);
 		
+		SELF orderBy(AccessorChain<C, ?> getter, Order order, boolean ignoreCase);
+		
 		enum Order {
 			ASC,
 			DESC

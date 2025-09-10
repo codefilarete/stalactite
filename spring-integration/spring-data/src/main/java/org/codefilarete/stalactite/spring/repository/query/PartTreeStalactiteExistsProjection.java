@@ -9,23 +9,18 @@ import java.util.function.Supplier;
 
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.ProjectionQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.model.LogicalOperator;
-import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.trace.MutableBoolean;
-import org.codefilarete.tool.trace.MutableLong;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
 import org.springframework.data.repository.query.parser.Part;
-import org.springframework.data.repository.query.parser.Part.IgnoreCaseType;
 import org.springframework.data.repository.query.parser.PartTree;
 import org.springframework.data.repository.query.parser.PartTree.OrPart;
 
@@ -85,7 +80,7 @@ public class PartTreeStalactiteExistsProjection<C> implements RepositoryQuery {
 	
 	@Override
 	public Boolean execute(Object[] parameters) {
-		query.criteriaChain.consume(parameters);
+		query.condition.consume(parameters);
 		return query.executableProjectionQuery.wrapIntoExecutable().execute(accumulator);
 	}
 	
@@ -101,6 +96,7 @@ public class PartTreeStalactiteExistsProjection<C> implements RepositoryQuery {
 		private EntityCriteriaSupport<C> currentSupport;
 		
 		DerivedQuery(AdvancedEntityPersister<C, ?> entityPersister, PartTree tree) {
+			super(entityPersister.getClassToPersist());
 			this.executableProjectionQuery = entityPersister.newProjectionCriteriaSupport(selectConsumer);
 			tree.forEach(this::append);
 		}
@@ -124,10 +120,9 @@ public class PartTreeStalactiteExistsProjection<C> implements RepositoryQuery {
 		
 		private void append(Part part, LogicalOperator orOrAnd) {
 			AccessorChain<C, Object> getter = convertToAccessorChain(part.getProperty());
-			Criterion criterion = convertToCriterion(part.getType(), part.shouldIgnoreCase() != IgnoreCaseType.NEVER);
+			Criterion criterion = append(part);
 			
-			this.currentSupport.add(orOrAnd, getter.getAccessors(), criterion.operator);
-			super.criteriaChain.criteria.add(criterion);
+			this.currentSupport.add(orOrAnd, getter.getAccessors(), criterion.condition);
 		}
 	}
 }

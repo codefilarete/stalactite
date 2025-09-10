@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.spring.repository.query;
 
 import java.util.HashMap;
 import java.util.IdentityHashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -23,12 +22,10 @@ import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.ProjectionQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.ProjectionQueryCriteriaSupport.ProjectionQueryPageSupport;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
-import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport.EntityQueryPageSupport;
 import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Limit;
-import org.codefilarete.stalactite.query.model.LogicalOperator;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.spring.repository.query.reduce.LimitHandler;
 import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultCollectioner;
@@ -43,10 +40,7 @@ import org.codefilarete.tool.VisibleForTesting;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.repository.query.Parameter;
-import org.springframework.data.repository.query.parser.Part;
-import org.springframework.data.repository.query.parser.Part.IgnoreCaseType;
 import org.springframework.data.repository.query.parser.PartTree;
-import org.springframework.data.repository.query.parser.PartTree.OrPart;
 
 public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<C, R> {
 	
@@ -97,7 +91,7 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 	private final ProjectionFactory factory;
 	private final Dialect dialect;
 	private final PartTreeStalactiteCountProjection<C> countQuery;
-	private final ProjectionCriteriaAppender projectionCriteriaAppender;
+	private final ProjectionQueryCriteriaSupport<C, ?> projectionQueryCriteriaSupport;
 	
 	public PartTreeStalactiteProjection(StalactiteQueryMethod method,
 										AdvancedEntityPersister<C, ?> entityPersister,
@@ -114,7 +108,10 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 		this.projectionMappingFinder = new ProjectionMappingFinder<>(factory, entityPersister);
 		
 		this.projectionMappingFinder.lookup(method.getDomainClass());
-		this.projectionCriteriaAppender = new ProjectionCriteriaAppender(partTree, entityPersister);
+		// by default, we don't customize the select clause because it will be adapted at very last time, during execution according to the projection
+		// type which can be dynamic
+		this.projectionQueryCriteriaSupport = entityPersister.newProjectionCriteriaSupport(selectables -> {});
+		ToCriteriaPartTreeTransformer<C> projectionCriteriaAppender = new ToCriteriaPartTreeTransformer<>(partTree, entityPersister.getClassToPersist(), projectionQueryCriteriaSupport);
 	}
 	
 	@Override
@@ -146,22 +143,26 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 			
 			@Override
 			public Supplier<List<C>> buildQueryExecutor(Object[] parameters) {
-				CriteriaAppender criteriaAppender = new CriteriaAppender(partTree, entityPersister);
-				criteriaAppender.criteriaChain.consume(parameters);
-				EntityQueryCriteriaSupport<C, ?> executableEntityQuery = criteriaAppender.executableEntityQuery;
+				EntityQueryCriteriaSupport<C, ?> executableEntityQuery = entityPersister.newCriteriaSupport();
+				ToCriteriaPartTreeTransformer<C> criteriaAppender = new ToCriteriaPartTreeTransformer<>(
+						partTree,
+						entityPersister.getClassToPersist(),
+						executableEntityQuery.getEntityCriteriaSupport(),
+						executableEntityQuery.getQueryPageSupport(),
+						executableEntityQuery.getQueryPageSupport());
+				criteriaAppender.condition.consume(parameters);
 				
-				R adaptation = buildResultWindower(criteriaAppender).adapt(() -> {
+				R adaptation = buildResultWindower(executableEntityQuery).adapt(() -> {
 					StalactiteQueryMethodInvocationParameters invocationParameters = new StalactiteQueryMethodInvocationParameters(method, parameters);
-					EntityQueryCriteriaSupport<C, ?> cEntityQueryCriteriaSupport = handleDynamicSort(invocationParameters, executableEntityQuery);
-					RelationalEntityPersister.ExecutableEntityQueryCriteria<C, ?> cExecutableEntityQueryCriteria = cEntityQueryCriteriaSupport.wrapIntoExecutable();
+					RelationalEntityPersister.ExecutableEntityQueryCriteria<C, ?> executableEntityQueryCriteria = handleDynamicSort(invocationParameters, executableEntityQuery).wrapIntoExecutable();
 					int i = 1;
 					for (Parameter bindableParameter : invocationParameters.getParameters().getBindableParameters()) {
 						Object value = invocationParameters.getBindableValue(bindableParameter.getIndex());
 						// Note that we don't apply the value to the criteria of the derived query template, else we temper with it for next execution
 						// defaultDerivedQuery.criteriaChain.criteria.get(i).setValue(..);
-						cExecutableEntityQueryCriteria.set(String.valueOf(i++), value);
+						executableEntityQueryCriteria.set(String.valueOf(i++), value);
 					}
-					return cExecutableEntityQueryCriteria.execute(Accumulators.toList());
+					return executableEntityQueryCriteria.execute(Accumulators.toList());
 				}).apply(parameters);
 				
 				return () -> method.getResultProcessor().processResult(adaptation);
@@ -169,7 +170,8 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 		};
 	}
 	
-	private EntityQueryCriteriaSupport<C, ?> handleDynamicSort(StalactiteQueryMethodInvocationParameters invocationParameters, EntityQueryCriteriaSupport<C, ?> executableEntityQuery) {
+	private EntityQueryCriteriaSupport<C, ?> handleDynamicSort(StalactiteQueryMethodInvocationParameters invocationParameters,
+															   EntityQueryCriteriaSupport<C, ?> defaultExecutableEntityQuery) {
 		EntityQueryCriteriaSupport<C, ?> derivedQueryToUse;
 		// following code will manage both Sort as an argument, and Sort in a Pageable because getSort() handle both
 		if (invocationParameters.getSort().isSorted()) {
@@ -183,16 +185,15 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 						order.getDirection() == Direction.ASC ? Order.ASC : Order.DESC,
 						order.isIgnoreCase());
 			});
-			derivedQueryToUse = executableEntityQuery.copyFor(dynamicSortSupport);
+			derivedQueryToUse = defaultExecutableEntityQuery.copyFor(dynamicSortSupport);
 		} else {
-			derivedQueryToUse = executableEntityQuery;
+			derivedQueryToUse = defaultExecutableEntityQuery;
 		}
 		return derivedQueryToUse;
 	}
 	
-	private QueryResultReducer<R, C> buildResultWindower(CriteriaAppender criteriaAppender) {
+	private QueryResultReducer<R, C> buildResultWindower(EntityQueryCriteriaSupport<C, ?> executableEntityQuery) {
 		QueryResultReducer<?, C> result;
-		EntityQueryCriteriaSupport<C, ?> executableEntityQuery = criteriaAppender.executableEntityQuery;
 		if (method.isPageQuery()) {
 			result = new QueryResultPager<>(this, new LimitHandler() {
 				@Override
@@ -230,7 +231,7 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 			IdentityHashMap<JoinLink<?, ?>, AccessorChain<C, ?>> columnToProperties) {
 		IdentityHashMap<JoinLink<?, ?>, String> aliases = buildAliases(columnToProperties);
 		
-		ProjectionQueryCriteriaSupport<C, ?> actualProjectionQueryCriteriaSupport = projectionCriteriaAppender.executableEntityQuery.copyFor(select -> {
+		ProjectionQueryCriteriaSupport<C, ?> actualProjectionQueryCriteriaSupport = projectionQueryCriteriaSupport.copyFor(select -> {
 			select.clear();
 			columnToProperties.keySet().forEach(selectable -> {
 				select.add(selectable, aliases.get(selectable));
@@ -265,11 +266,8 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 				return () -> {
 					// TODO: remove this usage everywhere else, to be replaced by the bindable parameters loop below
 //					query.criteriaChain.consume(parameters);
-					ExecutableProjectionQuery<C, ?> projectionQuery = handleDynamicSort(invocationParameters, actualProjectionQueryCriteriaSupport).wrapIntoExecutable();
-					Limit limit = invocationParameters.getLimit();
-					if (limit != null) {
-						projectionQuery.limit(limit.getCount(), limit.getOffset());
-					}
+					ExecutableProjectionQuery<C, ?> projectionQuery = handleDynamicParameters(invocationParameters, actualProjectionQueryCriteriaSupport);
+					
 					int i = 1;
 					for (Parameter bindableParameter : invocationParameters.getParameters().getBindableParameters()) {
 						Object value = invocationParameters.getBindableValue(bindableParameter.getIndex());
@@ -284,7 +282,8 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 		};
 	}
 	
-	private ProjectionQueryCriteriaSupport<C, ?> handleDynamicSort(StalactiteQueryMethodInvocationParameters invocationParameters, ProjectionQueryCriteriaSupport<C, ?> actualProjectionQueryCriteriaSupport) {
+	private ExecutableProjectionQuery<C, ?> handleDynamicParameters(StalactiteQueryMethodInvocationParameters invocationParameters,
+																   ProjectionQueryCriteriaSupport<C, ?> actualProjectionQueryCriteriaSupport) {
 		ProjectionQueryCriteriaSupport<C, ?> derivedQueryToUse;
 		// following code will manage both Sort as an argument, and Sort in a Pageable because getSort() handle both
 		if (invocationParameters.getSort().isSorted()) {
@@ -302,110 +301,16 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 		} else {
 			derivedQueryToUse = actualProjectionQueryCriteriaSupport;
 		}
-		return derivedQueryToUse;
+		ExecutableProjectionQuery<C, ?> result = derivedQueryToUse.wrapIntoExecutable();
+		Limit limit = invocationParameters.getLimit();
+		if (limit != null) {
+			result.limit(limit.getCount(), limit.getOffset());
+		}
+		return result;
 	}
 	
 	@Override
 	protected LongSupplier buildCountSupplier(StalactiteQueryMethodInvocationParameters accessor) {
 		return () -> countQuery.execute(accessor.getValues());
-	}
-	
-	private class CriteriaAppender extends AbstractDerivedQuery<C> {
-		
-		private final EntityQueryCriteriaSupport<C, ?> executableEntityQuery;
-		private EntityCriteriaSupport<C> currentSupport;
-		
-		private CriteriaAppender(PartTree tree, AdvancedEntityPersister<C, ?> entityPersister) {
-			this.executableEntityQuery = entityPersister.newCriteriaSupport();
-			this.currentSupport = executableEntityQuery.getEntityCriteriaSupport();
-			tree.forEach(this::append);
-			if (tree.getSort().isSorted()) {
-				appendSort(tree, entityPersister);
-			}
-		}
-		
-		private void appendSort(PartTree tree, AdvancedEntityPersister<C, ?> entityPersister) {
-			tree.getSort().iterator().forEachRemaining(order -> {
-				org.springframework.data.mapping.PropertyPath propertyPath = org.springframework.data.mapping.PropertyPath.from(order.getProperty(), entityPersister.getClassToPersist());
-				AccessorChain<C, Object> orderProperty = convertToAccessorChain(propertyPath);
-				executableEntityQuery.getQueryPageSupport()
-						.orderBy(orderProperty, order.getDirection() == Direction.ASC ? Order.ASC : Order.DESC, order.isIgnoreCase());
-			});
-		}
-		
-		private void append(OrPart part) {
-			boolean nested = false;
-			if (part.stream().count() > 1) {    // "if" made to avoid extra parenthesis (can be considered superfluous)
-				nested = true;
-				this.currentSupport = currentSupport.beginNested();
-			}
-			Iterator<Part> iterator = part.iterator();
-			if (iterator.hasNext()) {
-				append(iterator.next(), LogicalOperator.OR);
-			}
-			iterator.forEachRemaining(p -> this.append(p, LogicalOperator.AND));
-			if (nested) {    // "if" made to avoid extra parenthesis (can be considered superfluous)
-				this.currentSupport = currentSupport.endNested();
-			}
-		}
-		
-		private void append(Part part, LogicalOperator orOrAnd) {
-			AccessorChain<C, Object> getter = convertToAccessorChain(part.getProperty());
-			Criterion criterion = convertToCriterion(part.getType(), part.shouldIgnoreCase() != IgnoreCaseType.NEVER);
-			this.currentSupport.add(orOrAnd, getter.getAccessors(), criterion.operator);
-			super.criteriaChain.criteria.add(criterion);
-		}
-	}
-	
-	private class ProjectionCriteriaAppender extends AbstractDerivedQuery<C> {
-		
-		private final ProjectionQueryCriteriaSupport<C, ?> executableEntityQuery;
-		private EntityCriteriaSupport<C> currentSupport;
-		
-		private ProjectionCriteriaAppender(PartTree tree, AdvancedEntityPersister<C, ?> entityPersister) {
-			this(tree, entityPersister.newProjectionCriteriaSupport(selectables -> {
-			}), entityPersister);
-		}
-		
-		private ProjectionCriteriaAppender(PartTree tree, ProjectionQueryCriteriaSupport<C, ?> projectionQueryCriteriaSupport, AdvancedEntityPersister<C, ?> entityPersister) {
-			this.executableEntityQuery = projectionQueryCriteriaSupport;
-			this.currentSupport = executableEntityQuery.getEntityCriteriaSupport();
-			tree.forEach(this::append);
-			if (tree.getSort().isSorted()) {
-				appendSort(tree, entityPersister);
-			}
-		}
-		
-		private void appendSort(PartTree tree, AdvancedEntityPersister<C, ?> entityPersister) {
-			tree.getSort().iterator().forEachRemaining(order -> {
-				org.springframework.data.mapping.PropertyPath propertyPath = org.springframework.data.mapping.PropertyPath.from(order.getProperty(), entityPersister.getClassToPersist());
-				AccessorChain<C, Object> orderProperty = convertToAccessorChain(propertyPath);
-				executableEntityQuery.getQueryPageSupport()
-						.orderBy(orderProperty, order.getDirection() == Direction.ASC ? Order.ASC : Order.DESC, order.isIgnoreCase());
-			});
-		}
-		
-		private void append(OrPart part) {
-			boolean nested = false;
-			if (part.stream().count() > 1) {    // "if" made to avoid extra parenthesis (can be considered superfluous)
-				nested = true;
-				this.currentSupport = currentSupport.beginNested();
-			}
-			Iterator<Part> iterator = part.iterator();
-			if (iterator.hasNext()) {
-				append(iterator.next(), LogicalOperator.OR);
-			}
-			iterator.forEachRemaining(p -> this.append(p, LogicalOperator.AND));
-			if (nested) {    // "if" made to avoid extra parenthesis (can be considered superfluous)
-				this.currentSupport = currentSupport.endNested();
-			}
-		}
-		
-		private void append(Part part, LogicalOperator orOrAnd) {
-			AccessorChain<C, Object> getter = convertToAccessorChain(part.getProperty());
-			Criterion criterion = convertToCriterion(part.getType(), part.shouldIgnoreCase() != IgnoreCaseType.NEVER);
-			this.currentSupport.add(orOrAnd, getter.getAccessors(), criterion.operator);
-			super.criteriaChain.criteria.add(criterion);
-		}
 	}
 }
