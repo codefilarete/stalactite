@@ -59,7 +59,7 @@ public class BeanRepositoryQuery<C, R> extends AbstractRepositoryQuery<C, R> {
 	protected AbstractQueryExecutor<List<Object>, Object> buildQueryExecutor(StalactiteQueryMethodInvocationParameters invocationParameters) {
 		return new AbstractQueryExecutor<List<Object>, Object>(getQueryMethod(), dialect) {
 			@Override
-			public Supplier<List<Object>> buildQueryExecutor(Object[] parameters) {
+			public Supplier<List<Object>> buildQueryExecutor(StalactiteQueryMethodInvocationParameters invocationParameters) {
 				return () -> {
 					Limit limit = invocationParameters.getLimit();
 					if (limit != null) {

@@ -57,17 +57,16 @@ public class TupleNativeQueryExecutor extends AbstractQueryExecutor<List<Map<Str
 	}
 
 	@Override
-	public Supplier<List<Map<String, Object>>> buildQueryExecutor(Object[] parameters) {
+	public Supplier<List<Map<String, Object>>> buildQueryExecutor(StalactiteQueryMethodInvocationParameters invocationParameters) {
 		return () -> {
-			StalactiteQueryMethodInvocationParameters accessor = new StalactiteQueryMethodInvocationParameters(method, parameters);
-			Map<String, Object> values = accessor.getNamedValues();
+			Map<String, Object> values = invocationParameters.getNamedValues();
 			
-			Map<String, PreparedStatementWriter<?>> parameterBinders = accessor.bindParameters(dialect);
+			Map<String, PreparedStatementWriter<?>> parameterBinders = invocationParameters.bindParameters(dialect);
 			String sqlToExecute = sql;
 			// Taking pageable parameter into account: at first glance we could have thought that asking the user to add some "limit" and "offset"
 			// clauses to its SQL was sufficient, but it's not due to the offset clause that is actually optional. Indeed, the offset is only required
 			// for "next" pages, only the very first doesn't 
-			if (accessor.getParameters().hasPageableParameter()) {
+			if (invocationParameters.getParameters().hasPageableParameter()) {
 				Limit limit = limitSupplier.get();
 				if (limit != null) {
 					sqlToExecute += " limit :limit";

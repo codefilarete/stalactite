@@ -47,11 +47,11 @@ public abstract class AbstractRepositoryQuery<C, R> implements StalactiteReposit
 	
 	@Override
 	public R execute(Object[] parameters) {
-		StalactiteQueryMethodInvocationParameters accessor = new StalactiteQueryMethodInvocationParameters(method, parameters);
-		AbstractQueryExecutor<List<Object>, Object> queryExecutor = buildQueryExecutor(accessor);
-		Supplier<List<Object>> resultSupplier = queryExecutor.buildQueryExecutor(parameters);
+		StalactiteQueryMethodInvocationParameters invocationParameters = new StalactiteQueryMethodInvocationParameters(method, parameters);
+		AbstractQueryExecutor<List<Object>, Object> queryExecutor = buildQueryExecutor(invocationParameters);
+		Supplier<List<Object>> resultSupplier = queryExecutor.buildQueryExecutor(invocationParameters);
 		
-		R adaptation = buildResultReducer(accessor)
+		R adaptation = buildResultReducer(invocationParameters)
 				.adapt(resultSupplier)
 				.apply(parameters);
 		

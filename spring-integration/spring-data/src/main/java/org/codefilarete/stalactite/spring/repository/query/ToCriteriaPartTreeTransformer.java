@@ -14,18 +14,17 @@ import org.springframework.data.repository.query.parser.Part;
 import org.springframework.data.repository.query.parser.PartTree;
 import org.springframework.data.repository.query.parser.PartTree.OrPart;
 
+/**
+ * Applies a {@link PartTree} to a {@link EntityCriteriaSupport} which is expected to come from either a {@link ProjectionQueryCriteriaSupport}
+ * or a {@link org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport}
+ *
+ * @param <C>
+ * @author Guillaume Mary
+ */
 public class ToCriteriaPartTreeTransformer<C> extends AbstractDerivedQuery<C> {
 	
 	private final OrderByChain<C, ?> orderByChain;
 	private EntityCriteriaSupport<C> currentSupport;
-	
-	ToCriteriaPartTreeTransformer(PartTree tree, Class<C> entityType, ProjectionQueryCriteriaSupport<C, ?> projectionQueryCriteriaSupport) {
-		this(tree,
-				entityType,
-				projectionQueryCriteriaSupport.getEntityCriteriaSupport(),
-				projectionQueryCriteriaSupport.getQueryPageSupport(),
-				projectionQueryCriteriaSupport.getQueryPageSupport());
-	}
 	
 	ToCriteriaPartTreeTransformer(PartTree tree, Class<C> entityType, EntityCriteriaSupport<C> entityCriteriaSupport, OrderByChain<C, ?> orderByChain, LimitAware<?> limitAware) {
 		super(entityType);
