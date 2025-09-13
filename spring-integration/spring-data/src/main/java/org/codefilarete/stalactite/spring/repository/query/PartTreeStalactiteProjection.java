@@ -2,41 +2,19 @@ package org.codefilarete.stalactite.spring.repository.query;
 
 import java.util.HashMap;
 import java.util.IdentityHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
 import java.util.function.LongSupplier;
-import java.util.function.Supplier;
 
 import org.codefilarete.reflection.Accessor;
-import org.codefilarete.reflection.AccessorByMember;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.reflection.Accessors;
-import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
-import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.ProjectionQueryCriteriaSupport;
-import org.codefilarete.stalactite.engine.runtime.ProjectionQueryCriteriaSupport.ProjectionQueryPageSupport;
-import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.query.model.JoinLink;
-import org.codefilarete.stalactite.query.model.Limit;
-import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.spring.repository.query.reduce.LimitHandler;
-import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultCollectioner;
-import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultPager;
-import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultReducer;
-import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultSingler;
-import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultSlicer;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.VisibleForTesting;
-import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.projection.ProjectionFactory;
-import org.springframework.data.repository.query.Parameter;
 import org.springframework.data.repository.query.parser.PartTree;
 
 public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<C, R> {
@@ -88,7 +66,7 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 	private final ProjectionFactory factory;
 	private final Dialect dialect;
 	private final PartTreeStalactiteCountProjection<C> countQuery;
-	private final ProjectionQueryCriteriaSupport<C, ?> projectionQueryCriteriaSupport;
+	private final ProjectionQueryCriteriaSupport<C, ?> defaultProjectionQueryCriteriaSupport;
 	
 	public PartTreeStalactiteProjection(StalactiteQueryMethod method,
 										AdvancedEntityPersister<C, ?> entityPersister,
@@ -107,13 +85,13 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 		this.projectionMappingFinder.lookup(method.getDomainClass());
 		// by default, we don't customize the select clause because it will be adapted at very last time, during execution according to the projection
 		// type which can be dynamic
-		this.projectionQueryCriteriaSupport = entityPersister.newProjectionCriteriaSupport(selectables -> {});
+		this.defaultProjectionQueryCriteriaSupport = entityPersister.newProjectionCriteriaSupport(selectables -> {});
 		ToCriteriaPartTreeTransformer<C> projectionCriteriaAppender = new ToCriteriaPartTreeTransformer<>(
 				partTree,
 				entityPersister.getClassToPersist(),
-				projectionQueryCriteriaSupport.getEntityCriteriaSupport(),
-				projectionQueryCriteriaSupport.getQueryPageSupport(),
-				projectionQueryCriteriaSupport.getQueryPageSupport());
+				defaultProjectionQueryCriteriaSupport.getEntityCriteriaSupport(),
+				defaultProjectionQueryCriteriaSupport.getQueryPageSupport(),
+				defaultProjectionQueryCriteriaSupport.getQueryPageSupport());
 	}
 	
 	@Override
@@ -130,7 +108,7 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 			runProjectionQuery = factory.getProjectionInformation(method.getReturnedObjectType()).isClosed();
 		}
 		if (runProjectionQuery) {
-			return createClosedProjectionExecutor(invocationParameters, propertiesColumns);
+			return new ProjectionQueryExecutor<>(method, defaultProjectionQueryCriteriaSupport, propertiesColumns, dialect);
 		} else {
 			// if the projection is not closed (contains @Value for example), then we must fetch the whole entity
 			// because we can't know in advance which property will be required to evaluate the @Value
@@ -138,89 +116,6 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 			// see https://docs.spring.io/spring-data/jpa/reference/repositories/projections.html
 			return (AbstractQueryExecutor) new DomainEntityQueryExecutor<>(method, entityPersister, partTree, dialect);
 		}
-	}
-	
-	private AbstractQueryExecutor<List<Object>, Object> createClosedProjectionExecutor(
-			StalactiteQueryMethodInvocationParameters invocationParameters,
-			IdentityHashMap<JoinLink<?, ?>, AccessorChain<C, ?>> columnToProperties) {
-		IdentityHashMap<JoinLink<?, ?>, String> aliases = buildAliases(columnToProperties);
-		
-		ProjectionQueryCriteriaSupport<C, ?> actualProjectionQueryCriteriaSupport = projectionQueryCriteriaSupport.copyFor(select -> {
-			select.clear();
-			columnToProperties.keySet().forEach(selectable -> {
-				select.add(selectable, aliases.get(selectable));
-			});
-		});
-		Accumulator<Function<Selectable<Object>, Object>, List<Map<String, Object>>, List<Map<String, Object>>> accumulator = new Accumulator<Function<Selectable<Object>, Object>, List<Map<String, Object>>, List<Map<String, Object>>>() {
-			@Override
-			public Supplier<List<Map<String, Object>>> supplier() {
-				return LinkedList::new;
-			}
-			
-			@Override
-			public BiConsumer<List<Map<String, Object>>, Function<Selectable<Object>, Object>> aggregator() {
-				return (finalResult, databaseRowDataProvider) -> {
-					Map<String, Object> row = new HashMap<>();
-					finalResult.add(row);
-					for (Entry<JoinLink<?, ?>, AccessorChain<C, ?>> entry : columnToProperties.entrySet()) {
-						buildHierarchicMap(entry.getValue(), databaseRowDataProvider.apply((Selectable<Object>) entry.getKey()), row);
-					}
-				};
-			}
-			
-			@Override
-			public Function<List<Map<String, Object>>, List<Map<String, Object>>> finisher() {
-				return Function.identity();
-			}
-		};
-		
-		return new AbstractQueryExecutor<List<Object>, Object>(method, dialect) {
-			@Override
-			public Supplier<List<Object>> buildQueryExecutor(StalactiteQueryMethodInvocationParameters invocationParameters) {
-				return () -> {
-					// TODO: remove this usage everywhere else, to be replaced by the bindable parameters loop below
-//					query.criteriaChain.consume(parameters);
-					ExecutableProjectionQuery<C, ?> projectionQuery = handleDynamicParameters(invocationParameters, actualProjectionQueryCriteriaSupport);
-					
-					int i = 1;
-					for (Parameter bindableParameter : invocationParameters.getParameters().getBindableParameters()) {
-						Object value = invocationParameters.getBindableValue(bindableParameter.getIndex());
-						// Note that we don't apply the value to the criteria of the derived query template, else we temper with it for next execution
-						// defaultDerivedQuery.criteriaChain.criteria.get(i).setValue(..);
-						projectionQuery.set(String.valueOf(i++), value);
-					}
-					
-					return (List<Object>) (List) projectionQuery.execute(accumulator);
-				};
-			}
-		};
-	}
-	
-	private ExecutableProjectionQuery<C, ?> handleDynamicParameters(StalactiteQueryMethodInvocationParameters invocationParameters,
-																   ProjectionQueryCriteriaSupport<C, ?> actualProjectionQueryCriteriaSupport) {
-		ProjectionQueryCriteriaSupport<C, ?> derivedQueryToUse;
-		// following code will manage both Sort as an argument, and Sort in a Pageable because getSort() handle both
-		if (invocationParameters.getSort().isSorted()) {
-			Class<?> declaringClass = getQueryMethod().getEntityInformation().getJavaType();
-			// Spring Sort class supports only first-level properties, in-depth ones seems not to be definable,
-			// therefore we create AccessorChain of only one property
-			ProjectionQueryPageSupport<C> dynamicSortSupport = new ProjectionQueryPageSupport<>();
-			invocationParameters.getSort().stream().forEachOrdered(order -> {
-				AccessorByMember<?, ?, ?> accessor = Accessors.accessor(declaringClass, order.getProperty());
-				dynamicSortSupport.orderBy(new AccessorChain<>(accessor),
-						order.getDirection() == Direction.ASC ? Order.ASC : Order.DESC,
-						order.isIgnoreCase());
-			});
-			derivedQueryToUse = actualProjectionQueryCriteriaSupport.copyFor(dynamicSortSupport);
-		} else {
-			derivedQueryToUse = actualProjectionQueryCriteriaSupport;
-		}
-		ExecutableProjectionQuery<C, ?> result = derivedQueryToUse.wrapIntoExecutable();
-		Limit limit = invocationParameters.getLimit();
-		if (limit != null) {
-			result.limit(limit.getCount(), limit.getOffset());
-		}
-		return result;
 	}
 	
 	@Override
