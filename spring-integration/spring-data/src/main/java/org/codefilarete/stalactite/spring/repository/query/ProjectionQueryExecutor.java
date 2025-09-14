@@ -20,7 +20,6 @@ import org.codefilarete.stalactite.engine.runtime.ProjectionQueryCriteriaSupport
 import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.repository.query.Parameter;
@@ -42,9 +41,8 @@ class ProjectionQueryExecutor<C> extends AbstractQueryExecutor<List<Object>, Obj
 	
 	public ProjectionQueryExecutor(StalactiteQueryMethod method,
 								   ProjectionQueryCriteriaSupport<C, ?> defaultProjectionQueryCriteriaSupport,
-								   IdentityHashMap<JoinLink<?, ?>, AccessorChain<C, ?>> columnToProperties,
-								   Dialect dialect) {
-		super(method, dialect);
+								   IdentityHashMap<JoinLink<?, ?>, AccessorChain<C, ?>> columnToProperties) {
+		super(method);
 		IdentityHashMap<JoinLink<?, ?>, String> aliases = buildAliases(columnToProperties);
 		// we "clone" the default projection query to make our own, dedicated to the derived query
 		this.projectionQueryCriteriaSupport = defaultProjectionQueryCriteriaSupport.copyFor(select -> {

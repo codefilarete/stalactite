@@ -108,13 +108,13 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 			runProjectionQuery = factory.getProjectionInformation(method.getReturnedObjectType()).isClosed();
 		}
 		if (runProjectionQuery) {
-			return new ProjectionQueryExecutor<>(method, defaultProjectionQueryCriteriaSupport, propertiesColumns, dialect);
+			return new ProjectionQueryExecutor<>(method, defaultProjectionQueryCriteriaSupport, propertiesColumns);
 		} else {
 			// if the projection is not closed (contains @Value for example), then we must fetch the whole entity
 			// because we can't know in advance which property will be required to evaluate the @Value
 			// therefore we use the default query that select all columns of the aggregate
 			// see https://docs.spring.io/spring-data/jpa/reference/repositories/projections.html
-			return (AbstractQueryExecutor) new DomainEntityQueryExecutor<>(method, entityPersister, partTree, dialect);
+			return (AbstractQueryExecutor) new DomainEntityQueryExecutor<>(method, entityPersister, partTree);
 		}
 	}
 	

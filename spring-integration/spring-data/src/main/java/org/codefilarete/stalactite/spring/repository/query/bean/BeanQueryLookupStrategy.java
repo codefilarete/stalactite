@@ -51,7 +51,7 @@ public class BeanQueryLookupStrategy<C> implements QueryLookupStrategy {
 		BeanQueryMetadata beanQueryMetadata = findBeanQueryMetadata(method);
 		if (beanQueryMetadata != null) {
 			StalactiteQueryMethod queryMethod = new StalactiteQueryMethod(method, metadata, factory);
-			return new BeanRepositoryQuery<>(queryMethod, beanQueryMetadata.getBean(), beanQueryMetadata.getCounterBean(), dialect);
+			return new BeanRepositoryQuery<>(queryMethod, beanQueryMetadata.getBean(), beanQueryMetadata.getCounterBean());
 		} else {
 			return null;
 		}

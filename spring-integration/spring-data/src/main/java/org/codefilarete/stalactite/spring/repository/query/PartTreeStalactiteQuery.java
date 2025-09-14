@@ -37,7 +37,7 @@ public class PartTreeStalactiteQuery<C, R> extends AbstractRepositoryQuery<C, R>
 	
 	@Override
 	protected AbstractQueryExecutor<List<Object>, Object> buildQueryExecutor(StalactiteQueryMethodInvocationParameters invocationParameters) {
-		return (AbstractQueryExecutor) new DomainEntityQueryExecutor<>(method, entityPersister, partTree, dialect);
+		return (AbstractQueryExecutor) new DomainEntityQueryExecutor<>(method, entityPersister, partTree);
 	}
 	
 	@Override

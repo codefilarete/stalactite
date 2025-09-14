@@ -3,7 +3,6 @@ package org.codefilarete.stalactite.spring.repository.query.bean;
 import javax.annotation.Nullable;
 import java.lang.reflect.Executable;
 import java.util.List;
-import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
@@ -19,10 +18,8 @@ import org.codefilarete.stalactite.spring.repository.query.AbstractRepositoryQue
 import org.codefilarete.stalactite.spring.repository.query.BeanQuery;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethodInvocationParameters;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
-import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.Accumulators;
-import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Hanger.Holder;
@@ -40,16 +37,13 @@ public class BeanRepositoryQuery<C, R> extends AbstractRepositoryQuery<C, R> {
 	private final ExecutableEntityQuery<C, ?> entityQuery;
 	@Nullable
 	private final ExecutableProjectionQuery<C, ?> countQuery;
-	private final Dialect dialect;
 	
 	public BeanRepositoryQuery(StalactiteQueryMethod queryMethod,
 							   ExecutableEntityQuery<C, ?> entityQuery,
-							   @Nullable ExecutableProjectionQuery<C, ?> countQuery,
-							   Dialect dialect) {
+							   @Nullable ExecutableProjectionQuery<C, ?> countQuery) {
 		super(queryMethod);
 		this.entityQuery = entityQuery;
 		this.countQuery = countQuery;
-		this.dialect = dialect;
 		
 		// TODO: when upgrading to Spring Data 3.x.y, add an assertion on Limit parameter presence as it's done in StringBasedJdbcQuery
 		// https://github.com/spring-projects/spring-data-relational/blob/main/spring-data-jdbc/src/main/java/org/springframework/data/jdbc/repository/query/StringBasedJdbcQuery.java#L176
@@ -57,7 +51,7 @@ public class BeanRepositoryQuery<C, R> extends AbstractRepositoryQuery<C, R> {
 	
 	@Override
 	protected AbstractQueryExecutor<List<Object>, Object> buildQueryExecutor(StalactiteQueryMethodInvocationParameters invocationParameters) {
-		return new AbstractQueryExecutor<List<Object>, Object>(getQueryMethod(), dialect) {
+		return new AbstractQueryExecutor<List<Object>, Object>(getQueryMethod()) {
 			@Override
 			public Supplier<List<Object>> buildQueryExecutor(StalactiteQueryMethodInvocationParameters invocationParameters) {
 				return () -> {

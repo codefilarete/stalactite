@@ -12,7 +12,6 @@ import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.Exec
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport.EntityQueryPageSupport;
 import org.codefilarete.stalactite.query.model.Limit;
-import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.repository.query.parser.PartTree;
@@ -31,9 +30,8 @@ class DomainEntityQueryExecutor<C> extends AbstractQueryExecutor<List<C>, C> {
 	
 	public DomainEntityQueryExecutor(StalactiteQueryMethod method,
 									 AdvancedEntityPersister<C, ?> entityPersister,
-									 PartTree partTree,
-									 Dialect dialect) {
-		super(method, dialect);
+									 PartTree partTree) {
+		super(method);
 		this.entityPersister = entityPersister;
 		this.partTree = partTree;
 	}

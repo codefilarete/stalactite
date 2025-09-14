@@ -40,13 +40,14 @@ import static org.codefilarete.stalactite.spring.repository.query.PartTreeStalac
  * @author Guillaume Mary
  */
 public class TupleNativeQueryExecutor extends AbstractQueryExecutor<List<Map<String, Object>>, Map<String, Object>> {
-
+	
 	private final IdentityHashMap<JoinLink<?, ?>, String> expectedAliasesInNativeQuery;
 	private final IdentityHashMap<JoinLink<?, ?>, AccessorChain<?, ?>> columnToProperties;
 	private final Supplier<Limit> limitSupplier;
 	private final String sql;
 	private final ConnectionProvider connectionProvider;
-
+	private final Dialect dialect;
+	
 	public TupleNativeQueryExecutor(StalactiteQueryMethod method,
 									String sql,
 									Dialect dialect,
@@ -54,14 +55,15 @@ public class TupleNativeQueryExecutor extends AbstractQueryExecutor<List<Map<Str
 									IdentityHashMap<? extends JoinLink<?, ?>, String> expectedAliasesInNativeQuery,
 									IdentityHashMap<? extends JoinLink<?, ?>, ? extends AccessorChain<?, ?>> columnToProperties,
 									Supplier<Limit> limitSupplier) {
-		super(method, dialect);
+		super(method);
+		this.dialect = dialect;
 		this.sql = sql;
 		this.connectionProvider = connectionProvider;
 		this.expectedAliasesInNativeQuery = (IdentityHashMap<JoinLink<?, ?>, String>) expectedAliasesInNativeQuery;
 		this.columnToProperties = (IdentityHashMap<JoinLink<?, ?>, AccessorChain<?, ?>>) columnToProperties;
 		this.limitSupplier = limitSupplier;
 	}
-
+	
 	@Override
 	public Supplier<List<Map<String, Object>>> buildQueryExecutor(StalactiteQueryMethodInvocationParameters invocationParameters) {
 		return () -> {
