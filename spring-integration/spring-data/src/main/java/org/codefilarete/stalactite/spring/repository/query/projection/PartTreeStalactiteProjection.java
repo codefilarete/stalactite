@@ -18,12 +18,13 @@ import org.codefilarete.stalactite.spring.repository.query.domain.DomainEntityQu
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethodInvocationParameters;
 import org.codefilarete.stalactite.spring.repository.query.ToCriteriaPartTreeTransformer;
-import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.tool.VisibleForTesting;
 import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.repository.query.parser.PartTree;
 
 public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<C, R> {
+	
+	private final ToCriteriaPartTreeTransformer<C> projectionCriteriaAppender;
 	
 	/**
 	 * Fills given {@link Map} with some more {@link Map}s to create a hierarchic structure from the given dotted property name, e.g. "a.b.c" will
@@ -70,20 +71,17 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 	private final AdvancedEntityPersister<C, ?> entityPersister;
 	private final PartTree partTree;
 	private final ProjectionFactory factory;
-	private final Dialect dialect;
 	private final PartTreeStalactiteCountProjection<C> countQuery;
 	private final ProjectionQueryCriteriaSupport<C, ?> defaultProjectionQueryCriteriaSupport;
 	
 	public PartTreeStalactiteProjection(StalactiteQueryMethod method,
 										AdvancedEntityPersister<C, ?> entityPersister,
 										PartTree partTree,
-										ProjectionFactory factory,
-										Dialect dialect) {
+										ProjectionFactory factory) {
 		super(method);
 		this.entityPersister = entityPersister;
 		this.partTree = partTree;
 		this.factory = factory;
-		this.dialect = dialect;
 		
 		this.countQuery = new PartTreeStalactiteCountProjection<>(method, entityPersister, partTree);
 		this.projectionMappingFinder = new ProjectionMappingFinder<>(factory, entityPersister);
@@ -92,9 +90,8 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 		// by default, we don't customize the select clause because it will be adapted at very last time, during execution according to the projection
 		// type which can be dynamic
 		this.defaultProjectionQueryCriteriaSupport = entityPersister.newProjectionCriteriaSupport(selectables -> {});
-		ToCriteriaPartTreeTransformer<C> projectionCriteriaAppender = new ToCriteriaPartTreeTransformer<>(
-				partTree,
-				entityPersister.getClassToPersist(),
+		this.projectionCriteriaAppender = new ToCriteriaPartTreeTransformer<>(partTree, entityPersister.getClassToPersist());
+		this.projectionCriteriaAppender.applyTo(
 				defaultProjectionQueryCriteriaSupport.getEntityCriteriaSupport(),
 				defaultProjectionQueryCriteriaSupport.getQueryPageSupport(),
 				defaultProjectionQueryCriteriaSupport.getQueryPageSupport());

@@ -30,21 +30,16 @@ import org.springframework.data.repository.query.parser.Part.Type;
  */
 public abstract class AbstractDerivedQuery<T> {
 	
-	protected final List<Criterion> condition;
-	
 	private final Class<T> entityType;
 	
 	public AbstractDerivedQuery(Class<T> entityType) {
 		this.entityType = entityType;
-		this.condition = new ArrayList<>();
 	}
 	
-	public Criterion append(Part part) {
-		Criterion criterion = convertToCriterion(part.getType(), part.shouldIgnoreCase() != IgnoreCaseType.NEVER);
-		this.condition.add(criterion);
-		return criterion;
+	public Criterion convertToCriterion(Part part) {
+		return convertToCriterion(part.getType(), part.shouldIgnoreCase() != IgnoreCaseType.NEVER);
 	}
-
+	
 	private Criterion convertToCriterion(Type type, boolean ignoreCase) {
 		ConditionalOperator<?, ?> operator = null;
 		switch (type) {
@@ -165,14 +160,6 @@ public abstract class AbstractDerivedQuery<T> {
 		property.forEach(path ->
 				accessorChain.add(Accessors.accessor(path.getOwningType().getType(), path.getSegment())));
 		return new AccessorChain<>(accessorChain);
-	}
-	
-	public void consume(Object[] arguments) {
-		int argumentIndex = 0;
-		for (Criterion criterion : condition) {
-			criterion.setValue(arguments, argumentIndex);
-			argumentIndex += criterion.argumentCount;
-		}
 	}
 	
 	/**

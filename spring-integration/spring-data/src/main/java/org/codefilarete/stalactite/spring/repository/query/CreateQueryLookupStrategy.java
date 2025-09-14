@@ -57,7 +57,7 @@ public class CreateQueryLookupStrategy<T> implements QueryLookupStrategy {
 			// If the projection is open (any method as a @Value on it), then, because Spring can't know in advance which field will be required to
 			// evaluate the @Value expression, we must retrieve the whole aggregate as entities.
 			// se https://docs.spring.io/spring-data/jpa/reference/repositories/projections.html
-			return new PartTreeStalactiteProjection<>(queryMethod, entityPersister, partTree, factory, dialect);
+			return new PartTreeStalactiteProjection<>(queryMethod, entityPersister, partTree, factory);
 		} else {
 			return new PartTreeStalactiteQuery<>(queryMethod, entityPersister, partTree);
 		}

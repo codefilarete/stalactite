@@ -9,6 +9,7 @@ import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.ProjectionQueryCriteriaSupport;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.spring.repository.query.ToCriteriaPartTreeTransformer;
+import org.codefilarete.stalactite.spring.repository.query.ToCriteriaPartTreeTransformer.Condition;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulator;
@@ -27,8 +28,8 @@ public class PartTreeStalactiteExistsProjection<C> implements RepositoryQuery {
 	
 	private final QueryMethod method;
 	private final AdvancedEntityPersister<C, ?> entityPersister;
-	private final PartTree partTree;
 	private final Accumulator<Function<Selectable<Object>, Object>, MutableBoolean, Boolean> accumulator;
+	private final ToCriteriaPartTreeTransformer<C> criteriaAppender;
 	
 	/**
 	 * @param method the method found by Spring
@@ -40,7 +41,6 @@ public class PartTreeStalactiteExistsProjection<C> implements RepositoryQuery {
 											  PartTree partTree) {
 		this.method = method;
 		this.entityPersister = entityPersister;
-		this.partTree = partTree;
 		accumulator = new Accumulator<Function<Selectable<Object>, Object>, MutableBoolean, Boolean>() {
 			@Override
 			public Supplier<MutableBoolean> supplier() {
@@ -59,6 +59,9 @@ public class PartTreeStalactiteExistsProjection<C> implements RepositoryQuery {
 				return MutableBoolean::getValue;
 			}
 		};
+		criteriaAppender = new ToCriteriaPartTreeTransformer<>(
+				partTree,
+				entityPersister.getClassToPersist());
 	}
 	
 	@Override
@@ -74,13 +77,11 @@ public class PartTreeStalactiteExistsProjection<C> implements RepositoryQuery {
 		});
 		// since exists can be done directly in SQL we reduce the amount of retrieved data with a limit clause
 		executableEntityQuery.getQueryPageSupport().limit(1);
-		ToCriteriaPartTreeTransformer<C> criteriaAppender = new ToCriteriaPartTreeTransformer<>(
-				partTree,
-				entityPersister.getClassToPersist(),
+		Condition condition = criteriaAppender.applyTo(
 				executableEntityQuery.getEntityCriteriaSupport(),
 				executableEntityQuery.getQueryPageSupport(),
 				executableEntityQuery.getQueryPageSupport());
-		criteriaAppender.consume(parameters);
+		condition.consume(parameters);
 		return executableEntityQuery.wrapIntoExecutable().execute(accumulator);
 	}
 	

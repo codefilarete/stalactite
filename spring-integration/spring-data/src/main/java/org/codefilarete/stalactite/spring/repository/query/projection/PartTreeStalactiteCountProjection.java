@@ -12,6 +12,7 @@ import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.spring.repository.query.ToCriteriaPartTreeTransformer;
+import org.codefilarete.stalactite.spring.repository.query.ToCriteriaPartTreeTransformer.Condition;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulator;
@@ -31,8 +32,8 @@ public class PartTreeStalactiteCountProjection<C> implements RepositoryQuery {
 	private final Count count;
 	private final QueryMethod method;
 	private final AdvancedEntityPersister<C, ?> entityPersister;
-	private final PartTree partTree;
 	private final Accumulator<Function<Selectable<Long>, Long>, MutableLong, Long> accumulator;
+	private final ToCriteriaPartTreeTransformer<C> criteriaAppender;
 	
 	/**
 	 * @param method the method found by Spring
@@ -44,7 +45,6 @@ public class PartTreeStalactiteCountProjection<C> implements RepositoryQuery {
 											 PartTree partTree) {
 		this.method = method;
 		this.entityPersister = entityPersister;
-		this.partTree = partTree;
 		Set<Column<Table, ?>> columns = entityPersister.getMapping().getIdMapping().<Table>getIdentifierAssembler().getColumns();
 		count = Operators.count(columns);
 		if (partTree.isDistinct()) {
@@ -68,6 +68,9 @@ public class PartTreeStalactiteCountProjection<C> implements RepositoryQuery {
 				return MutableLong::getValue;
 			}
 		};
+		criteriaAppender = new ToCriteriaPartTreeTransformer<>(
+				partTree,
+				entityPersister.getClassToPersist());
 	}
 	
 	@Override
@@ -79,13 +82,8 @@ public class PartTreeStalactiteCountProjection<C> implements RepositoryQuery {
 		// because order-by and limit clauses are compatible with count operator, we pass a page support which is not the one the executable query,
 		// like a local black hole.
 		EntityQueryPageSupport<C> blackHole = new EntityQueryPageSupport<>();
-		ToCriteriaPartTreeTransformer<C> criteriaAppender = new ToCriteriaPartTreeTransformer<>(
-				partTree,
-				entityPersister.getClassToPersist(),
-				executableEntityQuery.getEntityCriteriaSupport(),
-				blackHole,
-				blackHole);
-		criteriaAppender.consume(parameters);
+		Condition condition = criteriaAppender.applyTo(executableEntityQuery.getEntityCriteriaSupport(), blackHole, blackHole);
+		condition.consume(parameters);
 		return executableEntityQuery.wrapIntoExecutable().execute(accumulator);
 	}
 	

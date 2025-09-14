@@ -12,10 +12,12 @@ import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.Exec
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport.EntityQueryPageSupport;
 import org.codefilarete.stalactite.query.model.Limit;
+import org.codefilarete.stalactite.spring.repository.query.AbstractDerivedQuery.Criterion;
 import org.codefilarete.stalactite.spring.repository.query.AbstractQueryExecutor;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethodInvocationParameters;
 import org.codefilarete.stalactite.spring.repository.query.ToCriteriaPartTreeTransformer;
+import org.codefilarete.stalactite.spring.repository.query.ToCriteriaPartTreeTransformer.Condition;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.repository.query.parser.PartTree;
@@ -30,27 +32,27 @@ import org.springframework.data.repository.query.parser.PartTree;
 public class DomainEntityQueryExecutor<C> extends AbstractQueryExecutor<List<C>, C> {
 	
 	private final AdvancedEntityPersister<C, ?> entityPersister;
-	private final PartTree partTree;
+	private final ToCriteriaPartTreeTransformer<C> criteriaAppender;
 	
 	public DomainEntityQueryExecutor(StalactiteQueryMethod method,
 									 AdvancedEntityPersister<C, ?> entityPersister,
 									 PartTree partTree) {
 		super(method);
 		this.entityPersister = entityPersister;
-		this.partTree = partTree;
+		this.criteriaAppender = new ToCriteriaPartTreeTransformer<>(
+				partTree,
+				entityPersister.getClassToPersist());
 	}
 	
 	@Override
 	public Supplier<List<C>> buildQueryExecutor(StalactiteQueryMethodInvocationParameters invocationParameters) {
 		return () -> {
 			EntityQueryCriteriaSupport<C, ?> executableEntityQuery = entityPersister.newCriteriaSupport();
-			ToCriteriaPartTreeTransformer<C> criteriaAppender = new ToCriteriaPartTreeTransformer<>(
-					partTree,
-					entityPersister.getClassToPersist(),
+			Condition condition = criteriaAppender.applyTo(
 					executableEntityQuery.getEntityCriteriaSupport(),
 					executableEntityQuery.getQueryPageSupport(),
 					executableEntityQuery.getQueryPageSupport());
-			criteriaAppender.consume(invocationParameters.getValues());
+			condition.consume(invocationParameters.getValues());
 			
 			ExecutableEntityQueryCriteria<C, ?> executableEntityQueryCriteria = handleDynamicParameters(invocationParameters, executableEntityQuery);
 			
