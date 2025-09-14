@@ -20,6 +20,7 @@ import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.query.model.JoinLink;
+import org.codefilarete.stalactite.spring.repository.query.projection.ProjectionMappingFinder;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;

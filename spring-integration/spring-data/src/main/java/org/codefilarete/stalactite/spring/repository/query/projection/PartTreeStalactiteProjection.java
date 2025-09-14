@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.spring.repository.query;
+package org.codefilarete.stalactite.spring.repository.query.projection;
 
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -12,6 +12,12 @@ import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.ProjectionQueryCriteriaSupport;
 import org.codefilarete.stalactite.query.model.JoinLink;
+import org.codefilarete.stalactite.spring.repository.query.AbstractQueryExecutor;
+import org.codefilarete.stalactite.spring.repository.query.AbstractRepositoryQuery;
+import org.codefilarete.stalactite.spring.repository.query.domain.DomainEntityQueryExecutor;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethodInvocationParameters;
+import org.codefilarete.stalactite.spring.repository.query.ToCriteriaPartTreeTransformer;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.tool.VisibleForTesting;
 import org.springframework.data.projection.ProjectionFactory;

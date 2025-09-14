@@ -31,7 +31,7 @@ import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 
-import static org.codefilarete.stalactite.spring.repository.query.PartTreeStalactiteProjection.buildHierarchicMap;
+import static org.codefilarete.stalactite.spring.repository.query.projection.PartTreeStalactiteProjection.buildHierarchicMap;
 
 /**
  * Classes for cases where the SQL given by @{@link org.codefilarete.stalactite.spring.repository.query.NativeQuery} annotation is expected to give

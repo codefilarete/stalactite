@@ -3,6 +3,11 @@ package org.codefilarete.stalactite.spring.repository.query;
 import java.lang.reflect.Method;
 
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
+import org.codefilarete.stalactite.spring.repository.query.domain.PartTreeStalactiteDelete;
+import org.codefilarete.stalactite.spring.repository.query.domain.PartTreeStalactiteQuery;
+import org.codefilarete.stalactite.spring.repository.query.projection.PartTreeStalactiteCountProjection;
+import org.codefilarete.stalactite.spring.repository.query.projection.PartTreeStalactiteExistsProjection;
+import org.codefilarete.stalactite.spring.repository.query.projection.PartTreeStalactiteProjection;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.repository.core.NamedQueries;
@@ -54,7 +59,7 @@ public class CreateQueryLookupStrategy<T> implements QueryLookupStrategy {
 			// se https://docs.spring.io/spring-data/jpa/reference/repositories/projections.html
 			return new PartTreeStalactiteProjection<>(queryMethod, entityPersister, partTree, factory, dialect);
 		} else {
-			return new PartTreeStalactiteQuery<>(queryMethod, entityPersister, partTree, dialect);
+			return new PartTreeStalactiteQuery<>(queryMethod, entityPersister, partTree);
 		}
 	}
 }

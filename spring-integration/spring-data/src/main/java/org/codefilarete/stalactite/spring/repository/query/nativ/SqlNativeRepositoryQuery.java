@@ -17,7 +17,7 @@ import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.spring.repository.query.AbstractQueryExecutor;
 import org.codefilarete.stalactite.spring.repository.query.AbstractRepositoryQuery;
 import org.codefilarete.stalactite.spring.repository.query.NativeQuery;
-import org.codefilarete.stalactite.spring.repository.query.ProjectionMappingFinder;
+import org.codefilarete.stalactite.spring.repository.query.projection.ProjectionMappingFinder;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethodInvocationParameters;
 import org.codefilarete.stalactite.sql.ConnectionProvider;

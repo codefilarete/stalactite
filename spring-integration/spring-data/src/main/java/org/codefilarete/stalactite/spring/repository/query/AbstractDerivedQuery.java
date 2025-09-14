@@ -30,18 +30,18 @@ import org.springframework.data.repository.query.parser.Part.Type;
  */
 public abstract class AbstractDerivedQuery<T> {
 	
-	protected final CriteriaChain condition;
+	protected final List<Criterion> condition;
 	
 	private final Class<T> entityType;
 	
 	public AbstractDerivedQuery(Class<T> entityType) {
 		this.entityType = entityType;
-		this.condition = new CriteriaChain(new ArrayList<>());
+		this.condition = new ArrayList<>();
 	}
 	
 	public Criterion append(Part part) {
 		Criterion criterion = convertToCriterion(part.getType(), part.shouldIgnoreCase() != IgnoreCaseType.NEVER);
-		this.condition.criteria.add(criterion);
+		this.condition.add(criterion);
 		return criterion;
 	}
 
@@ -167,12 +167,19 @@ public abstract class AbstractDerivedQuery<T> {
 		return new AccessorChain<>(accessorChain);
 	}
 	
+	public void consume(Object[] arguments) {
+		int argumentIndex = 0;
+		for (Criterion criterion : condition) {
+			criterion.setValue(arguments, argumentIndex);
+			argumentIndex += criterion.argumentCount;
+		}
+	}
+	
 	/**
 	 * Combination of an operator and its expected argument count.
-	 * Helps to consume runtime arguments, see {@link CriteriaChain}
+	 * Helps to consume runtime arguments, see {@link #consume(Object[])}
 	 *
 	 * @author Guillaume Mary
-	 * @see CriteriaChain
 	 */
 	public static class Criterion {
 		
@@ -194,29 +201,6 @@ public abstract class AbstractDerivedQuery<T> {
 		
 		protected Object convert(Object[] arguments, int argumentIndex) {
 			return arguments[argumentIndex];
-		}
-	}
-	
-	/**
-	 * Service that consumes runtime arguments, see {@link #consume(Object[])}
-	 *
-	 * @author Guillaume Mary
-	 * @see #consume(Object[])
-	 */
-	protected static class CriteriaChain {
-		
-		protected final List<Criterion> criteria;
-		
-		protected CriteriaChain(List<Criterion> criteria) {
-			this.criteria = criteria;
-		}
-		
-		void consume(Object[] arguments) {
-			int argumentIndex = 0;
-			for (Criterion criterion : criteria) {
-				criterion.setValue(arguments, argumentIndex);
-				argumentIndex += criterion.argumentCount;
-			}
 		}
 	}
 	

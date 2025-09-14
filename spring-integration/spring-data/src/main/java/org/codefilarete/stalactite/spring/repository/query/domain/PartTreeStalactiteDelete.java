@@ -1,9 +1,11 @@
-package org.codefilarete.stalactite.spring.repository.query;
+package org.codefilarete.stalactite.spring.repository.query.domain;
 
 import java.util.Collection;
 
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethodInvocationParameters;
 import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultCollectioner;
 import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultReducer;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -20,14 +22,14 @@ import org.springframework.data.repository.query.parser.PartTree;
  * @param <C> entity type
  * @author Guillaume Mary
  */
-class PartTreeStalactiteDelete<C> implements RepositoryQuery {
+public class PartTreeStalactiteDelete<C> implements RepositoryQuery {
 	
 	private final PartTreeStalactiteQuery<C, Collection<C>> partTreeQuery;
 	private final QueryMethod queryMethod;
 	private final AdvancedEntityPersister<C, ?> entityPersister;
 	
 	public PartTreeStalactiteDelete(StalactiteQueryMethod queryMethod, AdvancedEntityPersister<C, ?> entityPersister, PartTree partTree, Dialect dialect) {
-		this.partTreeQuery = new PartTreeStalactiteQuery<C, Collection<C>>(queryMethod, entityPersister, partTree, dialect) {
+		this.partTreeQuery = new PartTreeStalactiteQuery<C, Collection<C>>(queryMethod, entityPersister, partTree) {
 
 			@Override
 			protected <ROW> QueryResultReducer<Collection<C>, ROW> buildResultReducer(StalactiteQueryMethodInvocationParameters invocationParameters) {

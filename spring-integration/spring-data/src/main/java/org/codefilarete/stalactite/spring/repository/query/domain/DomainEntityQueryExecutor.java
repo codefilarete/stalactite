@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.spring.repository.query;
+package org.codefilarete.stalactite.spring.repository.query.domain;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -12,6 +12,10 @@ import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.Exec
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport.EntityQueryPageSupport;
 import org.codefilarete.stalactite.query.model.Limit;
+import org.codefilarete.stalactite.spring.repository.query.AbstractQueryExecutor;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethodInvocationParameters;
+import org.codefilarete.stalactite.spring.repository.query.ToCriteriaPartTreeTransformer;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.repository.query.parser.PartTree;
@@ -23,7 +27,7 @@ import org.springframework.data.repository.query.parser.PartTree;
  * @param <C> domain entity type
  * @author Guillaume Mary
  */
-class DomainEntityQueryExecutor<C> extends AbstractQueryExecutor<List<C>, C> {
+public class DomainEntityQueryExecutor<C> extends AbstractQueryExecutor<List<C>, C> {
 	
 	private final AdvancedEntityPersister<C, ?> entityPersister;
 	private final PartTree partTree;
@@ -46,7 +50,7 @@ class DomainEntityQueryExecutor<C> extends AbstractQueryExecutor<List<C>, C> {
 					executableEntityQuery.getEntityCriteriaSupport(),
 					executableEntityQuery.getQueryPageSupport(),
 					executableEntityQuery.getQueryPageSupport());
-			criteriaAppender.condition.consume(invocationParameters.getValues());
+			criteriaAppender.consume(invocationParameters.getValues());
 			
 			ExecutableEntityQueryCriteria<C, ?> executableEntityQueryCriteria = handleDynamicParameters(invocationParameters, executableEntityQuery);
 			

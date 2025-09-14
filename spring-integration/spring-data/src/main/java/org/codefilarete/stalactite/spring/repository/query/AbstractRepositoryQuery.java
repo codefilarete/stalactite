@@ -26,7 +26,7 @@ import org.springframework.data.repository.query.ResultProcessor;
  */
 public abstract class AbstractRepositoryQuery<C, R> implements StalactiteRepositoryQuery<C, R> {
 	
-	protected static IdentityHashMap<JoinLink<?, ?>, String> buildAliases(IdentityHashMap<? extends JoinLink<?, ?>, ? extends AccessorChain<?, ?>> columnToProperties) {
+	public static IdentityHashMap<JoinLink<?, ?>, String> buildAliases(IdentityHashMap<? extends JoinLink<?, ?>, ? extends AccessorChain<?, ?>> columnToProperties) {
 		return Iterables.map(
 				columnToProperties.entrySet(),
 				Map.Entry::getKey,

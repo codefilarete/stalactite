@@ -1,10 +1,14 @@
-package org.codefilarete.stalactite.spring.repository.query;
+package org.codefilarete.stalactite.spring.repository.query.domain;
 
 import java.util.List;
 import java.util.function.LongSupplier;
 
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
-import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.spring.repository.query.AbstractQueryExecutor;
+import org.codefilarete.stalactite.spring.repository.query.AbstractRepositoryQuery;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethodInvocationParameters;
+import org.codefilarete.stalactite.spring.repository.query.projection.PartTreeStalactiteCountProjection;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
 import org.springframework.data.repository.query.parser.PartTree;
@@ -21,17 +25,14 @@ public class PartTreeStalactiteQuery<C, R> extends AbstractRepositoryQuery<C, R>
 	
 	private final AdvancedEntityPersister<C, ?> entityPersister;
 	private final PartTree partTree;
-	private final Dialect dialect;
 	private final PartTreeStalactiteCountProjection<C> countQuery;
 	
 	public PartTreeStalactiteQuery(StalactiteQueryMethod method,
 								   AdvancedEntityPersister<C, ?> entityPersister,
-								   PartTree partTree,
-								   Dialect dialect) {
+								   PartTree partTree) {
 		super(method);
 		this.entityPersister = entityPersister;
 		this.partTree = partTree;
-		this.dialect = dialect;
 		this.countQuery = new PartTreeStalactiteCountProjection<>(method, entityPersister, partTree);
 	}
 	

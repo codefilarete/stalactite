@@ -26,7 +26,7 @@ public class ToCriteriaPartTreeTransformer<C> extends AbstractDerivedQuery<C> {
 	private final OrderByChain<C, ?> orderByChain;
 	private EntityCriteriaSupport<C> currentSupport;
 	
-	ToCriteriaPartTreeTransformer(PartTree tree, Class<C> entityType, EntityCriteriaSupport<C> entityCriteriaSupport, OrderByChain<C, ?> orderByChain, LimitAware<?> limitAware) {
+	public ToCriteriaPartTreeTransformer(PartTree tree, Class<C> entityType, EntityCriteriaSupport<C> entityCriteriaSupport, OrderByChain<C, ?> orderByChain, LimitAware<?> limitAware) {
 		super(entityType);
 		this.currentSupport = entityCriteriaSupport;
 		this.orderByChain = orderByChain;

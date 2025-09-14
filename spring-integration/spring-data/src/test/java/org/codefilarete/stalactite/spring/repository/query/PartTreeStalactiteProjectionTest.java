@@ -7,6 +7,7 @@ import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.spring.repository.query.PartTreeStalactiteProjectionTest.UserAddressStructure.Address;
 import org.codefilarete.stalactite.spring.repository.query.PartTreeStalactiteProjectionTest.UserAddressStructure.Street;
 import org.codefilarete.stalactite.spring.repository.query.PartTreeStalactiteProjectionTest.UserAddressStructure.User;
+import org.codefilarete.stalactite.spring.repository.query.projection.PartTreeStalactiteProjection;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

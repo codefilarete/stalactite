@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.spring.repository.query;
+package org.codefilarete.stalactite.spring.repository.query.projection;
 
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -11,6 +11,7 @@ import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSuppo
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.operator.Count;
+import org.codefilarete.stalactite.spring.repository.query.ToCriteriaPartTreeTransformer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulator;
@@ -84,7 +85,7 @@ public class PartTreeStalactiteCountProjection<C> implements RepositoryQuery {
 				executableEntityQuery.getEntityCriteriaSupport(),
 				blackHole,
 				blackHole);
-		criteriaAppender.condition.consume(parameters);
+		criteriaAppender.consume(parameters);
 		return executableEntityQuery.wrapIntoExecutable().execute(accumulator);
 	}
 	
