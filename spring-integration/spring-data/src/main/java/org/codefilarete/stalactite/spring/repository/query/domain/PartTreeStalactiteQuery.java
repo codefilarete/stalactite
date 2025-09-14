@@ -4,10 +4,10 @@ import java.util.List;
 import java.util.function.LongSupplier;
 
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
-import org.codefilarete.stalactite.spring.repository.query.AbstractQueryExecutor;
-import org.codefilarete.stalactite.spring.repository.query.AbstractRepositoryQuery;
+import org.codefilarete.stalactite.spring.repository.query.execution.AbstractQueryExecutor;
+import org.codefilarete.stalactite.spring.repository.query.execution.AbstractRepositoryQuery;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
-import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethodInvocationParameters;
+import org.codefilarete.stalactite.spring.repository.query.execution.StalactiteQueryMethodInvocationParameters;
 import org.codefilarete.stalactite.spring.repository.query.projection.PartTreeStalactiteCountProjection;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;

@@ -6,8 +6,8 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityFinder;
-import org.codefilarete.stalactite.spring.repository.query.AbstractQueryExecutor;
-import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethodInvocationParameters;
+import org.codefilarete.stalactite.spring.repository.query.execution.AbstractQueryExecutor;
+import org.codefilarete.stalactite.spring.repository.query.execution.StalactiteQueryMethodInvocationParameters;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
 import org.codefilarete.stalactite.sql.Dialect;
 

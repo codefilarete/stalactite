@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.spring.repository.query;
+package org.codefilarete.stalactite.spring.repository.query.derivation;
 
 import java.util.ArrayList;
 import java.util.List;

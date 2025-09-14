@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.spring.repository.query;
+package org.codefilarete.stalactite.spring.repository.query.execution;
 
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -9,11 +9,13 @@ import java.util.function.Supplier;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.query.model.JoinLink;
-import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultCollectioner;
-import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultPager;
-import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultReducer;
-import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultSingler;
-import org.codefilarete.stalactite.spring.repository.query.reduce.QueryResultSlicer;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteRepositoryQuery;
+import org.codefilarete.stalactite.spring.repository.query.execution.reduce.QueryResultCollectioner;
+import org.codefilarete.stalactite.spring.repository.query.execution.reduce.QueryResultPager;
+import org.codefilarete.stalactite.spring.repository.query.execution.reduce.QueryResultReducer;
+import org.codefilarete.stalactite.spring.repository.query.execution.reduce.QueryResultSingler;
+import org.codefilarete.stalactite.spring.repository.query.execution.reduce.QueryResultSlicer;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Iterables;
 import org.springframework.data.repository.query.ParametersParameterAccessor;

@@ -11,8 +11,8 @@ import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSuppo
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.operator.Count;
-import org.codefilarete.stalactite.spring.repository.query.ToCriteriaPartTreeTransformer;
-import org.codefilarete.stalactite.spring.repository.query.ToCriteriaPartTreeTransformer.Condition;
+import org.codefilarete.stalactite.spring.repository.query.derivation.ToCriteriaPartTreeTransformer;
+import org.codefilarete.stalactite.spring.repository.query.derivation.ToCriteriaPartTreeTransformer.Condition;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulator;

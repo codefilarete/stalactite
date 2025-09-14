@@ -1,6 +1,8 @@
-package org.codefilarete.stalactite.spring.repository.query;
+package org.codefilarete.stalactite.spring.repository.query.execution;
 
 import java.util.Collection;
+
+import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
 
 public abstract class AbstractQueryExecutor<C extends Collection<R>, R> implements QueryExecutor<C, R> {
 

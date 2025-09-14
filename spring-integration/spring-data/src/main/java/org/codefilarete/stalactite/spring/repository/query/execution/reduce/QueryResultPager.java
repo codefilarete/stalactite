@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.spring.repository.query.reduce;
+package org.codefilarete.stalactite.spring.repository.query.execution.reduce;
 
 import java.util.List;
 import java.util.function.Function;
@@ -6,7 +6,7 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.spring.repository.query.projection.PartTreeStalactiteCountProjection;
-import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethodInvocationParameters;
+import org.codefilarete.stalactite.spring.repository.query.execution.StalactiteQueryMethodInvocationParameters;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteRepositoryQuery;
 import org.springframework.data.domain.Page;
 

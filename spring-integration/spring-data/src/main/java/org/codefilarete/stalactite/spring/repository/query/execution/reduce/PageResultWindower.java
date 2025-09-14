@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.spring.repository.query.reduce;
+package org.codefilarete.stalactite.spring.repository.query.execution.reduce;
 
 import java.util.List;
 import java.util.function.LongSupplier;

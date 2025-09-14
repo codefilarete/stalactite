@@ -9,3 +9,18 @@ Which means, to summarize (from Spring code), it supports :
 - entity existence, method must start with "exists"
 
 Obviously, entity selection follows load logic of defined mapping. And deletion also, which means that entities must be loaded before being deleted.
+
+As Spring does, Stalactite supports native queries through the [@NativeQuery](NativeQuery.java) annotation.
+It also supports object-oriented queries, but in a different way of Spring's one: due to the lack of an equivalent to JPQL, Stalactite provides the [@BeanQuery](BeanQuery.java) annotation to create a Spring bean that overrides the default query prepared by Stalactite engine.
+
+# Known unsupported features
+
+Due to the different nature of Stalactite with JPA, some annotations do not make sense with it:
+- @NamedQuery
+- @NamedNativeQuery
+- @NamedQueries
+- @NamedNativeQueries
+- @Modifying
+- @QueryHints
+
+Stalactite does not support entity update, at least for now.

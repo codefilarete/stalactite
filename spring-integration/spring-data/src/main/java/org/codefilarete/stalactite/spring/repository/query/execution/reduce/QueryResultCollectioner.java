@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.spring.repository.query.reduce;
+package org.codefilarete.stalactite.spring.repository.query.execution.reduce;
 
 import java.util.Collection;
 import java.util.List;

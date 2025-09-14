@@ -1,10 +1,11 @@
-package org.codefilarete.stalactite.spring.repository.query;
+package org.codefilarete.stalactite.spring.repository.query.execution;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import org.codefilarete.stalactite.query.model.Limit;
-import org.codefilarete.stalactite.spring.repository.query.reduce.LimitHandler;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
+import org.codefilarete.stalactite.spring.repository.query.execution.reduce.LimitHandler;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.tool.collection.Arrays;
