@@ -13,20 +13,20 @@ import org.codefilarete.stalactite.sql.Dialect;
 
 /**
  * Classes for cases where the SQL given by @{@link org.codefilarete.stalactite.spring.repository.query.NativeQuery} annotation is expected to give
- * a result that is some entities.
+ * a result that is made of domain entities.
  * 
  * @param <C> entity type
  * @author Guillaume Mary
  */
-public class EntityNativeQueryExecutor<C> extends AbstractQueryExecutor<List<C>, C> {
+public class DomainEntityNativeQueryExecutor<C> extends AbstractQueryExecutor<List<C>, C> {
 
 	private final String sql;
 	private final RelationalEntityFinder<C, ?, ?> relationalEntityFinder;
 
-	public EntityNativeQueryExecutor(StalactiteQueryMethod method,
-									 String sql,
-									 RelationalEntityFinder<C, ?, ?> relationalEntityFinder,
-									 Dialect dialect) {
+	public DomainEntityNativeQueryExecutor(StalactiteQueryMethod method,
+										   String sql,
+										   RelationalEntityFinder<C, ?, ?> relationalEntityFinder,
+										   Dialect dialect) {
 		super(method, dialect);
 		this.sql = sql;
 		this.relationalEntityFinder = relationalEntityFinder;

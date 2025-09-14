@@ -33,6 +33,12 @@ import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 
 import static org.codefilarete.stalactite.spring.repository.query.PartTreeStalactiteProjection.buildHierarchicMap;
 
+/**
+ * Classes for cases where the SQL given by @{@link org.codefilarete.stalactite.spring.repository.query.NativeQuery} annotation is expected to give
+ * a projection of domain entities. The result is expected to be a list of maps, one map per row to suit Spring Data way of creating projections.
+ *
+ * @author Guillaume Mary
+ */
 public class TupleNativeQueryExecutor extends AbstractQueryExecutor<List<Map<String, Object>>, Map<String, Object>> {
 
 	private final IdentityHashMap<JoinLink<?, ?>, String> expectedAliasesInNativeQuery;
@@ -64,7 +70,7 @@ public class TupleNativeQueryExecutor extends AbstractQueryExecutor<List<Map<Str
 			Map<String, PreparedStatementWriter<?>> parameterBinders = invocationParameters.bindParameters(dialect);
 			String sqlToExecute = sql;
 			// Taking pageable parameter into account: at first glance we could have thought that asking the user to add some "limit" and "offset"
-			// clauses to its SQL was sufficient, but it's not due to the offset clause that is actually optional. Indeed, the offset is only required
+			// clauses to its SQL was enough, but it's not due to the offset clause that is actually optional. Indeed, the offset is only required
 			// for "next" pages, only the very first doesn't 
 			if (invocationParameters.getParameters().hasPageableParameter()) {
 				Limit limit = limitSupplier.get();

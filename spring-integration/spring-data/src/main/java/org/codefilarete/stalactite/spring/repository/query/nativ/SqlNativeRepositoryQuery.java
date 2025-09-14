@@ -91,7 +91,7 @@ public class SqlNativeRepositoryQuery<C, R> extends AbstractRepositoryQuery<C, R
 			
 			queryExecutor = (AbstractQueryExecutor) new TupleNativeQueryExecutor(getQueryMethod(), sql, dialect, connectionProvider, aliases, columnToProperties, invocationParameters::getLimit);
 		} else {
-			queryExecutor = (AbstractQueryExecutor) new EntityNativeQueryExecutor<>(getQueryMethod(), sql, relationalEntityFinder, dialect);
+			queryExecutor = (AbstractQueryExecutor) new DomainEntityNativeQueryExecutor<>(getQueryMethod(), sql, relationalEntityFinder, dialect);
 		}
 		return queryExecutor;
 	}
