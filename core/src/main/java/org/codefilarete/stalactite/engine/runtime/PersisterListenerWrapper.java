@@ -128,7 +128,7 @@ public abstract class PersisterListenerWrapper<C, I>
 		}
 	}
 	
-	abstract protected void doUpdateById(Iterable<? extends C> ids);
+	abstract protected void doUpdateById(Iterable<? extends C> entities);
 	
 	@Override
 	public void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {

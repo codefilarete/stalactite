@@ -34,7 +34,7 @@ import org.codefilarete.tool.exception.NotImplementedException;
  */
 public class BeanPersister<C, I, T extends Table<T>>
 		extends PersisterListenerWrapper<C, I>
-		implements EntityConfiguredPersister<C, I> {
+		implements ConfiguredPersister<C, I> {
 
 	/**
 	 * Property mapping on which SQL executors will refer to build their SQL operation

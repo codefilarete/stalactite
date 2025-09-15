@@ -95,7 +95,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 		ElementCollectionMapping<SRCTABLE, COLLECTIONTABLE> elementCollectionMapping = buildCollectionTableMapping(elementCollectionRelation, collectionProviderDefinition, sourcePK);
 		
 		// Note that table will be added to schema thanks to select cascade because join is added to source persister
-		SimpleRelationalEntityPersister<ElementRecord<TRGT, I>, ElementRecord<TRGT, I>, COLLECTIONTABLE> collectionPersister =
+		ElementRecordPersister<TRGT, I, COLLECTIONTABLE> collectionPersister =
 				new ElementRecordPersister<>(elementCollectionMapping.elementRecordMapping, dialect, connectionConfiguration);
 		
 		// insert management
@@ -261,7 +261,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 		sourcePersister.addDeleteListener(new DeleteTargetEntitiesBeforeDeleteCascader<>(wrapperPersister, collectionProviderAsPersistedInstances));
 	}
 	
-	private String addSelectCascade(ConfiguredRelationalPersister<SRC, I> sourcePersister,
+	private String addSelectCascade(RelationalEntityPersister<SRC, I> sourcePersister,
 									RelationalEntityPersister<ElementRecord<TRGT, I>, ElementRecord<TRGT, I>> elementRecordPersister,
 									PrimaryKey<?, I> sourcePK,
 									ForeignKey<?, ?, I> elementRecordToSourceForeignKey,
@@ -317,5 +317,4 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 			super(elementRecordMapping, dialect, connectionConfiguration);
 		}
 	}
-	
 }

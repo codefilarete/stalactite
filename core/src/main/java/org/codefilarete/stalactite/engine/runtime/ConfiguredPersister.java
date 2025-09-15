@@ -17,4 +17,8 @@ public interface ConfiguredPersister<C, I> extends EntityPersister<C, I> {
 	Collection<Table<?>> giveImpliedTables();
 	
 	PersisterListenerCollection<C, I> getPersisterListener();
+
+	default I getId(C entity) {
+		return getMapping().getId(entity);
+	}
 }
