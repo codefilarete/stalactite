@@ -4,7 +4,10 @@ package org.codefilarete.stalactite.spring.repository.query;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.codefilarete.stalactite.engine.model.AbstractCountry;
 import org.codefilarete.stalactite.engine.model.Color;
@@ -26,6 +29,7 @@ import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.codefilarete.tool.collection.Arrays.asHashSet;
 import static org.codefilarete.tool.function.Functions.chain;
+import static org.springframework.data.domain.Sort.by;
 
 /**
  * @author Guillaume Mary
@@ -150,13 +155,13 @@ abstract class AbstractDerivedQueriesTest {
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
 	
 		PageRequest pageable = PageRequest.ofSize(3);
-		Slice<NamesOnly> loadedNamesOnly2;
-		loadedNamesOnly2 = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("%t%", pageable);
-		assertThat(loadedNamesOnly2).extracting(NamesOnly::getName)
+		Slice<NamesOnly> loadedNamesOnly;
+		loadedNamesOnly = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("%t%", pageable);
+		assertThat(loadedNamesOnly).extracting(NamesOnly::getName)
 				.containsExactly(country3.getName(), country2.getName(), country1.getName());
 
-		loadedNamesOnly2 = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("%t%", pageable.next());
-		assertThat(loadedNamesOnly2).extracting(NamesOnly::getName)
+		loadedNamesOnly = derivedQueriesRepository.getByNameLikeOrderByPresidentNameAsc("%t%", pageable.next());
+		assertThat(loadedNamesOnly).extracting(NamesOnly::getName)
 				.containsExactly(country4.getName());
 	}
 	
@@ -1104,5 +1109,99 @@ abstract class AbstractDerivedQueriesTest {
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
 		loadedCountries = derivedQueriesRepository.findByNameOrDescriptionAndEuMemberOrPresidentName("TonTon", "a keyword contained in the description", true, "me");
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2, country4);
+	}
+	
+	@Test
+	void slice() {
+		Republic country1 = new Republic(42);
+		country1.setName("Titi");
+		Republic country2 = new Republic(43);
+		country2.setName("Toto");
+		Republic country3 = new Republic(44);
+		country3.setName("Tata");
+		Republic country4 = new Republic(45);
+		country4.setName("Tutu");
+		Republic country5 = new Republic(46);
+		country5.setName("Tonton");
+		Republic country6 = new Republic(47);
+		country6.setName("TinTin");
+		Republic country7 = new Republic(48);
+		country7.setName("Toutou");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4, country5, country6, country7));
+		
+		Slice<Republic> loadedCountries;
+		
+		loadedCountries = derivedQueriesRepository.searchByNameLikeOrderByIdAsc("%T%");
+		assertThat(loadedCountries.get()).containsExactly(country1, country2, country3, country4, country5, country6, country7);
+		assertThat(loadedCountries.hasNext()).isFalse();
+		
+		loadedCountries = derivedQueriesRepository.searchByNameLikeOrderByIdAsc("%T%", PageRequest.ofSize(2));
+		assertThat(loadedCountries.get()).containsExactly(country1, country2);
+		assertThat(loadedCountries.getContent()).containsExactly(country1, country2);
+		assertThat(loadedCountries.hasNext()).isTrue();
+		assertThat(loadedCountries.nextPageable()).isEqualTo(PageRequest.of(1, 2));
+		
+		loadedCountries = derivedQueriesRepository.searchByNameLikeOrderByIdAsc("T%o%", PageRequest.of(1, 2));
+		assertThat(loadedCountries.get()).containsExactly(country7);
+		assertThat(loadedCountries.nextPageable()).isEqualTo(Pageable.unpaged());
+	}
+	
+	@Test
+	void slice_withOrder() {
+		Republic country1 = new Republic(42);
+		country1.setName("Titi");
+		Republic country2 = new Republic(43);
+		country2.setName("Toto");
+		Republic country3 = new Republic(44);
+		country3.setName("Tata");
+		Republic country4 = new Republic(45);
+		country4.setName("Tutu");
+		Republic country5 = new Republic(46);
+		country5.setName("Tonton");
+		Republic country6 = new Republic(47);
+		country6.setName("TinTin");
+		Republic country7 = new Republic(48);
+		country7.setName("Toutou");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4, country5, country6, country7));
+		
+		Slice<Republic> loadedCountries = derivedQueriesRepository.searchByNameLike("%T%", PageRequest.ofSize(2).withSort(by("id").ascending()));
+		assertThat(loadedCountries.get()).containsExactly(country1, country2);
+		assertThat(loadedCountries.getContent()).containsExactly(country1, country2);
+		assertThat(loadedCountries.hasNext()).isTrue();
+		assertThat(loadedCountries.nextPageable()).isEqualTo(PageRequest.of(1, 2).withSort(by("id").ascending()));
+	}
+	
+	@Test
+	void stream() {
+		Republic country1 = new Republic(42);
+		country1.setName("Titi");
+		Republic country2 = new Republic(43);
+		country2.setName("Toto");
+		Republic country3 = new Republic(44);
+		country3.setName("Tata");
+		Republic country4 = new Republic(45);
+		country4.setName("Tutu");
+		Republic country5 = new Republic(46);
+		country5.setName("Tonton");
+		Republic country6 = new Republic(47);
+		country6.setName("TinTin");
+		Republic country7 = new Republic(48);
+		country7.setName("Toutou");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4, country5, country6, country7));
+		
+		Stream<Republic> loadedCountries;
+		List<Republic> collectedResult;
+		
+		loadedCountries = derivedQueriesRepository.streamByNameLikeOrderByIdAsc("%T%");
+		collectedResult = loadedCountries.collect(Collectors.toList());
+		assertThat(collectedResult).containsExactly(country1, country2, country3, country4, country5, country6, country7);
+		
+		loadedCountries = derivedQueriesRepository.streamByNameLikeOrderByIdAsc("%T%", PageRequest.ofSize(2));
+		collectedResult = loadedCountries.collect(Collectors.toList());
+		assertThat(collectedResult).containsExactly(country1, country2);
+		
+		loadedCountries = derivedQueriesRepository.streamByNameLikeOrderByIdAsc("T%o%", PageRequest.of(1, 2));
+		collectedResult = loadedCountries.collect(Collectors.toList());
+		assertThat(collectedResult).containsExactly(country7);
 	}
 }

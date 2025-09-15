@@ -16,6 +16,7 @@ import org.codefilarete.stalactite.spring.repository.query.execution.reduce.Quer
 import org.codefilarete.stalactite.spring.repository.query.execution.reduce.QueryResultReducer;
 import org.codefilarete.stalactite.spring.repository.query.execution.reduce.QueryResultSingler;
 import org.codefilarete.stalactite.spring.repository.query.execution.reduce.QueryResultSlicer;
+import org.codefilarete.stalactite.spring.repository.query.execution.reduce.QueryResultStreamer;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Iterables;
 import org.springframework.data.repository.query.ParametersParameterAccessor;
@@ -75,9 +76,9 @@ public abstract class AbstractRepositoryQuery<C, R> implements StalactiteReposit
 			case SLICE:
 				result = new QueryResultSlicer<>(this, invocationParameters);
 				break;
-//			case STREAM:
-//				result = new QueryResultStreamer<>(this);
-//				break;
+			case STREAM:
+				result = new QueryResultStreamer<>(this, invocationParameters);
+				break;
 			case SINGLE_ENTITY:
 				result = new QueryResultSingler<>();
 				break;

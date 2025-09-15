@@ -37,12 +37,15 @@ public class SliceResultWindower<C, R, P> extends QueryResultWindower<C, R, P> {
 	@Override
 	protected void adaptLimit(StalactiteQueryMethodInvocationParameters invocationParameters) {
 		Pageable pageable = invocationParameters.getPageable();
-		if (pageable.getPageNumber() == 0) {
-			// The + 1 is a look-ahead tip to make the returned Slice eventually return true on hasNext()
-			limitHandler.limit(pageable.getPageSize() + 1);
-		} else {
-			// when the user asks for a page number (given Pageable is a Page instance or a Slice with page number) then we ask for the page number
-			limitHandler.limit(pageable.getPageSize(), (int) pageable.getOffset());
+		if (!pageable.isUnpaged()) {
+			if (pageable.getPageNumber() == 0) {
+				// The + 1 is a look-ahead tip to make the returned Slice eventually return true on hasNext()
+				limitHandler.limit(pageable.getPageSize() + 1);
+			} else {
+				// when the user asks for a page number (given Pageable is a Page instance or a Slice with page number) then we ask for the page number
+				limitHandler.limit(pageable.getPageSize(), (int) pageable.getOffset());
+			}
 		}
+		// else: not paging is expected, thus no limit is required
 	}
 }

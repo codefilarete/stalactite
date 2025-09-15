@@ -25,8 +25,8 @@ public class StalactiteQueryMethod extends QueryMethod {
 				return QueryMethodReturnType.PAGE;
 			if (isSliceQuery())
 				return QueryMethodReturnType.SLICE;
-//			if (isStreamQuery())
-//				return QueryMethodReturnType.STREAM;
+			if (isStreamQuery())
+				return QueryMethodReturnType.STREAM;
 			if (isQueryForEntity())
 				return QueryMethodReturnType.SINGLE_ENTITY;
 			// default case: we suppose the result is a projection
@@ -63,14 +63,5 @@ public class StalactiteQueryMethod extends QueryMethod {
 	 */
 	public Method getMethod() {
 		return method;
-	}
-	
-	public enum QueryMethodReturnType {
-		COLLECTION,
-		PAGE,
-		SLICE,
-//		STREAM,
-		SINGLE_ENTITY,
-		SINGLE_PROJECTION
 	}
 }

@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.spring.repository.query;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.codefilarete.stalactite.engine.model.Republic;
 import org.codefilarete.stalactite.id.Identifier;
@@ -33,9 +34,17 @@ public interface DerivedQueriesWithoutMappedCollectionRepository extends Stalact
 	
 	Page<Republic> findByNameLike(String name, Pageable pageable);
 	
+	Slice<Republic> searchByNameLikeOrderByIdAsc(String name);
+	
 	Slice<Republic> searchByNameLikeOrderByIdAsc(String name, Pageable pageable);
 	
 	Slice<Republic> searchByNameLike(String name, Pageable pageable);
+	
+	// Note that "stream" keyword doesn't imply returning a Stream, it is used to distinguish the same method behavior from the other returning a Slice
+	Stream<Republic> streamByNameLikeOrderByIdAsc(String name);
+	
+	// Note that "stream" keyword doesn't imply returning a Stream, it is used to distinguish the same method behavior from the other returning a Slice
+	Stream<Republic> streamByNameLikeOrderByIdAsc(String name, Pageable pageable);
 	
 	// projection tests
 	NamesOnly getByName(String name);
