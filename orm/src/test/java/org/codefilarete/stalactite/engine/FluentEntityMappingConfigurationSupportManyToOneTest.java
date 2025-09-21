@@ -5,22 +5,15 @@ import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
-import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
-import org.codefilarete.stalactite.engine.model.City;
-import org.codefilarete.stalactite.engine.model.Country;
-import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.device.Address;
 import org.codefilarete.stalactite.engine.model.device.Company;
 import org.codefilarete.stalactite.engine.model.device.Device;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
-import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
@@ -28,23 +21,18 @@ import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifie
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
-import org.codefilarete.stalactite.sql.result.RowIterator;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.exception.Exceptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ALL;
 import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
@@ -58,9 +46,8 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 	
 	private final Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
-	private FluentEntityMappingBuilder<Person, Identifier<Long>> personConfiguration;
 	private FluentEntityMappingBuilder<Company, Identifier<Long>> companyConfiguration;
-	private FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration;
+	private FluentEntityMappingBuilder<Address, Identifier<Long>> addressConfiguration;
 	private PersistenceContext persistenceContext;
 	
 	@BeforeEach
@@ -69,20 +56,15 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		persistenceContext = new PersistenceContext(dataSource, dialect);
 		
-		FluentEntityMappingBuilder<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.map(Person::getName);
-		personConfiguration = personMappingBuilder;
-		
 		FluentEntityMappingBuilder<Company, Identifier<Long>> companyMappingBuilder = MappingEase.entityBuilder(Company.class, Identifier.LONG_TYPE)
 				.mapKey(Company::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Company::getName);
 		companyConfiguration = companyMappingBuilder;
 		
-		FluentEntityMappingBuilder<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
-				.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.map(City::getName);
-		cityConfiguration = cityMappingBuilder;
+		FluentEntityMappingBuilder<Address, Identifier<Long>> addressMappingBuilder = MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
+				.mapKey(Address::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(Address::getStreet);
+		addressConfiguration = addressMappingBuilder;
 	}
 	
 	@Nested
@@ -94,7 +76,7 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Device::getName)
 					// no cascade
-					.mapManyToOne(Device::getLocation, cityConfiguration).cascading(ASSOCIATION_ONLY);
+					.mapManyToOne(Device::getLocation, addressConfiguration).cascading(ASSOCIATION_ONLY);
 			
 			assertThatThrownBy(() -> mappingBuilder.build(persistenceContext))
 					.extracting(t -> Exceptions.findExceptionInCauses(t, MappingConfigurationException.class), InstanceOfAssertFactories.THROWABLE)
@@ -214,8 +196,8 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Company(id) values (42), (666)");
 			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Device(id, manufacturerId) values (100, 42), (200, 666)");
 			
-			Device persistedCountry = devicePersister.select(new PersistedIdentifier<>(100L));
-			devicePersister.delete(persistedCountry);
+			Device persistedDevice = devicePersister.select(new PersistedIdentifier<>(100L));
+			devicePersister.delete(persistedDevice);
 			ResultSet resultSet;
 			// Checking that we deleted what we wanted
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Device where id = 100");
@@ -240,14 +222,14 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Device::getName)
-					.mapManyToOne(Device::getLocation, cityConfiguration)
+					.mapManyToOne(Device::getLocation, addressConfiguration)
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
 			
 			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
-			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null, "CITY")) {
+			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null, "ADDRESS")) {
 				@Override
 				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
 					return new JdbcForeignKey(
@@ -258,7 +240,7 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 				}
 			};
 			JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
-			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_DEVICE_LOCATIONID_CITY_ID", "DEVICE", "LOCATIONID", "CITY", "ID");
+			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_DEVICE_LOCATIONID_ADDRESS_ID", "DEVICE", "LOCATIONID", "ADDRESS", "ID");
 			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 		}
 		
@@ -317,9 +299,9 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Device::getName)
-					.mapManyToOne(Device::getLocation, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
-							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-							.map(City::getName), new Table<>("Township"))
+					.mapManyToOne(Device::getLocation, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
+							.mapKey(Address::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.map(Address::getStreet), new Table<>("Township"))
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -362,9 +344,9 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Device::getName)
-					.mapManyToOne(Device::getLocation, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE, new Table<>("Town"))
-							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-							.map(City::getName))
+					.mapManyToOne(Device::getLocation, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE, new Table<>("Town"))
+							.mapKey(Address::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.map(Address::getStreet))
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -407,9 +389,9 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Device::getName)
-					.mapManyToOne(Device::getLocation, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE, new Table<>("Town"))
-							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-							.map(City::getName), new Table<>("Township"))
+					.mapManyToOne(Device::getLocation, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE, new Table<>("Town"))
+							.mapKey(Address::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.map(Address::getStreet), new Table<>("Township"))
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -444,5 +426,163 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_DEVICE_LOCATIONID_TOWNSHIP_ID", "DEVICE", "LOCATIONID", "TOWNSHIP", "ID");
 			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 		}
+	}
+	
+	@Test
+	void multiple_manyToOne() throws SQLException {
+		EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+				.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(Device::getName)
+				.mapManyToOne(Device::setManufacturer, companyConfiguration).cascading(ALL)
+				.mapManyToOne(Device::setLocation, addressConfiguration).cascading(ALL)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		LongProvider deviceIdProvider = new LongProvider();
+		Device dummyDevice = new Device(deviceIdProvider.giveNewIdentifier());
+		dummyDevice.setName("UPS");
+		
+		Company company = new Company(new LongProvider().giveNewIdentifier());
+		company.setName("World Company");
+		dummyDevice.setManufacturer(company);
+		
+		Address somewhere = new Address(new LongProvider().giveNewIdentifier());
+		somewhere.setStreet("somewhere");
+		dummyDevice.setLocation(somewhere);
+		
+		// testing insert cascade
+		devicePersister.insert(dummyDevice);
+		Device persistedDevice = devicePersister.select(dummyDevice.getId());
+		assertThat(persistedDevice.getId()).isEqualTo(new PersistedIdentifier<>(0L));
+		assertThat(persistedDevice.getManufacturer().getName()).isEqualTo("World Company");
+		assertThat(((Address) persistedDevice.getLocation()).getStreet()).isEqualTo("somewhere");
+		assertThat(persistedDevice.getManufacturer().getId().isPersisted()).isTrue();
+		assertThat(persistedDevice.getLocation().getId().isPersisted()).isTrue();
+		
+		// testing insert cascade with another Device reusing ManyToOne entities
+		Device dummyDevice2 = new Device(deviceIdProvider.giveNewIdentifier());
+		dummyDevice2.setName("France 2");
+		dummyDevice2.setManufacturer(company);
+		dummyDevice2.setLocation(somewhere);
+		devicePersister.insert(dummyDevice2);
+		// database must be up to date
+		Device persistedDevice2 = devicePersister.select(dummyDevice2.getId());
+		assertThat(persistedDevice2.getId()).isEqualTo(new PersistedIdentifier<>(1L));
+		assertThat(persistedDevice2.getManufacturer().getName()).isEqualTo("World Company");
+		assertThat(persistedDevice2.getManufacturer().getId().getDelegate()).isEqualTo(persistedDevice.getManufacturer().getId().getDelegate());
+		assertThat(persistedDevice2.getLocation().getId().getDelegate()).isEqualTo(persistedDevice.getLocation().getId().getDelegate());
+		assertThat(persistedDevice2.getManufacturer()).isNotSameAs(persistedDevice.getManufacturer());
+		assertThat(persistedDevice2.getLocation()).isNotSameAs(persistedDevice.getLocation());
+		
+		// testing update cascade
+		persistedDevice2.getManufacturer().setName("World Company renamed");
+		((Address) persistedDevice2.getLocation()).setStreet("somewhere renamed");
+		devicePersister.update(persistedDevice2, dummyDevice2, true);
+		// database must be up to date
+		ResultSet resultSet;
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select name from Company");
+		resultSet.next();
+		assertThat(resultSet.getString("name")).isEqualTo("World Company renamed");
+		assertThat(resultSet.next()).isFalse();
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select street from Address");
+		resultSet.next();
+		assertThat(resultSet.getString("street")).isEqualTo("somewhere renamed");
+		assertThat(resultSet.next()).isFalse();
+		
+		// testing delete cascade
+		// but we have to remove first the other device that points to the same manufacturer, else will get a constraint violation
+		assertThat(persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate(
+				"update Device set manufacturerId = null, locationId = null where id = " + dummyDevice2.getId().getDelegate())).isEqualTo(1);
+		devicePersister.delete(persistedDevice);
+		// database must be up to date
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement()
+				.executeQuery("select id from Device where id = " + persistedDevice.getId().getDelegate());
+		assertThat(resultSet.next()).isFalse();
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement()
+				.executeQuery("select id from Company where id = " + persistedDevice.getManufacturer().getId().getDelegate());
+		assertThat(resultSet.next()).isTrue();
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement()
+				.executeQuery("select id from Address where id = " + persistedDevice.getLocation().getId().getDelegate());
+		assertThat(resultSet.next()).isTrue();
+	}
+	
+	@Test
+	void multiple_manyToOne_partialOrphanRemoval() throws SQLException {
+		EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+				.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(Device::getName)
+				.mapManyToOne(Device::setManufacturer, companyConfiguration).cascading(ALL_ORPHAN_REMOVAL)
+				.mapManyToOne(Device::setLocation, addressConfiguration).cascading(ALL)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		LongProvider deviceIdProvider = new LongProvider();
+		Device dummyDevice = new Device(deviceIdProvider.giveNewIdentifier());
+		dummyDevice.setName("UPS");
+		
+		Company company = new Company(new LongProvider().giveNewIdentifier());
+		company.setName("World Company");
+		dummyDevice.setManufacturer(company);
+		
+		Address somewhere = new Address(new LongProvider().giveNewIdentifier());
+		somewhere.setStreet("somewhere");
+		dummyDevice.setLocation(somewhere);
+		
+		// testing insert cascade
+		devicePersister.insert(dummyDevice);
+		Device persistedDevice = devicePersister.select(dummyDevice.getId());
+		assertThat(persistedDevice.getId()).isEqualTo(new PersistedIdentifier<>(0L));
+		assertThat(persistedDevice.getManufacturer().getName()).isEqualTo("World Company");
+		assertThat(((Address) persistedDevice.getLocation()).getStreet()).isEqualTo("somewhere");
+		assertThat(persistedDevice.getManufacturer().getId().isPersisted()).isTrue();
+		assertThat(persistedDevice.getLocation().getId().isPersisted()).isTrue();
+		
+		// testing insert cascade with another Device reusing ManyToOne entities
+		Device dummyDevice2 = new Device(deviceIdProvider.giveNewIdentifier());
+		dummyDevice2.setName("UPS 2");
+		dummyDevice2.setManufacturer(company);
+		dummyDevice2.setLocation(somewhere);
+		devicePersister.insert(dummyDevice2);
+		// database must be up to date
+		Device persistedDevice2 = devicePersister.select(dummyDevice2.getId());
+		assertThat(persistedDevice2.getId()).isEqualTo(new PersistedIdentifier<>(1L));
+		assertThat(persistedDevice2.getManufacturer().getName()).isEqualTo("World Company");
+		assertThat(persistedDevice2.getManufacturer().getId().getDelegate()).isEqualTo(persistedDevice.getManufacturer().getId().getDelegate());
+		assertThat(persistedDevice2.getLocation().getId().getDelegate()).isEqualTo(persistedDevice.getLocation().getId().getDelegate());
+		assertThat(persistedDevice2.getManufacturer()).isNotSameAs(persistedDevice.getManufacturer());
+		assertThat(persistedDevice2.getLocation()).isNotSameAs(persistedDevice.getLocation());
+		
+		// testing update cascade
+		// but we have to remove first the other device that points to the same manufacturer, else will get a constraint violation
+		assertThat(persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate(
+				"update Device set manufacturerId = null, locationId = null where id = " + dummyDevice.getId().getDelegate())).isEqualTo(1);
+		persistedDevice2.setManufacturer(null);
+		((Address) persistedDevice2.getLocation()).setStreet("somewhere renamed");
+		devicePersister.update(persistedDevice2, dummyDevice2, true);
+		// database must be up to date
+		ResultSet resultSet;
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select name from Company");
+		assertThat(resultSet.next()).isFalse();
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select street from Address");
+		resultSet.next();
+		assertThat(resultSet.getString("street")).isEqualTo("somewhere renamed");
+		assertThat(resultSet.next()).isFalse();
+		
+		// testing delete cascade
+		devicePersister.delete(persistedDevice2);
+		// database must be up to date
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement()
+				.executeQuery("select id from Device where id = " + persistedDevice2.getId().getDelegate());
+		assertThat(resultSet.next()).isFalse();
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement()
+				.executeQuery("select id from Company where id = " + dummyDevice2.getManufacturer().getId().getDelegate());
+		assertThat(resultSet.next()).isFalse();
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement()
+				.executeQuery("select id from Address where id = " + persistedDevice2.getLocation().getId().getDelegate());
+		assertThat(resultSet.next()).isTrue();
 	}
 }

@@ -1,9 +1,10 @@
 package org.codefilarete.stalactite.engine.model.device;
 
+import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 
-public abstract class Location {
+public abstract class Location implements Identified<Long> {
 	
 	private Identifier<Long> id;
 	
