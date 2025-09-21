@@ -9,6 +9,7 @@ import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
+import org.codefilarete.stalactite.engine.configurer.manyToOne.ManyToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
@@ -49,7 +50,12 @@ public class EmptySubEntityMappingConfiguration<C> implements SubEntityMappingCo
 	}
 	
 	@Override
-	public <TRGT, TRGTID> List<ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>>> getManyToManyRelations() {
+	public <TRGT, TRGTID> List<ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>>> getManyToManys() {
+		return Collections.emptyList();
+	}
+	
+	@Override
+	public <TRGT, TRGTID> List<ManyToOneRelation<C, TRGT, TRGTID>> getManyToOnes() {
 		return Collections.emptyList();
 	}
 	

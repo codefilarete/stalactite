@@ -149,7 +149,7 @@ class OneToOneRelationConfigurerTest {
 		});
 		when(cityMappingConfiguration.getOneToOnes()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.getOneToManys()).thenReturn(Collections.emptyList());
-		when(cityMappingConfiguration.getManyToManyRelations()).thenReturn(Collections.emptyList());
+		when(cityMappingConfiguration.getManyToManys()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.inheritanceIterable()).thenAnswer(CALLS_REAL_METHODS);
 		
 		// defining Country -> City relation through capital property
@@ -269,7 +269,7 @@ class OneToOneRelationConfigurerTest {
 		});
 		when(cityMappingConfiguration.getOneToOnes()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.getOneToManys()).thenReturn(Collections.emptyList());
-		when(cityMappingConfiguration.getManyToManyRelations()).thenReturn(Collections.emptyList());
+		when(cityMappingConfiguration.getManyToManys()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.inheritanceIterable()).thenAnswer(CALLS_REAL_METHODS);
 		
 		// defining Country -> City relation through capital property

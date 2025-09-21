@@ -99,7 +99,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Country::getName)
 					.map(Country::getDescription)
-					// no cascade
+					// no cascade definition
 					.mapOneToOne(Country::getPresident, personConfiguration)
 					.build(persistenceContext);
 			
@@ -128,7 +128,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Country::getName)
 					.map(Country::getDescription)
-					// no cascade
+					// cascade read-only
 					.mapOneToOne(Country::getPresident, personConfiguration).cascading(READ_ONLY)
 					.build(persistenceContext);
 			
@@ -141,7 +141,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Country::getName)
 					.map(Country::getDescription)
-					// no cascade
+					// cascade read-only
 					.mapOneToOne(Country::setPresident, personConfiguration).cascading(READ_ONLY)
 					.build(persistenceContext);
 			
@@ -290,7 +290,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			assertThat(resultSet.next()).isFalse();
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Person where id = 42");
 			assertThat(resultSet.next()).isFalse();
-			// but we did'nt delete everything !
+			// but we didn't delete everything !
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 200");
 			assertThat(resultSet.next()).isTrue();
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Person where id = 666");
@@ -557,7 +557,6 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 							.mapOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
 									.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 									.map(City::getName), new Table<>("Township"))
-							.mappedBy(City::getCountry)
 							.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -605,7 +604,6 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 							.mapOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE, new Table<>("Town"))
 									.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 									.map(City::getName))
-							.mappedBy(City::getCountry)
 							.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -653,7 +651,6 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 							.mapOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE, new Table<>("Town"))
 									.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 									.map(City::getName), new Table<>("Township"))
-							.mappedBy(City::getCountry)
 							.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

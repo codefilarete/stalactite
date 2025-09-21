@@ -49,6 +49,7 @@ import org.codefilarete.stalactite.engine.ImportedEmbedWithColumnOptions;
 import org.codefilarete.stalactite.engine.InheritanceOptions;
 import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.ManyToManyOptions;
+import org.codefilarete.stalactite.engine.ManyToOneOptions;
 import org.codefilarete.stalactite.engine.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.engine.MapOptions;
 import org.codefilarete.stalactite.engine.MapOptions.KeyAsEntityMapOptions;
@@ -63,6 +64,7 @@ import org.codefilarete.stalactite.engine.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.VersioningStrategy;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.LinkageSupport;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
+import org.codefilarete.stalactite.engine.configurer.manyToOne.ManyToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
@@ -112,6 +114,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	private final List<OneToManyRelation<C, ?, ?, ? extends Collection>> oneToManyRelations = new ArrayList<>();
 	
 	private final List<ManyToManyRelation<C, ?, ?, ? extends Collection, ? extends Collection>> manyToManyRelations = new ArrayList<>();
+	
+	private final List<ManyToOneRelation<C, Object, Object>> manyToOneRelations = new ArrayList<>();
 	
 	private final List<ElementCollectionRelation<C, ?, ? extends Collection>> elementCollections = new ArrayList<>();
 	
@@ -231,8 +235,13 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public <TRGT, TRGTID> List<ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>>> getManyToManyRelations() {
+	public <TRGT, TRGTID> List<ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>>> getManyToManys() {
 		return (List) manyToManyRelations;
+	}
+	
+	@Override
+	public List<ManyToOneRelation<C, Object, Object>> getManyToOnes() {
+		return manyToOneRelations;
 	}
 	
 	@Override
@@ -629,7 +638,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	@Override
 	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(
 			SerializableBiConsumer<C, O> setter,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
+			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration,
 			T table) {
 		// we keep close to user demand: we keep its method reference ...
 		Mutator<C, O> mutatorByMethodReference = Accessors.mutatorByMethodReference(setter);
@@ -641,7 +650,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	@Override
 	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(
 			SerializableFunction<C, O> getter,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
+			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration,
 			T table) {
 		// we keep close to user demand: we keep its method reference ...
 		AccessorByMethodReference<C, O> accessorByMethodReference = Accessors.accessorByMethodReference(getter);
@@ -653,7 +662,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	private <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(
 			Accessor<C, O> accessor,
 			Mutator<C, O> mutator,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
+			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration,
 			T table) {
 		OneToOneRelation<C, O, J> oneToOneRelation = new OneToOneRelation<>(
 				new PropertyAccessor<>(accessor, mutator),
@@ -664,7 +673,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		return wrapForAdditionalOptions(oneToOneRelation);
 	}
 	
-	private <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> wrapForAdditionalOptions(final OneToOneRelation<C, O, J> oneToOneRelation) {
+	private <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> wrapForAdditionalOptions(OneToOneRelation<C, O, J> oneToOneRelation) {
 		// then we return an object that allows fluent settings over our OneToOne cascade instance
 		return new MethodDispatcher()
 				.redirect(OneToOneOptions.class, new OneToOneOptions() {
@@ -793,6 +802,88 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				.redirect(ManyToManyOptions.class, new ManyToManyOptionsSupport<>(manyToManyRelation), true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>>) (Class) FluentMappingBuilderManyToManyOptions.class);
+	}
+	
+	@Override
+	public <O, J, T extends Table> FluentMappingBuilderManyToOneOptions<C, I, T, O> mapManyToOne(
+			SerializableBiConsumer<C, O> setter,
+			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration,
+			T table) {
+		// we keep close to user demand: we keep its method reference ...
+		Mutator<C, O> mutatorByMethodReference = Accessors.mutatorByMethodReference(setter);
+		// ... but we can't do it for accessor, so we use the most equivalent manner: an accessor based on setter method (fallback to property if not present)
+		Accessor<C, O> accessor = new MutatorByMethod<C, O>(captureMethod(setter)).toAccessor();
+		return mapManyToOne(accessor, mutatorByMethodReference, mappingConfiguration, table);
+	}
+	
+	@Override
+	public <O, J, T extends Table> FluentMappingBuilderManyToOneOptions<C, I, T, O> mapManyToOne(
+			SerializableFunction<C, O> getter,
+			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration,
+			T table) {
+		// we keep close to user demand: we keep its method reference ...
+		AccessorByMethodReference<C, O> accessorByMethodReference = Accessors.accessorByMethodReference(getter);
+		// ... but we can't do it for mutator, so we use the most equivalent manner: a mutator based on getter method (fallback to property if not present)
+		Mutator<C, O> mutator = new AccessorByMethod<C, O>(captureMethod(getter)).toMutator();
+		return mapManyToOne(accessorByMethodReference, mutator, mappingConfiguration, table);
+	}
+	
+	private <O, J, T extends Table> FluentMappingBuilderManyToOneOptions<C, I, T, O> mapManyToOne(
+			Accessor<C, O> accessor,
+			Mutator<C, O> mutator,
+			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration,
+			T table) {
+		ManyToOneRelation<C, O, J> manyToOneRelation = new ManyToOneRelation<>(
+				new PropertyAccessor<>(accessor, mutator),
+				() -> this.polymorphismPolicy instanceof PolymorphismPolicy.TablePerClassPolymorphism,
+				mappingConfiguration,
+				table);
+		this.manyToOneRelations.add((ManyToOneRelation<C, Object, Object>) manyToOneRelation);
+		return wrapForAdditionalOptions(manyToOneRelation);
+	}
+	
+	private <O, J, T extends Table> FluentMappingBuilderManyToOneOptions<C, I, T, O> wrapForAdditionalOptions(ManyToOneRelation<C, O, J> manyToOneRelation) {
+		// then we return an object that allows fluent settings over our OneToOne cascade instance
+		return new MethodDispatcher()
+				.redirect(ManyToOneOptions.class, new ManyToOneOptions() {
+					@Override
+					public ManyToOneOptions cascading(RelationMode relationMode) {
+						manyToOneRelation.setRelationMode(relationMode);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+
+//					@Override
+//					public ManyToOneOptions mandatory() {
+//						manyToOneRelation.setNullable(false);
+//						return null;	// we can return null because dispatcher will return proxy
+//					}
+//
+//					@Override
+//					public ManyToOneOptions mappedBy(SerializableFunction reverseLink) {
+//						manyToOneRelation.setReverseGetter(reverseLink);
+//						return null;	// we can return null because dispatcher will return proxy
+//					}
+//
+//					@Override
+//					public ManyToOneOptions mappedBy(SerializableBiConsumer reverseLink) {
+//						manyToOneRelation.setReverseSetter(reverseLink);
+//						return null;	// we can return null because dispatcher will return proxy
+//					}
+//
+//					@Override
+//					public ManyToOneOptions mappedBy(Column reverseLink) {
+//						manyToOneRelation.setReverseColumn(reverseLink);
+//						return null;	// we can return null because dispatcher will return proxy
+//					}
+//
+//					@Override
+//					public ManyToOneOptions fetchSeparately() {
+//						manyToOneRelation.fetchSeparately();
+//						return null;	// we can return null because dispatcher will return proxy
+//					}
+				}, true)	// true to allow "return null" in implemented methods
+				.fallbackOn(this)
+				.build((Class<FluentMappingBuilderManyToOneOptions<C, I, T, O>>) (Class) FluentMappingBuilderManyToOneOptions.class);
 	}
 	
 	@Override

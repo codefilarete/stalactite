@@ -386,7 +386,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <J> type of identifier of {@code O}
 	 * @return an enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
 	 */
-	default <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
+	default <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
 		return mapOneToOne(getter, mappingConfiguration, null);
 	}
 	
@@ -399,7 +399,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <J> type of identifier of {@code O}
 	 * @return an enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
 	 */
-	default <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
+	default <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
 		return mapOneToOne(setter, mappingConfiguration, null);
 	}
 	
@@ -415,7 +415,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <J> type of identifier of {@code O}
 	 * @return an enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
-	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
+	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration, T table);
 	
 	/**
 	 * Declares a direct relation between current entity and some of type {@code O}.
@@ -429,7 +429,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <J> type of identifier of {@code O}
 	 * @return an enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
-	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
+	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration, T table);
 	
 	/**
 	 * Declares a relation between current entity and some of type {@code O} through a {@link Collection}.
@@ -703,6 +703,61 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
 	mapManyToMany(SerializableBiConsumer<C, S1> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
+	/**
+	 * Declares a direct relationship between current entity and some of type {@code O}.
+	 *
+	 * @param getter the way to get the target entity
+	 * @param mappingConfiguration the mapping configuration of the target entity
+	 * @param <O> type of target entity
+	 * @param <J> type of identifier of {@code O}
+	 * @return an enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
+	 */
+	default <O, J, T extends Table> FluentMappingBuilderManyToOneOptions<C, I, T, O> mapManyToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
+		return mapManyToOne(getter, mappingConfiguration, null);
+	}
+	
+	/**
+	 * Declares a direct relationship between current entity and some of type {@code O}.
+	 *
+	 * @param setter the way to get the target entity
+	 * @param mappingConfiguration the mapping configuration of the target entity
+	 * @param <O> type of target entity
+	 * @param <J> type of identifier of {@code O}
+	 * @return an enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
+	 */
+	default <O, J, T extends Table> FluentMappingBuilderManyToOneOptions<C, I, T, O> mapManyToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
+		return mapManyToOne(setter, mappingConfiguration, null);
+	}
+	
+	/**
+	 * Declares a direct relation between current entity and some of type {@code O}.
+	 * Allows to overwrite the target entity table on this relation : it will overwrite the eventually one of the mapping configuration or the one
+	 * deduced from naming strategy. Made for eventual reuse of target entity from persistence context to another.
+	 *
+	 * @param getter the way to get the target entity
+	 * @param mappingConfiguration the mapping configuration of the target entity
+	 * @param table an optional table to use for target entity on this particular relation
+	 * @param <O> type of target entity
+	 * @param <J> type of identifier of {@code O}
+	 * @return an enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
+	 */
+	<O, J, T extends Table> FluentMappingBuilderManyToOneOptions<C, I, T, O> mapManyToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration, T table);
+	
+	/**
+	 * Declares a direct relation between current entity and some of type {@code O}.
+	 * Allows to overwrite the target entity table on this relation : it will overwrite the eventually one of the mapping configuration or the one
+	 * deduced from naming strategy. Made for eventual reuse of target entity from persistence context to another.
+	 *
+	 * @param setter the way to get the target entity
+	 * @param mappingConfiguration the mapping configuration of the target entity
+	 * @param table an optional table to use for target entity on this particular relation
+	 * @param <O> type of target entity
+	 * @param <J> type of identifier of {@code O}
+	 * @return an enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
+	 */
+	<O, J, T extends Table> FluentMappingBuilderManyToOneOptions<C, I, T, O> mapManyToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration, T table);
+	
+	
 	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter, EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
 	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter, EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
@@ -882,6 +937,48 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		@Override
 		FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> indexed();
 		
+	}
+	
+	interface FluentMappingBuilderManyToOneOptions<C, I, T extends Table, O> extends FluentEntityMappingBuilder<C, I>,
+			ManyToOneOptions<C, I, T, O> {
+		
+//		@Override
+//		FluentMappingBuilderManyToOneOptions<C, I, T, O> mandatory();
+//
+//		/**
+//		 * {@inheritDoc}
+//		 * Declaration overridden to adapt return type to this class.
+//		 *
+//		 * @param reverseLink opposite owner of the relation (setter)
+//		 * @return the global mapping configurer
+//		 */
+//		FluentMappingBuilderManyToOneOptions<C, I, T, O> mappedBy(SerializableBiConsumer<? super O, C> reverseLink);
+//
+//		/**
+//		 * {@inheritDoc}
+//		 * Declaration overridden to adapt return type to this class.
+//		 *
+//		 * @param reverseLink opposite owner of the relation (getter)
+//		 * @return the global mapping configurer
+//		 */
+//		@Override
+//		FluentMappingBuilderManyToOneOptions<C, I, T, O> mappedBy(SerializableFunction<? super O, C> reverseLink);
+//
+//		/**
+//		 * {@inheritDoc}
+//		 * Declaration overridden to adapt return type to this class.
+//		 *
+//		 * @param reverseLink opposite owner of the relation
+//		 * @return the global mapping configurer
+//		 */
+//		@Override
+//		FluentMappingBuilderManyToOneOptions<C, I, T, O> mappedBy(Column<T, I> reverseLink);
+//
+		@Override
+		FluentMappingBuilderManyToOneOptions<C, I, T, O> cascading(RelationMode relationMode);
+
+//		@Override
+//		FluentMappingBuilderManyToOneOptions<C, I, T, O> fetchSeparately();
 	}
 	
 	/**

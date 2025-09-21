@@ -1,23 +1,22 @@
-package org.codefilarete.stalactite.engine.configurer.onetoone;
+package org.codefilarete.stalactite.engine.configurer.manyToOne;
 
 import javax.annotation.Nullable;
-
 import java.util.function.BooleanSupplier;
 
+import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * @author Guillaume Mary
  */
-public class OneToOneRelation<SRC, TRGT, TRGTID> {
+public class ManyToOneRelation<SRC, TRGT, TRGTID> {
 	
 	/** The method that gives the target entity from the source one */
 	private final ReversibleAccessor<SRC, TRGT> targetProvider;
@@ -51,17 +50,17 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	 */
 	private boolean fetchSeparately;
 	
-	public <T extends Table> OneToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider,
-											  boolean sourceTablePerClassPolymorphic,
-											  EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration,
-											  T table) {
+	public <T extends Table> ManyToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider,
+											   boolean sourceTablePerClassPolymorphic,
+											   EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration,
+											   T table) {
 		this(targetProvider, () -> sourceTablePerClassPolymorphic, () -> targetMappingConfiguration, table);
 	}
 	
-	public <T extends Table> OneToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider,
-											  BooleanSupplier sourceTablePerClassPolymorphic,
-											  EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration,
-											  T table) {
+	public <T extends Table> ManyToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider,
+											   BooleanSupplier sourceTablePerClassPolymorphic,
+											   EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration,
+											   T table) {
 		this.sourceTablePerClassPolymorphic = sourceTablePerClassPolymorphic;
 		this.targetMappingConfiguration = (EntityMappingConfigurationProvider<TRGT, TRGTID>) targetMappingConfiguration;
 		this.targetProvider = targetProvider;
@@ -133,14 +132,6 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	
 	public void setRelationMode(RelationMode relationMode) {
 		this.relationMode = relationMode;
-	}
-	
-	/**
-	 * Indicates if relation is owned by target entities table
-	 * @return true if one of {@link #getReverseSetter()}, {@link #getReverseGetter()}, {@link #getReverseColumn()} is not null
-	 */
-	public boolean isRelationOwnedByTarget() {
-		return getReverseSetter() != null || getReverseGetter() != null || getReverseColumn() != null;
 	}
 	
 	public boolean isFetchSeparately() {

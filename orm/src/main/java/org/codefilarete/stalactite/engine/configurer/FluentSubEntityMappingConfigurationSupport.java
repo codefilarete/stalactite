@@ -42,6 +42,7 @@ import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.LinkageSupport;
 import org.codefilarete.stalactite.engine.configurer.FluentEntityMappingConfigurationSupport.OneToManyOptionsSupport;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
+import org.codefilarete.stalactite.engine.configurer.manyToOne.ManyToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
@@ -73,6 +74,8 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	private final List<OneToOneRelation<C, ?, ?>> oneToOneRelations = new ArrayList<>();
 	
 	private final List<OneToManyRelation<C, ?, ?, ? extends Collection<?>>> oneToManyRelations = new ArrayList<>();
+	
+	private final List<OneToManyRelation<C, ?, ?, ? extends Collection<?>>> manyToOneRelations = new ArrayList<>();
 	
 	private final List<ElementCollectionRelation<C, ?, ? extends Collection<?>>> elementCollections = new ArrayList<>();
 	
@@ -119,8 +122,13 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 			}
 			
 			@Override
-			public <TRGT, TRGTID> List<ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>>> getManyToManyRelations() {
+			public <TRGT, TRGTID> List<ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>>> getManyToManys() {
 				return Collections.emptyList();
+			}
+			
+			@Override
+			public <TRGT, TRGTID> List<ManyToOneRelation<C, TRGT, TRGTID>> getManyToOnes() {
+				return (List) manyToOneRelations;
 			}
 			
 			@Override
