@@ -105,7 +105,7 @@ public class RelationConfigurer<C, I> {
 			((ManyToManyRelationConfigurer<C, TRGT, I, TRGTID, Collection<TRGT>, Collection<C>>) manyToManyRelationConfigurer).configure(manyToManyRelation);
 		}
 		
-		for (ManyToOneRelation<C, TRGT, TRGTID> manyToOneRelation : entityMappingConfiguration.<TRGT, TRGTID>getManyToOnes()) {
+		for (ManyToOneRelation<C, TRGT, TRGTID, Collection<C>> manyToOneRelation : entityMappingConfiguration.<TRGT, TRGTID>getManyToOnes()) {
 			manyToOneRelationConfigurer.configure(manyToOneRelation);
 		}
 		

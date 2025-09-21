@@ -55,7 +55,7 @@ public class EmptySubEntityMappingConfiguration<C> implements SubEntityMappingCo
 	}
 	
 	@Override
-	public <TRGT, TRGTID> List<ManyToOneRelation<C, TRGT, TRGTID>> getManyToOnes() {
+	public <TRGT, TRGTID> List<ManyToOneRelation<C, TRGT, TRGTID, Collection<C>>> getManyToOnes() {
 		return Collections.emptyList();
 	}
 	

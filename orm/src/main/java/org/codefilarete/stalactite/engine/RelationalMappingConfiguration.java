@@ -26,7 +26,7 @@ public interface RelationalMappingConfiguration<C> {
 	
 	<TRGT, TRGTID> List<ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>>> getManyToManys();
 	
-	<TRGT, TRGTID> List<ManyToOneRelation<C, TRGT, TRGTID>> getManyToOnes();
+	<TRGT, TRGTID> List<ManyToOneRelation<C, TRGT, TRGTID, Collection<C>>> getManyToOnes();
 	
 	<TRGT> List<ElementCollectionRelation<C, TRGT, ? extends Collection<TRGT>>> getElementCollections();
 	

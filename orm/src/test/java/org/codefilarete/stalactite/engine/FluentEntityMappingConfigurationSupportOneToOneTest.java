@@ -557,6 +557,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 							.mapOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
 									.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 									.map(City::getName), new Table<>("Township"))
+							.mappedBy(City::getCountry)
 							.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -604,6 +605,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 							.mapOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE, new Table<>("Town"))
 									.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 									.map(City::getName))
+							.mappedBy(City::getCountry)
 							.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -651,6 +653,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 							.mapOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE, new Table<>("Town"))
 									.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 									.map(City::getName), new Table<>("Township"))
+							.mappedBy(City::getCountry)
 							.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

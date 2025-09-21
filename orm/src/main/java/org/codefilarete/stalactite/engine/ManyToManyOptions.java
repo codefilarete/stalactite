@@ -22,7 +22,7 @@ public interface ManyToManyOptions<C, I, O, S1 extends Collection<O>, S2 extends
 	
 	/**
 	 * Defines combiner of current entity with target entity. This is a more fine-grained way to define how to combine current entity with target
-	 * entity than {@link #reverseCollection(SerializableFunction)} : sometimes a method existing in entities to fill the relation instead of
+	 * entity than {@link #reverseCollection(SerializableFunction)} : sometimes a method already exists in entities to fill the relation instead of
 	 * calling getter + Collection.add. This method is here to benefit from it.
 	 * This method has no consequence on database mapping since it only interacts in memory.
 	 *

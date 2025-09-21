@@ -6,10 +6,12 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
 import org.codefilarete.stalactite.engine.model.device.Address;
 import org.codefilarete.stalactite.engine.model.device.Company;
@@ -26,6 +28,7 @@ import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.exception.Exceptions;
 import org.junit.jupiter.api.BeforeEach;
@@ -209,6 +212,83 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 			assertThat(resultSet.next()).isTrue();
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Company where id = 666");
 			assertThat(resultSet.next()).isTrue();
+		}
+		
+		@Test
+		void all() {
+			EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Device::getName)
+					.mapManyToOne(Device::setManufacturer, companyConfiguration).cascading(ALL)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			LongProvider deviceIdProvider = new LongProvider(42);
+			Device dummyDevice = new Device(deviceIdProvider.giveNewIdentifier());
+			dummyDevice.setName("UPS");
+			
+			LongProvider companyIdProvider = new LongProvider();
+			Company company = new Company(companyIdProvider.giveNewIdentifier());
+			company.setName("World Company");
+			dummyDevice.setManufacturer(company);
+			
+			// insert cascade test
+			devicePersister.insert(dummyDevice);
+			Device persistedDevice = devicePersister.select(dummyDevice.getId());
+			assertThat(persistedDevice.getId()).isEqualTo(new PersistedIdentifier<>(42L));
+			assertThat(persistedDevice.getManufacturer().getName()).isEqualTo("World Company");
+			assertThat(persistedDevice.getManufacturer().getId().isPersisted()).isTrue();
+			
+			// choosing better names for next tests
+			Device modifiedDevice = persistedDevice;
+			Device referentDevice = dummyDevice;
+			
+			// nullifiying relation test
+			modifiedDevice.setManufacturer(null);
+			devicePersister.update(modifiedDevice, referentDevice, false);
+			modifiedDevice = devicePersister.select(referentDevice.getId());
+			assertThat(modifiedDevice.getManufacturer()).isNull();
+			
+			// ensuring that manufacturer was not deleted nor updated (we didn't ask for orphan removal)
+			ExecutableBeanPropertyQueryMapper<LiteCompany> companySelector = persistenceContext.newQuery("select name from Company where id = :id", LiteCompany.class)
+					.mapKey(LiteCompany::new, "name", String.class);
+			LiteCompany liteCompany = companySelector
+					.set("id", company.getId())
+					.execute(Accumulators.getFirstUnique());
+			// but relation is cut on both sides (because setCapital(..) calls setCountry(..))
+			assertThat(liteCompany).usingRecursiveComparison().isEqualTo(new LiteCompany("World Company"));
+			
+			// from null to a (new) object
+			referentDevice = devicePersister.select(referentDevice.getId());
+			Company stalactiteCorp = new Company(companyIdProvider.giveNewIdentifier());
+			stalactiteCorp.setName("Stalactite Corp");
+			modifiedDevice.setManufacturer(stalactiteCorp);
+			devicePersister.update(modifiedDevice, referentDevice, false);
+			modifiedDevice = devicePersister.select(referentDevice.getId());
+			assertThat(modifiedDevice.getManufacturer()).usingRecursiveComparison().isEqualTo(stalactiteCorp);
+			// ensuring that capital was not deleted nor updated
+			assertThat(companySelector
+					.set("id", stalactiteCorp.getId())
+					.execute(Accumulators.getFirstUnique())).usingRecursiveComparison().isEqualTo(new LiteCompany("Stalactite Corp"));
+			
+			// testing update cascade
+			referentDevice = devicePersister.select(referentDevice.getId());
+			modifiedDevice.getManufacturer().setName("Skynet");
+			devicePersister.update(modifiedDevice, referentDevice, false);
+			modifiedDevice = devicePersister.select(referentDevice.getId());
+			// ensuring that capital was not deleted nor updated
+			assertThat(companySelector
+					.set("id", stalactiteCorp.getId())
+					.execute(Accumulators.getFirstUnique())).usingRecursiveComparison().isEqualTo(new LiteCompany("Skynet"));
+			
+			// testing delete cascade
+			devicePersister.delete(modifiedDevice);
+			// ensuring that capital was not deleted nor updated
+			assertThat(companySelector
+					.set("id", stalactiteCorp.getId())
+					.execute(Accumulators.getFirstUnique())).usingRecursiveComparison().isEqualTo(new LiteCompany("Skynet"));
 		}
 	}
 	
@@ -584,5 +664,120 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement()
 				.executeQuery("select id from Address where id = " + persistedDevice2.getLocation().getId().getDelegate());
 		assertThat(resultSet.next()).isTrue();
+	}
+	
+	@Nested
+	class BiDirectionality {
+		
+		@Test
+		void reverseCollection() {
+			EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Device::getName)
+					.mapManyToOne(Device::setManufacturer, companyConfiguration).cascading(ALL).reverseCollection(Company::getDevices)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			LongProvider deviceIdProvider = new LongProvider();
+			Device device1 = new Device(deviceIdProvider.giveNewIdentifier());
+			device1.setName("device 1");
+			Device device2 = new Device(deviceIdProvider.giveNewIdentifier());
+			device2.setName("device 2");
+			
+			Company company = new Company(new LongProvider().giveNewIdentifier());
+			company.setName("World Company");
+			device1.setManufacturer(company);
+			company.addDevice(device1);
+			device2.setManufacturer(company);
+			company.addDevice(device2);
+			
+			devicePersister.insert(device1);
+			devicePersister.insert(device2);
+			
+			Set<Device> select = devicePersister.select(Arrays.asSet(device1.getId(), device2.getId()));
+			Device loadedDevice1 = Iterables.find(select, Device::getName, "device 1"::equals).getLeft();
+			Device loadedDevice2 = Iterables.find(select, Device::getName, "device 2"::equals).getLeft();
+			assertThat(loadedDevice1.getManufacturer().getDevices()).containsExactlyInAnyOrder(loadedDevice1, loadedDevice2);
+		}
+		
+		@Test
+		void reverselySetBy() {
+			EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Device::getName)
+					.mapManyToOne(Device::setManufacturer, companyConfiguration).cascading(ALL).reverselySetBy(Company::addDevice)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			LongProvider deviceIdProvider = new LongProvider();
+			Device device1 = new Device(deviceIdProvider.giveNewIdentifier());
+			device1.setName("device 1");
+			Device device2 = new Device(deviceIdProvider.giveNewIdentifier());
+			device2.setName("device 2");
+			
+			Company company = new Company(new LongProvider().giveNewIdentifier());
+			company.setName("World Company");
+			device1.setManufacturer(company);
+			company.addDevice(device1);
+			device2.setManufacturer(company);
+			company.addDevice(device2);
+			
+			devicePersister.insert(device1);
+			devicePersister.insert(device2);
+			
+			Set<Device> select = devicePersister.select(Arrays.asSet(device1.getId(), device2.getId()));
+			Device loadedDevice1 = Iterables.find(select, Device::getName, "device 1"::equals).getLeft();
+			Device loadedDevice2 = Iterables.find(select, Device::getName, "device 2"::equals).getLeft();
+			assertThat(loadedDevice1.getManufacturer().getDevices()).containsExactlyInAnyOrder(loadedDevice1, loadedDevice2);
+		}
+		
+		@Test
+		void reverselyInitializeWith() {
+			EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Device::getName)
+					.mapManyToOne(Device::setManufacturer, companyConfiguration).cascading(ALL)
+						.reverseCollection(Company::getDevices)
+						.reverselyInitializeWith(LinkedHashSet::new)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			LongProvider deviceIdProvider = new LongProvider();
+			Device device1 = new Device(deviceIdProvider.giveNewIdentifier());
+			device1.setName("device 1");
+			Device device2 = new Device(deviceIdProvider.giveNewIdentifier());
+			device2.setName("device 2");
+			
+			Company company = new Company(new LongProvider().giveNewIdentifier());
+			company.setName("World Company");
+			device1.setManufacturer(company);
+			company.addDevice(device1);
+			device2.setManufacturer(company);
+			company.addDevice(device2);
+			
+			devicePersister.insert(device1);
+			devicePersister.insert(device2);
+			
+			Set<Device> select = devicePersister.select(Arrays.asSet(device1.getId(), device2.getId()));
+			Device loadedDevice1 = Iterables.find(select, Device::getName, "device 1"::equals).getLeft();
+			Device loadedDevice2 = Iterables.find(select, Device::getName, "device 2"::equals).getLeft();
+			assertThat(loadedDevice1.getManufacturer().getDevices()).containsExactlyInAnyOrder(loadedDevice1, loadedDevice2);
+			assertThat(loadedDevice1.getManufacturer().getDevices()).isInstanceOf(LinkedHashSet.class);
+		}
+	}
+	
+	
+	public static class LiteCompany {
+		private final String name;
+		
+		public LiteCompany(String name) {
+			this.name = name;
+		}
 	}
 }

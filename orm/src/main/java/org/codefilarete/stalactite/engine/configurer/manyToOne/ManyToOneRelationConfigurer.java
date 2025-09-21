@@ -1,5 +1,7 @@
 package org.codefilarete.stalactite.engine.configurer.manyToOne;
 
+import java.util.Collection;
+
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
@@ -48,7 +50,7 @@ public class ManyToOneRelationConfigurer<C, I> {
 	 * @param <TRGT> type of output (right/target entities)
 	 * @param <TRGTID>> identifier type of target entities
 	 */
-	public <TRGT, TRGTID> void configure(ManyToOneRelation<C, TRGT, TRGTID> manyToOneRelation) {
+	public <TRGT, TRGTID> void configure(ManyToOneRelation<C, TRGT, TRGTID, Collection<C>> manyToOneRelation) {
 		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
 		
 		ManyToOneOwnedBySourceConfigurer<C, TRGT, I, TRGTID, ?, ?, I> configurer;
@@ -72,7 +74,7 @@ public class ManyToOneRelationConfigurer<C, I> {
 			cycleSolver.addCycleSolver(relationName, configurer);
 		} else {
 			// please note that even if no table is found in configuration, build(..) will create one
-			Table targetTable = nullable(manyToOneRelation.getTargetTable()).getOr(nullable(manyToOneRelation.getReverseColumn()).map(Column::getTable).get());
+			Table targetTable = manyToOneRelation.getTargetTable();
 			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = new PersisterBuilderImpl<>(targetMappingConfiguration)
 					.build(dialect, connectionConfiguration, targetTable);
 			configurer.configure(relationName, targetPersister, manyToOneRelation.isFetchSeparately());

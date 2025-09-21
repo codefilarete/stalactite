@@ -127,7 +127,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 			}
 			
 			@Override
-			public <TRGT, TRGTID> List<ManyToOneRelation<C, TRGT, TRGTID>> getManyToOnes() {
+			public <TRGT, TRGTID> List<ManyToOneRelation<C, TRGT, TRGTID, Collection<C>>> getManyToOnes() {
 				return (List) manyToOneRelations;
 			}
 			

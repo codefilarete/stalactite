@@ -1,15 +1,24 @@
 package org.codefilarete.stalactite.engine.configurer.manyToOne;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 
 import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.AccessorByMethod;
 import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.Mutator;
+import org.codefilarete.reflection.MutatorByMethod;
+import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
@@ -17,10 +26,12 @@ import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.RuntimeMappingException;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
+import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation.MappedByConfiguration;
 import org.codefilarete.stalactite.engine.configurer.onetoone.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
+import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
@@ -35,8 +46,14 @@ import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.Nullable;
+import org.codefilarete.tool.bean.FieldIterator;
+import org.codefilarete.tool.bean.InstanceFieldIterator;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+
+import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * @param <SRC> type of input (left/source entities)
@@ -52,7 +69,7 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 	
 	private final ConfiguredRelationalPersister<SRC, SRCID> sourcePersister;
 	
-	private final ManyToOneRelation<SRC, TRGT, TRGTID> manyToOneRelation;
+	private final ManyToOneRelation<SRC, TRGT, TRGTID, Collection<SRC>> manyToOneRelation;
 	
 	private final JoinColumnNamingStrategy joinColumnNamingStrategy;
 	
@@ -63,11 +80,11 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 	private ManyToOneOwnedBySourceEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> engine;
 	
 	public ManyToOneOwnedBySourceConfigurer(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-											ManyToOneRelation<SRC, TRGT, TRGTID> manyToOneRelation,
+											ManyToOneRelation<SRC, TRGT, TRGTID, ? extends Collection<SRC>> manyToOneRelation,
 											JoinColumnNamingStrategy joinColumnNamingStrategy,
 											ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
 		this.sourcePersister = sourcePersister;
-		this.manyToOneRelation = manyToOneRelation;
+		this.manyToOneRelation = (ManyToOneRelation<SRC, TRGT, TRGTID, Collection<SRC>>) manyToOneRelation;
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 	}
@@ -81,7 +98,7 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 		EntityMapping<TRGT, TRGTID, RIGHTTABLE> targetMappingStrategy = targetPersister.getMapping();
 		Duo<Key<LEFTTABLE, JOINID>, Key<RIGHTTABLE, JOINID>> foreignKeyColumns = determineForeignKeyColumns(sourcePersister.getMapping(), targetMappingStrategy);
 		
-		BeanRelationFixer<SRC, TRGT> beanRelationFixer = determineRelationFixer();
+		BeanRelationFixer<SRC, TRGT> beanRelationFixer = determineRelationFixer(targetPersister);
 		
 		String relationJoinNodeName = addSelectJoin(tableAlias, targetPersister, foreignKeyColumns.getLeft(), foreignKeyColumns.getRight(), beanRelationFixer, loadSeparately);
 		addWriteCascades(targetPersister);
@@ -97,7 +114,7 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 		EntityMapping<TRGT, TRGTID, RIGHTTABLE> targetMappingStrategy = targetPersister.getMapping();
 		Duo<Key<LEFTTABLE, JOINID>, Key<RIGHTTABLE, JOINID>> foreignKeyColumns = determineForeignKeyColumns(sourcePersister.getMapping(), targetMappingStrategy);
 		
-		BeanRelationFixer<SRC, TRGT> beanRelationFixer = determineRelationFixer();
+		BeanRelationFixer<SRC, TRGT> beanRelationFixer = determineRelationFixer(targetPersister);
 		
 		addSelectIn2Phases(tableAlias, targetPersister, foreignKeyColumns.getLeft(), foreignKeyColumns.getRight(), firstPhaseCycleLoadListener);
 		addWriteCascades(targetPersister);
@@ -108,6 +125,67 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 		RelationMode maintenanceMode = manyToOneRelation.getRelationMode();
 		if (maintenanceMode == RelationMode.ASSOCIATION_ONLY) {
 			throw new MappingConfigurationException(RelationMode.ASSOCIATION_ONLY + " is only relevant for one-to-many association");
+		}
+	}
+	
+	/**
+	 * Build the combiner between target entities and source ones.
+	 *
+	 * @param targetClass target entity type, provided to look up for reverse property if no sufficient info was given
+	 * @return null if no information was provided about the reverse side (no bidirectionality)
+	 */
+	private SerializableBiConsumer<TRGT, SRC> buildReverseCombiner(Class<TRGT> targetClass) {
+		MappedByConfiguration<SRC, TRGT, Collection<SRC>> mappedByConfiguration = manyToOneRelation.getMappedByConfiguration();
+		if (mappedByConfiguration.isEmpty()) {
+			// relation is not bidirectional, and not even set by the reverse link, there's nothing to do
+			return null;
+		} else {
+			PropertyAccessor<TRGT, Collection<SRC>> collectionAccessor = manyToOneRelation.buildReversePropertyAccessor();
+			if (collectionAccessor == null) {
+				// since some reverse info has been done but not the collection accessor, we try to find the matching property by type
+				FieldIterator targetFields = new InstanceFieldIterator(targetClass);
+				Class<SRC> sourceEntityType = sourcePersister.getClassToPersist();
+				Field reverseField = Iterables.find(targetFields, field -> Collection.class.isAssignableFrom(field.getType())
+						&& ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0].equals(sourceEntityType));
+				if (reverseField != null) {
+					Nullable<AccessorByMethod<TRGT, Collection<SRC>>> reverseGetterMethod = nullable(Accessors.accessorByMethod(reverseField));
+					if (reverseGetterMethod.isPresent()) {
+						collectionAccessor = new PropertyAccessor<>(reverseGetterMethod.get());
+					} else {
+						Nullable<MutatorByMethod<TRGT, Collection<SRC>>> reverseSetterMethod = nullable(Accessors.mutatorByMethod(reverseField));
+						if (reverseSetterMethod.isPresent()) {
+							collectionAccessor = new PropertyAccessor<>(reverseSetterMethod.get());
+						}
+					}
+				} // else : relation is not bidirectional, or not a usual one, may be set by reverse link
+			}
+			
+			Nullable<SerializableBiConsumer<TRGT, SRC>> configuredCombiner = nullable(mappedByConfiguration.getReverseCombiner());
+			if (collectionAccessor == null) {
+				return configuredCombiner.get();
+			} else {
+				// collection factory is in priority the one configured
+				Supplier<Collection<SRC>> reverseCollectionFactory = mappedByConfiguration.getReverseCollectionFactory();
+				if (reverseCollectionFactory == null) {
+					Class<Collection<SRC>> collectionType = AccessorDefinition.giveDefinition(collectionAccessor).getMemberType();
+					reverseCollectionFactory = BeanRelationFixer.giveCollectionFactory(collectionType);
+				}
+				PropertyAccessor<TRGT, Collection<SRC>> finalCollectionAccessor = collectionAccessor;
+				SerializableBiConsumer<TRGT, SRC> combiner = configuredCombiner.getOr((TRGT trgt, SRC src) -> {
+					// collectionAccessor can't be null due to nullable check
+					finalCollectionAccessor.get(trgt).add(src);
+				});
+				
+				Supplier<Collection<SRC>> effectiveCollectionFactory = reverseCollectionFactory;
+				return (TRGT trgt, SRC src) -> {
+					// we call the collection factory to ensure that property is initialized
+					if (finalCollectionAccessor.get(trgt) == null) {
+						finalCollectionAccessor.set(trgt, effectiveCollectionFactory.get());
+					}
+					// Note that combiner can't be null here thanks to nullable(..) check
+					combiner.accept(trgt, src);
+				};
+			}
 		}
 	}
 	
@@ -139,9 +217,20 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 		return new Duo<>(leftKey, rightKey);
 	}
 	
-	protected BeanRelationFixer<SRC, TRGT> determineRelationFixer() {
+	protected BeanRelationFixer<SRC, TRGT> determineRelationFixer(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		Mutator<SRC, TRGT> targetSetter = manyToOneRelation.getTargetProvider().toMutator();
-		return BeanRelationFixer.of(targetSetter::set);
+		SerializableBiConsumer<TRGT, SRC> reverseCombiner = buildReverseCombiner(targetPersister.getClassToPersist());
+		
+		if (reverseCombiner == null) {
+			return BeanRelationFixer.of(targetSetter::set);
+		} else {
+			return (target, input) -> {
+				targetSetter.set(target, input);
+				if (reverseCombiner != null) {
+					reverseCombiner.accept(input, target);
+				}
+			};
+		}
 	}
 	
 	protected void addWriteCascades(ConfiguredPersister<TRGT, TRGTID> targetPersister) {
