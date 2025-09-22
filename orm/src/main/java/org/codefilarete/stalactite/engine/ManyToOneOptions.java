@@ -54,11 +54,10 @@ public interface ManyToOneOptions<C, I, O, S extends Collection<C>> extends Casc
 	 */
 	ManyToOneOptions<C, I, O, S> reverselyInitializeWith(Supplier<S> collectionFactory);
 	
-//
-//	/**
-//	 * Asks to load relation in some separate query (actually may use several queries according to association table presence or polymorphism)
-//	 *
-//	 * @return the global mapping configurer
-//	 */
-//	ManyToOneOptions<C, I, T, O> fetchSeparately();
+	/**
+	 * Asks to load relation in some separate query (actually may use several queries according to association table presence or polymorphism)
+	 *
+	 * @return the global mapping configurer
+	 */
+	ManyToOneOptions<C, I, O, S> fetchSeparately();
 }

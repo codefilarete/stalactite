@@ -802,6 +802,31 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 				.hasMessage("Non null value expected for relation Device::getManufacturer on object o.c.s.e.m.d.Device@42");
 	}
 	
+	@Test
+	void fetchSeparately() {
+		EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+				.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(Device::getName)
+				// no cascade definition
+				.mapManyToOne(Device::getManufacturer, companyConfiguration).cascading(ALL).fetchSeparately()
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		// asserting null check at insertion time
+		Device dummyDevice = new Device(new PersistableIdentifier<>(42L));
+		dummyDevice.setName("UPS");
+		Company company = new Company(new PersistableIdentifier<>(1L));
+		company.setName("World Company");
+		dummyDevice.setManufacturer(company);
+		devicePersister.insert(dummyDevice);
+		
+		Device loadedDevice = devicePersister.select(dummyDevice.getId());
+		assertThat(loadedDevice.getManufacturer()).isNotNull();
+		assertThat(loadedDevice.getManufacturer().getName()).isEqualTo("World Company");
+	}
+	
 	public static class LiteCompany {
 		private final String name;
 		

@@ -4,6 +4,7 @@ import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -19,15 +20,15 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
+import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
+import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
-import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.EntityFinder;
-import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.operator.In;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
@@ -43,6 +44,8 @@ import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
 
 /**
  * Persister that registers relations of entities joined on "foreign key = primary key".
@@ -67,6 +70,14 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 		implements ConfiguredRelationalPersister<C, I>, AdvancedEntityPersister<C, I> {
 	
 	protected final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
+	
+	/**
+	 * Current storage of entities to be loaded during the 2-Phases load algorithm.
+	 * Tracked as a {@link Queue} to solve resource cleaning issue in case of recursive polymorphism. This may be solved by avoiding to have a static field
+	 */
+	// TODO : try a non-static field to remove Queue usage which impacts code complexity
+	@SuppressWarnings("java:S5164" /* remove() is called by SecondPhaseRelationLoader.afterSelect() */)
+	private static final ThreadLocal<Queue<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>>> CURRENT_2PHASES_LOAD_CONTEXT = new ThreadLocal<>();
 	
 	private final BeanPersister<C, I, T> persister;
 	/** Support for {@link EntityCriteria} query execution */
@@ -192,24 +203,36 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 																							 BeanRelationFixer<SRC, C> beanRelationFixer,
 																							 boolean optional,
 																							 boolean loadSeparately) {
-		
-		// We use our own select system since SelectListener is not aimed at joining table
-		EntityMappingAdapter<C, I, T> strategy = new EntityMappingAdapter<>(getMapping());
-		String createdJoinNodeName = sourcePersister.getEntityJoinTree().addRelationJoin(
-				EntityJoinTree.ROOT_JOIN_NAME,
-				// because joinAsOne can be called in either case of owned relation or reversely owned relation, generics can't be set correctly,
-				// so we simply cast first argument
-				(EntityInflater) strategy,
-				propertyAccessor,
-				leftColumn,
-				rightColumn,
-				rightTableAlias,
-				optional ? JoinType.OUTER : JoinType.INNER,
-				beanRelationFixer, Collections.emptySet());
-		
-		copyRootJoinsTo(sourcePersister.getEntityJoinTree(), createdJoinNodeName);
-		
-		return createdJoinNodeName;
+		if (loadSeparately) {
+			String mainTableJoinName = sourcePersister.getEntityJoinTree().addMergeJoin(ROOT_JOIN_NAME,
+					// Note that "this" uses EntityFinder with identifier as criteria to select entities
+					new FirstPhaseRelationLoader<>(this.getMapping().getIdMapping(), this,
+							(ThreadLocal<Queue<Set<RelationIds<Object, C, I>>>>) (ThreadLocal) CURRENT_2PHASES_LOAD_CONTEXT),
+					leftColumn,
+					rightColumn,
+					JoinType.OUTER);
+			// adding second phase loader
+			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, CURRENT_2PHASES_LOAD_CONTEXT));
+			return mainTableJoinName;
+		} else {
+			// We use our own select system since SelectListener is not aimed at joining table
+			EntityMappingAdapter<C, I, T> strategy = new EntityMappingAdapter<>(getMapping());
+			String createdJoinNodeName = sourcePersister.getEntityJoinTree().addRelationJoin(
+					EntityJoinTree.ROOT_JOIN_NAME,
+					// because joinAsOne can be called in either case of owned relation or reversely owned relation, generics can't be set correctly,
+					// so we simply cast first argument
+					(EntityInflater) strategy,
+					propertyAccessor,
+					leftColumn,
+					rightColumn,
+					rightTableAlias,
+					optional ? JoinType.OUTER : JoinType.INNER,
+					beanRelationFixer, Collections.emptySet());
+			
+			copyRootJoinsTo(sourcePersister.getEntityJoinTree(), createdJoinNodeName);
+			
+			return createdJoinNodeName;
+		}
 	}
 	
 	/**
@@ -226,23 +249,35 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 																							  Set<? extends Column<T2, ?>> selectableColumns,
 																							  boolean optional,
 																							  boolean loadSeparately) {
-		
-		String createdJoinNodeName = sourcePersister.getEntityJoinTree().addRelationJoin(
-				joinName,
-				new EntityMappingAdapter<>(getMapping()),
-				propertyAccessor,
-				leftColumn,
-				rightColumn,
-				null,
-				optional ? JoinType.OUTER : JoinType.INNER,
-				beanRelationFixer,
-				selectableColumns,
-				relationIdentifierProvider);
-		
-		// adding our subgraph select to source persister
-		copyRootJoinsTo(sourcePersister.getEntityJoinTree(), createdJoinNodeName);
-		
-		return createdJoinNodeName;
+		if (loadSeparately) {
+			String mainTableJoinName = sourcePersister.getEntityJoinTree().addMergeJoin(ROOT_JOIN_NAME,
+					// Note that "this" uses EntityFinder with identifier as criteria to select entities
+					new FirstPhaseRelationLoader<>(this.getMapping().getIdMapping(), this,
+							(ThreadLocal<Queue<Set<RelationIds<Object, C, I>>>>) (ThreadLocal) CURRENT_2PHASES_LOAD_CONTEXT),
+					leftColumn,
+					rightColumn,
+					JoinType.OUTER);
+			// adding second phase loader
+			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, CURRENT_2PHASES_LOAD_CONTEXT));
+			return mainTableJoinName;
+		} else {
+			String createdJoinNodeName = sourcePersister.getEntityJoinTree().addRelationJoin(
+					joinName,
+					new EntityMappingAdapter<>(getMapping()),
+					propertyAccessor,
+					leftColumn,
+					rightColumn,
+					null,
+					optional ? JoinType.OUTER : JoinType.INNER,
+					beanRelationFixer,
+					selectableColumns,
+					relationIdentifierProvider);
+			
+			// adding our subgraph select to source persister
+			copyRootJoinsTo(sourcePersister.getEntityJoinTree(), createdJoinNodeName);
+			
+			return createdJoinNodeName;
+		}
 	}
 	
 	@Override

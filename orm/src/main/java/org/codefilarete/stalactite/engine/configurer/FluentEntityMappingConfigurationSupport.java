@@ -882,11 +882,11 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
-//					@Override
-//					public ManyToOneOptions fetchSeparately() {
-//						manyToOneRelation.fetchSeparately();
-//						return null;	// we can return null because dispatcher will return proxy
-//					}
+					@Override
+					public ManyToOneOptions<C, I, O, S> fetchSeparately() {
+						manyToOneRelation.fetchSeparately();
+						return null;	// we can return null because dispatcher will return proxy
+					}
 				}, true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderManyToOneOptions<C, I, O, S>>) (Class) FluentMappingBuilderManyToOneOptions.class);

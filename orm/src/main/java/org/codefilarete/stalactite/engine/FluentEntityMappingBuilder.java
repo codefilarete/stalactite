@@ -997,9 +997,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		
 		@Override
 		FluentMappingBuilderManyToOneOptions<C, I, O, S> cascading(RelationMode relationMode);
-
-//		@Override
-//		FluentMappingBuilderManyToOneOptions<C, I, T, O> fetchSeparately();
+		
+		@Override
+		FluentMappingBuilderManyToOneOptions<C, I, O, S> fetchSeparately();
 	}
 	
 	/**

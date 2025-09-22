@@ -332,6 +332,30 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		assertThat(new HashSet<>(cityCountryIds)).isEqualTo(Arrays.asSet((Long) null));
 	}
 	
+	
+	@Test
+	void fetchSeparately() throws SQLException {
+		// mapping building thanks to fluent API
+		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(Country::getName)
+				// no cascade
+				.mapOneToMany(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry)
+					.fetchSeparately()
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		// preparing data
+		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into Country(id, name) values (42, 'France')").execute();
+		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into City(id, name, countryId) values (1, 'Paris', 42)").execute();
+		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into City(id, name, countryId) values (2, 'Lyon', 42)").execute();
+		
+		Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
+		assertThat(loadedCountry.getCities()).extracting(City::getName).containsExactlyInAnyOrder("Paris", "Lyon");
+	}
+	
 	@Test
 	void withPolymorphicTarget_crud() {
 		FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration = entityBuilder(City.class, LONG_TYPE)
@@ -1097,8 +1121,6 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		}
 		
 	}
-	
-	
 	
 	@Nested
 	class CascadeAllOrphanRemoval {
