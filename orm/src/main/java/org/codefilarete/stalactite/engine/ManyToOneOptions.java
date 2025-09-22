@@ -11,9 +11,9 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
  */
 public interface ManyToOneOptions<C, I, O, S extends Collection<C>> extends CascadeOptions {
 	
-//	/** Marks the relation as mandatory. Hence joins will be inner ones and a checking for non null value will be done before insert and update */
-//	ManyToOneOptions<C, I, T, O> mandatory();
-//
+	/** Marks the relation as mandatory. Hence joins will be inner ones and a checking for non null value will be done before insert and update */
+	ManyToOneOptions<C, I, O, S> mandatory();
+
 	/**
 	 * Defines combiner of current entity with target entity. This is a more fine-grained way to define how to combine current entity with target
 	 * entity than {@link #reverseCollection(SerializableFunction)} : sometimes a method already exists in entities to fill the relation instead of
@@ -23,7 +23,7 @@ public interface ManyToOneOptions<C, I, O, S extends Collection<C>> extends Casc
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	ManyToOneOptions<C, I, O,S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
+	ManyToOneOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
 	
 	/**
 	 * Defines reverse collection accessor.

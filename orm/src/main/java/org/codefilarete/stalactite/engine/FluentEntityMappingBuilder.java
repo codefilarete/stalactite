@@ -948,9 +948,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	interface FluentMappingBuilderManyToOneOptions<C, I, O, S extends Collection<C>> extends FluentEntityMappingBuilder<C, I>,
 			ManyToOneOptions<C, I, O, S> {
 		
-//		@Override
-//		FluentMappingBuilderManyToOneOptions<C, I, T, O> mandatory();
-//
+		@Override
+		FluentMappingBuilderManyToOneOptions<C, I, O, S> mandatory();
+		
 		/**
 		 * Defines combiner of current entity with target entity. This is a more fine-grained way to define how to combine current entity with target
 		 * entity than {@link #reverseCollection(SerializableFunction)} : sometimes a method already exists in entities to fill the relation instead of

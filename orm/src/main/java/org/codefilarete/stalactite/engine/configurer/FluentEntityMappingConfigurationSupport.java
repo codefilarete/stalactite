@@ -852,11 +852,11 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
-//					@Override
-//					public ManyToOneOptions mandatory() {
-//						manyToOneRelation.setNullable(false);
-//						return null;	// we can return null because dispatcher will return proxy
-//					}
+					@Override
+					public ManyToOneOptions<C, I, O, S> mandatory() {
+						manyToOneRelation.setNullable(false);
+						return null;	// we can return null because dispatcher will return proxy
+					}
 					
 					@Override
 					public ManyToOneOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink) {
