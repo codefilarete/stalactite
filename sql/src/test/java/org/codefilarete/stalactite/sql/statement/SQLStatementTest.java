@@ -4,13 +4,13 @@ import java.sql.PreparedStatement;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.Maps.ChainingMap;
-import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.INTEGER_BINDER;
 import static org.mockito.Mockito.mock;
 
@@ -23,14 +23,18 @@ public class SQLStatementTest {
 	public void testApplyValue_missingBinder_exceptionIsThrown() {
 		SQLStatement<String> testInstance = new SQLStatementStub(Maps.asMap("a", INTEGER_BINDER));
 		testInstance.setValues(Maps.asMap("a", 1).add("b", 2));
-		assertThatExceptionOfType(IllegalArgumentException.class).as("Missing binder for [b] for values {a=1, b=2} in \"dummy sql\"").isThrownBy(() -> testInstance.applyValues(mock(PreparedStatement.class)));
+		assertThatCode(() -> testInstance.applyValues(mock(PreparedStatement.class)))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Missing binder for parameters [b] for values {a=1, b=2} in \"dummy sql\"");
 	}
 	
 	@Test
 	public void testApplyValue_missingValue_exceptionIsThrown() {
 		SQLStatement<String> testInstance = new SQLStatementStub(Maps.asMap("a", INTEGER_BINDER));
 		testInstance.setValues(Maps.asMap("b", 2));
-		assertThatExceptionOfType(IllegalArgumentException.class).as("Missing value for parameters [a] in values {b=2} in \"dummy sql\"").isThrownBy(() -> testInstance.applyValues(mock(PreparedStatement.class)));
+		assertThatCode(() -> testInstance.applyValues(mock(PreparedStatement.class)))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Missing value for parameters [a] in values {b=2} in \"dummy sql\"");
 	}
 	
 	@Test

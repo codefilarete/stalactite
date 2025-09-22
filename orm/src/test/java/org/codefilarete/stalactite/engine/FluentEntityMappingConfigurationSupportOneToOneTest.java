@@ -41,7 +41,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ALL;
 import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
@@ -1067,8 +1067,9 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				LongProvider countryIdProvider = new LongProvider();
 				Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
 				dummyCountry.setName("France");
-				assertThatExceptionOfType(RuntimeMappingException.class).as("Non null value expected for relation o.c.s.e.m.Person o.c.s.e.m" 
-						+ ".Country.getPresident() on object Country@0").isThrownBy(() -> countryPersister.insert(dummyCountry));
+				assertThatCode(() -> countryPersister.insert(dummyCountry))
+						.isInstanceOf(RuntimeMappingException.class)
+						.hasMessageStartingWith("Non null value expected for relation Country::getPresident on object Country");
 			}
 			
 			@Test
@@ -1391,8 +1392,9 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				// Changing president's name to see what happens when we save it to the database
 				Country persistedCountry = countryPersister.select(dummyCountry.getId());
 				persistedCountry.setPresident(null);
-				assertThatExceptionOfType(RuntimeMappingException.class).as("Non null value expected for relation o.c.s.e.m.Person o.c.s.e.m" 
-						+ ".Country.getPresident() on object Country@0").isThrownBy(() -> countryPersister.update(persistedCountry, dummyCountry, true));
+				assertThatCode(() -> countryPersister.update(persistedCountry, dummyCountry, true))
+						.isInstanceOf(RuntimeMappingException.class)
+						.hasMessageStartingWith("Non null value expected for relation Country::getPresident on object Country");
 			}
 			
 		}

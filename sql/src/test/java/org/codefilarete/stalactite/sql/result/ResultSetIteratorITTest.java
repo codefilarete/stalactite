@@ -11,7 +11,7 @@ import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
  * Database integration test template for {@link ResultSetIterator}, see implementations in sql-adapter submodules
@@ -81,12 +81,12 @@ abstract class ResultSetIteratorITTest extends DatabaseIntegrationTest {
 			}
 		};
 		// No call to hasNext() throws NoSuchElementException
-		assertThatExceptionOfType(NoSuchElementException.class).isThrownBy(resultSetIterator::next);
+		assertThatCode(resultSetIterator::next).isInstanceOf(NoSuchElementException.class);
 		
 		// Multiple calls to next() without calling hasNext() throw NoSuchElementException
 		assertThat(resultSetIterator.hasNext()).isTrue();
 		resultSetIterator.next();
-		assertThatExceptionOfType(NoSuchElementException.class).isThrownBy(resultSetIterator::next);
+		assertThatCode(resultSetIterator::next).isInstanceOf(NoSuchElementException.class);
 	}
 	
 	@Test

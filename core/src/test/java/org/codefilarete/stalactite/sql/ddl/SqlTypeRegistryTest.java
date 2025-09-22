@@ -1,15 +1,13 @@
 package org.codefilarete.stalactite.sql.ddl;
 
-import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
  * @author Guillaume Mary
@@ -46,6 +44,6 @@ class SqlTypeRegistryTest {
 	void getTypeName_columnWithNullType_exceptionIsThrown() {
 		Table toto = new Table("toto");
 		// because we can't create a column with null type, if possible addd a safe guard in getTypeName
-		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> toto.addColumn("a", null));
+		assertThatCode(() -> toto.addColumn("a", null)).isInstanceOf(NullPointerException.class);
 	}
 }

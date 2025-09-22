@@ -13,8 +13,6 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
-import org.codefilarete.stalactite.engine.model.Country;
-import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.device.Address;
 import org.codefilarete.stalactite.engine.model.device.Company;
 import org.codefilarete.stalactite.engine.model.device.Device;
@@ -38,7 +36,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ALL;
 import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
@@ -790,8 +788,8 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 		// asserting null check at insertion time
 		Device dummyDevice = new Device(new PersistableIdentifier<>(42L));
 		dummyDevice.setManufacturer(null);
-		assertThatExceptionOfType(RuntimeMappingException.class).as("Non null value expected for relation o.c.s.e.m.d.Device o.c.s.e.m"
-				+ ".Device.getManufacturer() on object Device@0").isThrownBy(() -> devicePersister.insert(dummyDevice));
+		assertThatCode(() -> devicePersister.insert(dummyDevice)).isInstanceOf(RuntimeMappingException.class)
+				.hasMessage("Non null value expected for relation Device::getManufacturer on object o.c.s.e.m.d.Device@42");
 		
 		// completing the relation for update test hereafter
 		Company company = new Company(new PersistableIdentifier<>(1L));
@@ -800,8 +798,8 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 		
 		// asserting null check at update time
 		dummyDevice.setManufacturer(null);
-		assertThatExceptionOfType(RuntimeMappingException.class).as("Non null value expected for relation o.c.s.e.m.d.Device o.c.s.e.m"
-				+ ".Device.getManufacturer() on object Device@0").isThrownBy(() -> devicePersister.update(dummyDevice));
+		assertThatCode(() -> devicePersister.update(dummyDevice)).isInstanceOf(RuntimeMappingException.class)
+				.hasMessage("Non null value expected for relation Device::getManufacturer on object o.c.s.e.m.d.Device@42");
 	}
 	
 	public static class LiteCompany {

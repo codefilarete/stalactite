@@ -8,9 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.assertj.core.data.TemporalOffset;
 import org.assertj.core.data.TemporalUnitWithinOffset;
-import org.assertj.core.internal.Conditions;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.id.Identifier;
@@ -31,7 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 
@@ -59,14 +57,15 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	@Test
 	public void build_versionedPropertyIsOfUnsupportedType_throwsException() {
 		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
-		assertThatExceptionOfType(UnsupportedOperationException.class).isThrownBy(() -> MappingEase.entityBuilder(Country.class, LONG_TYPE)
+		assertThatCode(() -> MappingEase.entityBuilder(Country.class, LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getName)
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
 				.map(Country::getDescription)
-				.build(persistenceContext));
+				.build(persistenceContext))
+				.isInstanceOf(UnsupportedOperationException.class);
 	}
 	
 	@Test

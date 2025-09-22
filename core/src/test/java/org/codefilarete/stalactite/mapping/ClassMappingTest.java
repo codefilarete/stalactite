@@ -8,22 +8,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
+import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.PropertyAccessor;
-import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
-import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
  * @author Guillaume Mary
@@ -278,14 +278,14 @@ class ClassMappingTest {
 	<T extends Table<T>> void beanKeyIsPresent() {
 		TestData<T> testData = new TestData<>();
 		PropertyAccessor<Toto, Integer> identifierAccessor = Accessors.propertyAccessor(testData.persistentFieldHarvester.getField("a"));
-		assertThatExceptionOfType(IllegalArgumentException.class).as("Bean identifier '" + identifierAccessor + "' must have its matching column in "
-				+ "the mapping").isThrownBy(() -> new ClassMapping<>(Toto.class,
+		assertThatCode(() -> new ClassMapping<>(Toto.class,
 				testData.targetTable,
 				(Map<? extends ReversibleAccessor<Toto, ?>, ? extends Column<T, ?>>) (Map) Maps.asMap(Accessors.propertyAccessor(Toto.class, "b"), colB),
 				// identifier is not present in previous statement so it leads to the expected exception
 				identifierAccessor,
 				new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {}, c -> false)
-		));
+		)).isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Bean identifier 'o.c.s.m.ClassMappingTest$Toto.a' must have its matching column in the mapping");
 	}
 	
 	private static class Toto {

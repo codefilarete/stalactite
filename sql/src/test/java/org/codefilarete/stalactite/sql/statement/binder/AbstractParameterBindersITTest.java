@@ -38,7 +38,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.codefilarete.tool.collection.Iterables.first;
 
 /**
@@ -70,7 +70,7 @@ public abstract class AbstractParameterBindersITTest extends DatabaseIntegration
 	
 	@Test
 	void longPrimitiveBinder_nullValuePassed_NPEThrown() {
-		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> testParameterBinder(Long.TYPE, Arrays.asSet(null)));
+		assertThatCode(() -> testParameterBinder(Long.TYPE, Arrays.asSet(null))).isInstanceOf(NullPointerException.class);
 	}
 	
 	@Test
@@ -85,7 +85,7 @@ public abstract class AbstractParameterBindersITTest extends DatabaseIntegration
 	
 	@Test
 	void integerPrimitiveBinder_nullValuePassed_NPEThrown() {
-		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> testParameterBinder(Integer.TYPE, Arrays.asSet(null)));
+		assertThatCode(() -> testParameterBinder(Integer.TYPE, Arrays.asSet(null))).isInstanceOf(NullPointerException.class);
 	}
 	
 	@Test
@@ -100,7 +100,7 @@ public abstract class AbstractParameterBindersITTest extends DatabaseIntegration
 	
 	@Test
 	void bytePrimitiveBinder_nullValuePassed_NPEThrown() {
-		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> testParameterBinder(Byte.TYPE, Arrays.asSet(null)));
+		assertThatCode(() -> testParameterBinder(Byte.TYPE, Arrays.asSet(null))).isInstanceOf(NullPointerException.class);
 	}
 	
 	@Test
@@ -127,7 +127,7 @@ public abstract class AbstractParameterBindersITTest extends DatabaseIntegration
 	
 	@Test
 	void doublePrimitiveBinder_nullValuePassed_NPEThrown() {
-		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> testParameterBinder(Double.TYPE, Arrays.asSet(null)));
+		assertThatCode(() -> testParameterBinder(Double.TYPE, Arrays.asSet(null))).isInstanceOf(NullPointerException.class);
 	}
 	
 	@Test
@@ -142,7 +142,7 @@ public abstract class AbstractParameterBindersITTest extends DatabaseIntegration
 	
 	@Test
 	void floatPrimitiveBinder_nullValuePassed_NPEThrown() {
-		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> testParameterBinder(Float.TYPE, Arrays.asSet(null)));
+		assertThatCode(() -> testParameterBinder(Float.TYPE, Arrays.asSet(null))).isInstanceOf(NullPointerException.class);
 	}
 	
 	@Test
@@ -171,7 +171,7 @@ public abstract class AbstractParameterBindersITTest extends DatabaseIntegration
 	
 	@Test
 	void booleanPrimitiveBinder_nullValuePassed_NPEThrown() {
-		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> testParameterBinder(Boolean.TYPE, Arrays.asSet(null)));
+		assertThatCode(() -> testParameterBinder(Boolean.TYPE, Arrays.asSet(null))).isInstanceOf(NullPointerException.class);
 	}
 	
 	@Test

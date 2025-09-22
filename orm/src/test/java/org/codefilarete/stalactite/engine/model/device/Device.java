@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine.model.device;
 import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
+import org.codefilarete.tool.Reflections;
 
 public class Device implements Identified<Long> {
 	
@@ -56,5 +57,10 @@ public class Device implements Identified<Long> {
 	
 	public void setLocation(Location location) {
 		this.location = location;
+	}
+	
+	@Override
+	public String toString() {
+		return Reflections.toString(getClass()) + "@" + getId().getDelegate();
 	}
 }
