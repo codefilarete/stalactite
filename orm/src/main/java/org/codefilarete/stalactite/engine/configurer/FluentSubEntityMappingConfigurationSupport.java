@@ -280,21 +280,21 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	}
 	
 	@Override
-	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(
+	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(
 			SerializableFunction<C, O> getter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
 		return mapOneToOne(getter, mappingConfiguration, null);
 	}
 	
 	@Override
-	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(
+	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(
 			SerializableBiConsumer<C, O> setter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
 		return mapOneToOne(setter, mappingConfiguration, null);
 	}
 	
 	@Override
-	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(
+	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(
 			SerializableBiConsumer<C, O> setter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			T table) {
@@ -306,7 +306,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	}
 	
 	@Override
-	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(
+	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(
 			SerializableFunction<C, O> getter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			T table) {
@@ -317,10 +317,10 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 		return mapOneToOne(accessorByMethodReference, mutator, mappingConfiguration, table);
 	}
 	
-	private <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(Accessor<C, O> accessor,
-																		  Mutator<C, O> mutator,
-																		  EntityMappingConfigurationProvider<O, J> mappingConfiguration,
-																		  T table) {
+	private <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(Accessor<C, O> accessor,
+																							 Mutator<C, O> mutator,
+																							 EntityMappingConfigurationProvider<O, J> mappingConfiguration,
+																							 T table) {
 		OneToOneRelation<C, O, J> oneToOneRelation = new OneToOneRelation<>(
 				new PropertyAccessor<>(accessor, mutator),
 				() -> this.polymorphismPolicy instanceof PolymorphismPolicy.TablePerClassPolymorphism,
@@ -330,48 +330,48 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 		return wrapForAdditionalOptions(oneToOneRelation);
 	}
 	
-	private <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> wrapForAdditionalOptions(final OneToOneRelation<C, O, J> oneToOneRelation) {
+	private <O, J> FluentMappingBuilderOneToOneOptions<C, I, O> wrapForAdditionalOptions(OneToOneRelation<C, O, J> oneToOneRelation) {
 		// then we return an object that allows fluent settings over our OneToOne cascade instance
 		return new MethodDispatcher()
-				.redirect(OneToOneOptions.class, new OneToOneOptions() {
+				.redirect(OneToOneOptions.class, new OneToOneOptions<C, I, O>() {
 					@Override
-					public OneToOneOptions cascading(RelationMode relationMode) {
+					public OneToOneOptions<C, I, O> cascading(RelationMode relationMode) {
 						oneToOneRelation.setRelationMode(relationMode);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions mandatory() {
+					public OneToOneOptions<C, I, O> mandatory() {
 						oneToOneRelation.setNullable(false);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions mappedBy(SerializableFunction reverseLink) {
+					public OneToOneOptions<C, I, O> mappedBy(SerializableFunction reverseLink) {
 						oneToOneRelation.setReverseGetter(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions mappedBy(SerializableBiConsumer reverseLink) {
+					public OneToOneOptions<C, I, O> mappedBy(SerializableBiConsumer reverseLink) {
 						oneToOneRelation.setReverseSetter(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions mappedBy(Column reverseLink) {
+					public OneToOneOptions<C, I, O> mappedBy(Column<?, I> reverseLink) {
 						oneToOneRelation.setReverseColumn(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions fetchSeparately() {
+					public OneToOneOptions<C, I, O> fetchSeparately() {
 						oneToOneRelation.fetchSeparately();
 						return null;	// we can return null because dispatcher will return proxy
 					}
 				}, true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
-				.build((Class<FluentMappingBuilderOneToOneOptions<C, I, T, O>>) (Class) FluentMappingBuilderOneToOneOptions.class);
+				.build((Class<FluentMappingBuilderOneToOneOptions<C, I, O>>) (Class) FluentMappingBuilderOneToOneOptions.class);
 	}
 	
 	@Override

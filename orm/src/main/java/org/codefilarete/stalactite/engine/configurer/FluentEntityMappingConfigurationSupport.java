@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -636,7 +635,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(
+	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(
 			SerializableBiConsumer<C, O> setter,
 			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration,
 			T table) {
@@ -648,7 +647,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(
+	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(
 			SerializableFunction<C, O> getter,
 			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration,
 			T table) {
@@ -659,7 +658,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		return mapOneToOne(accessorByMethodReference, mutator, mappingConfiguration, table);
 	}
 	
-	private <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(
+	private <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(
 			Accessor<C, O> accessor,
 			Mutator<C, O> mutator,
 			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration,
@@ -673,7 +672,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		return wrapForAdditionalOptions(oneToOneRelation);
 	}
 	
-	private <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> wrapForAdditionalOptions(OneToOneRelation<C, O, J> oneToOneRelation) {
+	private <O, J> FluentMappingBuilderOneToOneOptions<C, I, O> wrapForAdditionalOptions(OneToOneRelation<C, O, J> oneToOneRelation) {
 		// then we return an object that allows fluent settings over our OneToOne cascade instance
 		return new MethodDispatcher()
 				.redirect(OneToOneOptions.class, new OneToOneOptions() {
@@ -714,7 +713,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					}
 				}, true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
-				.build((Class<FluentMappingBuilderOneToOneOptions<C, I, T, O>>) (Class) FluentMappingBuilderOneToOneOptions.class);
+				.build((Class<FluentMappingBuilderOneToOneOptions<C, I, O>>) (Class) FluentMappingBuilderOneToOneOptions.class);
 	}
 	
 	@Override

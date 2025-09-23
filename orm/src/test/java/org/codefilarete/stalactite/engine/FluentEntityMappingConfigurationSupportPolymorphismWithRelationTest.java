@@ -68,7 +68,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy.alreadyAssigned;
 import static org.codefilarete.stalactite.engine.MappingEase.embeddableBuilder;
 import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
@@ -2080,7 +2079,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 						.mapPolymorphism(giveVehiclePolymorphismPolicy(type)
 						);
 		
-		FluentMappingBuilderOneToOneOptions<Person, Identifier<Long>, ?, Vehicle> persisterConfiguration = entityBuilder(Person.class, LONG_TYPE)
+		FluentMappingBuilderOneToOneOptions<Person, Identifier<Long>, Vehicle> persisterConfiguration = entityBuilder(Person.class, LONG_TYPE)
 				.mapKey(Person::getId, ALREADY_ASSIGNED)
 				.mapOneToOne(Person::getVehicle, vehicleConfiguration)
 				.cascading(RelationMode.ALL_ORPHAN_REMOVAL);
