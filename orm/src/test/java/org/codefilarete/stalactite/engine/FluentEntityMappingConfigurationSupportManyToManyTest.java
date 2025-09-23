@@ -56,7 +56,7 @@ import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedId
 /**
  * @author Guillaume Mary
  */
-class FluentEntityMappingConfigurationSupportManyToManySetTest {
+class FluentEntityMappingConfigurationSupportManyToManyTest {
 	
 	private static final Dialect DIALECT = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 	private static FluentEntityMappingBuilder<Choice, Identifier<Long>> CHOICE_MAPPING_CONFIGURATION;
