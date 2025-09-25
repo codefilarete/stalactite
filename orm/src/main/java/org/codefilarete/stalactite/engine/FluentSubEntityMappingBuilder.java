@@ -200,6 +200,15 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		 * {@inheritDoc}
 		 * Declaration overridden to adapt return type to this class.
 		 *
+		 * @return the global mapping configurer
+		 */
+		@Override
+		FluentMappingBuilderOneToOneOptions<C, I, O> mandatory();
+		
+		/**
+		 * {@inheritDoc}
+		 * Declaration overridden to adapt return type to this class.
+		 *
 		 * @param reverseLink opposite owner of the relation (setter)
 		 * @return the global mapping configurer
 		 */
@@ -226,9 +235,32 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		@Override
 		FluentMappingBuilderOneToOneOptions<C, I, O> mappedBy(Column<?, I> reverseLink);
 		
+		/**
+		 * {@inheritDoc}
+		 * Declaration overridden to adapt return type to this class.
+		 *
+		 * @param reverseColumnName opposite owner of the relation
+		 * @return the global mapping configurer
+		 */
+		@Override
+		FluentMappingBuilderOneToOneOptions<C, I, O> mappedBy(String reverseColumnName);
+		
+		/**
+		 * {@inheritDoc}
+		 * Declaration overridden to adapt return type to this class.
+		 *
+		 * @param relationMode any {@link RelationMode}
+		 * @return the global mapping configurer
+		 */
 		@Override
 		FluentMappingBuilderOneToOneOptions<C, I, O> cascading(RelationMode relationMode);
 		
+		/**
+		 * {@inheritDoc}
+		 * Declaration overridden to adapt return type to this class.
+		 *
+		 * @return the global mapping configurer
+		 */
 		@Override
 		FluentMappingBuilderOneToOneOptions<C, I, O> fetchSeparately();
 	}

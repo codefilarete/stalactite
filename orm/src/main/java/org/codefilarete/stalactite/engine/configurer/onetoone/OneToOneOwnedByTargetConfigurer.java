@@ -75,26 +75,35 @@ public class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 																							EntityMapping<TRGT, TRGTID, RIGHTTABLE> targetMappingStrategy) {
 		// left column is always left table primary key
 		Key<LEFTTABLE, SRCID> leftKey = mappingStrategy.getTargetTable().getPrimaryKey();
+		// gathering reverse column
+		Column<RIGHTTABLE, SRCID> reverseColumn = oneToOneRelation.getReverseColumn();
+		if (reverseColumn == null) {
+			String reverseColumnName = oneToOneRelation.getReverseColumnName();
+			if (reverseColumnName != null) {
+				reverseColumn = targetMappingStrategy.getTargetTable().addColumn(reverseColumnName, mappingStrategy.getIdMapping().getIdentifierInsertionManager().getIdentifierType());
+			}
+		}
+		
 		// right column depends on relation owner
-		if (oneToOneRelation.getReverseColumn() != null) {
-			rightKey = Key.ofSingleColumn(oneToOneRelation.getReverseColumn());
+		if (reverseColumn != null) {
+			rightKey = Key.ofSingleColumn(reverseColumn);
 			PrimaryKey<LEFTTABLE, SRCID> sourcePrimaryKey = sourcePersister.<LEFTTABLE>getMainTable().getPrimaryKey();
 			if (sourcePrimaryKey.isComposed()) {
-				throw new UnsupportedOperationException("Can't map composite primary key " + sourcePrimaryKey + " on single reverse foreign key : " + oneToOneRelation.getReverseColumn());
+				throw new UnsupportedOperationException("Can't map composite primary key " + sourcePrimaryKey + " on single reverse foreign key : " + reverseColumn);
 			} else {
-				keyColumnsMapping.put(sourcePrimaryKey.getColumns().getAt(0), oneToOneRelation.getReverseColumn());
+				keyColumnsMapping.put(sourcePrimaryKey.getColumns().getAt(0), reverseColumn);
 			}
 		}
 		if (oneToOneRelation.getReverseGetter() != null) {
 			AccessorByMethodReference<TRGT, SRC> localReverseGetter = Accessors.accessorByMethodReference(oneToOneRelation.getReverseGetter());
 			AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(localReverseGetter);
 			// we add a column for reverse mapping if one is not already declared
-			rightKey = createOrUseReverseColumn(targetMappingStrategy, oneToOneRelation.getReverseColumn(), localReverseGetter, accessorDefinition);
+			rightKey = createOrUseReverseColumn(targetMappingStrategy, reverseColumn, localReverseGetter, accessorDefinition);
 		} else if (oneToOneRelation.getReverseSetter() != null) {
 			ValueAccessPoint<TRGT> reverseSetter = Accessors.mutatorByMethodReference(oneToOneRelation.getReverseSetter());
 			AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(reverseSetter);
 			// we add a column for reverse mapping if one is not already declared
-			rightKey = createOrUseReverseColumn(targetMappingStrategy, oneToOneRelation.getReverseColumn(), reverseSetter, accessorDefinition);
+			rightKey = createOrUseReverseColumn(targetMappingStrategy, reverseColumn, reverseSetter, accessorDefinition);
 		}
 		
 		// adding foreign key constraint

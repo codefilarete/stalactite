@@ -333,39 +333,45 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	private <O, J> FluentMappingBuilderOneToOneOptions<C, I, O> wrapForAdditionalOptions(OneToOneRelation<C, O, J> oneToOneRelation) {
 		// then we return an object that allows fluent settings over our OneToOne cascade instance
 		return new MethodDispatcher()
-				.redirect(OneToOneOptions.class, new OneToOneOptions<C, I, O>() {
+				.redirect(OneToOneOptions.class, new OneToOneOptions<C, J, O>() {
 					@Override
-					public OneToOneOptions<C, I, O> cascading(RelationMode relationMode) {
+					public OneToOneOptions<C, J, O> cascading(RelationMode relationMode) {
 						oneToOneRelation.setRelationMode(relationMode);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions<C, I, O> mandatory() {
+					public OneToOneOptions<C, J, O> mandatory() {
 						oneToOneRelation.setNullable(false);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions<C, I, O> mappedBy(SerializableFunction reverseLink) {
+					public OneToOneOptions<C, J, O> mappedBy(SerializableFunction<? super O, C> reverseLink) {
 						oneToOneRelation.setReverseGetter(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions<C, I, O> mappedBy(SerializableBiConsumer reverseLink) {
+					public OneToOneOptions<C, J, O> mappedBy(SerializableBiConsumer<? super O, C> reverseLink) {
 						oneToOneRelation.setReverseSetter(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions<C, I, O> mappedBy(Column<?, I> reverseLink) {
+					public OneToOneOptions<C, J, O> mappedBy(Column<?, J> reverseLink) {
 						oneToOneRelation.setReverseColumn(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions<C, I, O> fetchSeparately() {
+					public OneToOneOptions<C, J, O> mappedBy(String reverseColumnName) {
+						oneToOneRelation.setReverseColumn(reverseColumnName);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
+					public OneToOneOptions<C, J, O> fetchSeparately() {
 						oneToOneRelation.fetchSeparately();
 						return null;	// we can return null because dispatcher will return proxy
 					}

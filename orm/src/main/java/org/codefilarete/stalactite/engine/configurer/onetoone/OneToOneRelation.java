@@ -28,7 +28,7 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	private final BooleanSupplier sourceTablePerClassPolymorphic;
 	
 	@Nullable
-	private final Table targetTable;
+	private final Table<?> targetTable;
 	
 	private boolean nullable = true;
 	
@@ -43,6 +43,9 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	@Nullable
 	private Column<Table, SRC> reverseColumn;
 	
+	@Nullable
+	private String reverseColumnName;
+	
 	/** Default relation mode is {@link RelationMode#ALL} */
 	private RelationMode relationMode = RelationMode.ALL;
 	
@@ -51,17 +54,17 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	 */
 	private boolean fetchSeparately;
 	
-	public <T extends Table> OneToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider,
-											  boolean sourceTablePerClassPolymorphic,
-											  EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration,
-											  T table) {
+	public OneToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider,
+							boolean sourceTablePerClassPolymorphic,
+							EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration,
+							Table<?> table) {
 		this(targetProvider, () -> sourceTablePerClassPolymorphic, () -> targetMappingConfiguration, table);
 	}
 	
-	public <T extends Table> OneToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider,
-											  BooleanSupplier sourceTablePerClassPolymorphic,
-											  EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration,
-											  T table) {
+	public OneToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider,
+							BooleanSupplier sourceTablePerClassPolymorphic,
+							EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration,
+							Table<?> table) {
 		this.sourceTablePerClassPolymorphic = sourceTablePerClassPolymorphic;
 		this.targetMappingConfiguration = (EntityMappingConfigurationProvider<TRGT, TRGTID>) targetMappingConfiguration;
 		this.targetProvider = targetProvider;
@@ -105,8 +108,8 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 		return reverseGetter;
 	}
 	
-	public void setReverseGetter(@Nullable SerializableFunction<TRGT, SRC> reverseGetter) {
-		this.reverseGetter = reverseGetter;
+	public void setReverseGetter(@Nullable SerializableFunction<? super TRGT, SRC> reverseGetter) {
+		this.reverseGetter = (SerializableFunction<TRGT, SRC>) reverseGetter;
 	}
 	
 	@Nullable
@@ -114,8 +117,8 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 		return reverseSetter;
 	}
 	
-	public void setReverseSetter(@Nullable SerializableBiConsumer<TRGT, SRC> reverseSetter) {
-		this.reverseSetter = reverseSetter;
+	public void setReverseSetter(@Nullable SerializableBiConsumer<? super TRGT, SRC> reverseSetter) {
+		this.reverseSetter = (SerializableBiConsumer<TRGT, SRC>) reverseSetter;
 	}
 	
 	@Nullable
@@ -125,6 +128,15 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	
 	public void setReverseColumn(Column reverseSide) {
 		this.reverseColumn = reverseSide;
+	}
+	
+	@Nullable
+	public String getReverseColumnName() {
+		return reverseColumnName;
+	}
+	
+	public void setReverseColumn(@Nullable String reverseColumnName) {
+		this.reverseColumnName = reverseColumnName;
 	}
 	
 	public RelationMode getRelationMode() {
@@ -137,10 +149,12 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	
 	/**
 	 * Indicates if relation is owned by target entities table
-	 * @return true if one of {@link #getReverseSetter()}, {@link #getReverseGetter()}, {@link #getReverseColumn()} is not null
+	 * @return true if one of {@link #getReverseSetter()}, {@link #getReverseGetter()}, {@link #getReverseColumn()},
+	 * {@link #getReverseColumnName()} is not null
 	 */
 	public boolean isRelationOwnedByTarget() {
-		return getReverseSetter() != null || getReverseGetter() != null || getReverseColumn() != null;
+		return getReverseSetter() != null || getReverseGetter() != null
+				|| getReverseColumn() != null || getReverseColumnName() != null;
 	}
 	
 	public boolean isFetchSeparately() {

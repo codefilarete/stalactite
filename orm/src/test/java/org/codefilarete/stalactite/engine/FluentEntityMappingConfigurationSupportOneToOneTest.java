@@ -893,7 +893,6 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			Table cityTable = new Table("City");
 			Column countryId = cityTable.addColumn("countryId", Identifier.LONG_TYPE);
 			
-			
 			EntityMappingConfigurationProvider<City, Identifier<Long>> cityConfigurer = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
 					.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(City::getName);
@@ -902,6 +901,21 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Country::getDescription)
 					.mapOneToOne(Country::getCapital, cityConfigurer).cascading(ALL).mappedBy(countryId)
+					.build(persistenceContext);
+			
+			assertCascadeAll(countryPersister);
+		}
+		
+		@Test
+		void ownedByReverseSideColumnName() {
+			EntityMappingConfigurationProvider<City, Identifier<Long>> cityConfigurer = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+					.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(City::getName);
+			
+			EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Country::getDescription)
+					.mapOneToOne(Country::getCapital, cityConfigurer).cascading(ALL).mappedBy("countryId")
 					.build(persistenceContext);
 			
 			assertCascadeAll(countryPersister);
