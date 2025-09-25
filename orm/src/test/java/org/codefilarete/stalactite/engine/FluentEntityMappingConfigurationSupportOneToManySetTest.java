@@ -689,8 +689,8 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 				true },
 				{ (ThrowingSupplier<EntityPersister<Country, Identifier<Long>>, SQLException>) () -> {
 					PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
-					Table cityTable = new Table("city");
-					Column<Table, Identifier> countryId = cityTable.addColumn("countryId", Identifier.class);
+					Table<?> cityTable = new Table("city");
+					Column<?, Identifier<Long>> countryId = cityTable.addColumn("country_id", Identifier.LONG_TYPE);
 					EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(Country::getName)
@@ -704,6 +704,21 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 					return countryPersister;
 				},
 				false },
+				{ (ThrowingSupplier<EntityPersister<Country, Identifier<Long>>, SQLException>) () -> {
+					PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
+					EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.map(Country::getDescription)
+							// relation defined by column
+							.mapOneToMany(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy("country_id")
+							.cascading(ALL)
+							.build(persistenceContext);
+					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+					ddlDeployer.deployDDL();
+					return countryPersister;
+				},
+				false }
 		};
 	}
 	

@@ -1381,13 +1381,19 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		}
 		
 		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(Column<Table, ?> reverseLink) {
+		public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(Column<?, I> reverseLink) {
 			oneToManyRelation.setReverseColumn(reverseLink);
 			return null;	// we can return null because dispatcher will return proxy
 		}
 		
 		@Override
-		public OneToManyOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink) {
+		public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(String reverseColumnName) {
+			oneToManyRelation.setReverseColumn(reverseColumnName);
+			return null;
+		}
+		
+		@Override
+		public FluentMappingBuilderOneToManyOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink) {
 			oneToManyRelation.setReverseLink(reverseLink);
 			return null;	// we can return null because dispatcher will return proxy
 		}

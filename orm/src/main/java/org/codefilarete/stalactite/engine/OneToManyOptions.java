@@ -15,10 +15,10 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 public interface OneToManyOptions<C, I, O, S extends Collection<O>> extends CascadeOptions {
 	
 	/**
-	 * Defines the bidirectional relationship.
+	 * Defines the bidirectional relation.
 	 * No need to additionally call {@link #mappedBy(SerializableFunction)} or {@link #mappedBy(Column)}.
 	 * 
-	 * If the relationship is already defined through {@link #mappedBy(Column)} or {@link #mappedBy(SerializableFunction)} then there's no
+	 * If the relation is already defined through {@link #mappedBy(Column)} or {@link #mappedBy(SerializableFunction)} then there's no
 	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToManyRelationConfigurer}.
 	 * 
 	 * Signature note : given consumer accepts "? super C" to allow given method to return an abstraction of current mapping definition, especially
@@ -30,10 +30,10 @@ public interface OneToManyOptions<C, I, O, S extends Collection<O>> extends Casc
 	OneToManyOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink);
 	
 	/**
-	 * Defines the bidirectional relationship stored in target entity table.
+	 * Defines the bidirectional relation stored in target entity table.
 	 * No need to additionally call {@link #mappedBy(SerializableBiConsumer)} or {@link #mappedBy(Column)}.
 	 *
-	 * If the relationship is already defined through {@link #mappedBy(Column)} or {@link #mappedBy(SerializableBiConsumer)} then there's no
+	 * If the relation is already defined through {@link #mappedBy(Column)} or {@link #mappedBy(SerializableBiConsumer)} then there's no
 	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToManyRelationConfigurer}.
 	 *
 	 *
@@ -46,17 +46,30 @@ public interface OneToManyOptions<C, I, O, S extends Collection<O>> extends Casc
 	OneToManyOptions<C, I, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink);
 	
 	/**
-	 * Defines reverse side owner.
+	 * Defines reverse side owning column.
 	 * Note that defining it this way will not allow relation to be fixed in memory (after select in database), prefer {@link #mappedBy(SerializableBiConsumer)}.
-	 * Use this method to define unidirectional relationship.
+	 * Use this method to define unidirectional relation.
 	 *
-	 * If the relationship is already defined through {@link #mappedBy(SerializableFunction)} or {@link #mappedBy(SerializableBiConsumer)} then there's no
+	 * If the relation is already defined through {@link #mappedBy(SerializableFunction)} or {@link #mappedBy(SerializableBiConsumer)} then there's no
 	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToManyRelationConfigurer}.
 	 * 
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	OneToManyOptions<C, I, O, S> mappedBy(Column<Table, ?> reverseLink);
+	OneToManyOptions<C, I, O, S> mappedBy(Column<?, I> reverseLink);
+	
+	/**
+	 * Defines reverse side owning column name.
+	 * Note that defining it this way will not allow relation to be fixed in memory (after select in database), prefer {@link #mappedBy(SerializableBiConsumer)}.
+	 * Use this method to define unidirectional relation.
+	 *
+	 * If the relation is already defined through {@link #mappedBy(SerializableFunction)} or {@link #mappedBy(SerializableBiConsumer)} then there's no
+	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToManyRelationConfigurer}.
+	 *
+	 * @param reverseColumnName opposite owner of the relation
+	 * @return the global mapping configurer
+	 */
+	OneToManyOptions<C, I, O, S> mappedBy(String reverseColumnName);
 	
 	/**
 	 * Defines setter of current entity on target entity, which is only interesting while dealing with relation mapped
@@ -91,6 +104,7 @@ public interface OneToManyOptions<C, I, O, S extends Collection<O>> extends Casc
 	 * Activates entity order persistence and indicates {@link Column} to be used for it.
 	 * Collection that stores data is expected to support ordering by index (as List or LinkedHashSet)
 	 *
+	 * @param orderingColumn the column to be used for order persistence
 	 * @return the global mapping configurer
 	 */
 	OneToManyOptions<C, I, O, S> indexedBy(Column<?, Integer> orderingColumn);
@@ -99,6 +113,7 @@ public interface OneToManyOptions<C, I, O, S extends Collection<O>> extends Casc
 	 * Activates entity order persistence and indicates column name to be used for it.
 	 * Collection that stores data is expected to support ordering by index (as List or LinkedHashSet)
 	 *
+	 * @param columnName the column name to be used for order persistence
 	 * @return the global mapping configurer
 	 */
 	OneToManyOptions<C, I, O, S> indexedBy(String columnName);

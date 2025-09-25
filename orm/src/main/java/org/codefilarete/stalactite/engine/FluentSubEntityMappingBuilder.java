@@ -103,17 +103,21 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 	 * @return a enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
 	 * @see #mapOneToMany(SerializableFunction, EntityMappingConfigurationProvider)
 	 */
-	<O, J, S extends Collection<O>>
+	default <O, J, S extends Collection<O>>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
+		return mapOneToMany(getter, mappingConfiguration, null);
+	}
 	
 	<O, J, S extends Collection<O>, T extends Table>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
 	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
-	<O, J, S extends Collection<O>, T extends Table>
+	default <O, J, S extends Collection<O>>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	mapOneToMany(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
+		return mapOneToMany(setter, mappingConfiguration, null);
+	}
 	
 	<O, J, S extends Collection<O>, T extends Table>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
@@ -268,6 +272,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 	interface FluentMappingBuilderOneToManyOptions<C, I, O, S extends Collection<O>> extends FluentSubEntityMappingBuilder<C, I>, OneToManyOptions<C, I, O, S> {
 		
 		/**
+		 * {@inheritDoc}
 		 * Declaration overridden to adapt return type to this class.
 		 *
 		 * @param reverseLink opposite owner of the relation (setter)
@@ -277,6 +282,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink);
 		
 		/**
+		 * {@inheritDoc}
 		 * Declaration overridden to adapt return type to this class.
 		 *
 		 * @param reverseLink opposite owner of the relation (setter)
@@ -286,29 +292,90 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink);
 		
 		/**
+		 * {@inheritDoc}
 		 * Declaration overridden to adapt return type to this class.
 		 *
 		 * @param reverseLink opposite owner of the relation (setter)
 		 * @return the global mapping configurer
 		 */
 		@Override
-		FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(Column<Table, ?> reverseLink);
+		FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(Column<?, I> reverseLink);
 		
+		/**
+		 * {@inheritDoc}
+		 * Declaration overridden to adapt return type to this class.
+		 *
+		 * @param reverseColumnName opposite owner of the relation
+		 * @return the global mapping configurer
+		 */
+		@Override
+		FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(String reverseColumnName);
+
+		/**
+		 * {@inheritDoc}
+		 * Declaration overridden to adapt return type to this class.
+		 *
+		 * @param reverseLink opposite owner of the relation
+		 * @return the global mapping configurer
+		 */
 		@Override
 		FluentMappingBuilderOneToManyOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
 		
+		/**
+		 * {@inheritDoc}
+		 * Declaration overridden to adapt return type to this class.
+		 *
+		 * @param collectionFactory a collection factory
+		 * @return the global mapping configurer
+		 */
 		@Override
 		FluentMappingBuilderOneToManyOptions<C, I, O, S> initializeWith(Supplier<S> collectionFactory);
 		
+		/**
+		 * {@inheritDoc}
+		 * Declaration overridden to adapt return type to this class.
+		 *
+		 * @param relationMode any {@link RelationMode}
+		 * @return the global mapping configurer
+		 */
 		@Override
 		FluentMappingBuilderOneToManyOptions<C, I, O, S> cascading(RelationMode relationMode);
 		
+		/**
+		 * {@inheritDoc}
+		 * Declaration overridden to adapt return type to this class.
+		 *
+		 * @return the global mapping configurer
+		 */
+		@Override
+		FluentMappingBuilderOneToManyOptions<C, I, O, S> fetchSeparately();
+		
+		/**
+		 * {@inheritDoc}
+		 * Declaration overridden to adapt return type to this class.
+		 *
+		 * @param orderingColumn orderingColumn the column to be used for order persistence
+		 * @return the global mapping configurer
+		 */
 		@Override
 		FluentMappingBuilderOneToManyOptions<C, I, O, S> indexedBy(Column<?, Integer> orderingColumn);
 		
+		/**
+		 * {@inheritDoc}
+		 * Declaration overridden to adapt return type to this class.
+		 *
+		 * @param columnName the column name to be used for order persistence
+		 * @return the global mapping configurer
+		 */
 		@Override
 		FluentMappingBuilderOneToManyOptions<C, I, O, S> indexedBy(String columnName);
 		
+		/**
+		 * {@inheritDoc}
+		 * Declaration overridden to adapt return type to this class.
+		 *
+		 * @return the global mapping configurer
+		 */
 		@Override
 		FluentMappingBuilderOneToManyOptions<C, I, O, S> indexed();
 		

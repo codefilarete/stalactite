@@ -161,6 +161,15 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 		this.mappedByConfiguration.reverseColumn = (Column<Table<?>, Object>) reverseColumn;
 	}
 	
+	@Nullable
+	public String getReverseColumnName() {
+		return this.mappedByConfiguration.reverseColumnName;
+	}
+	
+	public void setReverseColumn(@Nullable String reverseColumnName) {
+		this.mappedByConfiguration.reverseColumnName = reverseColumnName;
+	}
+	
 	public ValueAccessPointMap<SRC, Column<Table<?>, Object>> getForeignKeyColumnMapping() {
 		return this.mappedByConfiguration.getForeignKeyColumnMapping();
 	}
@@ -257,6 +266,8 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 		 * Its type is undetermined (not forced at SRC) because it can only be a reference, such as an id.
 		 */
 		private Column<Table<?>, Object> reverseColumn;
+		
+		private String reverseColumnName;
 		
 		private final ValueAccessPointMap<SRC, Column<Table<?>, Object>> foreignKeyColumnMapping = new ValueAccessPointMap<>();
 		

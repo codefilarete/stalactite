@@ -381,13 +381,6 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	}
 	
 	@Override
-	public <O, J, S extends Collection<O>> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
-			SerializableFunction<C, S> getter,
-			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
-		return mapOneToMany(getter, mappingConfiguration, null);
-	}
-		
-	@Override
 	public <O, J, S extends Collection<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
 			SerializableFunction<C, S> getter,
 			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration,
@@ -400,13 +393,6 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				new AccessorByMethod<C, S>(captureMethod(getter)).toMutator());
 		return mapOneToMany(propertyAccessor, getterReference, mappingConfiguration, table);
-	}
-	
-	@Override
-	public <O, J, S extends Collection<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
-			SerializableBiConsumer<C, S> setter,
-			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
-		return mapOneToMany(setter, mappingConfiguration, null);
 	}
 	
 	@Override
