@@ -254,18 +254,14 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					
 					@Override
 					public EnumOptions<E> byName() {
-						setLinkageParameterBinder(EnumBindType.NAME);
+						linkage.setEnumBindType(EnumBindType.NAME);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
 					public EnumOptions<E> byOrdinal() {
-						setLinkageParameterBinder(EnumBindType.ORDINAL);
+						linkage.setEnumBindType(EnumBindType.ORDINAL);
 						return null;	// we can return null because dispatcher will return proxy
-					}
-					
-					private void setLinkageParameterBinder(EnumBindType ordinal) {
-						linkage.setParameterBinder(ordinal.newParameterBinder(linkage.getColumnType()));
 					}
 					
 					@Override
@@ -403,6 +399,9 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		/** Optional binder for this mapping */
 		private ParameterBinder<?> parameterBinder;
 		
+		@Nullable
+		private EnumBindType enumBindType;
+		
 		private boolean nullable = true;
 		
 		private boolean setByConstructor = false;
@@ -436,10 +435,6 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 			this.accessor = new AccessorFieldLazyInitializer();
 		}
 		
-		public void setParameterBinder(ParameterBinder<?> parameterBinder) {
-			this.parameterBinder = parameterBinder;
-		}
-		
 		SerializableFunction<T, O> getGetter() {
 			return getter;
 		}
@@ -452,6 +447,20 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		@Nullable
 		public ParameterBinder<Object> getParameterBinder() {
 			return (ParameterBinder<Object>) parameterBinder;
+		}
+		
+		public void setParameterBinder(@Nullable ParameterBinder<?> parameterBinder) {
+			this.parameterBinder = parameterBinder;
+		}
+		
+		@Override
+		@Nullable
+		public EnumBindType getEnumBindType() {
+			return enumBindType;
+		}
+		
+		public void setEnumBindType(@Nullable EnumBindType enumBindType) {
+			this.enumBindType = enumBindType;
 		}
 		
 		@Override

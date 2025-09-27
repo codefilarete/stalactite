@@ -40,9 +40,11 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry.EnumBindType;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.VisibleForTesting;
+import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
@@ -62,20 +64,20 @@ import static org.codefilarete.tool.collection.Iterables.stream;
  * Designed as such as its instances can be reused (no constructor, attributes are set through
  * {@link #build()}
  * therefore they are not thread-safe. This was made to avoid extra instance creation because this class is used in some loops.
- * 
+ *
  * Whereas it consumes an {@link BeanMappingConfiguration} it doesn't mean that its goal is to manage embedded beans of an entity : as its
  * name says it's aimed at collecting mapping of any beans, without the entity part (understanding identification and inheritance which is targeted
  * by {@link PersisterBuilderImpl})
- * 
+ *
  * @author Guillaume Mary
- * @see #build()    
+ * @see #build()
  */
 public class BeanMappingBuilder<C, T extends Table<T>> {
 	
 	/**
 	 * Iterates over configuration to look for any property defining a {@link Column} to use, its table would be the one to be used by builder.
 	 * Throws an exception if several tables are found during iteration.
-	 * 
+	 *
 	 * @param mappingConfiguration the configuration to look up for any overriding {@link Column}
 	 * @return null if no {@link Table} was found (meaning that builder is free to create one)
 	 */
@@ -215,7 +217,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		InternalProcessor internalProcessor = new InternalProcessor(onlyExtraTableLinkages);
 		// converting direct mapping
 		internalProcessor.includeDirectMapping(this.mainMappingConfiguration, null, new ValueAccessPointMap<>(), new ValueAccessPointMap<>(), new ValueAccessPointSet<>());
-		// adding embeddable (no particular thought about order compared to previous direct mapping) 
+		// adding embeddable (no particular thought about order compared to previous direct mapping)
 		internalProcessor.includeEmbeddedMapping();
 		return internalProcessor.result;
 	}
@@ -227,7 +229,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 	/**
 	 * Internal engine driven by {@link #build()} method.
 	 * Made to store result in another class than main one and decouple configuration from process.
-	 * 
+	 *
 	 * @author Guillaume Mary
 	 */
 	protected class InternalProcessor {
@@ -314,11 +316,28 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		protected <O> Column<T, O> addColumnToTable(Linkage<C, O> linkage, String columnName) {
 			Column<T, O> addedColumn;
 			Class<O> columnType;
-			if (linkage.getParameterBinder() != null) {
-				// when a parameter binder is defined, then the column type must be binder one
-				columnType = linkage.getParameterBinder().getColumnType();
+			if (linkage.getColumnType().isEnum()) {
+				if (linkage.getEnumBindType() == null) {
+					columnType = (Class<O>) Integer.class;
+				} else {
+					switch (linkage.getEnumBindType()) {
+						case NAME:
+							columnType = (Class<O>) String.class;
+							break;
+						case ORDINAL:
+							columnType = (Class<O>) Integer.class;
+							break;
+						default:
+							columnType = (Class<O>) Integer.class;
+					}
+				}
 			} else {
-				columnType = linkage.getColumnType();
+				if (linkage.getParameterBinder() != null) {
+					// when a parameter binder is defined, then the column type must be binder one
+					columnType = linkage.getParameterBinder().getColumnType();
+				} else {
+					columnType = linkage.getColumnType();
+				}
 			}
 			addedColumn = targetTable.addColumn(columnName, columnType);
 			addedColumn.setNullable(linkage.isNullable());
@@ -330,7 +349,10 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		}
 		
 		protected <O> void ensureColumnBindingInRegistry(Linkage<C, O> linkage, Column<?, O> column) {
-			if (linkage.getParameterBinder() != null) {
+			if (linkage.getColumnType().isEnum()) {
+				EnumBindType enumBindType = Objects.preventNull(linkage.getEnumBindType(), EnumBindType.ORDINAL);
+				columnBinderRegistry.register(column, enumBindType.newParameterBinder((Class<Enum>) linkage.getColumnType()));
+			} else if (linkage.getParameterBinder() != null) {
 				columnBinderRegistry.register(column, (ParameterBinder<O>) linkage.getParameterBinder());
 			} else {
 				try {
@@ -597,6 +619,12 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 						return embeddableLinkage.getParameterBinder();
 					}
 					
+					@Nullable
+					@Override
+					public EnumBindType getEnumBindType() {
+						return embeddableLinkage.getEnumBindType();
+					}
+					
 					@Override
 					public boolean isNullable() {
 						return false;
@@ -718,6 +746,12 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 					@Nullable
 					public ParameterBinder<Object> getParameterBinder() {
 						return embeddableLinkage.getParameterBinder();
+					}
+					
+					@Nullable
+					@Override
+					public EnumBindType getEnumBindType() {
+						return embeddableLinkage.getEnumBindType();
 					}
 					
 					@Override
@@ -887,6 +921,13 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 			
 			@Nullable
 			ParameterBinder<Object> getParameterBinder();
+			
+			/**
+			 * Gives the choice made by the user to define how to bind enum values: by name or ordinal.
+			 * @return null if no info was given
+			 */
+			@Nullable
+			EnumBindType getEnumBindType();
 			
 			boolean isNullable();
 			

@@ -20,6 +20,7 @@ import org.codefilarete.stalactite.engine.model.compositekey.Pet.Cat;
 import org.codefilarete.stalactite.engine.model.compositekey.Pet.CatBreed;
 import org.codefilarete.stalactite.engine.model.compositekey.Pet.Dog;
 import org.codefilarete.stalactite.engine.model.compositekey.Pet.PetId;
+import org.codefilarete.stalactite.engine.model.compositekey.Pet.PetType;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -95,7 +96,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_PERSON_HOUSEID_HOUSE_ID", "PERSON", "HOUSEID", "HOUSE", "ID");
 			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 		}
-
+		
 		@Test
 		void oneToOne_compositeToSingleKey_relationOwnedByTarget() throws SQLException {
 			entityBuilder(Person.class, PersonId.class)
@@ -141,7 +142,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
-
+			
 			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
 			ResultSet exportedKeysForPersonTable = currentConnection.getMetaData().getExportedKeys(null, null, "HOUSE");
 			Map<String, JdbcForeignKey> foreignKeyPerName = giveForeignKeys(exportedKeysForPersonTable);
@@ -182,7 +183,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		
 		@Test
 		void oneToMany_compositeToCompositeKey_withAssociationTable() throws SQLException {
-			EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
+			EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
 					.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 							.map(PersonId::getFirstName)
 							.map(PersonId::getLastName)
@@ -201,13 +202,13 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
 			ResultSet exportedKeysForPersonTable = currentConnection.getMetaData().getExportedKeys(null, null,
 					((ConfiguredPersister) persistenceContext.getPersister(Person.class)).getMapping().getTargetTable().getName().toUpperCase());
-			Map<String, JdbcForeignKey> foreignKeyPerName =  giveForeignKeys(exportedKeysForPersonTable);
+			Map<String, JdbcForeignKey> foreignKeyPerName = giveForeignKeys(exportedKeysForPersonTable);
 			JdbcForeignKey foundForeignKey = Iterables.first(foreignKeyPerName).getValue();
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_47CDB94D", "PERSON_PETS", "PERSON_FIRSTNAME, PERSON_LASTNAME, PERSON_ADDRESS", "PERSON", "FIRSTNAME, LASTNAME, ADDRESS");
 			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 			
 			ResultSet exportedKeysForPetTable = currentConnection.getMetaData().getExportedKeys(null, null, "PET");
-			foreignKeyPerName =  giveForeignKeys(exportedKeysForPetTable);
+			foreignKeyPerName = giveForeignKeys(exportedKeysForPetTable);
 			foundForeignKey = Iterables.first(foreignKeyPerName).getValue();
 			expectedForeignKey = new JdbcForeignKey("FK_3124176C", "PERSON_PETS", "PETS_NAME, PETS_RACE, PETS_AGE", "PET", "NAME, RACE, AGE");
 			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
@@ -361,169 +362,173 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		assertThat(columnNameReader.convert()).containsExactlyInAnyOrder("AGE", "FIRSTNAME", "FAMILYNAME", "ADDRESS");
 	}
 	
-	@Test
-	void crud_oneToOne_compositeToSingleKey_ownedBySource() {
-		EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
-				.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
-						.map(PersonId::getFirstName)
-						.map(PersonId::getLastName)
-						.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
-				.map(Person::getAge)
-				.mapOneToOne(Person::getHouse, entityBuilder(House.class, Long.class)
-						.mapKey(House::getId, IdentifierPolicy.databaseAutoIncrement()))
-				.build(persistenceContext);
+	@Nested
+	class CRUDOneToOne {
 		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
+		@Test
+		void compositeToSingleKey_ownedBySource() {
+			EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
+					.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
+							.map(PersonId::getFirstName)
+							.map(PersonId::getLastName)
+							.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
+					.map(Person::getAge)
+					.mapOneToOne(Person::getHouse, entityBuilder(House.class, Long.class)
+							.mapKey(House::getId, IdentifierPolicy.databaseAutoIncrement()))
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person dummyPerson = new Person(new PersonId("John", "Do", "nowhere"));
+			dummyPerson.setHouse(new House());
+			dummyPerson.setAge(35);
+			
+			personPersister.insert(dummyPerson);
+			
+			Person loadedPerson = personPersister.select(dummyPerson.getId());
+			assertThat(loadedPerson.getHouse().getId()).isEqualTo(1);
+			
+			dummyPerson.setAge(36);
+			personPersister.update(dummyPerson, loadedPerson, true);
+			Table personTable = new Table("Person");
+			Column<Table, Integer> age = personTable.addColumn("age", int.class);
+			List<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
+			assertThat(ages).containsExactly(36);
+			
+			personPersister.delete(dummyPerson);
+			ages = persistenceContext.select(SerializableFunction.identity(), age);
+			assertThat(ages).isEmpty();
+		}
 		
-		Person dummyPerson = new Person(new PersonId("John", "Do", "nowhere"));
-		dummyPerson.setHouse(new House());
-		dummyPerson.setAge(35);
+		@Test
+		void compositeToSingleKey_ownedByTarget() {
+			EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
+					.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
+							.map(PersonId::getFirstName)
+							.map(PersonId::getLastName)
+							.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
+					.map(Person::getAge)
+					.mapOneToOne(Person::getHouse, entityBuilder(House.class, Long.class)
+							.mapKey(House::getId, IdentifierPolicy.databaseAutoIncrement()))
+					.mappedBy(House::getOwner)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person dummyPerson = new Person(new PersonId("John", "Do", "nowhere"));
+			dummyPerson.setHouse(new House());
+			dummyPerson.setAge(35);
+			
+			personPersister.insert(dummyPerson);
+			
+			Person loadedPerson = personPersister.select(dummyPerson.getId());
+			assertThat(loadedPerson.getHouse().getId()).isEqualTo(1);
+			
+			dummyPerson.setAge(36);
+			personPersister.update(dummyPerson, loadedPerson, true);
+			Table personTable = new Table("Person");
+			Column<Table, Integer> age = personTable.addColumn("age", int.class);
+			List<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
+			assertThat(ages).containsExactly(36);
+			
+			personPersister.delete(dummyPerson);
+			ages = persistenceContext.select(SerializableFunction.identity(), age);
+			assertThat(ages).isEmpty();
+		}
 		
-		personPersister.insert(dummyPerson);
+		@Test
+		void compositeToCompositeKey_ownedBySource() {
+			EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
+					.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
+							.map(PersonId::getFirstName)
+							.map(PersonId::getLastName)
+							.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
+					.map(Person::getAge)
+					.mapOneToOne(Person::getHouse, entityBuilder(House.class, HouseId.class)
+							.mapCompositeKey(House::getHouseId, compositeKeyBuilder(HouseId.class)
+									.map(HouseId::getNumber)
+									.map(HouseId::getStreet)
+									.map(HouseId::getZipCode)
+									.map(HouseId::getCity), h -> persistedHouses.add(h.getHouseId()), h -> persistedHouses.contains(h.getHouseId()))
+					)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person dummyPerson = new Person(new PersonId("John", "Do", "nowhere"));
+			dummyPerson.setHouse(new House(new HouseId(42, "Stalactite street", "888", "CodeFilarete City")));
+			dummyPerson.setAge(35);
+			
+			personPersister.insert(dummyPerson);
+			
+			Person loadedPerson = personPersister.select(dummyPerson.getId());
+			assertThat(loadedPerson.getHouse().getHouseId())
+					.usingRecursiveComparison()
+					.isEqualTo(new HouseId(42, "Stalactite street", "888", "CodeFilarete City"));
+			
+			dummyPerson.setAge(36);
+			personPersister.update(dummyPerson, loadedPerson, true);
+			Table personTable = new Table("Person");
+			Column<Table, Integer> age = personTable.addColumn("age", int.class);
+			List<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
+			assertThat(ages).containsExactly(36);
+			
+			personPersister.delete(dummyPerson);
+			ages = persistenceContext.select(SerializableFunction.identity(), age);
+			assertThat(ages).isEmpty();
+		}
 		
-		Person loadedPerson = personPersister.select(dummyPerson.getId());
-		assertThat(loadedPerson.getHouse().getId()).isEqualTo(1);
-		
-		dummyPerson.setAge(36);
-		personPersister.update(dummyPerson, loadedPerson, true);
-		Table personTable = new Table("Person");
-		Column<Table, Integer> age = personTable.addColumn("age", int.class);
-		List<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
-		assertThat(ages).containsExactly(36);
-		
-		personPersister.delete(dummyPerson);
-		ages = persistenceContext.select(SerializableFunction.identity(), age);
-		assertThat(ages).isEmpty();
-	}
-
-	@Test
-	void crud_oneToOne_compositeToSingleKey_ownedByTarget() {
-		EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
-				.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
-						.map(PersonId::getFirstName)
-						.map(PersonId::getLastName)
-						.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
-				.map(Person::getAge)
-				.mapOneToOne(Person::getHouse, entityBuilder(House.class, Long.class)
-						.mapKey(House::getId, IdentifierPolicy.databaseAutoIncrement()))
-				.mappedBy(House::getOwner)
-				.build(persistenceContext);
-		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		Person dummyPerson = new Person(new PersonId("John", "Do", "nowhere"));
-		dummyPerson.setHouse(new House());
-		dummyPerson.setAge(35);
-		
-		personPersister.insert(dummyPerson);
-		
-		Person loadedPerson = personPersister.select(dummyPerson.getId());
-		assertThat(loadedPerson.getHouse().getId()).isEqualTo(1);
-		
-		dummyPerson.setAge(36);
-		personPersister.update(dummyPerson, loadedPerson, true);
-		Table personTable = new Table("Person");
-		Column<Table, Integer> age = personTable.addColumn("age", int.class);
-		List<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
-		assertThat(ages).containsExactly(36);
-		
-		personPersister.delete(dummyPerson);
-		ages = persistenceContext.select(SerializableFunction.identity(), age);
-		assertThat(ages).isEmpty();
-	}
-	
-	@Test
-	void crud_oneToOne_compositeToCompositeKey_ownedBySource() {
-		EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
-				.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
-						.map(PersonId::getFirstName)
-						.map(PersonId::getLastName)
-						.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
-				.map(Person::getAge)
-				.mapOneToOne(Person::getHouse, entityBuilder(House.class, HouseId.class)
-						.mapCompositeKey(House::getHouseId, compositeKeyBuilder(HouseId.class)
-								.map(HouseId::getNumber)
-								.map(HouseId::getStreet)
-								.map(HouseId::getZipCode)
-								.map(HouseId::getCity), h -> persistedHouses.add(h.getHouseId()), h -> persistedHouses.contains(h.getHouseId()))
-						)
-				.build(persistenceContext);
-		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		Person dummyPerson = new Person(new PersonId("John", "Do", "nowhere"));
-		dummyPerson.setHouse(new House(new HouseId(42, "Stalactite street", "888", "CodeFilarete City")));
-		dummyPerson.setAge(35);
-		
-		personPersister.insert(dummyPerson);
-		
-		Person loadedPerson = personPersister.select(dummyPerson.getId());
-		assertThat(loadedPerson.getHouse().getHouseId())
-				.usingRecursiveComparison()
-				.isEqualTo(new HouseId(42, "Stalactite street", "888", "CodeFilarete City"));
-		
-		dummyPerson.setAge(36);
-		personPersister.update(dummyPerson, loadedPerson, true);
-		Table personTable = new Table("Person");
-		Column<Table, Integer> age = personTable.addColumn("age", int.class);
-		List<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
-		assertThat(ages).containsExactly(36);
-		
-		personPersister.delete(dummyPerson);
-		ages = persistenceContext.select(SerializableFunction.identity(), age);
-		assertThat(ages).isEmpty();
-	}
-	
-	@Test
-	void crud_oneToOne_compositeToCompositeKey_ownedByTarget() {
-		EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
-				.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
-						.map(PersonId::getFirstName)
-						.map(PersonId::getLastName)
-						.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
-				.map(Person::getAge)
-				.mapOneToOne(Person::getHouse, entityBuilder(House.class, HouseId.class)
-						.mapCompositeKey(House::getHouseId, compositeKeyBuilder(HouseId.class)
-								.map(HouseId::getNumber)
-								.map(HouseId::getStreet)
-								.map(HouseId::getZipCode)
-								.map(HouseId::getCity), h -> persistedHouses.add(h.getHouseId()), h -> persistedHouses.contains(h.getHouseId()))
-				)
-				.mappedBy(House::getOwner)
-				.build(persistenceContext);
-		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		Person dummyPerson = new Person(new PersonId("John", "Do", "nowhere"));
-		dummyPerson.setHouse(new House(new HouseId(42, "Stalactite street", "888", "CodeFilarete City")));
-		dummyPerson.setAge(35);
-		
-		personPersister.insert(dummyPerson);
-		
-		Person loadedPerson = personPersister.select(dummyPerson.getId());
-		assertThat(loadedPerson.getHouse().getHouseId())
-				.usingRecursiveComparison()
-				.isEqualTo(new HouseId(42, "Stalactite street", "888", "CodeFilarete City"));
-		
-		dummyPerson.setAge(36);
-		personPersister.update(dummyPerson, loadedPerson, true);
-		Table personTable = new Table("Person");
-		Column<Table, Integer> age = personTable.addColumn("age", int.class);
-		List<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
-		assertThat(ages).containsExactly(36);
-		
-		personPersister.delete(dummyPerson);
-		ages = persistenceContext.select(SerializableFunction.identity(), age);
-		assertThat(ages).isEmpty();
+		@Test
+		void compositeToCompositeKey_ownedByTarget() {
+			EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
+					.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
+							.map(PersonId::getFirstName)
+							.map(PersonId::getLastName)
+							.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
+					.map(Person::getAge)
+					.mapOneToOne(Person::getHouse, entityBuilder(House.class, HouseId.class)
+							.mapCompositeKey(House::getHouseId, compositeKeyBuilder(HouseId.class)
+									.map(HouseId::getNumber)
+									.map(HouseId::getStreet)
+									.map(HouseId::getZipCode)
+									.map(HouseId::getCity), h -> persistedHouses.add(h.getHouseId()), h -> persistedHouses.contains(h.getHouseId()))
+					)
+					.mappedBy(House::getOwner)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person dummyPerson = new Person(new PersonId("John", "Do", "nowhere"));
+			dummyPerson.setHouse(new House(new HouseId(42, "Stalactite street", "888", "CodeFilarete City")));
+			dummyPerson.setAge(35);
+			
+			personPersister.insert(dummyPerson);
+			
+			Person loadedPerson = personPersister.select(dummyPerson.getId());
+			assertThat(loadedPerson.getHouse().getHouseId())
+					.usingRecursiveComparison()
+					.isEqualTo(new HouseId(42, "Stalactite street", "888", "CodeFilarete City"));
+			
+			dummyPerson.setAge(36);
+			personPersister.update(dummyPerson, loadedPerson, true);
+			Table personTable = new Table("Person");
+			Column<Table, Integer> age = personTable.addColumn("age", int.class);
+			List<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
+			assertThat(ages).containsExactly(36);
+			
+			personPersister.delete(dummyPerson);
+			ages = persistenceContext.select(SerializableFunction.identity(), age);
+			assertThat(ages).isEmpty();
+		}
 	}
 	
 	@Test
 	void crud_oneToMany_ownedByTarget() {
-		EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
+		EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
 				.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 						.map(PersonId::getFirstName)
 						.map(PersonId::getLastName)
@@ -571,7 +576,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	
 	@Test
 	void crud_oneToMany_withAssociationTable() {
-		EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
+		EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
 				.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 						.map(PersonId::getFirstName)
 						.map(PersonId::getLastName)
@@ -616,7 +621,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	
 	@Test
 	void crud_manyToMany() {
-		EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
+		EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
 				.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 						.map(PersonId::getFirstName)
 						.map(PersonId::getLastName)
@@ -660,11 +665,59 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	}
 	
 	@Nested
+	class WithEnum {
+		
+		@Test
+		void byOrdinal() {
+			EntityPersister<Pet, PetId> petPersister = entityBuilder(Pet.class, PetId.class)
+					.mapCompositeKey(Pet::getId, compositeKeyBuilder(PetId.class)
+							.map(PetId::getName)
+							.mapEnum(PetId::getType)
+							.map(PetId::getAge), p -> persistedPets.add(p.getId()), p -> persistedPets.contains(p.getId()))
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Pet dummyPet = new Pet(new PetId("Pluto", PetType.Dog, 4));
+			petPersister.persist(dummyPet);
+			
+			Pet loadedPet = petPersister.select(dummyPet.getId());
+			assertThat(loadedPet)
+					// we don't take "owner" into account because Person doesn't implement equals/hashcode
+					.usingRecursiveComparison()
+					.isEqualTo(dummyPet);
+		}
+		
+		@Test
+		void byName() {
+			EntityPersister<Pet, PetId> petPersister = entityBuilder(Pet.class, PetId.class)
+					.mapCompositeKey(Pet::getId, compositeKeyBuilder(PetId.class)
+							.map(PetId::getName)
+							.mapEnum(PetId::getType).byName()
+							.map(PetId::getAge), p -> persistedPets.add(p.getId()), p -> persistedPets.contains(p.getId()))
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Pet dummyPet = new Pet(new PetId("Pluto", PetType.Dog, 4));
+			petPersister.persist(dummyPet);
+			
+			Pet loadedPet = petPersister.select(dummyPet.getId());
+			assertThat(loadedPet)
+					// we don't take "owner" into account because Person doesn't implement equals/hashcode
+					.usingRecursiveComparison()
+					.isEqualTo(dummyPet);
+		}
+	}
+	
+	@Nested
 	class Persist {
 		
 		@Test
 		void oneToMany() {
-			EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
+			EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
 					.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 							.map(PersonId::getFirstName)
 							.map(PersonId::getLastName)
@@ -714,7 +767,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		
 		@Test
 		void manyToMany() {
-			EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
+			EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
 					.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 							.map(PersonId::getFirstName)
 							.map(PersonId::getLastName)
@@ -760,7 +813,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		
 		@Test
 		void oneToMany_manyTypeIsCompositeKeyAndPolymorphic() {
-			EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
+			EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
 					.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 							.map(PersonId::getFirstName)
 							.map(PersonId::getLastName)
@@ -808,7 +861,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		
 		@Test
 		<T extends Table<T>> void oneToMany_manyTypeIsCompositeKeyAndPolymorphic_realLife() {
-			EntityPersister<Person, PersonId> personPersister =  entityBuilder(Person.class, PersonId.class)
+			EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
 					.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
 							.map(PersonId::getFirstName)
 							.map(PersonId::getLastName)
@@ -861,12 +914,13 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		PersistenceContext persistenceContext2 = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
 		PersistenceContext persistenceContext3 = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
 		Object[][] result = new Object[][] {
-				{	"single table",
+				{ "single table",
 						entityBuilder(Pet.class, PetId.class)
 								.mapCompositeKey(Pet::getId, compositeKeyBuilder(PetId.class)
 										.map(PetId::getName)
 										.map(PetId::getRace)
-										.map(PetId::getAge), p -> {}, p -> false)
+										.map(PetId::getAge), p -> {
+								}, p -> false)
 								.mapPolymorphism(PolymorphismPolicy.singleTable(Pet.class)
 										.addSubClass(subentityBuilder(Cat.class)
 												.mapEnum(Cat::getCatBreed), "Pet")
@@ -874,12 +928,13 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 												.mapEnum(Dog::getDogBreed), "Dog")
 								).build(persistenceContext1)
 				},
-				{	"joined tables",
+				{ "joined tables",
 						entityBuilder(Pet.class, PetId.class)
 								.mapCompositeKey(Pet::getId, compositeKeyBuilder(PetId.class)
 										.map(PetId::getName)
 										.map(PetId::getRace)
-										.map(PetId::getAge), p -> {}, p -> false)
+										.map(PetId::getAge), p -> {
+								}, p -> false)
 								.mapPolymorphism(PolymorphismPolicy.joinTable(Pet.class)
 										.addSubClass(subentityBuilder(Cat.class)
 												.mapEnum(Cat::getCatBreed))
@@ -887,12 +942,13 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 												.mapEnum(Dog::getDogBreed))
 								).build(persistenceContext2)
 				},
-				{	"table per class",
+				{ "table per class",
 						entityBuilder(Pet.class, PetId.class)
 								.mapCompositeKey(Pet::getId, compositeKeyBuilder(PetId.class)
 										.map(PetId::getName)
 										.map(PetId::getRace)
-										.map(PetId::getAge), p -> {}, p -> false)
+										.map(PetId::getAge), p -> {
+								}, p -> false)
 								.mapPolymorphism(PolymorphismPolicy.tablePerClass(Pet.class)
 										.addSubClass(subentityBuilder(Cat.class)
 												.mapEnum(Cat::getCatBreed))
@@ -1081,6 +1137,5 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 			catBreed = persistenceContext.newQuery("select catBreed from Cat", String.class).mapKey("name", String.class).execute(Accumulators.getFirst());
 			assertThat(catBreed).isNull();
 		}
-	
 	}
 }

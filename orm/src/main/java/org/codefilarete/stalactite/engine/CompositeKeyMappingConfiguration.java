@@ -8,6 +8,7 @@ import java.util.List;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.configurer.FluentCompositeKeyMappingConfigurationSupport.Inset;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry.EnumBindType;
 
 /**
  * Defines elements needed to configure a mapping of an embeddable class
@@ -48,5 +49,12 @@ public interface CompositeKeyMappingConfiguration<C> {
 		
 		@Nullable
 		ParameterBinder<Object> getParameterBinder();
+		
+		/**
+		 * Gives the choice made by the user to define how to bind enum values: by name or ordinal.
+		 * @return null if no info was given
+		 */
+		@Nullable
+		EnumBindType getEnumBindType();
 	}
 }

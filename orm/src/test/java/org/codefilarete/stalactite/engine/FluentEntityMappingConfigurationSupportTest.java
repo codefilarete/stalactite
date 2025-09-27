@@ -1871,122 +1871,153 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 	}
 	
-	@Test
-	void withEnum_byDefault_ordinalIsUsed() {
-		ConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = (ConfiguredPersister<PersonWithGender, Identifier<Long>>) MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
-				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.map(Person::getName)
-				// no type of mapping given: neither ordinal nor name
-				.mapEnum(PersonWithGender::getGender)
-				.build(persistenceContext);
+	@Nested
+	class MapEnum {
 		
-		Column gender = (Column) personPersister.getMapping().getTargetTable().mapColumnsOnName().get("gender");
-		dialect.getSqlTypeRegistry().put(gender, "VARCHAR(255)");
+		@Test
+		void byDefault_ordinalIsUsed() {
+			ConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = (ConfiguredPersister<PersonWithGender, Identifier<Long>>) MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					// no type of mapping given: neither ordinal nor name
+					.mapEnum(PersonWithGender::getGender)
+					.build(persistenceContext);
+			
+			Column gender = (Column) personPersister.getMapping().getTargetTable().mapColumnsOnName().get("gender");
+			dialect.getSqlTypeRegistry().put(gender, "VARCHAR(255)");
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			PersonWithGender person = new PersonWithGender(new PersistableIdentifier<>(1L));
+			person.setName("toto");
+			person.setGender(Gender.FEMALE);
+			personPersister.insert(person);
+			
+			// checking that name was used
+			ExecutableQuery<Integer> integerExecutableQuery = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
+					.mapKey(Integer::new, "gender", Integer.class);
+			Set<Integer> result = integerExecutableQuery.execute(Accumulators.toSet());
+			assertThat(result).containsExactly(1);
+		}
 		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
+		@Test
+		void mandatory_onMissingValue_throwsException() {
+			ConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = (ConfiguredPersister<PersonWithGender, Identifier<Long>>) MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					// no type of mapping given: neither ordinal nor name
+					.mapEnum(PersonWithGender::getGender).mandatory()
+					.build(persistenceContext);
+			
+			Column gender = (Column) personPersister.getMapping().getTargetTable().mapColumnsOnName().get("gender");
+			dialect.getSqlTypeRegistry().put(gender, "VARCHAR(255)");
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			PersonWithGender person = new PersonWithGender(new PersistableIdentifier<>(1L));
+			person.setName("toto");
+			person.setGender(null);
+			
+			assertThatThrownBy(() -> personPersister.insert(person))
+					.isInstanceOf(RuntimeException.class)
+					.hasMessage("Error while inserting values for " + person + " in statement \"insert into PersonWithGender(gender, id, name) values (?, ?, ?)\"")
+					.hasCause(new BindingException("Expected non null value for : PersonWithGender.gender"));
+		}
 		
-		PersonWithGender person = new PersonWithGender(new PersistableIdentifier<>(1L));
-		person.setName("toto");
-		person.setGender(Gender.FEMALE);
-		personPersister.insert(person);
+		@Test
+		void mandatory_columnConstraintIsAdded() {
+			ConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = (ConfiguredPersister<PersonWithGender, Identifier<Long>>) MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					// no type of mapping given: neither ordinal nor name
+					.mapEnum(PersonWithGender::getGender).mandatory()
+					.build(persistenceContext);
+			
+			assertThat(personPersister.getMapping().getTargetTable().getColumn("gender").isNullable()).isFalse();
+		}
 		
-		// checking that name was used
-		ExecutableQuery<Integer> integerExecutableQuery = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
-				.mapKey(Integer::new, "gender", Integer.class);
-		Set<Integer> result = integerExecutableQuery.execute(Accumulators.toSet());
-		assertThat(result).containsExactly(1);
-	}
-	
-	@Test
-	void addEnum_mandatory_onMissingValue_throwsException() {
-		ConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = (ConfiguredPersister<PersonWithGender, Identifier<Long>>) MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
-				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.map(Person::getName)
-				// no type of mapping given: neither ordinal nor name
-				.mapEnum(PersonWithGender::getGender).mandatory()
-				.build(persistenceContext);
+		@Test
+		void mappedByOrdinal() {
+			ConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = (ConfiguredPersister<PersonWithGender, Identifier<Long>>) MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapEnum(PersonWithGender::getGender).byOrdinal()
+					.build(persistenceContext);
+			
+			Column gender = (Column) personPersister.getMapping().getTargetTable().mapColumnsOnName().get("gender");
+			dialect.getSqlTypeRegistry().put(gender, "INT");
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			PersonWithGender person = new PersonWithGender(new PersistableIdentifier<>(1L));
+			person.setName("toto");
+			person.setGender(Gender.FEMALE);
+			personPersister.insert(person);
+			
+			// checking that ordinal was used
+			ExecutableQuery<Integer> integerExecutableQuery = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
+					.mapKey(Integer::valueOf, "gender", String.class);
+			Set<Integer> result = integerExecutableQuery.execute(Accumulators.toSet());
+			assertThat(result).containsExactly(person.getGender().ordinal());
+		}
 		
-		Column gender = (Column) personPersister.getMapping().getTargetTable().mapColumnsOnName().get("gender");
-		dialect.getSqlTypeRegistry().put(gender, "VARCHAR(255)");
 		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
+		@Test
+		void mappedByName() {
+			ConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = (ConfiguredPersister<PersonWithGender, Identifier<Long>>) MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapEnum(PersonWithGender::getGender).byName()
+					.build(persistenceContext);
+			
+//			Column gender = (Column) personPersister.getMapping().getTargetTable().mapColumnsOnName().get("gender");
+//			dialect.getSqlTypeRegistry().put(gender, "INT");
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			PersonWithGender person = new PersonWithGender(new PersistableIdentifier<>(1L));
+			person.setName("toto");
+			person.setGender(Gender.FEMALE);
+			personPersister.insert(person);
+			
+			// checking that ordinal was used
+			ExecutableQuery<String> integerExecutableQuery = persistenceContext.newQuery("select * from PersonWithGender", String.class)
+					.mapKey("gender", String.class);
+			Set<String> result = integerExecutableQuery.execute(Accumulators.toSet());
+			assertThat(result).containsExactly(person.getGender().name());
+		}
 		
-		PersonWithGender person = new PersonWithGender(new PersistableIdentifier<>(1L));
-		person.setName("toto");
-		person.setGender(null);
-		
-		assertThatThrownBy(() -> personPersister.insert(person))
-				.isInstanceOf(RuntimeException.class)
-				.hasMessage("Error while inserting values for " + person + " in statement \"insert into PersonWithGender(gender, id, name) values (?, ?, ?)\"")
-				.hasCause(new BindingException("Expected non null value for : PersonWithGender.gender"));
-	}
-	
-	@Test
-	void addEnum_mandatory_columnConstraintIsAdded() {
-		ConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = (ConfiguredPersister<PersonWithGender, Identifier<Long>>) MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
-				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.map(Person::getName)
-				// no type of mapping given: neither ordinal nor name
-				.mapEnum(PersonWithGender::getGender).mandatory()
-				.build(persistenceContext);
-		
-		assertThat(personPersister.getMapping().getTargetTable().getColumn("gender").isNullable()).isFalse();
-	}
-	
-	@Test
-	void withEnum_mappedWithOrdinal() {
-		ConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = (ConfiguredPersister<PersonWithGender, Identifier<Long>>) MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
-				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.map(Person::getName)
-				.mapEnum(PersonWithGender::getGender).byOrdinal()
-				.build(persistenceContext);
-		
-		Column gender = (Column) personPersister.getMapping().getTargetTable().mapColumnsOnName().get("gender");
-		dialect.getSqlTypeRegistry().put(gender, "INT");
-		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		PersonWithGender person = new PersonWithGender(new PersistableIdentifier<>(1L));
-		person.setName("toto");
-		person.setGender(Gender.FEMALE);
-		personPersister.insert(person);
-		
-		// checking that ordinal was used
-		ExecutableQuery<Integer> integerExecutableQuery = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
-				.mapKey(Integer::valueOf, "gender", String.class);
-		Set<Integer> result = integerExecutableQuery.execute(Accumulators.toSet());
-		assertThat(result).containsExactly(person.getGender().ordinal());
-	}
-	
-	@Test
-	void withEnum_columnMappedWithOrdinal() {
-		Table personTable = new Table<>("PersonWithGender");
-		Column<Table, Gender> genderColumn = personTable.addColumn("gender", Gender.class);
-		
-		EntityPersister<PersonWithGender, Identifier<Long>> personPersister = MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
-				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.map(Person::getName)
-				.mapEnum(PersonWithGender::getGender).column(genderColumn).byOrdinal()
-				.build(persistenceContext);
-		
-		dialect.getSqlTypeRegistry().put(genderColumn, "INT");
-		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		PersonWithGender person = new PersonWithGender(new PersistableIdentifier<>(1L));
-		person.setName("toto");
-		person.setGender(Gender.FEMALE);
-		personPersister.insert(person);
-		
-		// checking that ordinal was used
-		ExecutableQuery<Integer> integerExecutableQuery = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
-				.mapKey(Integer::valueOf, "gender", String.class);
-		Set<Integer> result = integerExecutableQuery.execute(Accumulators.toSet());
-		assertThat(result).containsExactly(person.getGender().ordinal());
+		@Test
+		void columnMappedByOrdinal() {
+			Table personTable = new Table<>("PersonWithGender");
+			Column<Table, Gender> genderColumn = personTable.addColumn("gender", Gender.class);
+			
+			EntityPersister<PersonWithGender, Identifier<Long>> personPersister = MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapEnum(PersonWithGender::getGender).column(genderColumn).byOrdinal()
+					.build(persistenceContext);
+			
+			dialect.getSqlTypeRegistry().put(genderColumn, "INT");
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			PersonWithGender person = new PersonWithGender(new PersistableIdentifier<>(1L));
+			person.setName("toto");
+			person.setGender(Gender.FEMALE);
+			personPersister.insert(person);
+			
+			// checking that ordinal was used
+			ExecutableQuery<Integer> integerExecutableQuery = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
+					.mapKey(Integer::valueOf, "gender", String.class);
+			Set<Integer> result = integerExecutableQuery.execute(Accumulators.toSet());
+			assertThat(result).containsExactly(person.getGender().ordinal());
+		}
 	}
 	
 	@Test

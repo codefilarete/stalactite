@@ -9,6 +9,7 @@ import java.util.NoSuchElementException;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.Inset;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry.EnumBindType;
 import org.codefilarete.tool.collection.ReadOnlyIterator;
 import org.codefilarete.tool.function.Converter;
 
@@ -79,6 +80,13 @@ public interface EmbeddableMappingConfiguration<C> {
 		
 		@Nullable
 		ParameterBinder<Object> getParameterBinder();
+		
+		/**
+		 * Gives the choice made by the user to define how to bind enum values: by name or ordinal.
+		 * @return null if no info was given
+		 */
+		@Nullable
+		EnumBindType getEnumBindType();
 		
 		boolean isNullable();
 		

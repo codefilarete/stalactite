@@ -42,12 +42,26 @@ public class Pet {
 			this.age = age;
 		}
 		
+		public PetId(String name, PetType type, int age) {
+			this.name = name;
+			setType(type);
+			this.age = age;
+		}
+		
 		public String getName() {
 			return name;
 		}
 		
 		public String getRace() {
 			return race;
+		}
+		
+		public PetType getType() {
+			return PetType.valueOf(race);
+		}
+		
+		public void setType(PetType type) {
+			this.race = type.name();
 		}
 		
 		public int getAge() {
@@ -118,5 +132,10 @@ public class Pet {
 		Persian,
 		Siamese,
 		Maine_Coon
+	}
+	
+	public enum PetType {
+		Dog,
+		Cat
 	}
 }

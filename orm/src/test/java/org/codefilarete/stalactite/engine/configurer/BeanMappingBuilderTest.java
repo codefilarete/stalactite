@@ -90,6 +90,7 @@ class BeanMappingBuilderTest {
 		BeanMappingBuilder<Country, ?>.InternalProcessor internalProcessor = testInstance.new InternalProcessor(false);
 		Linkage<Country, Set> linkageMock = mock(Linkage.class);
 		when(linkageMock.getAccessor()).thenReturn(Accessors.accessor(Country::getCities));
+		when(linkageMock.getColumnType()).thenReturn(Set.class);
 		
 		assertThatThrownBy(() -> internalProcessor.ensureColumnBindingInRegistry(linkageMock, dummyColumn))
 				.isInstanceOf(Exception.class)

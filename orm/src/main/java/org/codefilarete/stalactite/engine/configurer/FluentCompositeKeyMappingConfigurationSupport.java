@@ -207,18 +207,14 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 					
 					@Override
 					public CompositeKeyEnumOptions byName() {
-						setLinkageParameterBinder(EnumBindType.NAME);
+						linkage.setEnumBindType(EnumBindType.NAME);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
 					public CompositeKeyEnumOptions byOrdinal() {
-						setLinkageParameterBinder(EnumBindType.ORDINAL);
+						linkage.setEnumBindType(EnumBindType.ORDINAL);
 						return null;	// we can return null because dispatcher will return proxy
-					}
-					
-					private void setLinkageParameterBinder(EnumBindType ordinal) {
-						linkage.setParameterBinder(ordinal.newParameterBinder(linkage.getColumnType()));
 					}
 				}, true)
 				.redirect(CompositeKeyPropertyOptions.class, new CompositeKeyPropertyOptions() {
@@ -321,6 +317,9 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 		private ParameterBinder<Object> parameterBinder;
 		
 		@Nullable
+		private EnumBindType enumBindType;
+		
+		@Nullable
 		private String columnName;
 		
 		private final AccessorFieldLazyInitializer accessor = new AccessorFieldLazyInitializer();
@@ -339,14 +338,24 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 			this.setter = setter;
 		}
 		
-		public void setParameterBinder(ParameterBinder<?> parameterBinder) {
-			this.parameterBinder = (ParameterBinder<Object>) parameterBinder;
-		}
-		
 		@Override
 		@Nullable
 		public ParameterBinder<Object> getParameterBinder() {
 			return parameterBinder;
+		}
+		
+		public void setParameterBinder(@Nullable ParameterBinder<?> parameterBinder) {
+			this.parameterBinder = (ParameterBinder<Object>) parameterBinder;
+		}
+		
+		@Nullable
+		@Override
+		public EnumBindType getEnumBindType() {
+			return enumBindType;
+		}
+		
+		public void setEnumBindType(@Nullable EnumBindType enumBindType) {
+			this.enumBindType = enumBindType;
 		}
 		
 		public void setColumnName(String name) {
