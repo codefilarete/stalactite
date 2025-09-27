@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.sql.ddl;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -15,7 +16,9 @@ import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierMana
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelector;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.ConnectionProvider.DataSourceConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver;
 import org.codefilarete.stalactite.sql.ddl.structure.Sequence;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
@@ -29,7 +32,10 @@ import static org.codefilarete.stalactite.sql.ddl.structure.Table.COMPARATOR_ON_
  * onto a {@link ConnectionProvider}, so it's more an entry point for high level usage.
  *
  * @author Guillaume Mary
+ * @see #deployDDL()
+ * @see #dropDDL()
  * @see DDLGenerator
+ * @see DDLSequenceGenerator
  */
 public class DDLDeployer {
 	
@@ -66,15 +72,47 @@ public class DDLDeployer {
 	
 	/**
 	 * Simple constructor that gets its information from the given {@link PersistenceContext}: {@link DDLGenerator} from its
-	 * {@link Dialect} and {@link ConnectionProvider}
+	 * {@link Dialect} and {@link ConnectionProvider}.
+	 * It automatically adds the {@link PersistenceContext} tables and sequences.
 	 * 
 	 * @param persistenceContext a {@link PersistenceContext}, source of arguments for {@link #DDLDeployer(DDLTableGenerator, DDLSequenceGenerator, ConnectionProvider)}
 	 * @see #DDLDeployer(DDLTableGenerator, DDLSequenceGenerator, ConnectionProvider) 
 	 */
 	public DDLDeployer(PersistenceContext persistenceContext) {
-		this(persistenceContext.getDialect().getDdlTableGenerator(), persistenceContext.getDialect().getDdlSequenceGenerator(), persistenceContext.getConnectionProvider());
+		this(persistenceContext.getDialect(), persistenceContext.getConnectionProvider());
 		ddlGenerator.addTables(collectTables(persistenceContext));
 		ddlGenerator.addSequences(collectSequences(persistenceContext));
+	}
+	
+	/**
+	 * Simple constructor that gets its information from the given {@link Dialect}: {@link DDLGenerator} and {@link DDLSequenceGenerator}
+	 * Tables to deploy must be added through {@link #getDdlGenerator()}.addTables(..)
+	 *
+	 * @param dialect the {@link Dialect} to get SQL generators from
+	 * @param connectionProvider provider of {@link Connection} to execute SQL
+	 * @see #DDLDeployer(DDLTableGenerator, DDLSequenceGenerator, ConnectionProvider)
+	 */
+	public DDLDeployer(Dialect dialect, ConnectionProvider connectionProvider) {
+		this(dialect.getDdlTableGenerator(), dialect.getDdlSequenceGenerator(), connectionProvider);
+	}
+	
+	/**
+	 * Constructor that gets its information from the given {@link DataSource}: the {@link Dialect} is found through {@link ServiceLoaderDialectResolver}.
+	 * Tables to deploy must be added through {@link #getDdlGenerator()}.addTables(..)
+	 *
+	 * @param dataSource the {@link DataSource} to get all information
+	 * @see #DDLDeployer(DDLTableGenerator, DDLSequenceGenerator, ConnectionProvider)
+	 */
+	public DDLDeployer(DataSource dataSource) {
+		ConnectionProvider connectionProvider = new DataSourceConnectionProvider(dataSource);
+		Dialect dialect;
+		try (Connection connection = connectionProvider.giveConnection()) {
+			dialect = new ServiceLoaderDialectResolver().determineDialect(connection);
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+		this.connectionProvider = connectionProvider;
+		this.ddlGenerator = new DDLGenerator(dialect.getDdlTableGenerator(), dialect.getDdlSequenceGenerator());
 	}
 	
 	/**
