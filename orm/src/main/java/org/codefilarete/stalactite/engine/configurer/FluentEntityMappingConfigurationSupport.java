@@ -100,7 +100,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	private final Class<C> classToPersist;
 	
 	@javax.annotation.Nullable
-	private final Table<?> targetTable;
+	private Table<?> targetTable;
 	
 	private TableNamingStrategy tableNamingStrategy = TableNamingStrategy.DEFAULT;
 	
@@ -148,16 +148,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	 * @param classToPersist the class to create a mapping for
 	 */
 	public FluentEntityMappingConfigurationSupport(Class<C> classToPersist) {
-		this(classToPersist, (Table<?>) null);
-	}
-	
-	public FluentEntityMappingConfigurationSupport(Class<C> classToPersist, String targetTableName) {
-		this(classToPersist, new Table<>(targetTableName));
-	}
-	
-	public FluentEntityMappingConfigurationSupport(Class<C> classToPersist, @javax.annotation.Nullable Table<?> targetTable) {
 		this.classToPersist = classToPersist;
-		this.targetTable = targetTable;
 		
 		// Helper to capture Method behind method reference
 		this.methodSpy = new MethodReferenceCapturer();
@@ -1039,6 +1030,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	private <V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, AccessorByMethodReference methodReference, Serie<V> serie) {
 		optimisticLockOption = new OptimisticLockOption<>(methodReference, serie);
 		map(getter);
+		return this;
+	}
+	
+	@Override
+	public FluentEntityMappingBuilder<C, I> onTable(Table table) {
+		this.targetTable = table;
 		return this;
 	}
 	

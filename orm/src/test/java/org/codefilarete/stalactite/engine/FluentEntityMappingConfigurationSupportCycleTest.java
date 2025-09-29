@@ -134,7 +134,8 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			Column<Table, Identifier<Long>> reverseGardenerId = personTable.addColumn("reverseGardenerId", Identifier.LONG_TYPE);
 			
 			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
-			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE, personTable)
+			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.onTable(personTable)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
@@ -219,7 +220,8 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			Column<Table, Identifier<Long>> reversePartnerId = personTable.addColumn("reversePartnerId", Identifier.LONG_TYPE);
 			// we need a holder to skip final variable problem
 			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
-			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE, personTable)
+			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.onTable(personTable)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).mappedBy(reversePartnerId));
@@ -314,7 +316,8 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			// we need a holder to skip final variable problem 
 			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
-			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE, personTable)
+			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.onTable(personTable)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).mappedBy(reversePartnerId)
@@ -428,7 +431,8 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			// we need a holder to skip final variable problem 
 			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
-			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE, personTable)
+			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.onTable(personTable)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration(), personTable).mappedBy(reversePartnerId)
@@ -480,7 +484,8 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			FluentEntityMappingBuilder<House, Identifier<Long>> houseMapping = MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
 					.mapKey(House::getId, ALREADY_ASSIGNED)
 					.map(House::getName);
-			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE, personTable)
+			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.onTable(personTable)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapOneToOne(Person::getHouse, houseMapping).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
@@ -532,7 +537,8 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 							.map(Address::getLocation))
 					.mapOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration())
 					.cascading(RelationMode.ALL_ORPHAN_REMOVAL);
-			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE, personTable)
+			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.onTable(personTable)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).mappedBy(reversePartnerId)

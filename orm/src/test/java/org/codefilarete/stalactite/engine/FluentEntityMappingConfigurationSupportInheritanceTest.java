@@ -505,7 +505,8 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.map(Vehicle::getColor)
 					.getConfiguration();
 			
-			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE, mappedSuperClassData.carTable)
+			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
+					.onTable(mappedSuperClassData.carTable)
 					.map(Car::getModel)
 					.mapSuperClass(inheritanceConfiguration)
 					.withJoinedTable()

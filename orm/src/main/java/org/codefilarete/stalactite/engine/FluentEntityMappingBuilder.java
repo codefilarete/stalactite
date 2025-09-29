@@ -772,6 +772,12 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	
 	<V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Serie<V> sequence);
 	
+	default FluentEntityMappingBuilder<C, I> onTable(String tableName) {
+		return this.onTable(new Table(tableName));
+	}
+	
+	FluentEntityMappingBuilder<C, I> onTable(Table table);
+	
 	FluentEntityMappingBuilder<C, I> mapPolymorphism(PolymorphismPolicy<C> polymorphismPolicy);
 	
 	interface FluentMappingBuilderPropertyOptions<C, I, O>

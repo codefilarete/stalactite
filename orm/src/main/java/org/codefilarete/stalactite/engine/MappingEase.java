@@ -28,37 +28,8 @@ public final class MappingEase {
 	 */
 	@SuppressWarnings("squid:S1172")	// identifierType is used to sign result
 	public static <T, I> FluentEntityMappingBuilder<T, I> entityBuilder(Class<T> classToPersist, Class<I> identifierType) {
-		return entityBuilder(classToPersist, identifierType, (Table) null);
-	}
-	
-	/**
-	 * Starts a {@link FluentEntityMappingBuilder} for a given class.
-	 *
-	 * @param classToPersist the class to be persisted
-	 * @param identifierType entity identifier type
-	 * @param targetTableName table name to store the entity in
-	 * @param <T> any type to be persisted
-	 * @param <I> the type of the identifier
-	 * @return a new {@link FluentEntityMappingBuilder}
-	 */
-	public static <T, I> FluentEntityMappingBuilder<T, I> entityBuilder(Class<T> classToPersist, Class<I> identifierType, @Nullable String targetTableName) {
 		// Note that we don't use identifierType, but it's necessary to generic type of returned instance
-		return new FluentEntityMappingConfigurationSupport<>(classToPersist, targetTableName);
-	}
-	
-	/**
-	 * Starts a {@link FluentEntityMappingBuilder} for a given class.
-	 *
-	 * @param classToPersist the class to be persisted
-	 * @param identifierType entity identifier type
-	 * @param targetTable table name to store the entity in, mapped property will be added to it as columns
-	 * @param <T> any type to be persisted
-	 * @param <I> the type of the identifier
-	 * @return a new {@link FluentEntityMappingBuilder}
-	 */
-	public static <T, I> FluentEntityMappingBuilder<T, I> entityBuilder(Class<T> classToPersist, Class<I> identifierType, @Nullable Table<?> targetTable) {
-		// Note that we don't use identifierType, but it's necessary to generic type of returned instance
-		return new FluentEntityMappingConfigurationSupport<>(classToPersist, targetTable);
+		return new FluentEntityMappingConfigurationSupport<>(classToPersist);
 	}
 	
 	/**

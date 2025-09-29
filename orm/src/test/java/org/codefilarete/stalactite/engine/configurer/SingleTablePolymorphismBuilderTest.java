@@ -60,7 +60,8 @@ class SingleTablePolymorphismBuilderTest {
 		Table expectedResult = new Table("MyOverridingTable");
 		Column colorTable = expectedResult.addColumn("myOverridingColumn", Integer.class);
 		
-		FluentEntityMappingBuilder<Vehicle, Identifier<Long>> configuration = entityBuilder(Vehicle.class, LONG_TYPE, new Table("TargetTable"))
+		FluentEntityMappingBuilder<Vehicle, Identifier<Long>> configuration = entityBuilder(Vehicle.class, LONG_TYPE)
+				.onTable(new Table("TargetTable"))
 				.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 						.addSubClass(subentityBuilder(Car.class)

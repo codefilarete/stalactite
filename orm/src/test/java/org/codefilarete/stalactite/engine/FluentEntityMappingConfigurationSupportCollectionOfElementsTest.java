@@ -397,7 +397,8 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 		dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 		dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 		
-		ConfiguredPersister<Toto, Identifier<UUID>> personPersister = (ConfiguredPersister<Toto, Identifier<UUID>>) entityBuilder(Toto.class, UUID_TYPE, totoTable)
+		ConfiguredPersister<Toto, Identifier<UUID>> personPersister = (ConfiguredPersister<Toto, Identifier<UUID>>) entityBuilder(Toto.class, UUID_TYPE)
+				.onTable(totoTable)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(Toto::getName)
 				.mapCollection(Toto::getPossibleStates, State.class)
@@ -424,7 +425,8 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 		dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 		dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 		
-		ConfiguredPersister<Toto, Identifier<UUID>> personPersister = (ConfiguredPersister<Toto, Identifier<UUID>>) entityBuilder(Toto.class, UUID_TYPE, totoTable)
+		ConfiguredPersister<Toto, Identifier<UUID>> personPersister = (ConfiguredPersister<Toto, Identifier<UUID>>) entityBuilder(Toto.class, UUID_TYPE)
+				.onTable(totoTable)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(Toto::getName)
 				.mapCollection(Toto::getTimes, Timestamp.class, MappingEase.embeddableBuilder(Timestamp.class)
@@ -455,7 +457,8 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 		dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 		dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 		
-		ConfiguredPersister<Toto, Identifier<UUID>> personPersister = (ConfiguredPersister<Toto, Identifier<UUID>>) entityBuilder(Toto.class, UUID_TYPE, totoTable)
+		ConfiguredPersister<Toto, Identifier<UUID>> personPersister = (ConfiguredPersister<Toto, Identifier<UUID>>) entityBuilder(Toto.class, UUID_TYPE)
+				.onTable(totoTable)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(Toto::getName)
 				.mapCollection(Toto::getTimes, Timestamp.class, MappingEase.embeddableBuilder(Timestamp.class)

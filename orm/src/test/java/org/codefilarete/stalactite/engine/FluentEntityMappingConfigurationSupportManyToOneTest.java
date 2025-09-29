@@ -425,7 +425,8 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Device::getName)
-					.mapManyToOne(Device::getLocation, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE, new Table<>("Town"))
+					.mapManyToOne(Device::getLocation, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
+							.onTable(new Table<>("Town"))
 							.mapKey(Address::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(Address::getStreet))
 					.build(persistenceContext);
@@ -470,7 +471,8 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Device::getName)
-					.mapManyToOne(Device::getLocation, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE, new Table<>("Town"))
+					.mapManyToOne(Device::getLocation, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
+							.onTable(new Table<>("Town"))
 							.mapKey(Address::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(Address::getStreet), new Table<>("Township"))
 					.build(persistenceContext);

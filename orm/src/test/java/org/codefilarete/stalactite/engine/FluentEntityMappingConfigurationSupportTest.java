@@ -149,7 +149,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+					.onTable(totoTable)
 					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
 					.map(Toto::getName)
 					.build(persistenceContext);	// necessary to set table since we override Identifier binding
@@ -174,7 +175,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			Supplier<Toto> constructor = Toto::newInstance;
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+					.onTable(totoTable)
 					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
 						.usingConstructor(constructor)
 					.map(Toto::getName)
@@ -200,7 +202,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getSqlTypeRegistry().put(UUID_TYPE, "VARCHAR(255)");
 			
 			Function<Identifier<UUID>, Toto> constructor = (Function<Identifier<UUID>, Toto>) (Function) (Function<PersistedIdentifier<UUID>, Toto>) Toto::new;
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, (Class<Identifier<UUID>>) (Class) UUID_TYPE, totoTable)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, (Class<Identifier<UUID>>) (Class) UUID_TYPE)
+					.onTable(totoTable)
 					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
 						.usingConstructor(constructor)
 					.map(Toto::getName)
@@ -226,7 +229,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			Function<Identifier<UUID>, Toto> constructor = (Function<Identifier<UUID>, Toto>) (Function) (Function<PersistedIdentifier<UUID>, Toto>) Toto::new;
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, (Class<Identifier<UUID>>) (Class) UUID_TYPE, totoTable)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, (Class<Identifier<UUID>>) (Class) UUID_TYPE)
+					.onTable(totoTable)
 					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
 						.usingConstructor(constructor, idColumn)
 					.map(Toto::getName)
@@ -251,7 +255,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getSqlTypeRegistry().put(UUID_TYPE, "VARCHAR(255)");
 			
 			Function<Identifier<UUID>, Toto> constructor = (Function<Identifier<UUID>, Toto>) (Function) (Function<PersistedIdentifier<UUID>, Toto>) Toto::new;
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, (Class<Identifier<UUID>>) (Class) UUID_TYPE, totoTable)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, (Class<Identifier<UUID>>) (Class) UUID_TYPE)
+					.onTable(totoTable)
 					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
 						.usingConstructor(constructor, "myId")
 					.map(Toto::getName)
@@ -278,7 +283,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			BiFunction<Identifier<UUID>, String, Toto> constructor = (BiFunction<Identifier<UUID>, String, Toto>) (BiFunction) (BiFunction<PersistedIdentifier<UUID>, String, Toto>) Toto::new;
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, (Class<Identifier<UUID>>) (Class) UUID_TYPE, totoTable)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, (Class<Identifier<UUID>>) (Class) UUID_TYPE)
+					.onTable(totoTable)
 					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
 						.usingConstructor(constructor, idColumn, nameColumn)
 					.map(Toto::getName).setByConstructor()	// avoiding superfluous property setting
@@ -306,7 +312,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+					.onTable(totoTable)
 					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
 					.usingFactory(row ->
 						new Toto((PersistedIdentifier<UUID>) row.apply(idColumn), (String) row.apply(nameColumn))
@@ -340,7 +347,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+					.onTable(totoTable)
 					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(Toto::getName)
 					.build(persistenceContext);	// necessary to set table since we override Identifier binding
@@ -365,7 +373,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			Function<Identifier<UUID>, Toto> constructor = (Function<Identifier<UUID>, Toto>) (Function) (Function<PersistedIdentifier<UUID>, Toto>) Toto::new;
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+					.onTable(totoTable)
 					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.usingConstructor(constructor, idColumn)
 					.map(Toto::getName)
@@ -391,7 +400,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getSqlTypeRegistry().put(UUID_TYPE, "VARCHAR(255)");
 			
 			Function<Identifier<UUID>, Toto> constructor = (Function<Identifier<UUID>, Toto>) (Function) (Function<PersistedIdentifier<UUID>, Toto>) Toto::new;
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+					.onTable(totoTable)
 					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED, "identifier")
 					.usingConstructor(constructor, "identifier")
 					.map(Toto::getName).columnName("label")
@@ -416,7 +426,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			Function<Identifier<UUID>, Toto> constructor = (Function<Identifier<UUID>, Toto>) (Function) (Function<PersistedIdentifier<UUID>, Toto>) Toto::new;
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+					.onTable(totoTable)
 					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.usingConstructor(constructor, idColumn)
 					.map(Toto::getName)
@@ -443,7 +454,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			BiFunction<Identifier<UUID>, String, Toto> constructor = (BiFunction<Identifier<UUID>, String, Toto>) (BiFunction) (BiFunction<PersistedIdentifier<UUID>, String, Toto>) Toto::new;
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+					.onTable(totoTable)
 					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.usingConstructor(constructor, idColumn, nameColumn)
 					.map(Toto::getName).setByConstructor()
@@ -547,7 +559,8 @@ class FluentEntityMappingConfigurationSupportTest {
 		dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 		
 		ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>)
-				MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+				MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.onTable(totoTable)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(Toto::getName).readonly()
 				.map(Toto::getFirstName)
@@ -643,7 +656,8 @@ class FluentEntityMappingConfigurationSupportTest {
 		dialect.getColumnBinderRegistry().register(id, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 		dialect.getSqlTypeRegistry().put(id, "varchar(255)");
 		
-		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.onTable(totoTable)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(Toto::getName).readConverter(String::toUpperCase)
 				.build(persistenceContext);
@@ -674,7 +688,8 @@ class FluentEntityMappingConfigurationSupportTest {
 		dialect.getColumnBinderRegistry().register(id, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 		dialect.getSqlTypeRegistry().put(id, "varchar(255)");
 		
-		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.onTable(totoTable)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(Toto::getName).readonly().readConverter(String::toUpperCase)
 				.build(persistenceContext);
@@ -704,7 +719,8 @@ class FluentEntityMappingConfigurationSupportTest {
 		dialect.getColumnBinderRegistry().register(id, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 		dialect.getSqlTypeRegistry().put(id, "varchar(255)");
 		
-		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.onTable(totoTable)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.usingConstructor(uuidIdentifier -> new Toto((PersistedIdentifier<UUID>) uuidIdentifier))
 				.map(Toto::getName).writeConverter(String::toUpperCase)
@@ -742,7 +758,8 @@ class FluentEntityMappingConfigurationSupportTest {
 		dialect.getColumnBinderRegistry().register(id, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 		dialect.getSqlTypeRegistry().put(id, "varchar(255)");
 		
-		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.onTable(totoTable)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				// upper casing data coming from database
 				.map(Toto::getName).sqlBinder(new NullAwareParameterBinder<>(new LambdaResultSetReader<>(
@@ -773,7 +790,8 @@ class FluentEntityMappingConfigurationSupportTest {
 		dialect.getColumnBinderRegistry().register(id, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 		dialect.getSqlTypeRegistry().put(id, "varchar(255)");
 		
-		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.onTable(totoTable)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				// upper casing data going to database
 				.map(Toto::getPossibleStates)
@@ -816,7 +834,8 @@ class FluentEntityMappingConfigurationSupportTest {
 		dialect.getSqlTypeRegistry().put(id, "varchar(255)");
 		
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.onTable(totoTable)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				// we remove hours from the date while writing to database
 				.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
@@ -858,7 +877,8 @@ class FluentEntityMappingConfigurationSupportTest {
 		dialect.getColumnBinderRegistry().register(id, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 		dialect.getSqlTypeRegistry().put(id, "varchar(255)");
 		
-		EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+		EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.onTable(totoTable)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.build(persistenceContext);
 		// column should be correctly created
@@ -901,7 +921,8 @@ class FluentEntityMappingConfigurationSupportTest {
 	@Test
 	void map_methodHasNoMatchingField_configurationIsStillValid() {
 		Table toto = new Table("Toto");
-		MappingEase.entityBuilder(Toto.class, UUID_TYPE, toto)
+		MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.onTable(toto)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(Toto::getNoMatchingField)
 				.build(persistenceContext);
@@ -914,7 +935,8 @@ class FluentEntityMappingConfigurationSupportTest {
 	@Test
 	void map_methodIsASetter_configurationIsStillValid() {
 		Table toto = new Table("Toto");
-		MappingEase.entityBuilder(Toto.class, UUID_TYPE, toto)
+		MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.onTable(toto)
 				.mapKey(Toto::setId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.build(persistenceContext);
 		
@@ -1122,7 +1144,8 @@ class FluentEntityMappingConfigurationSupportTest {
 	@Test
 	void embed_definedByGetter() {
 		Table toto = new Table("Toto");
-		MappingEase.entityBuilder(Toto.class, UUID_TYPE, toto)
+		MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.onTable(toto)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 						.map(Timestamp::getCreationDate)
@@ -1137,7 +1160,8 @@ class FluentEntityMappingConfigurationSupportTest {
 	@Test
 	void embed_definedBySetter() {
 		Table toto = new Table("Toto");
-		MappingEase.entityBuilder(Toto.class, UUID_TYPE, toto)
+		MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.onTable(toto)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.embed(Toto::setTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 						.map(Timestamp::getCreationDate)
@@ -1184,7 +1208,8 @@ class FluentEntityMappingConfigurationSupportTest {
 	@Test
 	void embed_withOverriddenColumnName() {
 		Table toto = new Table("Toto");
-		MappingEase.entityBuilder(Toto.class, UUID_TYPE, toto)
+		MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.onTable(toto)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 						.map(Timestamp::getCreationDate)
@@ -1236,7 +1261,8 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		Connection connectionMock = InvocationHandlerSupport.mock(Connection.class);
 		
-		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE, targetTable)
+		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.onTable(targetTable)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 						.map(Timestamp::getCreationDate)
@@ -1264,7 +1290,8 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		Connection connectionMock = InvocationHandlerSupport.mock(Connection.class);
 		
-		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE, targetTable)
+		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.onTable(targetTable)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 						.map(Timestamp::getCreationDate)
@@ -1290,7 +1317,8 @@ class FluentEntityMappingConfigurationSupportTest {
 		Table<?> countryTable = new Table<>("countryTable");
 		
 		FluentEntityMappingBuilder<Country, Identifier<Long>> mappingBuilder = MappingEase
-				.entityBuilder(Country.class, Identifier.LONG_TYPE, countryTable)
+				.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				.onTable(countryTable)
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
 				.embed(Country::getPresident, MappingEase.embeddableBuilder(Person.class)
@@ -1398,7 +1426,8 @@ class FluentEntityMappingConfigurationSupportTest {
 		Table<?> countryTable = new Table<>("countryTable");
 		
 		FluentEntityMappingBuilder<Country, Identifier<Long>> mappingBuilder = MappingEase
-				.entityBuilder(Country.class, Identifier.LONG_TYPE, countryTable)
+				.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				.onTable(countryTable)
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
 				.embed(Country::getPresident, MappingEase.embeddableBuilder(Person.class)
@@ -1487,7 +1516,8 @@ class FluentEntityMappingConfigurationSupportTest {
 	@Test
 	void innerEmbed_withTwiceSameInnerEmbeddableName() {
 		Table<?> countryTable = new Table<>("countryTable");
-		FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<Country, Identifier<Long>, Timestamp> mappingBuilder = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE, countryTable)
+		FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<Country, Identifier<Long>, Timestamp> mappingBuilder = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				.onTable(countryTable)
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
 				.embed(Country::getPresident, MappingEase.embeddableBuilder(Person.class)
@@ -1546,7 +1576,8 @@ class FluentEntityMappingConfigurationSupportTest {
 					.map(Timestamp::getCreationDate)
 					.map(Timestamp::getModificationDate);
 			
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+					.onTable(totoTable)
 					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(Toto::getName)
 					.embed(Toto::getTimestamp, timestampMapping)
@@ -1593,7 +1624,8 @@ class FluentEntityMappingConfigurationSupportTest {
 					.map(TimestampWithLocale::getLocale)
 					.mapSuperClass(timestampMapping);
 			
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+					.onTable(totoTable)
 					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(Toto::getName)
 					.embed(Toto::getTimestamp, timestampWithLocaleMapping)
@@ -1640,7 +1672,8 @@ class FluentEntityMappingConfigurationSupportTest {
 					.map(TimestampWithLocale::getLocale)
 					.mapSuperClass(timestampMapping);
 			
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+					.onTable(totoTable)
 					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(Toto::getName)
 					.embed(Toto::getTimestamp, timestampWithLocaleMapping)
@@ -1678,7 +1711,8 @@ class FluentEntityMappingConfigurationSupportTest {
 					.map(Timestamp::getCreationDate)
 					.map(Timestamp::getModificationDate);
 			
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+					.onTable(totoTable)
 					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(Toto::getName)
 					.embed(Toto::getTimestamp, timestampMapping)
@@ -1744,7 +1778,8 @@ class FluentEntityMappingConfigurationSupportTest {
 					.map(Timestamp::getCreationDate).columnName("creation")
 					.map(Timestamp::getModificationDate);
 			
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+					.onTable(totoTable)
 					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(Toto::getName)
 					.embed(Toto::getTimestamp, timestampMapping)
@@ -1803,7 +1838,8 @@ class FluentEntityMappingConfigurationSupportTest {
 					.map(Timestamp::getCreationDate).columnName("creation")
 					.map(Timestamp::getModificationDate);
 			
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+					.onTable(totoTable)
 					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(Toto::getName)
 					.embed(Toto::getTimestamp, timestampMapping)
@@ -1842,7 +1878,8 @@ class FluentEntityMappingConfigurationSupportTest {
 					.map(Timestamp::getCreationDate).columnName("creation")
 					.map(Timestamp::getModificationDate);
 			
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+					.onTable(totoTable)
 					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(Toto::getName)
 					.embed(Toto::getTimestamp, timestampMapping)
@@ -2213,7 +2250,8 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 		PersonTable personTable = new PersonTable();
 		try {
-			MappingEase.entityBuilder(PersonWithGender.class, long.class, new Table<>("person"))
+			MappingEase.entityBuilder(PersonWithGender.class, long.class)
+					.onTable(new Table<>("person"))
 					.map(Person::getName)
 					.map(Person::getName).column(personTable.name)
 					.mapEnum(PersonWithGender::getGender).byOrdinal()

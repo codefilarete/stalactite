@@ -338,7 +338,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			
 			Table<?> abstractVehicleTable = new Table<>("AbstractVehicle");
 			// we define the column, else it has no type and the
-			EntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE, abstractVehicleTable)
+			EntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+					.onTable(abstractVehicleTable)
 					// mapped super class defines id
 					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()

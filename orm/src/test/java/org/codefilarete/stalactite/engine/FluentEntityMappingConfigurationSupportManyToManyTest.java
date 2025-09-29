@@ -166,7 +166,8 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 		void withTargetTableSetByTargetEntity_tableSetByTargetEntityIsUSed() throws SQLException {
 			EntityPersister<Answer, Identifier<Long>> answerPersister = entityBuilder(Answer.class, LONG_TYPE)
 					.mapKey(Answer::getId, ALREADY_ASSIGNED)
-					.mapManyToMany(Answer::getChoices,  entityBuilder(Choice.class, LONG_TYPE, new Table<>("PossibleChoices"))
+					.mapManyToMany(Answer::getChoices,  entityBuilder(Choice.class, LONG_TYPE)
+							.onTable(new Table<>("PossibleChoices"))
 							.mapKey(Choice::getId, ALREADY_ASSIGNED)
 							.map(Choice::getLabel))
 					.cascading(READ_ONLY)
@@ -211,7 +212,8 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 		void withTargetTableAndTableSetByTargetEntity_targetTableIsUsed() throws SQLException {
 			EntityPersister<Answer, Identifier<Long>> answerPersister = entityBuilder(Answer.class, LONG_TYPE)
 					.mapKey(Answer::getId, ALREADY_ASSIGNED)
-					.mapManyToMany(Answer::getChoices,  entityBuilder(Choice.class, LONG_TYPE, new Table<>("PossibleChoices"))
+					.mapManyToMany(Answer::getChoices,  entityBuilder(Choice.class, LONG_TYPE)
+							.onTable(new Table<>("PossibleChoices"))
 							.mapKey(Choice::getId, ALREADY_ASSIGNED)
 							.map(Choice::getLabel), new Table("MyChoice"))
 					.cascading(READ_ONLY)
