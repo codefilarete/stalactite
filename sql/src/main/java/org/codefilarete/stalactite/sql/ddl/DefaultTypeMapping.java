@@ -70,7 +70,7 @@ public class DefaultTypeMapping extends JavaTypeToSqlTypeMapping {
 		put(LocalDateTime.class, "timestamp");
 		put(LocalTime.class, "timestamp");
 		put(Instant.class, "bigint");
-		put(String.class, "varchar");
+		put(String.class, "varchar(255)");
 		put(String.class, "varchar($l)", length(16383));
 		// 35 chars because the largest timezone found is "America/Argentina/ComodRivadavia" (with ZoneId.getAvailableZoneIds())
 		put(ZoneId.class, "varchar(35)");
