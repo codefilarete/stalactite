@@ -97,7 +97,7 @@ class DialectBuilderTest {
 			// Note that since that there's a lot of propagation of quote character in the code, it is simpler to check
 			// the result of some SQL code formating instead of checking that all generators have the right quote character
 			String totoTableCreateScript = dialect.getDdlTableGenerator().generateCreateTable(keywordNamedTable);
-			assertThat(totoTableCreateScript).isEqualTo("create table 'a_KeYworD'(id bigint not null, name varchar)");
+			assertThat(totoTableCreateScript).isEqualTo("create table 'a_KeYworD'(id bigint not null, name varchar(255))");
 			
 			String sequenceScript = dialect.getDdlSequenceGenerator().generateCreateSequence(new org.codefilarete.stalactite.sql.ddl.structure.Sequence(null, "A_KeywOrD"));
 			assertThat(sequenceScript).isEqualTo("create sequence 'A_KeywOrD'");
@@ -130,7 +130,7 @@ class DialectBuilderTest {
 			// Note that since that there's a lot of propagation of quote character in the code, it is simpler to check
 			// the result of some SQL code formating instead of checking that all generators have the right quote character
 			String totoTableCreateScript = dialect.getDdlTableGenerator().generateCreateTable(keywordNamedTable);
-			assertThat(totoTableCreateScript).isEqualTo("create table a_KeYworD('another_keyword' bigint not null, name varchar)");
+			assertThat(totoTableCreateScript).isEqualTo("create table a_KeYworD('another_keyword' bigint not null, name varchar(255))");
 			
 			String sequenceScript = dialect.getDdlSequenceGenerator().generateCreateSequence(new org.codefilarete.stalactite.sql.ddl.structure.Sequence(null, "A_KeywOrD"));
 			assertThat(sequenceScript).isEqualTo("create sequence A_KeywOrD");
@@ -168,7 +168,7 @@ class DialectBuilderTest {
 			// Note that since that there's a lot of propagation of quote character in the code, it is simpler to check
 			// the result of some SQL code formating instead of checking that all generators have the right quote character
 			String totoTableCreateScript = dialect.getDdlTableGenerator().generateCreateTable(totoTable);
-			assertThat(totoTableCreateScript).isEqualTo("create table `Toto`(`id` bigint not null, `name` varchar)");
+			assertThat(totoTableCreateScript).isEqualTo("create table `Toto`(`id` bigint not null, `name` varchar(255))");
 			
 			String sequenceScript = dialect.getDdlSequenceGenerator().generateCreateSequence(new org.codefilarete.stalactite.sql.ddl.structure.Sequence(null, "tOtO"));
 			assertThat(sequenceScript).isEqualTo("create sequence `tOtO`");

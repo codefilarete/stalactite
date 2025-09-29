@@ -162,7 +162,7 @@ class OperatorSQLBuilderTest {
 		Column<?, String> colB = tableToto.addColumn("b", String.class);
 		result = new StringSQLAppender(dmlNameProvider);
 		testInstance.catLike(new Like<>(new LowerCase<>(new UpperCase<>(new Coalesce<>(colA, new Cast<>(colB, String.class)))), true, true), result, null);
-		assertThat(result.getSQL()).isEqualTo("like lower(upper(coalesce(Toto.a, cast(Toto.b as varchar))))");
+		assertThat(result.getSQL()).isEqualTo("like lower(upper(coalesce(Toto.a, cast(Toto.b as varchar(255)))))");
 	}
 	
 	@Test
@@ -318,7 +318,7 @@ class OperatorSQLBuilderTest {
 		Column<?, String> colB = tableToto.addColumn("b", String.class);
 		result = new StringSQLAppender(dmlNameProvider);
 		testInstance.catEquals(new Equals<>(new LowerCase<>(new UpperCase<>(new Coalesce<>(colA, new Cast<>(colB, String.class))))), result, null);
-		assertThat(result.getSQL()).isEqualTo("= lower(upper(coalesce(Toto.a, cast(Toto.b as varchar))))");
+		assertThat(result.getSQL()).isEqualTo("= lower(upper(coalesce(Toto.a, cast(Toto.b as varchar(255)))))");
 	}
 	
 	@Test

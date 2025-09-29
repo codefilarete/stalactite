@@ -142,11 +142,11 @@ class FunctionSQLBuilderTest {
 		
 		result = new StringSQLAppender(dmlNameProvider);
 		testInstance.cat(new Coalesce<>(colA, new Cast<>(colB, String.class)), result);
-		assertThat(result.getSQL()).isEqualTo("coalesce(Toto.a, cast(Toto.b as varchar))");
+		assertThat(result.getSQL()).isEqualTo("coalesce(Toto.a, cast(Toto.b as varchar(255)))");
 		
 		result = new StringSQLAppender(dmlNameProvider);
 		testInstance.cat(new Max<>(new Coalesce<>(colA, new Cast<>(colB, String.class))), result);
-		assertThat(result.getSQL()).isEqualTo("max(coalesce(Toto.a, cast(Toto.b as varchar)))");
+		assertThat(result.getSQL()).isEqualTo("max(coalesce(Toto.a, cast(Toto.b as varchar(255))))");
 		
 		result = new StringSQLAppender(dmlNameProvider);
 		testInstance.cat(substring(colB, 2, 30), result);
@@ -154,6 +154,6 @@ class FunctionSQLBuilderTest {
 		
 		result = new StringSQLAppender(dmlNameProvider);
 		testInstance.cat(substring(cast(colA, String.class), 2, 30), result);
-		assertThat(result.getSQL()).isEqualTo("substring(cast(Toto.a as varchar), 2, 30)");
+		assertThat(result.getSQL()).isEqualTo("substring(cast(Toto.a as varchar(255)), 2, 30)");
 	}
 }
