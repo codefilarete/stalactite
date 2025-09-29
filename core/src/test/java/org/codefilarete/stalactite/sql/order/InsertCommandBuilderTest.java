@@ -32,7 +32,7 @@ class InsertCommandBuilderTest {
 		
 		InsertCommandBuilder<T> testInstance = new InsertCommandBuilder<>(insert, new DefaultDialect());
 		
-		assertThat(testInstance.toSQL()).isEqualTo("insert into Toto(a, b) values (?, ?)");
+		assertThat(testInstance.toSQL()).isEqualTo("insert into Toto(b) values (?)");
 	}
 	
 	@Test
@@ -51,7 +51,7 @@ class InsertCommandBuilderTest {
 		};
 		InsertCommandBuilder<T> testInstance = new InsertCommandBuilder<>(insert, dialect);
 		
-		assertThat(testInstance.toSQL()).isEqualTo("insert into `Toto`(`a`, `b`) values (?, ?)");
+		assertThat(testInstance.toSQL()).isEqualTo("insert into `Toto`(`b`) values (?)");
 	}
 	
 	@Test
@@ -61,7 +61,9 @@ class InsertCommandBuilderTest {
 		Column<T, String> columnB = totoTable.addColumn("b", String.class);
 		Column<T, String> columnC = totoTable.addColumn("c", String.class);
 		Insert<T> insert = new Insert<>(totoTable)
-				.set(columnB, "tata");
+				.set(columnA, 42L)
+				.set(columnB, "tata")
+				.set(columnC, "toto");
 		
 		DefaultDialect dialect = new DefaultDialect();
 		InsertCommandBuilder<T> testInstance = new InsertCommandBuilder<>(insert, dialect);
@@ -69,13 +71,10 @@ class InsertCommandBuilderTest {
 		InsertStatement<T> result = testInstance.toStatement();
 		assertThat(result.getSQL()).isEqualTo("insert into Toto(a, b, c) values (?, ?, ?)");
 		
-		assertThat(result.getValues()).isEqualTo(Maps.asMap(columnB, "tata"));
+		assertThat(result.getValues()).isEqualTo(Maps.forHashMap(Column.class, Object.class).add(columnA, 42L).add(columnB, "tata").add(columnC, "toto"));
 		assertThat(result.getParameterBinder(columnA)).isEqualTo(DefaultParameterBinders.LONG_BINDER);
 		assertThat(result.getParameterBinder(columnB)).isEqualTo(DefaultParameterBinders.STRING_BINDER);
 		assertThat(result.getParameterBinder(columnC)).isEqualTo(DefaultParameterBinders.STRING_BINDER);
-		
-		result.setValue(columnA, 42L);
-		result.setValue(columnC, "toto");
 		
 		PreparedStatement mock = mock(PreparedStatement.class);
 		result.applyValues(mock);

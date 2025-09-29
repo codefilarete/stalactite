@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.sql.order;
 
 import java.sql.PreparedStatement;
+import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -13,6 +14,7 @@ import org.codefilarete.stalactite.sql.statement.SQLStatement;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriterIndex;
+import org.codefilarete.tool.collection.KeepOrderSet;
 
 /**
  * A SQL builder for {@link Insert} objects
@@ -33,12 +35,14 @@ public class InsertCommandBuilder<T extends Table<T>> implements SQLBuilder {
 	
 	@Override
 	public String toSQL() {
-		ColumnParameterizedSQL<T> columnParameterizedSQL = dialect.getDmlGenerator().buildInsert(insert.getTargetTable().getColumns());
+		KeepOrderSet<? extends Column<T, ?>> columns = insert.getRow().stream().map(ColumnVariable::getColumn).collect(Collectors.toCollection(KeepOrderSet::new));
+		ColumnParameterizedSQL<T> columnParameterizedSQL = dialect.getDmlGenerator().buildInsert(columns);
 		return columnParameterizedSQL.getSQL();
 	}
 	
 	public InsertStatement<T> toStatement() {
-		ColumnParameterizedSQL<T> columnParameterizedSQL = dialect.getDmlGenerator().buildInsert(insert.getTargetTable().getColumns());
+		KeepOrderSet<? extends Column<T, ?>> columns = insert.getRow().stream().map(ColumnVariable::getColumn).collect(Collectors.toCollection(KeepOrderSet::new));
+		ColumnParameterizedSQL<T> columnParameterizedSQL = dialect.getDmlGenerator().buildInsert(columns);
 		PreparedStatementWriterIndex<Column<T, ?>, PreparedStatementWriter<?>> parameterBinderProvider = columnParameterizedSQL.getParameterBinderProvider();
 		InsertStatement<T> result = new InsertStatement<>(parameterBinderProvider, columnParameterizedSQL);
 		insert.getRow().forEach(c -> result.setValue(c.getColumn(), c.getValue()));
