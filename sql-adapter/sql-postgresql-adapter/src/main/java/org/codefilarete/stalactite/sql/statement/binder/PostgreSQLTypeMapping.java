@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.sql.statement.binder;
 
 import java.io.InputStream;
 import java.sql.Blob;
+import java.time.Instant;
 
 import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 
@@ -19,5 +20,6 @@ public class PostgreSQLTypeMapping extends DefaultTypeMapping {
         put(Double.class, "float8");
         put(float.class, "float4");
         put(Float.class, "float4");
+		put(Instant.class, "timestamp(6) with time zone");
     }
 }
