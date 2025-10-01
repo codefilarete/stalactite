@@ -4,6 +4,8 @@ import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.Size;
 
+import javax.annotation.Nullable;
+
 /**
  * Column of a table.
  * 
@@ -15,6 +17,7 @@ public class Column<T extends Table, O> implements Selectable<O>, JoinLink<T, O>
 	private final T table;
 	private final String name;
 	private final Class<O> javaType;
+	@Nullable
 	private final Size size;
 	private final String absoluteName;
 	private final String alias;
@@ -32,7 +35,7 @@ public class Column<T extends Table, O> implements Selectable<O>, JoinLink<T, O>
 	/**
 	 * Build a column with a size
 	 */
-	public Column(T owner, String name, Class<O> javaType, Size size) {
+	public Column(T owner, String name, Class<O> javaType, @Nullable Size size) {
 		this.table = owner;
 		this.name = name;
 		this.javaType = javaType;
@@ -82,6 +85,7 @@ public class Column<T extends Table, O> implements Selectable<O>, JoinLink<T, O>
 		return alias;
 	}
 	
+	@Nullable
 	public Size getSize() {
 		return size;
 	}

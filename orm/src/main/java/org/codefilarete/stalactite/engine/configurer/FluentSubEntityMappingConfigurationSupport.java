@@ -24,6 +24,7 @@ import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointByMethodReference;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
+import org.codefilarete.stalactite.engine.ColumnOptions;
 import org.codefilarete.stalactite.engine.ElementCollectionOptions;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfigurationProvider;
@@ -47,6 +48,7 @@ import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelati
 import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
@@ -440,6 +442,18 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 					}
 					
 					@Override
+					public ImportedEmbedWithColumnOptions<C> overrideSize(SerializableBiConsumer setter, Size columnSize) {
+						embedSupport.overrideSize(setter, columnSize);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
+					public ImportedEmbedWithColumnOptions<C> overrideSize(SerializableFunction getter, Size columnSize) {
+						embedSupport.overrideSize(getter, columnSize);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
 					public ImportedEmbedWithColumnOptions override(SerializableBiConsumer setter, Column targetColumn) {
 						propertiesMappingConfigurationDelegate.currentInset().override(setter, targetColumn);
 						return null;
@@ -524,8 +538,14 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 						}
 						
 						@Override
-						public PropertyOptions<O> columnName(String name) {
-							newMapping.setColumnOptions(new ColumnLinkageOptionsByName(name));
+						public ColumnOptions<O> columnName(String name) {
+							newMapping.getColumnOptions().setColumnName(name);
+							return null;
+						}
+						
+						@Override
+						public PropertyOptions<O> columnSize(Size size) {
+							newMapping.getColumnOptions().setColumnSize(size);
 							return null;
 						}
 						

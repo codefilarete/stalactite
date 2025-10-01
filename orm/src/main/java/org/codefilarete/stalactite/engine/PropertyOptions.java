@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine;
 import java.util.function.Function;
 
 import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.KeyOptions;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
@@ -40,6 +41,11 @@ public interface PropertyOptions<O> {
 	 * (see {@link #fieldName(String)}.
 	 */
 	PropertyOptions<O> columnName(String name);
+	
+	/**
+	 * Sets column size to be used.
+	 */
+	PropertyOptions<O> columnSize(Size size);
 	
 	/**
 	 * Sets column to be used. Used to target a specific {@link Column} took on a {@link Table} created upstream.

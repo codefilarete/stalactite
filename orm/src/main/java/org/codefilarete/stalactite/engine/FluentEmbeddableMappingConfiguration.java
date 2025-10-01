@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine;
 
 import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
@@ -85,6 +86,14 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 		<IN> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideName(AccessorChain<O, IN> chain, String columnName);
 		
 		@Override
+		<IN> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideSize(SerializableFunction<O, IN> getter, Size columnSize);
+		
+		@Override
+		<IN> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideSize(SerializableBiConsumer<O, IN> setter, Size columnSize);
+		
+		<IN> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideSize(AccessorChain<O, IN> chain, Size columnSize);
+		
+		@Override
 		<IN> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> exclude(SerializableFunction<O, IN> getter);
 		
 		@Override
@@ -107,6 +116,9 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 		
 		@Override
 		FluentEmbeddableMappingConfigurationEnumOptions<C, E> columnName(String name);
+		
+		@Override
+		FluentEmbeddableMappingConfigurationEnumOptions<C, E> columnSize(Size size);
 		
 		@Override
 		FluentEmbeddableMappingConfigurationEnumOptions<C, E> column(Column<? extends Table, ? extends E> column);
@@ -137,6 +149,9 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 		
 		@Override
 		FluentEmbeddableMappingConfigurationPropertyOptions<C, O> columnName(String name);
+		
+		@Override
+		FluentEmbeddableMappingConfigurationPropertyOptions<C, O> columnSize(Size size);
 		
 		@Override
 		FluentEmbeddableMappingConfigurationPropertyOptions<C, O> column(Column<? extends Table, ? extends O> column);

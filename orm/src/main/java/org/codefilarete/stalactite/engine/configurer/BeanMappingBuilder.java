@@ -35,6 +35,7 @@ import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMappingConfiguration.Inset;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMappingConfiguration.Linkage;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
@@ -216,7 +217,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 	public BeanMapping<C, T> build(boolean onlyExtraTableLinkages) {
 		InternalProcessor internalProcessor = new InternalProcessor(onlyExtraTableLinkages);
 		// converting direct mapping
-		internalProcessor.includeDirectMapping(this.mainMappingConfiguration, null, new ValueAccessPointMap<>(), new ValueAccessPointMap<>(), new ValueAccessPointSet<>());
+		internalProcessor.includeDirectMapping(this.mainMappingConfiguration, null, new ValueAccessPointMap<>(), new ValueAccessPointMap<>(), new ValueAccessPointMap<>(), new ValueAccessPointSet<>());
 		// adding embeddable (no particular thought about order compared to previous direct mapping)
 		internalProcessor.includeEmbeddedMapping();
 		return internalProcessor.result;
@@ -245,6 +246,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		protected void includeDirectMapping(BeanMappingConfiguration<?> mappingConfiguration,
 											@Nullable ValueAccessPoint<C> accessorPrefix,
 											ValueAccessPointMap<C, String> overriddenColumnNames,
+											ValueAccessPointMap<C, Size> overriddenColumnSizes,
 											ValueAccessPointMap<C, Column<T, ?>> overriddenColumns,
 											ValueAccessPointSet<C> excludedProperties) {
 			Stream<Linkage> linkageStream = mappingConfiguration.getPropertiesMapping().stream()
@@ -261,8 +263,11 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 								String columnName = nullable(overriddenColumn)
 										.map(Column::getName)
 										.getOr(() -> determineColumnName(linkage, overriddenColumnNames.get(linkage.getAccessor())));
+								Size columnSize = nullable(overriddenColumn)
+										.map(Column::getSize)
+										.getOr(() -> determineColumnSize(linkage, overriddenColumnSizes.get(linkage.getAccessor())));
 								assertMappingIsNotAlreadyDefinedByInheritance(linkage, columnName, mappingConfiguration);
-								Duo<ReversibleAccessor<C, Object>, Column<T, Object>> mapping = includeMapping(linkage, accessorPrefix, columnName, overriddenColumn, mappingConfiguration.getBeanType());
+								Duo<ReversibleAccessor<C, Object>, Column<T, Object>> mapping = includeMapping(linkage, accessorPrefix, columnName, columnSize, overriddenColumn, mappingConfiguration.getBeanType());
 								result.mapping.put(mapping.getLeft(), mapping.getRight());
 								Converter<Object, Object> readConverter = linkage.getReadConverter();
 								result.readConverters.put(mapping.getLeft(), readConverter);
@@ -275,8 +280,11 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 								String columnName = nullable(overriddenColumn)
 										.map(Column::getName)
 										.getOr(() -> determineColumnName(linkage, overriddenColumnNames.get(linkage.getAccessor())));
+								Size columnSize = nullable(overriddenColumn)
+										.map(Column::getSize)
+										.getOr(() -> determineColumnSize(linkage, overriddenColumnSizes.get(linkage.getAccessor())));
 								assertMappingIsNotAlreadyDefinedByInheritance(linkage, columnName, mappingConfiguration);
-								Duo<ReversibleAccessor<C, Object>, Column<T, Object>> mapping = includeMapping(linkage, accessorPrefix, columnName, overriddenColumn, mappingConfiguration.getBeanType());
+								Duo<ReversibleAccessor<C, Object>, Column<T, Object>> mapping = includeMapping(linkage, accessorPrefix, columnName, columnSize, overriddenColumn, mappingConfiguration.getBeanType());
 								result.readonlyMapping.put(mapping.getLeft(), mapping.getRight());
 								Converter<Object, Object> readConverter = linkage.getReadConverter();
 								result.readConverters.put(mapping.getLeft(), readConverter);
@@ -287,9 +295,10 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		protected <O> Duo<ReversibleAccessor<C, ?>, Column<T, Object>> includeMapping(Linkage<C, O> linkage,
 																					  @Nullable ValueAccessPoint<C> accessorPrefix,
 																					  String columnName,
+																					  @Nullable Size columnSize,
 																					  @Nullable Column<T, O> overriddenColumn,
 																					  Class<?> embeddedBeanType) {
-			Column<T, O> column = nullable(overriddenColumn).getOr(() -> addColumnToTable(linkage, columnName));
+			Column<T, O> column = nullable(overriddenColumn).getOr(() -> addColumnToTable(linkage, columnName, columnSize));
 			ensureColumnBindingInRegistry(linkage, column);
 			ReversibleAccessor<C, ?> accessor;
 			if (accessorPrefix != null) {
@@ -313,7 +322,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 					.forEach(duplicateDefinitionChecker);
 		}
 		
-		protected <O> Column<T, O> addColumnToTable(Linkage<C, O> linkage, String columnName) {
+		protected <O> Column<T, O> addColumnToTable(Linkage<C, O> linkage, String columnName, @Nullable Size columnSize) {
 			Column<T, O> addedColumn;
 			Class<O> columnType;
 			if (linkage.getColumnType().isEnum()) {
@@ -339,13 +348,17 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 					columnType = linkage.getColumnType();
 				}
 			}
-			addedColumn = targetTable.addColumn(columnName, columnType);
+			addedColumn = targetTable.addColumn(columnName, columnType, columnSize);
 			addedColumn.setNullable(linkage.isNullable());
 			return addedColumn;
 		}
 		
 		private <O> String determineColumnName(Linkage<C, O> linkage, @Nullable String overriddenColumName) {
 			return nullable(overriddenColumName).elseSet(linkage.getColumnName()).getOr(() -> columnNameProvider.giveColumnName(linkage));
+		}
+		
+		private <O> Size determineColumnSize(Linkage<C, O> linkage, @Nullable Size overriddenColumSize) {
+			return nullable(overriddenColumSize).elseSet(linkage.getColumnSize()).get();
 		}
 		
 		protected <O> void ensureColumnBindingInRegistry(Linkage<C, O> linkage, Column<?, O> column) {
@@ -395,7 +408,11 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 					includeMappedSuperClassMapping(inset, accessorPath, superClassConfiguration);
 				}
 				
-				includeDirectMapping(configuration, mappingPrefix, inset.getOverriddenColumnNames(), (ValueAccessPointMap) inset.getOverriddenColumns(),
+				includeDirectMapping(configuration,
+						mappingPrefix,
+						inset.getOverriddenColumnNames(),
+						inset.getOverriddenColumnSizes(),
+						(ValueAccessPointMap) inset.getOverriddenColumns(),
 						inset.getExcludedProperties());
 				if (configuration.getInsets().isEmpty()) {
 					accessorPath.remove();
@@ -600,6 +617,12 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 						return embeddableLinkage.getColumnName();
 					}
 					
+					@Nullable
+					@Override
+					public Size getColumnSize() {
+						return embeddableLinkage.getColumnSize();
+					}
+					
 					@Override
 					public Class getColumnType() {
 						return embeddableLinkage.getColumnType();
@@ -697,6 +720,11 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 						}
 						
 						@Override
+						public ValueAccessPointMap<C, Size> getOverriddenColumnSizes() {
+							return compositeInset.getOverriddenColumnSizes();
+						}
+						
+						@Override
 						public ValueAccessPointMap<C, Column> getOverriddenColumns() {
 							return compositeInset.getOverriddenColumns();
 						}
@@ -729,6 +757,12 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 					@Override
 					public String getColumnName() {
 						return embeddableLinkage.getColumnName();
+					}
+					
+					@Nullable
+					@Override
+					public Size getColumnSize() {
+						return embeddableLinkage.getColumnSize();
 					}
 					
 					@Override
@@ -824,6 +858,11 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 						}
 						
 						@Override
+						public ValueAccessPointMap<C, Size> getOverriddenColumnSizes() {
+							return embeddableInset.getOverriddenColumnSizes();
+						}
+						
+						@Override
 						public ValueAccessPointMap<C, Column> getOverriddenColumns() {
 							return embeddableInset.getOverriddenColumns();
 						}
@@ -893,6 +932,8 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 			
 			ValueAccessPointMap<SRC, String> getOverriddenColumnNames();
 			
+			ValueAccessPointMap<SRC, Size> getOverriddenColumnSizes();
+			
 			ValueAccessPointMap<SRC, Column> getOverriddenColumns();
 			
 			BeanMappingConfiguration<TRGT> getConfiguration();
@@ -913,6 +954,9 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 			
 			@Nullable
 			String getColumnName();
+			
+			@Nullable
+			Size getColumnSize();
 			
 			Class<O> getColumnType();
 			

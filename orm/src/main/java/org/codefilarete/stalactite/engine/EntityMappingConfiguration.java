@@ -10,7 +10,7 @@ import java.util.function.Function;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.collection.ReadOnlyIterator;
@@ -139,6 +139,9 @@ public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfi
 		
 		@Nullable
 		String getColumnName();
+		
+		@Nullable
+		Size getColumnSize();
 		
 	}
 	

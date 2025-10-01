@@ -22,7 +22,7 @@ import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.TableNamingStrategy;
-import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.ColumnLinkageOptionsByName;
+import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.ColumnLinkageOptionsSupport;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.LinkageSupport;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer;
@@ -99,10 +99,10 @@ class OneToOneRelationConfigurerTest {
 		
 		LinkageSupport<City, Identifier<Long>> identifierLinkage = new LinkageSupport<>(City::getId);
 		identifierLinkage.setField(Reflections.findField(City.class, "id"));
-		identifierLinkage.setColumnOptions(new ColumnLinkageOptionsByName("id"));
+		identifierLinkage.setColumnOptions(new ColumnLinkageOptionsSupport("id"));
 		LinkageSupport<City, String> nameLinkage = new LinkageSupport<>(City::getName);
 		nameLinkage.setField(Reflections.findField(City.class, "name"));
-		nameLinkage.setColumnOptions(new ColumnLinkageOptionsByName("name"));
+		nameLinkage.setColumnOptions(new ColumnLinkageOptionsSupport("name"));
 		
 		// defining City mapping
 		Table<?> cityTable = new Table<>("city");
@@ -228,10 +228,10 @@ class OneToOneRelationConfigurerTest {
 		
 		LinkageSupport<City, Identifier<Long>> identifierLinkage = new LinkageSupport<>(City::getId);
 		identifierLinkage.setField(Reflections.findField(City.class, "id"));
-		identifierLinkage.setColumnOptions(new ColumnLinkageOptionsByName("id"));
+		identifierLinkage.setColumnOptions(new ColumnLinkageOptionsSupport("id"));
 		LinkageSupport<City, String> nameLinkage = new LinkageSupport<>(City::getName);
 		nameLinkage.setField(Reflections.findField(City.class, "name"));
-		nameLinkage.setColumnOptions(new ColumnLinkageOptionsByName("name"));
+		nameLinkage.setColumnOptions(new ColumnLinkageOptionsSupport("name"));
 		
 		EmbeddableMappingConfiguration<City> cityPropertiesMapping = mock(EmbeddableMappingConfiguration.class);
 		// declaring mapping

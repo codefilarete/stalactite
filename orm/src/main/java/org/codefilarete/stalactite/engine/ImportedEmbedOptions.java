@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine;
 
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -31,6 +32,26 @@ public interface ImportedEmbedOptions<C> {
 	 * @return a mapping configurer, specialized for embedded elements
 	 */
 	<IN> ImportedEmbedOptions<C> overrideName(SerializableBiConsumer<C, IN> setter, String columnName);
+	
+	/**
+	 * Overrides embedding with a column size
+	 *
+	 * @param getter the getter as a method reference
+	 * @param columnSize a column size that's the target of the getter (will be added to the {@link Table} if not exists)
+	 * @param <IN> input of the function (type of the embedded element)
+	 * @return a mapping configurer, specialized for embedded elements
+	 */
+	<IN> ImportedEmbedOptions<C> overrideSize(SerializableFunction<C, IN> getter, Size columnSize);
+	
+	/**
+	 * Overrides embedding with a column size
+	 *
+	 * @param setter the setter as a method reference
+	 * @param columnSize a column size that's the target of the setter (will be added to the {@link Table} if not exists)
+	 * @param <IN> input of the function (type of the embedded element)
+	 * @return a mapping configurer, specialized for embedded elements
+	 */
+	<IN> ImportedEmbedOptions<C> overrideSize(SerializableBiConsumer<C, IN> setter, Size columnSize);
 	
 	<IN> ImportedEmbedOptions<C> exclude(SerializableFunction<C, IN> getter);
 	

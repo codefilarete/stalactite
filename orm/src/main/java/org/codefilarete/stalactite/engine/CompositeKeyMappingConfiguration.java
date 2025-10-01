@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.configurer.FluentCompositeKeyMappingConfigurationSupport.Inset;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry.EnumBindType;
 
@@ -44,6 +45,9 @@ public interface CompositeKeyMappingConfiguration<C> {
 		
 		@Nullable
 		String getColumnName();
+		
+		@Nullable
+		Size getColumnSize();
 		
 		Class<O> getColumnType();
 		

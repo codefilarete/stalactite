@@ -13,6 +13,7 @@ import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.MapOptions.KeyAsEntityMapOptions;
 import org.codefilarete.stalactite.engine.MapOptions.ValueAsEntityMapOptions;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
@@ -21,8 +22,6 @@ import org.codefilarete.tool.function.Serie;
 import org.codefilarete.tool.function.TriFunction;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-
-import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * An interface describing a fluent way to declare the persistence mapping of a class. 
@@ -549,6 +548,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		FluentMappingBuilderPropertyOptions<C, I, O> columnName(String name);
 		
 		@Override
+		FluentMappingBuilderPropertyOptions<C, I, O> columnSize(Size size);
+		
+		@Override
 		FluentMappingBuilderPropertyOptions<C, I, O> column(Column<? extends Table, ? extends O> column);
 		
 		@Override
@@ -851,6 +853,12 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		@Override
 		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideName(SerializableBiConsumer<O, IN> function, String columnName);
 		
+		@Override
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideSize(SerializableFunction<O, IN> function, Size columnSize);
+		
+		@Override
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideSize(SerializableBiConsumer<O, IN> function, Size columnSize);
+		
 		/**
 		 * Overrides embedding with an existing target column
 		 *
@@ -895,6 +903,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		
 		@Override
 		FluentMappingBuilderEnumOptions<C, I, E> columnName(String name);
+		
+		@Override
+		FluentMappingBuilderEnumOptions<C, I, E> columnSize(Size size);
 		
 		@Override
 		FluentMappingBuilderEnumOptions<C, I, E> column(Column<? extends Table, ? extends E> column);

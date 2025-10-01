@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine;
 
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
@@ -27,6 +28,9 @@ public interface EnumOptions<E extends Enum<E>> extends PropertyOptions<E> {
 	
 	@Override
 	EnumOptions<E> columnName(String name);
+	
+	@Override
+	EnumOptions<E> columnSize(Size size);
 	
 	@Override
 	EnumOptions<E> column(Column<? extends Table, ? extends E> column);

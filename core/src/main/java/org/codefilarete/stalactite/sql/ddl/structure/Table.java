@@ -135,7 +135,7 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	 * @param <O> column type
 	 * @return the created column or the existing one
 	 */
-	public <O> Column<SELF, O> addColumn(String name, Class<O> javaType, Size size) {
+	public <O> Column<SELF, O> addColumn(String name, Class<O> javaType, @Nullable Size size) {
 		return addertColumn(new Column<>((SELF) this, name, javaType, size));
 	}
 	

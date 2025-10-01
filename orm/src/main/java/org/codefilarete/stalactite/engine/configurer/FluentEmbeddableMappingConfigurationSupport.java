@@ -31,6 +31,7 @@ import org.codefilarete.stalactite.engine.ImportedEmbedOptions;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.PropertyOptions;
 import org.codefilarete.stalactite.engine.configurer.PropertyAccessorResolver.PropertyMapping;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
@@ -192,7 +193,13 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					
 					@Override
 					public PropertyOptions<O> columnName(String name) {
-						linkage.setColumnOptions(new ColumnLinkageOptionsByName(name));
+						linkage.getColumnOptions().setColumnName(name);
+						return null;
+					}
+					
+					@Override
+					public PropertyOptions<O> columnSize(Size size) {
+						linkage.getColumnOptions().setColumnSize(size);
 						return null;
 					}
 					
@@ -284,7 +291,13 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					
 					@Override
 					public EnumOptions<E> columnName(String name) {
-						linkage.setColumnOptions(new ColumnLinkageOptionsByName(name));
+						linkage.getColumnOptions().setColumnName(name);
+						return null;
+					}
+					
+					@Override
+					public EnumOptions<E> columnSize(Size size) {
+						linkage.getColumnOptions().setColumnSize(size);
 						return null;
 					}
 					
@@ -372,6 +385,18 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					}
 					
 					@Override
+					public <IN> ImportedEmbedOptions<C> overrideSize(SerializableFunction<C, IN> getter, Size columnSize) {
+						inset.overrideSize(getter, columnSize);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
+					public <IN> ImportedEmbedOptions<C> overrideSize(SerializableBiConsumer<C, IN> setter, Size columnSize) {
+						inset.overrideSize(setter, columnSize);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
 					public ImportedEmbedOptions exclude(SerializableBiConsumer setter) {
 						inset.exclude(setter);
 						return null;	// we can return null because dispatcher will return proxy
@@ -406,8 +431,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		
 		private boolean setByConstructor = false;
 		
-		@Nullable
-		private ColumnLinkageOptions columnOptions;
+		private LocalColumnLinkageOptions columnOptions = new ColumnLinkageOptionsSupport();
 		
 		private final ThreadSafeLazyInitializer<ReversibleAccessor<T, O>> accessor;
 		
@@ -481,12 +505,11 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 			return setByConstructor;
 		}
 		
-		@Nullable
-		public ColumnLinkageOptions getColumnOptions() {
+		public LocalColumnLinkageOptions getColumnOptions() {
 			return columnOptions;
 		}
 		
-		public void setColumnOptions(@Nullable ColumnLinkageOptions columnOptions) {
+		public void setColumnOptions(LocalColumnLinkageOptions columnOptions) {
 			this.columnOptions = columnOptions;
 		}
 		
@@ -509,6 +532,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		@Override
 		public String getColumnName() {
 			return nullable(this.columnOptions).map(ColumnLinkageOptions::getColumnName).get();
+		}
+		
+		@Nullable
+		@Override
+		public Size getColumnSize() {
+			return nullable(this.columnOptions).map(ColumnLinkageOptions::getColumnSize).get();
 		}
 		
 		@Override
@@ -581,12 +610,28 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		}
 	}
 	
-	static class ColumnLinkageOptionsByName implements ColumnLinkageOptions {
+	public interface LocalColumnLinkageOptions extends ColumnLinkageOptions {
 		
-		private final String columnName;
+		void setColumnName(String columnName);
 		
-		ColumnLinkageOptionsByName(@Nullable String columnName) {
+		void setColumnSize(Size columnSize);
+	}
+	
+	static class ColumnLinkageOptionsSupport implements LocalColumnLinkageOptions {
+		
+		private String columnName;
+		
+		private Size columnSize;
+		
+		ColumnLinkageOptionsSupport() {
+		}
+		
+		ColumnLinkageOptionsSupport(@Nullable String columnName) {
 			this.columnName = columnName;
+		}
+		
+		ColumnLinkageOptionsSupport(@Nullable Size columnSize) {
+			this.columnSize = columnSize;
 		}
 		
 		@Nullable
@@ -595,9 +640,24 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 			return this.columnName;
 		}
 		
+		@Override
+		public void setColumnName(String columnName) {
+			this.columnName = columnName;
+		}
+		
+		@Nullable
+		@Override
+		public Size getColumnSize() {
+			return columnSize;
+		}
+		
+		@Override
+		public void setColumnSize(Size columnSize) {
+			this.columnSize = columnSize;
+		}
 	}
 	
-	static class ColumnLinkageOptionsByColumn implements ColumnLinkageOptions {
+	static class ColumnLinkageOptionsByColumn implements LocalColumnLinkageOptions {
 		
 		private final Column column;
 		
@@ -616,6 +676,22 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		
 		public Class<?> getColumnType() {
 			return this.column.getJavaType();
+		}
+		
+		@Nullable
+		@Override
+		public Size getColumnSize() {
+			return this.column.getSize();
+		}
+		
+		@Override
+		public void setColumnName(String columnName) {
+			// no-op, column is already defined
+		}
+		
+		@Override
+		public void setColumnSize(Size columnSize) {
+			// no-op, column is already defined
 		}
 	}
 	
@@ -657,6 +733,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		/** Equivalent of {@link #insetAccessor} as a {@link PropertyAccessor}  */
 		private final Accessor<SRC, TRGT> accessor;
 		private final ValueAccessPointMap<SRC, String> overriddenColumnNames = new ValueAccessPointMap<>();
+		private final ValueAccessPointMap<SRC, Size> overriddenColumnSizes = new ValueAccessPointMap<>();
 		private final ValueAccessPointSet<SRC> excludedProperties = new ValueAccessPointSet<>();
 		private final EmbeddableMappingConfigurationProvider<? extends TRGT> configurationProvider;
 		private final ValueAccessPointMap<SRC, Column> overriddenColumns = new ValueAccessPointMap<>();
@@ -710,6 +787,10 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 			return this.overriddenColumnNames;
 		}
 		
+		public ValueAccessPointMap<SRC, Size> getOverriddenColumnSizes() {
+			return overriddenColumnSizes;
+		}
+		
 		public ValueAccessPointMap<SRC, Column> getOverriddenColumns() {
 			return overriddenColumns;
 		}
@@ -728,6 +809,18 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		
 		public void overrideName(AccessorChain accessorChain, String columnName) {
 			this.overriddenColumnNames.put(accessorChain, columnName);
+		}
+		
+		public void overrideSize(SerializableFunction methodRef, Size columnSize) {
+			this.overriddenColumnSizes.put(new AccessorByMethodReference(methodRef), columnSize);
+		}
+		
+		public void overrideSize(SerializableBiConsumer methodRef, Size columnSize) {
+			this.overriddenColumnSizes.put(new MutatorByMethodReference<>(methodRef), columnSize);
+		}
+		
+		public void overrideSize(AccessorChain accessorChain, Size columnSize) {
+			this.overriddenColumnSizes.put(accessorChain, columnSize);
 		}
 		
 		public void override(SerializableFunction methodRef, Column column) {

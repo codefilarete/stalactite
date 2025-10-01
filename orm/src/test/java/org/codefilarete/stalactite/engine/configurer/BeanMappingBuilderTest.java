@@ -125,7 +125,7 @@ class BeanMappingBuilderTest {
 			});
 			
 			// When I add the linkage to the configurator for this column, then it doesn't fail with any exception
-			assertThatCode(() -> testInstance.addColumnToTable(linkageMock, dummyColumn.getName())).doesNotThrowAnyException();
+			assertThatCode(() -> testInstance.addColumnToTable(linkageMock, dummyColumn.getName(), dummyColumn.getSize())).doesNotThrowAnyException();
 		}
 	}
 }

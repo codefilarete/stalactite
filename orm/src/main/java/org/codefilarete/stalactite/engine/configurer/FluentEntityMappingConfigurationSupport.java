@@ -70,6 +70,7 @@ import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
 import org.codefilarete.stalactite.engine.runtime.AbstractVersioningStrategy.VersioningStrategySupport;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
@@ -902,6 +903,18 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					}
 					
 					@Override
+					public ImportedEmbedWithColumnOptions overrideSize(SerializableBiConsumer setter, Size columnSize) {
+						support.overrideSize(setter, columnSize);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
+					public ImportedEmbedWithColumnOptions overrideSize(SerializableFunction getter, Size columnSize) {
+						support.overrideSize(getter, columnSize);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
 					public ImportedEmbedWithColumnOptions override(SerializableBiConsumer setter, Column targetColumn) {
 						propertiesMappingConfigurationDelegate.currentInset().override(setter, targetColumn);
 						return null;
@@ -1090,7 +1103,13 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 						
 						@Override
 						public ColumnOptions<O> columnName(String name) {
-							newMapping.setColumnOptions(new ColumnLinkageOptionsByName(name));
+							newMapping.getColumnOptions().setColumnName(name);
+							return null;
+						}
+						
+						@Override
+						public PropertyOptions<O> columnSize(Size size) {
+							newMapping.getColumnOptions().setColumnSize(size);
 							return null;
 						}
 						
@@ -1149,7 +1168,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		
 		SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy, String columnName) {
 			SingleKeyLinkageSupport<C, I> linkage = addKeyMapping(Accessors.accessor(getter), identifierPolicy);
-			linkage.setColumnOptions(new ColumnLinkageOptionsByName(columnName));
+			linkage.setColumnOptions(new ColumnLinkageOptionsSupport(columnName));
 			return linkage;
 		}
 		
@@ -1165,7 +1184,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		
 		SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy, String columnName) {
 			SingleKeyLinkageSupport<C, I> linkage = addKeyMapping(Accessors.mutator(setter), identifierPolicy);
-			linkage.setColumnOptions(new ColumnLinkageOptionsByName(columnName));
+			linkage.setColumnOptions(new ColumnLinkageOptionsSupport(columnName));
 			return linkage;
 		}
 		
@@ -1235,7 +1254,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 						
 						@Override
 						public KeyOptions<C, I> usingConstructor(Function<? super I, C> factory, String columnName) {
-							keyMapping.setColumnOptions(new ColumnLinkageOptionsByName(columnName));
+							keyMapping.setColumnOptions(new ColumnLinkageOptionsSupport(columnName));
 							keyMapping.setByConstructor();
 							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(table -> row -> factory.apply((I) row.get(table.getColumn(columnName))), true);
 							return null;
@@ -1259,7 +1278,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 						public <X> KeyOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
 																	 String columnName1,
 																	 String columnName2) {
-							keyMapping.setColumnOptions(new ColumnLinkageOptionsByName(columnName1));
+							keyMapping.setColumnOptions(new ColumnLinkageOptionsSupport(columnName1));
 							keyMapping.setByConstructor();
 							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(
 									table -> row -> factory.apply(
@@ -1291,7 +1310,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 																		String columnName1,
 																		String columnName2,
 																		String columnName3) {
-							keyMapping.setColumnOptions(new ColumnLinkageOptionsByName(columnName1));
+							keyMapping.setColumnOptions(new ColumnLinkageOptionsSupport(columnName1));
 							keyMapping.setByConstructor();
 							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(
 									table -> row -> factory.apply(

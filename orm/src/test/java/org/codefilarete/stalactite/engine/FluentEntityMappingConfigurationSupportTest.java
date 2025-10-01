@@ -52,6 +52,8 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
+import org.codefilarete.stalactite.sql.ddl.Length;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -1011,6 +1013,30 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
+		void tableStructure_columnSizeGiven_columnSizeIsUsed() {
+			dialect.getColumnBinderRegistry().register(
+					(Class<Identifier<UUID>>) (Class) Identifier.class,
+					new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.UUID_BINDER, PersistedIdentifier::new, StatefulIdentifier::getDelegate)));
+			dialect.getSqlTypeRegistry().put(Identifier.class, "VARCHAR(255)");
+			
+			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+					.mapKey(Toto::getIdentifier, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+					.map(Toto::getName).columnSize(Size.length(123))
+					.extraTableName("Tata")
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// column should be correctly created
+			assertThat(persister.getEntityJoinTree().giveTables()).extracting(Table::getName).containsExactlyInAnyOrder("Toto", "Tata");
+			Table<?> tataTable = Iterables.find(persister.getEntityJoinTree().giveTables(), table -> table.getName().equals("Tata"));
+			Column columnForProperty = tataTable.mapColumnsOnName().get("name");
+			assertThat(columnForProperty).isNotNull();
+			assertThat(((Length) columnForProperty.getSize()).getValue()).isEqualTo(123);
+		}
+		
+		@Test
 		void crud() {
 			dialect.getColumnBinderRegistry().register(
 					(Class<Identifier<UUID>>) (Class) Identifier.class,
@@ -1216,6 +1242,8 @@ class FluentEntityMappingConfigurationSupportTest {
 						.map(Timestamp::getModificationDate))
 					.overrideName(Timestamp::getCreationDate, "createdAt")
 					.overrideName(Timestamp::getModificationDate, "modifiedAt")
+					.overrideSize(Timestamp::getCreationDate, Size.length(42))
+					.overrideSize(Timestamp::getModificationDate, Size.length(42))
 				.build(new PersistenceContext(mock(ConnectionProvider.class), dialect));
 		
 		Map<String, Column> columnsByName = toto.mapColumnsOnName();

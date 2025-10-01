@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine;
 
 import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
@@ -58,6 +59,15 @@ public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappi
 		<IN> FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideName(AccessorChain<O, IN> chain, String columnName);
 		
 		@Override
+		<IN> FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideSize(SerializableFunction<O, IN> function, Size columnSize);
+		
+		@Override
+		<IN> FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideSize(SerializableBiConsumer<O, IN> function, Size columnSize);
+		
+		@Override
+		<IN> FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideSize(AccessorChain<O, IN> chain, Size columnSize);
+		
+		@Override
 		<IN> FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> exclude(SerializableBiConsumer<O, IN> setter);
 		
 		@Override
@@ -83,6 +93,9 @@ public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappi
 		
 		@Override
 		FluentEmbeddableMappingBuilderEnumOptions<C, E> columnName(String name);
+		
+		@Override
+		FluentEmbeddableMappingBuilderEnumOptions<C, E> columnSize(Size size);
 		
 		@Override
 		FluentEmbeddableMappingBuilderEnumOptions<C, E> column(Column<? extends Table, ? extends E> column);
@@ -113,6 +126,9 @@ public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappi
 		
 		@Override
 		FluentEmbeddableMappingBuilderPropertyOptions<C, O> columnName(String name);
+		
+		@Override
+		FluentEmbeddableMappingBuilderPropertyOptions<C, O> columnSize(Size size);
 		
 		@Override
 		FluentEmbeddableMappingBuilderPropertyOptions<C, O> column(Column<? extends Table, ? extends O> column);

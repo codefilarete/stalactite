@@ -8,6 +8,7 @@ import java.util.NoSuchElementException;
 
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.Inset;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry.EnumBindType;
 import org.codefilarete.tool.collection.ReadOnlyIterator;
@@ -75,6 +76,9 @@ public interface EmbeddableMappingConfiguration<C> {
 		
 		@Nullable
 		String getColumnName();
+		
+		@Nullable
+		Size getColumnSize();
 		
 		Class<O> getColumnType();
 		

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
@@ -110,6 +111,9 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		FluentSubEntityMappingBuilderPropertyOptions<C, I, O> columnName(String name);
 		
 		@Override
+		FluentSubEntityMappingBuilderPropertyOptions<C, I, O> columnSize(Size size);
+		
+		@Override
 		FluentSubEntityMappingBuilderPropertyOptions<C, I, O> column(Column<? extends Table, ? extends O> column);
 		
 		@Override
@@ -144,6 +148,9 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		
 		@Override
 		FluentSubEntityMappingConfigurationEnumOptions<C, I, E> columnName(String name);
+		
+		@Override
+		FluentSubEntityMappingConfigurationEnumOptions<C, I, E> columnSize(Size size);
 		
 		@Override
 		FluentSubEntityMappingConfigurationEnumOptions<C, I, E> column(Column<? extends Table, ? extends E> column);
@@ -359,6 +366,12 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		
 		@Override
 		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideName(SerializableBiConsumer<O, IN> function, String columnName);
+		
+		@Override
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideSize(SerializableFunction<O, IN> function, Size columnSize);
+		
+		@Override
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideSize(SerializableBiConsumer<O, IN> function, Size columnSize);
 		
 		/**
 		 * Overrides embedding with an existing target column

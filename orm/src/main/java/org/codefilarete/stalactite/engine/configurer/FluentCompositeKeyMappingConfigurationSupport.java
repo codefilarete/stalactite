@@ -27,6 +27,7 @@ import org.codefilarete.stalactite.engine.CompositeKeyPropertyOptions;
 import org.codefilarete.stalactite.engine.FluentCompositeKeyMappingBuilder;
 import org.codefilarete.stalactite.engine.ImportedEmbedOptions;
 import org.codefilarete.stalactite.engine.configurer.PropertyAccessorResolver.PropertyMapping;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry.EnumBindType;
@@ -286,6 +287,18 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 					}
 					
 					@Override
+					public <IN> ImportedEmbedOptions<C> overrideSize(SerializableFunction<C, IN> getter, Size columnSize) {
+						inset.overrideSize(getter, columnSize);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
+					public <IN> ImportedEmbedOptions<C> overrideSize(SerializableBiConsumer<C, IN> setter, Size columnSize) {
+						inset.overrideSize(setter, columnSize);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
 					public ImportedEmbedOptions exclude(SerializableBiConsumer setter) {
 						inset.exclude(setter);
 						return null;	// we can return null because dispatcher will return proxy
@@ -321,6 +334,9 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 		
 		@Nullable
 		private String columnName;
+		
+		@Nullable
+		private Size columnSize;
 		
 		private final AccessorFieldLazyInitializer accessor = new AccessorFieldLazyInitializer();
 		
@@ -358,8 +374,24 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 			this.enumBindType = enumBindType;
 		}
 		
+		@Nullable
+		@Override
+		public String getColumnName() {
+			return this.columnName;
+		}
+		
 		public void setColumnName(String name) {
 			this.columnName = name;
+		}
+		
+		@Nullable
+		@Override
+		public Size getColumnSize() {
+			return this.columnSize;
+		}
+		
+		public void setColumnSize(@Nullable Size columnSize) {
+			this.columnSize = columnSize;
 		}
 		
 		@Override
@@ -375,12 +407,6 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 		
 		public void setField(Field field) {
 			this.field = field;
-		}
-		
-		@Nullable
-		@Override
-		public String getColumnName() {
-			return this.columnName;
 		}
 		
 		@Override
@@ -430,6 +456,7 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 		/** Equivalent of {@link #insetAccessor} as a {@link PropertyAccessor}  */
 		private final PropertyAccessor<SRC, TRGT> accessor;
 		private final ValueAccessPointMap<SRC, String> overriddenColumnNames = new ValueAccessPointMap<>();
+		private final ValueAccessPointMap<SRC, Size> overriddenColumnSizes = new ValueAccessPointMap<>();
 		private final ValueAccessPointSet<SRC> excludedProperties = new ValueAccessPointSet<>();
 		private final CompositeKeyMappingConfigurationProvider<? extends TRGT> configurationProvider;
 		private final ValueAccessPointMap<SRC, Column> overriddenColumns = new ValueAccessPointMap<>();
@@ -485,6 +512,10 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 			return this.overriddenColumnNames;
 		}
 		
+		public ValueAccessPointMap<SRC, Size> getOverriddenColumnSizes() {
+			return overriddenColumnSizes;
+		}
+		
 		public ValueAccessPointMap<SRC, Column> getOverriddenColumns() {
 			return overriddenColumns;
 		}
@@ -503,6 +534,18 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 		
 		public void overrideName(AccessorChain accessorChain, String columnName) {
 			this.overriddenColumnNames.put(accessorChain, columnName);
+		}
+		
+		public void overrideSize(SerializableFunction methodRef, Size columnSize) {
+			this.overriddenColumnSizes.put(new AccessorByMethodReference(methodRef), columnSize);
+		}
+		
+		public void overrideSize(SerializableBiConsumer methodRef, Size columnSize) {
+			this.overriddenColumnSizes.put(new MutatorByMethodReference(methodRef), columnSize);
+		}
+		
+		public void overrideSize(AccessorChain accessorChain, Size columnSize) {
+			this.overriddenColumnSizes.put(accessorChain, columnSize);
 		}
 		
 		public void override(SerializableFunction methodRef, Column column) {

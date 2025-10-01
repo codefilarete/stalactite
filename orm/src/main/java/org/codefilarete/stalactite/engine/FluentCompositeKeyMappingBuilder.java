@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine;
 
 import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
@@ -56,6 +57,15 @@ public interface FluentCompositeKeyMappingBuilder<C> extends FluentCompositeKeyM
 		
 		@Override
 		<IN> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> overrideName(AccessorChain<O, IN> chain, String columnName);
+		
+		@Override
+		<IN> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> overrideSize(SerializableFunction<O, IN> function, Size columnSize);
+		
+		@Override
+		<IN> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> overrideSize(SerializableBiConsumer<O, IN> function, Size columnSize);
+		
+		@Override
+		<IN> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> overrideSize(AccessorChain<O, IN> chain, Size columnSize);
 		
 		@Override
 		<IN> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> exclude(SerializableBiConsumer<O, IN> setter);
