@@ -106,6 +106,9 @@ public class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 			rightKey = createOrUseReverseColumn(targetMappingStrategy, reverseColumn, reverseSetter, accessorDefinition);
 		}
 		
+		// According to the nullable option, we specify the ddl schema option
+		rightKey.getColumns().forEach(c -> ((Column) c).nullable(oneToOneRelation.isNullable()));
+		
 		// adding foreign key constraint
 		// we don't create foreign key for table-per-class because source columns should reference different tables (the one
 		// per entity) which databases do not allow

@@ -8,8 +8,12 @@ import java.sql.SQLException;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
+import org.apache.commons.lang3.builder.MultilineRecursiveToStringStyle;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.assertj.core.presentation.StandardRepresentation;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
@@ -369,7 +373,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Country::getName)
 					.map(Country::getDescription)
-					.mapOneToOne(Country::getCapital, cityConfiguration)
+					.mapOneToOne(Country::getCapital, cityConfiguration).mandatory()
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -389,6 +393,42 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_COUNTRY_CAPITALID_CITY_ID", "COUNTRY", "CAPITALID", "CITY", "ID");
 			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
+
+			class Column {
+				private final String tableName;
+				private final String name;
+				private final boolean nullable;
+
+				Column(String tableName, String name, boolean nullable) {
+					this.tableName = tableName;
+					this.name = name;
+					this.nullable = nullable;
+				}
+			}
+
+			ResultSetIterator<Column> columnIterator = new ResultSetIterator<Column>(currentConnection.getMetaData().getColumns(null, null, "COUNTRY", "%")) {
+				@Override
+				public Column convert(ResultSet rs) throws SQLException {
+					return new Column(
+							rs.getString("TABLE_NAME"),
+							rs.getString("COLUMN_NAME"),
+							rs.getBoolean("NULLABLE")
+					);
+				}
+			};
+			assertThat(Iterables.collectToList(() -> columnIterator, Function.identity()))
+					.usingRecursiveFieldByFieldElementComparator()
+					.withRepresentation(new StandardRepresentation() {
+						@Override
+						protected String fallbackToStringOf(Object object) {
+							return ToStringBuilder.reflectionToString(object, new MultilineRecursiveToStringStyle());
+						}
+					})
+					.containsExactlyInAnyOrder(
+							new Column("COUNTRY", "ID", false),
+							new Column("COUNTRY", "NAME", true),
+							new Column("COUNTRY", "DESCRIPTION", true),
+							new Column("COUNTRY", "CAPITALID", false));
 		}
 		
 		@Test
@@ -400,7 +440,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Country::getName)
 					.map(Country::getDescription)
-					.mapOneToOne(Country::getCapital, cityConfiguration).mappedBy(City::getCountry)
+					.mapOneToOne(Country::getCapital, cityConfiguration).mappedBy(City::getCountry).mandatory()
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -421,6 +461,41 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_CITY_COUNTRYID_COUNTRY_ID", "CITY", "COUNTRYID", "COUNTRY", "ID");
 			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
+
+			class Column {
+				private final String tableName;
+				private final String name;
+				private final boolean nullable;
+
+				Column(String tableName, String name, boolean nullable) {
+					this.tableName = tableName;
+					this.name = name;
+					this.nullable = nullable;
+				}
+			}
+
+			ResultSetIterator<Column> columnIterator = new ResultSetIterator<Column>(currentConnection.getMetaData().getColumns(null, null, "CITY", "%")) {
+				@Override
+				public Column convert(ResultSet rs) throws SQLException {
+					return new Column(
+							rs.getString("TABLE_NAME"),
+							rs.getString("COLUMN_NAME"),
+							rs.getBoolean("NULLABLE")
+					);
+				}
+			};
+			assertThat(Iterables.collectToList(() -> columnIterator, Function.identity()))
+					.usingRecursiveFieldByFieldElementComparator()
+					.withRepresentation(new StandardRepresentation() {
+						@Override
+						protected String fallbackToStringOf(Object object) {
+							return ToStringBuilder.reflectionToString(object, new MultilineRecursiveToStringStyle());
+						}
+					})
+					.containsExactlyInAnyOrder(
+							new Column("CITY", "ID", false),
+							new Column("CITY", "NAME", true),
+							new Column("CITY", "COUNTRYID", false));
 		}
 		
 		@Test

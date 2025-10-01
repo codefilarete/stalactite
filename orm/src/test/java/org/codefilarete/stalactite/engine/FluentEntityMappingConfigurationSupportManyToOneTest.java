@@ -8,8 +8,12 @@ import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.function.Function;
 
+import org.apache.commons.lang3.builder.MultilineRecursiveToStringStyle;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.assertj.core.presentation.StandardRepresentation;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
@@ -303,7 +307,7 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Device::getName)
-					.mapManyToOne(Device::getLocation, addressConfiguration)
+					.mapManyToOne(Device::getLocation, addressConfiguration).mandatory()
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -323,6 +327,41 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 			JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_DEVICE_LOCATIONID_ADDRESS_ID", "DEVICE", "LOCATIONID", "ADDRESS", "ID");
 			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
+
+			class Column {
+				private final String tableName;
+				private final String name;
+				private final boolean nullable;
+
+				Column(String tableName, String name, boolean nullable) {
+					this.tableName = tableName;
+					this.name = name;
+					this.nullable = nullable;
+				}
+			}
+			
+			ResultSetIterator<Column> columnIterator = new ResultSetIterator<Column>(currentConnection.getMetaData().getColumns(null, null, "DEVICE", "%")) {
+				@Override
+				public Column convert(ResultSet rs) throws SQLException {
+					return new Column(
+							rs.getString("TABLE_NAME"),
+							rs.getString("COLUMN_NAME"),
+							rs.getBoolean("NULLABLE")
+					);
+				}
+			};
+			assertThat(Iterables.collectToList(() -> columnIterator, Function.identity()))
+					.usingRecursiveFieldByFieldElementComparator()
+					.withRepresentation(new StandardRepresentation() {
+						@Override
+						protected String fallbackToStringOf(Object object) {
+							return ToStringBuilder.reflectionToString(object, new MultilineRecursiveToStringStyle());
+						}
+					})
+					.containsExactlyInAnyOrder(
+					new Column("DEVICE", "ID", false),
+					new Column("DEVICE", "NAME", true),
+					new Column("DEVICE", "LOCATIONID", false));
 		}
 		
 		@Test
