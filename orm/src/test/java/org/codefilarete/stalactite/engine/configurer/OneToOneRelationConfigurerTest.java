@@ -155,7 +155,8 @@ class OneToOneRelationConfigurerTest {
 		// defining Country -> City relation through capital property
 		PropertyAccessor<Country, City> capitalAccessPoint = new PropertyAccessor<>(new AccessorByMethodReference<>(Country::getCapital),
 				new MutatorByMethodReference<>(Country::setCapital));
-		OneToOneRelation<Country, City, Identifier<Long>> countryCapitalRelation = new OneToOneRelation<>(capitalAccessPoint, true, cityMappingConfiguration, cityTable);
+		OneToOneRelation<Country, City, Identifier<Long>> countryCapitalRelation = new OneToOneRelation<>(capitalAccessPoint, () -> true, () -> cityMappingConfiguration);
+		countryCapitalRelation.setTargetTable(cityTable);
 		// no reverse column declared, hence relation is maintained through an association table
 		
 		// Checking tables structure foreign key presence
@@ -275,7 +276,8 @@ class OneToOneRelationConfigurerTest {
 		// defining Country -> City relation through capital property
 		PropertyAccessor<Country, City> capitalAccessPoint = new PropertyAccessor<>(new AccessorByMethodReference<>(Country::getCapital),
 				new MutatorByMethodReference<>(Country::setCapital));
-		OneToOneRelation<Country, City, Identifier<Long>> countryCapitalRelation = new OneToOneRelation<>(capitalAccessPoint, true, cityMappingConfiguration, cityTable);
+		OneToOneRelation<Country, City, Identifier<Long>> countryCapitalRelation = new OneToOneRelation<>(capitalAccessPoint, () -> true, () -> cityMappingConfiguration);
+		countryCapitalRelation.setTargetTable(cityTable);
 		// giving reverse column to declare a relation owned by target table (no association table)
 		countryCapitalRelation.setReverseColumn(cityTableCountryColumn);
 		

@@ -1128,7 +1128,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			
 			answerPersister = entityBuilder(Answer.class, LONG_TYPE)
 					.mapKey(Answer::getId, ALREADY_ASSIGNED)
-					.mapOneToMany(Answer::getChoices, answerChoiceMappingConfiguration, choiceTable)
+					.mapOneToMany(Answer::getChoices, answerChoiceMappingConfiguration.onTable(choiceTable))
 						.cascading(ALL).indexed()
 					.build(persistenceContext);
 			

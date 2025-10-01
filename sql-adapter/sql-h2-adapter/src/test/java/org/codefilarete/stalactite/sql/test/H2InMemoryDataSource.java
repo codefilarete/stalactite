@@ -13,7 +13,11 @@ public class H2InMemoryDataSource extends UrlAwareDataSource {
 	
 	public H2InMemoryDataSource() {
 		// random URL to avoid conflict between tests
-		super("jdbc:h2:mem:test" + Randomizer.INSTANCE.randomHexString(8));
+		this("test" + Randomizer.INSTANCE.randomHexString(8));
+	}
+	
+	public H2InMemoryDataSource(String databaseName) {
+		super("jdbc:h2:mem:" + databaseName);
 		JdbcDataSource delegate = new JdbcDataSource();
 		delegate.setUrl(getUrl());
 		delegate.setUser("sa");

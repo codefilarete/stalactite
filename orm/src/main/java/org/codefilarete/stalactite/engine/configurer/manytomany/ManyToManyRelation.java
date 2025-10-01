@@ -35,7 +35,7 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 	private final EntityMappingConfigurationProvider<TRGT, TRGTID> targetMappingConfiguration;
 	
 	@Nullable
-	private final Table targetTable;
+	private Table targetTable;
 	
 	/** Default relation mode is {@link RelationMode#ALL} */
 	private RelationMode relationMode = RelationMode.ALL;
@@ -58,44 +58,21 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 	private String indexingColumnName;
 	
 	/**
-	 * Default, simple constructor.
-	 * 
-	 * @param collectionAccessor provider of the property to be persisted
-	 * @param methodReference equivalent to collectionProvider
-	 * @param targetMappingConfiguration persistence configuration of entities stored in the target collection
-	 * @param targetTable optional table to be used to store target entities
-	 */
-	public ManyToManyRelation(ReversibleAccessor<SRC, C1> collectionAccessor,
-							  ValueAccessPointByMethodReference<SRC> methodReference,
-							  EntityMappingConfiguration<? extends SRC, ?> sourceMappingConfiguration,
-							  EntityMappingConfiguration<? extends TRGT, TRGTID> targetMappingConfiguration,
-							  @Nullable Table targetTable) {
-		this(collectionAccessor,
-				methodReference,
-				() -> (EntityMappingConfiguration<SRC, Object>) sourceMappingConfiguration,
-				() -> (EntityMappingConfiguration<TRGT, TRGTID>) targetMappingConfiguration,
-				targetTable);
-	}
-	
-	/**
 	 * Constructor with lazy configuration provider. To be used when target configuration is not defined while source configuration is defined, for
 	 * instance on cycling configuration.
 	 *
 	 * @param collectionAccessor provider of the property to be persisted
 	 * @param methodReference equivalent to collectionProvider
 	 * @param targetMappingConfiguration persistence configuration provider of entities stored in the target collection
-	 * @param targetTable optional table to be used to store target entities
 	 */
 	public ManyToManyRelation(ReversibleAccessor<SRC, C1> collectionAccessor,
 							  ValueAccessPointByMethodReference<SRC> methodReference,
 							  EntityMappingConfigurationProvider<? extends SRC, ?> sourceMappingConfiguration,
-							  EntityMappingConfigurationProvider<? super TRGT, TRGTID> targetMappingConfiguration,
-							  @Nullable Table targetTable) {
+							  EntityMappingConfigurationProvider<? super TRGT, TRGTID> targetMappingConfiguration) {
 		this.collectionAccessor = collectionAccessor;
 		this.methodReference = methodReference;
 		this.sourceMappingConfiguration = (EntityMappingConfigurationProvider<SRC, ?>) sourceMappingConfiguration;
 		this.targetMappingConfiguration = (EntityMappingConfigurationProvider<TRGT, TRGTID>) targetMappingConfiguration;
-		this.targetTable = targetTable;
 	}
 	
 	public ReversibleAccessor<SRC, C1> getCollectionAccessor() {
@@ -122,11 +99,15 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 	
 	public boolean isTargetTablePerClassPolymorphic() {
 		return getTargetMappingConfiguration().getPolymorphismPolicy() instanceof PolymorphismPolicy.TablePerClassPolymorphism;
-	} 
+	}
 	
 	@Nullable
 	public Table getTargetTable() {
 		return targetTable;
+	}
+	
+	public void setTargetTable(@Nullable Table targetTable) {
+		this.targetTable = targetTable;
 	}
 	
 	public RelationMode getRelationMode() {

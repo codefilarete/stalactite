@@ -28,7 +28,7 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	private final BooleanSupplier sourceTablePerClassPolymorphic;
 	
 	@Nullable
-	private final Table<?> targetTable;
+	private Table<?> targetTable;
 	
 	private boolean nullable = true;
 	
@@ -55,20 +55,11 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	private boolean fetchSeparately;
 	
 	public OneToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider,
-							boolean sourceTablePerClassPolymorphic,
-							EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration,
-							Table<?> table) {
-		this(targetProvider, () -> sourceTablePerClassPolymorphic, () -> targetMappingConfiguration, table);
-	}
-	
-	public OneToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider,
 							BooleanSupplier sourceTablePerClassPolymorphic,
-							EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration,
-							Table<?> table) {
+							EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration) {
 		this.sourceTablePerClassPolymorphic = sourceTablePerClassPolymorphic;
 		this.targetMappingConfiguration = (EntityMappingConfigurationProvider<TRGT, TRGTID>) targetMappingConfiguration;
 		this.targetProvider = targetProvider;
-		this.targetTable = table;
 	}
 	
 	/** Original method reference given for mapping */
@@ -92,6 +83,10 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	@Nullable
 	public Table getTargetTable() {
 		return this.targetTable;
+	}
+	
+	public void setTargetTable(@Nullable Table<?> targetTable) {
+		this.targetTable = targetTable;
 	}
 	
 	/** Nullable option, mainly for column join and DDL schema generation */

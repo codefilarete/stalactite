@@ -435,14 +435,14 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 					.onTable(personTable)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)
-					.mapOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration(), personTable).mappedBy(reversePartnerId)
+					.mapOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).mappedBy(reversePartnerId)
 					.mapOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
 							.mapKey(House::getId, ALREADY_ASSIGNED)
 							.mapOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
 									.mapKey(Address::getId, ALREADY_ASSIGNED)
 									.map(Address::getLocation))
-							.mapOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration(), personTable)
-							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+							.mapOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration())
+							.cascading(RelationMode.ALL_ORPHAN_REMOVAL).onTable(personTable)
 					).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 			);
 			

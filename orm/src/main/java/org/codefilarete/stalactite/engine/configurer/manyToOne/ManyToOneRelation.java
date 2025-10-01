@@ -38,7 +38,7 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 	private final BooleanSupplier sourceTablePerClassPolymorphic;
 	
 	@javax.annotation.Nullable
-	private final Table targetTable;
+	private Table targetTable;
 	
 	private boolean nullable = true;
 	
@@ -52,21 +52,12 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 	 */
 	private boolean fetchSeparately;
 	
-	public <T extends Table> ManyToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider,
-											   boolean sourceTablePerClassPolymorphic,
-											   EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration,
-											   T table) {
-		this(targetProvider, () -> sourceTablePerClassPolymorphic, () -> targetMappingConfiguration, table);
-	}
-	
-	public <T extends Table> ManyToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider,
+	public ManyToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider,
 											   BooleanSupplier sourceTablePerClassPolymorphic,
-											   EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration,
-											   T table) {
+											   EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration) {
 		this.sourceTablePerClassPolymorphic = sourceTablePerClassPolymorphic;
 		this.targetMappingConfiguration = (EntityMappingConfigurationProvider<TRGT, TRGTID>) targetMappingConfiguration;
 		this.targetProvider = targetProvider;
-		this.targetTable = table;
 	}
 	
 	/** Original method reference given for mapping */
@@ -90,6 +81,10 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 	@javax.annotation.Nullable
 	public Table getTargetTable() {
 		return this.targetTable;
+	}
+	
+	public void setTargetTable(@javax.annotation.Nullable Table targetTable) {
+		this.targetTable = targetTable;
 	}
 	
 	/** Nullable option, mainly for column join and DDL schema generation */

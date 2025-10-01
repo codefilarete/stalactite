@@ -53,7 +53,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 	 * @param <J> type of identifier of {@code O}
 	 * @return a enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
 	 */
-	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
+	<O, J> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a direct relationship between current entity and some of type {@code O}.
@@ -64,31 +64,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 	 * @param <J> type of identifier of {@code O}
 	 * @return a enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
 	 */
-	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
-	
-	/**
-	 * Declares a direct relation between current entity and some of type {@code O}.
-	 *
-	 * @param getter the way to get the target entity
-	 * @param mappingConfiguration the mapping configuration of the target entity
-	 * @param table target table of the mapped configuration
-	 * @param <O> type of target entity
-	 * @param <J> type of identifier of {@code O}
-	 * @return a enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
-	 */
-	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
-	
-	/**
-	 * Declares a direct relation between current entity and some of type {@code O}.
-	 *
-	 * @param setter the way to get the target entity
-	 * @param mappingConfiguration the mapping configuration of the target entity
-	 * @param table target table of the mapped configuration
-	 * @param <O> type of target entity
-	 * @param <J> type of identifier of {@code O}
-	 * @return a enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
-	 */
-	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
+	<O, J> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a relation between current entity and some of type {@code O} through a {@link Collection}.
@@ -103,25 +79,13 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 	 * @return a enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
 	 * @see #mapOneToMany(SerializableFunction, EntityMappingConfigurationProvider)
 	 */
-	default <O, J, S extends Collection<O>>
+	<O, J, S extends Collection<O>>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
-		return mapOneToMany(getter, mappingConfiguration, null);
-	}
+	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
 	
-	<O, J, S extends Collection<O>, T extends Table>
+	<O, J, S extends Collection<O>>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration, @javax.annotation.Nullable T table);
-	
-	default <O, J, S extends Collection<O>>
-	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
-		return mapOneToMany(setter, mappingConfiguration, null);
-	}
-	
-	<O, J, S extends Collection<O>, T extends Table>
-	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	mapOneToMany(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
 	
 	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter,
 																							  EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);

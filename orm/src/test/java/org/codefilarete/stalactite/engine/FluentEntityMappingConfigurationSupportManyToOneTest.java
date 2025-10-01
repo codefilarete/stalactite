@@ -382,7 +382,8 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 					.map(Device::getName)
 					.mapManyToOne(Device::getLocation, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
 							.mapKey(Address::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-							.map(Address::getStreet), new Table<>("Township"))
+							.map(Address::getStreet)
+							.onTable(new Table<>("Township")))
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -461,52 +462,6 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 			};
 			JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_DEVICE_LOCATIONID_TOWN_ID", "DEVICE", "LOCATIONID", "TOWN", "ID");
-			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
-		}
-		
-		@Test
-		void withTargetTableAndTableSetByTargetEntity_targetTableIsUsed() throws SQLException {
-			MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
-					// setting a foreign key naming strategy to be tested
-					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
-					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.map(Device::getName)
-					.mapManyToOne(Device::getLocation, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
-							.onTable(new Table<>("Town"))
-							.mapKey(Address::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-							.map(Address::getStreet), new Table<>("Township"))
-					.build(persistenceContext);
-			
-			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-			ddlDeployer.deployDDL();
-			
-			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
-			
-			ResultSetIterator<Table> tableIterator = new ResultSetIterator<Table>(currentConnection.getMetaData().getTables(null, currentConnection.getSchema(),
-					null, null)) {
-				@Override
-				public Table convert(ResultSet rs) throws SQLException {
-					return new Table(
-							rs.getString("TABLE_NAME")
-					);
-				}
-			};
-			Set<String> foundTables = Iterables.collect(() -> tableIterator, Table::getName, HashSet::new);
-			assertThat(foundTables).containsExactlyInAnyOrder("DEVICE", "TOWNSHIP");
-			
-			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-					"TOWNSHIP")) {
-				@Override
-				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
-					return new JdbcForeignKey(
-							rs.getString("FK_NAME"),
-							rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
-							rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
-					);
-				}
-			};
-			JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
-			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_DEVICE_LOCATIONID_TOWNSHIP_ID", "DEVICE", "LOCATIONID", "TOWNSHIP", "ID");
 			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 		}
 	}

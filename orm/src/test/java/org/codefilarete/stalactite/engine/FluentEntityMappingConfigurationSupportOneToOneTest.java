@@ -556,7 +556,8 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 							.map(Country::getDescription)
 							.mapOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
 									.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-									.map(City::getName), new Table<>("Township"))
+									.map(City::getName)
+									.onTable(new Table<>("Township")))
 							.mappedBy(City::getCountry)
 							.build(persistenceContext);
 			
@@ -654,7 +655,8 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 							.mapOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
 									.onTable(new Table<>("Town"))
 									.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-									.map(City::getName), new Table<>("Township"))
+									.map(City::getName)
+									.onTable(new Table<>("Township")))
 							.mappedBy(City::getCountry)
 							.build(persistenceContext);
 			
