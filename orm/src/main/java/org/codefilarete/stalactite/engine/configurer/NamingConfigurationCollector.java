@@ -2,15 +2,15 @@ package org.codefilarete.stalactite.engine.configurer;
 
 import java.util.function.Consumer;
 
-import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
-import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
-import org.codefilarete.stalactite.engine.ElementCollectionTableNamingStrategy;
-import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
-import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
-import org.codefilarete.stalactite.engine.MapEntryTableNamingStrategy;
-import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
-import org.codefilarete.stalactite.engine.TableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
+import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
 import org.codefilarete.tool.function.Hanger.Holder;
 
 /**

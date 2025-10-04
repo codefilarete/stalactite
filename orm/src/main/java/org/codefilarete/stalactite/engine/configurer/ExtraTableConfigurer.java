@@ -5,7 +5,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.codefilarete.reflection.ValueAccessPointSet;
-import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration.Linkage;
+import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration.Linkage;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertSupport;
 import org.codefilarete.stalactite.engine.cascade.AfterUpdateByIdSupport;
 import org.codefilarete.stalactite.engine.cascade.AfterUpdateSupport;

@@ -10,7 +10,8 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.function.Function;
 
-import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
+import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
+import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.engine.FluentEntityMappingConfigurationSupportTest.State;
 import org.codefilarete.stalactite.engine.FluentEntityMappingConfigurationSupportTest.Toto;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImplTest.ToStringBuilder;
@@ -37,7 +38,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
 import static org.codefilarete.tool.collection.Iterables.map;
 import static org.codefilarete.tool.function.Functions.chain;
 import static org.codefilarete.tool.function.Functions.link;

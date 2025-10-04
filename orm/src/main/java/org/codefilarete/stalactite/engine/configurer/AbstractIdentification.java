@@ -5,9 +5,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.engine.ColumnOptions;
-import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
-import org.codefilarete.stalactite.engine.EntityMappingConfiguration.CompositeKeyMapping;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
+import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.CompositeKeyMapping;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
@@ -33,7 +33,7 @@ public abstract class AbstractIdentification<C, I> {
 	
 	/**
 	 * Build a single-key identification definition.
-	 * Argument identificationDefiner is expected to have a {@link org.codefilarete.stalactite.engine.EntityMappingConfiguration.SingleKeyMapping}
+	 * Argument identificationDefiner is expected to have a {@link EntityMappingConfiguration.SingleKeyMapping}
 	 * as key mapping, else a {@link ClassCastException} will be thrown.
 	 * 
 	 * @param identificationDefiner a configuration that defines a single-key identifier.
@@ -117,14 +117,14 @@ public abstract class AbstractIdentification<C, I> {
 	 */
 	public static class SingleColumnIdentification<C, I> extends AbstractIdentification<C, I> {
 		
-		private final ColumnOptions.IdentifierPolicy<I> identifierPolicy;
+		private final IdentifierPolicy<I> identifierPolicy;
 		
-		private SingleColumnIdentification(EntityMappingConfiguration<C, I> identificationDefiner, ColumnOptions.IdentifierPolicy<I> identifierPolicy) {
+		private SingleColumnIdentification(EntityMappingConfiguration<C, I> identificationDefiner, IdentifierPolicy<I> identifierPolicy) {
 			super(identificationDefiner);
 			this.identifierPolicy = identifierPolicy;
 		}
 		
-		public ColumnOptions.IdentifierPolicy<I> getIdentifierPolicy() {
+		public IdentifierPolicy<I> getIdentifierPolicy() {
 			return identifierPolicy;
 		}
 	}

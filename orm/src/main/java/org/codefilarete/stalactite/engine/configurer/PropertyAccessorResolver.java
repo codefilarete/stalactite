@@ -18,7 +18,7 @@ import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.engine.MappingConfigurationException;
+import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.Reflections.MemberNotFoundException;
 import org.codefilarete.tool.Strings;

@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine;
 
 import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.junit.jupiter.api.Test;

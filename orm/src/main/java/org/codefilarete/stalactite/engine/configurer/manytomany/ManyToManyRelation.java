@@ -6,10 +6,10 @@ import java.util.function.Supplier;
 
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointByMethodReference;
-import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
-import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
-import org.codefilarete.stalactite.engine.EntityMappingConfigurationProvider;
-import org.codefilarete.stalactite.engine.PolymorphismPolicy;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;

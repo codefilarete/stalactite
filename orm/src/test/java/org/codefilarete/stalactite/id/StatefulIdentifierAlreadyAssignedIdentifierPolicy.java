@@ -4,8 +4,8 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.codefilarete.stalactite.engine.ColumnOptions.AlreadyAssignedIdentifierPolicy;
-import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
+import org.codefilarete.stalactite.dsl.idpolicy.AlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 
 /**
  * Policy for entities that have a {@link StatefulIdentifier}

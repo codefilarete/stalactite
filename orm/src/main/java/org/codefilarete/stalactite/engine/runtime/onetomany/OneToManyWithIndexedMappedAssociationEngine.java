@@ -15,7 +15,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.diff.IndexedDiff;
 import org.codefilarete.stalactite.engine.listener.SelectListener;

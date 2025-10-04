@@ -5,9 +5,9 @@ import java.util.Set;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
-import org.codefilarete.stalactite.engine.MappingConfigurationException;
-import org.codefilarete.stalactite.engine.MappingEase;
+import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.MappingConfigurationException;
+import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMappingConfiguration.Linkage;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.codefilarete.stalactite.engine.model.Color;
@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.codefilarete.stalactite.engine.MappingEase.embeddableBuilder;
+import static org.codefilarete.stalactite.dsl.MappingEase.embeddableBuilder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 

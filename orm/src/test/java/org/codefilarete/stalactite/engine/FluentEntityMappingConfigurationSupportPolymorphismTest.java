@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
@@ -15,7 +16,6 @@ import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.model.AbstractVehicle;
 import org.codefilarete.stalactite.engine.model.Car;
 import org.codefilarete.stalactite.engine.model.Color;
-import org.codefilarete.stalactite.engine.model.Engine;
 import org.codefilarete.stalactite.engine.model.Truck;
 import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.id.Identifier;
@@ -43,8 +43,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
-import static org.codefilarete.stalactite.engine.MappingEase.subentityBuilder;
+import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.MappingEase.subentityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;

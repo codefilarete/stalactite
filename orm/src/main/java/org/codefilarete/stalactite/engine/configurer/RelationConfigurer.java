@@ -3,8 +3,8 @@ package org.codefilarete.stalactite.engine.configurer;
 import java.util.Collection;
 import java.util.Map;
 
-import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
-import org.codefilarete.stalactite.engine.RelationalMappingConfiguration;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
+import org.codefilarete.stalactite.dsl.RelationalMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.manyToOne.ManyToOneRelation;

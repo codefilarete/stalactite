@@ -9,6 +9,8 @@ import java.util.List;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.data.TemporalUnitWithinOffset;
+import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.id.Identifier;

@@ -14,7 +14,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.Accessor;
-import org.codefilarete.stalactite.engine.ColumnOptions.GeneratedKeysPolicy;
+import org.codefilarete.stalactite.dsl.idpolicy.GeneratedKeysPolicy;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteByIdSupport;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteSupport;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;

@@ -4,7 +4,7 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.function.Supplier;
 
-import org.codefilarete.stalactite.engine.EmbeddableMappingConfigurationProvider;
+import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.engine.configurer.LambdaMethodUnsheller;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;

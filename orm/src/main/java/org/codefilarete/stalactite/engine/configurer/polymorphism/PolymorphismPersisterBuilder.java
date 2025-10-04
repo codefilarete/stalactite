@@ -6,10 +6,10 @@ import java.util.Set;
 
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointMap;
-import org.codefilarete.stalactite.engine.PolymorphismPolicy;
-import org.codefilarete.stalactite.engine.PolymorphismPolicy.JoinTablePolymorphism;
-import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism;
-import org.codefilarete.stalactite.engine.PolymorphismPolicy.TablePerClassPolymorphism;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy.JoinTablePolymorphism;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy.SingleTablePolymorphism;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.listener.SelectListener;

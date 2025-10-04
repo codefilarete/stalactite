@@ -5,6 +5,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
+import org.codefilarete.stalactite.dsl.MappingEase;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.FluentEntityMappingConfigurationSupportPolymorphismTest.ElectricCar;
 import org.codefilarete.stalactite.engine.FluentEntityMappingConfigurationSupportPolymorphismTest.ElectricPlug;
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
@@ -34,8 +37,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
-import static org.codefilarete.stalactite.engine.MappingEase.subentityBuilder;
+import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.MappingEase.subentityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
@@ -203,7 +206,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				);
 		assertThatThrownBy(() -> builder.build(persistenceContext))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, NotImplementedException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Combining joined-tables polymorphism policy with o.c.s.e.PolymorphismPolicy$TablePerClassPolymorphism");
+				.hasMessage("Combining joined-tables polymorphism policy with o.c.s.d.PolymorphismPolicy$TablePerClassPolymorphism");
 	}
 	
 	@Test
@@ -283,7 +286,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				);
 		assertThatThrownBy(() -> builder.build(persistenceContext))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, NotImplementedException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Combining single-table polymorphism policy with o.c.s.e.PolymorphismPolicy$SingleTablePolymorphism");
+				.hasMessage("Combining single-table polymorphism policy with o.c.s.d.PolymorphismPolicy$SingleTablePolymorphism");
 	}
 	
 	@Test
@@ -303,7 +306,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				);
 		assertThatThrownBy(() -> builder.build(persistenceContext))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, NotImplementedException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Combining single-table polymorphism policy with o.c.s.e.PolymorphismPolicy$TablePerClassPolymorphism");
+				.hasMessage("Combining single-table polymorphism policy with o.c.s.d.PolymorphismPolicy$TablePerClassPolymorphism");
 	}
 	
 	@Test
@@ -382,7 +385,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				);
 		assertThatThrownBy(() -> builder.build(persistenceContext))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, NotImplementedException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Combining table-per-class polymorphism policy with o.c.s.e.PolymorphismPolicy$TablePerClassPolymorphism");
+				.hasMessage("Combining table-per-class polymorphism policy with o.c.s.d.PolymorphismPolicy$TablePerClassPolymorphism");
 	}
 	
 	@Test

@@ -1,0 +1,3 @@
+This directory contains the technical aspects of the project, in particular its class design and their interactions. The [Technical designs](Technical%20designs.drawio) schema file serves as a guide for developers who want to understand the architecture of the project.
+The file can be opened in [Draw.io](https://app.diagrams.net/) to view the schema.
+As all documentation, this file is a best-effort work and may contain errors or omissions since it is not guaranteed to be up to date. However, the schema is intended to be updated regularly as the project evolves.

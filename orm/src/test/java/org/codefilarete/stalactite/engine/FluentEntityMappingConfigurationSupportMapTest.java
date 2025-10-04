@@ -12,7 +12,10 @@ import java.util.TreeMap;
 import java.util.function.Function;
 
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
+import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImplTest.ToStringBuilder;
 import org.codefilarete.stalactite.engine.model.Car.Radio;
 import org.codefilarete.stalactite.engine.model.City;

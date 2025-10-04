@@ -4,7 +4,7 @@ import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Queue;
 
-import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildLifeCycleListener;

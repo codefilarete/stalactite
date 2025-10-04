@@ -1,13 +1,13 @@
 package org.codefilarete.stalactite.engine.configurer;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
+import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder;
-import org.codefilarete.stalactite.engine.MappingConfigurationException;
+import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
+import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.PersistenceContext;
-import org.codefilarete.stalactite.engine.PolymorphismPolicy;
-import org.codefilarete.stalactite.engine.PolymorphismPolicy.JoinTablePolymorphism;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy.JoinTablePolymorphism;
 import org.codefilarete.stalactite.engine.model.AbstractVehicle;
 import org.codefilarete.stalactite.engine.model.Car;
 import org.codefilarete.stalactite.engine.model.Color;
@@ -32,9 +32,9 @@ import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.codefilarete.stalactite.engine.MappingEase.embeddableBuilder;
-import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
-import static org.codefilarete.stalactite.engine.MappingEase.subentityBuilder;
+import static org.codefilarete.stalactite.dsl.MappingEase.embeddableBuilder;
+import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.MappingEase.subentityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;

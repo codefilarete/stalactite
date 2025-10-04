@@ -6,7 +6,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;

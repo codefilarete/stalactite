@@ -3,11 +3,11 @@ package org.codefilarete.stalactite.spring.repository.query.bean;
 import java.util.Collection;
 import java.util.Set;
 
-import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
+import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
-import org.codefilarete.stalactite.engine.MappingEase;
+import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Language;
@@ -40,7 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.reflection.AccessorChain.fromMethodReferences;
-import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.query.model.Operators.containsArgNamed;
 import static org.codefilarete.stalactite.query.model.Operators.endsWithArgNamed;

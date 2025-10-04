@@ -1,0 +1,506 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/28.1.2 Chrome/138.0.7204.243 Electron/37.4.0 Safari/537.36" version="28.1.2">
+  <diagram name="Entity graph inflation" id="npJagKjE0Bcq_mRWvHeF">
+    <mxGraphModel dx="2541" dy="1782" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="QDvtndHOjCB40-8WbIJz-9" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;Entity Graph Inflation Design&lt;/h1&gt;&lt;p&gt;Description of entity graph creation from a ResultSet&lt;/p&gt;" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=none;" parent="1" vertex="1">
+          <mxGeometry x="34" y="30" width="380" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="DRuXvabtluyJuKAr1dY7-3" value="ORM module" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry y="110" width="1630" height="660" as="geometry" />
+        </mxCell>
+        <mxCell id="DRuXvabtluyJuKAr1dY7-1" value="EntityInflater defines a contract to deserialize a database row to a bean. Its default concrete class is EntityMappingAdapter which acts as an overlay, dedicated to selection,&amp;nbsp;over an EntityMapping which is a contract to define whole (CRUD) entity persistence (from &lt;font face=&quot;Courier New&quot;&gt;core&lt;/font&gt; module)" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;size=11;fontSize=10;align=left;fillColor=#fff2cc;strokeColor=#d6b656;verticalAlign=top;" parent="DRuXvabtluyJuKAr1dY7-3" vertex="1">
+          <mxGeometry x="880" y="520" width="170" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="QDvtndHOjCB40-8WbIJz-3" value="EntityInflater" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;shape=ellipse;perimeter=ellipsePerimeter;" parent="DRuXvabtluyJuKAr1dY7-3" vertex="1">
+          <mxGeometry x="690" y="540" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-103" value="returns" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="DRuXvabtluyJuKAr1dY7-3" source="9Di0yadQhWRR1k__zpRe-101" target="9Di0yadQhWRR1k__zpRe-102" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="DRuXvabtluyJuKAr1dY7-4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=oval;endFill=1;curved=1;" parent="DRuXvabtluyJuKAr1dY7-3" source="DRuXvabtluyJuKAr1dY7-1" target="QDvtndHOjCB40-8WbIJz-3" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="840" y="655" as="sourcePoint" />
+            <mxPoint x="720" y="750" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="750" y="580" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-109" value="Structure, from relation creation" style="swimlane;whiteSpace=wrap;html=1;fillColor=#bac8d3;strokeColor=#23445d;" parent="DRuXvabtluyJuKAr1dY7-3" vertex="1">
+          <mxGeometry x="30" y="20" width="570" height="490" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-97" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=block;endFill=0;" parent="9Di0yadQhWRR1k__zpRe-109" source="9Di0yadQhWRR1k__zpRe-95" target="QDvtndHOjCB40-8WbIJz-2" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="237" y="400" />
+            </Array>
+            <mxPoint x="350" y="415.05" as="sourcePoint" />
+            <mxPoint x="280" y="419.76" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-98" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=block;endFill=0;" parent="9Di0yadQhWRR1k__zpRe-109" source="9Di0yadQhWRR1k__zpRe-96" target="QDvtndHOjCB40-8WbIJz-2" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="237" y="360" />
+            </Array>
+            <mxPoint x="280" y="480.05" as="sourcePoint" />
+            <mxPoint x="280" y="419.76" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-99" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=block;endFill=0;" parent="9Di0yadQhWRR1k__zpRe-109" source="9Di0yadQhWRR1k__zpRe-94" target="QDvtndHOjCB40-8WbIJz-2" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="237" y="450" />
+            </Array>
+            <mxPoint x="410" y="480.05" as="sourcePoint" />
+            <mxPoint x="280" y="419.76" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="QDvtndHOjCB40-8WbIJz-8" value="root" style="edgeStyle=orthogonalEdgeStyle;shape=connector;curved=1;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=classic;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="9Di0yadQhWRR1k__zpRe-109" source="QDvtndHOjCB40-8WbIJz-1" target="QDvtndHOjCB40-8WbIJz-2" edge="1">
+          <mxGeometry x="-0.3301" y="20" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="167" y="240" />
+            </Array>
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="QDvtndHOjCB40-8WbIJz-1" value="EntityJoinTree" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-109" vertex="1">
+          <mxGeometry x="107" y="165" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="QDvtndHOjCB40-8WbIJz-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;" parent="9Di0yadQhWRR1k__zpRe-109" source="QDvtndHOjCB40-8WbIJz-2" target="QDvtndHOjCB40-8WbIJz-5" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="267" y="295" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="QDvtndHOjCB40-8WbIJz-7" value="joins" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;" parent="QDvtndHOjCB40-8WbIJz-6" vertex="1" connectable="0">
+          <mxGeometry x="-0.3474" y="21" relative="1" as="geometry">
+            <mxPoint x="11" y="-14" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="DRuXvabtluyJuKAr1dY7-21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=block;endFill=0;" parent="9Di0yadQhWRR1k__zpRe-109" source="QDvtndHOjCB40-8WbIJz-2" target="DRuXvabtluyJuKAr1dY7-8" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="QDvtndHOjCB40-8WbIJz-2" value="JoinRoot" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-109" vertex="1">
+          <mxGeometry x="207" y="225" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="DRuXvabtluyJuKAr1dY7-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=block;endFill=0;" parent="9Di0yadQhWRR1k__zpRe-109" source="QDvtndHOjCB40-8WbIJz-5" target="DRuXvabtluyJuKAr1dY7-8" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+            <mxPoint x="411" y="280.28999999999996" as="sourcePoint" />
+            <mxPoint x="411" y="214.79019945774894" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="QDvtndHOjCB40-8WbIJz-5" value="AbstractJoinNode" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-109" vertex="1">
+          <mxGeometry x="347" y="280.28999999999996" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="DRuXvabtluyJuKAr1dY7-5" value="EntityJoinTree representes a tree of all joins required to select an entity. It has (obviously) a root which is related to joins if the entity as some relations or any inheritance.&lt;div&gt;Each &quot;Finder&quot; as an EntityJoinTree&lt;/div&gt;" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;size=11;fontSize=10;align=left;fillColor=#fff2cc;strokeColor=#d6b656;" parent="9Di0yadQhWRR1k__zpRe-109" vertex="1">
+          <mxGeometry x="37" y="45" width="170" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="DRuXvabtluyJuKAr1dY7-6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=oval;endFill=1;curved=1;" parent="9Di0yadQhWRR1k__zpRe-109" source="DRuXvabtluyJuKAr1dY7-5" target="QDvtndHOjCB40-8WbIJz-1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="326" y="180" as="sourcePoint" />
+            <mxPoint x="266" y="195" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="DRuXvabtluyJuKAr1dY7-8" value="JoinNode" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;shape=ellipse;fixedSize=1;perimeter=ellipsePerimeter;" parent="9Di0yadQhWRR1k__zpRe-109" vertex="1">
+          <mxGeometry x="347" y="185" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="DRuXvabtluyJuKAr1dY7-23" value="JoinNode is an abstraction that defines a SQL join. Mainly used in the concept of an EntityJoinTree. &lt;b&gt;They are cloned&lt;/b&gt; by it to make each Persister be independent from each other and avoid pollution between them while building the whole entity graph" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;size=11;fontSize=10;align=left;fillColor=#fff2cc;strokeColor=#d6b656;verticalAlign=top;" parent="9Di0yadQhWRR1k__zpRe-109" vertex="1">
+          <mxGeometry x="291" y="45" width="170" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="DRuXvabtluyJuKAr1dY7-24" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=oval;endFill=1;curved=1;" parent="9Di0yadQhWRR1k__zpRe-109" source="DRuXvabtluyJuKAr1dY7-23" target="DRuXvabtluyJuKAr1dY7-8" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="132" y="135" as="sourcePoint" />
+            <mxPoint x="177" y="175" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-88" value="RelationJoinNode" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-109" vertex="1">
+          <mxGeometry x="247" y="360.29" width="103" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-89" value="PassiveJoinNode" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-109" vertex="1">
+          <mxGeometry x="357" y="360.29" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-90" value="MergeJoinNode" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-109" vertex="1">
+          <mxGeometry x="467" y="360.29" width="93" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-91" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=block;endFill=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" parent="9Di0yadQhWRR1k__zpRe-109" source="9Di0yadQhWRR1k__zpRe-89" target="QDvtndHOjCB40-8WbIJz-5" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="407" y="360" />
+            </Array>
+            <mxPoint x="470" y="305.29" as="sourcePoint" />
+            <mxPoint x="494" y="220.29" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-92" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=block;endFill=0;" parent="9Di0yadQhWRR1k__zpRe-109" source="9Di0yadQhWRR1k__zpRe-90" target="QDvtndHOjCB40-8WbIJz-5" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="513" y="340" />
+              <mxPoint x="407" y="340" />
+            </Array>
+            <mxPoint x="400" y="370.29" as="sourcePoint" />
+            <mxPoint x="400" y="320.29" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-93" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=block;endFill=0;" parent="9Di0yadQhWRR1k__zpRe-109" source="9Di0yadQhWRR1k__zpRe-88" target="QDvtndHOjCB40-8WbIJz-5" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="299" y="340" />
+              <mxPoint x="407" y="340" />
+            </Array>
+            <mxPoint x="530" y="370.29" as="sourcePoint" />
+            <mxPoint x="410" y="320.29" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-94" value="SingleTableRootJoinNode" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-109" vertex="1">
+          <mxGeometry x="27" y="425" width="166" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-95" value="TablePerClassRootJoinNode" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-109" vertex="1">
+          <mxGeometry x="27" y="385" width="166" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-96" value="JoinTableRootJoinNode" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-109" vertex="1">
+          <mxGeometry x="27" y="345" width="166" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-101" value="toConsumer(..)" style="shape=partialRectangle;whiteSpace=wrap;html=1;right=0;top=0;bottom=0;fillColor=none;routingCenterX=-0.5;align=left;spacingLeft=4;" parent="9Di0yadQhWRR1k__zpRe-109" vertex="1">
+          <mxGeometry x="417" y="215" width="90" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-137" value="Algorithm" style="swimlane;whiteSpace=wrap;html=1;fillColor=#bac8d3;strokeColor=#23445d;" parent="DRuXvabtluyJuKAr1dY7-3" vertex="1">
+          <mxGeometry x="1110" y="20" width="500" height="490" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-108" value="EntityTreeInflater" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-137" vertex="1">
+          <mxGeometry x="30" y="45" width="140" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-139" value="Iterates over the ResultSet to inflate it and creates the entity aggregate.&lt;div&gt;Consumes instances of JoinRowConsumerTree to&lt;/div&gt;&lt;div&gt;- create aggregate roots&lt;/div&gt;&lt;div&gt;- apply relation&lt;/div&gt;&lt;div&gt;- to fullfill them&lt;/div&gt;&lt;div&gt;according to JoinRowConsumer type&lt;/div&gt;" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;size=11;fontSize=10;align=left;fillColor=#fff2cc;strokeColor=#d6b656;verticalAlign=top;" parent="9Di0yadQhWRR1k__zpRe-137" vertex="1">
+          <mxGeometry x="310" y="40" width="170" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-140" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=oval;endFill=1;curved=1;" parent="9Di0yadQhWRR1k__zpRe-137" source="9Di0yadQhWRR1k__zpRe-139" target="9Di0yadQhWRR1k__zpRe-108" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-220" y="570" as="sourcePoint" />
+            <mxPoint x="-350" y="560" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="230" y="60" />
+              <mxPoint x="230" y="60" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-138" value="Structure, dedicated to inflation" style="swimlane;whiteSpace=wrap;html=1;fillColor=#bac8d3;strokeColor=#23445d;" parent="DRuXvabtluyJuKAr1dY7-3" vertex="1">
+          <mxGeometry x="627" y="20" width="453" height="490" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-102" value="JoinRowConsumer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;shape=ellipse;fixedSize=1;perimeter=ellipsePerimeter;" parent="9Di0yadQhWRR1k__zpRe-138" vertex="1">
+          <mxGeometry x="43" y="214.71" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-104" value="Each JoinNode must gives a JoinRowConsumer dedicated to its way of deflating &quot;itself&quot;: the simplest cases are JoinRoot and RelationJoinNode that create the entity they must deflate (if not present in the deflation cache). Most complex ones a polymorphic join nodes because they must check which exact type they must instantiates, according to dicriminator or identifier presence (depending on their own policy)" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;size=11;fontSize=10;align=left;fillColor=#fff2cc;strokeColor=#d6b656;labelPosition=center;verticalLabelPosition=middle;verticalAlign=top;" parent="9Di0yadQhWRR1k__zpRe-138" vertex="1">
+          <mxGeometry x="243" y="160" width="170" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-105" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=oval;endFill=1;curved=1;" parent="9Di0yadQhWRR1k__zpRe-138" source="9Di0yadQhWRR1k__zpRe-104" target="9Di0yadQhWRR1k__zpRe-102" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="493" y="64.71" as="sourcePoint" />
+            <mxPoint x="383" y="89.71" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-107" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;curved=1;" parent="9Di0yadQhWRR1k__zpRe-138" source="9Di0yadQhWRR1k__zpRe-106" target="9Di0yadQhWRR1k__zpRe-102" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-106" value="A lot of classes, eventually anonymous" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-138" vertex="1">
+          <mxGeometry x="33" y="289.99999999999994" width="140" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-141" value="All JoinRowConsumers create a tree that mimic JoinNodes, but dedicated to ResultSet inflation." style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;size=11;fontSize=10;align=left;fillColor=#fff2cc;strokeColor=#d6b656;labelPosition=center;verticalLabelPosition=middle;verticalAlign=top;" parent="9Di0yadQhWRR1k__zpRe-138" vertex="1">
+          <mxGeometry x="243" y="330" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="DRuXvabtluyJuKAr1dY7-12" value="Legend" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;" parent="1" vertex="1">
+          <mxGeometry x="570" y="-280" width="390" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="DRuXvabtluyJuKAr1dY7-10" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="DRuXvabtluyJuKAr1dY7-12" vertex="1">
+          <mxGeometry x="20" y="40" width="70" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="DRuXvabtluyJuKAr1dY7-11" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;shape=ellipse;fixedSize=1;perimeter=ellipsePerimeter;" parent="DRuXvabtluyJuKAr1dY7-12" vertex="1">
+          <mxGeometry x="20" y="80" width="70" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="DRuXvabtluyJuKAr1dY7-13" value="" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;size=11;fontSize=10;align=left;fillColor=#fff2cc;strokeColor=#d6b656;" parent="DRuXvabtluyJuKAr1dY7-12" vertex="1">
+          <mxGeometry x="20" y="120" width="70" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="DRuXvabtluyJuKAr1dY7-14" value="Java class" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="DRuXvabtluyJuKAr1dY7-12" vertex="1">
+          <mxGeometry x="120" y="40" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="DRuXvabtluyJuKAr1dY7-15" value="Java interface" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="DRuXvabtluyJuKAr1dY7-12" vertex="1">
+          <mxGeometry x="120" y="80" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="DRuXvabtluyJuKAr1dY7-16" value="contextual comment" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="DRuXvabtluyJuKAr1dY7-12" vertex="1">
+          <mxGeometry x="120" y="120" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="DRuXvabtluyJuKAr1dY7-17" value="" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="DRuXvabtluyJuKAr1dY7-12" vertex="1">
+          <mxGeometry x="20" y="160" width="70" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="DRuXvabtluyJuKAr1dY7-18" value="Stalactite project module" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="DRuXvabtluyJuKAr1dY7-12" vertex="1">
+          <mxGeometry x="120" y="160" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="DRuXvabtluyJuKAr1dY7-20" value="relation between class or interface" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="DRuXvabtluyJuKAr1dY7-12" vertex="1">
+          <mxGeometry x="120" y="210" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="DRuXvabtluyJuKAr1dY7-19" value="" style="endArrow=classic;html=1;rounded=0;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="590" y="-50" as="sourcePoint" />
+            <mxPoint x="660" y="-50" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-1" value="ORM module" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry y="900" width="1100" height="270" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-84" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=doubleBlock;endFill=1;" parent="9Di0yadQhWRR1k__zpRe-1" source="9Di0yadQhWRR1k__zpRe-3" target="9Di0yadQhWRR1k__zpRe-25" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-3" value="*Configurer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-1" vertex="1">
+          <mxGeometry x="200" y="140" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-15" value="RelationalEntityPersister" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;shape=ellipse;fixedSize=1;perimeter=ellipsePerimeter;" parent="9Di0yadQhWRR1k__zpRe-1" vertex="1">
+          <mxGeometry x="354" y="100" width="186" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-16" value="&lt;div&gt;Consider the current Persister as the right part of the join.&lt;/div&gt;joinAs*(..) methods create a relation join on source join tree that inflates current persister entity, thus entityMapping (that inflates data) is taken on current persister.&lt;div&gt;Current persister &lt;b&gt;joins are cloned&lt;/b&gt;&amp;nbsp;onto the just-created join, to copy possible current persister relations, hence appending it to the &quot;left tree&quot; (which is considered the final one).&lt;/div&gt;" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;size=11;fontSize=10;align=left;fillColor=#fff2cc;strokeColor=#d6b656;verticalAlign=top;" parent="9Di0yadQhWRR1k__zpRe-1" vertex="1">
+          <mxGeometry x="620" y="40" width="230" height="137.5" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-17" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=oval;endFill=1;curved=1;" parent="9Di0yadQhWRR1k__zpRe-1" source="9Di0yadQhWRR1k__zpRe-16" target="9Di0yadQhWRR1k__zpRe-25" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="145" y="50" as="sourcePoint" />
+            <mxPoint x="190" y="90" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-25" value="joinAsOne(..)" style="shape=partialRectangle;whiteSpace=wrap;html=1;right=0;top=0;bottom=0;fillColor=none;routingCenterX=-0.5;align=left;spacingLeft=4;" parent="9Di0yadQhWRR1k__zpRe-1" vertex="1">
+          <mxGeometry x="405" y="130" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-26" value="joinAsMany(..)" style="shape=partialRectangle;whiteSpace=wrap;html=1;right=0;top=0;bottom=0;fillColor=none;routingCenterX=-0.5;align=left;spacingLeft=4;" parent="9Di0yadQhWRR1k__zpRe-1" vertex="1">
+          <mxGeometry x="405" y="150" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-82" value="JoinNode clone" style="shape=delay;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="9Di0yadQhWRR1k__zpRe-1" vertex="1">
+          <mxGeometry x="840" y="160" width="110" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-85" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=doubleBlock;endFill=1;" parent="9Di0yadQhWRR1k__zpRe-1" source="9Di0yadQhWRR1k__zpRe-3" target="9Di0yadQhWRR1k__zpRe-26" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="185" as="sourcePoint" />
+            <mxPoint x="485" y="155" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-87" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=oval;endFill=1;curved=1;" parent="9Di0yadQhWRR1k__zpRe-1" source="9Di0yadQhWRR1k__zpRe-86" target="9Di0yadQhWRR1k__zpRe-3" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-86" value="Persister configurer invokes joinAs*(..) methods, which composes the join tree of the persister" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;size=11;fontSize=10;align=left;fillColor=#fff2cc;strokeColor=#d6b656;verticalAlign=top;" parent="9Di0yadQhWRR1k__zpRe-1" vertex="1">
+          <mxGeometry x="120" y="190" width="230" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-18" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;Relation declaration on persister&lt;/h1&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=none;" parent="1" vertex="1">
+          <mxGeometry x="34" y="840" width="380" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-27" value="Core&amp;nbsp;module" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="-1100" y="900" width="750" height="290" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-42" value="EntityPersister" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;shape=ellipse;fixedSize=1;perimeter=ellipsePerimeter;" parent="9Di0yadQhWRR1k__zpRe-27" vertex="1">
+          <mxGeometry x="54" y="50" width="186" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-57" value="ConfiguredPersister" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;shape=ellipse;fixedSize=1;perimeter=ellipsePerimeter;" parent="9Di0yadQhWRR1k__zpRe-27" vertex="1">
+          <mxGeometry x="160" y="150" width="186" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-58" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=block;endFill=0;" parent="9Di0yadQhWRR1k__zpRe-27" source="9Di0yadQhWRR1k__zpRe-57" target="9Di0yadQhWRR1k__zpRe-42" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="157" y="790" as="sourcePoint" />
+            <mxPoint x="157" y="90" as="targetPoint" />
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-41" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;Available Persisters&lt;/h1&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=none;" parent="1" vertex="1">
+          <mxGeometry x="-1070" y="840" width="380" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-45" value="ORM module" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="-1100" y="1200" width="750" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-47" value="JoinTablePolymorphismPersister" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-45" vertex="1">
+          <mxGeometry x="520" y="330" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-51" value="PersisterWrapper" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-45" vertex="1">
+          <mxGeometry x="50" y="210" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-53" value="SingleTablePolymorphismPersister" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-45" vertex="1">
+          <mxGeometry x="520" y="290" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-54" value="RelationalEntityPersister" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;shape=ellipse;fixedSize=1;perimeter=ellipsePerimeter;" parent="9Di0yadQhWRR1k__zpRe-45" vertex="1">
+          <mxGeometry x="54" y="40" width="186" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-60" value="AdvancedEntityPersister" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;shape=ellipse;fixedSize=1;perimeter=ellipsePerimeter;" parent="9Di0yadQhWRR1k__zpRe-45" vertex="1">
+          <mxGeometry x="280" y="40" width="186" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-62" value="ConfiguredRelationalPersister" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;shape=ellipse;fixedSize=1;perimeter=ellipsePerimeter;" parent="9Di0yadQhWRR1k__zpRe-45" vertex="1">
+          <mxGeometry x="170" y="104" width="186" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-63" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=block;endFill=0;" parent="9Di0yadQhWRR1k__zpRe-45" source="9Di0yadQhWRR1k__zpRe-62" target="9Di0yadQhWRR1k__zpRe-60" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="383" y="50" as="sourcePoint" />
+            <mxPoint x="383" y="-480" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="263" y="90" />
+              <mxPoint x="373" y="90" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-65" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=block;endFill=0;" parent="9Di0yadQhWRR1k__zpRe-45" source="9Di0yadQhWRR1k__zpRe-62" target="9Di0yadQhWRR1k__zpRe-54" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="273" y="114" as="sourcePoint" />
+            <mxPoint x="383" y="80" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="263" y="90" />
+              <mxPoint x="147" y="90" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-67" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=block;endFill=0;" parent="9Di0yadQhWRR1k__zpRe-45" source="9Di0yadQhWRR1k__zpRe-66" target="9Di0yadQhWRR1k__zpRe-51" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="40" y="305" />
+              <mxPoint x="40" y="270" />
+              <mxPoint x="70" y="270" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-66" value="EntityIsManagedByPersisterAsserter" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-45" vertex="1">
+          <mxGeometry x="46" y="290" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-68" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=block;endFill=0;" parent="9Di0yadQhWRR1k__zpRe-45" source="9Di0yadQhWRR1k__zpRe-51" target="9Di0yadQhWRR1k__zpRe-62" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="225" y="290" as="sourcePoint" />
+            <mxPoint x="140" y="230" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-70" value="OptimizedUpdatePersister" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-45" vertex="1">
+          <mxGeometry x="46" y="340" width="164" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-71" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=block;endFill=0;" parent="9Di0yadQhWRR1k__zpRe-45" source="9Di0yadQhWRR1k__zpRe-70" target="9Di0yadQhWRR1k__zpRe-51" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="161" y="300" as="sourcePoint" />
+            <mxPoint x="140" y="230" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="30" y="355" />
+              <mxPoint x="30" y="260" />
+              <mxPoint x="70" y="260" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-72" value="SimpleRelationalEntityPersister" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-45" vertex="1">
+          <mxGeometry x="268" y="210" width="192" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-73" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=block;endFill=0;" parent="9Di0yadQhWRR1k__zpRe-45" source="9Di0yadQhWRR1k__zpRe-72" target="9Di0yadQhWRR1k__zpRe-62" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="140" y="200" as="sourcePoint" />
+            <mxPoint x="273" y="144" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-74" value="AbstractPolymorphismPersister" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-45" vertex="1">
+          <mxGeometry x="490" y="210" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-75" value="ElementRecordPersister" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-45" vertex="1">
+          <mxGeometry x="268" y="290" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-76" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=block;endFill=0;" parent="9Di0yadQhWRR1k__zpRe-45" source="9Di0yadQhWRR1k__zpRe-75" target="9Di0yadQhWRR1k__zpRe-72" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="56" y="315" as="sourcePoint" />
+            <mxPoint x="140" y="230" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="364" y="250" />
+              <mxPoint x="364" y="250" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-77" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=block;endFill=0;" parent="9Di0yadQhWRR1k__zpRe-45" source="9Di0yadQhWRR1k__zpRe-74" target="9Di0yadQhWRR1k__zpRe-62" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="374" y="200" as="sourcePoint" />
+            <mxPoint x="273" y="144" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="570" y="160" />
+              <mxPoint x="263" y="160" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-78" value="TablePerClassPolymorphismPersister" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-45" vertex="1">
+          <mxGeometry x="520" y="370" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-79" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=block;endFill=0;" parent="9Di0yadQhWRR1k__zpRe-45" source="9Di0yadQhWRR1k__zpRe-53" target="9Di0yadQhWRR1k__zpRe-74" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="580" y="200" as="sourcePoint" />
+            <mxPoint x="273" y="144" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="510" y="305" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-80" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=block;endFill=0;" parent="9Di0yadQhWRR1k__zpRe-45" source="9Di0yadQhWRR1k__zpRe-47" target="9Di0yadQhWRR1k__zpRe-74" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="550" y="300" as="sourcePoint" />
+            <mxPoint x="550" y="230" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="510" y="345" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-81" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=block;endFill=0;" parent="9Di0yadQhWRR1k__zpRe-45" source="9Di0yadQhWRR1k__zpRe-78" target="9Di0yadQhWRR1k__zpRe-74" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="635" y="340" as="sourcePoint" />
+            <mxPoint x="590" y="230" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="510" y="385" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-56" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=block;endFill=0;" parent="1" source="9Di0yadQhWRR1k__zpRe-54" target="9Di0yadQhWRR1k__zpRe-42" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-750" y="1415" as="sourcePoint" />
+            <mxPoint x="-953" y="1260.0000000000005" as="targetPoint" />
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-50" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=block;endFill=0;" parent="1" source="9Di0yadQhWRR1k__zpRe-60" target="9Di0yadQhWRR1k__zpRe-57" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-727" y="1150" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-143" value="ORM module" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry y="1280" width="1100" height="270" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-157" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=oval;endFill=1;curved=1;" parent="9Di0yadQhWRR1k__zpRe-143" source="9Di0yadQhWRR1k__zpRe-154" target="9Di0yadQhWRR1k__zpRe-156" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-154" value="Wrapper of the Query and its configuration (select binders, inflater, ...) that is necessary to create and read a ResultSet to buid an entity aggregate." style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;size=11;fontSize=10;align=left;fillColor=#fff2cc;strokeColor=#d6b656;" parent="9Di0yadQhWRR1k__zpRe-143" vertex="1">
+          <mxGeometry x="720" y="60" width="230" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-158" value="creates" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="9Di0yadQhWRR1k__zpRe-143" source="9Di0yadQhWRR1k__zpRe-142" target="9Di0yadQhWRR1k__zpRe-156" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-142" value="EntityTreeQueryBuilder" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-143" vertex="1">
+          <mxGeometry x="100" y="50" width="160" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-156" value="EntityTreeQuery" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="9Di0yadQhWRR1k__zpRe-143" vertex="1">
+          <mxGeometry x="400" y="50" width="127" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-159" value="Query" style="shape=partialRectangle;whiteSpace=wrap;html=1;right=0;top=0;bottom=0;fillColor=none;routingCenterX=-0.5;align=left;spacingLeft=4;" parent="9Di0yadQhWRR1k__zpRe-143" vertex="1">
+          <mxGeometry x="420" y="70" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-160" value="EntityTreeInflater" style="shape=partialRectangle;whiteSpace=wrap;html=1;right=0;top=0;bottom=0;fillColor=none;routingCenterX=-0.5;align=left;spacingLeft=4;" parent="9Di0yadQhWRR1k__zpRe-143" vertex="1">
+          <mxGeometry x="420" y="90" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-162" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;curved=1;endArrow=oval;endFill=1;" parent="9Di0yadQhWRR1k__zpRe-143" source="9Di0yadQhWRR1k__zpRe-161" target="9Di0yadQhWRR1k__zpRe-142" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-161" value="Takes an EntityJoinTree as constructor argument.&lt;div&gt;Clones every JoinNode Table to take the possible appearance of duplicate or cycle in entity tree. Cloning should allows the user to target the right columns in criteria and order by clause.&lt;/div&gt;" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;size=11;fontSize=10;align=left;fillColor=#fff2cc;strokeColor=#d6b656;verticalAlign=top;" parent="9Di0yadQhWRR1k__zpRe-143" vertex="1">
+          <mxGeometry x="230" y="140" width="230" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-163" value="Table clone" style="shape=delay;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="9Di0yadQhWRR1k__zpRe-143" vertex="1">
+          <mxGeometry x="440" y="200" width="110" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-164" value="1. Building Query is made very lately (at the very last moment, when selecting entities in *Finders) to ensure that all joins are available.&lt;div&gt;2. Only a Map&amp;lt;Selectable, Selectable&amp;gt; is generated by EntityTreeQueryBuilder to store table clones. This is insufficient because, for example, in case of 2 OneToOne siblings of same type (person.mainHouse, person.secondaryHouse), last win. Which means that we loose the context (the property name/accessor) =&amp;gt; This must be reviewed because we can&#39;t handle sibling types.&lt;/div&gt;" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;size=11;fontSize=10;align=left;fillColor=#fad9d5;strokeColor=#ae4132;" parent="9Di0yadQhWRR1k__zpRe-143" vertex="1">
+          <mxGeometry x="597" y="120" width="230" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="9Di0yadQhWRR1k__zpRe-155" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;Building an EntityTreeQuery&lt;/h1&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=none;" parent="1" vertex="1">
+          <mxGeometry x="34" y="1220" width="380" height="60" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

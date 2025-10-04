@@ -11,7 +11,12 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
+import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.dsl.MappingConfigurationException;
+import org.codefilarete.stalactite.dsl.MappingEase;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
@@ -51,11 +56,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ALL;
-import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
-import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
-import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.READ_ONLY;
-import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.ALL;
+import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
+import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
+import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.READ_ONLY;
+import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 
 /**

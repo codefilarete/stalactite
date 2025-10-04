@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.stalactite.engine.MapEntryTableNamingStrategy.DefaultMapEntryTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy.DefaultMapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;

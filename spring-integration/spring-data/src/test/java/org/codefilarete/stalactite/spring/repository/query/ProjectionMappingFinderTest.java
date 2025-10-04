@@ -5,9 +5,9 @@ import java.util.IdentityHashMap;
 import java.util.List;
 
 import org.codefilarete.reflection.AccessorChain;
-import org.codefilarete.stalactite.engine.ColumnOptions;
+import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.engine.MappingEase;
+import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Country;
@@ -37,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.reflection.AccessorChain.fromMethodReference;
 import static org.codefilarete.reflection.AccessorChain.fromMethodReferences;
 import static org.codefilarete.reflection.AccessorDefinition.giveDefinition;
-import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.spring.repository.StalactiteRepositoryFactoryBean.asInternalPersister;
@@ -60,7 +60,7 @@ class ProjectionMappingFinderTest {
 		PersistenceContext persistenceContext = new PersistenceContext(mock(DataSource.class), dialect);
 		
 		EntityPersister<Republic, Identifier<Long>> persister = entityBuilder(Republic.class, LONG_TYPE)
-				.mapKey(Republic::getId, ColumnOptions.IdentifierPolicy.<Country, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
+				.mapKey(Republic::getId, IdentifierPolicy.<Country, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
 				.map(Republic::getName)
 				.map(Republic::getDescription)
 				.map(Republic::isEuMember)
@@ -68,18 +68,18 @@ class ProjectionMappingFinderTest {
 						.map(Timestamp::getCreationDate)
 						.map(Timestamp::getModificationDate))
 				.mapOneToOne(Republic::getPresident, entityBuilder(Person.class, LONG_TYPE)
-						.mapKey(Person::getId, ColumnOptions.IdentifierPolicy.<Person, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
+						.mapKey(Person::getId, IdentifierPolicy.<Person, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
 						.map(Person::getName)
 						.mapCollection(Person::getNicknames, String.class)
 						.mapMap(Person::getPhoneNumbers, String.class, String.class)
 						.mapOneToOne(Person::getVehicle, entityBuilder(Vehicle.class, LONG_TYPE)
-								.mapKey(Vehicle::getId, ColumnOptions.IdentifierPolicy.<Vehicle, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
+								.mapKey(Vehicle::getId, IdentifierPolicy.<Vehicle, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
 								.map(Vehicle::getColor)))
 				.mapOneToMany(Republic::getStates, entityBuilder(State.class, LONG_TYPE)
-						.mapKey(State::getId, ColumnOptions.IdentifierPolicy.<State, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
+						.mapKey(State::getId, IdentifierPolicy.<State, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
 						.map(State::getName))
 				.mapManyToMany(Republic::getLanguages, entityBuilder(Language.class, LONG_TYPE)
-						.mapKey(Language::getId, ColumnOptions.IdentifierPolicy.<Language, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
+						.mapKey(Language::getId, IdentifierPolicy.<Language, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
 						.usingConstructor(Language::new, "id", "code")
 						.map(Language::getCode).setByConstructor()
 				)

@@ -1,5 +1,7 @@
 package org.codefilarete.stalactite.engine;
 
+import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
+import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
@@ -15,7 +17,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	 * Test to check that the API returns right Object which means:
 	 * - interfaces are well written to return right types, so one can chain others methods
 	 * - at runtime instance of the right type is also returned
-	 * (avoid "java.lang.ClassCastException: com.sun.proxy.$Proxy10 cannot be cast to org.codefilarete.stalactite.engine.FluentEmbeddableMappingBuilder")
+	 * (avoid "java.lang.ClassCastException: com.sun.proxy.$Proxy10 cannot be cast to org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder")
 	 * <p>
 	 * As many as possible combinations of method chaining should be done here, but since all combinations seem impossible, this test must be
 	 * considered as a best effort, and any regression found in user code should be added here

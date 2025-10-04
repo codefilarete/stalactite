@@ -3,9 +3,9 @@ package org.codefilarete.stalactite.spring.repository.config;
 import javax.sql.DataSource;
 import java.util.Optional;
 
-import org.codefilarete.stalactite.engine.ColumnOptions;
+import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.engine.MappingEase;
+import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.id.Identifier;
@@ -114,7 +114,7 @@ class StalactiteRepositoryConfigExtensionTest {
 		@Bean
 		public EntityPersister<Person, Identifier<Long>> personPersister(PersistenceContext persistenceContext) {
 			return MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.mapKey(Person::getId, ColumnOptions.IdentifierPolicy.alreadyAssigned(p -> ((Person) p).getId().setPersisted(), p -> ((Person) p).getId().isPersisted()))
+					.mapKey(Person::getId, IdentifierPolicy.alreadyAssigned(p -> ((Person) p).getId().setPersisted(), p -> ((Person) p).getId().isPersisted()))
 					.map(Person::getName)
 					.build(persistenceContext);
 		}

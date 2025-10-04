@@ -7,7 +7,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.codefilarete.reflection.Accessor;
-import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.RelationIdentifier;

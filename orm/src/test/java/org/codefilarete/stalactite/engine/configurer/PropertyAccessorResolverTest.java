@@ -12,7 +12,7 @@ import org.codefilarete.reflection.MutatorByField;
 import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
-import org.codefilarete.stalactite.engine.MappingConfigurationException;
+import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.configurer.PropertyAccessorResolver.PropertyMapping;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.tool.Reflections;

@@ -27,7 +27,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 
-import org.codefilarete.stalactite.engine.NotYetSupportedOperationException;
+import org.codefilarete.stalactite.dsl.NotYetSupportedOperationException;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
 import org.codefilarete.stalactite.sql.CommitListener;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;

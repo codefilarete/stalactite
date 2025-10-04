@@ -14,7 +14,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.apache.commons.collections4.map.LinkedMap;
-import org.codefilarete.stalactite.engine.MappingConfigurationException;
+import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.NodeVisitor.EntityCreationResult;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.ExcludingJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.ForkJoinRowConsumer;

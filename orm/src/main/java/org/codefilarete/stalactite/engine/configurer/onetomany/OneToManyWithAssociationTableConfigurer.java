@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.engine.configurer.onetomany;
 
 import java.util.Collection;
 
-import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.AssociationRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.configurer.IndexedAssociationRecordMapping;

@@ -3,9 +3,9 @@ package org.codefilarete.stalactite.engine.configurer.polymorphism;
 import java.util.Map;
 import java.util.Set;
 
-import org.codefilarete.stalactite.engine.PolymorphismPolicy;
-import org.codefilarete.stalactite.engine.RelationalMappingConfiguration;
-import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
+import org.codefilarete.stalactite.dsl.RelationalMappingConfiguration;
+import org.codefilarete.stalactite.dsl.subentity.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.SingleColumnIdentification;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;

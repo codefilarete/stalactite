@@ -25,8 +25,12 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
-import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions;
+import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
+import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
+import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
+import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder.FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions;
+import org.codefilarete.stalactite.dsl.MappingConfigurationException;
+import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImplTest.ToStringBuilder;
 import org.codefilarete.stalactite.engine.model.AbstractCountry;
@@ -126,7 +130,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		assertThatThrownBy(() -> mappingStrategy.build(persistenceContext))
 				.isInstanceOf(UnsupportedOperationException.class)
 				.hasMessage("Identifier is not defined for o.c.s.e.FluentEntityMappingConfigurationSupportTest$Toto,"
-						+ " please add one through o.c.s.e.FluentEntityMappingBuilder.mapKey(o.d.j.u.f.s.SerializableBiConsumer, o.c.s.e.ColumnOptions$IdentifierPolicy)");
+						+ " please add one through o.c.s.d.e.FluentEntityMappingBuilder.mapKey(o.d.j.u.f.s.SerializableBiConsumer, o.c.s.d.i.IdentifierPolicy)");
 	}
 	
 	@Nested
@@ -2166,7 +2170,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	 * Test to check that the API returns right Object which means:
 	 * - interfaces are well written to return right types, so one can chain others methods
 	 * - at runtime instance of the right type is also returned
-	 * (avoid "java.lang.ClassCastException: com.sun.proxy.$Proxy10 cannot be cast to org.codefilarete.stalactite.engine.FluentEmbeddableMappingBuilder")
+	 * (avoid "java.lang.ClassCastException: com.sun.proxy.$Proxy10 cannot be cast to org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder")
 	 * <p>
 	 * As many as possible combinations of method chaining should be done here, because all combination seems impossible, this test must be
 	 * considered as best effort, and any regression found in user code should be added here

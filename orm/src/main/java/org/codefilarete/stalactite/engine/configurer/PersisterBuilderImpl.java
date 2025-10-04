@@ -21,36 +21,36 @@ import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
-import org.codefilarete.stalactite.engine.ColumnOptions;
-import org.codefilarete.stalactite.engine.ColumnOptions.AlreadyAssignedIdentifierPolicy;
-import org.codefilarete.stalactite.engine.ColumnOptions.BeforeInsertIdentifierPolicy;
-import org.codefilarete.stalactite.engine.ColumnOptions.BeforeInsertIdentifierPolicySupport;
-import org.codefilarete.stalactite.engine.ColumnOptions.DatabaseSequenceIdentifierPolicySupport;
-import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
-import org.codefilarete.stalactite.engine.ColumnOptions.PooledHiLoSequenceIdentifierPolicySupport;
-import org.codefilarete.stalactite.engine.CompositeKeyMappingConfiguration;
-import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
-import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration.Linkage;
-import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
-import org.codefilarete.stalactite.engine.EntityMappingConfiguration.ColumnLinkageOptions;
-import org.codefilarete.stalactite.engine.EntityMappingConfiguration.CompositeKeyMapping;
-import org.codefilarete.stalactite.engine.EntityMappingConfiguration.EntityFactoryProvider;
-import org.codefilarete.stalactite.engine.EntityMappingConfiguration.InheritanceConfiguration;
-import org.codefilarete.stalactite.engine.EntityMappingConfiguration.KeyMapping;
-import org.codefilarete.stalactite.engine.EntityMappingConfiguration.SingleKeyMapping;
-import org.codefilarete.stalactite.engine.EntityMappingConfigurationProvider;
+import org.codefilarete.stalactite.dsl.idpolicy.GeneratedKeysPolicy;
+import org.codefilarete.stalactite.dsl.idpolicy.AlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.dsl.idpolicy.BeforeInsertIdentifierPolicy;
+import org.codefilarete.stalactite.dsl.idpolicy.BeforeInsertIdentifierPolicySupport;
+import org.codefilarete.stalactite.dsl.idpolicy.DatabaseSequenceIdentifierPolicySupport;
+import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
+import org.codefilarete.stalactite.dsl.idpolicy.PooledHiLoSequenceIdentifierPolicySupport;
+import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfiguration;
+import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
+import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration.Linkage;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.ColumnLinkageOptions;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.CompositeKeyMapping;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.EntityFactoryProvider;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.InheritanceConfiguration;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.KeyMapping;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.SingleKeyMapping;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder;
-import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentEntityMappingBuilderKeyOptions;
-import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.engine.MappingConfigurationException;
+import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
+import org.codefilarete.stalactite.dsl.key.FluentEntityMappingBuilderKeyOptions;
+import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.PersistenceContext;
-import org.codefilarete.stalactite.engine.PersisterBuilder;
+import org.codefilarete.stalactite.dsl.PersisterBuilder;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.PersisterRegistry.DefaultPersisterRegistry;
-import org.codefilarete.stalactite.engine.PolymorphismPolicy;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.SeparateTransactionExecutor;
-import org.codefilarete.stalactite.engine.TableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.VersioningStrategy;
 import org.codefilarete.stalactite.engine.cascade.AfterDeleteByIdSupport;
 import org.codefilarete.stalactite.engine.cascade.AfterDeleteSupport;
@@ -602,7 +602,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			Column<?, I> primaryKey = pkTable.addColumn(columnName, identifierDefinition.getMemberType());
 			primaryKey.setNullable(false);	// may not be necessary because of primary key, let for principle
 			primaryKey.primaryKey();
-			if (((SingleColumnIdentification<C, I>) identification).getIdentifierPolicy() instanceof ColumnOptions.GeneratedKeysPolicy) {
+			if (((SingleColumnIdentification<C, I>) identification).getIdentifierPolicy() instanceof GeneratedKeysPolicy) {
 				primaryKey.autoGenerated();
 			}
 		}
@@ -847,7 +847,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					((CompositeKeyIdentification<E, I>) identification).getIsPersistedFunction());
 		} else {
 			IdentifierPolicy<I> identifierPolicy = ((SingleColumnIdentification<E, I>) identification).getIdentifierPolicy();
-			if (identifierPolicy instanceof ColumnOptions.GeneratedKeysPolicy) {
+			if (identifierPolicy instanceof GeneratedKeysPolicy) {
 				// with identifier set by database generated key, identifier must be retrieved as soon as possible which means by the very first
 				// persister, which is current one, which is the first in order of mappings
 				Table<?> targetTable = first(mappingPerTable.getMappings()).targetTable;
@@ -862,7 +862,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				);
 			} else if (identifierPolicy instanceof BeforeInsertIdentifierPolicy) {
 				Sequence<I> sequence;
-				if (identifierPolicy instanceof ColumnOptions.PooledHiLoSequenceIdentifierPolicySupport) {
+				if (identifierPolicy instanceof PooledHiLoSequenceIdentifierPolicySupport) {
 					Class<E> entityType = identification.getIdentificationDefiner().getEntityType();
 					PooledHiLoSequenceOptions options = new PooledHiLoSequenceOptions(50, entityType.getSimpleName());
 					ConnectionProvider connectionProvider = connectionConfiguration.getConnectionProvider();
@@ -872,7 +872,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					}
 					sequence = (Sequence<I>) new PooledHiLoSequence(options,
 							new PooledHiLoSequencePersister(((PooledHiLoSequenceIdentifierPolicySupport) identifierPolicy).getStorageOptions(), dialect, (SeparateTransactionExecutor) connectionProvider, connectionConfiguration.getBatchSize()));
-				} else if (identifierPolicy instanceof ColumnOptions.DatabaseSequenceIdentifierPolicySupport) {
+				} else if (identifierPolicy instanceof DatabaseSequenceIdentifierPolicySupport) {
 					Class<E> entityType = identification.getIdentificationDefiner().getEntityType();
 					DatabaseSequenceIdentifierPolicySupport databaseSequenceSupport = (DatabaseSequenceIdentifierPolicySupport) identifierPolicy;
 					String sequenceName = databaseSequenceSupport.getDatabaseSequenceNamingStrategy().giveName(entityType);
@@ -887,7 +887,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 								.withInitialValue(databaseSequenceSupport.getDatabaseSequenceSettings().getInitialValue())
 							;
 					sequence = (Sequence<I>) dialect.getDatabaseSequenceSelectorFactory().create(databaseSequence, connectionConfiguration.getConnectionProvider());
-				} else if (identifierPolicy instanceof ColumnOptions.BeforeInsertIdentifierPolicySupport) {
+				} else if (identifierPolicy instanceof BeforeInsertIdentifierPolicySupport) {
 					sequence = ((BeforeInsertIdentifierPolicySupport<I>) identifierPolicy).getSequence();
 				} else {
 					throw new MappingConfigurationException("Before-insert identifier policy " + Reflections.toString(identifierPolicy.getClass()) + " is not supported");

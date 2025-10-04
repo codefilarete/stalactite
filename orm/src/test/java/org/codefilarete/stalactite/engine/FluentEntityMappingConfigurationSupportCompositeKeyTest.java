@@ -10,7 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
+import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
+import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.model.compositekey.House;
 import org.codefilarete.stalactite.engine.model.compositekey.House.HouseId;
 import org.codefilarete.stalactite.engine.model.compositekey.Person;
@@ -41,9 +43,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.engine.MappingEase.compositeKeyBuilder;
-import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
-import static org.codefilarete.stalactite.engine.MappingEase.subentityBuilder;
+import static org.codefilarete.stalactite.dsl.MappingEase.compositeKeyBuilder;
+import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.MappingEase.subentityBuilder;
 
 public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	

@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.engine;
 
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.stalactite.engine.ElementCollectionTableNamingStrategy.DefaultElementCollectionTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy.DefaultElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.junit.jupiter.api.Test;

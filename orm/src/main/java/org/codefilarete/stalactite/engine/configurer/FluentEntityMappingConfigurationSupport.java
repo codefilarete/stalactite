@@ -26,40 +26,48 @@ import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointByMethodReference;
-import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
-import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
-import org.codefilarete.stalactite.engine.ColumnOptions;
-import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
-import org.codefilarete.stalactite.engine.CompositeKeyMappingConfiguration.CompositeKeyLinkage;
-import org.codefilarete.stalactite.engine.CompositeKeyMappingConfigurationProvider;
-import org.codefilarete.stalactite.engine.ElementCollectionOptions;
-import org.codefilarete.stalactite.engine.ElementCollectionTableNamingStrategy;
-import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
-import org.codefilarete.stalactite.engine.EmbeddableMappingConfigurationProvider;
-import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
-import org.codefilarete.stalactite.engine.EntityMappingConfigurationProvider;
-import org.codefilarete.stalactite.engine.EnumOptions;
-import org.codefilarete.stalactite.engine.ExtraTablePropertyOptions;
-import org.codefilarete.stalactite.engine.FluentEmbeddableMappingBuilder.FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions;
-import org.codefilarete.stalactite.engine.FluentEmbeddableMappingBuilder.FluentEmbeddableMappingBuilderEnumOptions;
-import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder;
-import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.engine.ImportedEmbedWithColumnOptions;
-import org.codefilarete.stalactite.engine.InheritanceOptions;
-import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
-import org.codefilarete.stalactite.engine.ManyToManyOptions;
-import org.codefilarete.stalactite.engine.ManyToOneOptions;
-import org.codefilarete.stalactite.engine.MapEntryTableNamingStrategy;
-import org.codefilarete.stalactite.engine.MapOptions;
-import org.codefilarete.stalactite.engine.MapOptions.KeyAsEntityMapOptions;
-import org.codefilarete.stalactite.engine.MapOptions.ValueAsEntityMapOptions;
-import org.codefilarete.stalactite.engine.MappingConfigurationException;
-import org.codefilarete.stalactite.engine.OneToManyOptions;
-import org.codefilarete.stalactite.engine.OneToOneOptions;
+import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderManyToManyOptions;
+import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.property.ColumnOptions;
+import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
+import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyOptions;
+import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToOneOptions;
+import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderManyToOneOptions;
+import org.codefilarete.stalactite.dsl.key.CompositeKeyOptions;
+import org.codefilarete.stalactite.dsl.key.FluentEntityMappingBuilderCompositeKeyOptions;
+import org.codefilarete.stalactite.dsl.key.FluentEntityMappingBuilderKeyOptions;
+import org.codefilarete.stalactite.dsl.key.KeyOptions;
+import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfiguration.CompositeKeyLinkage;
+import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfigurationProvider;
+import org.codefilarete.stalactite.dsl.property.ElementCollectionOptions;
+import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
+import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
+import org.codefilarete.stalactite.dsl.property.EnumOptions;
+import org.codefilarete.stalactite.dsl.ExtraTablePropertyOptions;
+import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder.FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions;
+import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder.FluentEmbeddableMappingBuilderEnumOptions;
+import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
+import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.dsl.embeddable.ImportedEmbedWithColumnOptions;
+import org.codefilarete.stalactite.dsl.InheritanceOptions;
+import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.relation.ManyToManyOptions;
+import org.codefilarete.stalactite.dsl.relation.ManyToOneOptions;
+import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.property.MapOptions;
+import org.codefilarete.stalactite.dsl.property.MapOptions.KeyAsEntityMapOptions;
+import org.codefilarete.stalactite.dsl.property.MapOptions.ValueAsEntityMapOptions;
+import org.codefilarete.stalactite.dsl.MappingConfigurationException;
+import org.codefilarete.stalactite.dsl.relation.OneToManyOptions;
+import org.codefilarete.stalactite.dsl.relation.OneToOneOptions;
 import org.codefilarete.stalactite.engine.PersistenceContext;
-import org.codefilarete.stalactite.engine.PolymorphismPolicy;
-import org.codefilarete.stalactite.engine.PropertyOptions;
-import org.codefilarete.stalactite.engine.TableNamingStrategy;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
+import org.codefilarete.stalactite.dsl.property.PropertyOptions;
+import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.VersioningStrategy;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.LinkageSupport;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
@@ -979,7 +987,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public FluentEntityMappingBuilder<C, I> withIndexColumnNamingStrategy(ColumnNamingStrategy columnNamingStrategy) {
+	public FluentEntityMappingBuilder<C, I> withIndexColumnNaming(ColumnNamingStrategy columnNamingStrategy) {
 		this.indexColumnNamingStrategy = columnNamingStrategy;
 		return this;
 	}
@@ -1108,7 +1116,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 						}
 						
 						@Override
-						public PropertyOptions<O> columnSize(Size size) {
+						public ColumnOptions<O> columnSize(Size size) {
 							newMapping.getColumnOptions().setColumnSize(size);
 							return null;
 						}

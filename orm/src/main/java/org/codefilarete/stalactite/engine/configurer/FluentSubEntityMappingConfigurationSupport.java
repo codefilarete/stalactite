@@ -23,23 +23,24 @@ import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointByMethodReference;
-import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
-import org.codefilarete.stalactite.engine.ColumnOptions;
-import org.codefilarete.stalactite.engine.ElementCollectionOptions;
-import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
-import org.codefilarete.stalactite.engine.EmbeddableMappingConfigurationProvider;
-import org.codefilarete.stalactite.engine.EntityMappingConfigurationProvider;
-import org.codefilarete.stalactite.engine.EnumOptions;
-import org.codefilarete.stalactite.engine.FluentEmbeddableMappingBuilder.FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions;
-import org.codefilarete.stalactite.engine.FluentEmbeddableMappingBuilder.FluentEmbeddableMappingBuilderEnumOptions;
-import org.codefilarete.stalactite.engine.FluentSubEntityMappingBuilder;
-import org.codefilarete.stalactite.engine.ImportedEmbedWithColumnOptions;
-import org.codefilarete.stalactite.engine.MappingConfigurationException;
-import org.codefilarete.stalactite.engine.OneToManyOptions;
-import org.codefilarete.stalactite.engine.OneToOneOptions;
-import org.codefilarete.stalactite.engine.PolymorphismPolicy;
-import org.codefilarete.stalactite.engine.PropertyOptions;
-import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
+import org.codefilarete.stalactite.dsl.subentity.FluentSubEntityMappingBuilderOneToManyOptions;
+import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.property.ColumnOptions;
+import org.codefilarete.stalactite.dsl.property.ElementCollectionOptions;
+import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
+import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
+import org.codefilarete.stalactite.dsl.property.EnumOptions;
+import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder.FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions;
+import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder.FluentEmbeddableMappingBuilderEnumOptions;
+import org.codefilarete.stalactite.dsl.subentity.FluentSubEntityMappingBuilder;
+import org.codefilarete.stalactite.dsl.embeddable.ImportedEmbedWithColumnOptions;
+import org.codefilarete.stalactite.dsl.MappingConfigurationException;
+import org.codefilarete.stalactite.dsl.relation.OneToManyOptions;
+import org.codefilarete.stalactite.dsl.relation.OneToOneOptions;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
+import org.codefilarete.stalactite.dsl.property.PropertyOptions;
+import org.codefilarete.stalactite.dsl.subentity.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.LinkageSupport;
 import org.codefilarete.stalactite.engine.configurer.FluentEntityMappingConfigurationSupport.OneToManyOptionsSupport;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
@@ -365,7 +366,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	}
 	
 	@Override
-	public <O, J, S extends Collection<O>> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
+	public <O, J, S extends Collection<O>> FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
 			SerializableFunction<C, S> getter,
 			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
 		
@@ -379,7 +380,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	}
 	
 	@Override
-	public <O, J, S extends Collection<O>> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
+	public <O, J, S extends Collection<O>> FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
 			SerializableBiConsumer<C, S> setter,
 			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
 		
@@ -391,7 +392,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 		return mapOneToMany(propertyAccessor, setterReference, mappingConfiguration);
 	}
 	
-	private <O, J, S extends Collection<O>> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
+	private <O, J, S extends Collection<O>> FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
 			ReversibleAccessor<C, S> propertyAccessor,
 			ValueAccessPointByMethodReference<C> methodReference,
 			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
@@ -404,7 +405,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 		return new MethodDispatcher()
 				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(oneToManyRelation), true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
-				.build((Class<FluentMappingBuilderOneToManyOptions<C, I, O, S>>) (Class) FluentMappingBuilderOneToManyOptions.class);
+				.build((Class<FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S>>) (Class) FluentSubEntityMappingBuilderOneToManyOptions.class);
 	}
 	
 	@Override

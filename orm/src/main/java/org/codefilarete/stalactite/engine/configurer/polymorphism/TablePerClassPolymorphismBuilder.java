@@ -9,10 +9,10 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
-import org.codefilarete.stalactite.engine.ColumnOptions;
-import org.codefilarete.stalactite.engine.PolymorphismPolicy;
-import org.codefilarete.stalactite.engine.PolymorphismPolicy.TablePerClassPolymorphism;
-import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
+import org.codefilarete.stalactite.dsl.idpolicy.GeneratedKeysPolicy;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy.TablePerClassPolymorphism;
+import org.codefilarete.stalactite.dsl.subentity.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.SingleColumnIdentification;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder;
@@ -87,7 +87,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 	
 	@Override
 	public AbstractPolymorphismPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
-		if (this.identification instanceof AbstractIdentification.SingleColumnIdentification && ((SingleColumnIdentification<C, I>) this.identification).getIdentifierPolicy() instanceof ColumnOptions.GeneratedKeysPolicy) {
+		if (this.identification instanceof AbstractIdentification.SingleColumnIdentification && ((SingleColumnIdentification<C, I>) this.identification).getIdentifierPolicy() instanceof GeneratedKeysPolicy) {
 			throw new UnsupportedOperationException("Table-per-class polymorphism is not compatible with auto-incremented primary key");
 		}
 		Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass = collectSubClassPersister(dialect, connectionConfiguration);
