@@ -10,10 +10,8 @@ import org.codefilarete.stalactite.engine.runtime.DMLExecutorTest.PersistenceCon
 import org.codefilarete.stalactite.engine.runtime.DMLExecutorTest.Tata;
 import org.codefilarete.stalactite.engine.runtime.DMLExecutorTest.Toto;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
-import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.ReadOperationFactory;
 import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -45,14 +43,14 @@ abstract class SelectExecutorITTest<T extends Table<T>> extends DatabaseIntegrat
 		Connection connection = connectionProvider.giveConnection();
 		ConnectionProvider connectionProvider = new SimpleConnectionProvider(connection);
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), dialect.getDdlSequenceGenerator(), connectionProvider);
-		ddlDeployer.getDdlGenerator().addTables(persistenceConfiguration.classMappingStrategy.getTargetTable());
+		ddlDeployer.getDdlGenerator().addTables(persistenceConfiguration.entityMapping.getTargetTable());
 		ddlDeployer.deployDDL();
 		connection.prepareStatement("insert into Toto(a, b, c) values (1, 10, 100)").execute();
 		connection.prepareStatement("insert into Toto(a, b, c) values (2, 20, 200)").execute();
 		connection.prepareStatement("insert into Toto(a, b, c) values (3, 30, 300)").execute();
 		connection.prepareStatement("insert into Toto(a, b, c) values (4, 40, 400)").execute();
 		
-		SelectExecutor<Toto, Integer, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy,
+		SelectExecutor<Toto, Integer, T> testInstance = new SelectExecutor<>(persistenceConfiguration.entityMapping,
 				new ConnectionConfigurationSupport(connectionProvider, 10, 100),
 				dmlGenerator,
 				new ReadOperationFactory(),
@@ -83,14 +81,14 @@ abstract class SelectExecutorITTest<T extends Table<T>> extends DatabaseIntegrat
 		Connection connection = connectionProvider.giveConnection();
 		ConnectionProvider connectionProvider = new SimpleConnectionProvider(connection);
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), dialect.getDdlSequenceGenerator(), connectionProvider);
-		ddlDeployer.getDdlGenerator().addTables(persistenceConfiguration.classMappingStrategy.getTargetTable());
+		ddlDeployer.getDdlGenerator().addTables(persistenceConfiguration.entityMapping.getTargetTable());
 		ddlDeployer.deployDDL();
 		connection.prepareStatement("insert into Toto(a, b, c) values (1, 10, 100)").execute();
 		connection.prepareStatement("insert into Toto(a, b, c) values (2, 20, 200)").execute();
 		connection.prepareStatement("insert into Toto(a, b, c) values (3, 30, 300)").execute();
 		connection.prepareStatement("insert into Toto(a, b, c) values (4, 40, 400)").execute();
 
-		SelectExecutor<Toto, Toto, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy,
+		SelectExecutor<Toto, Toto, T> testInstance = new SelectExecutor<>(persistenceConfiguration.entityMapping,
 				new ConnectionConfigurationSupport(connectionProvider, 10, 100),
 				dmlGenerator,
 				new ReadOperationFactory(),
@@ -113,14 +111,14 @@ abstract class SelectExecutorITTest<T extends Table<T>> extends DatabaseIntegrat
 		Connection connection = connectionProvider.giveConnection();
 		ConnectionProvider connectionProvider = new SimpleConnectionProvider(connection);
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), dialect.getDdlSequenceGenerator(), connectionProvider);
-		ddlDeployer.getDdlGenerator().addTables(persistenceConfiguration.classMappingStrategy.getTargetTable());
+		ddlDeployer.getDdlGenerator().addTables(persistenceConfiguration.entityMapping.getTargetTable());
 		ddlDeployer.deployDDL();
 		connection.prepareStatement("insert into Tata(a, b, c) values (1, 10, 100)").execute();
 		connection.prepareStatement("insert into Tata(a, b, c) values (2, 20, 200)").execute();
 		connection.prepareStatement("insert into Tata(a, b, c) values (3, 30, 300)").execute();
 		connection.prepareStatement("insert into Tata(a, b, c) values (4, 40, 400)").execute();
 
-		SelectExecutor<Tata, ComposedId, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy,
+		SelectExecutor<Tata, ComposedId, T> testInstance = new SelectExecutor<>(persistenceConfiguration.entityMapping,
 				new ConnectionConfigurationSupport(connectionProvider, 10, 100),
 				dmlGenerator,
 				new ReadOperationFactory(),

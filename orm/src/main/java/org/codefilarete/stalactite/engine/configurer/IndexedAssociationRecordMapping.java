@@ -3,12 +3,11 @@ package org.codefilarete.stalactite.engine.configurer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
@@ -30,7 +29,7 @@ public class IndexedAssociationRecordMapping<
 		RIGHTTABLE extends Table<RIGHTTABLE>,
 		LEFTID,
 		RIGHTID>
-		extends ClassMapping<IndexedAssociationRecord, IndexedAssociationRecord, ASSOCIATIONTABLE> {
+		extends DefaultEntityMapping<IndexedAssociationRecord, IndexedAssociationRecord, ASSOCIATIONTABLE> {
 	
 	
 	public IndexedAssociationRecordMapping(ASSOCIATIONTABLE targetTable,

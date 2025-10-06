@@ -19,7 +19,7 @@ import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.singletable.SingleTablePolymorphismPersister;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -118,7 +118,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 		subEntityReadonlyPropertiesMapping.putAll((Map) mainReadonlyMapping);
 		subEntityPropertiesReadConverters.putAll((Map) mainReadConverters);
 		subEntityPropertiesWriteConverters.putAll((Map) mainWriteConverters);
-		ClassMapping<D, I, T> classMappingStrategy = PersisterBuilderImpl.createClassMappingStrategy(
+		DefaultEntityMapping<D, I, T> entityMapping = PersisterBuilderImpl.createEntityMapping(
 				true,    // given Identification (which is parent one) contains identifier policy
 				mainTable,
 				subEntityPropertiesMapping,
@@ -130,10 +130,10 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 				subConfiguration.getPropertiesMapping().getBeanType(),
 				null);
 		// we need to copy also shadow columns, made in particular for one-to-one owned by source side because foreign key is maintained through it
-		classMappingStrategy.addShadowColumns((ClassMapping) mainPersister.getMapping());
+		entityMapping.addShadowColumns((DefaultEntityMapping) mainPersister.getMapping());
 		
 		// no primary key to add nor foreign key since table is the same as main one (single table strategy)
-		return new SimpleRelationalEntityPersister<>(classMappingStrategy, dialect, connectionConfiguration);
+		return new SimpleRelationalEntityPersister<>(entityMapping, dialect, connectionConfiguration);
 	}
 	
 	@Override

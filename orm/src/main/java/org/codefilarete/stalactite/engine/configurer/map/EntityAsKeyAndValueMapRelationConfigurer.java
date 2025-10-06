@@ -27,7 +27,7 @@ import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.AfterUpdateTrigger;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.EmbeddedClassMapping;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
@@ -157,7 +157,7 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 	
 	@Override
 	<TT extends Table<TT>, TARGETTABLE extends Table<TARGETTABLE>>
-	ClassMapping<KeyValueRecord<KID, VID, SRCID>, RecordId<KID, SRCID>, TARGETTABLE>
+	DefaultEntityMapping<KeyValueRecord<KID, VID, SRCID>, RecordId<KID, SRCID>, TARGETTABLE>
 	buildKeyValueRecordMapping(TARGETTABLE targetTable,
 							   IdentifierAssembler<SRCID, TT> sourceIdentifierAssembler,
 							   Map<Column<TT, ?>, Column<TARGETTABLE, ?>> primaryKeyForeignColumnMapping,

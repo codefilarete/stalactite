@@ -32,7 +32,7 @@ public interface EntityMerger<C> {
 		
 		public EntityMergerAdapter(EntityMapping<C, ?, T> delegate) {
 			// We create a full clone of the current selectable columns to capture them and avoid later changes, which can hardly change except when
-			// shadow columns are added to the ClassMapping: this happens in one-to-many mapped association and many side is a table-per-class case.
+			// shadow columns are added to the DefaultEntityDefaultEntityMapping: this happens in one-to-many mapped association and many side is a table-per-class case.
 			// This is a bit of a hack, but it globally makes sense, even if doing it only fixes the above case (no problem with other polymorphic
 			// cases, which is normal because their algorithms are different)
 			this.selectableColumns = new KeepOrderSet<>(delegate.getSelectableColumns());

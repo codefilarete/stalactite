@@ -8,13 +8,12 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -62,7 +61,7 @@ class RelationalEntityFinderTest {
 		Map<ReversibleAccessor<Toto, Object>, Column<T, Object>> totoClassMapping = (Map) new ValueAccessPointMap<>();
 		totoClassMapping.put(Accessors.propertyAccessor(Toto.class, "id"), totoColId);
 		
-		ClassMapping<Toto, Integer, T> totoMapping = new ClassMapping<>(
+		DefaultEntityMapping<Toto, Integer, T> totoMapping = new DefaultEntityMapping<>(
 				Toto.class,
 				(T) totoTable,
 				totoClassMapping,
@@ -82,7 +81,7 @@ class RelationalEntityFinderTest {
 		tataClassMapping.put(Accessors.propertyAccessor(Tata.class, "id"), tataColId);
 		
 		
-		ClassMapping<Tata, Integer, T> tataMapping = new ClassMapping<>(
+		DefaultEntityMapping<Tata, Integer, T> tataMapping = new DefaultEntityMapping<>(
 				Tata.class,
 				(T) totoTable,
 				tataClassMapping,

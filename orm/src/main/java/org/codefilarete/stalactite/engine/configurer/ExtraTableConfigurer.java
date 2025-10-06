@@ -17,7 +17,7 @@ import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersiste
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
@@ -60,8 +60,8 @@ class ExtraTableConfigurer<C, I, T extends Table<T>> {
 		Set<SimpleRelationalEntityPersister<C, I, ?>> extraTablePersisters = new KeepOrderSet<>();
 		
 		this.extraTableLinkages.forEach((extraTableName, linkages) -> {
-			ClassMapping<C, I, ?> extratableClassMapping = buildExtraTableClassMapping(extraTableName, linkages);
-			extraTablePersisters.add(new SimpleRelationalEntityPersister<>(extratableClassMapping, dialect, connectionConfiguration));
+			DefaultEntityMapping<C, I, ?> extratableEntityMapping = buildExtraTableClassMapping(extraTableName, linkages);
+			extraTablePersisters.add(new SimpleRelationalEntityPersister<>(extratableEntityMapping, dialect, connectionConfiguration));
 		});
 		
 		// we handle cascade on other table by adding listeners to main persister, other manner would be to override
@@ -75,7 +75,7 @@ class ExtraTableConfigurer<C, I, T extends Table<T>> {
 		});
 	}
 	
-	private <EXTRATABLE extends Table<EXTRATABLE>> ClassMapping<C, I, EXTRATABLE> buildExtraTableClassMapping(String extraTableName, Set<Linkage> linkages) {
+	private <EXTRATABLE extends Table<EXTRATABLE>> DefaultEntityMapping<C, I, EXTRATABLE> buildExtraTableClassMapping(String extraTableName, Set<Linkage> linkages) {
 		EXTRATABLE extraTable = (EXTRATABLE) new Table(extraTableName);
 		addPrimaryKey(extraTable);
 		addForeignKey(extraTable);
@@ -85,10 +85,10 @@ class ExtraTableConfigurer<C, I, T extends Table<T>> {
 		BeanMappingBuilder<C, EXTRATABLE> beanMappingBuilder = new BeanMappingBuilder<>(fluentEmbeddableMappingConfigurationSupport, extraTable, columnBinderRegistry, namingConfiguration.getColumnNamingStrategy());
 		BeanMapping<C, EXTRATABLE> build = beanMappingBuilder.build(true);
 		
-		// we create the ClassMapping from the complex method, not from one of its constructor, because it would
+		// we create the DefaultEntityDefaultEntityMapping from the complex method, not from one of its constructor, because it would
 		// require the IdMapping which can be taken from mainPersister but which is wrong since PK column is not the
 		// right one and create exception at runtime (update case for example)
-		ClassMapping<C, I, EXTRATABLE> extratableClassMapping = PersisterBuilderImpl.createClassMappingStrategy(
+		DefaultEntityMapping<C, I, EXTRATABLE> extratableEntityMapping = PersisterBuilderImpl.createEntityMapping(
 				false,
 				extraTable,
 				build.getMapping(),
@@ -101,12 +101,12 @@ class ExtraTableConfigurer<C, I, T extends Table<T>> {
 				mainPersister.getClassToPersist(),
 				null);
 		mainPersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_JOIN_NAME,
-				new EntityMergerAdapter<>(extratableClassMapping),
+				new EntityMergerAdapter<>(extratableEntityMapping),
 				mainPersister.getMainTable().getPrimaryKey(),
 				extraTable.getPrimaryKey(),
 				JoinType.OUTER
 		);
-		return extratableClassMapping;
+		return extratableEntityMapping;
 	}
 	
 	private void addPrimaryKey(Table table) {

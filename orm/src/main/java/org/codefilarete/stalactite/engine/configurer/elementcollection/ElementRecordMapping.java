@@ -2,10 +2,9 @@ package org.codefilarete.stalactite.engine.configurer.elementcollection;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.EmbeddedClassMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
@@ -24,7 +23,7 @@ import org.codefilarete.tool.collection.Maps;
  * Class mapping dedicated to {@link ElementRecord}. Very close to {@link org.codefilarete.stalactite.engine.configurer.AssociationRecordMapping}
  * in its principle.
  */
-public class ElementRecordMapping<C, I, T extends Table<T>> extends ClassMapping<ElementRecord<C, I>, ElementRecord<C, I>, T> {
+public class ElementRecordMapping<C, I, T extends Table<T>> extends DefaultEntityMapping<ElementRecord<C, I>, ElementRecord<C, I>, T> {
 	
 	@VisibleForTesting
 	public <LEFTTABLE extends Table<LEFTTABLE>> ElementRecordMapping(T targetTable,

@@ -6,7 +6,7 @@ import java.util.function.Consumer;
 
 import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.PersistenceContext;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
@@ -239,11 +239,11 @@ public class BeanPersister<C, I, T extends Table<T>>
 	}
 	
 	/**
-	 * Indicates if a bean is persisted or not. Delegated to {@link ClassMapping}
+	 * Indicates if a bean is persisted or not. Delegated to {@link DefaultEntityMapping}
 	 * 
 	 * @param c a bean
 	 * @return true if a bean is already persisted
-	 * @see ClassMapping#isNew(Object)
+	 * @see DefaultEntityMapping#isNew(Object)
 	 * @see SimpleIdMapping.IsNewDeterminer
 	 */
 	@Override

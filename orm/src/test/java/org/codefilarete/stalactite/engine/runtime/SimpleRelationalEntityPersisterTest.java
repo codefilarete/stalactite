@@ -43,7 +43,7 @@ import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
@@ -108,7 +108,7 @@ class SimpleRelationalEntityPersisterTest {
 	private ArgumentCaptor<Integer> indexCaptor;
 	private ArgumentCaptor<String> statementArgCaptor;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
-	private ClassMapping<Toto, Identifier<Integer>, ?> totoClassMappingStrategy_ontoTable1;
+	private DefaultEntityMapping<Toto, Identifier<Integer>, ?> totoEntityMappingStrategy_ontoTable1;
 	private DefaultDialect dialect;
 	private Key<Table, Identifier<Integer>> leftJoinColumn;
 	private Key<Table, Identifier<Integer>> rightJoinColumn;
@@ -157,7 +157,7 @@ class SimpleRelationalEntityPersisterTest {
 				new AccessorWrapperIdAccessor<>(identifierAccessor),
 				() -> new PersistableIdentifier<>(identifierGenerator.next()),
 				(Class<Identifier<Integer>>) (Class) Identifier.class);
-		totoClassMappingStrategy_ontoTable1 = new ClassMapping<>(Toto.class,
+		totoEntityMappingStrategy_ontoTable1 = new DefaultEntityMapping<>(Toto.class,
 				totoClassTable,
 				totoClassMapping,
 				identifierAccessor,
@@ -230,7 +230,7 @@ class SimpleRelationalEntityPersisterTest {
 		
 		DataSource dataSource = mock(DataSource.class);
 		when(dataSource.getConnection()).thenReturn(connection);
-		testInstance = new SimpleRelationalEntityPersister<>(totoClassMappingStrategy_ontoTable1, dialect,
+		testInstance = new SimpleRelationalEntityPersister<>(totoEntityMappingStrategy_ontoTable1, dialect,
 															 new ConnectionConfigurationSupport(new CurrentThreadConnectionProvider(dataSource), 3));
 	}
 	
@@ -741,7 +741,7 @@ class SimpleRelationalEntityPersisterTest {
 	@Nested
 	class CRUD_WithListener {
 		
-		private ClassMapping<Toto, Identifier<Integer>, ?> totoClassMappingStrategy;
+		private DefaultEntityMapping<Toto, Identifier<Integer>, ?> totoEntityMappingStrategy;
 		private BeanPersister<Toto, Identifier<Integer>, ?> persister;
 		
 		@BeforeEach
@@ -784,14 +784,14 @@ class SimpleRelationalEntityPersisterTest {
 			AlreadyAssignedIdentifierManager<Toto, Identifier<Integer>> identifierManager =
 					new AlreadyAssignedIdentifierManager<>((Class<Identifier<Integer>>) (Class) Identifier.class,
 														   c -> c.getId().setPersisted(), c -> c.getId().isPersisted());
-			totoClassMappingStrategy = new ClassMapping<>(Toto.class, totoClassTable, totoClassMapping2, identifierAccessor, identifierManager);
+			totoEntityMappingStrategy = new DefaultEntityMapping<>(Toto.class, totoClassTable, totoClassMapping2, identifierAccessor, identifierManager);
 		}
 		
 		protected void initTest() throws SQLException {
 			SimpleRelationalEntityPersisterTest.this.initTest();
 			
 			// we add a copier onto a another table
-			persister = new BeanPersister<>(totoClassMappingStrategy, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
+			persister = new BeanPersister<>(totoEntityMappingStrategy, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
 			testInstance.getEntityJoinTree().addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME,
 															 new EntityMappingAdapter<>(persister.getMapping()), Accessors.accessorByMethodReference(Toto::getId),
                     leftJoinColumn, rightJoinColumn, null, JoinType.INNER, Toto::merge, Collections.emptySet());

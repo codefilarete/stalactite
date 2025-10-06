@@ -11,7 +11,7 @@ import java.util.function.Function;
 import org.assertj.core.presentation.StandardRepresentation;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.QueryEase;
 import org.codefilarete.stalactite.query.model.QueryStatement.PseudoColumn;
@@ -37,12 +37,12 @@ import static org.mockito.Mockito.when;
  */
 class EntityJoinTreeTest {
 	
-	static ClassMapping buildMappingStrategyMock(String tableName) {
+	static DefaultEntityMapping buildMappingStrategyMock(String tableName) {
 		return buildMappingStrategyMock(new Table(tableName));
 	}
 	
-	static ClassMapping buildMappingStrategyMock(Table table) {
-		ClassMapping mappingStrategyMock = mock(ClassMapping.class);
+	static DefaultEntityMapping buildMappingStrategyMock(Table table) {
+		DefaultEntityMapping mappingStrategyMock = mock(DefaultEntityMapping.class);
 		when(mappingStrategyMock.getTargetTable()).thenReturn(table);
 		// the selected columns are plugged on the table ones
 		when(mappingStrategyMock.getSelectableColumns()).thenAnswer(invocation -> table.getColumns());
@@ -54,7 +54,7 @@ class EntityJoinTreeTest {
 		// Given following tree:
 		// Toto.id (Root)
 		// Toto.tataId = Tata.id (X)
-		ClassMapping totoMappingMock = buildMappingStrategyMock("Toto");
+		DefaultEntityMapping totoMappingMock = buildMappingStrategyMock("Toto");
 		Table totoTable = totoMappingMock.getTargetTable();
 		Column<Table, Long> tataIdColumn = totoTable.addColumn("tataId", long.class);
 		Table tataTable = new Table("Tata");
@@ -76,7 +76,7 @@ class EntityJoinTreeTest {
 
 		// and another given tree:
 		// Tutu.id (Root)
-		ClassMapping tutuMappingMock = buildMappingStrategyMock("Tutu");
+		DefaultEntityMapping tutuMappingMock = buildMappingStrategyMock("Tutu");
 		EntityJoinTree tutuEntityJoinTree = new EntityJoinTree(tutuMappingMock);
 		Table<?> tutuTable = (Table<?>) tutuEntityJoinTree.getRoot().getTable();
 		tutuTable.addColumn("id", long.class).primaryKey();
@@ -127,7 +127,7 @@ class EntityJoinTreeTest {
 		// Given following tree:
 		// Toto.id (Root)
 		// Toto.tataId = Tata.id (X)
-		ClassMapping totoMappingMock = buildMappingStrategyMock("Toto");
+		DefaultEntityMapping totoMappingMock = buildMappingStrategyMock("Toto");
 		Table totoTable = totoMappingMock.getTargetTable();
 		Column<Table, Long> tataIdColumn = totoTable.addColumn("tataId", long.class);
 		Table tataTable = new Table("Tata");
@@ -147,7 +147,7 @@ class EntityJoinTreeTest {
 
 		// and another given tree:
 		// Tutu.id (Root)
-		ClassMapping tutuMappingMock = buildMappingStrategyMock("Tutu");
+		DefaultEntityMapping tutuMappingMock = buildMappingStrategyMock("Tutu");
 		EntityJoinTree tutuEntityJoinTree = new EntityJoinTree(tutuMappingMock);
 		Table tutuTable = (Table) tutuEntityJoinTree.getRoot().getTable();
 		tutuTable.addColumn("id", long.class).primaryKey();
@@ -199,7 +199,7 @@ class EntityJoinTreeTest {
 		// Given following tree:
 		// Toto.id (Root)
 		// Toto.tataId = Tata.id (X)
-		ClassMapping totoMappingMock = buildMappingStrategyMock("Toto");
+		DefaultEntityMapping totoMappingMock = buildMappingStrategyMock("Toto");
 		Table totoTable = totoMappingMock.getTargetTable();
 		Column<Table, Long> tataIdColumn = totoTable.addColumn("tataId", long.class);
 		Table tataTable = new Table("Tata");
@@ -217,7 +217,7 @@ class EntityJoinTreeTest {
 
 		// and another given tree:
 		// Tutu.id (Root)
-		ClassMapping tutuMappingMock = buildMappingStrategyMock("Tutu");
+		DefaultEntityMapping tutuMappingMock = buildMappingStrategyMock("Tutu");
 		EntityJoinTree tutuEntityJoinTree = new EntityJoinTree(tutuMappingMock);
 		Table tutuTable = (Table) tutuEntityJoinTree.getRoot().getTable();
 		tutuTable.addColumn("id", long.class).primaryKey();
@@ -276,28 +276,28 @@ class EntityJoinTreeTest {
 	
 	@Test
 	void projectTo() {
-		ClassMapping totoMappingMock = buildMappingStrategyMock("Toto");
+		DefaultEntityMapping totoMappingMock = buildMappingStrategyMock("Toto");
 		Table totoTable = totoMappingMock.getTargetTable();
 		totoTable.addColumn("id", long.class).primaryKey();
 		PrimaryKey<?, Long> totoPrimaryKey = totoTable.getPrimaryKey();
 		// column for "noise" in select
 		Column totoNameColumn = totoTable.addColumn("name", String.class);
 		
-		ClassMapping tataMappingMock = buildMappingStrategyMock("Tata");
+		DefaultEntityMapping tataMappingMock = buildMappingStrategyMock("Tata");
 		Table tataTable = tataMappingMock.getTargetTable();
 		tataTable.addColumn("id", long.class).primaryKey();
 		PrimaryKey<?, Long> tataPrimaryKey = tataTable.getPrimaryKey();
 		// column for "noise" in select
 		Column tataNameColumn = tataTable.addColumn("name", String.class);
 		
-		ClassMapping tutuMappingMock = buildMappingStrategyMock("Tutu");
+		DefaultEntityMapping tutuMappingMock = buildMappingStrategyMock("Tutu");
 		Table tutuTable = tutuMappingMock.getTargetTable();
 		tutuTable.addColumn("id", long.class).primaryKey();
 		PrimaryKey<?, Long> tutuPrimaryKey = tutuTable.getPrimaryKey();
 		// column for "noise" in select
 		Column tutuNameColumn = tutuTable.addColumn("name", String.class);
 		
-		ClassMapping titiMappingMock = buildMappingStrategyMock("Titi");
+		DefaultEntityMapping titiMappingMock = buildMappingStrategyMock("Titi");
 		Table titiTable = titiMappingMock.getTargetTable();
 		titiTable.addColumn("id", long.class).primaryKey();
 		PrimaryKey<?, Long> titiPrimaryKey = titiTable.getPrimaryKey();
@@ -352,28 +352,28 @@ class EntityJoinTreeTest {
 	
 	@Test
 	void joinIterator() {
-		ClassMapping totoMappingMock = buildMappingStrategyMock("Toto");
+		DefaultEntityMapping totoMappingMock = buildMappingStrategyMock("Toto");
 		Table totoTable = totoMappingMock.getTargetTable();
 		totoTable.addColumn("id", long.class).primaryKey();
 		PrimaryKey<?, Long> totoPrimaryKey = totoTable.getPrimaryKey();
 		// column for "noise" in select
 		Column totoNameColumn = totoTable.addColumn("name", String.class);
 		
-		ClassMapping tataMappingMock = buildMappingStrategyMock("Tata");
+		DefaultEntityMapping tataMappingMock = buildMappingStrategyMock("Tata");
 		Table tataTable = tataMappingMock.getTargetTable();
 		tataTable.addColumn("id", long.class).primaryKey();
 		PrimaryKey<?, Long> tataPrimaryKey = tataTable.getPrimaryKey();
 		// column for "noise" in select
 		Column tataNameColumn = tataTable.addColumn("name", String.class);
 		
-		ClassMapping tutuMappingMock = buildMappingStrategyMock("Tutu");
+		DefaultEntityMapping tutuMappingMock = buildMappingStrategyMock("Tutu");
 		Table tutuTable = tutuMappingMock.getTargetTable();
 		tutuTable.addColumn("id", long.class).primaryKey();
 		PrimaryKey<?, Long> tutuPrimaryKey = tutuTable.getPrimaryKey();
 		// column for "noise" in select
 		Column tutuNameColumn = tutuTable.addColumn("name", String.class);
 		
-		ClassMapping titiMappingMock = buildMappingStrategyMock("Titi");
+		DefaultEntityMapping titiMappingMock = buildMappingStrategyMock("Titi");
 		Table titiTable = titiMappingMock.getTargetTable();
 		titiTable.addColumn("id", long.class).primaryKey();
 		PrimaryKey<?, Long> titiPrimaryKey = titiTable.getPrimaryKey();
@@ -381,14 +381,14 @@ class EntityJoinTreeTest {
 		Column titiNameColumn = titiTable.addColumn("name", String.class);
 		
 		Table tataTableClone = new Table("tata2");
-		ClassMapping tataCloneMappingMock = buildMappingStrategyMock(tataTableClone);
+		DefaultEntityMapping tataCloneMappingMock = buildMappingStrategyMock(tataTableClone);
 		tataTableClone.addColumn("id", long.class).primaryKey();
 		PrimaryKey<?, Long> tataClonePrimaryKey = tataTableClone.getPrimaryKey();
 		// column for "noise" in select
 		Column tataCloneNameColumn = tataTableClone.addColumn("name", String.class);
 		
 		Table tutuTableClone = new Table("tutu2");
-		ClassMapping tutuCloneMappingMock = buildMappingStrategyMock(tutuTableClone);
+		DefaultEntityMapping tutuCloneMappingMock = buildMappingStrategyMock(tutuTableClone);
 		tutuTableClone.addColumn("id", long.class).primaryKey();
 		// column for "noise" in select
 		Column tutuCloneNameColumn = tutuTableClone.addColumn("name", String.class);
@@ -423,28 +423,28 @@ class EntityJoinTreeTest {
 	
 	@Test
 	void foreachJoinWithDepth() {
-		ClassMapping totoMappingMock = buildMappingStrategyMock("Toto");
+		DefaultEntityMapping totoMappingMock = buildMappingStrategyMock("Toto");
 		Table totoTable = totoMappingMock.getTargetTable();
 		totoTable.addColumn("id", long.class).primaryKey();
 		PrimaryKey<?, Long> totoPrimaryKey = totoTable.getPrimaryKey();
 		// column for "noise" in select
 		Column totoNameColumn = totoTable.addColumn("name", String.class);
 		
-		ClassMapping tataMappingMock = buildMappingStrategyMock("Tata");
+		DefaultEntityMapping tataMappingMock = buildMappingStrategyMock("Tata");
 		Table tataTable = tataMappingMock.getTargetTable();
 		tataTable.addColumn("id", long.class).primaryKey();
 		PrimaryKey<?, Long> tataPrimaryKey = tataTable.getPrimaryKey();
 		// column for "noise" in select
 		Column tataNameColumn = tataTable.addColumn("name", String.class);
 		
-		ClassMapping tutuMappingMock = buildMappingStrategyMock("Tutu");
+		DefaultEntityMapping tutuMappingMock = buildMappingStrategyMock("Tutu");
 		Table tutuTable = tutuMappingMock.getTargetTable();
 		tutuTable.addColumn("id", long.class).primaryKey();
 		PrimaryKey<?, Long> tutuPrimaryKey = tutuTable.getPrimaryKey();
 		// column for "noise" in select
 		Column tutuNameColumn = tutuTable.addColumn("name", String.class);
 		
-		ClassMapping titiMappingMock = buildMappingStrategyMock("Titi");
+		DefaultEntityMapping titiMappingMock = buildMappingStrategyMock("Titi");
 		Table titiTable = titiMappingMock.getTargetTable();
 		titiTable.addColumn("id", long.class).primaryKey();
 		PrimaryKey<?, Long> titiPrimaryKey = titiTable.getPrimaryKey();
@@ -452,14 +452,14 @@ class EntityJoinTreeTest {
 		Column titiNameColumn = titiTable.addColumn("name", String.class);
 		
 		Table tataTableClone = new Table("tata2");
-		ClassMapping tataCloneMappingMock = buildMappingStrategyMock(tataTableClone);
+		DefaultEntityMapping tataCloneMappingMock = buildMappingStrategyMock(tataTableClone);
 		tataTableClone.addColumn("id", long.class).primaryKey();
 		PrimaryKey<?, Long> tataClonePrimaryKey = tataTableClone.getPrimaryKey();
 		// column for "noise" in select
 		Column tataCloneNameColumn = tataTableClone.addColumn("name", String.class);
 		
 		Table tutuTableClone = new Table("tutu2");
-		ClassMapping tutuCloneMappingMock = buildMappingStrategyMock(tutuTableClone);
+		DefaultEntityMapping tutuCloneMappingMock = buildMappingStrategyMock(tutuTableClone);
 		tutuTableClone.addColumn("id", long.class).primaryKey();
 		PrimaryKey<?, Long> tutuClonePrimaryKey = tutuTableClone.getPrimaryKey();
 		// column for "noise" in select
@@ -503,28 +503,28 @@ class EntityJoinTreeTest {
 	
 	@Test
 	void giveTables() {
-		ClassMapping totoMappingMock = buildMappingStrategyMock("Toto");
+		DefaultEntityMapping totoMappingMock = buildMappingStrategyMock("Toto");
 		Table totoTable = totoMappingMock.getTargetTable();
 		totoTable.addColumn("id", long.class).primaryKey();
 		PrimaryKey<?, Long> totoPrimaryKey = totoTable.getPrimaryKey();
 		// column for "noise" in select
 		Column totoNameColumn = totoTable.addColumn("name", String.class);
 		
-		ClassMapping tataMappingMock = buildMappingStrategyMock("Tata");
+		DefaultEntityMapping tataMappingMock = buildMappingStrategyMock("Tata");
 		Table tataTable = tataMappingMock.getTargetTable();
 		tataTable.addColumn("id", long.class).primaryKey();
 		PrimaryKey<?, Long> tataPrimaryKey = tataTable.getPrimaryKey();
 		// column for "noise" in select
 		Column tataNameColumn = tataTable.addColumn("name", String.class);
 		
-		ClassMapping tutuMappingMock = buildMappingStrategyMock("Tutu");
+		DefaultEntityMapping tutuMappingMock = buildMappingStrategyMock("Tutu");
 		Table tutuTable = tutuMappingMock.getTargetTable();
 		tutuTable.addColumn("id", long.class).primaryKey();
 		PrimaryKey<?, Long> tutuPrimaryKey = tutuTable.getPrimaryKey();
 		// column for "noise" in select
 		Column tutuNameColumn = tutuTable.addColumn("name", String.class);
 		
-		ClassMapping titiMappingMock = buildMappingStrategyMock("Titi");
+		DefaultEntityMapping titiMappingMock = buildMappingStrategyMock("Titi");
 		Table titiTable = titiMappingMock.getTargetTable();
 		titiTable.addColumn("id", long.class).primaryKey();
 		PrimaryKey<?, Long> titiPrimaryKey = titiTable.getPrimaryKey();
@@ -532,14 +532,14 @@ class EntityJoinTreeTest {
 		Column titiNameColumn = titiTable.addColumn("name", String.class);
 		
 		Table tataTableClone = new Table("tata2");
-		ClassMapping tataCloneMappingMock = buildMappingStrategyMock(tataTableClone);
+		DefaultEntityMapping tataCloneMappingMock = buildMappingStrategyMock(tataTableClone);
 		tataTableClone.addColumn("id", long.class).primaryKey();
 		PrimaryKey<?, Long> tataClonePrimaryKey = tataTableClone.getPrimaryKey();
 		// column for "noise" in select
 		Column tataCloneNameColumn = tataTableClone.addColumn("name", String.class);
 		
 		Table tutuTableClone = new Table("tutu2");
-		ClassMapping tutuCloneMappingMock = buildMappingStrategyMock(tutuTableClone);
+		DefaultEntityMapping tutuCloneMappingMock = buildMappingStrategyMock(tutuTableClone);
 		tutuTableClone.addColumn("id", long.class).primaryKey();
 		PrimaryKey<?, Long> tutuClonePrimaryKey = tutuTableClone.getPrimaryKey();
 		// column for "noise" in select

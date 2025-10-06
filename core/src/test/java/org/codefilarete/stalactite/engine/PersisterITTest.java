@@ -11,7 +11,7 @@ import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.PersistentFieldHarvester;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
@@ -51,7 +51,7 @@ abstract class PersisterITTest extends DatabaseIntegrationTest {
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
 		// defining a test instance that maps Toto class onto TotoTable with "a" field as identifier
 		PropertyAccessor<Toto, Integer> identifierAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("a"));
-		ClassMapping<Toto, Integer, TotoTable> totoClassMappingStrategy = new ClassMapping<>(
+		DefaultEntityMapping<Toto, Integer, TotoTable> totoEntityMappingStrategy = new DefaultEntityMapping<>(
 				Toto.class,
 				totoClassTable,
 				totoClassMapping,
@@ -64,7 +64,7 @@ abstract class PersisterITTest extends DatabaseIntegrationTest {
 		// reset id counter between 2 tests else id "overflows"
 		identifierGenerator.reset();
 		
-		testInstance = new BeanPersister<>(totoClassMappingStrategy, dialect, new ConnectionConfigurationSupport(connectionProvider, 3));
+		testInstance = new BeanPersister<>(totoEntityMappingStrategy, dialect, new ConnectionConfigurationSupport(connectionProvider, 3));
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getDdlTableGenerator(), dialect.getDdlSequenceGenerator(), connectionProvider);
 		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));

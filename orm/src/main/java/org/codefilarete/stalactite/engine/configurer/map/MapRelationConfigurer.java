@@ -31,7 +31,7 @@ import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersiste
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.AfterUpdateTrigger;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.DeleteTargetEntitiesBeforeDeleteCascader;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.EmbeddedClassMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
@@ -117,7 +117,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 				nullable(mapRelation.getKeyEmbeddableConfigurationProvider()).map(EmbeddableMappingConfigurationProvider::getConfiguration).get();
 		EmbeddableMappingConfiguration<V> valueEmbeddableConfiguration =
 				nullable(mapRelation.getValueEmbeddableConfigurationProvider()).map(EmbeddableMappingConfigurationProvider::getConfiguration).get();
-		ClassMapping<KeyValueRecord<K, V, ID>, RecordId<K, ID>, TARGETTABLE> relationRecordMapping;
+		DefaultEntityMapping<KeyValueRecord<K, V, ID>, RecordId<K, ID>, TARGETTABLE> relationRecordMapping;
 		IdentifierAssembler<ID, T> sourceIdentifierAssembler = sourcePersister.getMapping().getIdMapping().getIdentifierAssembler();
 		relationRecordMapping = buildKeyValueRecordMapping(targetTable, sourceIdentifierAssembler, primaryKeyForeignColumnMapping, keyEmbeddableConfiguration, valueEmbeddableConfiguration);
 		
@@ -144,7 +144,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 	}
 	
 	<T extends Table<T>, TARGETTABLE extends Table<TARGETTABLE>>
-	ClassMapping<KeyValueRecord<K, V, ID>, RecordId<K, ID>, TARGETTABLE>
+	DefaultEntityMapping<KeyValueRecord<K, V, ID>, RecordId<K, ID>, TARGETTABLE>
 	buildKeyValueRecordMapping(TARGETTABLE targetTable,
 							   IdentifierAssembler<ID, T> sourceIdentifierAssembler,
 							   Map<Column<T, ?>, Column<TARGETTABLE, ?>> primaryKeyForeignColumnMapping,
@@ -155,12 +155,12 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 	}
 	
 	<T extends Table<T>, TARGETTABLE extends Table<TARGETTABLE>>
-	ClassMapping<KeyValueRecord<K, V, ID>, RecordId<K, ID>, TARGETTABLE>
+	DefaultEntityMapping<KeyValueRecord<K, V, ID>, RecordId<K, ID>, TARGETTABLE>
 	buildKeyValueRecordMapping(EmbeddableMappingConfiguration<K> keyEmbeddableConfiguration,
 							   TARGETTABLE targetTable,
 							   KeyValueRecordMappingBuilder<K, V, ID, TARGETTABLE, T> builder,
 							   EmbeddableMappingConfiguration<V> valueEmbeddableConfiguration) {
-		ClassMapping<KeyValueRecord<K, V, ID>, RecordId<K, ID>, TARGETTABLE> relationRecordMapping;
+		DefaultEntityMapping<KeyValueRecord<K, V, ID>, RecordId<K, ID>, TARGETTABLE> relationRecordMapping;
 		if (keyEmbeddableConfiguration == null) {
 			String keyColumnName = nullable(mapRelation.getKeyColumnName())
 					.getOr(() -> columnNamingStrategy.giveName(ENTRY_KEY_ACCESSOR_DEFINITION));

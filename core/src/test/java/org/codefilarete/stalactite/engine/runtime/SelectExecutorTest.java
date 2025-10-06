@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.runtime.SelectExecutor.InternalExecutor;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
@@ -56,7 +56,7 @@ class SelectExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 	public void setUp() throws SQLException {
 		PersistenceConfiguration<Toto, Integer, T> persistenceConfiguration = giveDefaultPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter(), DMLNameProvider::new);
-		testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy,
+		testInstance = new SelectExecutor<>(persistenceConfiguration.entityMapping,
 				new ConnectionConfiguration.ConnectionConfigurationSupport(jdbcMock.transactionManager, 10, 100),
 				dmlGenerator,
 				new ReadOperationFactory(),
@@ -194,7 +194,7 @@ class SelectExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 	void select_multiple_composedId_lastBlockContainsOneValue() throws SQLException {
 		PersistenceConfiguration<Toto, Toto, T> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter(), DMLNameProvider::new);
-		SelectExecutor<Toto, Toto, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy,
+		SelectExecutor<Toto, Toto, T> testInstance = new SelectExecutor<>(persistenceConfiguration.entityMapping,
 				new ConnectionConfiguration.ConnectionConfigurationSupport(jdbcMock.transactionManager, 10, 100),
 				dmlGenerator,
 				new ReadOperationFactory(),
@@ -221,7 +221,7 @@ class SelectExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 	void select_multiple_composedId_lastBlockContainsMultipleValue() throws SQLException {
 		PersistenceConfiguration<Toto, Toto, T> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter(), DMLNameProvider::new);
-		SelectExecutor<Toto, Toto, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy,
+		SelectExecutor<Toto, Toto, T> testInstance = new SelectExecutor<>(persistenceConfiguration.entityMapping,
 				new ConnectionConfiguration.ConnectionConfigurationSupport(jdbcMock.transactionManager, 10, 100),
 				dmlGenerator,
 				new ReadOperationFactory(),
@@ -248,7 +248,7 @@ class SelectExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 	void select_multiple_composedId_lastBlockSizeIsInOperatorSize() throws SQLException {
 		PersistenceConfiguration<Toto, Toto, T> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter(), DMLNameProvider::new);
-		SelectExecutor<Toto, Toto, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy,
+		SelectExecutor<Toto, Toto, T> testInstance = new SelectExecutor<>(persistenceConfiguration.entityMapping,
 				new ConnectionConfiguration.ConnectionConfigurationSupport(jdbcMock.transactionManager, 10, 100),
 				dmlGenerator,
 				new ReadOperationFactory(),
@@ -276,7 +276,7 @@ class SelectExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 		T targetTable = (T) new Table("Toto");
 		Column id = targetTable.addColumn("id", long.class).primaryKey();
 		
-		ClassMapping<Toto, Integer, T> mappingStrategyMock = mock(ClassMapping.class);
+		DefaultEntityMapping<Toto, Integer, T> mappingStrategyMock = mock(DefaultEntityMapping.class);
 		when(mappingStrategyMock.getTargetTable()).thenReturn(targetTable);
 		// the selected columns are plugged on the table ones
 		when(mappingStrategyMock.getSelectableColumns()).thenAnswer(invocation -> targetTable.getColumns());

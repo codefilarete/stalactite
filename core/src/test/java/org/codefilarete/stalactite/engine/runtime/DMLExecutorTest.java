@@ -2,13 +2,12 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 
 import org.codefilarete.reflection.AccessorByField;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.engine.InMemoryCounterIdentifierGenerator;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.stalactite.mapping.PersistentFieldHarvester;
@@ -38,7 +37,7 @@ abstract class DMLExecutorTest {
 		IdentifierInsertionManager<Toto, Integer> identifierGenerator = new BeforeInsertIdentifierManager<>(
 			new AccessorWrapperIdAccessor<>(primaryKeyAccessor), new InMemoryCounterIdentifierGenerator(), Integer.class);
 
-		toReturn.classMappingStrategy = new ClassMapping<>(
+		toReturn.entityMapping = new DefaultEntityMapping<>(
 			Toto.class,
 			targetTable,
 			mappedFileds,
@@ -93,7 +92,7 @@ abstract class DMLExecutorTest {
 																				  new AlreadyAssignedIdentifierManager<>(Toto.class, c -> {}, c -> false),
 																				  composedIdentifierAssembler);
 		
-		toReturn.classMappingStrategy = new ClassMapping<>(
+		toReturn.entityMapping = new DefaultEntityMapping<>(
 				Toto.class,
 				targetTable,
 				mappedFields,
@@ -145,7 +144,7 @@ abstract class DMLExecutorTest {
 																						composedIdentifierAssembler);
 		
 		Map<AccessorByField<Tata, ?>, Column<T, ?>> mappedFields = Maps.asMap(Accessors.accessorByField(Tata.class, "c"), colC);
-		toReturn.classMappingStrategy = new ClassMapping<>(
+		toReturn.entityMapping = new DefaultEntityMapping<>(
 				Tata.class,
 				targetTable,
 				mappedFields,
@@ -158,7 +157,7 @@ abstract class DMLExecutorTest {
 
 	protected static class PersistenceConfiguration<C, I, T extends Table<T>> {
 		
-		protected ClassMapping<C, I, T> classMappingStrategy;
+		protected DefaultEntityMapping<C, I, T> entityMapping;
 		protected T targetTable;
 	}
 	

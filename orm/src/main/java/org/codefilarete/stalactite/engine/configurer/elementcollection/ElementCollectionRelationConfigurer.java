@@ -32,7 +32,7 @@ import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersiste
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.AfterUpdateTrigger;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.DeleteTargetEntitiesBeforeDeleteCascader;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.EmbeddedClassMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
@@ -142,7 +142,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 		
 		EmbeddableMappingConfiguration<TRGT> embeddableConfiguration =
 				nullable(linkage.getEmbeddableConfigurationProvider()).map(EmbeddableMappingConfigurationProvider::getConfiguration).get();
-		ClassMapping<ElementRecord<TRGT, I>, ElementRecord<TRGT, I>, COLLECTIONTABLE> elementRecordMapping;
+		DefaultEntityMapping<ElementRecord<TRGT, I>, ElementRecord<TRGT, I>, COLLECTIONTABLE> elementRecordMapping;
 		IdentifierAssembler<I, SRCTABLE> sourceIdentifierAssembler = sourcePersister.getMapping().getIdMapping().getIdentifierAssembler();
 		if (embeddableConfiguration == null) {
 			String columnName = nullable(linkage.getElementColumnName())
@@ -191,9 +191,9 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 	
 	private class ElementCollectionMapping<SRCTABLE extends Table<SRCTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>> {
 		public final ForeignKey<COLLECTIONTABLE, SRCTABLE, I> reverseForeignKey;
-		public final ClassMapping<ElementRecord<TRGT, I>, ElementRecord<TRGT, I>, COLLECTIONTABLE> elementRecordMapping;
+		public final DefaultEntityMapping<ElementRecord<TRGT, I>, ElementRecord<TRGT, I>, COLLECTIONTABLE> elementRecordMapping;
 		
-		public ElementCollectionMapping(ForeignKey<COLLECTIONTABLE, SRCTABLE, I> reverseForeignKey, ClassMapping<ElementRecord<TRGT, I>, ElementRecord<TRGT, I>, COLLECTIONTABLE> elementRecordMapping) {
+		public ElementCollectionMapping(ForeignKey<COLLECTIONTABLE, SRCTABLE, I> reverseForeignKey, DefaultEntityMapping<ElementRecord<TRGT, I>, ElementRecord<TRGT, I>, COLLECTIONTABLE> elementRecordMapping) {
 			this.reverseForeignKey = reverseForeignKey;
 			this.elementRecordMapping = elementRecordMapping;
 		}
@@ -313,7 +313,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 	
 	public static class ElementRecordPersister<TRGT, ID, T extends Table<T>> extends SimpleRelationalEntityPersister<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>, T> {
 		
-		public ElementRecordPersister(ClassMapping<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>, T> elementRecordMapping, Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+		public ElementRecordPersister(DefaultEntityMapping<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>, T> elementRecordMapping, Dialect dialect, ConnectionConfiguration connectionConfiguration) {
 			super(elementRecordMapping, dialect, connectionConfiguration);
 		}
 	}

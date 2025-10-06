@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.util.Map;
 
 import org.codefilarete.stalactite.engine.runtime.BeanPersister;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.reflection.PropertyAccessor;
@@ -154,12 +154,12 @@ public class PooledHiLoSequencePersister extends BeanPersister<Sequence, String,
 	
 	private static class SequencePersisterConfigurer {
 		
-		private ClassMapping<Sequence, String, SequenceTable> buildConfiguration(PooledHiLoSequenceStorageOptions storageOptions) {
+		private DefaultEntityMapping<Sequence, String, SequenceTable> buildConfiguration(PooledHiLoSequenceStorageOptions storageOptions) {
 			// Sequence table creation
 			SequenceTable sequenceTable = new SequenceTable(null, storageOptions.getTable(), storageOptions.getSequenceNameColumn(), storageOptions.getValueColumn());
 			// Strategy building
 			// NB: no id generator here because we manage ids (see reservePool)
-			return new ClassMapping<>(
+			return new DefaultEntityMapping<>(
 					Sequence.class,
 					sequenceTable,
 					sequenceTable.getPooledSequenceFieldMapping(),

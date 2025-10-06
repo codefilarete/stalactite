@@ -45,7 +45,7 @@ import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.PersistentFieldHarvester;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
@@ -112,7 +112,7 @@ class SingleTablePolymorphismPersisterTest {
 	private ArgumentCaptor<Integer> indexCaptor;
 	private ArgumentCaptor<String> statementArgCaptor;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
-	private ClassMapping<AbstractToto, Identifier<Integer>, ?> totoClassMapping;
+	private DefaultEntityMapping<AbstractToto, Identifier<Integer>, ?> totoEntityMapping;
 	private DefaultDialect dialect;
 	private final EffectiveBatchedRowCount effectiveBatchedRowCount = new EffectiveBatchedRowCount();
 	private final Holder<Long> expectedRowCountForUpdate = new Holder<>();
@@ -138,9 +138,9 @@ class SingleTablePolymorphismPersisterTest {
 		PropertyAccessor<TotoA, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("id"));
 		persistentFieldHarvester.getColumn(primaryKeyAccessor).primaryKey();
 		
-		IdentifierInsertionManager<TotoA, Identifier<Integer>> identifierManager = (IdentifierInsertionManager) totoClassMapping.getIdMapping().getIdentifierInsertionManager();
+		IdentifierInsertionManager<TotoA, Identifier<Integer>> identifierManager = (IdentifierInsertionManager) totoEntityMapping.getIdMapping().getIdentifierInsertionManager();
 		
-		return new SimpleRelationalEntityPersister<>(new ClassMapping<>(TotoA.class,
+		return new SimpleRelationalEntityPersister<>(new DefaultEntityMapping<>(TotoA.class,
 				totoTable,
 				mappedFields,
 				primaryKeyAccessor,
@@ -153,9 +153,9 @@ class SingleTablePolymorphismPersisterTest {
 		PropertyAccessor<TotoB, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("id"));
 		persistentFieldHarvester.getColumn(primaryKeyAccessor).primaryKey();
 		
-		IdentifierInsertionManager<TotoB, Identifier<Integer>> identifierManager = (IdentifierInsertionManager) totoClassMapping.getIdMapping().getIdentifierInsertionManager();
+		IdentifierInsertionManager<TotoB, Identifier<Integer>> identifierManager = (IdentifierInsertionManager) totoEntityMapping.getIdMapping().getIdentifierInsertionManager();
 		
-		return new SimpleRelationalEntityPersister<>(new ClassMapping<>(TotoB.class,
+		return new SimpleRelationalEntityPersister<>(new DefaultEntityMapping<>(TotoB.class,
 				totoTable,
 				mappedFields,
 				primaryKeyAccessor,
@@ -185,7 +185,7 @@ class SingleTablePolymorphismPersisterTest {
 				new AccessorWrapperIdAccessor<>(identifierAccessor),
 				() -> new PersistableIdentifier<>(identifierGenerator.next()),
 				(Class<Identifier<Integer>>) (Class) Identifier.class);
-		totoClassMapping = new ClassMapping<>(AbstractToto.class,
+		totoEntityMapping = new DefaultEntityMapping<>(AbstractToto.class,
 				totoTable,
 				totoPropertyMapping,
 				identifierAccessor,
@@ -259,7 +259,7 @@ class SingleTablePolymorphismPersisterTest {
 		DataSource dataSource = mock(DataSource.class);
 		when(dataSource.getConnection()).thenReturn(connection);
 		
-		ConfiguredRelationalPersister<AbstractToto, Identifier<Integer>> mainPersister = new SimpleRelationalEntityPersister<>(totoClassMapping, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
+		ConfiguredRelationalPersister<AbstractToto, Identifier<Integer>> mainPersister = new SimpleRelationalEntityPersister<>(totoEntityMapping, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
 		ConfiguredRelationalPersister<TotoA, Identifier<Integer>> totoAIdentifierConfiguredPersister = initMappingTotoA(mainPersister.getMainTable());
 		ConfiguredRelationalPersister<TotoB, Identifier<Integer>> totoBIdentifierConfiguredPersister = initMappingTotoB(mainPersister.getMainTable());
 		Map<Class<? extends AbstractToto>, ConfiguredPersister<? extends AbstractToto, Identifier<Integer>>> subclasses = Maps
@@ -267,7 +267,7 @@ class SingleTablePolymorphismPersisterTest {
 				.add(TotoA.class, totoAIdentifierConfiguredPersister)
 				.add(TotoB.class, totoBIdentifierConfiguredPersister);
 		// We specify discriminator as an Integer because it's the same type as other tested columns and simplify data capture and comparison
-		Column<?, Integer> dtype = totoClassMapping.getTargetTable().addColumn("DTYPE", Integer.class);
+		Column<?, Integer> dtype = totoEntityMapping.getTargetTable().addColumn("DTYPE", Integer.class);
 		SingleTablePolymorphism<AbstractToto, Integer> polymorphismPolicy = new SingleTablePolymorphism<>(dtype.getName(), dtype.getJavaType());
 		polymorphismPolicy.addSubClass(new EmptySubEntityMappingConfiguration<>(TotoA.class), 100);
 		polymorphismPolicy.addSubClass(new EmptySubEntityMappingConfiguration<>(TotoB.class), 200);

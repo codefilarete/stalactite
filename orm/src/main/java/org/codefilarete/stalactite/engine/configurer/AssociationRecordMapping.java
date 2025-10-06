@@ -10,7 +10,7 @@ import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
@@ -34,7 +34,7 @@ public class AssociationRecordMapping<
 		RIGHTTABLE extends Table<RIGHTTABLE>,
 		LEFTID,
 		RIGHTID>
-		extends ClassMapping<AssociationRecord, AssociationRecord, ASSOCIATIONTABLE> {
+		extends DefaultEntityMapping<AssociationRecord, AssociationRecord, ASSOCIATIONTABLE> {
 	
 	/**
 	 * Computes a mapping from the {@link AssociationRecord} class to the association table's column.

@@ -33,7 +33,7 @@ import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
@@ -93,7 +93,7 @@ class OneToOneRelationConfigurerTest {
 				Accessors.accessorByMethodReference(Country::getId),
 				Accessors.mutatorByField(Country.class, "id")
 		);
-		ClassMapping<Country, Identifier<Long>, T> countryClassMappingStrategy = new ClassMapping<Country, Identifier<Long>, T>(Country.class, countryTable,
+		DefaultEntityMapping<Country, Identifier<Long>, T> countryEntityMappingStrategy = new DefaultEntityMapping<Country, Identifier<Long>, T>(Country.class, countryTable,
 				(Map) countryMapping, countryIdentifierAccessorByMethodReference,
 				(IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class, c -> {}, c -> false));
 		
@@ -165,7 +165,7 @@ class OneToOneRelationConfigurerTest {
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		
 		// When
-		SimpleRelationalEntityPersister<Country, Identifier<Long>, T> countryPersister = new SimpleRelationalEntityPersister<>(countryClassMappingStrategy, dialect,
+		SimpleRelationalEntityPersister<Country, Identifier<Long>, T> countryPersister = new SimpleRelationalEntityPersister<>(countryEntityMappingStrategy, dialect,
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10));
 		OneToOneRelationConfigurer<Country, Identifier<Long>> testInstance = new OneToOneRelationConfigurer<>(
 				dialect,
@@ -214,7 +214,7 @@ class OneToOneRelationConfigurerTest {
 				Accessors.accessorByMethodReference(Country::getId),
 				Accessors.mutatorByField(Country.class, "id")
 		);
-		ClassMapping<Country, Identifier<Long>, T> countryClassMappingStrategy = new ClassMapping<Country, Identifier<Long>, T>(Country.class, countryTable,
+		DefaultEntityMapping<Country, Identifier<Long>, T> countryEntityMappingStrategy = new DefaultEntityMapping<Country, Identifier<Long>, T>(Country.class, countryTable,
 				(Map) countryMapping, countryIdentifierAccessorByMethodReference,
 				(IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class, c -> {}, c -> false));
 		
@@ -286,7 +286,7 @@ class OneToOneRelationConfigurerTest {
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		
-		SimpleRelationalEntityPersister<Country, Identifier<Long>, T> countryPersister = new SimpleRelationalEntityPersister<>(countryClassMappingStrategy, dialect,
+		SimpleRelationalEntityPersister<Country, Identifier<Long>, T> countryPersister = new SimpleRelationalEntityPersister<>(countryEntityMappingStrategy, dialect,
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10));
 		
 		OneToOneRelationConfigurer<Country, Identifier<Long>> testInstance = new OneToOneRelationConfigurer<>(

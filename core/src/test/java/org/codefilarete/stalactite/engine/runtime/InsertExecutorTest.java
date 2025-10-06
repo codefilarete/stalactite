@@ -12,7 +12,7 @@ import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.runtime.AbstractVersioningStrategy.VersioningStrategySupport;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.PersistentFieldHarvester;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
@@ -61,7 +61,7 @@ class InsertExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 	void setUp() {
 		PersistenceConfiguration<Toto, Integer, T> persistenceConfiguration = giveDefaultPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter(), DMLNameProvider::new);
-		testInstance = new InsertExecutor<>(persistenceConfiguration.classMappingStrategy,
+		testInstance = new InsertExecutor<>(persistenceConfiguration.entityMapping,
 			new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
 	}
 	
@@ -150,7 +150,7 @@ class InsertExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 		Map<ReversibleAccessor, Column> mapping = Maps.forHashMap((Class<ReversibleAccessor>) null, (Class<Column>) null)
 				.add(PropertyAccessor.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion), versionColumn)
 				.add(PropertyAccessor.fromMethodReference(VersionnedToto::getA, VersionnedToto::setA), pk);
-		testInstance = new InsertExecutor<>(new ClassMapping<VersionnedToto, Integer, T>(
+		testInstance = new InsertExecutor<>(new DefaultEntityMapping<VersionnedToto, Integer, T>(
 				VersionnedToto.class,
 				totoTable,
 				(Map) mapping,
@@ -191,7 +191,7 @@ class InsertExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 			new GeneratedKeysReaderAsInt(primaryKeyColumn.getName()),
 			Integer.class);
 
-		toReturn.classMappingStrategy = new ClassMapping<>(
+		toReturn.entityMapping = new DefaultEntityMapping<>(
 			Toto.class,
 			targetTable,
 			mappedFileds,
@@ -225,7 +225,7 @@ class InsertExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 			
 			
 			DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter(), DMLNameProvider::new);
-			InsertExecutor<Toto, Integer, ?> testInstance = new InsertExecutor<>(persistenceConfiguration.classMappingStrategy,
+			InsertExecutor<Toto, Integer, ?> testInstance = new InsertExecutor<>(persistenceConfiguration.entityMapping,
 					new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
 			List<Toto> totoList = Arrays.asList(new Toto(17, 23), new Toto(29, 31), new Toto(37, 41), new Toto(43, 53));
 			testInstance.insert(totoList);

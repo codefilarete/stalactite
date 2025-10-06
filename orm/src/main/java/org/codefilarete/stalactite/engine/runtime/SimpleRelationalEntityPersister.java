@@ -23,7 +23,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
@@ -50,11 +50,11 @@ import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROO
 /**
  * Persister that registers relations of entities joined on "foreign key = primary key".
  * This does not handle inheritance nor entities mapped on several tables, it focuses on select part : a main table is defined by
- * {@link ClassMapping} passed to constructor which then it can be added to some other {@link RelationalEntityPersister} thanks to
+ * {@link DefaultEntityMapping} passed to constructor which then it can be added to some other {@link RelationalEntityPersister} thanks to
  * {@link RelationalEntityPersister#joinAsMany(String, RelationalEntityPersister, Accessor, Key, Key, BeanRelationFixer, Function, boolean, boolean)} and
  * {@link RelationalEntityPersister#joinAsOne(RelationalEntityPersister, Accessor, Key, Key, String, BeanRelationFixer, boolean, boolean)}.
  * 
- * Entity load is defined by a select that joins all tables, each {@link ClassMapping} is called to complete
+ * Entity load is defined by a select that joins all tables, each {@link DefaultEntityMapping} is called to complete
  * entity loading.
  * 
  * In the orm module this class replace {@link BeanPersister} in case of single table, because it has methods for join support whereas {@link BeanPersister}
@@ -88,7 +88,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	private final EntityJoinTree<C, I> entityJoinTree;
 	protected final Dialect dialect;
 	
-	public SimpleRelationalEntityPersister(ClassMapping<C, I, T> mainMappingStrategy,
+	public SimpleRelationalEntityPersister(DefaultEntityMapping<C, I, T> mainMappingStrategy,
 										   Dialect dialect,
 										   ConnectionConfiguration connectionConfiguration) {
 		this.persister = new BeanPersister<>(mainMappingStrategy, dialect, connectionConfiguration);

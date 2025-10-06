@@ -12,7 +12,7 @@ import org.codefilarete.stalactite.engine.VersioningStrategy;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener.UpdatePayload;
 import org.codefilarete.stalactite.engine.runtime.InsertExecutor.VersioningStrategyRollbackListener;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
@@ -159,7 +159,7 @@ public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 	
 	/**
 	 * Executes update of given payloads. This method expects that every payload wants to update same columns
-	 * as those given by {@link ClassMapping#getUpdatableColumns()} : this means all mapped columns.
+	 * as those given by {@link DefaultEntityMapping#getUpdatableColumns()} : this means all mapped columns.
 	 * If such a contract is not fulfilled, an exception may occur (because of missing data)
 	 * 
 	 * This method applies JDBC batch.

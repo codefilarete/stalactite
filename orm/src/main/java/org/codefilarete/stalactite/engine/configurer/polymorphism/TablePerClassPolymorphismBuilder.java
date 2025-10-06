@@ -24,7 +24,7 @@ import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.tableperclass.TablePerClassPolymorphismPersister;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -102,10 +102,10 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 		// we propagate shadow columns through TablePerClassPolymorphismPersister.getMapping() because it has a
 		// mechanism that projects them to sub-persisters (but columns were added in buildSubclassPersister()
 		// which is not very consistent)
-		((ClassMapping<C, I, T>) mainPersister.getMapping()).getShadowColumnsForInsert().forEach(columnProvider -> {
+		((DefaultEntityMapping<C, I, T>) mainPersister.getMapping()).getShadowColumnsForInsert().forEach(columnProvider -> {
 			result.getMapping().addShadowColumnInsert(columnProvider);
 		});
-		((ClassMapping<C, I, T>) mainPersister.getMapping()).getShadowColumnsForUpdate().forEach(columnProvider -> {
+		((DefaultEntityMapping<C, I, T>) mainPersister.getMapping()).getShadowColumnsForUpdate().forEach(columnProvider -> {
 			result.getMapping().addShadowColumnUpdate(columnProvider);
 		});
 		return result;
@@ -158,7 +158,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 				subEntityPropertiesWriteConverters,
 				false);
 		addIdentificationToMapping(identification, subEntityMapping);
-		ClassMapping<D, I, SUBTABLE> classMappingStrategy = PersisterBuilderImpl.createClassMappingStrategy(
+		DefaultEntityMapping<D, I, SUBTABLE> entityMapping = PersisterBuilderImpl.createEntityMapping(
 				true,    // given Identification (which is parent one) contains identifier policy
 				subTable,
 				subEntityPropertiesMapping,
@@ -170,20 +170,20 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 				subConfiguration.getPropertiesMapping().getBeanType(),
 				null);
 		
-		((ClassMapping<C, I, T>) mainPersister.getMapping()).getShadowColumnsForInsert().forEach(columnProvider -> {
+		((DefaultEntityMapping<C, I, T>) mainPersister.getMapping()).getShadowColumnsForInsert().forEach(columnProvider -> {
 			columnProvider.getColumns().forEach(c -> {
 				Column column = subTable.addColumn(c.getName(), c.getJavaType(), c.getSize());
 				column.setNullable(c.isNullable());
 			});
 		});
-		((ClassMapping<C, I, T>) mainPersister.getMapping()).getShadowColumnsForUpdate().forEach(columnProvider -> {
+		((DefaultEntityMapping<C, I, T>) mainPersister.getMapping()).getShadowColumnsForUpdate().forEach(columnProvider -> {
 			columnProvider.getColumns().forEach(c -> {
 				Column column = subTable.addColumn(c.getName(), c.getJavaType(), c.getSize());
 				column.setNullable(c.isNullable());
 			});
 		});
 		
-		return new SimpleRelationalEntityPersister<>(classMappingStrategy, dialect, connectionConfiguration);
+		return new SimpleRelationalEntityPersister<>(entityMapping, dialect, connectionConfiguration);
 	}
 	
 	private void addPrimaryKey(Table table) {

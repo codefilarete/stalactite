@@ -71,7 +71,7 @@ import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersiste
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
@@ -384,7 +384,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		if (versioningStrategy != null) {
 			// we have to declare it to the mapping strategy. To do that we must find the versioning column
 			Column column = result.getMapping().getPropertyToColumn().get(versioningStrategy.getVersionAccessor());
-			((ClassMapping) result.getMapping()).addVersionedColumn(versioningStrategy.getVersionAccessor(), column);
+			((DefaultEntityMapping) result.getMapping()).addVersionedColumn(versioningStrategy.getVersionAccessor(), column);
 			// and don't forget to give it to the workers !
 			result.getUpdateExecutor().setVersioningStrategy(versioningStrategy);
 			result.getInsertExecutor().setVersioningStrategy(versioningStrategy);
@@ -412,7 +412,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			Mapping<C, TT> castedMapping = (Mapping<C, TT>) mapping;
 			PrimaryKey<TT, I> subclassPK = castedMapping.targetTable.getPrimaryKey();
 			boolean isIdentifyingConfiguration = identification.getIdentificationDefiner().getPropertiesMapping() == mapping.giveEmbeddableConfiguration();
-			ClassMapping<C, I, TT> currentMappingStrategy = createClassMappingStrategy(
+			DefaultEntityMapping<C, I, TT> currentMappingStrategy = createEntityMapping(
 					isIdentifyingConfiguration,
 					castedMapping.targetTable,
 					castedMapping.getMapping(),
@@ -443,7 +443,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		// If there's some mapped inheritance, then the identifying configuration is the one with the join table
 		boolean isIdentifyingConfiguration = this.entityMappingConfiguration.getInheritanceConfiguration() == null
 					|| !this.entityMappingConfiguration.getInheritanceConfiguration().isJoinTable();
-		ClassMapping<C, I, T> mappingStrategy = createClassMappingStrategy(
+		DefaultEntityMapping<C, I, T> mappingStrategy = createEntityMapping(
 				isIdentifyingConfiguration,
 				mapping.targetTable,
 				mapping.mapping,
@@ -938,18 +938,18 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	/**
 	 * 
 	 * @param isIdentifyingConfiguration true for a root mapping (will use {@link SingleColumnIdentification#getInsertionManager()}), false for inheritance case (will use {@link SingleColumnIdentification#getIdentificationDefiner()}) 
-	 * @param targetTable {@link Table} to use by created {@link ClassMapping}
-	 * @param mapping properties to be managed by created {@link ClassMapping}
+	 * @param targetTable {@link Table} to use by created {@link DefaultEntityMapping}
+	 * @param mapping properties to be managed by created {@link DefaultEntityMapping}
 	 * @param propertiesSetByConstructor properties set by constructor ;), to avoid re-setting them (and even look for a setter for them) 
 	 * @param identification {@link SingleColumnIdentification} to use (see isIdentifyingConfiguration)
-	 * @param beanType entity type to be managed by created {@link ClassMapping}
+	 * @param beanType entity type to be managed by created {@link DefaultEntityMapping}
 	 * @param entityFactoryProvider optional, if null default bean type constructor will be used
 	 * @param <E> entity type
 	 * @param <I> identifier type
 	 * @param <T> {@link Table} type
-	 * @return a new {@link ClassMapping} built from all arguments
+	 * @return a new {@link DefaultEntityMapping} built from all arguments
 	 */
-	public static <E, I, T extends Table<T>> ClassMapping<E, I, T> createClassMappingStrategy(
+	public static <E, I, T extends Table<T>> DefaultEntityMapping<E, I, T> createEntityMapping(
 			boolean isIdentifyingConfiguration,
 			T targetTable,
 			Map<? extends ReversibleAccessor<E, Object>, ? extends Column<T, Object>> mapping,
@@ -1012,7 +1012,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			identifierSetByBeanFactory = entityFactoryProvider.isIdentifierSetByFactory();
 		}
 		
-		ClassMapping<E, I, T> result = new ClassMapping<>(beanType, targetTable, mapping, readOnlyMapping, idMappingStrategy, beanFactory, identifierSetByBeanFactory);
+		DefaultEntityMapping<E, I, T> result = new DefaultEntityMapping<>(beanType, targetTable, mapping, readOnlyMapping, idMappingStrategy, beanFactory, identifierSetByBeanFactory);
 		result.getMainMapping().setReadConverters(readConverters);
 		result.getMainMapping().setWriteConverters(writeConverters);
 		propertiesSetByConstructor.forEach(result::addPropertySetByConstructor);

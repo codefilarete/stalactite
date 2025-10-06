@@ -8,7 +8,7 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.CompositeKeyMapping;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -63,12 +63,12 @@ public abstract class AbstractIdentification<C, I> {
 	private final EntityMappingConfiguration.KeyMapping<C, I> keyLinkage;
 	
 	/**
-	 * Insertion manager for {@link ClassMapping} that owns identifier policy
+	 * Insertion manager for {@link DefaultEntityMapping} that owns identifier policy
 	 */
 	private IdentifierInsertionManager<C, I> insertionManager;
 	
 	/**
-	 * Insertion manager for {@link ClassMapping} that doesn't own identifier policy : they get an already-assigned one.
+	 * Insertion manager for {@link DefaultEntityMapping} that doesn't own identifier policy : they get an already-assigned one.
 	 * Set for entity that inherits another one which defines identifier policy.
 	 */
 	private AlreadyAssignedIdentifierManager<C, I> fallbackInsertionManager;

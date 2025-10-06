@@ -7,7 +7,7 @@ import java.util.List;
 import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
@@ -30,22 +30,22 @@ class AssociationRecordInsertionCascaderTest {
 	
 	@Test
 	void testAssociationRecordInsertionCascader_getTargets() {
-		ClassMapping classMappingStrategyMock = mock(ClassMapping.class);
-		when(classMappingStrategyMock.getId(any(Keyboard.class))).thenAnswer((Answer<Identifier<Long>>) invocation ->
+		DefaultEntityMapping entityMappingMock = mock(DefaultEntityMapping.class);
+		when(entityMappingMock.getId(any(Keyboard.class))).thenAnswer((Answer<Identifier<Long>>) invocation ->
 				((Keyboard) invocation.getArgument(0)).getId());
 		
 		// mocking Persister action of adding identifier manager InsertListeners
 		IdMapping idMappingStrategymock = mock(IdMapping.class);
 		when(idMappingStrategymock.getIdentifierInsertionManager()).thenReturn(mock(IdentifierInsertionManager.class));
-		when(classMappingStrategyMock.getIdMapping()).thenReturn(idMappingStrategymock);
+		when(entityMappingMock.getIdMapping()).thenReturn(idMappingStrategymock);
 		
-		ClassMapping keyClassMappingStrategyMock = mock(ClassMapping.class);
-		when(keyClassMappingStrategyMock.getId(any(Key.class))).thenAnswer((Answer<Identifier<Long>>) invocation ->
+		DefaultEntityMapping keyEntityMappingStrategyMock = mock(DefaultEntityMapping.class);
+		when(keyEntityMappingStrategyMock.getId(any(Key.class))).thenAnswer((Answer<Identifier<Long>>) invocation ->
 				((Key) invocation.getArgument(0)).getId());
 		AssociationRecordPersister persisterStub =
-				new AssociationRecordPersister(classMappingStrategyMock, new DefaultDialect(), new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 1));
+				new AssociationRecordPersister(entityMappingMock, new DefaultDialect(), new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 1));
 		AssociationRecordInsertionCascader<Keyboard, Key, Identifier, Identifier, List<Key>> testInstance
-				= new AssociationRecordInsertionCascader<>(persisterStub, Keyboard::getKeys, classMappingStrategyMock, keyClassMappingStrategyMock);
+				= new AssociationRecordInsertionCascader<>(persisterStub, Keyboard::getKeys, entityMappingMock, keyEntityMappingStrategyMock);
 		
 		Keyboard inputData = new Keyboard(1L);
 		Key key1 = new Key(1L);

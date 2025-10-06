@@ -59,7 +59,7 @@ import org.codefilarete.tool.function.Converter;
  * @author Guillaume Mary
  * @see org.codefilarete.stalactite.query.model.Query
  */
-public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, I, T> {
+public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMapping<C, I, T> {
 	
 	private final EmbeddedClassMapping<C, T> mainMapping;
 	
@@ -79,7 +79,7 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 	
 	/**
 	 * Main constructor
-	 * Oriented for single column identifier / primary key. Prefer {@link #ClassMapping(Class, Table, Map, IdMapping)} for composed id.
+	 * Oriented for single column identifier / primary key. Prefer {@link #DefaultEntityMapping(Class, Table, Map, IdMapping)} for composed id.
 	 * It only defines main class and table, secondary ones, such as embedded class, must be defined through {@link #put(ReversibleAccessor, EmbeddedBeanMapping)}
 	 * 
 	 * @param classToPersist the class to be persisted
@@ -89,11 +89,11 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 	 * @param identifierInsertionManager manager of identifiers
 	 * @see #put(ReversibleAccessor, EmbeddedBeanMapping) 
 	 */
-	public ClassMapping(Class<C> classToPersist,
-						T targetTable,
-						Map<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> propertyToColumn,
-						ReversibleAccessor<C, I> identifierProperty,
-						IdentifierInsertionManager<C, I> identifierInsertionManager) {
+	public DefaultEntityMapping(Class<C> classToPersist,
+								T targetTable,
+								Map<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> propertyToColumn,
+								ReversibleAccessor<C, I> identifierProperty,
+								IdentifierInsertionManager<C, I> identifierInsertionManager) {
 		if (identifierProperty == null) {
 			throw new UnsupportedOperationException("No identifier property for " + Reflections.toString(classToPersist));
 		}
@@ -128,10 +128,10 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 	 * @param idMapping mapping strategy of class identifier
 	 * @see #put(ReversibleAccessor, EmbeddedBeanMapping)
 	 */
-	public ClassMapping(Class<C> classToPersist,
-						T targetTable,
-						Map<? extends ReversibleAccessor<C, ?>, Column<T, ?>> propertyToColumn,
-						IdMapping<C, I> idMapping) {
+	public DefaultEntityMapping(Class<C> classToPersist,
+								T targetTable,
+								Map<? extends ReversibleAccessor<C, ?>, Column<T, ?>> propertyToColumn,
+								IdMapping<C, I> idMapping) {
 		this(new EmbeddedClassMapping<>(classToPersist, targetTable, propertyToColumn), idMapping, false);
 	}
 	
@@ -146,17 +146,17 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 	 * @param entityFactory entity factory
 	 * @see #put(ReversibleAccessor, EmbeddedBeanMapping)
 	 */
-	public ClassMapping(Class<C> classToPersist,
-						T targetTable,
-						Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> propertyToColumn,
-						Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> readonlyColumns,
-						IdMapping<C, I> idMapping,
-						Function<ColumnedRow, C> entityFactory,
-						boolean identifierSetByBeanFactory) {
+	public DefaultEntityMapping(Class<C> classToPersist,
+								T targetTable,
+								Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> propertyToColumn,
+								Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> readonlyColumns,
+								IdMapping<C, I> idMapping,
+								Function<ColumnedRow, C> entityFactory,
+								boolean identifierSetByBeanFactory) {
 		this(new EmbeddedClassMapping<>(classToPersist, targetTable, propertyToColumn, readonlyColumns, entityFactory), idMapping, identifierSetByBeanFactory);
 	}
 	
-	private ClassMapping(EmbeddedClassMapping<C, T> mainMapping, IdMapping<C, I> idMapping, boolean identifierSetByBeanFactory) {
+	private DefaultEntityMapping(EmbeddedClassMapping<C, T> mainMapping, IdMapping<C, I> idMapping, boolean identifierSetByBeanFactory) {
 		if (idMapping.getIdAccessor() == null) {
 			throw new UnsupportedOperationException("No identifier property defined for " + Reflections.toString(mainMapping.getClassToPersist()));
 		}
@@ -277,9 +277,9 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 		return Collections.unmodifiableCollection(this.mainMapping.getShadowColumnsForUpdate());
 	}
 	
-	public void addShadowColumns(ClassMapping<C, I, T> classMappingStrategy) {
-		classMappingStrategy.mainMapping.getShadowColumnsForInsert().forEach(this::addShadowColumnInsert);
-		classMappingStrategy.mainMapping.getShadowColumnsForUpdate().forEach(this::addShadowColumnUpdate);
+	public void addShadowColumns(DefaultEntityMapping<C, I, T> entityMapping) {
+		entityMapping.mainMapping.getShadowColumnsForInsert().forEach(this::addShadowColumnInsert);
+		entityMapping.mainMapping.getShadowColumnsForUpdate().forEach(this::addShadowColumnUpdate);
 	}
 	
 	public void addVersionedColumn(ReversibleAccessor propertyAccessor, Column<T, Object> column) {

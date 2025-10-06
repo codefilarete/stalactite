@@ -41,7 +41,7 @@ import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.PersistentFieldHarvester;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
@@ -103,7 +103,7 @@ class TablePerClassPolymorphismPersisterTest {
 	private ArgumentCaptor<Integer> indexCaptor;
 	private ArgumentCaptor<String> statementArgCaptor;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
-	private ClassMapping<AbstractToto, Identifier<Integer>, ?> totoClassMapping;
+	private DefaultEntityMapping<AbstractToto, Identifier<Integer>, ?> totoEntityMapping;
 	private DefaultDialect dialect;
 	private final EffectiveBatchedRowCount effectiveBatchedRowCount = new EffectiveBatchedRowCount();
 	private final Holder<Long> expectedRowCountForUpdate = new Holder<>();
@@ -129,9 +129,9 @@ class TablePerClassPolymorphismPersisterTest {
 		PropertyAccessor<TotoA, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("id"));
 		persistentFieldHarvester.getColumn(primaryKeyAccessor).primaryKey();
 		
-		IdentifierInsertionManager<TotoA, Identifier<Integer>> identifierManager = (IdentifierInsertionManager) totoClassMapping.getIdMapping().getIdentifierInsertionManager();
+		IdentifierInsertionManager<TotoA, Identifier<Integer>> identifierManager = (IdentifierInsertionManager) totoEntityMapping.getIdMapping().getIdentifierInsertionManager();
 		
-		return new SimpleRelationalEntityPersister<>(new ClassMapping<>(TotoA.class,
+		return new SimpleRelationalEntityPersister<>(new DefaultEntityMapping<>(TotoA.class,
 				table,
 				mappedFields,
 				primaryKeyAccessor,
@@ -144,9 +144,9 @@ class TablePerClassPolymorphismPersisterTest {
 		PropertyAccessor<TotoB, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("id"));
 		persistentFieldHarvester.getColumn(primaryKeyAccessor).primaryKey();
 		
-		IdentifierInsertionManager<TotoB, Identifier<Integer>> identifierManager = (IdentifierInsertionManager) totoClassMapping.getIdMapping().getIdentifierInsertionManager();
+		IdentifierInsertionManager<TotoB, Identifier<Integer>> identifierManager = (IdentifierInsertionManager) totoEntityMapping.getIdMapping().getIdentifierInsertionManager();
 		
-		return new SimpleRelationalEntityPersister<>(new ClassMapping<>(TotoB.class,
+		return new SimpleRelationalEntityPersister<>(new DefaultEntityMapping<>(TotoB.class,
 				table,
 				mappedFields,
 				primaryKeyAccessor,
@@ -176,7 +176,7 @@ class TablePerClassPolymorphismPersisterTest {
 				new AccessorWrapperIdAccessor<>(identifierAccessor),
 				() -> new PersistableIdentifier<>(identifierGenerator.next()),
 				(Class<Identifier<Integer>>) (Class) Identifier.class);
-		totoClassMapping = new ClassMapping<>(AbstractToto.class,
+		totoEntityMapping = new DefaultEntityMapping<>(AbstractToto.class,
 				totoTable,
 				totoPropertyMapping,
 				identifierAccessor,
@@ -250,7 +250,7 @@ class TablePerClassPolymorphismPersisterTest {
 		DataSource dataSource = mock(DataSource.class);
 		when(dataSource.getConnection()).thenReturn(connection);
 		
-		ConfiguredRelationalPersister<AbstractToto, Identifier<Integer>> mainPersister = new SimpleRelationalEntityPersister<>(totoClassMapping, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
+		ConfiguredRelationalPersister<AbstractToto, Identifier<Integer>> mainPersister = new SimpleRelationalEntityPersister<>(totoEntityMapping, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
 		Table<?> totoATable = new Table<>("TotoA");
 		Table<?> totoBTable = new Table<>("TotoB");
 		ConfiguredRelationalPersister<TotoA, Identifier<Integer>> totoAIdentifierConfiguredPersister = initMappingTotoA(totoATable);

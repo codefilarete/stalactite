@@ -20,7 +20,7 @@ import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.jointable.JoinTablePolymorphismPersister;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -105,7 +105,7 @@ public class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends Abst
 				subEntityPropertiesWriteConverters,
 				false);
 		addIdentificationToMapping(identification, subEntityMapping);
-		ClassMapping<D, I, SUBT> classMappingStrategy = PersisterBuilderImpl.createClassMappingStrategy(
+		DefaultEntityMapping<D, I, SUBT> entityMapping = PersisterBuilderImpl.createEntityMapping(
 				false,
 				subTable,
 				subEntityPropertiesMapping,
@@ -119,7 +119,7 @@ public class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends Abst
 		
 		// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
 		// available by PersistenceContext.getPersister(..)) and it is not sure that they are perfect ones (all their features should be tested)
-		return new SimpleRelationalEntityPersister<>(classMappingStrategy, dialect, connectionConfiguration);
+		return new SimpleRelationalEntityPersister<>(entityMapping, dialect, connectionConfiguration);
 	}
 	
 	@Override

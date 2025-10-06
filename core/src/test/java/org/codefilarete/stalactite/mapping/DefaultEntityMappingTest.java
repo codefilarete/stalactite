@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 /**
  * @author Guillaume Mary
  */
-class ClassMappingTest {
+class DefaultEntityMappingTest {
 	
 	private static class TestData<T extends Table<T>> {
 		private Column<T, ?> colA;
@@ -44,7 +44,7 @@ class ClassMappingTest {
 		private Map<String, Column<T, ?>> columnMapOnName;
 		private PropertyAccessor<Toto, List<String>> myListField;
 		private PropertyAccessor<Toto, Map<String, String>> myMapField;
-		private ClassMapping<Toto, Integer, ?> classMapping;
+		private DefaultEntityMapping<Toto, Integer, ?> entityMapping;
 		
 		private TestData() {
 			persistentFieldHarvester = new PersistentFieldHarvester();
@@ -67,7 +67,7 @@ class ClassMappingTest {
 			
 			// instance to test
 			// The basic mapping will be altered to add special mapping for field "myListField" (a Collection) and "myMapField" (a Map)
-			classMapping = new ClassMapping<>(
+			entityMapping = new DefaultEntityMapping<>(
 					Toto.class,
 					(T) targetTable,
 					propertyMapping,
@@ -92,7 +92,7 @@ class ClassMappingTest {
 					return object.toString();
 				}
 			};
-			((ClassMapping<Toto, Integer, T>) classMapping).put(myListField, columnedCollectionMapping);
+			((DefaultEntityMapping<Toto, Integer, T>) entityMapping).put(myListField, columnedCollectionMapping);
 			
 			// Additional mapping: the map is mapped to 2 additional columns
 			Map<String, Column<T, ?>> mappedColumnsByKey = new HashMap<>();
@@ -138,7 +138,7 @@ class ClassMappingTest {
 					return o.toString();
 				}
 			};
-			((ClassMapping<Toto, Integer, T>) classMapping).put(myMapField, columnedMapMapping);
+			((DefaultEntityMapping<Toto, Integer, T>) entityMapping).put(myMapField, columnedMapMapping);
 			
 			columnMapOnName = targetTable.mapColumnsOnName();
 			colD1 = columnMapOnName.get("cold_1");
@@ -155,7 +155,7 @@ class ClassMappingTest {
 	private static Column colD2;
 	private static Column colE1;
 	private static Column colE2;
-	private static ClassMapping testInstance;
+	private static DefaultEntityMapping testInstance;
 	
 	
 	static <T extends Table<T>> void setUpInstance() {
@@ -168,7 +168,7 @@ class ClassMappingTest {
 		colD2 = testData.colD2;
 		colE1 = testData.colE1;
 		colE2 = testData.colE2;
-		testInstance = testData.classMapping;
+		testInstance = testData.entityMapping;
 	}
 	
 	static Object[][] getInsertValues() {
@@ -278,14 +278,14 @@ class ClassMappingTest {
 	<T extends Table<T>> void beanKeyIsPresent() {
 		TestData<T> testData = new TestData<>();
 		PropertyAccessor<Toto, Integer> identifierAccessor = Accessors.propertyAccessor(testData.persistentFieldHarvester.getField("a"));
-		assertThatCode(() -> new ClassMapping<>(Toto.class,
+		assertThatCode(() -> new DefaultEntityMapping<>(Toto.class,
 				testData.targetTable,
 				(Map<? extends ReversibleAccessor<Toto, ?>, ? extends Column<T, ?>>) (Map) Maps.asMap(Accessors.propertyAccessor(Toto.class, "b"), colB),
 				// identifier is not present in previous statement so it leads to the expected exception
 				identifierAccessor,
 				new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {}, c -> false)
 		)).isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Bean identifier 'o.c.s.m.ClassMappingTest$Toto.a' must have its matching column in the mapping");
+				.hasMessage("Bean identifier 'o.c.s.m.DefaultEntityMappingTest$Toto.a' must have its matching column in the mapping");
 	}
 	
 	private static class Toto {

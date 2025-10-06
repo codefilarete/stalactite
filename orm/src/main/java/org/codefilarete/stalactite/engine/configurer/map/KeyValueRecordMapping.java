@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.EmbeddedBeanMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
@@ -30,7 +30,7 @@ import org.codefilarete.tool.collection.Maps;
  * @param <T> relation table type
  * @author Guillaume Mary
  */
-public class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<KeyValueRecord<K, V, I>, RecordId<K, I>, T> {
+public class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends DefaultEntityMapping<KeyValueRecord<K, V, I>, RecordId<K, I>, T> {
 	
 	@VisibleForTesting
 	public KeyValueRecordMapping(T targetTable,

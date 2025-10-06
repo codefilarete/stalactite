@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
@@ -42,7 +42,7 @@ public class AfterUpdateCollectionCascaderTest extends AbstractCascaderTest {
 		ReversibleAccessor<Tata, Long> propName = Accessors.accessorByField(Tata.class, "name");
 		// we must add a property to let us set some differences between 2 instances and have them detected by the system
 		Map<? extends ReversibleAccessor<Tata, Object>, Column<T, Object>> mapping = (Map) Maps.asMap(identifier, (Column) primaryKey).add(propName, nameColumn);
-		ClassMapping<Tata, Long, T> mappingStrategyMock = new ClassMapping<>(Tata.class, tataTable,
+		DefaultEntityMapping<Tata, Long, T> mappingStrategyMock = new DefaultEntityMapping<>(Tata.class, tataTable,
 																			 mapping, identifier,
 																			 new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));
 		

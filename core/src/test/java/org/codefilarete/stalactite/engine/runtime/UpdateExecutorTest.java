@@ -9,7 +9,7 @@ import org.codefilarete.reflection.Accessors;
 import org.codefilarete.stalactite.engine.StaleStateObjectException;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener.UpdatePayload;
-import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
@@ -55,7 +55,7 @@ class UpdateExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 	void setUp() {
 		PersistenceConfiguration<Toto, Integer, T> persistenceConfiguration = giveDefaultPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter(), DMLNameProvider::new);
-		testInstance = new UpdateExecutor<>(persistenceConfiguration.classMappingStrategy,
+		testInstance = new UpdateExecutor<>(persistenceConfiguration.entityMapping,
 				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
 	}
 	
@@ -140,7 +140,7 @@ class UpdateExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 		Map<AccessorByField<SimpleEntity, Object>, Column<T, Object>> mapping = Maps
 				.forHashMap((Class<AccessorByField<SimpleEntity, Object>>) null, (Class<Column<T, Object>>) null)
 				.add((AccessorByField) idAccessor, (Column) id);
-		ClassMapping<SimpleEntity, Long, T> simpleEntityPersistenceMapping = new ClassMapping<>(
+		DefaultEntityMapping<SimpleEntity, Long, T> simpleEntityPersistenceMapping = new DefaultEntityMapping<>(
 				SimpleEntity.class,
 				table,
 				mapping,
@@ -270,7 +270,7 @@ class UpdateExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 		T table = (T) new Table<>("SimpleEntity");
 		Column<?, Long> id = table.addColumn("id", long.class).primaryKey();
 		AccessorByField<SimpleEntity, Long> idAccessor = Accessors.accessorByField(SimpleEntity.class, "id");
-		ClassMapping<SimpleEntity, Long, T> simpleEntityPersistenceMapping = new ClassMapping<SimpleEntity, Long, T>
+		DefaultEntityMapping<SimpleEntity, Long, T> simpleEntityPersistenceMapping = new DefaultEntityMapping<SimpleEntity, Long, T>
 				(SimpleEntity.class, table, (Map) Maps.asMap(idAccessor, id), idAccessor, new AlreadyAssignedIdentifierManager<>(long.class, c -> {}, c -> false));
 		UpdateExecutor<SimpleEntity, Long, T> testInstance = new UpdateExecutor<>(
 				simpleEntityPersistenceMapping, new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 4), new DMLGenerator(new ColumnBinderRegistry(), NoopSorter.INSTANCE, DMLNameProvider::new), new WriteOperationFactory(), 4);
