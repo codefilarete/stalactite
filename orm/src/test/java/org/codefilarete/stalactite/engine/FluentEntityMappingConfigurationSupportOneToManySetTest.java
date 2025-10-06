@@ -85,7 +85,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 	void beforeTest() {
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		
-		// We need to rebuild our cityPersister before each test because some of them alter it on country relationship.
+		// We need to rebuild our cityPersister before each test because some of them alter it on country relation.
 		// So schema contains FK twice with same name, ending in duplicate FK name exception
 		CITY_MAPPING_CONFIGURATION = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
 				.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)

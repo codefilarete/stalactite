@@ -1,14 +1,14 @@
 package org.codefilarete.stalactite.dsl.property;
 
 /**
- * Parent options for one-to-one and one-to-many relationship configuration
+ * Parent options for one-to-one and one-to-many relation configuration
  * 
  * @author Guillaume Mary
  */
 public interface CascadeOptions {
 	
 	/**
-	 * Specifies relationship maintenance mode.
+	 * Specifies relation maintenance mode.
 	 * Default is {@link RelationMode#ALL}
 	 * 
 	 * @param relationMode any {@link RelationMode}
@@ -30,8 +30,8 @@ public interface CascadeOptions {
 		 */
 		ALL_ORPHAN_REMOVAL,
 		/**
-		 * Relevant only for one-to-many relationship with association table (between source entities and target ones).<br>
-		 * <strong>If used on any other case (one-to-one or one-to-many owned by target), an exception will be thrown at configuration time.</strong>
+		 * Relevant only for relations with association table (between source entities and target ones) line one-to-many and many-to-many.
+		 * <strong>If used on cases without association table (one-to-one or one-to-many owned by target), an exception will be thrown at configuration time.</strong>
 		 * <p/>
 		 * Sets target entities as readonly, so only association record will be maintained.
 		 * Useful when an aggregate (Domain Driven Design term) wants to be linked to an entity of another aggregate without modifying it: this mode
@@ -39,7 +39,7 @@ public interface CascadeOptions {
 		 */
 		ASSOCIATION_ONLY,
 		/**
-		 * Declares relationship as readonly: no insert, update nor delete will be performed on target entities (nor association records if it exists)
+		 * Declares relation as readonly: no insert, update nor delete will be performed on target entities (nor association records if it exists)
 		 */
 		READ_ONLY
 	}

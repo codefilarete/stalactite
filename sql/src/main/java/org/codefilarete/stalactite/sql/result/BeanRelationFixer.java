@@ -21,8 +21,8 @@ import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.function.TriConsumer;
 
 /**
- * An interface aimed at abstracting the way how relations between 2 beans are filled : implementation should handle one-to-one relationship
- * as well as one-to-many relationship.
+ * An interface aimed at abstracting the way how relations between 2 beans are filled : implementation should handle one-to-one relation
+ * as well as one-to-many relation.
  * Since implementations are quite simple, they are done through all "of" static methods in this interface.
  * 
  * @param <E> bean type on which relation must be applied to

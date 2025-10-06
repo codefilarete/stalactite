@@ -57,24 +57,24 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 	FluentSubEntityMappingBuilder<C, I> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	
 	/**
-	 * Declares a direct relationship between current entity and some of type {@code O}.
+	 * Declares a direct relation between current entity and some of type {@code O}.
 	 *
 	 * @param getter the way to get the target entity
 	 * @param mappingConfiguration the mapping configuration of the target entity
 	 * @param <O> type of target entity
 	 * @param <J> type of identifier of {@code O}
-	 * @return a enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
+	 * @return a enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
 	<O, J> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
 	/**
-	 * Declares a direct relationship between current entity and some of type {@code O}.
+	 * Declares a direct relation between current entity and some of type {@code O}.
 	 *
 	 * @param setter the way to get the target entity
 	 * @param mappingConfiguration the mapping configuration of the target entity
 	 * @param <O> type of target entity
 	 * @param <J> type of identifier of {@code O}
-	 * @return a enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
+	 * @return a enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
 	<O, J> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	

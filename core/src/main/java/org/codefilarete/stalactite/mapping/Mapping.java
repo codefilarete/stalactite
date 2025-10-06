@@ -27,7 +27,7 @@ public interface Mapping<C, T extends Table<T>> {
 	 * Returns columns that must be inserted
 	 *
 	 * @param c the instance to be inserted,
-	 * 					may be null when this method is called to manage relationship
+	 * 					may be null when this method is called to manage relation
 	 * @return a mapping between columns that must be put in the SQL insert order and there values
 	 */
 	Map<Column<T, ?>, ?> getInsertValues(C c);
@@ -36,7 +36,7 @@ public interface Mapping<C, T extends Table<T>> {
 	 * Returns columns that must be updated because of change between 2 instances.
 	 * 
 	 * @param modified the modified instance,
-	 * 					may be null when this method is called to manage relationship
+	 * 					may be null when this method is called to manage relation
 	 * @param unmodified the non modified instance or "previous state" (coming from database for instance),
 	 * 					may be null to generate a rough update statement (allColumn doesn't matter in this case) 
 	 * @param allColumns indicates if allColumns must be returned, even if they are not all modified (necessary for JDBC batch optimization)

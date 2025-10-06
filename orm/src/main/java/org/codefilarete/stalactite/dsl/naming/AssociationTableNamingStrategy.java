@@ -112,7 +112,7 @@ public interface AssociationTableNamingStrategy {
 	
 	/**
 	 * Default implementation of the {@link AssociationTableNamingStrategy} interface.
-	 * Will use relationship property name for it, prefixed with source table name.
+	 * Will use relation property name for it, prefixed with source table name.
 	 * For instance: for a Country entity with the getCities() getter to retrieve country cities,
 	 * the association table will be named "Country_cities".
 	 * If property cannot be deduced from getter (it doesn't start with "get") then target table name will be used, suffixed by "s".

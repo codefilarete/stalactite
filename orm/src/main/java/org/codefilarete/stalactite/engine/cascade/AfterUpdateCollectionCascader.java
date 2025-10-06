@@ -10,11 +10,11 @@ import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 
 /**
- * Cascader for update, written for one-to-many style of cascade where Trigger owns the relationship to Target.
+ * Cascader for update, written for one-to-many style of cascade where Trigger owns the relation to Target.
  * Target instances are updated after Trigger instances
  *
  * @param <TRIGGER> type of the elements that trigger this cascade
- * @param <TARGET> relationship entity type
+ * @param <TARGET> relation entity type
  * @author Guillaume Mary
  */
 public abstract class AfterUpdateCollectionCascader<TRIGGER, TARGET> implements UpdateListener<TRIGGER> {

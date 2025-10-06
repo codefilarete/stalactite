@@ -1121,7 +1121,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			
 			// We create another choices persister dedicated to Answer association because usages are not the same :
 			// like Aggregate (in Domain Driven Design) or CQRS, Answers are not in the same context than Questions so it requires a different
-			// mapping. For instance there's no need of Question relationship mapping.
+			// mapping. For instance there's no need of Question relation mapping.
 			// BE AWARE THAT mapping Choice a second time is a bad practise
 			FluentEntityMappingBuilder<AnswerChoice, Identifier<Long>> answerChoiceMappingConfiguration = entityBuilder(AnswerChoice.class, LONG_TYPE)
 					.mapKey(AnswerChoice::getId, ALREADY_ASSIGNED)
@@ -1133,7 +1133,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 						.cascading(ALL).indexed()
 					.build(persistenceContext);
 			
-			// We declare the table that will store our relationship, and overall our List index
+			// We declare the table that will store our relation, and overall our List index
 			// NB: names are hardcoded here because they are hardly accessible from outside of CascadeManyConfigurer
 			answerChoicesTable = new Table("Answer_Choices");
 			answerChoicesTableId = answerChoicesTable.addColumn("answer_Id", Identifier.class).primaryKey();

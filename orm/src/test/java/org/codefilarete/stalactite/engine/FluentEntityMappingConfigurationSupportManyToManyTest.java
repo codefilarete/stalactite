@@ -78,7 +78,7 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		
 		
-		// We need to rebuild our choicePersister before each test because some of them alter it on answer relationship.
+		// We need to rebuild our choicePersister before each test because some of them alter it on answer relation.
 		// So schema contains FK twice with same name, ending in duplicate FK name exception
 		CHOICE_MAPPING_CONFIGURATION = entityBuilder(Choice.class, LONG_TYPE)
 				.mapKey(Choice::getId, ALREADY_ASSIGNED)

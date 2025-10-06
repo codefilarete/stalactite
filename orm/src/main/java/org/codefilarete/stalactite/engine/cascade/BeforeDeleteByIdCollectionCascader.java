@@ -9,7 +9,7 @@ import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 
 /**
- * Cascader for delete, written for one-to-many style of cascade where Target owns the relationship to Trigger
+ * Cascader for delete, written for one-to-many style of cascade where Target owns the relation to Trigger
  *
  * @param <TRIGGER> type of the elements that trigger this collection cascade
  * @param <TARGET> collection elements type
