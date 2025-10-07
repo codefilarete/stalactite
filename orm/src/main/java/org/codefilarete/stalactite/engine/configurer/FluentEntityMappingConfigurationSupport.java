@@ -620,10 +620,20 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	public FluentMappingBuilderInheritanceOptions<C, I> mapSuperClass(EntityMappingConfigurationProvider<? super C, I> mappingConfiguration) {
 		inheritanceConfiguration = new InheritanceConfigurationSupport<>(mappingConfiguration.getConfiguration());
 		return new MethodReferenceDispatcher()
-				.redirect((SerializableFunction<InheritanceOptions, InheritanceOptions>) InheritanceOptions::withJoinedTable,
-						() -> this.inheritanceConfiguration.joinTable = true)
-				.redirect((SerializableBiFunction<InheritanceOptions, Table, InheritanceOptions>) InheritanceOptions::withJoinedTable,
-						t -> { this.inheritanceConfiguration.joinTable = true; this.inheritanceConfiguration.table = t;})
+				.redirect(InheritanceOptions.class, new InheritanceOptions() {
+					@Override
+					public InheritanceOptions withJoinedTable() {
+						inheritanceConfiguration.setJoinTable(true);
+						return null;
+					}
+
+					@Override
+					public InheritanceOptions withJoinedTable(Table parentTable) {
+						inheritanceConfiguration.setJoinTable(true);
+						inheritanceConfiguration.table = parentTable;
+						return null;
+					}
+				}, true)
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderInheritanceOptions<C, I>>) (Class) FluentMappingBuilderInheritanceOptions.class);
 	}
@@ -1535,6 +1545,10 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 			return configuration;
 		}
 		
+		public void setJoinTable(boolean joinTable) {
+			this.joinTable = joinTable;
+		}
+
 		@Override
 		public boolean isJoinTable() {
 			return this.joinTable;

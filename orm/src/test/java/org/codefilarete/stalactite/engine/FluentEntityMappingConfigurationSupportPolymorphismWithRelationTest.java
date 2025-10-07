@@ -2205,7 +2205,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 				.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
 				.isEqualTo(person);
 		// checking for orphan removal (relation was marked as such)
-		assertThat(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(42L))).isNull();
+		assertThat(persistenceContext.findPersister(Vehicle.class).select(new PersistedIdentifier<>(42L))).isNull();
 		
 		// nullifying one-to-one relation
 		person.setVehicle(null);
@@ -2214,7 +2214,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		loadedPerson = testInstance.select(person.getId());
 		assertThat(loadedPerson).isEqualTo(person);
 		// checking for orphan removal (relation was marked as such)
-		assertThat(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(666L))).isNull();
+		assertThat(persistenceContext.findPersister(Vehicle.class).select(new PersistedIdentifier<>(666L))).isNull();
 		
 		
 		// setting new one-to-one relation
@@ -2228,7 +2228,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		testInstance.delete(person);
 		assertThat(testInstance.select(person.getId())).isNull();
 		// checking for orphan removal (relation was marked as such)
-		assertThat(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(17L))).isNull();
+		assertThat(persistenceContext.findPersister(Vehicle.class).select(new PersistedIdentifier<>(17L))).isNull();
 	}
 	
 	

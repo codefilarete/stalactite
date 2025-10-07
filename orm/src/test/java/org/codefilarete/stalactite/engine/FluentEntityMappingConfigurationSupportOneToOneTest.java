@@ -254,7 +254,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			Person newPerson = new Person(new PersistableIdentifier<>(2L));
 			newPerson.setName("New French president");
 			// person must be persisted before usage because cascade is marked as READ_ONLY
-			persistenceContext.getPersister(Person.class).insert(newPerson);
+			persistenceContext.findPersister(Person.class).insert(newPerson);
 			
 			dummyCountry.setPresident(newPerson);
 			countryPersister.update(dummyCountry, loadedCountry, true);

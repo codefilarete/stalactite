@@ -53,22 +53,23 @@ public interface PersisterRegistry {
 		 */
 		@Override
 		public <C, I> EntityPersister<C, I> getPersister(Class<C> clazz) {
-			if (persisterCache.get(clazz) != null) {
-				return persisterCache.get(clazz);
-			} else {
-				ClassIterator classIterator = new ClassIterator(clazz);
-				EntityPersister<C, I> result;
-				Class<?> pawn;
-				do {
-					pawn = classIterator.next();
-					result = persisterCache.get(pawn);
-				} while (result == null && classIterator.hasNext());
-				// we add our finding to cache for future lookup
-				if (result != null) {
-					persisterCache.put(clazz, result);
-				}
-				return result;
-			}
+			return persisterCache.get(clazz);
+//			if (persisterCache.get(clazz) != null) {
+//				return persisterCache.get(clazz);
+//			} else {
+//				ClassIterator classIterator = new ClassIterator(clazz);
+//				EntityPersister<C, I> result;
+//				Class<?> pawn;
+//				do {
+//					pawn = classIterator.next();
+//					result = persisterCache.get(pawn);
+//				} while (result == null && classIterator.hasNext());
+//				// we add our finding to cache for future lookup
+//				if (result != null) {
+//					persisterCache.put(clazz, result);
+//				}
+//				return result;
+//			}
 		}
 		
 		/**

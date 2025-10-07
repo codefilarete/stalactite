@@ -118,7 +118,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 			
 			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
 			ResultSet exportedKeysForPersonTable = currentConnection.getMetaData().getExportedKeys(null, null,
-					((ConfiguredPersister) persistenceContext.getPersister(Person.class)).getMapping().getTargetTable().getName().toUpperCase());
+					((ConfiguredPersister) persistenceContext.findPersister(Person.class)).getMapping().getTargetTable().getName().toUpperCase());
 			Map<String, JdbcForeignKey> foreignKeyPerName = giveForeignKeys(exportedKeysForPersonTable);
 			JdbcForeignKey foundForeignKey = Iterables.first(foreignKeyPerName).getValue();
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_A240422", "HOUSE", "OWNERFIRSTNAME, OWNERLASTNAME, OWNERADDRESS", "PERSON", "FIRSTNAME, LASTNAME, ADDRESS");
@@ -176,7 +176,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 			
 			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
 			ResultSet exportedKeysForPersonTable = currentConnection.getMetaData().getExportedKeys(null, null,
-					((ConfiguredPersister) persistenceContext.getPersister(Person.class)).getMapping().getTargetTable().getName().toUpperCase());
+					((ConfiguredPersister) persistenceContext.findPersister(Person.class)).getMapping().getTargetTable().getName().toUpperCase());
 			Map<String, JdbcForeignKey> foreignKeyPerName = giveForeignKeys(exportedKeysForPersonTable);
 			JdbcForeignKey foundForeignKey = Iterables.first(foreignKeyPerName).getValue();
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_A240422", "HOUSE", "OWNERFIRSTNAME, OWNERLASTNAME, OWNERADDRESS", "PERSON", "FIRSTNAME, LASTNAME, ADDRESS");
@@ -203,7 +203,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 			
 			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
 			ResultSet exportedKeysForPersonTable = currentConnection.getMetaData().getExportedKeys(null, null,
-					((ConfiguredPersister) persistenceContext.getPersister(Person.class)).getMapping().getTargetTable().getName().toUpperCase());
+					((ConfiguredPersister) persistenceContext.findPersister(Person.class)).getMapping().getTargetTable().getName().toUpperCase());
 			Map<String, JdbcForeignKey> foreignKeyPerName = giveForeignKeys(exportedKeysForPersonTable);
 			JdbcForeignKey foundForeignKey = Iterables.first(foreignKeyPerName).getValue();
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_47CDB94D", "PERSON_PETS", "PERSON_FIRSTNAME, PERSON_LASTNAME, PERSON_ADDRESS", "PERSON", "FIRSTNAME, LASTNAME, ADDRESS");
@@ -322,7 +322,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		assertThat(loadedPerson.getId().getLastName()).isEqualTo("Do");
 		
 		ResultSet tableColumns = persistenceContext.getConnectionProvider().giveConnection().getMetaData().getColumns(null, null,
-				((ConfiguredPersister) persistenceContext.getPersister(Person.class)).getMapping().getTargetTable().getName().toUpperCase(), null);
+				((ConfiguredPersister) persistenceContext.findPersister(Person.class)).getMapping().getTargetTable().getName().toUpperCase(), null);
 		ResultSetIterator<String> columnNameReader = new ResultSetIterator<String>(tableColumns) {
 			@Override
 			public String convert(ResultSet resultSet) throws SQLException {
@@ -354,7 +354,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		assertThat(loadedPerson.getId().getLastName()).isEqualTo("Do");
 		
 		ResultSet tableColumns = persistenceContext.getConnectionProvider().giveConnection().getMetaData().getColumns(null, null,
-				((ConfiguredPersister) persistenceContext.getPersister(Person.class)).getMapping().getTargetTable().getName().toUpperCase(), null);
+				((ConfiguredPersister) persistenceContext.findPersister(Person.class)).getMapping().getTargetTable().getName().toUpperCase(), null);
 		ResultSetIterator<String> columnNameReader = new ResultSetIterator<String>(tableColumns) {
 			@Override
 			public String convert(ResultSet resultSet) throws SQLException {

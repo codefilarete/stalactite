@@ -79,7 +79,7 @@ public class StalactiteRepositoryFactoryBean<R extends Repository<C, I>, C, I>
 	
 	@Override
 	protected RepositoryFactorySupport doCreateRepositoryFactory() {
-		EntityPersister<?, Object> foundPersister = persistenceContext.getPersister(this.entityType);
+		EntityPersister<?, Object> foundPersister = persistenceContext.findPersister(this.entityType);
 		if (foundPersister == null) {
 			throw new IllegalArgumentException("No persister found for entityType " + Reflections.toString(entityType) + " in persistence context.");
 		}

@@ -39,6 +39,7 @@ import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.Inherit
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.KeyMapping;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.SingleKeyMapping;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
+import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.key.FluentEntityMappingBuilderKeyOptions;
@@ -627,76 +628,10 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @return the mapping between property accessor and their column in target tables, never null
 	 */
 	@VisibleForTesting
-	MappingPerTable<C> collectPropertiesMappingFromInheritance() {
+	<T extends Table<T>> MappingPerTable<C> collectPropertiesMappingFromInheritance() {
 		MappingPerTable<C> result = new MappingPerTable<>();
 		
-		class MappingCollector<T extends Table<T>> implements Consumer<EmbeddableMappingConfiguration<C>> {
-			
-			private T currentTable;
-			
-			private Map<ReversibleAccessor<C, Object>, Column<T, Object>> currentColumnMap = new HashMap<>();
-			
-			private Map<ReversibleAccessor<C, Object>, Column<T, Object>> currentReadonlyColumnMap = new HashMap<>();
-			
-			private final ValueAccessPointMap<C, Converter<Object, Object>> readConverters = new ValueAccessPointMap<>();
-			
-			private final ValueAccessPointMap<C, Converter<Object, Object>> writeConverters = new ValueAccessPointMap<>();
-			
-			private Mapping<C, T> currentMapping;
-			
-			private Object currentKey;
-			
-			private boolean mappedSuperClass = false;
-			
-			@Override
-			public void accept(EmbeddableMappingConfiguration<C> embeddableMappingConfiguration) {
-				BeanMappingBuilder<C, T> beanMappingBuilder = new BeanMappingBuilder<>(embeddableMappingConfiguration,
-						this.currentTable,
-						PersisterBuilderImpl.this.columnBinderRegistry,
-						namingConfiguration.getColumnNamingStrategy());
-				BeanMapping<C, T> propertiesMapping = beanMappingBuilder.build();
-				ValueAccessPointSet<C> localMapping = new ValueAccessPointSet<>(currentColumnMap.keySet());
-				propertiesMapping.getMapping().keySet().forEach(propertyAccessor -> {
-					if (localMapping.contains(propertyAccessor)) {
-						throw new MappingConfigurationException(AccessorDefinition.toString(propertyAccessor) + " is mapped twice");
-					}
-				});
-				propertiesMapping.getReadonlyMapping().keySet().forEach(propertyAccessor -> {
-					if (localMapping.contains(propertyAccessor)) {
-						throw new MappingConfigurationException(AccessorDefinition.toString(propertyAccessor) + " is mapped twice");
-					}
-				});
-				currentColumnMap.putAll(propertiesMapping.getMapping());
-				currentReadonlyColumnMap.putAll(propertiesMapping.getReadonlyMapping());
-				readConverters.putAll(propertiesMapping.getReadConverters());
-				writeConverters.putAll(propertiesMapping.getWriteConverters());
-				if (currentMapping == null) {
-					currentMapping = result.add(preventNull(currentKey, embeddableMappingConfiguration), currentTable,
-							// Note that we clone maps because ours are reused while iterating
-							currentColumnMap, currentReadonlyColumnMap,
-							new ValueAccessPointMap<>(readConverters),
-							new ValueAccessPointMap<>(writeConverters),
-							mappedSuperClass);
-				} else {
-					currentMapping = result.add(embeddableMappingConfiguration, currentTable,
-							// Note that we clone maps because ours are reused while iterating
-							currentColumnMap, currentReadonlyColumnMap,
-							new ValueAccessPointMap<>(readConverters),
-							new ValueAccessPointMap<>(writeConverters),
-							mappedSuperClass);
-					currentMapping.getMapping().putAll(currentColumnMap);
-				}
-				embeddableMappingConfiguration.getPropertiesMapping().stream()
-						.filter(Linkage::isSetByConstructor).map(Linkage::getAccessor).forEach(currentMapping.propertiesSetByConstructor::add);
-			}
-			
-			public void accept(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
-				accept(entityMappingConfiguration.getPropertiesMapping());
-			}
-		}
-		
-		
-		MappingCollector mappingCollector = new MappingCollector();
+		InheritanceMappingCollector<C, I, T> mappingCollector = new InheritanceMappingCollector<>(result, this.columnBinderRegistry, this.namingConfiguration.getColumnNamingStrategy());
 		visitInheritedEmbeddableMappingConfigurations(new Consumer<EntityMappingConfiguration>() {
 			private boolean initMapping = false;
 			
@@ -704,15 +639,10 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			public void accept(EntityMappingConfiguration entityMappingConfiguration) {
 				mappingCollector.currentKey = entityMappingConfiguration;
 				if (initMapping) {
-					// we can't clear those maps since they are given to 
-					mappingCollector.currentColumnMap = new HashMap<>();
-					mappingCollector.currentReadonlyColumnMap = new HashMap<>();
-					mappingCollector.readConverters.clear();
-					mappingCollector.writeConverters.clear();
-					mappingCollector.currentMapping = null;
+					mappingCollector.init();
 				}
 				
-				mappingCollector.currentTable = tableMap.get(entityMappingConfiguration);
+				mappingCollector.currentTable = (T) tableMap.get(entityMappingConfiguration);
 				mappingCollector.accept(entityMappingConfiguration);
 				
 				// we must reinit mapping when table changes (which is a join table case), then mapping doesn't target always the same Map 
@@ -1130,6 +1060,96 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			public Duo<ReversibleAccessor<C, ?>, PrimaryKey<T, ?>> getIdentifier() {
 				return identifier;
 			}
+		}
+	}
+
+	private static class InheritanceMappingCollector<C, I, T extends Table<T>> implements Consumer<EmbeddableMappingConfiguration<C>> {
+
+		private final MappingPerTable<C> result;
+		
+		private T currentTable;
+		
+		private Map<ReversibleAccessor<C, Object>, Column<T, Object>> currentColumnMap;
+		
+		private Map<ReversibleAccessor<C, Object>, Column<T, Object>> currentReadonlyColumnMap;
+		
+		private final ValueAccessPointMap<C, Converter<Object, Object>> readConverters;
+		
+		private final ValueAccessPointMap<C, Converter<Object, Object>> writeConverters;
+		
+		private Mapping<C, T> currentMapping;
+		
+		private Object currentKey;
+		
+		private boolean mappedSuperClass;
+		
+		private ColumnBinderRegistry columnBinderRegistry;
+		private ColumnNamingStrategy columnNamingStrategy;
+
+		InheritanceMappingCollector(MappingPerTable<C> result, ColumnBinderRegistry columnBinderRegistry, ColumnNamingStrategy columnNamingStrategy) {
+			this.result = result;
+			this.currentColumnMap = new HashMap<>();
+			this.currentReadonlyColumnMap = new HashMap<>();
+			this.readConverters = new ValueAccessPointMap<>();
+			this.writeConverters = new ValueAccessPointMap<>();
+			this.mappedSuperClass = false;
+			this.columnBinderRegistry = columnBinderRegistry;
+			this.columnNamingStrategy = columnNamingStrategy;
+		}
+		
+		public void init() {
+			// we can't clear those maps since they are given to some other objects, thus clearing them will impact other objects
+			this.currentColumnMap = new HashMap<>();
+			this.currentReadonlyColumnMap = new HashMap<>();
+			this.readConverters.clear();
+			this.writeConverters.clear();
+			this.currentMapping = null;
+		}
+		
+		public void accept(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
+			accept(entityMappingConfiguration.getPropertiesMapping());
+		}
+		
+		@Override
+		public void accept(EmbeddableMappingConfiguration<C> embeddableMappingConfiguration) {
+			BeanMappingBuilder<C, T> beanMappingBuilder = new BeanMappingBuilder<>(embeddableMappingConfiguration,
+					this.currentTable,
+					this.columnBinderRegistry,
+					this.columnNamingStrategy);
+			BeanMapping<C, T> propertiesMapping = beanMappingBuilder.build();
+			ValueAccessPointSet<C> localMapping = new ValueAccessPointSet<>(currentColumnMap.keySet());
+			propertiesMapping.getMapping().keySet().forEach(propertyAccessor -> {
+				if (localMapping.contains(propertyAccessor)) {
+					throw new MappingConfigurationException(AccessorDefinition.toString(propertyAccessor) + " is mapped twice");
+				}
+			});
+			propertiesMapping.getReadonlyMapping().keySet().forEach(propertyAccessor -> {
+				if (localMapping.contains(propertyAccessor)) {
+					throw new MappingConfigurationException(AccessorDefinition.toString(propertyAccessor) + " is mapped twice");
+				}
+			});
+			currentColumnMap.putAll(propertiesMapping.getMapping());
+			currentReadonlyColumnMap.putAll(propertiesMapping.getReadonlyMapping());
+			readConverters.putAll(propertiesMapping.getReadConverters());
+			writeConverters.putAll(propertiesMapping.getWriteConverters());
+			if (currentMapping == null) {
+				currentMapping = result.add(preventNull(currentKey, embeddableMappingConfiguration), currentTable,
+						// Note that we clone maps because ours are reused while iterating
+						currentColumnMap, currentReadonlyColumnMap,
+						new ValueAccessPointMap<>(readConverters),
+						new ValueAccessPointMap<>(writeConverters),
+						mappedSuperClass);
+			} else {
+				currentMapping = result.add(embeddableMappingConfiguration, currentTable,
+						// Note that we clone maps because ours are reused while iterating
+						currentColumnMap, currentReadonlyColumnMap,
+						new ValueAccessPointMap<>(readConverters),
+						new ValueAccessPointMap<>(writeConverters),
+						mappedSuperClass);
+				currentMapping.getMapping().putAll(currentColumnMap);
+			}
+			embeddableMappingConfiguration.getPropertiesMapping().stream()
+					.filter(Linkage::isSetByConstructor).map(Linkage::getAccessor).forEach(currentMapping.propertiesSetByConstructor::add);
 		}
 	}
 }

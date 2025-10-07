@@ -7,15 +7,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
-import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
-import org.codefilarete.stalactite.dsl.MappingEase;
-import org.codefilarete.stalactite.engine.model.AbstractVehicle;
-import org.codefilarete.stalactite.engine.model.Car;
-import org.codefilarete.stalactite.engine.model.Color;
-import org.codefilarete.stalactite.engine.model.Vehicle;
+import org.codefilarete.stalactite.engine.model.*;
 import org.codefilarete.stalactite.engine.model.book.AbstractEntity;
 import org.codefilarete.stalactite.engine.model.book.Author;
 import org.codefilarete.stalactite.engine.model.book.Book;
@@ -29,6 +24,7 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
@@ -47,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.codefilarete.stalactite.dsl.MappingEase.embeddableBuilder;
 import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy.*;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.query.model.QueryEase.select;
@@ -88,14 +85,14 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.map(Car::getModel)
 					// concrete class defines id
 					.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.mapSuperClass(MappingEase.embeddableBuilder(Vehicle.class)
+					.mapSuperClass(embeddableBuilder(Vehicle.class)
 							.map(Vehicle::getColor))
 					.build(persistenceContext);
 			
 			// as a mapped super class, the table shouldn't be in the context, nor its persister exists
 			Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
 			assertThat(tables.contains(mappedSuperClassData.vehicleTable)).isFalse();
-			assertThat(persistenceContext.getPersister(Vehicle.class)).isNull();
+			assertThat(persistenceContext.findPersister(Vehicle.class)).isNull();
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -126,14 +123,14 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.map(Car::getModel)
 					// concrete class defines id
 					.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.mapSuperClass(MappingEase.embeddableBuilder(Vehicle.class)
+					.mapSuperClass(embeddableBuilder(Vehicle.class)
 							.map(Vehicle::getColor))
 					.build(persistenceContext);
 			
 			// as a mapped super class, the table shouldn't be in the context, nor its persister exists
 			Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
 			assertThat(tables.contains(mappedSuperClassData.vehicleTable)).isFalse();
-			assertThat(persistenceContext.getPersister(Vehicle.class)).isNull();
+			assertThat(persistenceContext.findPersister(Vehicle.class)).isNull();
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -163,7 +160,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.withColumnNaming(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
 					// concrete class defines id
 					.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.mapSuperClass(MappingEase.embeddableBuilder(Vehicle.class)
+					.mapSuperClass(embeddableBuilder(Vehicle.class)
 							.map(Vehicle::getColor))
 					.build(persistenceContext);
 			
@@ -196,8 +193,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.map(Car::getModel)
 					// concrete class defines id
 					.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.mapSuperClass(MappingEase
-							.embeddableBuilder(Vehicle.class)
+					.mapSuperClass(embeddableBuilder(Vehicle.class)
 							.map(Vehicle::getColor)
 							.withColumnNaming(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_supercol"))
 					.build(persistenceContext);
@@ -239,8 +235,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.withColumnNaming(columnNamingStrategy)
 					// concrete class defines id
 					.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.mapSuperClass(MappingEase
-							.embeddableBuilder(Vehicle.class)
+					.mapSuperClass(embeddableBuilder(Vehicle.class)
 							.map(Vehicle::getColor))
 					.build(persistenceContext);
 			
@@ -272,8 +267,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			assertThatThrownBy(() -> entityBuilder(Car.class, LONG_TYPE)
 						.map(Car::getModel)
 						.map(Car::getColor)
-						.mapSuperClass(MappingEase
-								.embeddableBuilder(Vehicle.class)
+						.mapSuperClass(embeddableBuilder(Vehicle.class)
 								.map(Vehicle::getColor))
 						.build(persistenceContext))
 					.isInstanceOf(UnsupportedOperationException.class)
@@ -287,8 +281,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.map(Car::getModel)
 					// concrete class defines id
 					.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.mapSuperClass(MappingEase
-							.embeddableBuilder(Vehicle.class)
+					.mapSuperClass(embeddableBuilder(Vehicle.class)
 							.embed(Vehicle::getColor, embeddableBuilder(Color.class)
 									.map(Color::getRgb)))
 					.build(persistenceContext);
@@ -368,7 +361,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 		void withIdDefinedInSuperClass_severalTimes() {
 			FluentEntityMappingBuilder<AbstractEntity, Long> inheritanceConfiguration = entityBuilder(AbstractEntity.class, long.class)
 					// mapped super class defines id
-					.mapKey(AbstractEntity::getId, IdentifierPolicy.databaseAutoIncrement());
+					.mapKey(AbstractEntity::getId, databaseAutoIncrement());
 			
 			FluentEntityMappingBuilder<Author, Long> authorConfiguration = entityBuilder(Author.class, long.class)
 					.map(Author::getName)
@@ -459,7 +452,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			
 			// as an inherited entity, the table should be in the context, and its persister does exist
 			assertThat(DDLDeployer.collectTables(persistenceContext).stream().map(Table::getName).collect(Collectors.toSet())).isEqualTo(Arrays.asHashSet("Car", "Vehicle", "AbstractVehicle"));
-			assertThat(((ConfiguredRelationalPersister) persistenceContext.getPersister(Car.class)).getMapping().getTargetTable().getName()).isEqualTo("Car");
+			assertThat(((ConfiguredRelationalPersister) persistenceContext.findPersister(Car.class)).getMapping().getTargetTable().getName()).isEqualTo("Car");
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -492,7 +485,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			FluentEntityMappingBuilder<Car, Identifier<Long>> mappingBuilder = entityBuilder(Car.class, LONG_TYPE)
 					.map(Car::getModel)
 					.map(Car::getColor)
-					.mapSuperClass(MappingEase.embeddableBuilder(Vehicle.class)
+					.mapSuperClass(embeddableBuilder(Vehicle.class)
 							.map(Vehicle::getColor))
 					.mapSuperClass(inheritanceConfiguration);
 			assertThatThrownBy(() -> mappingBuilder.build(persistenceContext))
@@ -580,6 +573,39 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.map("rgb", Car::setColor, int.class, Color::new);
 			Set<Car> allCars = carExecutableQuery.execute(Accumulators.toSet());
 			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
+		}
+
+		@Test
+		void twiceInheritanceInRelation_schemaContainsAllTables() {
+			FluentEntityMappingBuilder<AbstractVehicle, Identifier<Long>> abstractVehicleConfiguration = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+					.mapKey(AbstractVehicle::getId, databaseAutoIncrement());
+			FluentEntityMappingBuilder<Person, Identifier<Long>> personConfiguration = entityBuilder(Person.class, LONG_TYPE)
+					.mapKey(Person::getId, databaseAutoIncrement())
+					.map(Person::getName)
+					.mapOneToOne(Person::getVehicle, entityBuilder(Vehicle.class, LONG_TYPE)
+							.mapSuperClass(abstractVehicleConfiguration))
+						.mappedBy(Vehicle::getOwner)
+					.mapOneToOne(Person::getBicycle, entityBuilder(Bicycle.class, LONG_TYPE)
+							.mapSuperClass(abstractVehicleConfiguration)
+							.map(Bicycle::getColor))
+						.mappedBy(Bicycle::getOwner)
+					;
+			
+			personConfiguration.build(persistenceContext);
+			
+			Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
+			assertThat(tables).extracting(Table::getName).containsExactlyInAnyOrder("Person", "Vehicle", "Bicycle");
+			assertThat(tables.stream().flatMap(table -> table.getForeignKeys().stream()))
+							.extracting(ForeignKey::getName).containsExactlyInAnyOrder("FK_Bicycle_ownerId_Person_id", "FK_Vehicle_ownerId_Person_id");
+
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			assertThat(ddlDeployer.getCreationScripts()).containsExactly(
+					"create table Bicycle(color int, id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, ownerId int, unique (id))",
+					"create table Person(name varchar(255), id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, unique (id))",
+					"create table Vehicle(id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, ownerId int, unique (id))",
+					"alter table Bicycle add constraint FK_Bicycle_ownerId_Person_id foreign key(ownerId) references Person(id)",
+					"alter table Vehicle add constraint FK_Vehicle_ownerId_Person_id foreign key(ownerId) references Person(id)"
+			);
 		}
 	}
 	

@@ -22,8 +22,6 @@ class PersisterRegistryTest {
 		// check with persister type
 		assertThat(testInstance.getPersister(Date.class)).isEqualTo(persisterMock);
 		
-		// check with inherited persister type (Timestamp inherit from Date)
-		assertThat(testInstance.getPersister(Timestamp.class)).isEqualTo(persisterMock);
 		assertThat(testInstance.getPersisters()).extracting(EntityPersister::getClassToPersist).contains(Date.class);
 	}
 }

@@ -55,6 +55,7 @@ import org.codefilarete.stalactite.sql.result.ResultSetRowAssembler;
 import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer;
 import org.codefilarete.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
 import org.codefilarete.tool.Nullable;
+import org.codefilarete.tool.bean.ClassIterator;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Converter;
@@ -182,22 +183,38 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	}
 	
 	/**
-	 * Gives the persister of given class if exists.
+	 * Looks for an {@link EntityPersister} registered for given class or one of its parent.
+	 * Found persister is then capable of persisting any instance of given class.
+	 * Made as such to take into account inheritance of a given entity and be capable of writing such code:
+	 * <pre>{@code
+	 * // this would work even if entity is a subtype of an aggregate root persister registered in the registry
+	 * persisterRegistry.getPersister(entity.getClass()).insert(entity);
+	 * }</pre>
 	 * Expected to work for aggregate root entity type, not for intermediary persisters, to keep a clean and sane behavior of cascades,
 	 * bi-directionality, polymorphism, etc.
-	 * Meanwhile, it depends on the context in which {@link #addPersister(EntityPersister)} was used.
 	 * 
 	 * @param clazz persister entity class
 	 * @return null if no persister was found for given class
 	 * @param <C> entity type
 	 * @param <I> entity identifier type
 	 */
-	public <C, I> EntityPersister<C, I> getPersister(Class<C> clazz) {
-		return persisterRegistry.getPersister(clazz);
+	public <C, I> EntityPersister<C, I> findPersister(Class<C> clazz) {
+		if (persisterRegistry.getPersister(clazz) != null) {
+			return persisterRegistry.getPersister(clazz);
+		} else {
+			ClassIterator classIterator = new ClassIterator(clazz);
+			EntityPersister<C, I> result;
+			Class<?> pawn;
+			do {
+				pawn = classIterator.next();
+				result = (EntityPersister<C, I>) persisterRegistry.getPersister(pawn);
+			} while (result == null && classIterator.hasNext());
+			return result;
+		}
 	}
 	
 	/**
-	 * Register a persister into this context. Then, it can be retrieved with {@link #getPersister(Class)}.
+	 * Register a persister into this context. Then, it can be retrieved with {@link #findPersister(Class)}.
 	 * It's expected to give it an aggregate root persister, not intermediary persisters, to keep a clean and sane behavior of cascades,
 	 * bi-directionality, polymorphism, etc.
 	 * 

@@ -30,6 +30,8 @@ public class Person implements Identified<Long> {
 	
 	private Vehicle vehicle;
 	
+	private Bicycle bicycle;
+	
 	private Set<String> nicknames;
 	
 	private Map<String, String> phoneNumbers;
@@ -103,6 +105,14 @@ public class Person implements Identified<Long> {
 		if (vehicle != null) {
 			vehicle.setOwner(this);
 		}
+	}
+	
+	public Bicycle getBicycle() {
+		return bicycle;
+	}
+
+	public void setBicycle(Bicycle bicycle) {
+		this.bicycle = bicycle;
 	}
 	
 	public Set<String> getNicknames() {
