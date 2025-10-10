@@ -7,7 +7,7 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.bean.ClassIterator;
+import org.codefilarete.tool.collection.Iterables;
 
 /**
  * Contract for {@link BeanPersister} registry.
@@ -33,10 +33,24 @@ public interface PersisterRegistry {
 	 * @param <C> type of persisted bean
 	 */
 	<C> void addPersister(EntityPersister<C, ?> persister);
+
+	/**
+	 * Returns all registered persisters
+	 * @return a set of all registered persisters
+	 */
+	Set<EntityPersister> getPersisters();
 	
 	class DefaultPersisterRegistry implements PersisterRegistry {
 		
-		private final Map<Class<?>, EntityPersister> persisterCache = new HashMap<>();
+		private final Map<Class<?>, EntityPersister> persisterCache;
+
+		public DefaultPersisterRegistry() {
+			this.persisterCache = new HashMap<>();
+		}
+
+		public DefaultPersisterRegistry(Set<EntityPersister> persisters) {
+			this.persisterCache = Iterables.map(persisters, EntityPersister::getClassToPersist, p -> p, HashMap::new);
+		}
 		
 		/**
 		 * Looks for an {@link EntityPersister} registered for given class or one of its parent.
@@ -54,22 +68,6 @@ public interface PersisterRegistry {
 		@Override
 		public <C, I> EntityPersister<C, I> getPersister(Class<C> clazz) {
 			return persisterCache.get(clazz);
-//			if (persisterCache.get(clazz) != null) {
-//				return persisterCache.get(clazz);
-//			} else {
-//				ClassIterator classIterator = new ClassIterator(clazz);
-//				EntityPersister<C, I> result;
-//				Class<?> pawn;
-//				do {
-//					pawn = classIterator.next();
-//					result = persisterCache.get(pawn);
-//				} while (result == null && classIterator.hasNext());
-//				// we add our finding to cache for future lookup
-//				if (result != null) {
-//					persisterCache.put(clazz, result);
-//				}
-//				return result;
-//			}
 		}
 		
 		/**
@@ -89,6 +87,7 @@ public interface PersisterRegistry {
 			persisterCache.put(persister.getClassToPersist(), persister);
 		}
 		
+		@Override
 		public Set<EntityPersister> getPersisters() {
 			// copy the Set because values() is backed by the Map and getPersisters() is not expected to permit such modification
 			return new HashSet<>(persisterCache.values());

@@ -39,16 +39,17 @@ public class RelationConfigurer<C, I> {
 	private final ConnectionConfiguration connectionConfiguration;
 	private final ConfiguredRelationalPersister<C, I> sourcePersister;
 	private final NamingConfiguration namingConfiguration;
-	private final OneToOneRelationConfigurer<C, I> oneToOneRelationConfigurer;
-	private final OneToManyRelationConfigurer<C, ?, I, ?> oneToManyRelationConfigurer;
+	private final OneToOneRelationConfigurer<C, I, ?, ?> oneToOneRelationConfigurer;
+	private final OneToManyRelationConfigurer<C, I, ?, ?> oneToManyRelationConfigurer;
 	private final ManyToManyRelationConfigurer<C, ?, I, ?, ?, Collection<C>> manyToManyRelationConfigurer;
-	private final ManyToOneRelationConfigurer<C, I> manyToOneRelationConfigurer;
+	private final ManyToOneRelationConfigurer<C, I, ?, ?> manyToOneRelationConfigurer;
 	private final ElementCollectionRelationConfigurer<C, ?, I, ? extends Collection<?>> elementCollectionRelationConfigurer;
 	
 	public RelationConfigurer(Dialect dialect,
 							  ConnectionConfiguration connectionConfiguration,
 							  ConfiguredRelationalPersister<C, I> sourcePersister,
-							  NamingConfiguration namingConfiguration) {
+							  NamingConfiguration namingConfiguration,
+							  PersisterBuilderContext currentBuilderContext) {
 		this.dialect = dialect;
 		this.connectionConfiguration = connectionConfiguration;
 		this.sourcePersister = sourcePersister;
@@ -57,31 +58,37 @@ public class RelationConfigurer<C, I> {
 				this.dialect,
 				this.connectionConfiguration,
 				this.sourcePersister,
+				this.namingConfiguration.getTableNamingStrategy(),
 				this.namingConfiguration.getJoinColumnNamingStrategy(),
-				this.namingConfiguration.getForeignKeyNamingStrategy());
+				this.namingConfiguration.getForeignKeyNamingStrategy(),
+				currentBuilderContext);
 		this.oneToManyRelationConfigurer = new OneToManyRelationConfigurer<>(
 				this.sourcePersister,
 				this.dialect,
 				this.connectionConfiguration,
+				this.namingConfiguration.getTableNamingStrategy(),
 				this.namingConfiguration.getForeignKeyNamingStrategy(),
 				this.namingConfiguration.getJoinColumnNamingStrategy(),
 				this.namingConfiguration.getAssociationTableNamingStrategy(),
-				this.namingConfiguration.getIndexColumnNamingStrategy());
+				this.namingConfiguration.getIndexColumnNamingStrategy(), currentBuilderContext);
 		this.manyToManyRelationConfigurer = new ManyToManyRelationConfigurer<>(
 				this.sourcePersister,
 				this.dialect,
 				this.connectionConfiguration,
+				this.namingConfiguration.getTableNamingStrategy(),
 				this.namingConfiguration.getForeignKeyNamingStrategy(),
 				this.namingConfiguration.getJoinColumnNamingStrategy(),
 				this.namingConfiguration.getIndexColumnNamingStrategy(),
-				this.namingConfiguration.getAssociationTableNamingStrategy()
-		);
+				this.namingConfiguration.getAssociationTableNamingStrategy(),
+				currentBuilderContext);
 		this.manyToOneRelationConfigurer = new ManyToOneRelationConfigurer<>(
 				this.dialect,
 				this.connectionConfiguration,
 				this.sourcePersister,
+				this.namingConfiguration.getTableNamingStrategy(),
 				this.namingConfiguration.getJoinColumnNamingStrategy(),
-				this.namingConfiguration.getForeignKeyNamingStrategy());
+				this.namingConfiguration.getForeignKeyNamingStrategy(),
+				currentBuilderContext);
 		this.elementCollectionRelationConfigurer = new ElementCollectionRelationConfigurer<>(
 				sourcePersister,
 				this.namingConfiguration.getForeignKeyNamingStrategy(),
@@ -94,11 +101,11 @@ public class RelationConfigurer<C, I> {
 	public <TRGT, TRGTID> void configureRelations(RelationalMappingConfiguration<C> entityMappingConfiguration) {
 		
 		for (OneToOneRelation<C, TRGT, TRGTID> oneToOneRelation : entityMappingConfiguration.<TRGT, TRGTID>getOneToOnes()) {
-			oneToOneRelationConfigurer.configure(oneToOneRelation);
+			((OneToOneRelationConfigurer<C, I, TRGT, TRGTID>) oneToOneRelationConfigurer).configure(oneToOneRelation);
 		}
 		
 		for (OneToManyRelation<C, TRGT, TRGTID, Collection<TRGT>> oneToManyRelation : entityMappingConfiguration.<TRGT, TRGTID>getOneToManys()) {
-			((OneToManyRelationConfigurer<C, TRGT, I, TRGTID>) oneToManyRelationConfigurer).configure(oneToManyRelation);
+			((OneToManyRelationConfigurer<C, I, TRGT, TRGTID>) oneToManyRelationConfigurer).configure(oneToManyRelation);
 		}
 		
 		for (ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>> manyToManyRelation : entityMappingConfiguration.<TRGT, TRGTID>getManyToManys()) {
@@ -106,7 +113,7 @@ public class RelationConfigurer<C, I> {
 		}
 		
 		for (ManyToOneRelation<C, TRGT, TRGTID, Collection<C>> manyToOneRelation : entityMappingConfiguration.<TRGT, TRGTID>getManyToOnes()) {
-			manyToOneRelationConfigurer.configure(manyToOneRelation);
+			((ManyToOneRelationConfigurer<C, I, TRGT, TRGTID>) manyToOneRelationConfigurer).configure(manyToOneRelation);
 		}
 		
 		// taking element collections into account

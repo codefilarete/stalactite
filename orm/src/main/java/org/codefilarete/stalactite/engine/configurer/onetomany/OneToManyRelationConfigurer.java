@@ -4,15 +4,13 @@ import java.util.Collection;
 import java.util.Set;
 
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.*;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
-import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
-import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
+import org.codefilarete.stalactite.engine.configurer.AbstractRelationConfigurer;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -32,11 +30,8 @@ import static org.codefilarete.tool.Nullable.nullable;
  * @param <TRGTID> identifier type of target entities
  * @author Guillaume Mary
  */
-public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID> {
+public class OneToManyRelationConfigurer<SRC, SRCID, TRGT, TRGTID> extends AbstractRelationConfigurer<SRC, SRCID, TRGT, TRGTID> {
 	
-	private final ConfiguredRelationalPersister<SRC, SRCID> sourcePersister;
-	private final Dialect dialect;
-	private final ConnectionConfiguration connectionConfiguration;
 	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	private final JoinColumnNamingStrategy joinColumnNamingStrategy;
 	private final AssociationTableNamingStrategy associationTableNamingStrategy;
@@ -46,14 +41,13 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID> {
 	public OneToManyRelationConfigurer(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 									   Dialect dialect,
 									   ConnectionConfiguration connectionConfiguration,
+									   TableNamingStrategy tableNamingStrategy,
 									   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 									   JoinColumnNamingStrategy joinColumnNamingStrategy,
 									   AssociationTableNamingStrategy associationTableNamingStrategy,
-									   ColumnNamingStrategy indexColumnNamingStrategy) {
-		this.sourcePersister = sourcePersister;
-		this.dialect = dialect;
-		this.connectionConfiguration = connectionConfiguration;
-		
+									   ColumnNamingStrategy indexColumnNamingStrategy,
+									   PersisterBuilderContext currentBuilderContext) {
+		super(dialect, connectionConfiguration, sourcePersister, tableNamingStrategy, currentBuilderContext);
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
 		this.associationTableNamingStrategy = associationTableNamingStrategy;
@@ -90,7 +84,6 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID> {
 					connectionConfiguration);
 		}
 		
-		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
 		EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration = oneToManyRelation.getTargetMappingConfiguration();
 		if (currentBuilderContext.isCycling(targetMappingConfiguration)) {
 			// cycle detected
@@ -134,6 +127,10 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		}
 		
 		// NB: even if no table is found in configuration, build(..) will create one
-		return nullable(oneToManyRelation.getTargetTable()).elseSet(reverseTable).elseSet(indexingTable).get();
+		Table result = nullable(oneToManyRelation.getTargetTable()).elseSet(reverseTable).elseSet(indexingTable).get();
+		if (result == null) {
+			result = lookupTableInRegisteredPersisters(oneToManyRelation.getTargetMappingConfiguration().getEntityType());
+		}
+		return result;
 	}
 }

@@ -10,25 +10,13 @@ import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.PropertyAccessor;
-import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.*;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
-import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
-import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
-import org.codefilarete.stalactite.engine.configurer.AssociationRecordMapping;
-import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
-import org.codefilarete.stalactite.engine.configurer.IndexedAssociationRecordMapping;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
+import org.codefilarete.stalactite.engine.configurer.*;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation.MappedByConfiguration;
 import org.codefilarete.stalactite.engine.configurer.onetomany.FirstPhaseCycleLoadListener;
-import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
-import org.codefilarete.stalactite.engine.runtime.AssociationRecordPersister;
-import org.codefilarete.stalactite.engine.runtime.AssociationTable;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
-import org.codefilarete.stalactite.engine.runtime.IndexedAssociationRecord;
-import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
+import org.codefilarete.stalactite.engine.runtime.*;
 import org.codefilarete.stalactite.engine.runtime.onetomany.AbstractOneToManyWithAssociationTableEngine;
 import org.codefilarete.stalactite.engine.runtime.onetomany.IndexedAssociationTableManyRelationDescriptor;
 import org.codefilarete.stalactite.engine.runtime.onetomany.ManyRelationDescriptor;
@@ -55,11 +43,9 @@ import static org.codefilarete.tool.Nullable.nullable;
  * @param <C1> collection type of the relation
  * @author Guillaume Mary
  */
-public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends Collection<TRGT>, C2 extends Collection<SRC>> {
+public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends Collection<TRGT>, C2 extends Collection<SRC>>
+	extends AbstractRelationConfigurer<SRC, SRCID, TRGT, TRGTID> {
 	
-	private final ConfiguredRelationalPersister<SRC, SRCID> sourcePersister;
-	private final Dialect dialect;
-	private final ConnectionConfiguration connectionConfiguration;
 	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	private final JoinColumnNamingStrategy joinColumnNamingStrategy;
 	private final ColumnNamingStrategy indexColumnNamingStrategy;
@@ -69,21 +55,18 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 	public ManyToManyRelationConfigurer(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 										Dialect dialect,
 										ConnectionConfiguration connectionConfiguration,
+										TableNamingStrategy tableNamingStrategy,
 										ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 										JoinColumnNamingStrategy joinColumnNamingStrategy,
 										ColumnNamingStrategy indexColumnNamingStrategy,
-										AssociationTableNamingStrategy associationTableNamingStrategy) {
-		this.sourcePersister = sourcePersister;
-		this.dialect = dialect;
-		this.connectionConfiguration = connectionConfiguration;
+										AssociationTableNamingStrategy associationTableNamingStrategy,
+										PersisterBuilderContext currentBuilderContext) {
+		super(dialect, connectionConfiguration, sourcePersister, tableNamingStrategy, currentBuilderContext);
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
 		this.indexColumnNamingStrategy = indexColumnNamingStrategy;
 		this.associationTableNamingStrategy = associationTableNamingStrategy;
-		
 		this.leftPrimaryKey = sourcePersister.getMapping().getTargetTable().getPrimaryKey();
-		
-		
 	}
 	
 	public void configure(ManyToManyRelation<SRC, TRGT, TRGTID, C1, C2> manyToManyRelation) {
@@ -106,8 +89,6 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 				maintenanceMode == RelationMode.ASSOCIATION_ONLY,
 				connectionConfiguration);
 		
-		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
-		
 		String relationName = AccessorDefinition.giveDefinition(manyToManyRelation.getCollectionAccessor()).getName();
 		
 		EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration = manyToManyRelation.getTargetMappingConfiguration();
@@ -126,11 +107,19 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 			cycleSolver.addCycleSolver(relationName, configurer);
 		} else {
 			// NB: even if no table is found in configuration, build(..) will create one
-			Table targetTable = associationConfiguration.getManyToManyRelation().getTargetTable();
+			Table targetTable = determineTargetTable(associationConfiguration.getManyToManyRelation());
 			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = new PersisterBuilderImpl<>(targetMappingConfiguration)
 					.build(dialect, connectionConfiguration, targetTable);
 			configurer.configure(targetPersister, associationConfiguration.getManyToManyRelation().isFetchSeparately());
 		}
+	}
+
+	private Table determineTargetTable(ManyToManyRelation<SRC, TRGT, TRGTID, C1, C2> manyToManyRelation) {
+		Table targetTable = manyToManyRelation.getTargetTable();
+		if (targetTable == null) {
+			targetTable = lookupTableInRegisteredPersisters(manyToManyRelation.getTargetMappingConfiguration().getEntityType());
+		}
+		return targetTable;
 	}
 	
 	/**

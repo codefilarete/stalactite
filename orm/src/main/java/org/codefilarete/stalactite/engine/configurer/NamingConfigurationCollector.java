@@ -26,7 +26,7 @@ public class NamingConfigurationCollector {
 		this.entityMappingConfiguration = entityMappingConfiguration;
 	}
 	
-	NamingConfiguration collect() {
+	public NamingConfiguration collect() {
 		
 		org.codefilarete.tool.Nullable<TableNamingStrategy> optionalTableNamingStrategy = org.codefilarete.tool.Nullable.empty();
 		visitInheritedEntityMappingConfigurations(configuration -> {

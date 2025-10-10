@@ -167,12 +167,11 @@ class OneToOneRelationConfigurerTest {
 		// When
 		SimpleRelationalEntityPersister<Country, Identifier<Long>, T> countryPersister = new SimpleRelationalEntityPersister<>(countryEntityMappingStrategy, dialect,
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10));
-		OneToOneRelationConfigurer<Country, Identifier<Long>> testInstance = new OneToOneRelationConfigurer<>(
+		OneToOneRelationConfigurer<Country, Identifier<Long>, City, Identifier<Long>> testInstance = new OneToOneRelationConfigurer<>(
 				dialect,
 				mock(ConnectionConfiguration.class),
 				countryPersister,
-				JoinColumnNamingStrategy.JOIN_DEFAULT,
-				ForeignKeyNamingStrategy.DEFAULT);
+				TableNamingStrategy.DEFAULT, JoinColumnNamingStrategy.JOIN_DEFAULT, ForeignKeyNamingStrategy.DEFAULT, PersisterBuilderContext.CURRENT.get());
 		
 		testInstance.configure(countryCapitalRelation);
 		
@@ -289,12 +288,11 @@ class OneToOneRelationConfigurerTest {
 		SimpleRelationalEntityPersister<Country, Identifier<Long>, T> countryPersister = new SimpleRelationalEntityPersister<>(countryEntityMappingStrategy, dialect,
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10));
 		
-		OneToOneRelationConfigurer<Country, Identifier<Long>> testInstance = new OneToOneRelationConfigurer<>(
+		OneToOneRelationConfigurer<Country, Identifier<Long>, City, Identifier<Long>> testInstance = new OneToOneRelationConfigurer<>(
 				dialect,
 				mock(ConnectionConfiguration.class),
 				countryPersister,
-				JoinColumnNamingStrategy.JOIN_DEFAULT,
-				ForeignKeyNamingStrategy.DEFAULT);
+				TableNamingStrategy.DEFAULT, JoinColumnNamingStrategy.JOIN_DEFAULT, ForeignKeyNamingStrategy.DEFAULT, PersisterBuilderContext.CURRENT.get());
 		
 		testInstance.configure(countryCapitalRelation);
 		

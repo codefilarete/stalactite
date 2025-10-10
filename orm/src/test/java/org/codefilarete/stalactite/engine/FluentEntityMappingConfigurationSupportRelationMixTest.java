@@ -4,17 +4,16 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.Set;
 
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.MappingEase;
+import org.codefilarete.stalactite.engine.configurer.AbstractRelationConfigurer;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
-import org.codefilarete.stalactite.engine.model.City;
-import org.codefilarete.stalactite.engine.model.Country;
-import org.codefilarete.stalactite.engine.model.Person;
-import org.codefilarete.stalactite.engine.model.State;
+import org.codefilarete.stalactite.engine.model.*;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
@@ -23,24 +22,33 @@ import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifie
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
+import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
+import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
+import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy.databaseAutoIncrement;
 import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.ALL;
 import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
+import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
+import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 import static org.codefilarete.tool.collection.Iterables.first;
 
 /**
  * @author Guillaume Mary
  */
-public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
+public class FluentEntityMappingConfigurationSupportRelationMixTest {
 	
 	private final Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
@@ -53,6 +61,9 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		// binder creation for our identifier
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
+		dialect.getColumnBinderRegistry().register(Color.class, new NullAwareParameterBinder<>(new LambdaParameterBinder<>(INTEGER_PRIMITIVE_BINDER, Color::new, Color::getRgb)));
+		dialect.getSqlTypeRegistry().put(Color.class, "int");
+		
 		persistenceContext = new PersistenceContext(dataSource, dialect);
 		
 		FluentEntityMappingBuilder<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
@@ -311,5 +322,187 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				.mapKey(Long::new, "id", long.class);
 		Set<Long> loadedAin = longExecutableQuery.execute(Accumulators.toSet());
 		assertThat(first(loadedAin)).isNotNull();
+	}
+
+	/**
+	 * Test cases for persister / configuration reuse.
+	 * The initial problem was that the colum and foreign keys on the reused persister were missing: the failing scenario
+	 * was due to the call to persistenceContext.build(..) of a configuration (to build a persister) that will be reused
+	 * in a relation of another persister.
+	 * In depth, the bug was due to the non-lookup of the related / target table in the PersistenceContext.
+	 * By looking for it and reusing the table, the problem is fixed
+	 * (see {@link AbstractRelationConfigurer#lookupTableInRegisteredPersisters(Class)})
+	 */
+	@Nested
+	class ConfigurationReuse_MappedSuperClassAndRelations {
+		
+		@Test
+		void mappedBy_withOneToOne_foreignKeysAreAddedToSchema() {
+			FluentEntityMappingBuilder<AbstractVehicle, Identifier<Long>> abstractVehicleConfiguration = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+					.mapKey(AbstractVehicle::getId, databaseAutoIncrement());
+
+			FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleMappingConfiguration = entityBuilder(Vehicle.class, LONG_TYPE)
+					.mapSuperClass(abstractVehicleConfiguration);
+			FluentEntityMappingBuilder<Bicycle, Identifier<Long>> bicycleMappingConfiguration = entityBuilder(Bicycle.class, LONG_TYPE)
+					.mapSuperClass(abstractVehicleConfiguration)
+					.map(Bicycle::getColor);
+			
+			FluentEntityMappingBuilder<Person, Identifier<Long>> personConfiguration = entityBuilder(Person.class, LONG_TYPE)
+					.mapKey(Person::getId, databaseAutoIncrement())
+					.map(Person::getName)
+					// we declare 2 relations on configuration that will be transformed as persisters,
+					// and we will expect foreign keys to be created for both of them
+					.mapOneToOne(Person::getVehicle, vehicleMappingConfiguration)
+					.mappedBy(Vehicle::getOwner)
+					.mapOneToMany(Person::getBicycles, bicycleMappingConfiguration)
+					.mappedBy(Bicycle::getOwner);
+
+			// we create both persisters to simulate a reuse of the mapping configuration
+			vehicleMappingConfiguration.build(persistenceContext);
+			bicycleMappingConfiguration.build(persistenceContext);
+			personConfiguration.build(persistenceContext);
+
+			Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
+			assertThat(tables).extracting(Table::getName).containsExactlyInAnyOrder("Person", "Vehicle", "Bicycle");
+			assertThat(tables.stream().flatMap(table -> table.getForeignKeys().stream()))
+					.extracting(ForeignKey::getName).containsExactlyInAnyOrder("FK_Bicycle_ownerId_Person_id", "FK_Vehicle_ownerId_Person_id");
+
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			assertThat(ddlDeployer.getCreationScripts()).containsExactly(
+					"create table Bicycle(color int, id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, ownerId int, unique (id))",
+					"create table Person(name varchar(255), id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, unique (id))",
+					"create table Vehicle(id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, ownerId int, unique (id))",
+					"alter table Bicycle add constraint FK_Bicycle_ownerId_Person_id foreign key(ownerId) references Person(id)",
+					"alter table Vehicle add constraint FK_Vehicle_ownerId_Person_id foreign key(ownerId) references Person(id)"
+			);
+		}
+
+		@Test
+		void mappedBy_withOneToMany_foreignKeysAreAddedToSchema() {
+			FluentEntityMappingBuilder<AbstractVehicle, Identifier<Long>> abstractVehicleConfiguration = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+					.mapKey(AbstractVehicle::getId, databaseAutoIncrement());
+
+			FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleMappingConfiguration = entityBuilder(Vehicle.class, LONG_TYPE)
+					.mapSuperClass(abstractVehicleConfiguration);
+			FluentEntityMappingBuilder<Bicycle, Identifier<Long>> bicycleMappingConfiguration = entityBuilder(Bicycle.class, LONG_TYPE)
+					.mapSuperClass(abstractVehicleConfiguration)
+					.map(Bicycle::getColor);
+
+			FluentEntityMappingBuilder<Person, Identifier<Long>> personConfiguration = entityBuilder(Person.class, LONG_TYPE)
+					.mapKey(Person::getId, databaseAutoIncrement())
+					.map(Person::getName)
+					// we declare 2 relations on configuration that will be transformed as persisters,
+					// and we will expect foreign keys to be created for both of them
+					.mapOneToOne(Person::getVehicle, vehicleMappingConfiguration)
+					.mappedBy(Vehicle::getOwner)
+					.mapOneToMany(Person::getBicycles, bicycleMappingConfiguration)
+					.mappedBy(Bicycle::getOwner);
+			
+			// we create both persisters to simulate a reuse of the mapping configuration
+			vehicleMappingConfiguration.build(persistenceContext);
+			bicycleMappingConfiguration.build(persistenceContext);
+			personConfiguration.build(persistenceContext);
+
+			Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
+			assertThat(tables).extracting(Table::getName).containsExactlyInAnyOrder("Person", "Vehicle", "Bicycle");
+			assertThat(tables.stream().flatMap(table -> table.getForeignKeys().stream()))
+					.extracting(ForeignKey::getName).containsExactlyInAnyOrder("FK_Bicycle_ownerId_Person_id", "FK_Vehicle_ownerId_Person_id");
+
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			assertThat(ddlDeployer.getCreationScripts()).containsExactly(
+					"create table Bicycle(color int, id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, ownerId int, unique (id))",
+					"create table Person(name varchar(255), id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, unique (id))",
+					"create table Vehicle(id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, ownerId int, unique (id))",
+					"alter table Bicycle add constraint FK_Bicycle_ownerId_Person_id foreign key(ownerId) references Person(id)",
+					"alter table Vehicle add constraint FK_Vehicle_ownerId_Person_id foreign key(ownerId) references Person(id)"
+			);
+		}
+
+		@Test
+		void mappedBy_withManyToOne_foreignKeysAreAddedToSchema() {
+			FluentEntityMappingBuilder<AbstractVehicle, Identifier<Long>> abstractVehicleConfiguration = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+					.mapKey(AbstractVehicle::getId, databaseAutoIncrement());
+
+			FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleMappingConfiguration = entityBuilder(Vehicle.class, LONG_TYPE)
+					.mapSuperClass(abstractVehicleConfiguration);
+			FluentEntityMappingBuilder<Bicycle, Identifier<Long>> bicycleMappingConfiguration = entityBuilder(Bicycle.class, LONG_TYPE)
+					.mapSuperClass(abstractVehicleConfiguration)
+					.map(Bicycle::getColor);
+
+			FluentEntityMappingBuilder<Person, Identifier<Long>> personConfiguration = entityBuilder(Person.class, LONG_TYPE)
+					.mapKey(Person::getId, databaseAutoIncrement())
+					// we declare 2 relations on configuration that will be transformed as persisters,
+					// and we will expect foreign keys to be created for both of them
+					.map(Person::getName)
+					.mapOneToOne(Person::getVehicle, vehicleMappingConfiguration)
+					.mappedBy(Vehicle::getOwner)
+					.mapManyToOne(Person::getMainBicycle, bicycleMappingConfiguration);
+					// no mappedBy here because it's a many-to-one relation
+
+			// we create both persisters to simulate a reuse of the mapping configuration
+			vehicleMappingConfiguration.build(persistenceContext);
+			bicycleMappingConfiguration.build(persistenceContext);
+			personConfiguration.build(persistenceContext);
+
+			Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
+			assertThat(tables).extracting(Table::getName).containsExactlyInAnyOrder("Person", "Vehicle", "Bicycle");
+			assertThat(tables.stream().flatMap(table -> table.getForeignKeys().stream()))
+					.extracting(ForeignKey::getName).containsExactlyInAnyOrder("FK_Person_mainBicycleId_Bicycle_id", "FK_Vehicle_ownerId_Person_id");
+
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			assertThat(ddlDeployer.getCreationScripts()).containsExactly(
+					"create table Bicycle(color int, id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, unique (id))",
+					"create table Person(name varchar(255), id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, mainBicycleId int, unique (id))",
+					"create table Vehicle(id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, ownerId int, unique (id))",
+					"alter table Person add constraint FK_Person_mainBicycleId_Bicycle_id foreign key(mainBicycleId) references Bicycle(id)",
+					"alter table Vehicle add constraint FK_Vehicle_ownerId_Person_id foreign key(ownerId) references Person(id)"
+			);
+		}
+
+		@Test
+		void mappedBy_withManyToMany_foreignKeysAreAddedToSchema() {
+			FluentEntityMappingBuilder<AbstractVehicle, Identifier<Long>> abstractVehicleConfiguration = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+					.mapKey(AbstractVehicle::getId, databaseAutoIncrement());
+
+			FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleMappingConfiguration = entityBuilder(Vehicle.class, LONG_TYPE)
+					.mapSuperClass(abstractVehicleConfiguration);
+			FluentEntityMappingBuilder<Bicycle, Identifier<Long>> bicycleMappingConfiguration = entityBuilder(Bicycle.class, LONG_TYPE)
+					.mapSuperClass(abstractVehicleConfiguration)
+					.map(Bicycle::getColor);
+
+			FluentEntityMappingBuilder<Person, Identifier<Long>> personConfiguration = entityBuilder(Person.class, LONG_TYPE)
+					.mapKey(Person::getId, databaseAutoIncrement())
+					// we declare 2 relations on configuration that will be transformed as persisters,
+					// and we will expect foreign keys to be created for both of them
+					.map(Person::getName)
+					.mapOneToOne(Person::getVehicle, vehicleMappingConfiguration)
+					.mappedBy(Vehicle::getOwner)
+					.mapManyToMany(Person::getBicycles, bicycleMappingConfiguration);
+					// no mappedBy here because it's a many-to-many relation
+
+			// we create both persisters to simulate a reuse of the mapping configuration
+			vehicleMappingConfiguration.build(persistenceContext);
+			bicycleMappingConfiguration.build(persistenceContext);
+			personConfiguration.build(persistenceContext);
+
+			Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
+			assertThat(tables).extracting(Table::getName).containsExactlyInAnyOrder("Person", "Vehicle", "Person_bicycles", "Bicycle");
+			assertThat(tables.stream().flatMap(table -> table.getForeignKeys().stream()))
+					.extracting(ForeignKey::getName).containsExactlyInAnyOrder(
+							"FK_Person_bicycles_person_id_Person_id",
+							"FK_Person_bicycles_bicycles_id_Bicycle_id",
+							"FK_Vehicle_ownerId_Person_id");
+
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			assertThat(ddlDeployer.getCreationScripts()).containsExactly(
+					"create table Bicycle(color int, id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, unique (id))",
+					"create table Person(name varchar(255), id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, unique (id))",
+					"create table Person_bicycles(person_id int, bicycles_id int, unique (person_id, bicycles_id))",
+					"create table Vehicle(id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, ownerId int, unique (id))",
+					"alter table Person_bicycles add constraint FK_Person_bicycles_person_id_Person_id foreign key(person_id) references Person(id)",
+					"alter table Person_bicycles add constraint FK_Person_bicycles_bicycles_id_Bicycle_id foreign key(bicycles_id) references Bicycle(id)",
+					"alter table Vehicle add constraint FK_Vehicle_ownerId_Person_id foreign key(ownerId) references Person(id)"
+			);
+		}
 	}
 }

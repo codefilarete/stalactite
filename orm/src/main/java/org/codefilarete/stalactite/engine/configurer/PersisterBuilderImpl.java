@@ -126,6 +126,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	private Table table;
 	private final Map<EntityMappingConfiguration, Table> tableMap = new HashMap<>();
 	private final NamingConfiguration namingConfiguration;
+	private DefaultPersisterRegistry persisterRegistry;
 	
 	public PersisterBuilderImpl(EntityMappingConfigurationProvider<C, I> entityMappingConfigurationProvider) {
 		this(entityMappingConfigurationProvider.getConfiguration());
@@ -151,6 +152,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	
 	@Override
 	public ConfiguredRelationalPersister<C, I> build(PersistenceContext persistenceContext) {
+		persisterRegistry = new DefaultPersisterRegistry(persistenceContext.getPersisters());
 		ConfiguredRelationalPersister<C, I> builtPersister = build(
 				persistenceContext.getDialect(),
 				OptimizedUpdatePersister.wrapWithQueryCache(persistenceContext.getConnectionConfiguration()),
@@ -174,7 +176,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		boolean isInitiator = PersisterBuilderContext.CURRENT.get() == null;
 		
 		if (isInitiator) {
-			PersisterBuilderContext.CURRENT.set(new PersisterBuilderContext(new DefaultPersisterRegistry()));
+			PersisterBuilderContext.CURRENT.set(new PersisterBuilderContext(persisterRegistry));
 		}
 		
 		try {
@@ -234,10 +236,11 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		
 		applyExtraTableConfigurations(identification, mainPersister, dialect, connectionConfiguration);
 		
+		PersisterBuilderContext persisterBuilderContext = PersisterBuilderContext.CURRENT.get();
 		RelationConfigurer<C, I> relationConfigurer = new RelationConfigurer<>(dialect, connectionConfiguration, mainPersister,
-				namingConfiguration);
+				namingConfiguration, persisterBuilderContext);
 		
-		PersisterBuilderContext.CURRENT.get().runInContext(entityMappingConfiguration, () -> {
+		persisterBuilderContext.runInContext(entityMappingConfiguration, () -> {
 			// registering relations on parent entities
 			// WARN : this MUST BE DONE BEFORE POLYMORPHISM HANDLING because it needs them to create adhoc joins on sub entities tables 
 			inheritanceMappingPerTable.getMappings().stream()

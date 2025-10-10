@@ -585,11 +585,10 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.mapOneToOne(Person::getVehicle, entityBuilder(Vehicle.class, LONG_TYPE)
 							.mapSuperClass(abstractVehicleConfiguration))
 						.mappedBy(Vehicle::getOwner)
-					.mapOneToOne(Person::getBicycle, entityBuilder(Bicycle.class, LONG_TYPE)
+					.mapOneToOne(Person::getMainBicycle, entityBuilder(Bicycle.class, LONG_TYPE)
 							.mapSuperClass(abstractVehicleConfiguration)
 							.map(Bicycle::getColor))
-						.mappedBy(Bicycle::getOwner)
-					;
+					.mappedBy(Bicycle::getOwner);
 			
 			personConfiguration.build(persistenceContext);
 			
