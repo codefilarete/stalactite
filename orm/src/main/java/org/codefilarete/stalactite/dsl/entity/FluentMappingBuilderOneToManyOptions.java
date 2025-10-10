@@ -43,7 +43,7 @@ public interface FluentMappingBuilderOneToManyOptions<C, I, O, S extends Collect
 	/**
 	 *
 	 * @param reverseColumnName opposite owner of the relation
-	 * @return
+	 * @return the global mapping configurer
 	 */
 	@Override
 	FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(String reverseColumnName);

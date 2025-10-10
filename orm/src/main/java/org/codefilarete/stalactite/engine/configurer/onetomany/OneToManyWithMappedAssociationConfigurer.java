@@ -27,6 +27,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 
 import static org.codefilarete.tool.Nullable.nullable;
@@ -109,12 +110,21 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 				});
 				return result;
 			};
-		} else if (relation.getReverseColumn() != null) {
-			foreignKeyBuilder.addColumn((Column<RIGHTTABLE, Object>) relation.getReverseColumn());
-			mappedReverseColumns = Arrays.asHashSet((Column<RIGHTTABLE, Object>) relation.getReverseColumn());
+		} else if (relation.getReverseColumnName() != null || relation.getReverseColumn() != null) {
+			Column<RIGHTTABLE, ?> reverseColumn;
+			if (relation.getReverseColumnName() != null) {
+				reverseColumn = mainTargetTable.addColumn(
+						relation.getReverseColumnName(),
+						// with a reverse column name, we assume that the primary key is a single column key
+						Iterables.first(associationConfiguration.getSrcPersister().getMainTable().getPrimaryKey().getColumns()).getJavaType());
+			} else {
+				reverseColumn = (Column<RIGHTTABLE, ?>) relation.getReverseColumn();
+			}
+			foreignKeyBuilder.addColumn(reverseColumn);
+			mappedReverseColumns = Arrays.asHashSet(reverseColumn);
 			reverseColumnsValueProvider = srcid -> {
 				Map<Column<RIGHTTABLE, ?>, Object> result = new HashMap<>();
-				result.put((Column<RIGHTTABLE, ?>) relation.getReverseColumn(), srcid);
+				result.put(reverseColumn, srcid);
 				return result;
 			};
 		} else if (relation.getReverseGetter() != null) {

@@ -232,61 +232,275 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		}
 	}
 	
-	@Test
-	void mappedBy_set_crud() {
-		FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration = entityBuilder(City.class, LONG_TYPE)
-				.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.map(City::getName);
+	@Nested
+	class MappedBy {
 		
-		EntityPersister<Country, Identifier<Long>> persister = entityBuilder(Country.class, LONG_TYPE)
-				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.mapOneToMany(Country::getCities, cityConfiguration)
+		@Test
+		void crud() {
+			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration = entityBuilder(City.class, LONG_TYPE)
+					.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(City::getName);
+			
+			EntityPersister<Country, Identifier<Long>> persister = entityBuilder(Country.class, LONG_TYPE)
+					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapOneToMany(Country::getCities, cityConfiguration)
 					// we indicate that relation is owned by reverse side
 					.mappedBy(City::getCountry).cascading(ALL)
-				.build(persistenceContext);
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+
+			Country country = new Country(new PersistableIdentifier<>(1L));
+			City grenoble = new City(new PersistableIdentifier<>(13L));
+			grenoble.setName("Grenoble");
+			country.addCity(grenoble);
+			City lyon = new City(new PersistableIdentifier<>(17L));
+			lyon.setName("Lyon");
+			country.addCity(lyon);
+			persister.insert(country);
+
+			ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select countryId from city", Long.class)
+					.mapKey(i -> i, "countryId", Long.class);
+			Set<Long> cityCountryIds = longExecutableQuery2.execute(Accumulators.toSet());
+
+			assertThat(new HashSet<>(cityCountryIds)).isEqualTo(Arrays.asSet(country.getId().getDelegate()));
+
+			// testing select
+			Country loadedCountry = persister.select(country.getId());
+			assertThat(loadedCountry.getCities()).extracting(City::getName).containsExactlyInAnyOrder("Grenoble", "Lyon");
+			// ensuring that source is set on reverse side too
+			assertThat(Iterables.first(loadedCountry.getCities()).getCountry()).isEqualTo(loadedCountry);
+
+			// testing update : removal of a city, reversed column must be set to null
+			Country modifiedCountry = new Country(country.getId());
+			modifiedCountry.addCity(Iterables.first(country.getCities()));
+
+			persister.update(modifiedCountry, country, false);
+
+			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select countryId from city", Long.class)
+					.mapKey(i -> i, "countryId", Long.class);
+			cityCountryIds = longExecutableQuery1.execute(Accumulators.toSet());
+			assertThat(new HashSet<>(cityCountryIds)).isEqualTo(Arrays.asSet(country.getId().getDelegate(), null));
+			
+			// testing delete
+			persister.delete(modifiedCountry);
+			// referencing columns must be set to null (we didn't ask for delete orphan)
+			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select countryId from city", Long.class)
+					.mapKey(i -> i, "countryId", Long.class);
+			cityCountryIds = longExecutableQuery.execute(Accumulators.toSet());
+			assertThat(new HashSet<>(cityCountryIds)).isEqualTo(Arrays.asSet((Long) null));
+		}
 		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
+		@Test
+		void ordered_crud() {
+			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration = entityBuilder(City.class, LONG_TYPE)
+					.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(City::getName);
+			
+			EntityPersister<Country, Identifier<Long>> persister = entityBuilder(Country.class, LONG_TYPE)
+					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapOneToMany(Country::getCities, cityConfiguration)
+						// we indicate that relation is owned by reverse side
+						.mappedBy(City::getCountry)
+						.indexedBy("myIdx")
+						.initializeWith(LinkedHashSet::new)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Country country = new Country(new PersistableIdentifier<>(1L));
+			City grenoble = new City(new PersistableIdentifier<>(13L));
+			grenoble.setName("Grenoble");
+			City lyon = new City(new PersistableIdentifier<>(17L));
+			lyon.setName("Lyon");
+			City paris = new City(new PersistableIdentifier<>(23L));
+			paris.setName("Paris");
+			country.addCity(paris);
+			country.addCity(grenoble);
+			country.addCity(lyon);
+			
+			persister.insert(country);
+			
+			ExecutableQuery<Duo<String, Integer>> duoExecutableQuery1 = persistenceContext.newQuery("select name, myIdx from city", (Class<Duo<String, Integer>>) (Class) Duo.class)
+					.mapKey(FluentEntityMappingConfigurationSupportOneToManySetTest::pair, "name", "myIdx");
+			Set<Duo<String, Integer>> cityCountryIds = duoExecutableQuery1.execute(Accumulators.toSet());
+			
+			assertThat(cityCountryIds).containsExactlyInAnyOrder(new Duo<>("Paris", 1), new Duo<>("Grenoble", 2), new Duo<>("Lyon", 3));
+			
+			// testing select
+			Country loadedCountry = persister.select(country.getId());
+			assertThat(loadedCountry.getCities()).extracting(City::getName).containsExactly("Paris", "Grenoble", "Lyon");
+			// ensuring that source is set on reverse side too
+			assertThat(Iterables.first(loadedCountry.getCities()).getCountry()).isEqualTo(loadedCountry);
+			
+			// testing update : removal of a city, reversed column must be set to null
+			Country modifiedCountry = loadedCountry;
+			modifiedCountry.getCities().removeIf(city -> city.getName().equals("Grenoble"));
+			
+			persister.update(modifiedCountry, country, false);
+			
+			ExecutableQuery<Duo<String, Integer>> duoExecutableQuery = persistenceContext.newQuery("select name, myIdx from city", (Class<Duo<String, Integer>>) (Class) Duo.class)
+					.mapKey(FluentEntityMappingConfigurationSupportOneToManySetTest::pair, "name", "myIdx");
+			cityCountryIds = duoExecutableQuery.execute(Accumulators.toSet());
+			
+			assertThat(cityCountryIds).containsExactlyInAnyOrder(new Duo<>("Paris", 1), new Duo<>("Lyon", 2), new Duo<>("Grenoble", null));
+		}
 		
-		Country country = new Country(new PersistableIdentifier<>(1L));
-		City grenoble = new City(new PersistableIdentifier<>(13L));
-		grenoble.setName("Grenoble");
-		country.addCity(grenoble);
-		City lyon = new City(new PersistableIdentifier<>(17L));
-		lyon.setName("Lyon");
-		country.addCity(lyon);
-		persister.insert(country);
+		@Test
+		void noCascade_defaultCascadeIsAll() throws SQLException {
+			// mapping building thanks to fluent API
+			EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Country::getName)
+					.map(Country::getDescription)
+					// no cascade
+					.mapOneToMany(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Country dummyCountry = new Country(new PersistableIdentifier<>(42L));
+			dummyCountry.setName("France");
+			dummyCountry.setDescription("Smelly cheese !");
+			City city = new City(new LongProvider().giveNewIdentifier());
+			city.setName("Paris");
+			dummyCountry.addCity(city);
+			countryPersister.insert(dummyCountry);
+			
+			// Checking that country is persisted and its city because we didn't set relation mode and default is ALL
+			// NB: we don't check with countryPersister.select(..) because select(..) depends on outer join which we don't want to be bothered by 
+			ResultSet resultSet;
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 42");
+			assertThat(resultSet.next()).isTrue();
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from City");
+			assertThat(resultSet.next()).isTrue();
+			
+			// preparing next tests by relating a city to the existing country
+			persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into City(id, name, countryId) values (1, 'Paris', 42)").execute();
+			
+			// select entity and relations
+			Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
+			assertThat(loadedCountry.getName()).isEqualTo("France");
+			assertThat(Iterables.first(loadedCountry.getCities()).getName()).isEqualTo("Paris");
+			
+			loadedCountry.setName("touched France");
+			Iterables.first(loadedCountry.getCities()).setName("touched Paris");
+			countryPersister.update(loadedCountry, dummyCountry, false);
+			
+			// city is left untouched because association is ALL (not ALL_ORPHAN_REMOVAL)
+			assertThat(persistenceContext.newQuery("select name from City where id = 1", String.class)
+					.mapKey("name", String.class)
+					.execute(Accumulators.getFirst()))
+					.isEqualTo("Paris");
+			
+			assertThat(persistenceContext.newQuery("select name from Country where id = 42", String.class)
+					.mapKey("name", String.class)
+					.execute(Accumulators.getFirst()))
+					.isEqualTo("touched France");
+			
+			// testing delete
+			countryPersister.delete(loadedCountry);
+			
+			ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select name from Country where id = 42", String.class)
+					.mapKey("name", String.class);
+			assertThat(stringExecutableQuery.execute(Accumulators.toSet())).isEmpty();
+			
+			// city is left untouched because association is ALL (not ALL_ORPHAN_REMOVAL)
+			assertThat(persistenceContext.newQuery("select name from City where id = 1", String.class)
+					.mapKey("name", String.class)
+					.execute(Accumulators.getFirst()))
+					.isEqualTo("Paris");
+		}
 		
-		ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select countryId from city", Long.class)
-				.mapKey(i -> i, "countryId", Long.class);
-		Set<Long> cityCountryIds = longExecutableQuery2.execute(Accumulators.toSet());
+		@Test
+		void reverseEntitiesAreLoaded() throws SQLException {
+			// mapping building thanks to fluent API
+			EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Country::getName)
+					// no cascade
+					.mapOneToMany(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// preparing data
+			persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into Country(id, name) values (42, 'France')").execute();
+			persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into City(id, name, countryId) values (1, 'Paris', 42)").execute();
+			persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into City(id, name, countryId) values (2, 'Lyon', 42)").execute();
+			
+			Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
+			assertThat(loadedCountry.getCities()).extracting(City::getName).containsExactlyInAnyOrder("Paris", "Lyon");
+		}
 		
-		assertThat(new HashSet<>(cityCountryIds)).isEqualTo(Arrays.asSet(country.getId().getDelegate()));
+		@Test
+		void initializeWith() throws SQLException {
+			// mapping building thanks to fluent API
+			EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Country::getName)
+					.mapOneToMany(Country::getCities, CITY_MAPPING_CONFIGURATION)
+					.mappedBy(City::setCountry)
+					// applying a Set that will sort cities by their name
+					.initializeWith(() -> new TreeSet<>(Comparator.comparing(City::getName)))
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// preparing data
+			persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into Country(id, name) values (42, 'France')").execute();
+			persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into City(id, name, countryId) values (1, 'Paris', 42)").execute();
+			persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into City(id, name, countryId) values (2, 'Lyon', 42)").execute();
+			
+			Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
+			assertThat(loadedCountry.getCities().getClass()).isEqualTo(TreeSet.class);
+			assertThat(loadedCountry.getCities()).extracting(City::getName).containsExactly("Lyon", "Paris");
+		}
 		
-		// testing select
-		Country loadedCountry = persister.select(country.getId());
-		assertThat(loadedCountry.getCities()).extracting(City::getName).containsExactlyInAnyOrder("Grenoble", "Lyon");
-		// ensuring that source is set on reverse side too
-		assertThat(Iterables.first(loadedCountry.getCities()).getCountry()).isEqualTo(loadedCountry);
-		
-		// testing update : removal of a city, reversed column must be set to null
-		Country modifiedCountry = new Country(country.getId());
-		modifiedCountry.addCity(Iterables.first(country.getCities()));
-		
-		persister.update(modifiedCountry, country, false);
-		
-		ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select countryId from city", Long.class)
-				.mapKey(i -> i, "countryId", Long.class);
-		cityCountryIds = longExecutableQuery1.execute(Accumulators.toSet());
-		assertThat(new HashSet<>(cityCountryIds)).isEqualTo(Arrays.asSet(country.getId().getDelegate(), null));
-		
-		// testing delete
-		persister.delete(modifiedCountry);
-		// referencing columns must be set to null (we didn't ask for delete orphan)
-		ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select countryId from city", Long.class)
-				.mapKey(i -> i, "countryId", Long.class);
-		cityCountryIds = longExecutableQuery.execute(Accumulators.toSet());
-		assertThat(new HashSet<>(cityCountryIds)).isEqualTo(Arrays.asSet((Long) null));
+		@Test
+		void relationIsDefinedByColumnNameOnTargetSideAndReverseAccessorIsUsed_columnOverrideIsUsed() throws SQLException {
+			FluentEntityMappingBuilder<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+					.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(City::getName);
+			
+			FluentEntityMappingBuilder<Town, Identifier<Long>> townMappingBuilder = MappingEase.entityBuilder(Town.class, Identifier.LONG_TYPE)
+					.mapSuperClass(cityMappingBuilder)
+					.map(Town::getDiscotecCount);
+			
+			ConfiguredPersister<Country, Identifier<Long>> countryPersister =
+					(ConfiguredPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+							// setting a foreign key naming strategy to be tested
+							.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
+							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.map(Country::getDescription)
+							.mapOneToMany(Country::getTowns, townMappingBuilder).mappedBy(Town::getCountry).mappedBy("state")
+							.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
+			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
+					countryPersister.getMapping().getTargetTable().getName().toUpperCase())) {
+				@Override
+				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+					return new JdbcForeignKey(
+							rs.getString("FK_NAME"),
+							rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+							rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+					);
+				}
+			};
+			JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
+			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_TOWN_STATE_COUNTRY_ID", "TOWN", "STATE", "COUNTRY", "ID");
+			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
+		}
 	}
 	
 	
@@ -376,63 +590,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		return new Duo<>(name, idx);
 	}
 	
-	@Test
-	void mappedBy_set_ordered_crud() {
-		FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration = entityBuilder(City.class, LONG_TYPE)
-				.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.map(City::getName);
-		
-		EntityPersister<Country, Identifier<Long>> persister = entityBuilder(Country.class, LONG_TYPE)
-				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.mapOneToMany(Country::getCities, cityConfiguration)
-					// we indicate that relation is owned by reverse side
-					.mappedBy(City::getCountry)
-					.indexedBy("myIdx")
-					.initializeWith(LinkedHashSet::new)
-					.cascading(ALL)
-				.build(persistenceContext);
-		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		Country country = new Country(new PersistableIdentifier<>(1L));
-		City grenoble = new City(new PersistableIdentifier<>(13L));
-		grenoble.setName("Grenoble");
-		City lyon = new City(new PersistableIdentifier<>(17L));
-		lyon.setName("Lyon");
-		City paris = new City(new PersistableIdentifier<>(23L));
-		paris.setName("Paris");
-		country.addCity(paris);
-		country.addCity(grenoble);
-		country.addCity(lyon);
-		
-		persister.insert(country);
-		
-		ExecutableQuery<Duo<String, Integer>> duoExecutableQuery1 = persistenceContext.newQuery("select name, myIdx from city", (Class<Duo<String, Integer>>) (Class) Duo.class)
-				.mapKey(FluentEntityMappingConfigurationSupportOneToManySetTest::pair, "name", "myIdx");
-		Set<Duo<String, Integer>> cityCountryIds = duoExecutableQuery1.execute(Accumulators.toSet());
-		
-		assertThat(cityCountryIds).containsExactlyInAnyOrder(new Duo<>("Paris", 1), new Duo<>("Grenoble", 2), new Duo<>("Lyon", 3));
-		
-		// testing select
-		Country loadedCountry = persister.select(country.getId());
-		assertThat(loadedCountry.getCities()).extracting(City::getName).containsExactly("Paris", "Grenoble", "Lyon");
-		// ensuring that source is set on reverse side too
-		assertThat(Iterables.first(loadedCountry.getCities()).getCountry()).isEqualTo(loadedCountry);
-		
-		// testing update : removal of a city, reversed column must be set to null
-		Country modifiedCountry = loadedCountry;
-		modifiedCountry.getCities().removeIf(city -> city.getName().equals("Grenoble"));
-
-		persister.update(modifiedCountry, country, false);
-		
-		ExecutableQuery<Duo<String, Integer>> duoExecutableQuery = persistenceContext.newQuery("select name, myIdx from city", (Class<Duo<String, Integer>>) (Class) Duo.class)
-				.mapKey(FluentEntityMappingConfigurationSupportOneToManySetTest::pair, "name", "myIdx");
-		cityCountryIds = duoExecutableQuery.execute(Accumulators.toSet());
-		
-		assertThat(cityCountryIds).containsExactlyInAnyOrder(new Duo<>("Paris", 1), new Duo<>("Lyon", 2), new Duo<>("Grenoble", null));
-
-	}
+	
 	
 	@Test
 	void associationTable_set_crud() {
@@ -493,120 +651,6 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 				.mapKey(i -> i, "id", Long.class);
 		Set<Long> cityIds = longExecutableQuery.execute(Accumulators.toSet());
 		assertThat(cityIds).containsExactlyInAnyOrder(grenoble.getId().getDelegate(), lyon.getId().getDelegate());
-	}
-	
-	@Test
-	void mappedBy_noCascade_defaultCascadeIsAll() throws SQLException {
-		// mapping building thanks to fluent API
-		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
-				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.map(Country::getName)
-				.map(Country::getDescription)
-				// no cascade
-				.mapOneToMany(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry)
-				.build(persistenceContext);
-		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		Country dummyCountry = new Country(new PersistableIdentifier<>(42L));
-		dummyCountry.setName("France");
-		dummyCountry.setDescription("Smelly cheese !");
-		City city = new City(new LongProvider().giveNewIdentifier());
-		city.setName("Paris");
-		dummyCountry.addCity(city);
-		countryPersister.insert(dummyCountry);
-		
-		// Checking that country is persisted and its city because we didn't set relation mode and default is ALL
-		// NB: we don't check with countryPersister.select(..) because select(..) depends on outer join which we don't want to be bothered by 
-		ResultSet resultSet;
-		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 42");
-		assertThat(resultSet.next()).isTrue();
-		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from City");
-		assertThat(resultSet.next()).isTrue();
-		
-		// preparing next tests by relating a city to the existing country
-		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into City(id, name, countryId) values (1, 'Paris', 42)").execute();
-		
-		// select entity and relations
-		Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
-		assertThat(loadedCountry.getName()).isEqualTo("France");
-		assertThat(Iterables.first(loadedCountry.getCities()).getName()).isEqualTo("Paris");
-		
-		loadedCountry.setName("touched France");
-		Iterables.first(loadedCountry.getCities()).setName("touched Paris");
-		countryPersister.update(loadedCountry, dummyCountry, false);
-		
-		// city is left untouched because association is ALL (not ALL_ORPHAN_REMOVAL)
-		assertThat(persistenceContext.newQuery("select name from City where id = 1", String.class)
-				.mapKey("name", String.class)
-				.execute(Accumulators.getFirst()))
-				.isEqualTo("Paris");
-		
-		assertThat(persistenceContext.newQuery("select name from Country where id = 42", String.class)
-				.mapKey("name", String.class)
-				.execute(Accumulators.getFirst()))
-				.isEqualTo("touched France");
-		
-		// testing delete
-		countryPersister.delete(loadedCountry);
-		
-		ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select name from Country where id = 42", String.class)
-				.mapKey("name", String.class);
-		assertThat(stringExecutableQuery.execute(Accumulators.toSet())).isEmpty();
-		
-		// city is left untouched because association is ALL (not ALL_ORPHAN_REMOVAL)
-		assertThat(persistenceContext.newQuery("select name from City where id = 1", String.class)
-				.mapKey("name", String.class)
-				.execute(Accumulators.getFirst()))
-				.isEqualTo("Paris");
-	}
-	
-	@Test
-	void mappedBy_entitiesAreLoaded() throws SQLException {
-		// mapping building thanks to fluent API
-		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
-				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.map(Country::getName)
-				// no cascade
-				.mapOneToMany(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry)
-				.build(persistenceContext);
-		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		// preparing data
-		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into Country(id, name) values (42, 'France')").execute();
-		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into City(id, name, countryId) values (1, 'Paris', 42)").execute();
-		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into City(id, name, countryId) values (2, 'Lyon', 42)").execute();
-		
-		Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
-		assertThat(loadedCountry.getCities()).extracting(City::getName).containsExactlyInAnyOrder("Paris", "Lyon");
-	}
-	
-	@Test
-	void mappedBy_collectionFactory() throws SQLException {
-		// mapping building thanks to fluent API
-		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
-				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.map(Country::getName)
-				.mapOneToMany(Country::getCities, CITY_MAPPING_CONFIGURATION)
-					.mappedBy(City::setCountry)
-					// applying a Set that will sort cities by their name
-					.initializeWith(() -> new TreeSet<>(Comparator.comparing(City::getName)))
-				.build(persistenceContext);
-		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		// preparing data
-		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into Country(id, name) values (42, 'France')").execute();
-		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into City(id, name, countryId) values (1, 'Paris', 42)").execute();
-		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into City(id, name, countryId) values (2, 'Lyon', 42)").execute();
-		
-		Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
-		assertThat(loadedCountry.getCities().getClass()).isEqualTo(TreeSet.class);
-		assertThat(loadedCountry.getCities()).extracting(City::getName).containsExactly("Lyon", "Paris");
 	}
 	
 	static Object[][] mappedBy_differentWays_data() {
