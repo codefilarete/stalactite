@@ -43,11 +43,12 @@ public class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends Abst
 	private final PrimaryKey<T, I> mainTablePrimaryKey;
 	
 	public JoinTablePolymorphismBuilder(JoinTablePolymorphism<C> polymorphismPolicy,
-								 AbstractIdentification<C, I> identification,
-								 ConfiguredRelationalPersister<C, I> mainPersister,
-								 ColumnBinderRegistry columnBinderRegistry,
-								 NamingConfiguration namingConfiguration) {
-		super(polymorphismPolicy, identification, mainPersister, columnBinderRegistry, namingConfiguration);
+										AbstractIdentification<C, I> identification,
+										ConfiguredRelationalPersister<C, I> mainPersister,
+										ColumnBinderRegistry columnBinderRegistry,
+										NamingConfiguration namingConfiguration,
+										PersisterBuilderContext persisterBuilderContext) {
+		super(polymorphismPolicy, identification, mainPersister, columnBinderRegistry, namingConfiguration, persisterBuilderContext);
 		this.joinTablePolymorphism = polymorphismPolicy;
 		this.mainTablePrimaryKey = (PrimaryKey<T, I>) this.mainPersister.getMapping().getTargetTable().getPrimaryKey();
 	}
@@ -95,7 +96,7 @@ public class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends Abst
 		BeanMapping<D, SUBT> beanMapping = beanMappingBuilder.build();
 		Map<ReversibleAccessor<D, Object>, Column<SUBT, Object>> subEntityPropertiesMapping = beanMapping.getMapping();
 		Map<ReversibleAccessor<D, Object>, Column<SUBT, Object>> subEntityReadonlyPropertiesMapping = beanMapping.getReadonlyMapping();
-		ValueAccessPointMap<D,Converter<Object, Object>> subEntityPropertiesConverters = beanMapping.getReadConverters();
+		ValueAccessPointMap<D, Converter<Object, Object>> subEntityPropertiesConverters = beanMapping.getReadConverters();
 		ValueAccessPointMap<D, Converter<Object, Object>> subEntityPropertiesWriteConverters = beanMapping.getWriteConverters();
 		addPrimarykey(subTable);
 		addForeignKey(subTable);

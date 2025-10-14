@@ -9,9 +9,9 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
-import org.codefilarete.stalactite.dsl.idpolicy.GeneratedKeysPolicy;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy.TablePerClassPolymorphism;
+import org.codefilarete.stalactite.dsl.idpolicy.GeneratedKeysPolicy;
 import org.codefilarete.stalactite.dsl.subentity.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.SingleColumnIdentification;
@@ -77,8 +77,9 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 									 ValueAccessPointMap<C, ? extends Converter<Object, Object>> mainReadConverters,
 									 ValueAccessPointMap<C, ? extends Converter<Object, Object>> mainWriteConverters,
 									 ColumnBinderRegistry columnBinderRegistry,
-									 NamingConfiguration namingConfiguration) {
-		super(polymorphismPolicy, identification, mainPersister, columnBinderRegistry, namingConfiguration);
+									 NamingConfiguration namingConfiguration,
+									 PersisterBuilderContext persisterBuilderContext) {
+		super(polymorphismPolicy, identification, mainPersister, columnBinderRegistry, namingConfiguration, persisterBuilderContext);
 		this.mainMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainMapping;
 		this.mainReadonlyMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainReadonlyMapping;
 		this.mainReadConverters = (ValueAccessPointMap<C, Converter<Object, Object>>) mainReadConverters;

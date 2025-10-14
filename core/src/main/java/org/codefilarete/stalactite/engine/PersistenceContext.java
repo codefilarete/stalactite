@@ -213,19 +213,12 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		}
 	}
 	
-	/**
-	 * Register a persister into this context. Then, it can be retrieved with {@link #findPersister(Class)}.
-	 * It's expected to give it an aggregate root persister, not intermediary persisters, to keep a clean and sane behavior of cascades,
-	 * bi-directionality, polymorphism, etc.
-	 * 
-	 * @param persister the persister to be registered
-	 */
-	public void addPersister(EntityPersister<?, ?> persister) {
-		persisterRegistry.addPersister(persister);
-	}
-	
 	public Set<EntityPersister> getPersisters() {
 		return persisterRegistry.getPersisters();
+	}
+	
+	public PersisterRegistry getPersisterRegistry() {
+		return persisterRegistry;
 	}
 	
 	public ConnectionConfiguration getConnectionConfiguration() {

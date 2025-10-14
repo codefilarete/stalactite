@@ -41,7 +41,7 @@ public abstract class AbstractIdentification<C, I> {
 	 * @param <I> identifier type
 	 * @return a single-key identification
 	 */
-	static <C, I> SingleColumnIdentification<C, I> forSingleKey(EntityMappingConfiguration<C, I> identificationDefiner) {
+	public static <C, I> SingleColumnIdentification<C, I> forSingleKey(EntityMappingConfiguration<C, I> identificationDefiner) {
 		return new SingleColumnIdentification<>(identificationDefiner, ((EntityMappingConfiguration.SingleKeyMapping<C, I>) identificationDefiner.getKeyMapping()).getIdentifierPolicy());
 	}
 	
@@ -54,7 +54,7 @@ public abstract class AbstractIdentification<C, I> {
 	 * @param <I> identifier type
 	 * @return a composite-key identification
 	 */
-	static <C, I> CompositeKeyIdentification<C, I> forCompositeKey(EntityMappingConfiguration<C, I> identificationDefiner, CompositeKeyMapping<C, I> foundKeyMapping) {
+	public static <C, I> CompositeKeyIdentification<C, I> forCompositeKey(EntityMappingConfiguration<C, I> identificationDefiner, CompositeKeyMapping<C, I> foundKeyMapping) {
 		return new CompositeKeyIdentification<>(identificationDefiner, foundKeyMapping.getMarkAsPersistedFunction(), foundKeyMapping.getIsPersistedFunction());
 	}
 	

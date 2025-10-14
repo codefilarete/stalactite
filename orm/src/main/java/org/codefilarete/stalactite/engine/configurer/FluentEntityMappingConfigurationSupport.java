@@ -1611,7 +1611,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	/**
 	 * Storage for composite key mapping definition. See {@link FluentEntityMappingBuilder#mapCompositeKey(SerializableFunction, CompositeKeyMappingConfigurationProvider, Consumer, Function)} methods.
 	 */
-	protected static class CompositeKeyLinkageSupport<C, I> implements KeyMapping<C, I>, CompositeKeyMapping<C, I> {
+	public static class CompositeKeyLinkageSupport<C, I> implements KeyMapping<C, I>, CompositeKeyMapping<C, I> {
 		
 		private final ReversibleAccessor<C, I> accessor;
 		private final CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder;

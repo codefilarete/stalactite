@@ -28,17 +28,20 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 	protected final ColumnBinderRegistry columnBinderRegistry;
 	
 	protected final NamingConfiguration namingConfiguration;
+	protected final PersisterBuilderContext persisterBuilderContext;
 	
 	protected AbstractPolymorphicPersisterBuilder(PolymorphismPolicy<C> polymorphismPolicy,
 												  AbstractIdentification<C, I> identification,
 												  ConfiguredRelationalPersister<C, I> mainPersister,
 												  ColumnBinderRegistry columnBinderRegistry,
-												  NamingConfiguration namingConfiguration) {
+												  NamingConfiguration namingConfiguration,
+												  PersisterBuilderContext persisterBuilderContext) {
 		this.polymorphismPolicy = polymorphismPolicy;
 		this.identification = identification;
 		this.mainPersister = mainPersister;
 		this.columnBinderRegistry = columnBinderRegistry;
 		this.namingConfiguration = namingConfiguration;
+		this.persisterBuilderContext = persisterBuilderContext;
 	}
 	
 	/**
@@ -57,7 +60,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 		// we surround our relation configuration with cycle detection (see registerRelationCascades(..) implementation), this may seem too wide and
 		// could be closer to registerRelationCascades(..) method call (which actually requires it) but as doing such we also cover the case of 2
 		// subconfigurations using same entity in their relation 
-		PersisterBuilderContext.CURRENT.get().runInContext(mainPersister, () -> {
+		persisterBuilderContext.runInContext(mainPersister, () -> {
 			for (SubEntityMappingConfiguration<D> subConfiguration : (Set<SubEntityMappingConfiguration<D>>) (Set) this.polymorphismPolicy.getSubClasses()) {
 				ConfiguredRelationalPersister<D, I> subEntityPersister = persisterPerSubclass.get(subConfiguration.getEntityType());
 				
@@ -101,7 +104,8 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 				(Map) subPersister.getMapping().getReadonlyPropertyToColumn(),
 				subPersister.getMapping().getReadConverters(),
 				subPersister.getMapping().getWriteConverters(),
-				namingConfiguration);
+				namingConfiguration,
+				persisterBuilderContext);
 		return polymorphismPersisterBuilder.build(dialect, connectionConfiguration);
 	}
 	
@@ -114,7 +118,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 				connectionConfiguration,
 				subEntityPersister,
 				namingConfiguration,
-				PersisterBuilderContext.CURRENT.get());
+				persisterBuilderContext);
 		relationConfigurer.configureRelations(entityMappingConfiguration);
 	}
 }

@@ -43,6 +43,7 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 	private final ValueAccessPointMap<C, Converter<Object, Object>> mainReadConverters;
 	private final ValueAccessPointMap<C, Converter<Object, Object>> mainWriteConverters;
 	private final NamingConfiguration namingConfiguration;
+	private final PersisterBuilderContext persisterBuilderContext;
 	
 	public PolymorphismPersisterBuilder(PolymorphismPolicy<C> polymorphismPolicy,
 										AbstractIdentification<C, I> identification,
@@ -52,7 +53,8 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 										Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> mainReadonlyMapping,
 										ValueAccessPointMap<C, ? extends Converter<Object, Object>> mainReadConverters,
 										ValueAccessPointMap<C, ? extends Converter<Object, Object>> mainWriteConverters,
-										NamingConfiguration namingConfiguration) {
+										NamingConfiguration namingConfiguration,
+										PersisterBuilderContext persisterBuilderContext) {
 		this.polymorphismPolicy = polymorphismPolicy;
 		this.identification = identification;
 		this.mainPersister = mainPersister;
@@ -62,6 +64,7 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 		this.mainReadConverters = (ValueAccessPointMap<C, Converter<Object, Object>>) mainReadConverters;
 		this.mainWriteConverters = (ValueAccessPointMap<C, Converter<Object, Object>>) mainWriteConverters;
 		this.namingConfiguration = namingConfiguration;
+		this.persisterBuilderContext = persisterBuilderContext;
 	}
 	
 	@Override
@@ -72,16 +75,20 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 					this.identification, this.mainPersister,
 					this.mainMapping, this.mainReadonlyMapping,
 					this.mainReadConverters, this.mainWriteConverters,
-					this.columnBinderRegistry, this.namingConfiguration);
+					this.columnBinderRegistry, this.namingConfiguration,
+					this.persisterBuilderContext);
 		} else if (polymorphismPolicy instanceof PolymorphismPolicy.TablePerClassPolymorphism) {
 			polymorphismBuilder = new TablePerClassPolymorphismBuilder<>((TablePerClassPolymorphism<C>) polymorphismPolicy,
 					this.identification, this.mainPersister,
 					this.mainMapping, this.mainReadonlyMapping,
 					this.mainReadConverters, this.mainWriteConverters,
-					this.columnBinderRegistry, this.namingConfiguration);
+					this.columnBinderRegistry, this.namingConfiguration,
+					this.persisterBuilderContext);
 		} else if (polymorphismPolicy instanceof PolymorphismPolicy.JoinTablePolymorphism) {
 			polymorphismBuilder = new JoinTablePolymorphismBuilder<>((JoinTablePolymorphism<C>) polymorphismPolicy,
-					this.identification, this.mainPersister, this.columnBinderRegistry, this.namingConfiguration);
+					this.identification, this.mainPersister,
+					this.columnBinderRegistry, this.namingConfiguration,
+					this.persisterBuilderContext);
 		} else {
 			// this exception is more to satisfy Sonar than for real case
 			throw new NotImplementedException("Given policy is not implemented : " + polymorphismPolicy);

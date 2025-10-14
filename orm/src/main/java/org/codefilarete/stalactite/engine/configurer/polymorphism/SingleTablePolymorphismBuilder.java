@@ -48,9 +48,9 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 								   ValueAccessPointMap<C, ? extends Converter<Object, Object>> mainReadConverters,
 								   ValueAccessPointMap<C, ? extends Converter<Object, Object>> mainWriteConverters,
 								   ColumnBinderRegistry columnBinderRegistry,
-								   NamingConfiguration namingConfiguration
-	) {
-		super(polymorphismPolicy, identification, mainPersister, columnBinderRegistry, namingConfiguration);
+								   NamingConfiguration namingConfiguration,
+								   PersisterBuilderContext persisterBuilderContext) {
+		super(polymorphismPolicy, identification, mainPersister, columnBinderRegistry, namingConfiguration, persisterBuilderContext);
 		this.mainMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainMapping;
 		this.mainReadonlyMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainReadonlyMapping;
 		this.mainReadConverters = (ValueAccessPointMap<C, Converter<Object, Object>>) mainReadConverters;
