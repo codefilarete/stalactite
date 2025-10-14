@@ -29,8 +29,9 @@ public class OrphanRemovalOnUpdate<SRC, TRGT> implements UpdateListener<SRC> {
 			// nullified relations and changed ones must be removed (orphan removal)
 			// TODO: one day we'll have to cover case of reused instance in same graph : one of the relation must handle it, not both,
 			//  "else a marked instance" system must be implemented
-			if (newTarget == null || (oldTarget != null && !targetIdAccessor.get(newTarget).equals(targetIdAccessor.get(oldTarget)))) {
-				targetsToDeleteUpdate.add(oldTarget);
+			if (oldTarget != null &&
+				(newTarget == null || !targetIdAccessor.get(newTarget).equals(targetIdAccessor.get(oldTarget)))) {
+					targetsToDeleteUpdate.add(oldTarget);
 			}
 		});
 		targetPersister.delete(targetsToDeleteUpdate);

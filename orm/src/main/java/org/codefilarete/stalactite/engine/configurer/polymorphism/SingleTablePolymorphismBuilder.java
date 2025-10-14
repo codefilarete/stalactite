@@ -11,10 +11,11 @@ import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.dsl.subentity.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
-import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder;
-import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMapping;
+import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder;
+import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.BeanMapping;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
+import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
+import org.codefilarete.stalactite.engine.configurer.builder.MainPersisterStep;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
@@ -118,7 +119,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 		subEntityReadonlyPropertiesMapping.putAll((Map) mainReadonlyMapping);
 		subEntityPropertiesReadConverters.putAll((Map) mainReadConverters);
 		subEntityPropertiesWriteConverters.putAll((Map) mainWriteConverters);
-		DefaultEntityMapping<D, I, T> entityMapping = PersisterBuilderImpl.createEntityMapping(
+		DefaultEntityMapping<D, I, T> entityMapping = MainPersisterStep.createEntityMapping(
 				true,    // given Identification (which is parent one) contains identifier policy
 				mainTable,
 				subEntityPropertiesMapping,

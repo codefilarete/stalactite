@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.configurer;
+package org.codefilarete.stalactite.engine.configurer.builder;
 
 import java.util.Map;
 import java.util.Set;
@@ -11,7 +11,10 @@ import org.codefilarete.stalactite.engine.cascade.AfterUpdateByIdSupport;
 import org.codefilarete.stalactite.engine.cascade.AfterUpdateSupport;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteByIdSupport;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteSupport;
-import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMapping;
+import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
+import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.BeanMapping;
+import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
+import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
@@ -31,7 +34,7 @@ import org.codefilarete.tool.collection.KeepOrderSet;
  * 
  * @author Guillaume Mary
  */
-class ExtraTableConfigurer<C, I, T extends Table<T>> {
+public class ExtraTableConfigurer<C, I, T extends Table<T>> {
 	
 	private final PrimaryKey<T, I> mainTablePrimaryKey;
 	private final ConfiguredRelationalPersister<C, I> mainPersister;
@@ -41,11 +44,11 @@ class ExtraTableConfigurer<C, I, T extends Table<T>> {
 	
 	private final NamingConfiguration namingConfiguration;
 	
-	ExtraTableConfigurer(AbstractIdentification<C, I> identification,
-						 ConfiguredRelationalPersister<C, I> mainPersister,
-						 Map<String, Set<Linkage>> extraTableLinkages,
-						 ColumnBinderRegistry columnBinderRegistry,
-						 NamingConfiguration namingConfiguration) {
+	public ExtraTableConfigurer(AbstractIdentification<C, I> identification,
+								ConfiguredRelationalPersister<C, I> mainPersister,
+								Map<String, Set<Linkage>> extraTableLinkages,
+								ColumnBinderRegistry columnBinderRegistry,
+								NamingConfiguration namingConfiguration) {
 		this.identification = identification;
 		this.mainPersister = mainPersister;
 		this.extraTableLinkages = extraTableLinkages;
@@ -81,14 +84,14 @@ class ExtraTableConfigurer<C, I, T extends Table<T>> {
 		addForeignKey(extraTable);
 		
 		FluentEmbeddableMappingConfigurationSupport<C> fluentEmbeddableMappingConfigurationSupport = new FluentEmbeddableMappingConfigurationSupport<>(mainPersister.getClassToPersist());
-		fluentEmbeddableMappingConfigurationSupport.mapping.addAll(linkages);
+		fluentEmbeddableMappingConfigurationSupport.getPropertiesMapping().addAll(linkages);
 		BeanMappingBuilder<C, EXTRATABLE> beanMappingBuilder = new BeanMappingBuilder<>(fluentEmbeddableMappingConfigurationSupport, extraTable, columnBinderRegistry, namingConfiguration.getColumnNamingStrategy());
 		BeanMapping<C, EXTRATABLE> build = beanMappingBuilder.build(true);
 		
 		// we create the DefaultEntityDefaultEntityMapping from the complex method, not from one of its constructor, because it would
 		// require the IdMapping which can be taken from mainPersister but which is wrong since PK column is not the
 		// right one and create exception at runtime (update case for example)
-		DefaultEntityMapping<C, I, EXTRATABLE> extratableEntityMapping = PersisterBuilderImpl.createEntityMapping(
+		DefaultEntityMapping<C, I, EXTRATABLE> extratableEntityMapping = MainPersisterStep.createEntityMapping(
 				false,
 				extraTable,
 				build.getMapping(),
@@ -110,11 +113,11 @@ class ExtraTableConfigurer<C, I, T extends Table<T>> {
 	}
 	
 	private void addPrimaryKey(Table table) {
-		PersisterBuilderImpl.propagatePrimaryKey(this.mainTablePrimaryKey, Arrays.asSet(table));
+		PrimaryKeyPropagationStep.propagatePrimaryKey(this.mainTablePrimaryKey, Arrays.asSet(table));
 	}
 	
 	private void addForeignKey(Table table) {
-		PersisterBuilderImpl.applyForeignKeys(this.mainTablePrimaryKey, this.namingConfiguration.getForeignKeyNamingStrategy(), Arrays.asSet(table));
+		PrimaryKeyPropagationStep.applyForeignKeys(this.mainTablePrimaryKey, this.namingConfiguration.getForeignKeyNamingStrategy(), Arrays.asSet(table));
 	}
 	
 }

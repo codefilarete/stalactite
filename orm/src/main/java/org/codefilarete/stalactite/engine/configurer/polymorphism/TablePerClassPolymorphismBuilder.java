@@ -15,11 +15,14 @@ import org.codefilarete.stalactite.dsl.idpolicy.GeneratedKeysPolicy;
 import org.codefilarete.stalactite.dsl.subentity.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.SingleColumnIdentification;
-import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder;
-import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMapping;
+import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder;
+import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.BeanMapping;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
+import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
+import org.codefilarete.stalactite.engine.configurer.builder.IdentifierManagerStep;
+import org.codefilarete.stalactite.engine.configurer.builder.InheritanceMappingStep.Mapping;
+import org.codefilarete.stalactite.engine.configurer.builder.MainPersisterStep;
+import org.codefilarete.stalactite.engine.configurer.builder.PrimaryKeyPropagationStep;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
@@ -158,8 +161,8 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 				subEntityPropertiesReadConverters,
 				subEntityPropertiesWriteConverters,
 				false);
-		addIdentificationToMapping(identification, subEntityMapping);
-		DefaultEntityMapping<D, I, SUBTABLE> entityMapping = PersisterBuilderImpl.createEntityMapping(
+		addIdentificationToMapping(identification, (Mapping<C, ?>) subEntityMapping);
+		DefaultEntityMapping<D, I, SUBTABLE> entityMapping = MainPersisterStep.createEntityMapping(
 				true,    // given Identification (which is parent one) contains identifier policy
 				subTable,
 				subEntityPropertiesMapping,
@@ -188,11 +191,11 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 	}
 	
 	private void addPrimaryKey(Table table) {
-		PersisterBuilderImpl.propagatePrimaryKey(this.mainPersister.getMapping().getTargetTable().getPrimaryKey(), Arrays.asSet(table));
+		PrimaryKeyPropagationStep.propagatePrimaryKey(this.mainPersister.getMapping().getTargetTable().getPrimaryKey(), Arrays.asSet(table));
 	}
 	
-	private void addIdentificationToMapping(AbstractIdentification<C, I> identification, Mapping mapping) {
-		PersisterBuilderImpl.addIdentificationToMapping(identification, Arrays.asSet(mapping));
+	private void addIdentificationToMapping(AbstractIdentification<C, I> identification, Mapping<C, ?> mapping) {
+		IdentifierManagerStep.addIdentificationToMapping(identification, Arrays.asSet(mapping));
 	}
 	
 	@Override

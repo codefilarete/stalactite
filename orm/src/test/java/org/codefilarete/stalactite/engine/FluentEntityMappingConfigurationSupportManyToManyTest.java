@@ -23,6 +23,7 @@ import org.codefilarete.stalactite.engine.idprovider.LongProvider;
 import org.codefilarete.stalactite.engine.model.book.Author;
 import org.codefilarete.stalactite.engine.model.book.Book;
 import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
+import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
 import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
@@ -903,7 +904,7 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 				.build(persistenceContext);
 
 		// this is a configuration safeguard, thus we ensure that configuration matches test below
-		assertThat(((OptimizedUpdatePersister<Answer, Identifier<Long>>) answerPersister).getDelegate()
+		assertThat(((RelationalEntityPersister<Answer, Identifier<Long>>) answerPersister)
 				.getEntityJoinTree().getJoin("Answer_Choices0")).isNull();
 
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

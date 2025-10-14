@@ -24,8 +24,8 @@ import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPrope
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy.TablePerClassPolymorphism;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildLifeCycleListener;
+import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
+import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListener;
 import org.codefilarete.stalactite.engine.model.Car;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Engine;

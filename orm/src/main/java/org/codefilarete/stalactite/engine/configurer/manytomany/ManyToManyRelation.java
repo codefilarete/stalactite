@@ -34,9 +34,6 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 	/** Configuration used for "many" side beans persistence */
 	private final EntityMappingConfigurationProvider<TRGT, TRGTID> targetMappingConfiguration;
 	
-	@Nullable
-	private Table targetTable;
-	
 	/** Default relation mode is {@link RelationMode#ALL} */
 	private RelationMode relationMode = RelationMode.ALL;
 	
@@ -99,15 +96,6 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 	
 	public boolean isTargetTablePerClassPolymorphic() {
 		return getTargetMappingConfiguration().getPolymorphismPolicy() instanceof PolymorphismPolicy.TablePerClassPolymorphism;
-	}
-	
-	@Nullable
-	public Table getTargetTable() {
-		return targetTable;
-	}
-	
-	public void setTargetTable(@Nullable Table targetTable) {
-		this.targetTable = targetTable;
 	}
 	
 	public RelationMode getRelationMode() {

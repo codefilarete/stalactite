@@ -1,22 +1,19 @@
-package org.codefilarete.stalactite.engine.configurer;
+package org.codefilarete.stalactite.engine.configurer.builder;
 
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Queue;
 
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildLifeCycleListener;
-import org.codefilarete.stalactite.sql.ConnectionConfiguration;
-import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.KeepOrderSet;
 
 /**
- * Running context of {@link PersisterBuilderImpl}. Allows to share some information during configuration of the whole entity graph.
+ * Running context of {@link org.codefilarete.stalactite.engine.configurer.builder.DefaultPersisterBuilder}. Allows to share some information during configuration of the whole entity graph.
  * The currently available instance is accessible through {@link #CURRENT} variable which is created and destroyed by
- * {@link PersisterBuilderImpl#build(Dialect, ConnectionConfiguration, Table)} 
+ * {@link org.codefilarete.stalactite.engine.configurer.builder.DefaultPersisterBuilder#build(EntityMappingConfiguration)}
  * 
  * @author Guillaume Mary
  */
@@ -24,9 +21,9 @@ public class PersisterBuilderContext {
 	
 	/**
 	 * Give access to current {@link PersisterBuilderContext}, created and destroyed by
-	 * {@link PersisterBuilderImpl#build(Dialect, ConnectionConfiguration, Table)}
+	 * {@link org.codefilarete.stalactite.engine.configurer.builder.DefaultPersisterBuilder#build(EntityMappingConfigurationProvider)}
 	 * 
-	 * Made static because several {@link PersisterBuilderImpl}s are instantiated along the build process.
+	 * Made static because several {@link org.codefilarete.stalactite.engine.configurer.builder.DefaultPersisterBuilder}s are instantiated along the build process.
 	 * Not the best design ever, but works !
 	 */
 	public static final ThreadLocal<PersisterBuilderContext> CURRENT = new ThreadLocal<>();

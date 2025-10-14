@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.engine.FluentEntityMappingConfigurationSupportTest.State;
 import org.codefilarete.stalactite.engine.FluentEntityMappingConfigurationSupportTest.Toto;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImplTest.ToStringBuilder;
+import org.codefilarete.stalactite.engine.configurer.ToStringBuilder;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;

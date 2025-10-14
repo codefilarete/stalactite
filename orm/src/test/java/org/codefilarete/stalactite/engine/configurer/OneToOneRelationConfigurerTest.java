@@ -24,6 +24,7 @@ import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.ColumnLinkageOptionsSupport;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.LinkageSupport;
+import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer;
 import org.codefilarete.stalactite.engine.model.City;
@@ -36,7 +37,6 @@ import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifie
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
-import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -155,8 +155,10 @@ class OneToOneRelationConfigurerTest {
 		// defining Country -> City relation through capital property
 		PropertyAccessor<Country, City> capitalAccessPoint = new PropertyAccessor<>(new AccessorByMethodReference<>(Country::getCapital),
 				new MutatorByMethodReference<>(Country::setCapital));
-		OneToOneRelation<Country, City, Identifier<Long>> countryCapitalRelation = new OneToOneRelation<>(capitalAccessPoint, () -> true, () -> cityMappingConfiguration);
-		countryCapitalRelation.setTargetTable(cityTable);
+		OneToOneRelation<Country, City, Identifier<Long>> countryCapitalRelation = new OneToOneRelation<>(
+				capitalAccessPoint,
+				() -> true,
+				() -> new EntityMappingConfigurationWithTable<>(cityMappingConfiguration, cityTable));
 		// no reverse column declared, hence relation is maintained through an association table
 		
 		// Checking tables structure foreign key presence
@@ -165,11 +167,12 @@ class OneToOneRelationConfigurerTest {
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		
 		// When
+		ConnectionConfigurationSupport connectionConfiguration = new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10);
 		SimpleRelationalEntityPersister<Country, Identifier<Long>, T> countryPersister = new SimpleRelationalEntityPersister<>(countryEntityMappingStrategy, dialect,
-				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10));
+				connectionConfiguration);
 		OneToOneRelationConfigurer<Country, Identifier<Long>, City, Identifier<Long>> testInstance = new OneToOneRelationConfigurer<>(
 				dialect,
-				mock(ConnectionConfiguration.class),
+				connectionConfiguration,
 				countryPersister,
 				TableNamingStrategy.DEFAULT, JoinColumnNamingStrategy.JOIN_DEFAULT, ForeignKeyNamingStrategy.DEFAULT, PersisterBuilderContext.CURRENT.get());
 		
@@ -275,8 +278,10 @@ class OneToOneRelationConfigurerTest {
 		// defining Country -> City relation through capital property
 		PropertyAccessor<Country, City> capitalAccessPoint = new PropertyAccessor<>(new AccessorByMethodReference<>(Country::getCapital),
 				new MutatorByMethodReference<>(Country::setCapital));
-		OneToOneRelation<Country, City, Identifier<Long>> countryCapitalRelation = new OneToOneRelation<>(capitalAccessPoint, () -> true, () -> cityMappingConfiguration);
-		countryCapitalRelation.setTargetTable(cityTable);
+		OneToOneRelation<Country, City, Identifier<Long>> countryCapitalRelation = new OneToOneRelation<>(
+				capitalAccessPoint,
+				() -> true,
+				() -> new EntityMappingConfigurationWithTable<>(cityMappingConfiguration, cityTable));
 		// giving reverse column to declare a relation owned by target table (no association table)
 		countryCapitalRelation.setReverseColumn(cityTableCountryColumn);
 		
@@ -285,12 +290,13 @@ class OneToOneRelationConfigurerTest {
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		
+		ConnectionConfigurationSupport connectionConfiguration = new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10);
 		SimpleRelationalEntityPersister<Country, Identifier<Long>, T> countryPersister = new SimpleRelationalEntityPersister<>(countryEntityMappingStrategy, dialect,
-				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10));
+				connectionConfiguration);
 		
 		OneToOneRelationConfigurer<Country, Identifier<Long>, City, Identifier<Long>> testInstance = new OneToOneRelationConfigurer<>(
 				dialect,
-				mock(ConnectionConfiguration.class),
+				connectionConfiguration,
 				countryPersister,
 				TableNamingStrategy.DEFAULT, JoinColumnNamingStrategy.JOIN_DEFAULT, ForeignKeyNamingStrategy.DEFAULT, PersisterBuilderContext.CURRENT.get());
 		

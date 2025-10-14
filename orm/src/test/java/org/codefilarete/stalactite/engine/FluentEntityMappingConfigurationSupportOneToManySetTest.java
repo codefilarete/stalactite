@@ -24,6 +24,7 @@ import org.codefilarete.stalactite.engine.model.State;
 import org.codefilarete.stalactite.engine.model.Town;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
+import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
@@ -1494,7 +1495,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 					.build(persistenceContext);
 			
 			// this is a configuration safeguard, thus we ensure that configuration matches test below
-			assertThat(((OptimizedUpdatePersister<Country, Identifier<Long>>) countryPersister).getDelegate()
+			assertThat(((RelationalEntityPersister<Country, Identifier<Long>>) countryPersister)
 					.getEntityJoinTree().getJoin("Country_Citys0")).isNull();
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

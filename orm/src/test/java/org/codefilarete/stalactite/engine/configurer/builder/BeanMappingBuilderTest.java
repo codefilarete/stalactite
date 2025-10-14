@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.configurer;
+package org.codefilarete.stalactite.engine.configurer.builder;
 
 import java.util.Date;
 import java.util.Set;
@@ -8,8 +8,10 @@ import org.codefilarete.reflection.Accessors;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.MappingEase;
-import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMappingConfiguration.Linkage;
-import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
+import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
+import org.codefilarete.stalactite.engine.configurer.FluentEntityMappingConfigurationSupport;
+import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.BeanMappingConfiguration.Linkage;
+import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.ColumnNameProvider;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;

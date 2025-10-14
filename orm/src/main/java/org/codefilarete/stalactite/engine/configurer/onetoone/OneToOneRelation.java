@@ -27,9 +27,6 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	
 	private final BooleanSupplier sourceTablePerClassPolymorphic;
 	
-	@Nullable
-	private Table<?> targetTable;
-	
 	private boolean nullable = true;
 	
 	/** the method that gets the "one" entity from the "many" entities */
@@ -78,15 +75,6 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	
 	public boolean isTargetTablePerClassPolymorphic() {
 		return getTargetMappingConfiguration().getPolymorphismPolicy() instanceof PolymorphismPolicy.TablePerClassPolymorphism;
-	}
-	
-	@Nullable
-	public Table getTargetTable() {
-		return this.targetTable;
-	}
-	
-	public void setTargetTable(@Nullable Table<?> targetTable) {
-		this.targetTable = targetTable;
 	}
 	
 	/** Nullable option, mainly for column join and DDL schema generation */

@@ -9,6 +9,7 @@ import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
+import org.codefilarete.stalactite.engine.runtime.PersisterWrapper;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.reflect.MethodDispatcher;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +33,7 @@ public class StalactiteRepositoryFactoryBean<R extends Repository<C, I>, C, I>
 		// This is hideous : due to the will to not expose AdvancedEntityPersister to the outside world, but combined to the need to use it and
 		// the fact that its implementing classes are hidden by several layers of interfaces, with "dig" into given result to find them
 		// and wrap the result into a proxy that dispatch called methods accordingly.
-		ConfiguredRelationalPersister<C, I> deepestDelegate = ((OptimizedUpdatePersister<C, I>) foundPersister).getDeepestDelegate();
+		ConfiguredRelationalPersister<C, I> deepestDelegate = ((PersisterWrapper<C, I>) foundPersister).getDeepestDelegate();
 		MethodDispatcher methodDispatcher = new MethodDispatcher();
 		// Please note that order of precedence has an impact on getting a working result or not because AdvancedEntityPersister already extends
 		// ConfiguredPersister (yes, that's awful, but I couldn't find a better way without the constraint of not exposing AdvancedEntityPersister)

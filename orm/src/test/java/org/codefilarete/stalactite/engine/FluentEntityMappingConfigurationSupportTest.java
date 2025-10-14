@@ -32,7 +32,7 @@ import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder.FluentM
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImplTest.ToStringBuilder;
+import org.codefilarete.stalactite.engine.configurer.ToStringBuilder;
 import org.codefilarete.stalactite.engine.model.AbstractCountry;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;

@@ -7,16 +7,14 @@ import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
 import org.codefilarete.stalactite.engine.configurer.AbstractRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.EntityMappingConfigurationWithTable;
+import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Iterables;
-
-import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * Wrapper for {@link ManyToOneOwnedBySourceConfigurer} to make them available for cycle.
@@ -71,15 +69,14 @@ public class ManyToOneRelationConfigurer<C, I, TRGT, TRGTID> extends AbstractRel
 		} else {
 			// please note that even if no table is found in configuration, build(..) will create one
 			Table targetTable = determineTargetTable(manyToOneRelation);
-			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = new PersisterBuilderImpl<>(targetMappingConfiguration)
-					.build(dialect, connectionConfiguration, targetTable);
+			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = persisterBuilder.build(new EntityMappingConfigurationWithTable<>(targetMappingConfiguration, targetTable));
 			configurer.configure(relationName, targetPersister, manyToOneRelation.isFetchSeparately());
 		}
 	}
 	
 	private Table determineTargetTable(ManyToOneRelation<C, TRGT, TRGTID, Collection<C>> manyToOneRelation) {
 		EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration = manyToOneRelation.getTargetMappingConfiguration();
-		Table targetTable = manyToOneRelation.getTargetTable();
+		Table targetTable = targetMappingConfiguration.getTable();
 		if (targetTable == null) {
 			targetTable = lookupTableInRegisteredPersisters(targetMappingConfiguration.getEntityType());
 		}

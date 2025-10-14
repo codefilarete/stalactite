@@ -70,6 +70,7 @@ import org.codefilarete.stalactite.dsl.property.PropertyOptions;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.VersioningStrategy;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.LinkageSupport;
+import org.codefilarete.stalactite.engine.configurer.builder.DefaultPersisterBuilder;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.manyToOne.ManyToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
@@ -1064,8 +1065,10 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	@Override
 	public ConfiguredRelationalPersister<C, I> build(PersistenceContext persistenceContext) {
-		PersisterBuilderImpl<C, I> persisterBuilder = new PersisterBuilderImpl<>(this.getConfiguration());
-		return persisterBuilder.build(persistenceContext);
+		DefaultPersisterBuilder persisterBuilder = new DefaultPersisterBuilder(persistenceContext);
+		ConfiguredRelationalPersister<C, I> persister = persisterBuilder.build(this.getConfiguration());
+		persistenceContext.getPersisterRegistry().addPersister(persister);
+		return persister;
 	}
 	
 	/**

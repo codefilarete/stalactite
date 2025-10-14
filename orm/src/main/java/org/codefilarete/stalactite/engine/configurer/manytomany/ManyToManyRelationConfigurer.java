@@ -14,6 +14,7 @@ import org.codefilarete.stalactite.dsl.naming.*;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.*;
+import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation.MappedByConfiguration;
 import org.codefilarete.stalactite.engine.configurer.onetomany.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.runtime.*;
@@ -108,14 +109,13 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 		} else {
 			// NB: even if no table is found in configuration, build(..) will create one
 			Table targetTable = determineTargetTable(associationConfiguration.getManyToManyRelation());
-			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = new PersisterBuilderImpl<>(targetMappingConfiguration)
-					.build(dialect, connectionConfiguration, targetTable);
+			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = persisterBuilder.build(new EntityMappingConfigurationWithTable<>(targetMappingConfiguration, targetTable));
 			configurer.configure(targetPersister, associationConfiguration.getManyToManyRelation().isFetchSeparately());
 		}
 	}
 
 	private Table determineTargetTable(ManyToManyRelation<SRC, TRGT, TRGTID, C1, C2> manyToManyRelation) {
-		Table targetTable = manyToManyRelation.getTargetTable();
+		Table targetTable = manyToManyRelation.getTargetMappingConfiguration().getTable();
 		if (targetTable == null) {
 			targetTable = lookupTableInRegisteredPersisters(manyToManyRelation.getTargetMappingConfiguration().getEntityType());
 		}

@@ -28,7 +28,6 @@ import java.util.TreeMap;
 import java.util.function.Consumer;
 
 import org.codefilarete.stalactite.dsl.NotYetSupportedOperationException;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
 import org.codefilarete.stalactite.sql.CommitListener;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
@@ -58,7 +57,7 @@ import org.codefilarete.tool.sql.ResultSetWrapper;
  * method.
  * <strong>
  * It requires that given {@link ConfiguredRelationalPersister} uses a {@link CachingQueryConnectionProvider}, this is done at build time
- * ({@link PersisterBuilderImpl}) by calling {@link #wrapWithQueryCache(ConnectionConfiguration)}.
+ * ({@link org.codefilarete.stalactite.engine.configurer.builder.DefaultPersisterBuilder}) by calling {@link #wrapWithQueryCache(ConnectionConfiguration)}.
  * </strong>
  * 
  * @author Guillaume Mary

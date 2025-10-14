@@ -5,6 +5,8 @@ import java.util.Map;
 
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.RelationalMappingConfiguration;
+import org.codefilarete.stalactite.engine.configurer.builder.DefaultPersisterBuilder;
+import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.manyToOne.ManyToOneRelation;
@@ -44,6 +46,8 @@ public class RelationConfigurer<C, I> {
 	private final ManyToManyRelationConfigurer<C, ?, I, ?, ?, Collection<C>> manyToManyRelationConfigurer;
 	private final ManyToOneRelationConfigurer<C, I, ?, ?> manyToOneRelationConfigurer;
 	private final ElementCollectionRelationConfigurer<C, ?, I, ? extends Collection<?>> elementCollectionRelationConfigurer;
+	protected final DefaultPersisterBuilder persisterBuilder;
+//	protected final PersisterBuilderPipeline<Object, Object> persisterBuilder;
 	
 	public RelationConfigurer(Dialect dialect,
 							  ConnectionConfiguration connectionConfiguration,
@@ -54,6 +58,8 @@ public class RelationConfigurer<C, I> {
 		this.connectionConfiguration = connectionConfiguration;
 		this.sourcePersister = sourcePersister;
 		this.namingConfiguration = namingConfiguration;
+		this.persisterBuilder = new DefaultPersisterBuilder(dialect, connectionConfiguration, currentBuilderContext.getPersisterRegistry());
+//		this.persisterBuilder = new PersisterBuilderPipeline<>(dialect, connectionConfiguration, currentBuilderContext.getPersisterRegistry());
 		this.oneToOneRelationConfigurer = new OneToOneRelationConfigurer<>(
 				this.dialect,
 				this.connectionConfiguration,
@@ -125,11 +131,9 @@ public class RelationConfigurer<C, I> {
 		for (MapRelation<C, ?, ?, ? extends Map> map : entityMappingConfiguration.getMaps()) {
 			if (map.getKeyEntityConfigurationProvider() != null && map.getValueEntityConfigurationProvider() != null) {
 				EntityMappingConfiguration<Object, Object> keyEntityConfiguration = (EntityMappingConfiguration<Object, Object>) map.getKeyEntityConfigurationProvider().getConfiguration();
-				ConfiguredRelationalPersister<Object, Object> keyEntityPersister = new PersisterBuilderImpl<>(keyEntityConfiguration)
-						.build(dialect, connectionConfiguration, null);
+				ConfiguredRelationalPersister<Object, Object> keyEntityPersister = persisterBuilder.build(keyEntityConfiguration);
 				EntityMappingConfiguration<Object, Object> valueEntityConfiguration = (EntityMappingConfiguration<Object, Object>) map.getValueEntityConfigurationProvider().getConfiguration();
-				ConfiguredRelationalPersister<Object, Object> valueEntityPersister = new PersisterBuilderImpl<>(valueEntityConfiguration)
-						.build(dialect, connectionConfiguration, null);
+				ConfiguredRelationalPersister<Object, Object> valueEntityPersister = persisterBuilder.build(valueEntityConfiguration);
 				EntityAsKeyAndValueMapRelationConfigurer entityAsKeyMapRelationConfigurer = new EntityAsKeyAndValueMapRelationConfigurer<>(
 						(MapRelation) map,
 						sourcePersister,
@@ -143,8 +147,7 @@ public class RelationConfigurer<C, I> {
 				entityAsKeyMapRelationConfigurer.configure();
 			} else if (map.getKeyEntityConfigurationProvider() != null) {
 				EntityMappingConfiguration<Object, Object> keyEntityConfiguration = (EntityMappingConfiguration<Object, Object>) map.getKeyEntityConfigurationProvider().getConfiguration();
-				ConfiguredRelationalPersister<Object, Object> keyEntityPersister = new PersisterBuilderImpl<>(keyEntityConfiguration)
-						.build(dialect, connectionConfiguration, null);
+				ConfiguredRelationalPersister<Object, Object> keyEntityPersister = persisterBuilder.build(keyEntityConfiguration);
 				EntityAsKeyMapRelationConfigurer entityAsKeyMapRelationConfigurer = new EntityAsKeyMapRelationConfigurer<>(
 						(MapRelation) map,
 						sourcePersister,
@@ -157,8 +160,7 @@ public class RelationConfigurer<C, I> {
 				entityAsKeyMapRelationConfigurer.configure();
 			} else if (map.getValueEntityConfigurationProvider() != null) {
 				EntityMappingConfiguration<Object, Object> valueEntityConfiguration = (EntityMappingConfiguration<Object, Object>) map.getValueEntityConfigurationProvider().getConfiguration();
-				ConfiguredRelationalPersister<Object, Object> valueEntityPersister = new PersisterBuilderImpl<>(valueEntityConfiguration)
-						.build(dialect, connectionConfiguration, null);
+				ConfiguredRelationalPersister<Object, Object> valueEntityPersister = persisterBuilder.build(valueEntityConfiguration);
 				ValueAsKeyMapRelationConfigurer valueAsKeyMapRelationConfigurer = new ValueAsKeyMapRelationConfigurer<>(
 						(MapRelation) map,
 						sourcePersister,

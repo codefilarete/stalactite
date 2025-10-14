@@ -4,13 +4,17 @@ import java.util.Collection;
 import java.util.Set;
 
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.stalactite.dsl.naming.*;
-import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
-import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
+import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.configurer.AbstractRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.EntityMappingConfigurationWithTable;
+import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -101,8 +105,7 @@ public class OneToManyRelationConfigurer<SRC, SRCID, TRGT, TRGTID> extends Abstr
 			cycleSolver.addCycleSolver(relationName, configurer);
 		} else {
 			Table targetTable = determineTargetTable(oneToManyRelation);
-			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = new PersisterBuilderImpl<>(targetMappingConfiguration)
-					.build(dialect, connectionConfiguration, targetTable);
+			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = persisterBuilder.build(new EntityMappingConfigurationWithTable<>(targetMappingConfiguration, targetTable));
 			configurer.configure(targetPersister);
 		}
 	}
@@ -110,7 +113,7 @@ public class OneToManyRelationConfigurer<SRC, SRCID, TRGT, TRGTID> extends Abstr
 	private Table determineTargetTable(OneToManyRelation<SRC, TRGT, TRGTID, ?> oneToManyRelation) {
 		Table reverseTable = nullable(oneToManyRelation.getReverseColumn()).map(Column::getTable).get();
 		Table indexingTable = nullable(oneToManyRelation.getIndexingColumn()).map(Column::getTable).get();
-		Set<Table> availableTables = Arrays.asHashSet(oneToManyRelation.getTargetTable(), reverseTable, indexingTable);
+		Set<Table> availableTables = Arrays.asHashSet(oneToManyRelation.getTargetMappingConfiguration().getTable(), reverseTable, indexingTable);
 		availableTables.remove(null);
 		if (availableTables.size() > 1) {
 			class TableAppender extends StringAppender {
@@ -127,7 +130,7 @@ public class OneToManyRelationConfigurer<SRC, SRCID, TRGT, TRGTID> extends Abstr
 		}
 		
 		// NB: even if no table is found in configuration, build(..) will create one
-		Table result = nullable(oneToManyRelation.getTargetTable()).elseSet(reverseTable).elseSet(indexingTable).get();
+		Table result = nullable(oneToManyRelation.getTargetMappingConfiguration().getTable()).elseSet(reverseTable).elseSet(indexingTable).get();
 		if (result == null) {
 			result = lookupTableInRegisteredPersisters(oneToManyRelation.getTargetMappingConfiguration().getEntityType());
 		}

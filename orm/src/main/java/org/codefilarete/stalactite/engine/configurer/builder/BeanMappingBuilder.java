@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.configurer;
+package org.codefilarete.stalactite.engine.configurer.builder;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
@@ -33,8 +33,8 @@ import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfiguration;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
-import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMappingConfiguration.Inset;
-import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMappingConfiguration.Linkage;
+import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.BeanMappingConfiguration.Inset;
+import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.BeanMappingConfiguration.Linkage;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -68,7 +68,7 @@ import static org.codefilarete.tool.collection.Iterables.stream;
  *
  * Whereas it consumes an {@link BeanMappingConfiguration} it doesn't mean that its goal is to manage embedded beans of an entity : as its
  * name says it's aimed at collecting mapping of any beans, without the entity part (understanding identification and inheritance which is targeted
- * by {@link PersisterBuilderImpl})
+ * by {@link org.codefilarete.stalactite.engine.configurer.builder.DefaultPersisterBuilder})
  *
  * @author Guillaume Mary
  * @see #build()

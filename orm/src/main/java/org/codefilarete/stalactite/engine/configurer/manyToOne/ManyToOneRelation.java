@@ -37,9 +37,6 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 	
 	private final BooleanSupplier sourceTablePerClassPolymorphic;
 	
-	@javax.annotation.Nullable
-	private Table targetTable;
-	
 	private boolean nullable = true;
 	
 	/** Default relation mode is {@link RelationMode#ALL} */
@@ -76,15 +73,6 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 	
 	public boolean isTargetTablePerClassPolymorphic() {
 		return getTargetMappingConfiguration().getPolymorphismPolicy() instanceof PolymorphismPolicy.TablePerClassPolymorphism;
-	}
-	
-	@javax.annotation.Nullable
-	public Table getTargetTable() {
-		return this.targetTable;
-	}
-	
-	public void setTargetTable(@javax.annotation.Nullable Table targetTable) {
-		this.targetTable = targetTable;
 	}
 	
 	/** Nullable option, mainly for column join and DDL schema generation */

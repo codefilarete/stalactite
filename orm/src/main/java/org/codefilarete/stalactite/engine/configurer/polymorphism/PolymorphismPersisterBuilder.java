@@ -12,6 +12,7 @@ import org.codefilarete.stalactite.dsl.PolymorphismPolicy.SingleTablePolymorphis
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
+import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;

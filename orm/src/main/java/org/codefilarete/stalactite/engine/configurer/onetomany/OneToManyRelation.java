@@ -37,9 +37,6 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	/** Configuration used for "many" side beans persistence */
 	private final EntityMappingConfigurationProvider<TRGT, TRGTID> targetMappingConfiguration;
 	
-	@Nullable
-	private Table targetTable;
-	
 	private final MappedByConfiguration mappedByConfiguration = new MappedByConfiguration();
 	
 	/**
@@ -104,15 +101,6 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	
 	public boolean isTargetTablePerClassPolymorphic() {
 		return getTargetMappingConfiguration().getPolymorphismPolicy() instanceof PolymorphismPolicy.TablePerClassPolymorphism;
-	}
-	
-	@Nullable
-	public Table getTargetTable() {
-		return targetTable;
-	}
-	
-	public void setTargetTable(@Nullable Table targetTable) {
-		this.targetTable = targetTable;
 	}
 	
 	@Nullable

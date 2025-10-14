@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.configurer;
+package org.codefilarete.stalactite.engine.configurer.builder;
 
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.tool.trace.MutableInt;

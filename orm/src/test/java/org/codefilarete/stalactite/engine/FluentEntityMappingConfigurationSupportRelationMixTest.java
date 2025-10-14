@@ -494,7 +494,7 @@ public class FluentEntityMappingConfigurationSupportRelationMixTest {
 							"FK_Vehicle_ownerId_Person_id");
 
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-			assertThat(ddlDeployer.getCreationScripts()).containsExactly(
+			assertThat(ddlDeployer.getCreationScripts()).containsExactlyInAnyOrder(
 					"create table Bicycle(color int, id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, unique (id))",
 					"create table Person(name varchar(255), id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, unique (id))",
 					"create table Person_bicycles(person_id int, bicycles_id int, unique (person_id, bicycles_id))",

@@ -43,14 +43,17 @@ public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfi
 	@Nullable
 	Table getTable();
 	
+	@Nullable
 	TableNamingStrategy getTableNamingStrategy();
 	
+	@Nullable
 	ColumnNamingStrategy getColumnNamingStrategy();
 	
 	KeyMapping<C, I> getKeyMapping();
 	
 	EmbeddableMappingConfiguration<C> getPropertiesMapping();
 	
+	@Nullable
 	VersioningStrategy getOptimisticLockOption();
 	
 	/** Gives inheritance information if inheritance has been defined, else returns null */
@@ -58,20 +61,26 @@ public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfi
 	@Nullable
 	InheritanceConfiguration<? super C, I> getInheritanceConfiguration();
 	
+	@Nullable
 	ForeignKeyNamingStrategy getForeignKeyNamingStrategy();
 	
+	@Nullable
 	AssociationTableNamingStrategy getAssociationTableNamingStrategy();
 	
+	@Nullable
 	ElementCollectionTableNamingStrategy getElementCollectionTableNamingStrategy();
 	
+	@Nullable
 	JoinColumnNamingStrategy getJoinColumnNamingStrategy();
 	
 	/**
 	 * Gives {@link ColumnNamingStrategy} for index column of one-to-many {@link List} association
 	 * @return maybe null, {@link ColumnNamingStrategy#INDEX_DEFAULT} will be used instead
 	 */
+	@Nullable
 	ColumnNamingStrategy getIndexColumnNamingStrategy();
 	
+	@Nullable
 	MapEntryTableNamingStrategy getEntryMapTableNamingStrategy();
 	
 	PolymorphismPolicy<C> getPolymorphismPolicy();

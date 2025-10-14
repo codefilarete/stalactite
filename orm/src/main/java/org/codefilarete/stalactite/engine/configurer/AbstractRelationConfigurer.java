@@ -2,6 +2,8 @@ package org.codefilarete.stalactite.engine.configurer;
 
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.configurer.builder.DefaultPersisterBuilder;
+import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
@@ -18,7 +20,9 @@ public class AbstractRelationConfigurer<SRC, SRCID, TRGT, TRGTID> {
 
 	protected final TableNamingStrategy tableNamingStrategy;
 	protected final PersisterBuilderContext currentBuilderContext;
-
+	protected final DefaultPersisterBuilder persisterBuilder;
+//	protected final PersisterBuilderPipeline<TRGT, TRGTID> persisterBuilder;
+	
 	public AbstractRelationConfigurer(Dialect dialect,
 									  ConnectionConfiguration connectionConfiguration,
 									  ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
@@ -29,6 +33,8 @@ public class AbstractRelationConfigurer<SRC, SRCID, TRGT, TRGTID> {
 		this.sourcePersister = sourcePersister;
 		this.tableNamingStrategy = tableNamingStrategy;
 		this.currentBuilderContext = currentBuilderContext;
+		this.persisterBuilder = new DefaultPersisterBuilder(dialect, connectionConfiguration, currentBuilderContext.getPersisterRegistry());
+//		this.persisterBuilder = new PersisterBuilderPipeline<>(dialect, connectionConfiguration, currentBuilderContext.getPersisterRegistry());
 	}
 
 	protected Table lookupTableInRegisteredPersisters(Class<TRGT> entityType) {
