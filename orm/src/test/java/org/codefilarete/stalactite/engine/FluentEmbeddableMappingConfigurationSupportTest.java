@@ -32,7 +32,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 							.map(Person::getName)
 							.embed(Person::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 									.map(Timestamp::getCreationDate)
-									.map(Timestamp::getModificationDate)))
+									.map(Timestamp::getModificationDate).unique()))
 					.overrideName(Person::getId, "personId")
 					.overrideName(Person::getName, "personName")
 					
@@ -87,7 +87,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		
 		try {
 			EmbeddableMappingConfigurationProvider<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
-					.map(Person::getName);
+					.map(Person::getName).unique();
 			
 			MappingEase.embeddableBuilder(Country.class)
 					.map(Country::getName)

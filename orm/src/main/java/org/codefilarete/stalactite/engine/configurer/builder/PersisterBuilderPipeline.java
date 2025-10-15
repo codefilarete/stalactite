@@ -99,11 +99,13 @@ public class PersisterBuilderPipeline<C, I> {
 		MappingPerTable<C> inheritanceMappingPerTable = inheritanceMappingStep.collectPropertiesMappingFromInheritance(entityMappingConfiguration,
 				entityMappingConfigurationTables,
 				dialect.getColumnBinderRegistry(),
-				namingConfiguration.getColumnNamingStrategy());
+				namingConfiguration.getColumnNamingStrategy(),
+				namingConfiguration.getIndexNamingStrategy());
 		PrimaryKey<?, I> primaryKey = primaryKeyStep.addIdentifyingPrimarykey(identification,
 				entityMappingConfigurationTables,
 				dialect.getColumnBinderRegistry(),
-				namingConfiguration.getColumnNamingStrategy());
+				namingConfiguration.getColumnNamingStrategy(),
+				namingConfiguration.getIndexNamingStrategy());
 		this.primaryKeyPropagationStep.propagate(primaryKey, inheritanceMappingPerTable, namingConfiguration.getForeignKeyNamingStrategy());
 		// determining insertion manager must be done AFTER primary key addition, else it would fall into NullPointerException
 		this.identifierManagerStep.applyIdentifierManager(identification, inheritanceMappingPerTable, identification.getIdAccessor(), dialect, connectionConfiguration);

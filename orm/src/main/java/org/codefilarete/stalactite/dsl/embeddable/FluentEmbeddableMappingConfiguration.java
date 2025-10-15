@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.dsl.embeddable;
 
 import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.EnumOptions;
 import org.codefilarete.stalactite.dsl.property.PropertyOptions;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
@@ -69,6 +70,8 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 */
 	FluentEmbeddableMappingConfiguration<C> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	
+	FluentEmbeddableMappingConfiguration<C> withIndexNaming(IndexNamingStrategy indexNamingStrategy);
+	
 	/**
 	 * A mashup that allows to come back to the "main" options as well as continue configuration of an "imported bean mapping"
 	 * 
@@ -115,6 +118,9 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 		FluentEmbeddableMappingConfigurationEnumOptions<C, E> mandatory();
 		
 		@Override
+		FluentEmbeddableMappingConfigurationEnumOptions<C, E> unique();
+		
+		@Override
 		FluentEmbeddableMappingConfigurationEnumOptions<C, E> readonly();
 		
 		@Override
@@ -143,6 +149,9 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 		
 		@Override
 		FluentEmbeddableMappingConfigurationPropertyOptions<C, O> mandatory();
+		
+		@Override
+		FluentEmbeddableMappingConfigurationPropertyOptions<C, O> unique();
 		
 		@Override
 		FluentEmbeddableMappingConfigurationPropertyOptions<C, O> setByConstructor();

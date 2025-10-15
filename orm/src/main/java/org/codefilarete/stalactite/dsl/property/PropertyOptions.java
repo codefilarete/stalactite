@@ -24,6 +24,12 @@ public interface PropertyOptions<O> {
 	PropertyOptions<O> mandatory();
 	
 	/**
+	 * Marks the property column as a unique key.
+	 * Relevant for when the unique key constraint corresponds to only a single column.
+	 */
+	PropertyOptions<O> unique();
+	
+	/**
 	 * Marks this property as set by constructor, meaning it won't be set by any associated setter (method or field access).
 	 * Should be used in conjunction with {@link KeyOptions#usingConstructor(Function)}
 	 * and other equivalent methods.

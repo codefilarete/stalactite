@@ -4,6 +4,7 @@ import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
@@ -16,18 +17,20 @@ import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
  */
 public class NamingConfiguration {
 	
-	private TableNamingStrategy tableNamingStrategy;
-	private ColumnNamingStrategy columnNamingStrategy;
-	private ForeignKeyNamingStrategy foreignKeyNamingStrategy;
-	private ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy;
-	private MapEntryTableNamingStrategy mapEntryTableNamingStrategy;
-	private JoinColumnNamingStrategy joinColumnNamingStrategy;
-	private ColumnNamingStrategy indexColumnNamingStrategy;
-	private AssociationTableNamingStrategy associationTableNamingStrategy;
+	private final TableNamingStrategy tableNamingStrategy;
+	private final ColumnNamingStrategy columnNamingStrategy;
+	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
+	private final IndexNamingStrategy indexNamingStrategy;
+	private final ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy;
+	private final MapEntryTableNamingStrategy mapEntryTableNamingStrategy;
+	private final JoinColumnNamingStrategy joinColumnNamingStrategy;
+	private final ColumnNamingStrategy indexColumnNamingStrategy;
+	private final AssociationTableNamingStrategy associationTableNamingStrategy;
 	
 	public NamingConfiguration(TableNamingStrategy tableNamingStrategy,
 							   ColumnNamingStrategy columnNamingStrategy,
 							   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+							   IndexNamingStrategy indexNamingStrategy,
 							   ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy,
 							   MapEntryTableNamingStrategy mapEntryTableNamingStrategy,
 							   JoinColumnNamingStrategy joinColumnNamingStrategy,
@@ -36,6 +39,7 @@ public class NamingConfiguration {
 		this.tableNamingStrategy = tableNamingStrategy;
 		this.columnNamingStrategy = columnNamingStrategy;
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
+		this.indexNamingStrategy = indexNamingStrategy;
 		this.elementCollectionTableNamingStrategy = elementCollectionTableNamingStrategy;
 		this.mapEntryTableNamingStrategy = mapEntryTableNamingStrategy;
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
@@ -47,63 +51,35 @@ public class NamingConfiguration {
 		return tableNamingStrategy;
 	}
 	
-	public void setTableNamingStrategy(TableNamingStrategy tableNamingStrategy) {
-		this.tableNamingStrategy = tableNamingStrategy;
-	}
-	
 	public ColumnNamingStrategy getColumnNamingStrategy() {
 		return columnNamingStrategy;
-	}
-	
-	public void setColumnNamingStrategy(ColumnNamingStrategy columnNamingStrategy) {
-		this.columnNamingStrategy = columnNamingStrategy;
 	}
 	
 	public ForeignKeyNamingStrategy getForeignKeyNamingStrategy() {
 		return foreignKeyNamingStrategy;
 	}
 	
-	public void setForeignKeyNamingStrategy(ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
-		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
+	public IndexNamingStrategy getIndexNamingStrategy() {
+		return indexNamingStrategy;
 	}
 	
 	public ElementCollectionTableNamingStrategy getElementCollectionTableNamingStrategy() {
 		return elementCollectionTableNamingStrategy;
 	}
 	
-	public void setElementCollectionTableNamingStrategy(ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy) {
-		this.elementCollectionTableNamingStrategy = elementCollectionTableNamingStrategy;
-	}
-	
 	public MapEntryTableNamingStrategy getEntryMapTableNamingStrategy() {
 		return mapEntryTableNamingStrategy;
-	}
-	
-	public void setEntryMapTableNamingStrategy(MapEntryTableNamingStrategy mapEntryTableNamingStrategy) {
-		this.mapEntryTableNamingStrategy = mapEntryTableNamingStrategy;
 	}
 	
 	public JoinColumnNamingStrategy getJoinColumnNamingStrategy() {
 		return joinColumnNamingStrategy;
 	}
 	
-	public void setJoinColumnNamingStrategy(JoinColumnNamingStrategy joinColumnNamingStrategy) {
-		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
-	}
-	
 	public ColumnNamingStrategy getIndexColumnNamingStrategy() {
 		return indexColumnNamingStrategy;
 	}
 	
-	public void setIndexColumnNamingStrategy(ColumnNamingStrategy indexColumnNamingStrategy) {
-		this.indexColumnNamingStrategy = indexColumnNamingStrategy;
-	}
-	
 	public AssociationTableNamingStrategy getAssociationTableNamingStrategy() {
 		return associationTableNamingStrategy;
-	}
-	
-	public void setAssociationTableNamingStrategy(AssociationTableNamingStrategy associationTableNamingStrategy) {
-		this.associationTableNamingStrategy = associationTableNamingStrategy;
 	}
 }

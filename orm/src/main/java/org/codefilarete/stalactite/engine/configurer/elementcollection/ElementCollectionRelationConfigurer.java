@@ -20,6 +20,7 @@ import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
+import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
@@ -71,19 +72,22 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 	private final ElementCollectionTableNamingStrategy tableNamingStrategy;
 	private final Dialect dialect;
 	private final ConnectionConfiguration connectionConfiguration;
+	private final IndexNamingStrategy indexNamingStrategy;
 	
 	public ElementCollectionRelationConfigurer(ConfiguredRelationalPersister<SRC, I> sourcePersister,
 											   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 											   ColumnNamingStrategy columnNamingStrategy,
 											   ElementCollectionTableNamingStrategy tableNamingStrategy,
 											   Dialect dialect,
-											   ConnectionConfiguration connectionConfiguration) {
+											   ConnectionConfiguration connectionConfiguration,
+											   IndexNamingStrategy indexNamingStrategy) {
 		this.sourcePersister = sourcePersister;
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 		this.columnNamingStrategy = columnNamingStrategy;
 		this.tableNamingStrategy = tableNamingStrategy;
 		this.dialect = dialect;
 		this.connectionConfiguration = connectionConfiguration;
+		this.indexNamingStrategy = indexNamingStrategy;
 	}
 	
 	public <SRCTABLE extends Table<SRCTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>> void
@@ -162,7 +166,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 					return nullable(linkage.getOverriddenColumnNames().get(pawn.getAccessor()))
 							.getOr(() -> super.giveColumnName(pawn));
 				}
-			});
+			}, indexNamingStrategy);
 			Map<ReversibleAccessor<TRGT, Object>, Column<COLLECTIONTABLE, Object>> columnMapping = elementCollectionMappingBuilder.build().getMapping();
 			
 			Map<ReversibleAccessor<ElementRecord<TRGT, I>, Object>, Column<COLLECTIONTABLE, Object>> projectedColumnMap = new HashMap<>();

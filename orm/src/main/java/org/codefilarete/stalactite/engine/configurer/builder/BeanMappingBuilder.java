@@ -29,10 +29,11 @@ import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointComparator;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
-import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
-import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfiguration;
-import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
+import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
+import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfiguration;
+import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.BeanMappingConfiguration.Inset;
 import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.BeanMappingConfiguration.Linkage;
 import org.codefilarete.stalactite.sql.ddl.Size;
@@ -50,11 +51,9 @@ import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.ReadOnlyIterator;
-import org.codefilarete.tool.collection.StreamSplitter;
 import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.Hanger.Holder;
-import org.codefilarete.tool.function.Predicates;
 
 import static org.codefilarete.reflection.MethodReferences.toMethodReferenceString;
 import static org.codefilarete.tool.Nullable.nullable;
@@ -163,46 +162,55 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 	private final T targetTable;
 	private final ColumnBinderRegistry columnBinderRegistry;
 	private final ColumnNameProvider columnNameProvider;
+	private final IndexNamingStrategy indexNamingStrategy;
 	
 	public BeanMappingBuilder(EmbeddableMappingConfiguration<C> mappingConfiguration,
 							  T targetTable,
 							  ColumnBinderRegistry columnBinderRegistry,
-							  ColumnNameProvider columnNameProvider) {
+							  ColumnNameProvider columnNameProvider,
+							  IndexNamingStrategy indexNamingStrategy) {
 		this(BeanMappingConfiguration.fromEmbeddableMappingConfiguration(mappingConfiguration),
 				targetTable,
 				columnBinderRegistry,
-				columnNameProvider);
+				columnNameProvider,
+				indexNamingStrategy);
 	}
 	
 	public BeanMappingBuilder(EmbeddableMappingConfiguration<C> mappingConfiguration,
 							  T targetTable,
 							  ColumnBinderRegistry columnBinderRegistry,
-							  ColumnNamingStrategy columnNamingStrategy) {
+							  ColumnNamingStrategy columnNamingStrategy,
+							  IndexNamingStrategy indexNamingStrategy) {
 		this(BeanMappingConfiguration.fromEmbeddableMappingConfiguration(mappingConfiguration),
 				targetTable,
 				columnBinderRegistry,
-				new ColumnNameProvider(columnNamingStrategy));
+				new ColumnNameProvider(columnNamingStrategy),
+				indexNamingStrategy);
 	}
 	
 	public BeanMappingBuilder(CompositeKeyMappingConfiguration<C> mappingConfiguration,
 							  T targetTable,
 							  ColumnBinderRegistry columnBinderRegistry,
-							  ColumnNamingStrategy columnNamingStrategy) {
+							  ColumnNamingStrategy columnNamingStrategy,
+							  IndexNamingStrategy indexNamingStrategy) {
 		this(BeanMappingConfiguration.fromCompositeKeyMappingConfiguration(mappingConfiguration),
 				targetTable,
 				columnBinderRegistry,
-				new ColumnNameProvider(columnNamingStrategy));
+				new ColumnNameProvider(columnNamingStrategy),
+				indexNamingStrategy);
 	}
 	
 	@VisibleForTesting
 	BeanMappingBuilder(BeanMappingConfiguration<C> mappingConfiguration,
-							  T targetTable,
-							  ColumnBinderRegistry columnBinderRegistry,
-							  ColumnNameProvider columnNameProvider) {
+					   T targetTable,
+					   ColumnBinderRegistry columnBinderRegistry,
+					   ColumnNameProvider columnNameProvider,
+					   IndexNamingStrategy indexNamingStrategy) {
 		this.mainMappingConfiguration = mappingConfiguration;
 		this.targetTable = targetTable;
 		this.columnNameProvider = columnNameProvider;
 		this.columnBinderRegistry = columnBinderRegistry;
+		this.indexNamingStrategy = indexNamingStrategy;
 	}
 	
 	/**
@@ -256,40 +264,32 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 				// this method (and class) doesn't deal with extra table
 				linkageStream = linkageStream.filter(linkage -> linkage.getExtraTableName() == null);
 			}
-			new StreamSplitter<>(linkageStream)
-					.dispatch(Predicates.not(Linkage::isReadonly),
-							linkage -> {
-								Column<T, ?> overriddenColumn = overriddenColumns.get(linkage.getAccessor());
-								String columnName = nullable(overriddenColumn)
-										.map(Column::getName)
-										.getOr(() -> determineColumnName(linkage, overriddenColumnNames.get(linkage.getAccessor())));
-								Size columnSize = nullable(overriddenColumn)
-										.map(Column::getSize)
-										.getOr(() -> determineColumnSize(linkage, overriddenColumnSizes.get(linkage.getAccessor())));
-								assertMappingIsNotAlreadyDefinedByInheritance(linkage, columnName, mappingConfiguration);
-								Duo<ReversibleAccessor<C, Object>, Column<T, Object>> mapping = includeMapping(linkage, accessorPrefix, columnName, columnSize, overriddenColumn, mappingConfiguration.getBeanType());
-								result.mapping.put(mapping.getLeft(), mapping.getRight());
-								Converter<Object, Object> readConverter = linkage.getReadConverter();
-								result.readConverters.put(mapping.getLeft(), readConverter);
-								Converter<Object, Object> writeConverter = linkage.getWriteConverter();
-								result.writeConverters.put(mapping.getLeft(), writeConverter);
-							})
-					.dispatch(Linkage::isReadonly,
-							linkage -> {
-								Column<T, ?> overriddenColumn = overriddenColumns.get(linkage.getAccessor());
-								String columnName = nullable(overriddenColumn)
-										.map(Column::getName)
-										.getOr(() -> determineColumnName(linkage, overriddenColumnNames.get(linkage.getAccessor())));
-								Size columnSize = nullable(overriddenColumn)
-										.map(Column::getSize)
-										.getOr(() -> determineColumnSize(linkage, overriddenColumnSizes.get(linkage.getAccessor())));
-								assertMappingIsNotAlreadyDefinedByInheritance(linkage, columnName, mappingConfiguration);
-								Duo<ReversibleAccessor<C, Object>, Column<T, Object>> mapping = includeMapping(linkage, accessorPrefix, columnName, columnSize, overriddenColumn, mappingConfiguration.getBeanType());
-								result.readonlyMapping.put(mapping.getLeft(), mapping.getRight());
-								Converter<Object, Object> readConverter = linkage.getReadConverter();
-								result.readConverters.put(mapping.getLeft(), readConverter);
-							})
-					.split();
+			linkageStream.forEach(linkage -> {
+				Column<T, ?> overriddenColumn = overriddenColumns.get(linkage.getAccessor());
+				String columnName = nullable(overriddenColumn)
+						.map(Column::getName)
+						.getOr(() -> determineColumnName(linkage, overriddenColumnNames.get(linkage.getAccessor())));
+				Size columnSize = nullable(overriddenColumn)
+						.map(Column::getSize)
+						.getOr(() -> determineColumnSize(linkage, overriddenColumnSizes.get(linkage.getAccessor())));
+				assertMappingIsNotAlreadyDefinedByInheritance(linkage, columnName, mappingConfiguration);
+				Duo<ReversibleAccessor<C, Object>, Column<T, Object>> mapping = includeMapping(
+						linkage,
+						accessorPrefix,
+						columnName,
+						columnSize,
+						overriddenColumn,
+						mappingConfiguration);
+				Converter<Object, Object> readConverter = linkage.getReadConverter();
+				result.readConverters.put(mapping.getLeft(), readConverter);
+				if (!linkage.isReadonly()) {
+					result.mapping.put(mapping.getLeft(), mapping.getRight());
+					Converter<Object, Object> writeConverter = linkage.getWriteConverter();
+					result.writeConverters.put(mapping.getLeft(), writeConverter);
+				} else {
+					result.readonlyMapping.put(mapping.getLeft(), mapping.getRight());
+				}
+			});
 		}
 		
 		protected <O> Duo<ReversibleAccessor<C, ?>, Column<T, Object>> includeMapping(Linkage<C, O> linkage,
@@ -297,12 +297,20 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 																					  String columnName,
 																					  @Nullable Size columnSize,
 																					  @Nullable Column<T, O> overriddenColumn,
-																					  Class<?> embeddedBeanType) {
+																					  BeanMappingConfiguration<?> beanMappingConfiguration) {
 			Column<T, O> column = nullable(overriddenColumn).getOr(() -> addColumnToTable(linkage, columnName, columnSize));
+			
+			if (linkage.isUnique()) {
+				targetTable.addIndex(
+								Objects.preventNull(beanMappingConfiguration.getIndexNamingStrategy(), indexNamingStrategy).giveName(linkage),
+								column)
+						.setUnique();
+			}
+			
 			ensureColumnBindingInRegistry(linkage, column);
 			ReversibleAccessor<C, ?> accessor;
 			if (accessorPrefix != null) {
-				accessor = newAccessorChain(Collections.singletonList(accessorPrefix), linkage.getAccessor(), embeddedBeanType);
+				accessor = newAccessorChain(Collections.singletonList(accessorPrefix), linkage.getAccessor(), beanMappingConfiguration.getBeanType());
 			} else {
 				accessor = linkage.getAccessor();
 			}
@@ -427,7 +435,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 			// we include super type mapping by using a new instance of BeanMappingBuilder, this is the simplest (but maybe not the most
 			// debuggable) and allows to manage inheritance of several mappedSuperClass 
 			BeanMapping<C, T> superMapping = new BeanMappingBuilder<>((BeanMappingConfiguration<C>) superClassConfiguration, targetTable,
-					columnBinderRegistry, columnNameProvider).build();
+					columnBinderRegistry, columnNameProvider, Objects.preventNull(superClassConfiguration.getIndexNamingStrategy(), indexNamingStrategy)).build();
 			Class<?> insetBeanType = inset.getConfiguration().getBeanType();
 			superMapping.mapping.forEach((accessor, column) -> {
 				AccessorChain prefix;
@@ -658,6 +666,11 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 						return false;
 					}
 					
+					@Override
+					public boolean isUnique() {
+						return false;
+					}
+
 					@Nullable
 					@Override
 					public Converter getReadConverter() {
@@ -735,6 +748,12 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 						}
 					});
 				}
+				
+				@Override
+				public IndexNamingStrategy getIndexNamingStrategy() {
+					// no IndexNamingStrategy for compositeKey, this would be nonsense.
+					return null;
+				}
 			};
 		}
 		
@@ -798,6 +817,11 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 						return embeddableLinkage.isReadonly();
 					}
 					
+					@Override
+					public boolean isUnique() {
+						return embeddableLinkage.isUnique();
+					}
+
 					@Nullable
 					@Override
 					public Converter getReadConverter() {
@@ -873,6 +897,11 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 						}
 					});
 				}
+				
+				@Override
+				public IndexNamingStrategy getIndexNamingStrategy() {
+					return embeddableMappingConfiguration.getIndexNamingStrategy();
+				}
 			};
 		}
 		
@@ -886,6 +915,8 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		List<Linkage> getPropertiesMapping();
 		
 		Collection<Inset<C, Object>> getInsets();
+		
+		IndexNamingStrategy getIndexNamingStrategy();
 		
 		/**
 		 * @return an iterable for all inheritance configurations, including this
@@ -977,6 +1008,8 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 			
 			boolean isReadonly();
 			
+			boolean isUnique();
+
 			@Nullable
 			Converter<O, O> getReadConverter();
 			

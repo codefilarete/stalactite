@@ -14,6 +14,7 @@ import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.InheritanceConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.BeanMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
@@ -48,10 +49,11 @@ public class InheritanceMappingStep<C, I> {
 	<T extends Table<T>> MappingPerTable<C> collectPropertiesMappingFromInheritance(EntityMappingConfiguration<C, I> entityMappingConfiguration,
 																					Map<EntityMappingConfiguration, Table> tableMap,
 																					ColumnBinderRegistry columnBinderRegistry,
-																					ColumnNamingStrategy columnNamingStrategy) {
+																					ColumnNamingStrategy columnNamingStrategy,
+																					IndexNamingStrategy indexNamingStrategy) {
 		MappingPerTable<C> result = new MappingPerTable<>();
 		
-		InheritanceMappingCollector<C, I, T> mappingCollector = new InheritanceMappingCollector<>(result, columnBinderRegistry, columnNamingStrategy);
+		InheritanceMappingCollector<C, I, T> mappingCollector = new InheritanceMappingCollector<>(result, columnBinderRegistry, columnNamingStrategy, indexNamingStrategy);
 		visitInheritedEmbeddableMappingConfigurations(entityMappingConfiguration,
 				new Consumer<EntityMappingConfiguration>() {
 					private boolean initMapping = false;
@@ -246,9 +248,14 @@ public class InheritanceMappingStep<C, I> {
 		
 		private ColumnBinderRegistry columnBinderRegistry;
 		private ColumnNamingStrategy columnNamingStrategy;
+		private final IndexNamingStrategy indexNamingStrategy;
 		
-		InheritanceMappingCollector(MappingPerTable<C> result, ColumnBinderRegistry columnBinderRegistry, ColumnNamingStrategy columnNamingStrategy) {
+		InheritanceMappingCollector(MappingPerTable<C> result,
+									ColumnBinderRegistry columnBinderRegistry,
+									ColumnNamingStrategy columnNamingStrategy,
+									IndexNamingStrategy indexNamingStrategy) {
 			this.result = result;
+			this.indexNamingStrategy = indexNamingStrategy;
 			this.currentColumnMap = new HashMap<>();
 			this.currentReadonlyColumnMap = new HashMap<>();
 			this.readConverters = new ValueAccessPointMap<>();
@@ -276,7 +283,8 @@ public class InheritanceMappingStep<C, I> {
 			BeanMappingBuilder<C, T> beanMappingBuilder = new BeanMappingBuilder<>(embeddableMappingConfiguration,
 					this.currentTable,
 					this.columnBinderRegistry,
-					this.columnNamingStrategy);
+					this.columnNamingStrategy,
+					this.indexNamingStrategy);
 			BeanMapping<C, T> propertiesMapping = beanMappingBuilder.build();
 			ValueAccessPointSet<C> localMapping = new ValueAccessPointSet<>(currentColumnMap.keySet());
 			propertiesMapping.getMapping().keySet().forEach(propertyAccessor -> {

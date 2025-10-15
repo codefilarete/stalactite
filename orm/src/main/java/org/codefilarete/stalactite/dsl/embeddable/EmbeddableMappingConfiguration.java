@@ -8,6 +8,7 @@ import java.util.NoSuchElementException;
 
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.Inset;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
@@ -34,6 +35,9 @@ public interface EmbeddableMappingConfiguration<C> {
 	
 	@Nullable
 	ColumnNamingStrategy getColumnNamingStrategy();
+	
+	@Nullable
+	IndexNamingStrategy getIndexNamingStrategy();
 	
 	/**
 	 * @return an iterable for all inheritance configurations, including this
@@ -94,6 +98,8 @@ public interface EmbeddableMappingConfiguration<C> {
 		EnumBindType getEnumBindType();
 		
 		boolean isNullable();
+		
+		boolean isUnique();
 		
 		/** Indicates if this property is managed by entity constructor (information coming from user) */
 		boolean isSetByConstructor();

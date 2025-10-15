@@ -47,7 +47,6 @@ public class RelationConfigurer<C, I> {
 	private final ManyToOneRelationConfigurer<C, I, ?, ?> manyToOneRelationConfigurer;
 	private final ElementCollectionRelationConfigurer<C, ?, I, ? extends Collection<?>> elementCollectionRelationConfigurer;
 	protected final DefaultPersisterBuilder persisterBuilder;
-//	protected final PersisterBuilderPipeline<Object, Object> persisterBuilder;
 	
 	public RelationConfigurer(Dialect dialect,
 							  ConnectionConfiguration connectionConfiguration,
@@ -59,7 +58,6 @@ public class RelationConfigurer<C, I> {
 		this.sourcePersister = sourcePersister;
 		this.namingConfiguration = namingConfiguration;
 		this.persisterBuilder = new DefaultPersisterBuilder(dialect, connectionConfiguration, currentBuilderContext.getPersisterRegistry());
-//		this.persisterBuilder = new PersisterBuilderPipeline<>(dialect, connectionConfiguration, currentBuilderContext.getPersisterRegistry());
 		this.oneToOneRelationConfigurer = new OneToOneRelationConfigurer<>(
 				this.dialect,
 				this.connectionConfiguration,
@@ -101,7 +99,8 @@ public class RelationConfigurer<C, I> {
 				this.namingConfiguration.getColumnNamingStrategy(),
 				this.namingConfiguration.getElementCollectionTableNamingStrategy(),
 				dialect,
-				this.connectionConfiguration);
+				this.connectionConfiguration,
+				this.namingConfiguration.getIndexNamingStrategy());
 	}
 	
 	public <TRGT, TRGTID> void configureRelations(RelationalMappingConfiguration<C> entityMappingConfiguration) {
@@ -143,7 +142,8 @@ public class RelationConfigurer<C, I> {
 						namingConfiguration.getColumnNamingStrategy(),
 						namingConfiguration.getEntryMapTableNamingStrategy(),
 						dialect,
-						connectionConfiguration);
+						connectionConfiguration,
+						namingConfiguration.getIndexNamingStrategy());
 				entityAsKeyMapRelationConfigurer.configure();
 			} else if (map.getKeyEntityConfigurationProvider() != null) {
 				EntityMappingConfiguration<Object, Object> keyEntityConfiguration = (EntityMappingConfiguration<Object, Object>) map.getKeyEntityConfigurationProvider().getConfiguration();
@@ -156,7 +156,8 @@ public class RelationConfigurer<C, I> {
 						namingConfiguration.getColumnNamingStrategy(),
 						namingConfiguration.getEntryMapTableNamingStrategy(),
 						dialect,
-						connectionConfiguration);
+						connectionConfiguration,
+						namingConfiguration.getIndexNamingStrategy());
 				entityAsKeyMapRelationConfigurer.configure();
 			} else if (map.getValueEntityConfigurationProvider() != null) {
 				EntityMappingConfiguration<Object, Object> valueEntityConfiguration = (EntityMappingConfiguration<Object, Object>) map.getValueEntityConfigurationProvider().getConfiguration();
@@ -169,7 +170,8 @@ public class RelationConfigurer<C, I> {
 						namingConfiguration.getColumnNamingStrategy(),
 						namingConfiguration.getEntryMapTableNamingStrategy(),
 						dialect,
-						connectionConfiguration);
+						connectionConfiguration,
+						namingConfiguration.getIndexNamingStrategy());
 				valueAsKeyMapRelationConfigurer.configure();
 			} else {
 				MapRelationConfigurer<C, I, ?, ?, ? extends Map> mapRelationConfigurer = new MapRelationConfigurer<>(
@@ -179,7 +181,8 @@ public class RelationConfigurer<C, I> {
 						namingConfiguration.getColumnNamingStrategy(),
 						namingConfiguration.getEntryMapTableNamingStrategy(),
 						dialect,
-						connectionConfiguration
+						connectionConfiguration,
+						namingConfiguration.getIndexNamingStrategy()
 				);
 				mapRelationConfigurer.configure();
 			}

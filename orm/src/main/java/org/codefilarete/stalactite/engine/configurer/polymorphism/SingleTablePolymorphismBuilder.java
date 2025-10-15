@@ -107,7 +107,8 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 		BeanMappingBuilder<D, T> beanMappingBuilder = new BeanMappingBuilder<>(subConfiguration.getPropertiesMapping(),
 				mainTable,
 				this.columnBinderRegistry,
-				this.namingConfiguration.getColumnNamingStrategy());
+				this.namingConfiguration.getColumnNamingStrategy(),
+				this.namingConfiguration.getIndexNamingStrategy());
 		BeanMapping<D, T> beanMapping = beanMappingBuilder.build();
 		Map<ReversibleAccessor<D, Object>, Column<T, Object>> subEntityPropertiesMapping = beanMapping.getMapping();
 		Map<ReversibleAccessor<D, Object>, Column<T, Object>> subEntityReadonlyPropertiesMapping = beanMapping.getReadonlyMapping();

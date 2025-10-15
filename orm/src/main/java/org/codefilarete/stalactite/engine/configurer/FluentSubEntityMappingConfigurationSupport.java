@@ -527,6 +527,12 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 						}
 						
 						@Override
+						public PropertyOptions<O> unique() {
+							newMapping.setUnique(true);
+							return null;
+						}
+						
+						@Override
 						public PropertyOptions<O> setByConstructor() {
 							newMapping.setByConstructor();
 							return null;

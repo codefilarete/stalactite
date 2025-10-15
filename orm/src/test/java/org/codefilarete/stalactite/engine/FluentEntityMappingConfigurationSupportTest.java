@@ -60,6 +60,7 @@ import org.codefilarete.stalactite.sql.ddl.Length;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
+import org.codefilarete.stalactite.sql.ddl.structure.Index;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
@@ -1163,12 +1164,61 @@ class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	void withTableNaming() {
-		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+		EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
 				.mapKey(Toto::setId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.withTableNaming(persistedClass -> "tata")
 				.build(persistenceContext);
 		
-		assertThat(persister.giveImpliedTables().stream().map(Table::getName).collect(Collectors.toList())).containsExactlyInAnyOrder("tata");
+		assertThat(((ConfiguredPersister<Toto, Identifier<UUID>>) persister).giveImpliedTables().stream().map(Table::getName).collect(Collectors.toList())).containsExactlyInAnyOrder("tata");
+	}
+	
+	@Test
+	void withIndexNaming() {
+		EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.mapKey(Toto::setId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+				.map(Toto::getName).unique()
+				.withIndexNaming(linkage -> "myIndex")
+				.build(persistenceContext);
+		
+		assertThat(((ConfiguredPersister<Toto, Identifier<UUID>>) persister).giveImpliedTables().stream().flatMap(table -> table.getIndexes().stream())
+				.map(Index::getName)
+				.collect(Collectors.toList())).containsExactlyInAnyOrder("myIndex");
+	}
+	
+	@Test
+	void withIndexNaming_isAppliedToEmbedded() {
+		EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.mapKey(Toto::setId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+				.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+						.map(Timestamp::getCreationDate)
+						.map(Timestamp::getModificationDate).unique())
+				.withIndexNaming(linkage -> "myIndex")
+				.build(persistenceContext);
+		
+		assertThat(((ConfiguredPersister<Toto, Identifier<UUID>>) persister).giveImpliedTables().stream().flatMap(table -> table.getIndexes().stream())
+				.map(Index::getName)
+				.collect(Collectors.toList())).containsExactlyInAnyOrder("myIndex");
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		assertThat(ddlDeployer.getCreationScripts()).contains("create unique index myIndex on Toto(modificationDate)");
+	}
+	
+	@Test
+	void withIndexNaming_onEmbedded() {
+		EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.mapKey(Toto::setId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+				.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+						.withIndexNaming(linkage -> "myIndex")
+						.map(Timestamp::getCreationDate)
+						.map(Timestamp::getModificationDate).unique())
+				.build(persistenceContext);
+		
+		assertThat(((ConfiguredPersister<Toto, Identifier<UUID>>) persister).giveImpliedTables().stream().flatMap(table -> table.getIndexes().stream())
+				.map(Index::getName)
+				.collect(Collectors.toList())).containsExactlyInAnyOrder("myIndex");
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		assertThat(ddlDeployer.getCreationScripts()).contains("create unique index myIndex on Toto(modificationDate)");
 	}
 	
 	@Test

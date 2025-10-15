@@ -11,6 +11,7 @@ import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.SingleK
 import org.codefilarete.stalactite.dsl.idpolicy.GeneratedKeysPolicy;
 import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.CompositeKeyIdentification;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.SingleColumnIdentification;
@@ -36,7 +37,8 @@ public class PrimaryKeyStep<C, I> {
 	<T extends Table<T>> PrimaryKey<T, I> addIdentifyingPrimarykey(AbstractIdentification<C, I> identification,
 																   Map<EntityMappingConfiguration, Table> tableMap,
 																   ColumnBinderRegistry columnBinderRegistry,
-																   ColumnNamingStrategy columnNamingStrategy) {
+																   ColumnNamingStrategy columnNamingStrategy,
+																   IndexNamingStrategy indexNamingStrategy) {
 		T pkTable = (T) tableMap.get(identification.getIdentificationDefiner());
 		KeyMapping<C, I> keyLinkage = identification.getKeyLinkage();
 		AccessorDefinition identifierDefinition = AccessorDefinition.giveDefinition(identification.getIdAccessor());
@@ -44,7 +46,7 @@ public class PrimaryKeyStep<C, I> {
 			CompositeKeyMappingConfiguration<I> configuration = ((CompositeKeyLinkageSupport<C, I>) keyLinkage).getCompositeKeyMappingBuilder().getConfiguration();
 			// Note that we won't care about readonly column returned by build(..) since we're on a primary key case, then
 			// some readonly columns would be nonsense
-			BeanMappingBuilder<I, T> compositeKeyBuilder = new BeanMappingBuilder<>(configuration, pkTable, columnBinderRegistry, columnNamingStrategy);
+			BeanMappingBuilder<I, T> compositeKeyBuilder = new BeanMappingBuilder<>(configuration, pkTable, columnBinderRegistry, columnNamingStrategy, indexNamingStrategy);
 			BeanMapping<I, T> build = compositeKeyBuilder.build();
 			Map<ReversibleAccessor<I, Object>, Column<T, Object>> compositeKeyMapping = build.getMapping();
 			compositeKeyMapping.values().forEach(Column::primaryKey);

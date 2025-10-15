@@ -17,6 +17,7 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
+import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
@@ -70,14 +71,16 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 	protected final MapEntryTableNamingStrategy tableNamingStrategy;
 	protected final Dialect dialect;
 	protected final ConnectionConfiguration connectionConfiguration;
-	
+	private final IndexNamingStrategy indexNamingStrategy;
+
 	public MapRelationConfigurer(MapRelation<SRC, K, V, M> mapRelation,
 								 ConfiguredRelationalPersister<SRC, ID> sourcePersister,
 								 ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 								 ColumnNamingStrategy columnNamingStrategy,
 								 MapEntryTableNamingStrategy tableNamingStrategy,
 								 Dialect dialect,
-								 ConnectionConfiguration connectionConfiguration) {
+								 ConnectionConfiguration connectionConfiguration,
+								 IndexNamingStrategy indexNamingStrategy) {
 		this.mapRelation = mapRelation;
 		this.sourcePersister = sourcePersister;
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
@@ -85,6 +88,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 		this.tableNamingStrategy = tableNamingStrategy;
 		this.dialect = dialect;
 		this.connectionConfiguration = connectionConfiguration;
+		this.indexNamingStrategy = indexNamingStrategy;
 	}
 	
 	public <T extends Table<T>, TARGETTABLE extends Table<TARGETTABLE>> void configure() {
@@ -176,7 +180,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 					return nullable(mapRelation.getOverriddenKeyColumnNames().get(pawn.getAccessor()))
 							.getOr(() -> super.giveColumnName(pawn));
 				}
-			});
+			}, indexNamingStrategy);
 			BeanMapping<K, TARGETTABLE> entryKeyMapping = entryKeyMappingBuilder.build();
 			Map<ReversibleAccessor<K, Object>, Column<TARGETTABLE, Object>> columnMapping = entryKeyMapping.getMapping();
 			
@@ -197,7 +201,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 					return nullable(mapRelation.getOverriddenValueColumnNames().get(pawn.getAccessor()))
 							.getOr(() -> super.giveColumnName(pawn));
 				}
-			});
+			}, indexNamingStrategy);
 			BeanMapping<V, TARGETTABLE> entryValueMapping = recordKeyMappingBuilder.build();
 			Map<ReversibleAccessor<V, Object>, Column<TARGETTABLE, Object>> columnMapping = entryValueMapping.getMapping();
 			

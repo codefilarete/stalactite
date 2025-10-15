@@ -2,16 +2,20 @@ package org.codefilarete.stalactite.engine.configurer;
 
 import java.util.function.Consumer;
 
+import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
-import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
-import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
-import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
+import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.function.Hanger.Holder;
+
+import static org.codefilarete.tool.Nullable.empty;
 
 /**
  * Build a {@link NamingConfiguration} from an {@link EntityMappingConfiguration} by iterating over its hierarchy
@@ -28,7 +32,7 @@ public class NamingConfigurationCollector {
 	
 	public NamingConfiguration collect() {
 		
-		org.codefilarete.tool.Nullable<TableNamingStrategy> optionalTableNamingStrategy = org.codefilarete.tool.Nullable.empty();
+		Nullable<TableNamingStrategy> optionalTableNamingStrategy = empty();
 		visitInheritedEntityMappingConfigurations(configuration -> {
 			if (configuration.getTableNamingStrategy() != null && !optionalTableNamingStrategy.isPresent()) {
 				optionalTableNamingStrategy.set(configuration.getTableNamingStrategy());
@@ -37,7 +41,7 @@ public class NamingConfigurationCollector {
 		TableNamingStrategy tableNamingStrategy = optionalTableNamingStrategy.getOr(TableNamingStrategy.DEFAULT);
 		
 		// When a ColumnNamingStrategy is defined on mapping, it must be applied to super classes too
-		org.codefilarete.tool.Nullable<ColumnNamingStrategy> optionalColumnNamingStrategy = org.codefilarete.tool.Nullable.empty();
+		Nullable<ColumnNamingStrategy> optionalColumnNamingStrategy = empty();
 		class ColumnNamingStrategyCollector implements Consumer<EmbeddableMappingConfiguration> {
 			@Override
 			public void accept(EmbeddableMappingConfiguration embeddableMappingConfiguration) {
@@ -51,7 +55,7 @@ public class NamingConfigurationCollector {
 				columnNamingStrategyCollector.accept(entityConfigurationConsumer.getPropertiesMapping()), columnNamingStrategyCollector);
 		ColumnNamingStrategy columnNamingStrategy = optionalColumnNamingStrategy.getOr(ColumnNamingStrategy.DEFAULT);
 		
-		org.codefilarete.tool.Nullable<ForeignKeyNamingStrategy> optionalForeignKeyNamingStrategy = org.codefilarete.tool.Nullable.empty();
+		Nullable<ForeignKeyNamingStrategy> optionalForeignKeyNamingStrategy = empty();
 		visitInheritedEntityMappingConfigurations(configuration -> {
 			if (configuration.getForeignKeyNamingStrategy() != null && !optionalForeignKeyNamingStrategy.isPresent()) {
 				optionalForeignKeyNamingStrategy.set(configuration.getForeignKeyNamingStrategy());
@@ -59,7 +63,19 @@ public class NamingConfigurationCollector {
 		});
 		ForeignKeyNamingStrategy foreignKeyNamingStrategy = optionalForeignKeyNamingStrategy.getOr(ForeignKeyNamingStrategy.DEFAULT);
 		
-		org.codefilarete.tool.Nullable<JoinColumnNamingStrategy> optionalJoinColumnNamingStrategy = org.codefilarete.tool.Nullable.empty();
+		Nullable<IndexNamingStrategy> optionalIndexNamingStrategy = empty();
+		visitInheritedEmbeddableMappingConfigurations(configuration -> {
+			if (configuration.getIndexNamingStrategy() != null && !optionalIndexNamingStrategy.isPresent()) {
+				optionalIndexNamingStrategy.set(configuration.getIndexNamingStrategy());
+			}
+		}, embeddableMappingConfiguration -> {
+			if (embeddableMappingConfiguration.getIndexNamingStrategy() != null && !optionalIndexNamingStrategy.isPresent()) {
+				optionalIndexNamingStrategy.set(embeddableMappingConfiguration.getIndexNamingStrategy());
+			}
+		});
+		IndexNamingStrategy indexNamingStrategy = optionalIndexNamingStrategy.getOr(IndexNamingStrategy.DEFAULT);
+		
+		Nullable<JoinColumnNamingStrategy> optionalJoinColumnNamingStrategy = empty();
 		visitInheritedEntityMappingConfigurations(configuration -> {
 			if (configuration.getJoinColumnNamingStrategy() != null && !optionalJoinColumnNamingStrategy.isPresent()) {
 				optionalJoinColumnNamingStrategy.set(configuration.getJoinColumnNamingStrategy());
@@ -67,7 +83,7 @@ public class NamingConfigurationCollector {
 		});
 		JoinColumnNamingStrategy joinColumnNamingStrategy = optionalJoinColumnNamingStrategy.getOr(JoinColumnNamingStrategy.JOIN_DEFAULT);
 		
-		org.codefilarete.tool.Nullable<ColumnNamingStrategy> optionalIndexColumnNamingStrategy = org.codefilarete.tool.Nullable.empty();
+		Nullable<ColumnNamingStrategy> optionalIndexColumnNamingStrategy = empty();
 		visitInheritedEntityMappingConfigurations(configuration -> {
 			if (configuration.getIndexColumnNamingStrategy() != null && !optionalIndexColumnNamingStrategy.isPresent()) {
 				optionalIndexColumnNamingStrategy.set(configuration.getIndexColumnNamingStrategy());
@@ -75,7 +91,7 @@ public class NamingConfigurationCollector {
 		});
 		ColumnNamingStrategy indexColumnNamingStrategy = optionalIndexColumnNamingStrategy.getOr(ColumnNamingStrategy.INDEX_DEFAULT);
 		
-		org.codefilarete.tool.Nullable<AssociationTableNamingStrategy> optionalAssociationTableNamingStrategy = org.codefilarete.tool.Nullable.empty();
+		Nullable<AssociationTableNamingStrategy> optionalAssociationTableNamingStrategy = empty();
 		visitInheritedEntityMappingConfigurations(configuration -> {
 			if (configuration.getAssociationTableNamingStrategy() != null && !optionalAssociationTableNamingStrategy.isPresent()) {
 				optionalAssociationTableNamingStrategy.set(configuration.getAssociationTableNamingStrategy());
@@ -83,7 +99,7 @@ public class NamingConfigurationCollector {
 		});
 		AssociationTableNamingStrategy associationTableNamingStrategy = optionalAssociationTableNamingStrategy.getOr(AssociationTableNamingStrategy.DEFAULT);
 		
-		org.codefilarete.tool.Nullable<ElementCollectionTableNamingStrategy> optionalElementCollectionTableNamingStrategy = org.codefilarete.tool.Nullable.empty();
+		Nullable<ElementCollectionTableNamingStrategy> optionalElementCollectionTableNamingStrategy = empty();
 		visitInheritedEntityMappingConfigurations(configuration -> {
 			if (configuration.getElementCollectionTableNamingStrategy() != null && !optionalElementCollectionTableNamingStrategy.isPresent()) {
 				optionalElementCollectionTableNamingStrategy.set(configuration.getElementCollectionTableNamingStrategy());
@@ -91,7 +107,7 @@ public class NamingConfigurationCollector {
 		});
 		ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy = optionalElementCollectionTableNamingStrategy.getOr(ElementCollectionTableNamingStrategy.DEFAULT);
 		
-		org.codefilarete.tool.Nullable<MapEntryTableNamingStrategy> optionalEntryMapTableNamingStrategy = org.codefilarete.tool.Nullable.empty();
+		Nullable<MapEntryTableNamingStrategy> optionalEntryMapTableNamingStrategy = empty();
 		visitInheritedEntityMappingConfigurations(configuration -> {
 			if (configuration.getEntryMapTableNamingStrategy() != null && !optionalEntryMapTableNamingStrategy.isPresent()) {
 				optionalEntryMapTableNamingStrategy.set(configuration.getEntryMapTableNamingStrategy());
@@ -103,6 +119,7 @@ public class NamingConfigurationCollector {
 				tableNamingStrategy,
 				columnNamingStrategy,
 				foreignKeyNamingStrategy,
+				indexNamingStrategy,
 				elementCollectionTableNamingStrategy,
 				mapEntryTableNamingStrategy,
 				joinColumnNamingStrategy,

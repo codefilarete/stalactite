@@ -141,7 +141,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 				.getOr(() -> new Table(namingConfiguration.getTableNamingStrategy().giveName(subConfiguration.getEntityType())));
 		
 		BeanMappingBuilder<D, SUBTABLE> beanMappingBuilder = new BeanMappingBuilder<>(subConfiguration.getPropertiesMapping(), subTable,
-				this.columnBinderRegistry, this.namingConfiguration.getColumnNamingStrategy());
+				this.columnBinderRegistry, this.namingConfiguration.getColumnNamingStrategy(), this.namingConfiguration.getIndexNamingStrategy());
 		BeanMapping<D, SUBTABLE> beanMapping = beanMappingBuilder.build();
 		Map<ReversibleAccessor<D, Object>, Column<SUBTABLE, Object>> subEntityPropertiesMapping = beanMapping.getMapping();
 		Map<ReversibleAccessor<D, Object>, Column<SUBTABLE, Object>> subEntityReadonlyPropertiesMapping = beanMapping.getReadonlyMapping();

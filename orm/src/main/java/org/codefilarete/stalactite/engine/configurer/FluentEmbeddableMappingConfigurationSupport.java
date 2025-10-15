@@ -25,6 +25,7 @@ import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.ColumnLinkageOptions;
+import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.EnumOptions;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder;
 import org.codefilarete.stalactite.dsl.embeddable.ImportedEmbedOptions;
@@ -60,6 +61,9 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	@Nullable
 	private ColumnNamingStrategy columnNamingStrategy;
 	
+	@Nullable
+	private IndexNamingStrategy indexNamingStrategy;
+
 	/** Mapping definitions */
 	protected final List<Linkage> mapping = new ArrayList<>();
 	
@@ -106,6 +110,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		return columnNamingStrategy;
 	}
 	
+	@Nullable
+	@Override
+	public IndexNamingStrategy getIndexNamingStrategy() {
+		return indexNamingStrategy;
+	}
+
 	@Override
 	public List<Linkage> getPropertiesMapping() {
 		return mapping;
@@ -132,6 +142,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		return this;
 	}
 	
+	@Override
+	public FluentEmbeddableMappingBuilder<C> withIndexNaming(IndexNamingStrategy indexNamingStrategy) {
+		this.indexNamingStrategy = indexNamingStrategy;
+		return this;
+	}
+
 	/**
 	 * Gives access to currently configured {@link Inset}. Made so one can access features of {@link Inset} which are wider than
 	 * the one available through {@link FluentEmbeddableMappingBuilder}.
@@ -179,6 +195,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
+					@Override
+					public PropertyOptions<O> unique() {
+						linkage.setUnique(true);
+						return null;
+					}
+
 					@Override
 					public PropertyOptions<O> setByConstructor() {
 						linkage.setByConstructor();
@@ -275,6 +297,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					public EnumOptions<E> mandatory() {
 						linkage.setNullable(false);
 						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
+					public EnumOptions<E> unique() {
+						linkage.setUnique(true);
+						return null;
 					}
 					
 					@Override
@@ -429,6 +457,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		
 		private boolean nullable = true;
 		
+		private boolean unique;
+		
 		private boolean setByConstructor = false;
 		
 		private LocalColumnLinkageOptions columnOptions = new ColumnLinkageOptionsSupport();
@@ -494,6 +524,15 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		
 		public void setNullable(boolean nullable) {
 			this.nullable = nullable;
+		}
+		
+		public void setUnique(boolean unique) {
+			this.unique = unique;
+		}
+		
+		@Override
+		public boolean isUnique() {
+			return unique;
 		}
 		
 		public void setByConstructor() {

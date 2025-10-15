@@ -95,7 +95,7 @@ public class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends Abst
 				.getOr(() -> new Table<>(namingConfiguration.getTableNamingStrategy().giveName(subConfiguration.getEntityType())));
 		
 		BeanMappingBuilder<D, SUBT> beanMappingBuilder = new BeanMappingBuilder<>(subConfiguration.getPropertiesMapping(), subTable,
-				this.columnBinderRegistry, this.namingConfiguration.getColumnNamingStrategy());
+				this.columnBinderRegistry, this.namingConfiguration.getColumnNamingStrategy(), this.namingConfiguration.getIndexNamingStrategy());
 		BeanMapping<D, SUBT> beanMapping = beanMappingBuilder.build();
 		Map<ReversibleAccessor<D, Object>, Column<SUBT, Object>> subEntityPropertiesMapping = beanMapping.getMapping();
 		Map<ReversibleAccessor<D, Object>, Column<SUBT, Object>> subEntityReadonlyPropertiesMapping = beanMapping.getReadonlyMapping();

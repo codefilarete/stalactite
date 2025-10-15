@@ -13,7 +13,20 @@ import org.codefilarete.stalactite.dsl.InheritanceOptions;
 import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.dsl.PersisterBuilder;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
+import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
+import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
+import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder;
+import org.codefilarete.stalactite.dsl.embeddable.ImportedEmbedWithColumnOptions;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
+import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfigurationProvider;
+import org.codefilarete.stalactite.dsl.key.FluentEntityMappingBuilderCompositeKeyOptions;
+import org.codefilarete.stalactite.dsl.key.FluentEntityMappingBuilderKeyOptions;
+import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
@@ -23,18 +36,6 @@ import org.codefilarete.stalactite.dsl.property.EnumOptions;
 import org.codefilarete.stalactite.dsl.property.MapOptions;
 import org.codefilarete.stalactite.dsl.property.MapOptions.KeyAsEntityMapOptions;
 import org.codefilarete.stalactite.dsl.property.MapOptions.ValueAsEntityMapOptions;
-import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
-import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
-import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder;
-import org.codefilarete.stalactite.dsl.embeddable.ImportedEmbedWithColumnOptions;
-import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfigurationProvider;
-import org.codefilarete.stalactite.dsl.key.FluentEntityMappingBuilderCompositeKeyOptions;
-import org.codefilarete.stalactite.dsl.key.FluentEntityMappingBuilderKeyOptions;
-import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.relation.ManyToManyOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyOptions;
 import org.codefilarete.stalactite.engine.PersistenceContext;
@@ -176,6 +177,8 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	FluentEntityMappingBuilder<C, I> withTableNaming(TableNamingStrategy tableNamingStrategy);
 	
 	FluentEntityMappingBuilder<C, I> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
+	
+	FluentEntityMappingBuilder<C, I> withIndexNaming(IndexNamingStrategy indexNamingStrategy);
 	
 	FluentEntityMappingBuilder<C, I> withJoinColumnNaming(JoinColumnNamingStrategy joinColumnNamingStrategy);
 	
@@ -402,6 +405,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		FluentMappingBuilderPropertyOptions<C, I, O> mandatory();
 		
 		@Override
+		FluentMappingBuilderPropertyOptions<C, I, O> unique();
+		
+		@Override
 		FluentMappingBuilderPropertyOptions<C, I, O> setByConstructor();
 		
 		@Override
@@ -492,6 +498,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		@Override
 		FluentMappingBuilderEnumOptions<C, I, E> mandatory();
 		
+		@Override
+		FluentMappingBuilderEnumOptions<C, I, E> unique();
+
 		@Override
 		FluentMappingBuilderEnumOptions<C, I, E> readonly();
 		

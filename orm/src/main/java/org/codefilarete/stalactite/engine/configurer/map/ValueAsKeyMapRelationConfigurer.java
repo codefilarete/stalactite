@@ -15,6 +15,7 @@ import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
@@ -94,14 +95,16 @@ public class ValueAsKeyMapRelationConfigurer<SRC, SRCID, K, V, VID, M extends Ma
 			ColumnNamingStrategy columnNamingStrategy,
 			MapEntryTableNamingStrategy tableNamingStrategy,
 			Dialect dialect,
-			ConnectionConfiguration connectionConfiguration) {
+			ConnectionConfiguration connectionConfiguration,
+			IndexNamingStrategy indexNamingStrategy) {
 		super(convertEntityMapToIdentifierMap(mapRelation, valueEntityPersister),
 				sourcePersister,
 				foreignKeyNamingStrategy,
 				columnNamingStrategy,
 				tableNamingStrategy,
 				dialect,
-				connectionConfiguration);
+				connectionConfiguration,
+				indexNamingStrategy);
 		this.originalMapRelation = mapRelation;
 		this.valueEntityPersister = valueEntityPersister;
 		this.mapGetter = originalMapRelation.getMapProvider()::get;

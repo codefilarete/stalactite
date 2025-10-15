@@ -85,7 +85,7 @@ public class ExtraTableConfigurer<C, I, T extends Table<T>> {
 		
 		FluentEmbeddableMappingConfigurationSupport<C> fluentEmbeddableMappingConfigurationSupport = new FluentEmbeddableMappingConfigurationSupport<>(mainPersister.getClassToPersist());
 		fluentEmbeddableMappingConfigurationSupport.getPropertiesMapping().addAll(linkages);
-		BeanMappingBuilder<C, EXTRATABLE> beanMappingBuilder = new BeanMappingBuilder<>(fluentEmbeddableMappingConfigurationSupport, extraTable, columnBinderRegistry, namingConfiguration.getColumnNamingStrategy());
+		BeanMappingBuilder<C, EXTRATABLE> beanMappingBuilder = new BeanMappingBuilder<>(fluentEmbeddableMappingConfigurationSupport, extraTable, columnBinderRegistry, namingConfiguration.getColumnNamingStrategy(), namingConfiguration.getIndexNamingStrategy());
 		BeanMapping<C, EXTRATABLE> build = beanMappingBuilder.build(true);
 		
 		// we create the DefaultEntityDefaultEntityMapping from the complex method, not from one of its constructor, because it would

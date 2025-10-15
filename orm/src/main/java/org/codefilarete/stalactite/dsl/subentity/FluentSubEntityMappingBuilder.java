@@ -113,6 +113,9 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		FluentSubEntityMappingBuilderPropertyOptions<C, I, O> mandatory();
 		
 		@Override
+		FluentSubEntityMappingBuilderPropertyOptions<C, I, O> unique();
+
+		@Override
 		FluentSubEntityMappingBuilderPropertyOptions<C, I, O> setByConstructor();
 		
 		@Override
@@ -151,6 +154,9 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		@Override
 		FluentSubEntityMappingConfigurationEnumOptions<C, I, E> mandatory();
 		
+		@Override
+		FluentSubEntityMappingConfigurationEnumOptions<C, I, E> unique();
+
 		@Override
 		FluentSubEntityMappingConfigurationEnumOptions<C, I, E> setByConstructor();
 		

@@ -19,6 +19,9 @@ public interface ColumnOptions<O> extends PropertyOptions<O> {
 	ColumnOptions<O> mandatory();
 	
 	@Override
+	ColumnOptions<O> unique();
+	
+	@Override
 	ColumnOptions<O> setByConstructor();
 	
 	@Override

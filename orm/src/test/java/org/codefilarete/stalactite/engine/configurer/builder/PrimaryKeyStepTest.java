@@ -39,7 +39,8 @@ class PrimaryKeyStepTest {
 				AbstractIdentification.forSingleKey(identifyingConfiguration),
 				new TableMappingStep<AbstractVehicle, Identifier<Long>>().mapEntityConfigurationToTable(identifyingConfiguration, mainTable, TableNamingStrategy.DEFAULT),
 				new ColumnBinderRegistry(),
-				identifyingConfiguration.getColumnNamingStrategy());
+				identifyingConfiguration.getColumnNamingStrategy(),
+				identifyingConfiguration.getIndexNamingStrategy());
 		
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 				Column::getAbsoluteName,
@@ -73,7 +74,8 @@ class PrimaryKeyStepTest {
 				AbstractIdentification.forSingleKey(identifyingConfiguration),
 				new TableMappingStep<AbstractVehicle, Identifier<Long>>().mapEntityConfigurationToTable(identifyingConfiguration, mainTable, TableNamingStrategy.DEFAULT),
 				new ColumnBinderRegistry(),
-				identifyingConfiguration.getColumnNamingStrategy());
+				identifyingConfiguration.getColumnNamingStrategy(),
+				identifyingConfiguration.getIndexNamingStrategy());
 		
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 				Column::getAbsoluteName,
@@ -99,7 +101,8 @@ class PrimaryKeyStepTest {
 				AbstractIdentification.forSingleKey(identifyingConfiguration),
 				new TableMappingStep<AbstractVehicle, Identifier<Long>>().mapEntityConfigurationToTable(identifyingConfiguration, mainTable, TableNamingStrategy.DEFAULT),
 				new ColumnBinderRegistry(),
-				identifyingConfiguration.getColumnNamingStrategy());
+				identifyingConfiguration.getColumnNamingStrategy(),
+				identifyingConfiguration.getIndexNamingStrategy());
 
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 				Column::getAbsoluteName,

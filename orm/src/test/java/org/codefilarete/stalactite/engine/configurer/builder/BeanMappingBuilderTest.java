@@ -8,6 +8,7 @@ import org.codefilarete.reflection.Accessors;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.MappingEase;
+import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.configurer.FluentEntityMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.BeanMappingConfiguration.Linkage;
@@ -88,7 +89,8 @@ class BeanMappingBuilderTest {
 				new FluentEmbeddableMappingConfigurationSupport(Country.class),
 				countryTable,
 				new ColumnBinderRegistry(), 
-				new ColumnNameProvider(ColumnNamingStrategy.DEFAULT));
+				new ColumnNameProvider(ColumnNamingStrategy.DEFAULT),
+				IndexNamingStrategy.DEFAULT);
 		BeanMappingBuilder<Country, ?>.InternalProcessor internalProcessor = testInstance.new InternalProcessor(false);
 		Linkage<Country, Set> linkageMock = mock(Linkage.class);
 		when(linkageMock.getAccessor()).thenReturn(Accessors.accessor(Country::getCities));
@@ -112,7 +114,8 @@ class BeanMappingBuilderTest {
 					new FluentEmbeddableMappingConfigurationSupport(Country.class),
 					countryTable,
 					new ColumnBinderRegistry(),
-					new ColumnNameProvider(ColumnNamingStrategy.DEFAULT));
+					new ColumnNameProvider(ColumnNamingStrategy.DEFAULT),
+					IndexNamingStrategy.DEFAULT);
 			BeanMappingBuilder.InternalProcessor testInstance = testInstanceBuilder.new InternalProcessor(false);
 			
 			// ... and a linkage that uses a different type

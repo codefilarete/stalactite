@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.dsl.embeddable;
 
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -45,6 +46,9 @@ public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappi
 	
 	@Override
 	FluentEmbeddableMappingBuilder<C> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
+	
+	@Override
+	FluentEmbeddableMappingBuilder<C> withIndexNaming(IndexNamingStrategy indexNamingStrategy);
 	
 	interface FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O>
 			extends FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O>,
@@ -90,6 +94,9 @@ public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappi
 		FluentEmbeddableMappingBuilderEnumOptions<C, E> mandatory();
 		
 		@Override
+		FluentEmbeddableMappingBuilderEnumOptions<C, E> unique();
+		
+		@Override
 		FluentEmbeddableMappingBuilderEnumOptions<C, E> readonly();
 		
 		@Override
@@ -119,6 +126,9 @@ public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappi
 		@Override
 		FluentEmbeddableMappingBuilderPropertyOptions<C, O> mandatory();
 		
+		@Override
+		FluentEmbeddableMappingBuilderPropertyOptions<C, O> unique();
+
 		@Override
 		FluentEmbeddableMappingBuilderPropertyOptions<C, O> setByConstructor();
 		

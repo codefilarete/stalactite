@@ -6,14 +6,21 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
+import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
-import org.codefilarete.stalactite.dsl.MappingConfigurationException;
-import org.codefilarete.stalactite.engine.model.*;
+import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
+import org.codefilarete.stalactite.engine.model.AbstractVehicle;
+import org.codefilarete.stalactite.engine.model.Bicycle;
+import org.codefilarete.stalactite.engine.model.Car;
+import org.codefilarete.stalactite.engine.model.Color;
+import org.codefilarete.stalactite.engine.model.Person;
+import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.engine.model.book.AbstractEntity;
 import org.codefilarete.stalactite.engine.model.book.Author;
 import org.codefilarete.stalactite.engine.model.book.Book;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
@@ -25,6 +32,7 @@ import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
+import org.codefilarete.stalactite.sql.ddl.structure.Index;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
@@ -43,7 +51,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.codefilarete.stalactite.dsl.MappingEase.embeddableBuilder;
 import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
-import static org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy.*;
+import static org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy.databaseAutoIncrement;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.query.model.QueryEase.select;
@@ -260,6 +268,52 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
 			assertThat(loadedCar).isEqualTo(dummyCar);
+		}
+		
+		@Test
+		void indexNamingStrategyChanged() {
+			EntityPersister<Car, Identifier<Long>> persister = entityBuilder(Car.class, LONG_TYPE)
+					.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Car::getModel).unique()
+					.withIndexNaming(linkage -> AccessorDefinition.giveDefinition(linkage.getAccessor()).getName() + "_UK")
+					.mapSuperClass(embeddableBuilder(Vehicle.class)
+							.map(Vehicle::getColor))
+					.build(persistenceContext);
+			
+			assertThat(((ConfiguredPersister<Car, Identifier<Long>>) persister).giveImpliedTables().stream().flatMap(table -> table.getIndexes().stream())
+					.map(Index::getName)
+					.collect(Collectors.toList())).containsExactlyInAnyOrder("model_UK");
+		}
+		
+		@Test
+		void indexNamingStrategyChanged_inParent() {
+			EntityPersister<Car, Identifier<Long>> persister = entityBuilder(Car.class, LONG_TYPE)
+					.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Car::getModel).unique()
+					.mapSuperClass(embeddableBuilder(Vehicle.class)
+							.map(Vehicle::getColor)
+							.withIndexNaming(linkage -> AccessorDefinition.giveDefinition(linkage.getAccessor()).getName() + "_Unique_Index"))
+					.build(persistenceContext);
+			
+			assertThat(((ConfiguredPersister<Car, Identifier<Long>>) persister).giveImpliedTables().stream().flatMap(table -> table.getIndexes().stream())
+					.map(Index::getName)
+					.collect(Collectors.toList())).containsExactlyInAnyOrder("model_Unique_Index");
+		}
+		
+		@Test
+		void indexNamingStrategyChanged_inBoth_lowestTakesPriority() {
+			EntityPersister<Car, Identifier<Long>> persister = entityBuilder(Car.class, LONG_TYPE)
+					.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Car::getModel).unique()
+					.withIndexNaming(linkage -> AccessorDefinition.giveDefinition(linkage.getAccessor()).getName() + "_UK")
+					.mapSuperClass(embeddableBuilder(Vehicle.class)
+							.map(Vehicle::getColor)
+							.withIndexNaming(linkage -> AccessorDefinition.giveDefinition(linkage.getAccessor()).getName() + "_Unique_Index"))
+					.build(persistenceContext);
+			
+			assertThat(((ConfiguredPersister<Car, Identifier<Long>>) persister).giveImpliedTables().stream().flatMap(table -> table.getIndexes().stream())
+					.map(Index::getName)
+					.collect(Collectors.toList())).containsExactlyInAnyOrder("model_UK");
 		}
 		
 		@Test
