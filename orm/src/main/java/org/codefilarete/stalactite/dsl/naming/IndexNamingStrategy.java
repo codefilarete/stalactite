@@ -20,7 +20,7 @@ public interface IndexNamingStrategy {
 	
 	class SnakeCaseIndexNamingStrategy implements IndexNamingStrategy {
 		
-		public static final String DEFAULT_SUFFIX = "Key";
+		public static final String DEFAULT_SUFFIX = "key";
 		
 		@Override
 		public String giveName(Linkage<?, ?> linkage) {
@@ -32,8 +32,8 @@ public interface IndexNamingStrategy {
 				// not a table one, thus their uniqueness must be on that scope too.
 				return Strings.snakeCase(
 						accessorDefinition.getDeclaringClass().getSimpleName()
-								+ accessorDefinition.getName()
-								+ DEFAULT_SUFFIX);
+								+ "_" + accessorDefinition.getName()
+								+ "_" + DEFAULT_SUFFIX);
 			}
 		}
 	}
