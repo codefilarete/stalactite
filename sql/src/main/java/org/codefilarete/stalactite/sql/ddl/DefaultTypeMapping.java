@@ -52,7 +52,7 @@ public class DefaultTypeMapping extends JavaTypeToSqlTypeMapping {
 		put(Number.class, "double");
 		put(Float.class, "float");
 		put(Float.TYPE, "float");
-		put(BigDecimal.class, "decimal($p, $s)", fixedPoint(10, 4));
+		put(BigDecimal.class, "decimal($p, $s)", fixedPoint(38, 2));
 		put(BigInteger.class, "bigint");
 		put(Long.class, "bigint");
 		put(Long.TYPE, "bigint");

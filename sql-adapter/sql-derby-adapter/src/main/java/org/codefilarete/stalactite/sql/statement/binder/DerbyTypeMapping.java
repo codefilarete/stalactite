@@ -1,10 +1,12 @@
 package org.codefilarete.stalactite.sql.statement.binder;
 
 import java.io.File;
+import java.math.BigDecimal;
 import java.nio.file.Path;
 
 import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 
+import static org.codefilarete.stalactite.sql.ddl.Size.fixedPoint;
 import static org.codefilarete.stalactite.sql.ddl.Size.length;
 
 /**
@@ -20,5 +22,7 @@ public class DerbyTypeMapping extends DefaultTypeMapping {
 		put(Path.class, "varchar($l)", length(Integer.MAX_VALUE));
 		put(File.class, "varchar(255)");
 		put(File.class, "varchar($l)", length(Integer.MAX_VALUE));
+		// Derby can only handle BigDecimal with 31 as precision instead of 38 for other databases
+		replace(BigDecimal.class, "decimal($p, $s)", fixedPoint(31, 2));
 	}
 }

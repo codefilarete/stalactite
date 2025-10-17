@@ -79,6 +79,16 @@ public class JavaTypeToSqlTypeMapping {
 		return this;
 	}
 	
+	public void replace(Class clazz, String sqlType) {
+		replace(clazz, sqlType, null);
+	}
+	
+	public void replace(Class clazz, String sqlType, Size size) {
+		SQLTypeHolder replacingValue = new SQLTypeHolder();
+		replacingValue.setType(sqlType, size);
+		javaTypeToSQLType.put(clazz, replacingValue);
+	}
+	
 	/**
 	 * Gives the SQL type of a Java class, checks also for its interfaces
 	 *
