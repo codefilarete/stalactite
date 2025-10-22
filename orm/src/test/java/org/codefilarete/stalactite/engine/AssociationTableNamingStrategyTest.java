@@ -7,6 +7,7 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy.DefaultAssociationTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy.HibernateAssociationTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy.ReferencedColumnNames;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.model.City;
@@ -25,11 +26,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class AssociationTableNamingStrategyTest {
 	
 	@Test
-	void giveName() {
+	void defaultImplementation_giveName() {
 		Table countryTable = new Table(null, "CountryTable");
-		countryTable.addColumn("id", String.class).primaryKey();
+		Column countryTableIdColumn = countryTable.addColumn("id", String.class).primaryKey();
 		Table cityTable = new Table(null, "CityTable");
-		cityTable.addColumn("cityId", String.class).primaryKey();
+		Column cityTableRefIdColumn = cityTable.addColumn("cityId", String.class).primaryKey();
 		
 		
 		DefaultAssociationTableNamingStrategy testInstance = new DefaultAssociationTableNamingStrategy();
@@ -38,7 +39,34 @@ class AssociationTableNamingStrategyTest {
 				"Country_cities");
 		assertThat(testInstance.giveName(new AccessorDefinition(Country.class, "giveCities", Set.class), countryTable.getPrimaryKey(), cityTable.getPrimaryKey())).isEqualTo(
 				"Country_giveCities");
+		ReferencedColumnNames<?, ?> expectedColumns = new ReferencedColumnNames<>();
+		expectedColumns.setLeftColumnName(countryTableIdColumn, "countryTable_id");
+		expectedColumns.setRightColumnName(cityTableRefIdColumn, "giveCities_cityId");
+		assertThat(testInstance.giveColumnNames(new AccessorDefinition(Country.class, "giveCities", Set.class), countryTable.getPrimaryKey(), cityTable.getPrimaryKey()))
+				.usingRecursiveComparison()
+				.isEqualTo(expectedColumns);
+	}
+	
+	@Test
+	void hibernateImplementation_giveName() {
+		Table countryTable = new Table(null, "CountryTable");
+		Column countryTableIdColumn = countryTable.addColumn("id", String.class).primaryKey();
+		Table cityTable = new Table(null, "CityTable");
+		Column cityTableRefIdColumn = cityTable.addColumn("cityId", String.class).primaryKey();
 		
+		
+		HibernateAssociationTableNamingStrategy testInstance = new HibernateAssociationTableNamingStrategy();
+		
+		assertThat(testInstance.giveName(new AccessorDefinition(Country.class, "cities", Set.class), countryTable.getPrimaryKey(), cityTable.getPrimaryKey())).isEqualTo(
+				"CountryTable_CityTable");
+		assertThat(testInstance.giveName(new AccessorDefinition(Country.class, "giveCities", Set.class), countryTable.getPrimaryKey(), cityTable.getPrimaryKey())).isEqualTo(
+				"CountryTable_CityTable");
+		ReferencedColumnNames<?, ?> expectedColumns = new ReferencedColumnNames<>();
+		expectedColumns.setLeftColumnName(countryTableIdColumn, "countryTable_id");
+		expectedColumns.setRightColumnName(cityTableRefIdColumn, "cityId");
+		assertThat(testInstance.giveColumnNames(new AccessorDefinition(Country.class, "giveCities", Set.class), countryTable.getPrimaryKey(), cityTable.getPrimaryKey()))
+				.usingRecursiveComparison()
+				.isEqualTo(expectedColumns);
 	}
 	
 	@Nested

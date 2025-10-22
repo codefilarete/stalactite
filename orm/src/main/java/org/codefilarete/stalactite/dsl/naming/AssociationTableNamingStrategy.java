@@ -110,6 +110,8 @@ public interface AssociationTableNamingStrategy {
 	
 	AssociationTableNamingStrategy DEFAULT = new DefaultAssociationTableNamingStrategy();
 	
+	AssociationTableNamingStrategy HIBERNATE = new HibernateAssociationTableNamingStrategy();
+	
 	/**
 	 * Default implementation of the {@link AssociationTableNamingStrategy} interface.
 	 * Will use relation property name for it, prefixed with source table name.
@@ -150,6 +152,48 @@ public interface AssociationTableNamingStrategy {
 				if (existingColumns.contains(rightColumnName)) {
 					throw new MappingConfigurationException("Identical column names in association table of collection "
 							+ accessorDefinition + " : " + rightColumnName);
+				}
+				result.setRightColumnName(column, rightColumnName);
+			});
+			return result;
+		}
+	}
+	
+	/**
+	 * Hibernate implementation of the {@link AssociationTableNamingStrategy} interface.
+	 * The table name is made of left table one and right table one, separated by an underscore.
+	 * @author Guillaume Mary
+	 */
+	class HibernateAssociationTableNamingStrategy implements AssociationTableNamingStrategy {
+		
+		@Override
+		public <LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
+		String giveName(AccessorDefinition accessor, PrimaryKey<LEFTTABLE, ?> source, PrimaryKey<RIGHTTABLE, ?> target) {
+			return source.getTable().getName() + "_" + target.getTable().getName();
+		}
+		
+		@Override
+		public <LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, LEFTID, RIGHTID>
+		ReferencedColumnNames<LEFTTABLE, RIGHTTABLE> giveColumnNames(AccessorDefinition accessor,
+																	 PrimaryKey<LEFTTABLE, LEFTID> leftPrimaryKey,
+																	 PrimaryKey<RIGHTTABLE, RIGHTID> rightPrimaryKey) {
+			
+			ReferencedColumnNames<LEFTTABLE, RIGHTTABLE> result = new ReferencedColumnNames<>();
+			
+			// columns pointing to left table get same names as original ones
+			leftPrimaryKey.getColumns().forEach(column -> {
+				String leftColumnName = Strings.uncapitalize(leftPrimaryKey.getTable().getName()) + "_" + column.getName();
+				result.setLeftColumnName(column, leftColumnName);
+			});
+			Set<String> existingColumns = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+			existingColumns.addAll(result.leftColumnNames.values());
+			
+			// columns pointing to right table get a name that contains accessor definition name
+			rightPrimaryKey.getColumns().forEach(column -> {
+				String rightColumnName = column.getName();
+				if (existingColumns.contains(rightColumnName)) {
+					throw new MappingConfigurationException("Identical column names in association table of collection "
+							+ accessor + " : " + rightColumnName);
 				}
 				result.setRightColumnName(column, rightColumnName);
 			});
