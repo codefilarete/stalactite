@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.model;
+package org.codefilarete.stalactite.engine.model.survey;
 
 public class Question extends Element {
 	

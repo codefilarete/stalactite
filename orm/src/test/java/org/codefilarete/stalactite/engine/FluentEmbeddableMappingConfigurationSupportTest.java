@@ -7,6 +7,9 @@ import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.PersonWithGender;
 import org.codefilarete.stalactite.engine.model.Timestamp;
+import org.codefilarete.stalactite.id.Identified;
+import org.codefilarete.stalactite.id.Identifier;
+import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -129,6 +132,26 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 					.mapEnum(PersonWithGender::getGender).columnName("MM").byOrdinal()
 					.mapEnum(PersonWithGender::getGender).columnName("MM").mandatory()
 					.map(PersonWithGender::getId).columnName("zz")
+					.mapEnum(PersonWithGender::setGender).byName()
+					.embed(Person::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+							.map(Timestamp::getCreationDate)
+							.map(Timestamp::getModificationDate))
+					.mapEnum(PersonWithGender::setGender).columnName("MM").byName();
+		} catch (RuntimeException e) {
+			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
+		}
+		try {
+			MappingEase.embeddableBuilder(PersonWithGender.class)
+					.map(Person::getName)
+					.mapEnum(PersonWithGender::getGender).byOrdinal()
+					.embed(Person::setTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+							.map(Timestamp::getCreationDate)
+							.map(Timestamp::getModificationDate))
+					.overrideName(Timestamp::getCreationDate, "myDate")
+					.mapOneToOne(Person::getCountry, MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.columnName("zz"))
 					.mapEnum(PersonWithGender::setGender).byName()
 					.embed(Person::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 							.map(Timestamp::getCreationDate)

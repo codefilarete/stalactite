@@ -15,6 +15,7 @@ import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.ColumnOptions;
 import org.codefilarete.stalactite.dsl.property.ElementCollectionOptions;
 import org.codefilarete.stalactite.dsl.property.EnumOptions;
+import org.codefilarete.stalactite.dsl.relation.OneToOneEntityOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToOneOptions;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -186,7 +187,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 	}
 	
 	interface FluentMappingBuilderOneToOneOptions<C, I, O> extends FluentSubEntityMappingBuilder<C, I>,
-			OneToOneOptions<C, I, O> {
+			OneToOneEntityOptions<C, I, O> {
 		
 		/**
 		 * {@inheritDoc}

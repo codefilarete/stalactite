@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine.configurer.builder;
 
+import org.codefilarete.stalactite.dsl.RelationalMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
@@ -35,8 +36,8 @@ public class RelationsStep<C, I> {
 			// WARN : this MUST BE DONE BEFORE POLYMORPHISM HANDLING because it needs them to create adhoc joins on sub entities tables
 			inheritanceMappingPerTable.getMappings().stream()
 					.map(Mapping::getMappingConfiguration)
-					.filter(EntityMappingConfiguration.class::isInstance)
-					.map(EntityMappingConfiguration.class::cast)
+					.filter(RelationalMappingConfiguration.class::isInstance)
+					.map(RelationalMappingConfiguration.class::cast)
 					.forEach(relationConfigurer::configureRelations);
 		});
 	}

@@ -1,13 +1,11 @@
-package org.codefilarete.stalactite.dsl.entity;
+package org.codefilarete.stalactite.dsl.embeddable;
 
-import org.codefilarete.stalactite.dsl.relation.OneToOneEntityOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToOneOptions;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
-public interface FluentMappingBuilderOneToOneOptions<C, I, O> extends FluentEntityMappingBuilder<C, I>,
-		OneToOneEntityOptions<C, I, O> {
+public interface FluentEmbeddableMappingBuilderOneToOneOptions<C, O> extends FluentEmbeddableMappingBuilder<C>,
+		OneToOneOptions<C, O> {
 	
 	/**
 	 * {@inheritDoc}
@@ -16,7 +14,7 @@ public interface FluentMappingBuilderOneToOneOptions<C, I, O> extends FluentEnti
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentMappingBuilderOneToOneOptions<C, I, O> mandatory();
+	FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mandatory();
 	
 	/**
 	 * {@inheritDoc}
@@ -25,7 +23,7 @@ public interface FluentMappingBuilderOneToOneOptions<C, I, O> extends FluentEnti
 	 * @param reverseLink opposite owner of the relation (setter)
 	 * @return the global mapping configurer
 	 */
-	FluentMappingBuilderOneToOneOptions<C, I, O> mappedBy(SerializableBiConsumer<? super O, C> reverseLink);
+	FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mappedBy(SerializableBiConsumer<? super O, C> reverseLink);
 	
 	/**
 	 * {@inheritDoc}
@@ -35,17 +33,7 @@ public interface FluentMappingBuilderOneToOneOptions<C, I, O> extends FluentEnti
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentMappingBuilderOneToOneOptions<C, I, O> mappedBy(SerializableFunction<? super O, C> reverseLink);
-	
-	/**
-	 * {@inheritDoc}
-	 * Declaration overridden to adapt return type to this class.
-	 *
-	 * @param reverseLink opposite owner of the relation
-	 * @return the global mapping configurer
-	 */
-	@Override
-	FluentMappingBuilderOneToOneOptions<C, I, O> mappedBy(Column<?, I> reverseLink);
+	FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mappedBy(SerializableFunction<? super O, C> reverseLink);
 	
 	/**
 	 * {@inheritDoc}
@@ -55,7 +43,7 @@ public interface FluentMappingBuilderOneToOneOptions<C, I, O> extends FluentEnti
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentMappingBuilderOneToOneOptions<C, I, O> mappedBy(String reverseColumnName);
+	FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mappedBy(String reverseColumnName);
 	
 	/**
 	 * {@inheritDoc}
@@ -65,7 +53,7 @@ public interface FluentMappingBuilderOneToOneOptions<C, I, O> extends FluentEnti
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentMappingBuilderOneToOneOptions<C, I, O> cascading(RelationMode relationMode);
+	FluentEmbeddableMappingBuilderOneToOneOptions<C, O> cascading(RelationMode relationMode);
 	
 	/**
 	 * {@inheritDoc}
@@ -74,5 +62,5 @@ public interface FluentMappingBuilderOneToOneOptions<C, I, O> extends FluentEnti
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentMappingBuilderOneToOneOptions<C, I, O> fetchSeparately();
+	FluentEmbeddableMappingBuilderOneToOneOptions<C, O> fetchSeparately();
 }

@@ -23,6 +23,7 @@ import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointByMethodReference;
+import org.codefilarete.stalactite.dsl.relation.OneToOneEntityOptions;
 import org.codefilarete.stalactite.dsl.subentity.FluentSubEntityMappingBuilderOneToManyOptions;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.ColumnOptions;
@@ -318,45 +319,45 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	private <O, J> FluentMappingBuilderOneToOneOptions<C, I, O> wrapForAdditionalOptions(OneToOneRelation<C, O, J> oneToOneRelation) {
 		// then we return an object that allows fluent settings over our OneToOne cascade instance
 		return new MethodDispatcher()
-				.redirect(OneToOneOptions.class, new OneToOneOptions<C, J, O>() {
+				.redirect(OneToOneEntityOptions.class, new OneToOneEntityOptions<C, J, O>() {
 					@Override
-					public OneToOneOptions<C, J, O> cascading(RelationMode relationMode) {
+					public OneToOneOptions<C, O> cascading(RelationMode relationMode) {
 						oneToOneRelation.setRelationMode(relationMode);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions<C, J, O> mandatory() {
+					public OneToOneEntityOptions<C, J, O> mandatory() {
 						oneToOneRelation.setNullable(false);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions<C, J, O> mappedBy(SerializableFunction<? super O, C> reverseLink) {
+					public OneToOneEntityOptions<C, J, O> mappedBy(SerializableFunction<? super O, C> reverseLink) {
 						oneToOneRelation.setReverseGetter(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions<C, J, O> mappedBy(SerializableBiConsumer<? super O, C> reverseLink) {
+					public OneToOneEntityOptions<C, J, O> mappedBy(SerializableBiConsumer<? super O, C> reverseLink) {
 						oneToOneRelation.setReverseSetter(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions<C, J, O> mappedBy(Column<?, J> reverseLink) {
+					public OneToOneEntityOptions<C, J, O> mappedBy(Column<?, J> reverseLink) {
 						oneToOneRelation.setReverseColumn(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions<C, J, O> mappedBy(String reverseColumnName) {
+					public OneToOneEntityOptions<C, J, O> mappedBy(String reverseColumnName) {
 						oneToOneRelation.setReverseColumn(reverseColumnName);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions<C, J, O> fetchSeparately() {
+					public OneToOneEntityOptions<C, J, O> fetchSeparately() {
 						oneToOneRelation.fetchSeparately();
 						return null;	// we can return null because dispatcher will return proxy
 					}

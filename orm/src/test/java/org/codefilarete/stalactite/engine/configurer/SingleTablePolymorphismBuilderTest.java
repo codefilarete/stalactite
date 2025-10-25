@@ -11,9 +11,9 @@ import org.codefilarete.stalactite.dsl.PolymorphismPolicy.SingleTablePolymorphis
 import org.codefilarete.stalactite.engine.model.AbstractVehicle;
 import org.codefilarete.stalactite.engine.model.Car;
 import org.codefilarete.stalactite.engine.model.Color;
-import org.codefilarete.stalactite.engine.model.Element;
-import org.codefilarete.stalactite.engine.model.Part;
-import org.codefilarete.stalactite.engine.model.Question;
+import org.codefilarete.stalactite.engine.model.survey.Element;
+import org.codefilarete.stalactite.engine.model.survey.Part;
+import org.codefilarete.stalactite.engine.model.survey.Question;
 import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;

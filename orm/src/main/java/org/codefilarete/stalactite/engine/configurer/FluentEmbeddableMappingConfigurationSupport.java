@@ -5,7 +5,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 
 import org.codefilarete.reflection.Accessor;
@@ -13,14 +15,18 @@ import org.codefilarete.reflection.AccessorByMethod;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
+import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilderOneToOneOptions;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
@@ -31,7 +37,14 @@ import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder
 import org.codefilarete.stalactite.dsl.embeddable.ImportedEmbedOptions;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.property.PropertyOptions;
+import org.codefilarete.stalactite.dsl.relation.OneToOneOptions;
 import org.codefilarete.stalactite.engine.configurer.PropertyAccessorResolver.PropertyMapping;
+import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
+import org.codefilarete.stalactite.engine.configurer.manyToOne.ManyToOneRelation;
+import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
+import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
+import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
+import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -41,6 +54,7 @@ import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.SerializableTriFunction;
 import org.codefilarete.tool.function.ThreadSafeLazyInitializer;
+import org.codefilarete.tool.reflect.MethodDispatcher;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
@@ -57,6 +71,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	
 	/** Owning class of mapped properties */
 	private final Class<C> classToPersist;
+	
+	private final List<OneToOneRelation<C, ?, ?>> oneToOneRelations = new ArrayList<>();
 	
 	@Nullable
 	private ColumnNamingStrategy columnNamingStrategy;
@@ -134,6 +150,82 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	@Override
 	public Method captureLambdaMethod(SerializableBiConsumer setter) {
 		return this.methodSpy.findMethod(setter);
+	}
+	
+	@Override
+	public <O, J> FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mapOneToOne(SerializableFunction<C, O> getter,
+														 EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
+		// we keep close to user demand: we keep its method reference ...
+		AccessorByMethodReference<C, O> accessorByMethodReference = Accessors.accessorByMethodReference(getter);
+		// ... but we can't do it for mutator, so we use the most equivalent manner: a mutator based on getter method (fallback to property if not present)
+		Mutator<C, O> mutator = new AccessorByMethod<C, O>(captureLambdaMethod(getter)).toMutator();
+		return mapOneToOne(accessorByMethodReference, mutator, mappingConfiguration);
+	}
+	
+	@Override
+	public <O, J> FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mapOneToOne(SerializableBiConsumer<C, O> setter,
+														 EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
+		// we keep close to user demand: we keep its method reference ...
+		Mutator<C, O> mutatorByMethodReference = Accessors.mutatorByMethodReference(setter);
+		// ... but we can't do it for accessor, so we use the most equivalent manner: an accessor based on setter method (fallback to property if not present)
+		Accessor<C, O> accessor = new MutatorByMethod<C, O>(captureLambdaMethod(setter)).toAccessor();
+		return mapOneToOne(accessor, mutatorByMethodReference, mappingConfiguration);
+	}
+	
+	private <O, J> FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mapOneToOne(
+			Accessor<C, O> accessor,
+			Mutator<C, O> mutator,
+			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
+		OneToOneRelation<C, O, J> oneToOneRelation = new OneToOneRelation<>(
+				new PropertyAccessor<>(accessor, mutator),
+				() -> false,
+				mappingConfiguration);
+		this.oneToOneRelations.add((OneToOneRelation<C, Object, Object>) oneToOneRelation);
+		return wrapForAdditionalOptions(oneToOneRelation);
+	}
+	
+	private <O, J> FluentEmbeddableMappingBuilderOneToOneOptions<C, O> wrapForAdditionalOptions(OneToOneRelation<C, O, J> oneToOneRelation) {
+		// then we return an object that allows fluent settings over our OneToOne cascade instance
+		return new MethodDispatcher()
+				.redirect(OneToOneOptions.class, new OneToOneOptions<C, O>() {
+					@Override
+					public OneToOneOptions<C, O> cascading(RelationMode relationMode) {
+						oneToOneRelation.setRelationMode(relationMode);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
+					public OneToOneOptions<C, O> mandatory() {
+						oneToOneRelation.setNullable(false);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
+					public OneToOneOptions<C, O> mappedBy(SerializableFunction<? super O, C> reverseLink) {
+						oneToOneRelation.setReverseGetter(reverseLink);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
+					public OneToOneOptions<C, O> mappedBy(SerializableBiConsumer<? super O, C> reverseLink) {
+						oneToOneRelation.setReverseSetter(reverseLink);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
+					public OneToOneOptions<C, O> mappedBy(String reverseColumnName) {
+						oneToOneRelation.setReverseColumn(reverseColumnName);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
+					public OneToOneOptions<C, O> fetchSeparately() {
+						oneToOneRelation.fetchSeparately();
+						return null;	// we can return null because dispatcher will return proxy
+					}
+				}, true)	// true to allow "return null" in implemented methods
+				.fallbackOn(this)
+				.build((Class<FluentEmbeddableMappingBuilderOneToOneOptions<C, O>>) (Class) FluentEmbeddableMappingBuilderOneToOneOptions.class);
 	}
 	
 	@Override
@@ -439,6 +531,41 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 				}, true)
 				.fallbackOn(this)
 				.build((Class<FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O>>) (Class) FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions.class);
+	}
+	
+	@Override
+	public Class<C> getEntityType() {
+		return classToPersist;
+	}
+	
+	@Override
+	public <TRGT, TRGTID> List<OneToOneRelation<C, TRGT, TRGTID>> getOneToOnes() {
+		return (List) oneToOneRelations;
+	}
+	
+	@Override
+	public <TRGT, TRGTID> List<OneToManyRelation<C, TRGT, TRGTID, Collection<TRGT>>> getOneToManys() {
+		return Collections.emptyList();
+	}
+	
+	@Override
+	public <TRGT, TRGTID> List<ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>>> getManyToManys() {
+		return Collections.emptyList();
+	}
+	
+	@Override
+	public <TRGT, TRGTID> List<ManyToOneRelation<C, TRGT, TRGTID, Collection<C>>> getManyToOnes() {
+		return Collections.emptyList();
+	}
+	
+	@Override
+	public <TRGT> List<ElementCollectionRelation<C, TRGT, ? extends Collection<TRGT>>> getElementCollections() {
+		return Collections.emptyList();
+	}
+	
+	@Override
+	public List<MapRelation<C, ?, ?, ? extends Map>> getMaps() {
+		return Collections.emptyList();
 	}
 	
 	/**

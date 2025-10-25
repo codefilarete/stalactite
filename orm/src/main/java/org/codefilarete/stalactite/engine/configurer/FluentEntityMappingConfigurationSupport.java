@@ -67,6 +67,7 @@ import org.codefilarete.stalactite.dsl.property.PropertyOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToManyOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToOneOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyOptions;
+import org.codefilarete.stalactite.dsl.relation.OneToOneEntityOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToOneOptions;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.VersioningStrategy;
@@ -119,13 +120,13 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	private final MethodReferenceCapturer methodSpy;
 	
-	private final List<OneToOneRelation<C, Object, Object>> oneToOneRelations = new ArrayList<>();
+	private final List<OneToOneRelation<C, ?, ?>> oneToOneRelations = new ArrayList<>();
 	
 	private final List<OneToManyRelation<C, ?, ?, ? extends Collection>> oneToManyRelations = new ArrayList<>();
 	
 	private final List<ManyToManyRelation<C, ?, ?, ? extends Collection, ? extends Collection>> manyToManyRelations = new ArrayList<>();
 	
-	private final List<ManyToOneRelation<C, Object, Object, Collection<C>>> manyToOneRelations = new ArrayList<>();
+	private final List<ManyToOneRelation<C, ?, ?, Collection<C>>> manyToOneRelations = new ArrayList<>();
 	
 	private final List<ElementCollectionRelation<C, ?, ? extends Collection>> elementCollections = new ArrayList<>();
 	
@@ -243,8 +244,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public List<ManyToOneRelation<C, Object, Object, Collection<C>>> getManyToOnes() {
-		return manyToOneRelations;
+	public <TRGT, TRGTID> List<ManyToOneRelation<C, TRGT, TRGTID, Collection<C>>> getManyToOnes() {
+		return (List) manyToOneRelations;
 	}
 	
 	@Override
@@ -691,45 +692,45 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	private <O, J> FluentMappingBuilderOneToOneOptions<C, I, O> wrapForAdditionalOptions(OneToOneRelation<C, O, J> oneToOneRelation) {
 		// then we return an object that allows fluent settings over our OneToOne cascade instance
 		return new MethodDispatcher()
-				.redirect(OneToOneOptions.class, new OneToOneOptions<C, J, O>() {
+				.redirect(OneToOneEntityOptions.class, new OneToOneEntityOptions<C, J, O>() {
 					@Override
-					public OneToOneOptions<C, J, O> cascading(RelationMode relationMode) {
+					public OneToOneOptions<C, O> cascading(RelationMode relationMode) {
 						oneToOneRelation.setRelationMode(relationMode);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions<C, J, O> mandatory() {
+					public OneToOneEntityOptions<C, J, O> mandatory() {
 						oneToOneRelation.setNullable(false);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions<C, J, O> mappedBy(SerializableFunction<? super O, C> reverseLink) {
+					public OneToOneEntityOptions<C, J, O> mappedBy(SerializableFunction<? super O, C> reverseLink) {
 						oneToOneRelation.setReverseGetter(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions<C, J, O> mappedBy(SerializableBiConsumer<? super O, C> reverseLink) {
+					public OneToOneEntityOptions<C, J, O> mappedBy(SerializableBiConsumer<? super O, C> reverseLink) {
 						oneToOneRelation.setReverseSetter(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions<C, J, O> mappedBy(Column<?, J> reverseLink) {
+					public OneToOneEntityOptions<C, J, O> mappedBy(Column<?, J> reverseLink) {
 						oneToOneRelation.setReverseColumn(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions<C, J, O> mappedBy(String reverseColumnName) {
+					public OneToOneEntityOptions<C, J, O> mappedBy(String reverseColumnName) {
 						oneToOneRelation.setReverseColumn(reverseColumnName);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions<C, J, O> fetchSeparately() {
+					public OneToOneEntityOptions<C, J, O> fetchSeparately() {
 						oneToOneRelation.fetchSeparately();
 						return null;	// we can return null because dispatcher will return proxy
 					}

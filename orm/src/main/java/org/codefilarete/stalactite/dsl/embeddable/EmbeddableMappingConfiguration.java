@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.stalactite.dsl.RelationalMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.Inset;
@@ -21,7 +22,7 @@ import org.codefilarete.tool.function.Converter;
  * 
  * @author Guillaume Mary
  */
-public interface EmbeddableMappingConfiguration<C> {
+public interface EmbeddableMappingConfiguration<C> extends RelationalMappingConfiguration<C> {
 	
 	Class<C> getBeanType();
 	

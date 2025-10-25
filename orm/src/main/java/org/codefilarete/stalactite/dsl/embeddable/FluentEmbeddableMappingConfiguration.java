@@ -1,6 +1,9 @@
 package org.codefilarete.stalactite.dsl.embeddable;
 
 import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
+import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
+import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToOneOptions;
 import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.EnumOptions;
 import org.codefilarete.stalactite.dsl.property.PropertyOptions;
@@ -60,6 +63,31 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	
 	<O> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableBiConsumer<C, O> setter,
 																			 EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
+	
+	/**
+	 * Declares a direct relation between current entity and some of type {@code O}.
+	 *
+	 * @param getter the way to get the target entity
+	 * @param mappingConfiguration the mapping configuration of the target entity
+	 * @param <O> type of target entity
+	 * @param <J> type of identifier of {@code O}
+	 * @return an enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
+	 */
+	<O, J> FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mapOneToOne(SerializableFunction<C, O> getter,
+																		   EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
+	
+	/**
+	 * Declares a direct relation between current entity and some of type {@code O}.
+	 *
+	 * @param setter the way to set the target entity
+	 * @param mappingConfiguration the mapping configuration of the target entity
+	 * @param <O> type of target entity
+	 * @param <J> type of identifier of {@code O}
+	 * @return an enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
+	 */
+	<O, J> FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mapOneToOne(SerializableBiConsumer<C, O> setter,
+																		   EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
+	
 	
 	/**
 	 * Change default column naming strategy, which is {@link ColumnNamingStrategy#DEFAULT}, by the given one.

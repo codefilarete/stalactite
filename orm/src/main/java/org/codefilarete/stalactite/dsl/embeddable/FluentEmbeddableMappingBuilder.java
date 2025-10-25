@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.dsl.embeddable;
 
 import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.sql.ddl.Size;
@@ -45,6 +46,14 @@ public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappi
 																									 EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
 	@Override
+	<O, J> FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mapOneToOne(SerializableFunction<C, O> getter,
+																		   EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
+	
+	@Override
+	<O, J> FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mapOneToOne(SerializableBiConsumer<C, O> setter,
+																		   EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
+	
+	@Override
 	FluentEmbeddableMappingBuilder<C> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	
 	@Override
@@ -81,8 +90,7 @@ public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappi
 	}
 	
 	interface FluentEmbeddableMappingBuilderEnumOptions<C, E extends Enum<E>>
-			extends FluentEmbeddableMappingConfigurationEnumOptions<C, E>,
-		FluentEmbeddableMappingBuilder<C> {
+			extends FluentEmbeddableMappingConfigurationEnumOptions<C, E>, FluentEmbeddableMappingBuilder<C> {
 		
 		@Override
 		FluentEmbeddableMappingBuilderEnumOptions<C, E> byName();
