@@ -1,13 +1,10 @@
 package org.codefilarete.stalactite.dsl.naming;
 
-import java.util.List;
-
 import org.codefilarete.reflection.PropertyAccessor;
-import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.BeanMappingConfiguration.Linkage;
+import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration.Linkage;
 import org.codefilarete.stalactite.engine.model.AbstractVehicle;
 import org.codefilarete.stalactite.engine.model.PersonWithGender;
 import org.codefilarete.tool.collection.Arrays;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;

@@ -24,8 +24,9 @@ import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
-import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder;
-import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.ColumnNameProvider;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.ColumnNameProvider;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableLinkage;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
@@ -53,7 +54,6 @@ import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.PairIterator;
 
-import static org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.BeanMappingConfiguration.Linkage;
 import static org.codefilarete.tool.Nullable.nullable;
 import static org.codefilarete.tool.bean.Objects.preventNull;
 
@@ -159,10 +159,10 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 			elementRecordMapping = new ElementRecordMapping<>(targetTable, elementColumn, sourceIdentifierAssembler, primaryKeyForeignColumnMapping);
 		} else {
 			// a special configuration was given, we compute a EmbeddedClassMapping from it
-			BeanMappingBuilder<TRGT, COLLECTIONTABLE> elementCollectionMappingBuilder = new BeanMappingBuilder<>(embeddableConfiguration, targetTable,
+			EmbeddableMappingBuilder<TRGT, COLLECTIONTABLE> elementCollectionMappingBuilder = new EmbeddableMappingBuilder<>(embeddableConfiguration, targetTable,
 					dialect.getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
 				@Override
-				protected String giveColumnName(Linkage pawn) {
+				protected String giveColumnName(EmbeddableLinkage pawn) {
 					return nullable(linkage.getOverriddenColumnNames().get(pawn.getAccessor()))
 							.getOr(() -> super.giveColumnName(pawn));
 				}

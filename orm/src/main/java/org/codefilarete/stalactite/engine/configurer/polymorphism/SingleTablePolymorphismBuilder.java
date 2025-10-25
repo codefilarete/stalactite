@@ -11,8 +11,8 @@ import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.dsl.subentity.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
-import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder;
-import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.BeanMapping;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.builder.MainPersisterStep;
@@ -102,18 +102,18 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 		// as a difference with other polymorphic cases, we don't use the following line to get the target table, but
 		// only to ensure that configuration is right because it raises an exception if the user gave a column that is
 		// not part of target table
-		BeanMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping(), mainTable);
+		EmbeddableMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping(), mainTable);
 		
-		BeanMappingBuilder<D, T> beanMappingBuilder = new BeanMappingBuilder<>(subConfiguration.getPropertiesMapping(),
+		EmbeddableMappingBuilder<D, T> embeddableMappingBuilder = new EmbeddableMappingBuilder<>(subConfiguration.getPropertiesMapping(),
 				mainTable,
 				this.columnBinderRegistry,
 				this.namingConfiguration.getColumnNamingStrategy(),
 				this.namingConfiguration.getIndexNamingStrategy());
-		BeanMapping<D, T> beanMapping = beanMappingBuilder.build();
-		Map<ReversibleAccessor<D, Object>, Column<T, Object>> subEntityPropertiesMapping = beanMapping.getMapping();
-		Map<ReversibleAccessor<D, Object>, Column<T, Object>> subEntityReadonlyPropertiesMapping = beanMapping.getReadonlyMapping();
-		ValueAccessPointMap<D, Converter<Object, Object>> subEntityPropertiesReadConverters = beanMapping.getReadConverters();
-		ValueAccessPointMap<D, Converter<Object, Object>> subEntityPropertiesWriteConverters = beanMapping.getWriteConverters();
+		EmbeddableMapping<D, T> embeddableMapping = embeddableMappingBuilder.build();
+		Map<ReversibleAccessor<D, Object>, Column<T, Object>> subEntityPropertiesMapping = embeddableMapping.getMapping();
+		Map<ReversibleAccessor<D, Object>, Column<T, Object>> subEntityReadonlyPropertiesMapping = embeddableMapping.getReadonlyMapping();
+		ValueAccessPointMap<D, Converter<Object, Object>> subEntityPropertiesReadConverters = embeddableMapping.getReadConverters();
+		ValueAccessPointMap<D, Converter<Object, Object>> subEntityPropertiesWriteConverters = embeddableMapping.getWriteConverters();
 		// in single-table polymorphism, main properties must be given to sub-entities ones, because CRUD operations are dispatched to them
 		// by a proxy and main persister is not so much used
 		subEntityPropertiesMapping.putAll((Map) mainMapping);

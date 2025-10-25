@@ -11,8 +11,8 @@ import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy.JoinTablePolymorphism;
 import org.codefilarete.stalactite.dsl.subentity.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
-import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder;
-import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.BeanMapping;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.builder.IdentifierManagerStep;
@@ -88,19 +88,19 @@ public class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends Abst
 		// then the one defined by inheritance
 		// if both are null we'll create a new one
 		Table tableDefinedByInheritanceConfiguration = joinTablePolymorphism.giveTable(subConfiguration);
-		Table tableDefinedByColumnOverride = BeanMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping(), tableDefinedByInheritanceConfiguration);
+		Table tableDefinedByColumnOverride = EmbeddableMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping(), tableDefinedByInheritanceConfiguration);
 		
 		SUBT subTable = (SUBT) nullable(tableDefinedByColumnOverride)
 				.elseSet(tableDefinedByInheritanceConfiguration)
 				.getOr(() -> new Table<>(namingConfiguration.getTableNamingStrategy().giveName(subConfiguration.getEntityType())));
 		
-		BeanMappingBuilder<D, SUBT> beanMappingBuilder = new BeanMappingBuilder<>(subConfiguration.getPropertiesMapping(), subTable,
+		EmbeddableMappingBuilder<D, SUBT> embeddableMappingBuilder = new EmbeddableMappingBuilder<>(subConfiguration.getPropertiesMapping(), subTable,
 				this.columnBinderRegistry, this.namingConfiguration.getColumnNamingStrategy(), this.namingConfiguration.getIndexNamingStrategy());
-		BeanMapping<D, SUBT> beanMapping = beanMappingBuilder.build();
-		Map<ReversibleAccessor<D, Object>, Column<SUBT, Object>> subEntityPropertiesMapping = beanMapping.getMapping();
-		Map<ReversibleAccessor<D, Object>, Column<SUBT, Object>> subEntityReadonlyPropertiesMapping = beanMapping.getReadonlyMapping();
-		ValueAccessPointMap<D, Converter<Object, Object>> subEntityPropertiesConverters = beanMapping.getReadConverters();
-		ValueAccessPointMap<D, Converter<Object, Object>> subEntityPropertiesWriteConverters = beanMapping.getWriteConverters();
+		EmbeddableMapping<D, SUBT> embeddableMapping = embeddableMappingBuilder.build();
+		Map<ReversibleAccessor<D, Object>, Column<SUBT, Object>> subEntityPropertiesMapping = embeddableMapping.getMapping();
+		Map<ReversibleAccessor<D, Object>, Column<SUBT, Object>> subEntityReadonlyPropertiesMapping = embeddableMapping.getReadonlyMapping();
+		ValueAccessPointMap<D, Converter<Object, Object>> subEntityPropertiesConverters = embeddableMapping.getReadConverters();
+		ValueAccessPointMap<D, Converter<Object, Object>> subEntityPropertiesWriteConverters = embeddableMapping.getWriteConverters();
 		addPrimarykey(subTable);
 		addForeignKey(subTable);
 		Mapping<D, SUBT> subEntityMapping = new Mapping<>(subConfiguration, subTable,

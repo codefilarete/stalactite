@@ -15,8 +15,8 @@ import org.codefilarete.stalactite.dsl.idpolicy.GeneratedKeysPolicy;
 import org.codefilarete.stalactite.dsl.subentity.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.SingleColumnIdentification;
-import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder;
-import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.BeanMapping;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.builder.IdentifierManagerStep;
@@ -134,19 +134,19 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 		// then the one defined by inheritance
 		// if both are null we'll create a new one
 		Table tableDefinedByInheritanceConfiguration = ((TablePerClassPolymorphism<D>) polymorphismPolicy).giveTable(subConfiguration);
-		Table tableDefinedByColumnOverride = BeanMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping(), tableDefinedByInheritanceConfiguration);
+		Table tableDefinedByColumnOverride = EmbeddableMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping(), tableDefinedByInheritanceConfiguration);
 		
 		SUBTABLE subTable = (SUBTABLE) nullable(tableDefinedByColumnOverride)
 				.elseSet(tableDefinedByInheritanceConfiguration)
 				.getOr(() -> new Table(namingConfiguration.getTableNamingStrategy().giveName(subConfiguration.getEntityType())));
 		
-		BeanMappingBuilder<D, SUBTABLE> beanMappingBuilder = new BeanMappingBuilder<>(subConfiguration.getPropertiesMapping(), subTable,
+		EmbeddableMappingBuilder<D, SUBTABLE> embeddableMappingBuilder = new EmbeddableMappingBuilder<>(subConfiguration.getPropertiesMapping(), subTable,
 				this.columnBinderRegistry, this.namingConfiguration.getColumnNamingStrategy(), this.namingConfiguration.getIndexNamingStrategy());
-		BeanMapping<D, SUBTABLE> beanMapping = beanMappingBuilder.build();
-		Map<ReversibleAccessor<D, Object>, Column<SUBTABLE, Object>> subEntityPropertiesMapping = beanMapping.getMapping();
-		Map<ReversibleAccessor<D, Object>, Column<SUBTABLE, Object>> subEntityReadonlyPropertiesMapping = beanMapping.getReadonlyMapping();
-		ValueAccessPointMap<D, Converter<Object, Object>> subEntityPropertiesReadConverters = beanMapping.getReadConverters();
-		ValueAccessPointMap<D, Converter<Object, Object>> subEntityPropertiesWriteConverters = beanMapping.getWriteConverters();
+		EmbeddableMapping<D, SUBTABLE> embeddableMapping = embeddableMappingBuilder.build();
+		Map<ReversibleAccessor<D, Object>, Column<SUBTABLE, Object>> subEntityPropertiesMapping = embeddableMapping.getMapping();
+		Map<ReversibleAccessor<D, Object>, Column<SUBTABLE, Object>> subEntityReadonlyPropertiesMapping = embeddableMapping.getReadonlyMapping();
+		ValueAccessPointMap<D, Converter<Object, Object>> subEntityPropertiesReadConverters = embeddableMapping.getReadConverters();
+		ValueAccessPointMap<D, Converter<Object, Object>> subEntityPropertiesWriteConverters = embeddableMapping.getWriteConverters();
 		// in table-per-class polymorphism, main properties must be transferred to sub-entities ones, because CRUD operations are dispatched to them
 		// by a proxy and main persister is not so much used
 		addPrimaryKey(subTable);

@@ -22,10 +22,10 @@ import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
-import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder;
-import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.BeanMapping;
-import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.BeanMappingConfiguration.Linkage;
-import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.ColumnNameProvider;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.ColumnNameProvider;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableLinkage;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
@@ -173,15 +173,15 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 			builder.withEntryKeyIsSingleProperty(keyColumn);
 		} else {
 			// a special configuration was given, we compute a EmbeddedClassMapping from it
-			BeanMappingBuilder<K, TARGETTABLE> entryKeyMappingBuilder = new BeanMappingBuilder<>(keyEmbeddableConfiguration, targetTable,
+			EmbeddableMappingBuilder<K, TARGETTABLE> entryKeyMappingBuilder = new EmbeddableMappingBuilder<>(keyEmbeddableConfiguration, targetTable,
 					dialect.getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
 				@Override
-				protected String giveColumnName(Linkage pawn) {
+				protected String giveColumnName(EmbeddableLinkage pawn) {
 					return nullable(mapRelation.getOverriddenKeyColumnNames().get(pawn.getAccessor()))
 							.getOr(() -> super.giveColumnName(pawn));
 				}
 			}, indexNamingStrategy);
-			BeanMapping<K, TARGETTABLE> entryKeyMapping = entryKeyMappingBuilder.build();
+			EmbeddableMapping<K, TARGETTABLE> entryKeyMapping = entryKeyMappingBuilder.build();
 			Map<ReversibleAccessor<K, Object>, Column<TARGETTABLE, Object>> columnMapping = entryKeyMapping.getMapping();
 			
 			columnMapping.forEach((propertyAccessor, column) -> column.primaryKey());
@@ -194,15 +194,15 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 			builder.withEntryValueIsSingleProperty(valueColumn);
 		} else {
 			// a special configuration was given, we compute a EmbeddedClassMapping from it
-			BeanMappingBuilder<V, TARGETTABLE> recordKeyMappingBuilder = new BeanMappingBuilder<>(valueEmbeddableConfiguration, targetTable,
+			EmbeddableMappingBuilder<V, TARGETTABLE> recordKeyMappingBuilder = new EmbeddableMappingBuilder<>(valueEmbeddableConfiguration, targetTable,
 					dialect.getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
 				@Override
-				protected String giveColumnName(Linkage pawn) {
+				protected String giveColumnName(EmbeddableLinkage pawn) {
 					return nullable(mapRelation.getOverriddenValueColumnNames().get(pawn.getAccessor()))
 							.getOr(() -> super.giveColumnName(pawn));
 				}
 			}, indexNamingStrategy);
-			BeanMapping<V, TARGETTABLE> entryValueMapping = recordKeyMappingBuilder.build();
+			EmbeddableMapping<V, TARGETTABLE> entryValueMapping = recordKeyMappingBuilder.build();
 			Map<ReversibleAccessor<V, Object>, Column<TARGETTABLE, Object>> columnMapping = entryValueMapping.getMapping();
 			
 			builder.withEntryValueIsComplexType(new EmbeddedClassMapping<>(valueEmbeddableConfiguration.getBeanType(), targetTable, columnMapping));

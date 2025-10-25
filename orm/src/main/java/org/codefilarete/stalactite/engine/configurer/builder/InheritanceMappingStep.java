@@ -15,7 +15,8 @@ import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.InheritanceConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
-import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.BeanMapping;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -280,12 +281,12 @@ public class InheritanceMappingStep<C, I> {
 		
 		@Override
 		public void accept(EmbeddableMappingConfiguration<C> embeddableMappingConfiguration) {
-			BeanMappingBuilder<C, T> beanMappingBuilder = new BeanMappingBuilder<>(embeddableMappingConfiguration,
+			EmbeddableMappingBuilder<C, T> embeddableMappingBuilder = new EmbeddableMappingBuilder<>(embeddableMappingConfiguration,
 					this.currentTable,
 					this.columnBinderRegistry,
 					this.columnNamingStrategy,
 					this.indexNamingStrategy);
-			BeanMapping<C, T> propertiesMapping = beanMappingBuilder.build();
+			EmbeddableMapping<C, T> propertiesMapping = embeddableMappingBuilder.build();
 			ValueAccessPointSet<C> localMapping = new ValueAccessPointSet<>(currentColumnMap.keySet());
 			propertiesMapping.getMapping().keySet().forEach(propertyAccessor -> {
 				if (localMapping.contains(propertyAccessor)) {

@@ -15,7 +15,8 @@ import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.CompositeKeyIdentification;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.SingleColumnIdentification;
-import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.BeanMapping;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
 import org.codefilarete.stalactite.engine.configurer.FluentEntityMappingConfigurationSupport.CompositeKeyLinkageSupport;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
@@ -46,8 +47,8 @@ public class PrimaryKeyStep<C, I> {
 			CompositeKeyMappingConfiguration<I> configuration = ((CompositeKeyLinkageSupport<C, I>) keyLinkage).getCompositeKeyMappingBuilder().getConfiguration();
 			// Note that we won't care about readonly column returned by build(..) since we're on a primary key case, then
 			// some readonly columns would be nonsense
-			BeanMappingBuilder<I, T> compositeKeyBuilder = new BeanMappingBuilder<>(configuration, pkTable, columnBinderRegistry, columnNamingStrategy, indexNamingStrategy);
-			BeanMapping<I, T> build = compositeKeyBuilder.build();
+			EmbeddableMappingBuilder<I, T> compositeKeyBuilder = new EmbeddableMappingBuilder<>(configuration, pkTable, columnBinderRegistry, columnNamingStrategy, indexNamingStrategy);
+			EmbeddableMapping<I, T> build = compositeKeyBuilder.build();
 			Map<ReversibleAccessor<I, Object>, Column<T, Object>> compositeKeyMapping = build.getMapping();
 			compositeKeyMapping.values().forEach(Column::primaryKey);
 			((CompositeKeyIdentification<C, I>) identification).setCompositeKeyMapping(compositeKeyMapping);

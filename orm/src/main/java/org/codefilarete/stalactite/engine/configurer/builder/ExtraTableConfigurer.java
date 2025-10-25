@@ -12,7 +12,8 @@ import org.codefilarete.stalactite.engine.cascade.AfterUpdateSupport;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteByIdSupport;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteSupport;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
-import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.BeanMapping;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
@@ -85,8 +86,8 @@ public class ExtraTableConfigurer<C, I, T extends Table<T>> {
 		
 		FluentEmbeddableMappingConfigurationSupport<C> fluentEmbeddableMappingConfigurationSupport = new FluentEmbeddableMappingConfigurationSupport<>(mainPersister.getClassToPersist());
 		fluentEmbeddableMappingConfigurationSupport.getPropertiesMapping().addAll(linkages);
-		BeanMappingBuilder<C, EXTRATABLE> beanMappingBuilder = new BeanMappingBuilder<>(fluentEmbeddableMappingConfigurationSupport, extraTable, columnBinderRegistry, namingConfiguration.getColumnNamingStrategy(), namingConfiguration.getIndexNamingStrategy());
-		BeanMapping<C, EXTRATABLE> build = beanMappingBuilder.build(true);
+		EmbeddableMappingBuilder<C, EXTRATABLE> embeddableMappingBuilder = new EmbeddableMappingBuilder<>(fluentEmbeddableMappingConfigurationSupport, extraTable, columnBinderRegistry, namingConfiguration.getColumnNamingStrategy(), namingConfiguration.getIndexNamingStrategy());
+		EmbeddableMapping<C, EXTRATABLE> build = embeddableMappingBuilder.build(true);
 		
 		// we create the DefaultEntityDefaultEntityMapping from the complex method, not from one of its constructor, because it would
 		// require the IdMapping which can be taken from mainPersister but which is wrong since PK column is not the

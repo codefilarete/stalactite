@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.configurer.builder;
+package org.codefilarete.stalactite.engine.configurer.builder.embeddable;
 
 import java.util.Date;
 import java.util.Set;
@@ -11,8 +11,6 @@ import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.configurer.FluentEntityMappingConfigurationSupport;
-import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.BeanMappingConfiguration.Linkage;
-import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.ColumnNameProvider;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
@@ -35,7 +33,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-class BeanMappingBuilderTest {
+class EmbeddableMappingBuilderTest {
 	
 	@Test
 	void giveTargetTable() {
@@ -46,7 +44,7 @@ class BeanMappingBuilderTest {
 		vehicleObjectFluentEntityMappingConfigurationSupport.embed(Vehicle::getColor, embeddableBuilder(Color.class)
 				.map(Color::getRgb))
 				.override(Color::getRgb, colorTable);
-		Table result = BeanMappingBuilder.giveTargetTable(vehicleObjectFluentEntityMappingConfigurationSupport.getPropertiesMapping());
+		Table result = EmbeddableMappingBuilder.giveTargetTable(vehicleObjectFluentEntityMappingConfigurationSupport.getPropertiesMapping());
 		assertThat(result).isSameAs(expectedResult);
 	}
 	
@@ -63,7 +61,7 @@ class BeanMappingBuilderTest {
 						.map(Person::getVersion))
 				.override(Person::getName, nameColumn)
 				.override(Person::getVersion, versionColumn);
-		assertThatThrownBy(() -> BeanMappingBuilder.giveTargetTable(vehicleObjectFluentEntityMappingConfigurationSupport.getPropertiesMapping()))
+		assertThatThrownBy(() -> EmbeddableMappingBuilder.giveTargetTable(vehicleObjectFluentEntityMappingConfigurationSupport.getPropertiesMapping()))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, MappingConfigurationException.class), InstanceOfAssertFactories.THROWABLE)
 				.hasMessage("Property o.c.s.e.m.Person::getName overrides column with MyOverridingTable.myOverridingColumn but it is not part of main table MyOverridingTable2");
 	}
@@ -77,7 +75,7 @@ class BeanMappingBuilderTest {
 		vehicleObjectFluentEntityMappingConfigurationSupport.embed(Vehicle::getOwner, MappingEase.embeddableBuilder(Person.class)
 				.map(Person::getName))
 				.override(Person::getName, nameColumn);
-		Table result = BeanMappingBuilder.giveTargetTable(vehicleObjectFluentEntityMappingConfigurationSupport.getPropertiesMapping());
+		Table result = EmbeddableMappingBuilder.giveTargetTable(vehicleObjectFluentEntityMappingConfigurationSupport.getPropertiesMapping());
 		assertThat(result).isSameAs(expectedResult);
 	}
 	
@@ -85,14 +83,14 @@ class BeanMappingBuilderTest {
 	void ensureColumnBindingInRegistry() {
 		Table countryTable = new Table("Country");
 		Column<?, Set> dummyColumn = countryTable.addColumn("dummyColumn", Set.class);
-		BeanMappingBuilder<Country, ?> testInstance = new BeanMappingBuilder(
+		EmbeddableMappingBuilder<Country, ?> testInstance = new EmbeddableMappingBuilder(
 				new FluentEmbeddableMappingConfigurationSupport(Country.class),
 				countryTable,
 				new ColumnBinderRegistry(), 
 				new ColumnNameProvider(ColumnNamingStrategy.DEFAULT),
 				IndexNamingStrategy.DEFAULT);
-		BeanMappingBuilder<Country, ?>.InternalProcessor internalProcessor = testInstance.new InternalProcessor(false);
-		Linkage<Country, Set> linkageMock = mock(Linkage.class);
+		EmbeddableMappingBuilder<Country, ?>.InternalProcessor internalProcessor = testInstance.new InternalProcessor(false);
+		EmbeddableLinkage<Country, Set> linkageMock = mock(EmbeddableLinkage.class);
 		when(linkageMock.getAccessor()).thenReturn(Accessors.accessor(Country::getCities));
 		when(linkageMock.getColumnType()).thenReturn(Set.class);
 		
@@ -110,16 +108,16 @@ class BeanMappingBuilderTest {
 			// Given a table that has a column ...
 			Table countryTable = new Table("Country");
 			Column dummyColumn = countryTable.addColumn("dummyColumnName", String.class);
-			BeanMappingBuilder<Country, ?> testInstanceBuilder = new BeanMappingBuilder(
+			EmbeddableMappingBuilder<Country, ?> testInstanceBuilder = new EmbeddableMappingBuilder(
 					new FluentEmbeddableMappingConfigurationSupport(Country.class),
 					countryTable,
 					new ColumnBinderRegistry(),
 					new ColumnNameProvider(ColumnNamingStrategy.DEFAULT),
 					IndexNamingStrategy.DEFAULT);
-			BeanMappingBuilder.InternalProcessor testInstance = testInstanceBuilder.new InternalProcessor(false);
+			EmbeddableMappingBuilder.InternalProcessor testInstance = testInstanceBuilder.new InternalProcessor(false);
 			
 			// ... and a linkage that uses a different type
-			Linkage linkageMock = mock(Linkage.class);
+			EmbeddableLinkage linkageMock = mock(EmbeddableLinkage.class);
 			when(linkageMock.getColumnType()).thenReturn(Date.class);
 			// ... but with a SQL parameter binder that overrides its own "columnType" to match column one
 			when(linkageMock.getParameterBinder()).thenReturn(new DateBinder() {

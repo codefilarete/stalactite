@@ -1,15 +1,15 @@
 package org.codefilarete.stalactite.dsl.naming;
 
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder;
-import org.codefilarete.stalactite.engine.configurer.builder.BeanMappingBuilder.BeanMappingConfiguration.Linkage;
+import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration.Linkage;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
 import org.codefilarete.tool.Strings;
 
 /**
  * Strategy for generating index names from a property mapping.
  * Used by persister builder when creating indexes for properties marked with {@link org.codefilarete.stalactite.dsl.property.PropertyOptions#unique()}.
  *
- * @see BeanMappingBuilder
+ * @see EmbeddableMappingBuilder
  * @see AccessorDefinition
  */
 public interface IndexNamingStrategy {
