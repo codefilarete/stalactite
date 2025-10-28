@@ -67,7 +67,6 @@ public abstract class PersisterListenerWrapper<C, I>
 		this.persisterListener.addDeleteByIdListener(deleteListener);
 	}
 	
-//	@Override
 	public PersisterListenerCollection<C, I> getPersisterListener() {
 		return this.persisterListener;
 	}

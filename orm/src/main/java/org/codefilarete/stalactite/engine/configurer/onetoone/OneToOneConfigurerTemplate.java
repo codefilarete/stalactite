@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine.configurer.onetoone;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
@@ -47,7 +48,7 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 		this.oneToOneRelation = oneToOneRelation;
 	}
 	
-	public String configure(String tableAlias,
+	public String configure(@Nullable String tableAlias,
 							ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 							boolean loadSeparately) {
 		assertConfigurationIsSupported();
@@ -120,7 +121,7 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 	protected abstract void addDeleteCascade(ConfiguredPersister<TRGT, TRGTID> targetPersister, boolean orphanRemoval);
 	
 	protected String addSelectJoin(
-			String tableAlias,
+			@Nullable String tableAlias,
 			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 			Key<LEFTTABLE, JOINID> leftKey,
 			Key<RIGHTTABLE, JOINID> rightKey,

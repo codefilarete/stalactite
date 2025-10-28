@@ -149,7 +149,7 @@ public class EntityJoinTree<C, I> {
 																					  Accessor<?, ?> propertyAccessor,
 																					  Key<T1, ID> leftJoinColumn,
 																					  Key<T2, ID> rightJoinColumn,
-																					  String rightTableAlias,
+																					  @Nullable String rightTableAlias,
 																					  JoinType joinType,
 																					  BeanRelationFixer<C, U> beanRelationFixer,
 																					  Set<? extends Column<T2, ?>> additionalSelectableColumns) {
