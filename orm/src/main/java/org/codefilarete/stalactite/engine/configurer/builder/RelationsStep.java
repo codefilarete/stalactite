@@ -1,12 +1,25 @@
 package org.codefilarete.stalactite.engine.configurer.builder;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.codefilarete.stalactite.dsl.RelationalMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.Inset;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.RelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.builder.InheritanceMappingStep.Mapping;
 import org.codefilarete.stalactite.engine.configurer.builder.InheritanceMappingStep.MappingPerTable;
+import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
+import org.codefilarete.stalactite.engine.configurer.manyToOne.ManyToOneRelation;
+import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
+import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
+import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
+import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -34,11 +47,84 @@ public class RelationsStep<C, I> {
 		persisterBuilderContext.runInContext(mainPersister, () -> {
 			// registering relations on parent entities
 			// WARN : this MUST BE DONE BEFORE POLYMORPHISM HANDLING because it needs them to create adhoc joins on sub entities tables
-			inheritanceMappingPerTable.getMappings().stream()
-					.map(Mapping::getMappingConfiguration)
-					.filter(RelationalMappingConfiguration.class::isInstance)
-					.map(RelationalMappingConfiguration.class::cast)
-					.forEach(relationConfigurer::configureRelations);
+			configuredInheritedRelations(inheritanceMappingPerTable, relationConfigurer);
+			
+			configuredEmbeddableRelations(inheritanceMappingPerTable, relationConfigurer, mainPersister.getClassToPersist());
 		});
+	}
+	
+	private void configuredInheritedRelations(MappingPerTable<C> inheritanceMappingPerTable, RelationConfigurer<C, I> relationConfigurer) {
+		inheritanceMappingPerTable.getMappings().stream()
+				.map(Mapping::getMappingConfiguration)
+				.filter(RelationalMappingConfiguration.class::isInstance)
+				.map(RelationalMappingConfiguration.class::cast)
+				.forEach(relationConfigurer::configureRelations);
+	}
+	
+	private <D> void configuredEmbeddableRelations(MappingPerTable<C> inheritanceMappingPerTable, RelationConfigurer<C, I> relationConfigurer, Class<C> rootEntityType) {
+		inheritanceMappingPerTable.getMappings().stream()
+				.map(Mapping::getMappingConfiguration)
+				.filter(EntityMappingConfiguration.class::isInstance)
+				.map(EntityMappingConfiguration.class::cast)
+				.map(EntityMappingConfiguration::getPropertiesMapping)
+				.flatMap(conf -> ((Collection<Inset<C, D>>) conf.getInsets()).stream()
+						.map(inset -> new SlidedRelationalMappingConfiguration<>(rootEntityType, inset.getConfigurationProvider().getConfiguration(), inset)))
+				.forEach(relationConfigurer::configureRelations);
+	}
+	
+	/**
+	 * A {@link RelationalMappingConfiguration} which relations are slided by a prefix that is the accessor to the embeddable which is embedded
+	 * in the main entity.
+	 *
+	 * @param <D>
+	 * @author Guillaume Mary
+	 */
+	private class SlidedRelationalMappingConfiguration<D> implements RelationalMappingConfiguration<C> {
+		private final Class<C> rootEntityType;
+		private final RelationalMappingConfiguration<D> configuration;
+		private final Inset<C, D> inset;
+		
+		public SlidedRelationalMappingConfiguration(Class<C> rootEntityType, RelationalMappingConfiguration<D> configuration, Inset<C, D> inset) {
+			this.rootEntityType = rootEntityType;
+			this.configuration = configuration;
+			this.inset = inset;
+		}
+		
+		@Override
+		public Class<C> getEntityType() {
+			return rootEntityType;
+		}
+		
+		@Override
+		public <TRGT, TRGTID> List<OneToOneRelation<C, TRGT, TRGTID>> getOneToOnes() {
+			return configuration.<TRGT, TRGTID>getOneToOnes().stream()
+					.map(oneToOne -> oneToOne.embedInto(inset.getAccessor()))
+					.collect(Collectors.toList());
+		}
+		
+		@Override
+		public <TRGT, TRGTID> List<OneToManyRelation<C, TRGT, TRGTID, Collection<TRGT>>> getOneToManys() {
+			return Collections.emptyList();
+		}
+		
+		@Override
+		public <TRGT, TRGTID> List<ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>>> getManyToManys() {
+			return Collections.emptyList();
+		}
+		
+		@Override
+		public <TRGT, TRGTID> List<ManyToOneRelation<C, TRGT, TRGTID, Collection<C>>> getManyToOnes() {
+			return Collections.emptyList();
+		}
+		
+		@Override
+		public <TRGT> List<ElementCollectionRelation<C, TRGT, ? extends Collection<TRGT>>> getElementCollections() {
+			return Collections.emptyList();
+		}
+		
+		@Override
+		public List<MapRelation<C, ?, ?, ? extends Map>> getMaps() {
+			return Collections.emptyList();
+		}
 	}
 }

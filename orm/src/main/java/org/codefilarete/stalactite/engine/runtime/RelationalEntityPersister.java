@@ -53,7 +53,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 																					  Accessor<SRC, C> propertyAccessor,
 																					  Key<T1, JOINID> leftColumn,
 																					  Key<T2, JOINID> rightColumn,
-																					  String rightTableAlias,
+																					  @Nullable String rightTableAlias,
 																					  BeanRelationFixer<SRC, C> beanRelationFixer,
 																					  boolean optional,
 																					  boolean loadSeparately);

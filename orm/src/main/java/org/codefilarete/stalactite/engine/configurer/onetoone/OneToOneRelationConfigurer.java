@@ -76,7 +76,10 @@ public class OneToOneRelationConfigurer<C, I, TRGT, TRGTID> extends AbstractRela
 			// please note that even if no table is found in configuration, build(..) will create one
 			Table targetTable = determineTargetTable(oneToOneRelation);
 			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = persisterBuilder.build(new EntityMappingConfigurationWithTable<>(targetMappingConfiguration, targetTable));
-			configurer.configure(relationName, targetPersister, oneToOneRelation.isFetchSeparately());
+			// we replace dot character by underscore one to take embedded relation properties into account: their accessor is an AccessorChain
+			// which is printed with dots by AccessorDefinition
+			String tableAlias = relationName.replace('.', '_');
+			configurer.configure(tableAlias, targetPersister, oneToOneRelation.isFetchSeparately());
 		}
 	}
 	

@@ -11,6 +11,7 @@ import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.device.Address;
+import org.codefilarete.stalactite.engine.model.device.Device;
 import org.codefilarete.stalactite.engine.model.device.Location;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.id.Identifier;
@@ -121,6 +122,83 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 			assertThat(addressPersister.select(address.getId())).isNull();
 			
 			assertThat(countryPersister.select(country1.getId())).isNull();
+		}
+	}
+	
+	@Nested
+	class Embedded {
+
+		@Test
+		void foreignKeyIsCreated() {
+			FluentEmbeddableMappingBuilder<Address> addressMappingBuilder = MappingEase.embeddableBuilder(Address.class)
+					.map(Address::getStreet)
+					.mapOneToOne(Address::getCity, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.map(City::getName).mandatory());
+
+			EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Device::getName)
+					.embed(Device::setLocation, addressMappingBuilder)
+					.build(persistenceContext);
+
+			ConfiguredPersister<Device, Identifier<Long>> addressPersister = (ConfiguredPersister) devicePersister;
+
+			// ensuring that the foreign key is present on table
+			JdbcForeignKey expectedForeignKey1 = new JdbcForeignKey("FK_Device_location_cityId_City_id", "Device", "location_cityId", "City", "id");
+			Comparator<JdbcForeignKey> comparing = Comparator.comparing(JdbcForeignKey::getSignature, Comparator.naturalOrder());
+			assertThat((Set<? extends ForeignKey<?, ?, ?>>) addressPersister.getMapping().getTargetTable().getForeignKeys()).extracting(JdbcForeignKey::new)
+					.usingElementComparator(comparing)
+					.containsExactlyInAnyOrder(expectedForeignKey1);
+		}
+		
+		@Test
+		void crud() {
+			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+					.mapKey(City::getId, ALREADY_ASSIGNED)
+					.map(City::getName).mandatory();
+			
+			EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Device::getName)
+					.embed(Device::setLocation, MappingEase.embeddableBuilder(Address.class)
+							.map(Address::getStreet)
+							.mapOneToOne(Address::getCity, cityConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL))
+					.build(persistenceContext);
+			
+			EntityPersister<City, Identifier<Long>> cityPersister = cityConfiguration.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			
+			Device dummyDevice = new Device(13);
+			dummyDevice.setName("UPS");
+			Address address = new Address();
+			address.setStreet("221B Baker Street");
+			City city = new City(111);
+			city.setName("France");
+			address.setCity(city);
+			dummyDevice.setLocation(address);
+			
+			devicePersister.insert(dummyDevice);
+			Device loadedDevice;
+			loadedDevice = devicePersister.select(dummyDevice.getId());
+			assertThat(loadedDevice).usingRecursiveComparison().isEqualTo(dummyDevice);
+			
+			City city1 = new City(22);
+			city1.setName("Spain");
+			address.setCity(city1);
+			
+			devicePersister.update(dummyDevice);
+			
+			loadedDevice = devicePersister.select(dummyDevice.getId());
+			assertThat(loadedDevice).usingRecursiveComparison().isEqualTo(dummyDevice);
+			
+			devicePersister.delete(dummyDevice);
+			assertThat(devicePersister.select(dummyDevice.getId())).isNull();
+			
+			assertThat(cityPersister.select(city1.getId())).isNull();
 		}
 	}
 }

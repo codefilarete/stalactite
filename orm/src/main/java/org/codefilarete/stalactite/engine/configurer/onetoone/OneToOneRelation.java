@@ -1,18 +1,19 @@
 package org.codefilarete.stalactite.engine.configurer.onetoone;
 
 import javax.annotation.Nullable;
-
 import java.util.function.BooleanSupplier;
 
-import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
+import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
-import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * @author Guillaume Mary
@@ -150,5 +151,23 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	
 	public void fetchSeparately() {
 		setFetchSeparately(true);
+	}
+	
+	/**
+	 * Clones this object to make one with the given accessor as prefix of current one.
+	 * Made to "slide" current instance with an accessor prefix. Used for embeddable objects with relation to make the relation being accessible
+	 * from the "root" entity.
+	 *
+	 * @param accessor the prefix of the clone to be created
+	 * @return a clones of this instance prefixed with the given accessor
+	 * @param <C> the root entity type that owns the embeddable which has this relation
+	 */
+	public <C> OneToOneRelation<C, TRGT, TRGTID> embedInto(Accessor<C, SRC> accessor) {
+		AccessorChain<C, TRGT> slidedTargetProvider = new AccessorChain<>(accessor, targetProvider);
+		OneToOneRelation<C, TRGT, TRGTID> result = new OneToOneRelation<>(slidedTargetProvider, this::isSourceTablePerClassPolymorphic, this::getTargetMappingConfiguration);
+		result.setRelationMode(this.getRelationMode());
+		result.setNullable(this.isNullable());
+		result.setFetchSeparately(this.isFetchSeparately());
+		return result;
 	}
 }
