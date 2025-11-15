@@ -3,12 +3,12 @@ package org.codefilarete.stalactite.dsl.entity;
 import java.util.Collection;
 import java.util.function.Supplier;
 
-import org.codefilarete.stalactite.dsl.relation.OneToManyOptions;
+import org.codefilarete.stalactite.dsl.relation.OneToManyEntityOptions;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
-public interface FluentMappingBuilderOneToManyOptions<C, I, O, S extends Collection<O>> extends FluentEntityMappingBuilder<C, I>, OneToManyOptions<C, I, O, S> {
+public interface FluentMappingBuilderOneToManyOptions<C, I, O, S extends Collection<O>> extends FluentEntityMappingBuilder<C, I>, OneToManyEntityOptions<C, I, O, S> {
 	
 	/**
 	 * {@inheritDoc}

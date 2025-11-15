@@ -104,7 +104,9 @@ public class RelationsStep<C, I> {
 		
 		@Override
 		public <TRGT, TRGTID> List<OneToManyRelation<C, TRGT, TRGTID, Collection<TRGT>>> getOneToManys() {
-			return Collections.emptyList();
+			return configuration.<TRGT, TRGTID>getOneToManys().stream()
+					.map(oneToMany -> oneToMany.embedInto(inset.getAccessor()))
+					.collect(Collectors.toList());
 		}
 		
 		@Override

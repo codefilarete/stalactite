@@ -66,7 +66,7 @@ import org.codefilarete.stalactite.dsl.property.MapOptions.ValueAsEntityMapOptio
 import org.codefilarete.stalactite.dsl.property.PropertyOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToManyOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToOneOptions;
-import org.codefilarete.stalactite.dsl.relation.OneToManyOptions;
+import org.codefilarete.stalactite.dsl.relation.OneToManyEntityOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToOneEntityOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToOneOptions;
 import org.codefilarete.stalactite.engine.PersistenceContext;
@@ -205,11 +205,11 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		return indexColumnNamingStrategy;
 	}
 	
-	private Method captureMethod(SerializableFunction getter) {
+	private Method captureLambdaMethod(SerializableFunction getter) {
 		return this.methodSpy.findMethod(getter);
 	}
 	
-	private Method captureMethod(SerializableBiConsumer setter) {
+	private Method captureLambdaMethod(SerializableBiConsumer setter) {
 		return this.methodSpy.findMethod(setter);
 	}
 	
@@ -662,7 +662,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		// we keep close to user demand: we keep its method reference ...
 		Mutator<C, O> mutatorByMethodReference = Accessors.mutatorByMethodReference(setter);
 		// ... but we can't do it for accessor, so we use the most equivalent manner: an accessor based on setter method (fallback to property if not present)
-		Accessor<C, O> accessor = new MutatorByMethod<C, O>(captureMethod(setter)).toAccessor();
+		Accessor<C, O> accessor = new MutatorByMethod<C, O>(captureLambdaMethod(setter)).toAccessor();
 		return mapOneToOne(accessor, mutatorByMethodReference, mappingConfiguration);
 	}
 	
@@ -673,7 +673,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		// we keep close to user demand: we keep its method reference ...
 		AccessorByMethodReference<C, O> accessorByMethodReference = Accessors.accessorByMethodReference(getter);
 		// ... but we can't do it for mutator, so we use the most equivalent manner: a mutator based on getter method (fallback to property if not present)
-		Mutator<C, O> mutator = new AccessorByMethod<C, O>(captureMethod(getter)).toMutator();
+		Mutator<C, O> mutator = new AccessorByMethod<C, O>(captureLambdaMethod(getter)).toMutator();
 		return mapOneToOne(accessorByMethodReference, mutator, mappingConfiguration);
 	}
 	
@@ -749,7 +749,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				// we keep close to user demand : we keep its method reference ...
 				getterReference,
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
-				new AccessorByMethod<C, S>(captureMethod(getter)).toMutator());
+				new AccessorByMethod<C, S>(captureLambdaMethod(getter)).toMutator());
 		return mapOneToMany(propertyAccessor, getterReference, mappingConfiguration);
 	}
 	
@@ -777,7 +777,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				mappingConfiguration);
 		this.oneToManyRelations.add(oneToManyRelation);
 		return new MethodDispatcher()
-				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(oneToManyRelation), true)	// true to allow "return null" in implemented methods
+				.redirect(OneToManyEntityOptions.class, new OneToManyEntityOptionsSupport<>(oneToManyRelation), true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderOneToManyOptions<C, I, O, S>>) (Class) FluentMappingBuilderOneToManyOptions.class);
 	}
@@ -791,7 +791,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				// we keep close to user demand : we keep its method reference ...
 				getterReference,
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
-				new AccessorByMethod<C, S1>(captureMethod(getter)).toMutator());
+				new AccessorByMethod<C, S1>(captureLambdaMethod(getter)).toMutator());
 		return mapManyToMany(propertyAccessor, getterReference, mappingConfiguration);
 	}
 	
@@ -827,7 +827,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		// we keep close to user demand: we keep its method reference ...
 		Mutator<C, O> mutatorByMethodReference = Accessors.mutatorByMethodReference(setter);
 		// ... but we can't do it for accessor, so we use the most equivalent manner: an accessor based on setter method (fallback to property if not present)
-		Accessor<C, O> accessor = new MutatorByMethod<C, O>(captureMethod(setter)).toAccessor();
+		Accessor<C, O> accessor = new MutatorByMethod<C, O>(captureLambdaMethod(setter)).toAccessor();
 		return mapManyToOne(accessor, mutatorByMethodReference, mappingConfiguration);
 	}
 	
@@ -838,7 +838,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		// we keep close to user demand: we keep its method reference ...
 		AccessorByMethodReference<C, O> accessorByMethodReference = Accessors.accessorByMethodReference(getter);
 		// ... but we can't do it for mutator, so we use the most equivalent manner: a mutator based on getter method (fallback to property if not present)
-		Mutator<C, O> mutator = new AccessorByMethod<C, O>(captureMethod(getter)).toMutator();
+		Mutator<C, O> mutator = new AccessorByMethod<C, O>(captureLambdaMethod(getter)).toMutator();
 		return mapManyToOne(accessorByMethodReference, mutator, mappingConfiguration);
 	}
 	
@@ -1402,14 +1402,14 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	/**
-	 * A small class for one-to-many options storage into a {@link OneToManyRelation}. Acts as a wrapper over it.
+	 * A small class for one-to-many options storage into a {@link OneToManyEntityOptions}. Acts as a wrapper over it.
 	 */
-	static class OneToManyOptionsSupport<C, I, O, S extends Collection<O>>
-			implements OneToManyOptions<C, I, O, S> {
+	static class OneToManyEntityOptionsSupport<C, I, O, S extends Collection<O>>
+			implements OneToManyEntityOptions<C, I, O, S> {
 		
 		private final OneToManyRelation<C, O, I, S> oneToManyRelation;
 		
-		public OneToManyOptionsSupport(OneToManyRelation<C, O, I, S> oneToManyRelation) {
+		public OneToManyEntityOptionsSupport(OneToManyRelation<C, O, I, S> oneToManyRelation) {
 			this.oneToManyRelation = oneToManyRelation;
 		}
 		

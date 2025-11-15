@@ -1,13 +1,15 @@
 package org.codefilarete.stalactite.dsl.embeddable;
 
+import java.util.Collection;
+import java.util.Set;
+
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
-import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
-import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToOneOptions;
+import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.EnumOptions;
 import org.codefilarete.stalactite.dsl.property.PropertyOptions;
-import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.relation.OneToManyOptions;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -88,6 +90,43 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	<O, J> FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mapOneToOne(SerializableBiConsumer<C, O> setter,
 																		   EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
+	/**
+	 * Declares a relation between current entity and some of type {@code O} through a {@link Collection}.
+	 * Depending on collection type, order persistence can be asked by one of the {@link OneToManyOptions#indexed()}
+	 * methods.
+	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
+	 * to handle any super type of current entity type.
+	 *
+	 * @param getter the way to get the {@link Set} from source entities
+	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
+	 * @param <O> type of {@link Collection} element
+	 * @param <J> type of identifier of {@code O}
+	 * @param <S> refined {@link Collection} type
+	 * @return an enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
+	 * @see #mapOneToMany(SerializableFunction, EntityMappingConfigurationProvider)
+	 */
+	<O, J, S extends Collection<O>>
+	FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S>
+	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	
+	/**
+	 * Declares a relation between current entity and some of type {@code O} through a {@link Collection}.
+	 * Depending on collection type, order persistence can be asked by one of the {@link OneToManyOptions#indexed()}
+	 * methods.
+	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
+	 * to handle any super type of current entity type.
+	 *
+	 * @param setter the way to set the {@link Set} from source entities
+	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
+	 * @param <O> type of {@link Collection} element
+	 * @param <J> type of identifier of {@code O}
+	 * @param <S> refined {@link Collection} type
+	 * @return an enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
+	 * @see #mapOneToMany(SerializableFunction, EntityMappingConfigurationProvider)
+	 */
+	<O, J, S extends Collection<O>>
+	FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S>
+	mapOneToMany(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
 	
 	/**
 	 * Change default column naming strategy, which is {@link ColumnNamingStrategy#DEFAULT}, by the given one.

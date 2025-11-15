@@ -5,13 +5,15 @@ import java.util.Collection;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointByMethodReference;
 import org.codefilarete.reflection.ValueAccessPointMap;
-import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
-import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -22,12 +24,12 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
  * @param <SRC> the "one" type
  * @param <TRGT> the "many" type
  * @param <TRGTID> identifier type of TRGT
- * @param <C> the "many" collection type
+ * @param <S> the "many" collection type
  */
-public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
+public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	
 	/** The method that gives the "many" entities from the "one" entity */
-	private final ReversibleAccessor<SRC, C> collectionProvider;
+	private final ReversibleAccessor<SRC, S> collectionProvider;
 	
 	private final ValueAccessPointByMethodReference<SRC> methodReference;
 	
@@ -48,7 +50,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	/** Default relation mode is {@link RelationMode#ALL} */
 	private RelationMode relationMode = RelationMode.ALL;
 	/** Optional provider of collection instance to be used if collection value is null */
-	private Supplier<C> collectionFactory;
+	private Supplier<S> collectionFactory;
 	
 	/**
 	 * Indicates that relation must be loaded in same main query (through join) or in some separate query
@@ -72,7 +74,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	 * @param sourceTablePerClassPolymorphic must return true if source persister has table-per-class polymorphism
 	 * @param targetMappingConfiguration must return persistence configuration of entities stored in the target collection
 	 */
-	public OneToManyRelation(ReversibleAccessor<SRC, C> collectionProvider,
+	public OneToManyRelation(ReversibleAccessor<SRC, S> collectionProvider,
 							 ValueAccessPointByMethodReference<SRC> methodReference,
 							 BooleanSupplier sourceTablePerClassPolymorphic,
 							 EntityMappingConfigurationProvider<? super TRGT, TRGTID> targetMappingConfiguration) {
@@ -82,7 +84,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 		this.targetMappingConfiguration = (EntityMappingConfigurationProvider<TRGT, TRGTID>) targetMappingConfiguration;
 	}
 	
-	public ReversibleAccessor<SRC, C> getCollectionProvider() {
+	public ReversibleAccessor<SRC, S> getCollectionProvider() {
 		return collectionProvider;
 	}
 	
@@ -173,11 +175,11 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	}
 	
 	@Nullable
-	public Supplier<C> getCollectionFactory() {
+	public Supplier<S> getCollectionFactory() {
 		return collectionFactory;
 	}
 	
-	public void setCollectionFactory(Supplier<C> collectionFactory) {
+	public void setCollectionFactory(Supplier<S> collectionFactory) {
 		this.collectionFactory = collectionFactory;
 	}
 	
@@ -192,7 +194,6 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	public void fetchSeparately() {
 		setFetchSeparately(true);
 	}
-	
 	
 	public void setIndexingColumn(Column<? extends Table, Integer> indexingColumn) {
 		ordered();
@@ -220,6 +221,23 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	
 	public boolean isOrdered() {
 		return this.ordered;
+	}
+	
+	/**
+	 * Clones this object to make one with the given accessor as prefix of current one.
+	 * Made to "slide" current instance with an accessor prefix. Used for embeddable objects with relation to make the relation being accessible
+	 * from the "root" entity.
+	 *
+	 * @param accessor the prefix of the clone to be created
+	 * @return a clones of this instance prefixed with the given accessor
+	 * @param <C> the root entity type that owns the embeddable which has this relation
+	 */
+	public <C> OneToManyRelation<C, TRGT, TRGTID, S> embedInto(Accessor<C, SRC> accessor) {
+		AccessorChain<C, S> slidedTargetProvider = new AccessorChain<>(accessor, collectionProvider);
+		OneToManyRelation<C, TRGT, TRGTID, S> result = new OneToManyRelation<>(slidedTargetProvider, null, this::isSourceTablePerClassPolymorphic, this.targetMappingConfiguration);
+		result.setRelationMode(this.getRelationMode());
+		result.setFetchSeparately(this.isFetchSeparately());
+		return result;
 	}
 	
 	private class MappedByConfiguration {

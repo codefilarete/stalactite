@@ -14,7 +14,9 @@ import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleMutator;
+import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
+import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.onetomany.IndexedMappedManyRelationDescriptor;
 import org.codefilarete.stalactite.engine.runtime.onetomany.MappedManyRelationDescriptor;
@@ -57,11 +59,27 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 	protected String configure(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		determineForeignKeyColumns(targetPersister);
 		assignAssociationEngine(targetPersister);
+		propagateMappedAssociationToSubTables(targetPersister);
 		
-		mappedAssociationEngine.propagateMappedAssociationToSubTables(this.foreignKey);
 		String relationJoinNodeName = mappedAssociationEngine.addSelectCascade(associationConfiguration.getLeftPrimaryKey(), loadSeparately);
 		addWriteCascades(mappedAssociationEngine, targetPersister);
 		return relationJoinNodeName;
+	}
+	
+	public void propagateMappedAssociationToSubTables(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+		ForeignKeyNamingStrategy foreignKeyNamingStrategy = associationConfiguration.getForeignKeyNamingStrategy();
+		// adding foreign key constraint
+		// When source persister is table-per-class, adding a FK from right side (owner) to the several left sides is not possible
+		if (!associationConfiguration.getOneToManyRelation().isSourceTablePerClassPolymorphic()) {
+			// NB: we ask to add FK to targetPersister because it may be polymorphic (ie contains several tables) so it knows better how to do it
+			AbstractPolymorphismPersister<?, ?> targetPersisterAsPolymorphic = AbstractPolymorphismPersister.lookupForPolymorphicPersister(targetPersister);
+			if (targetPersisterAsPolymorphic == null) {
+				targetPersister.<RIGHTTABLE>getMainTable().addForeignKey(foreignKeyNamingStrategy::giveName,
+						foreignKey, associationConfiguration.getSrcPersister().<RIGHTTABLE>getMainTable().getPrimaryKey());
+			} else {
+				targetPersisterAsPolymorphic.propagateMappedAssociationToSubTables(foreignKey, associationConfiguration.getSrcPersister().getMainTable().getPrimaryKey(), foreignKeyNamingStrategy::giveName);
+			}
+		}
 	}
 	
 	protected void determineForeignKeyColumns(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
@@ -213,13 +231,13 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 				associationConfiguration.getCollectionGetter(),
 				associationConfiguration.getSetter()::set,
 				associationConfiguration.getCollectionFactory(), reverseSetter, reverseColumn);
-		mappedAssociationEngine = new OneToManyWithMappedAssociationEngine(
+		mappedAssociationEngine = new OneToManyWithMappedAssociationEngine<>(
 				targetPersister,
 				manyRelationDefinition,
 				associationConfiguration.getSrcPersister(),
 				mappedReverseColumns,
-				reverseColumnsValueProvider,
-				associationConfiguration.getForeignKeyNamingStrategy());
+				reverseColumnsValueProvider
+		);
 	}
 	
 	private void assignEngineForIndexedAssociation(@Nullable BiConsumer<TRGT, SRC> reverseSetter,
@@ -249,8 +267,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 				associationConfiguration.getSrcPersister(),
 				mappedReverseColumns,
 				indexingColumn,
-				reverseColumnsValueProvider,
-				associationConfiguration.getForeignKeyNamingStrategy()
+				reverseColumnsValueProvider
 		);
 	}
 }

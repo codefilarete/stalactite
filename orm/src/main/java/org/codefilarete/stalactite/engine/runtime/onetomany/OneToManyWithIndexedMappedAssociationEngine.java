@@ -15,7 +15,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.diff.IndexedDiff;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
@@ -53,9 +52,8 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 													   ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 													   Set<Column<RIGHTTABLE, ?>> mappedReverseColumns,
 													   Column<RIGHTTABLE, Integer> indexColumn,
-													   Function<SRCID, Map<Column<RIGHTTABLE, ?>, ?>> reverseColumnsValueProvider,
-													   ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
-		super(targetPersister, manyRelationDefinition, sourcePersister, mappedReverseColumns, reverseColumnsValueProvider, foreignKeyNamingStrategy);
+													   Function<SRCID, Map<Column<RIGHTTABLE, ?>, ?>> reverseColumnsValueProvider) {
+		super(targetPersister, manyRelationDefinition, sourcePersister, mappedReverseColumns, reverseColumnsValueProvider);
 		this.indexColumn = indexColumn;
 	}
 	

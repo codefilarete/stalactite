@@ -60,9 +60,10 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 	private AccessorDefinition buildAccessorDefinition() {
 		// we don't use AccessorDefinition.giveMemberDefinition(..) because it gives a cross-member definition, loosing get/set for example,
 		// whereas we need this information to build a better association table name
+		AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(this.oneToManyRelation.getCollectionProvider());
 		return new AccessorDefinition(
-				this.oneToManyRelation.getMethodReference().getDeclaringClass(),
-				AccessorDefinition.giveDefinition(this.oneToManyRelation.getMethodReference()).getName(),
+				accessorDefinition.getDeclaringClass(),
+				accessorDefinition.getName(),
 				// we prefer the target persister type to method reference member type because the latter only gets the collection type which is not
 				// valuable information for table / column naming
 				this.oneToManyRelation.getTargetMappingConfiguration().getEntityType());

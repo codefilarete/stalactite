@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.model.device;
 
-import org.codefilarete.stalactite.engine.model.City;
+import java.util.Set;
+
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
@@ -11,6 +12,8 @@ public abstract class Location implements Identified<Long> {
 	private Identifier<Long> id;
 	
 	private Country country;
+	
+	private Set<Review> reviews;
 	
 	public Location() {
 	}
@@ -33,5 +36,13 @@ public abstract class Location implements Identified<Long> {
 	
 	public void setCountry(Country country) {
 		this.country = country;
+	}
+	
+	public Set<Review> getReviews() {
+		return reviews;
+	}
+	
+	public void setReviews(Set<Review> reviews) {
+		this.reviews = reviews;
 	}
 }

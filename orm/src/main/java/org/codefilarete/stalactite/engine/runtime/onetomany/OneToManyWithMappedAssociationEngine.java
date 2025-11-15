@@ -15,7 +15,6 @@ import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.idpolicy.GeneratedKeysPolicy;
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteByIdCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteCollectionCascader;
@@ -24,11 +23,9 @@ import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
-import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
-import org.codefilarete.stalactite.engine.runtime.tableperclass.TablePerClassPolymorphismPersister;
 import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -55,8 +52,6 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	protected final ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister;
 	
 	protected final MappedManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDescriptor;
-	
-	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	
 	/**
 	 * Foreign key column value store, for insert, update and delete cases : stores parent entity value per child entity,
@@ -97,12 +92,10 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 												MappedManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDescriptor,
 												ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 												Set<Column<RIGHTTABLE, ?>> mappedReverseColumns,
-												Function<SRCID, Map<Column<RIGHTTABLE, ?>, ?>> reverseColumnsValueProvider,
-												ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
+												Function<SRCID, Map<Column<RIGHTTABLE, ?>, ?>> reverseColumnsValueProvider) {
 		this.targetPersister = targetPersister;
 		this.manyRelationDescriptor = manyRelationDescriptor;
 		this.sourcePersister = sourcePersister;
-		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 		this.foreignKeyValueProvider = new ShadowColumnValueProvider<TRGT, RIGHTTABLE>() {
 			@Override
 			public Set<Column<RIGHTTABLE, ?>> getColumns() {
@@ -144,23 +137,6 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	
 	public MappedManyRelationDescriptor<SRC, TRGT, C, SRCID> getManyRelationDescriptor() {
 		return manyRelationDescriptor;
-	}
-	
-	public <LEFTTABLE extends Table<LEFTTABLE>, JOINTYPE> void propagateMappedAssociationToSubTables(Key<LEFTTABLE, JOINTYPE> foreignKey) {
-		// adding foreign key constraint
-		// NB: we ask it to targetPersister because it may be polymorphic or complex (ie contains several tables) so it knows better how to do it
-		AbstractPolymorphismPersister<?, ?> targetPersisterAsPolymorphic = AbstractPolymorphismPersister.lookupForPolymorphicPersister(targetPersister);
-		if (targetPersisterAsPolymorphic != null) {
-			targetPersisterAsPolymorphic.propagateMappedAssociationToSubTables(foreignKey, sourcePersister.getMainTable().getPrimaryKey(), foreignKeyNamingStrategy::giveName);
-		} else {
-			AbstractPolymorphismPersister<?, ?> sourcePersisterAsPolymorphic = AbstractPolymorphismPersister.lookupForPolymorphicPersister(sourcePersister);
-			if (!(sourcePersisterAsPolymorphic instanceof TablePerClassPolymorphismPersister)) {
-				// here source persister is either a simple one, or a join-table or a single-table
-				sourcePersister.<LEFTTABLE>getMainTable().addForeignKey(foreignKeyNamingStrategy::giveName,
-						foreignKey, sourcePersister.getMainTable().getPrimaryKey());
-			}   // else source persister is table-per-class: FK should be from right side (owner) to the several left sides, which is not possible
-				// because database vendors don't allow adding several FK on same source columns to different targets
-		}
 	}
 	
 	public <T1 extends Table<T1>, T2 extends Table<T2>> String addSelectCascade(Key<T1, SRCID> sourcePrimaryKey,
