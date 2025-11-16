@@ -126,7 +126,7 @@ public interface AssociationTableNamingStrategy {
 		@Override
 		public <LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
 		String giveName(AccessorDefinition accessor, PrimaryKey<LEFTTABLE, ?> source, PrimaryKey<RIGHTTABLE, ?> target) {
-			return accessor.getDeclaringClass().getSimpleName() + "_" + accessor.getName();
+			return accessor.getDeclaringClass().getSimpleName() + "_" + accessor.getName().replace('.', '_');
 		}
 		
 		@Override
@@ -146,7 +146,7 @@ public interface AssociationTableNamingStrategy {
 			existingColumns.addAll(result.leftColumnNames.values());
 			
 			// columns pointing to right table get a name that contains accessor definition name
-			String rightSideColumnNamePrefix = accessorDefinition.getName();
+			String rightSideColumnNamePrefix = accessorDefinition.getName().replace('.', '_');
 			rightPrimaryKey.getColumns().forEach(column -> {
 				String rightColumnName = Strings.uncapitalize(rightSideColumnNamePrefix + "_" + column.getName());
 				if (existingColumns.contains(rightColumnName)) {

@@ -53,26 +53,14 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 		this.setter = collectionGetter.toMutator();
 		this.orphanRemoval = orphanRemoval;
 		this.writeAuthorized = writeAuthorized;
-		this.accessorDefinition = buildAccessorDefinition();
+		this.accessorDefinition = AccessorDefinition.giveDefinition(this.oneToManyRelation.getCollectionProvider());
 		this.collectionFactory = buildCollectionFactory();
-	}
-	
-	private AccessorDefinition buildAccessorDefinition() {
-		// we don't use AccessorDefinition.giveMemberDefinition(..) because it gives a cross-member definition, loosing get/set for example,
-		// whereas we need this information to build a better association table name
-		AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(this.oneToManyRelation.getCollectionProvider());
-		return new AccessorDefinition(
-				accessorDefinition.getDeclaringClass(),
-				accessorDefinition.getName(),
-				// we prefer the target persister type to method reference member type because the latter only gets the collection type which is not
-				// valuable information for table / column naming
-				this.oneToManyRelation.getTargetMappingConfiguration().getEntityType());
 	}
 	
 	private Supplier<C> buildCollectionFactory() {
 		Supplier<C> result = oneToManyRelation.getCollectionFactory();
 		if (result == null) {
-			result = BeanRelationFixer.giveCollectionFactory((Class<C>) oneToManyRelation.getMethodReference().getPropertyType());
+			result = BeanRelationFixer.giveCollectionFactory((Class<C>) accessorDefinition.getMemberType());
 		}
 		return result;
 	}

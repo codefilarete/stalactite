@@ -234,6 +234,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	 */
 	public <C> OneToManyRelation<C, TRGT, TRGTID, S> embedInto(Accessor<C, SRC> accessor) {
 		AccessorChain<C, S> slidedTargetProvider = new AccessorChain<>(accessor, collectionProvider);
+		slidedTargetProvider.setNullValueHandler(AccessorChain.INITIALIZE_VALUE);
 		OneToManyRelation<C, TRGT, TRGTID, S> result = new OneToManyRelation<>(slidedTargetProvider, null, this::isSourceTablePerClassPolymorphic, this.targetMappingConfiguration);
 		result.setRelationMode(this.getRelationMode());
 		result.setFetchSeparately(this.isFetchSeparately());

@@ -60,7 +60,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 		// case : Collection mapping without reverse property : an association table is needed
 		PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey = targetPersister.<RIGHTTABLE>getMapping().getTargetTable().getPrimaryKey();
 		
-		String associationTableName = associationTableNamingStrategy.giveName(associationConfiguration.getAccessorDefinition(),
+		String associationTableName = associationTableNamingStrategy.giveName(accessorDefinitionForTableNaming,
 				associationConfiguration.getLeftPrimaryKey(), rightPrimaryKey);
 		if (associationConfiguration.getOneToManyRelation().isOrdered()) {
 			return assignEngineForIndexedAssociation(rightPrimaryKey, associationTableName, targetPersister);
@@ -103,7 +103,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 				associationTableName,
 				associationConfiguration.getLeftPrimaryKey(),
 				rightPrimaryKey,
-				associationConfiguration.getAccessorDefinition(),
+				accessorDefinitionForTableNaming,
 				associationTableNamingStrategy,
 				associationConfiguration.getForeignKeyNamingStrategy(),
 				createOneSideForeignKey,
@@ -148,7 +148,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 				associationTableName,
 				associationConfiguration.getLeftPrimaryKey(),
 				rightPrimaryKey,
-				associationConfiguration.getAccessorDefinition(),
+				accessorDefinitionForTableNaming,
 				associationTableNamingStrategy,
 				associationConfiguration.getForeignKeyNamingStrategy(),
 				createOneSideForeignKey,

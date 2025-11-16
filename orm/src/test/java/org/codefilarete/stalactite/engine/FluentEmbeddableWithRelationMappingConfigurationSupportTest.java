@@ -26,6 +26,7 @@ import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -132,7 +133,7 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 	}
 	
 	@Nested
-	class Embedded {
+	class OneToOne_Embedded {
 
 		@Test
 		void foreignKeyIsCreated() {
@@ -176,7 +177,6 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
-			
 			
 			Device dummyDevice = new Device(13);
 			dummyDevice.setName("UPS");
@@ -300,6 +300,86 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 			
 			// we ensure that orphan removal is respected
 			addressPersister.delete(address);
+			assertThat(reviewPersister.select(address.getReviews().stream().map(Review::getId).collect(Collectors.toSet()))).isEmpty();
+		}
+	}
+	
+	@Nested
+	class OneToMany_Embedded {
+		
+		@Test
+		void foreignKeyIsCreated() {
+			FluentEntityMappingBuilder<Review, Identifier<Long>> reviewConfiguration = entityBuilder(Review.class, Identifier.LONG_TYPE)
+					.mapKey(Review::getId, ALREADY_ASSIGNED)
+					.map(Review::getRanking).mandatory();
+			
+			FluentEmbeddableMappingBuilder<Location> locationMappingBuilder = embeddableBuilder(Location.class)
+					.mapOneToMany(Location::getReviews, reviewConfiguration)
+					// FIXME : MappedBy doesn't work or shouldn't be available, i don't know, but for now Stalactite creates an association table even when mappedBy is applied
+					.mappedBy(Review::getLocation);
+			
+			EntityPersister<Device, Identifier<Long>> devicePersister = entityBuilder(Device.class, Identifier.LONG_TYPE)
+					.mapKey(Device::getId, ALREADY_ASSIGNED)
+					.map(Device::getName)
+					.embed(Device::setLocation, locationMappingBuilder)
+					.build(persistenceContext);
+			
+			Map<String, Table<?>> tablePerName = Iterables.map(DDLDeployer.collectTables(persistenceContext), Table::getName);
+			
+			// ensuring that the foreign key is present on table
+			JdbcForeignKey expectedForeignKey1 = new JdbcForeignKey("FK_Device_location_reviews_location_reviews_id_Review_id", "Device_location_reviews", "location_reviews_id", "Review", "id");
+			JdbcForeignKey expectedForeignKey2 = new JdbcForeignKey("FK_Device_location_reviews_device_id_Device_id", "Device_location_reviews", "device_id", "Device", "id");
+			Comparator<JdbcForeignKey> comparing = Comparator.comparing(JdbcForeignKey::getSignature, Comparator.naturalOrder());
+			assertThat((Set<? extends ForeignKey<?, ?, ?>>) tablePerName.get("Device_location_reviews").getForeignKeys()).extracting(JdbcForeignKey::new)
+					.usingElementComparator(comparing)
+					.containsExactlyInAnyOrder(expectedForeignKey1, expectedForeignKey2);
+		}
+		
+		@Test
+		void crud() {
+			FluentEntityMappingBuilder<Review, Identifier<Long>> reviewConfiguration = entityBuilder(Review.class, Identifier.LONG_TYPE)
+					.mapKey(Review::getId, ALREADY_ASSIGNED)
+					.map(Review::getRanking).mandatory();
+			
+			FluentEmbeddableMappingBuilder<Address> locationMappingBuilder = embeddableBuilder(Address.class)
+					.map(Address::getStreet).mandatory()
+					.mapOneToMany(Address::getReviews, reviewConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+//					.mappedBy(Review::getLocation)
+					;
+			
+			EntityPersister<Device, Identifier<Long>> devicePersister = entityBuilder(Device.class, Identifier.LONG_TYPE)
+					.mapKey(Device::getId, ALREADY_ASSIGNED)
+					.map(Device::getName)
+					.embed(Device::setLocation, locationMappingBuilder)
+					.build(persistenceContext);
+			
+			EntityPersister<Review, Identifier<Long>> reviewPersister = reviewConfiguration.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Device dummyDevice = new Device(13);
+			dummyDevice.setName("UPS");
+			Address address = new Address();
+			address.setStreet("221B Baker Street");
+			address.setReviews(Arrays.asHashSet(new Review(1), new Review(2), new Review(3)));
+			dummyDevice.setLocation(address);
+			
+			devicePersister.insert(dummyDevice);
+			Device loadedDevice;
+			loadedDevice = devicePersister.select(dummyDevice.getId());
+			assertThat(loadedDevice).usingRecursiveComparison().isEqualTo(dummyDevice);
+			
+			address.getReviews().add(new Review(4));
+			
+			devicePersister.update(dummyDevice);
+			
+			loadedDevice = devicePersister.select(dummyDevice.getId());
+			assertThat(loadedDevice).usingRecursiveComparison().isEqualTo(dummyDevice);
+			
+			devicePersister.delete(dummyDevice);
+			assertThat(devicePersister.select(dummyDevice.getId())).isNull();
+			
 			assertThat(reviewPersister.select(address.getReviews().stream().map(Review::getId).collect(Collectors.toSet()))).isEmpty();
 		}
 	}

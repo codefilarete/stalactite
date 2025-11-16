@@ -245,7 +245,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 												   @Nullable Column<RIGHTTABLE, Integer> indexingColumn,
 												   ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		if (indexingColumn == null) {
-			String indexingColumnName = nullable(associationConfiguration.getColumnName()).getOr(() -> associationConfiguration.getIndexColumnNamingStrategy().giveName(associationConfiguration.getAccessorDefinition()));
+			String indexingColumnName = nullable(associationConfiguration.getColumnName()).getOr(() -> associationConfiguration.getIndexColumnNamingStrategy().giveName(accessorDefinitionForTableNaming));
 			Class indexColumnType = this.associationConfiguration.isOrphanRemoval()
 					? int.class
 					: Integer.class;	// column must be nullable since row won't be deleted through orphan removal but only "detached" from parent row
