@@ -115,7 +115,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 		// select management
 		Supplier<C> collectionFactory = preventNull(
 				elementCollectionRelation.getCollectionFactory(),
-				BeanRelationFixer.giveCollectionFactory((Class<C>) collectionProviderDefinition.getMemberType()));
+				Reflections.giveCollectionFactory((Class<C>) collectionProviderDefinition.getMemberType()));
 		addSelectCascade(sourcePersister, collectionPersister, sourcePK, elementCollectionMapping.reverseForeignKey,
 				elementCollectionRelation.getCollectionProvider().toMutator()::set, collectionAccessor,
 				collectionFactory);
@@ -178,7 +178,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 						return Reflections.newInstance(embeddableConfiguration.getBeanType());
 					} else {
 						// default mechanism
-						return ValueInitializerOnNullValue.newInstance(accessor, valueType);
+						return Reflections.newInstance(valueType);
 					}
 				});
 				

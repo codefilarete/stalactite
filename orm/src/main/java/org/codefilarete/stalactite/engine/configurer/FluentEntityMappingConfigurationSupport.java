@@ -750,7 +750,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				getterReference,
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				new AccessorByMethod<C, S>(captureLambdaMethod(getter)).toMutator());
-		return mapOneToMany(propertyAccessor, getterReference, mappingConfiguration);
+		return mapOneToMany(propertyAccessor, mappingConfiguration);
 	}
 	
 	@Override
@@ -763,16 +763,14 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
 				setterReference
 		);
-		return mapOneToMany(propertyAccessor, setterReference, mappingConfiguration);
+		return mapOneToMany(propertyAccessor, mappingConfiguration);
 	}
 	
 	private <O, J, S extends Collection<O>> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
 			ReversibleAccessor<C, S> propertyAccessor,
-			ValueAccessPointByMethodReference methodReference,
 			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
 		OneToManyRelation<C, O, J, S> oneToManyRelation = new OneToManyRelation<>(
 				propertyAccessor,
-				methodReference,
 				() -> this.polymorphismPolicy instanceof PolymorphismPolicy.TablePerClassPolymorphism,
 				mappingConfiguration);
 		this.oneToManyRelations.add(oneToManyRelation);

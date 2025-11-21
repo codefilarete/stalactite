@@ -20,8 +20,8 @@ import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelati
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.Nullable;
+import org.codefilarete.tool.Reflections;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
@@ -82,7 +82,7 @@ class ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1 extends Co
 	private Supplier<C1> buildCollectionFactory() {
 		Supplier<C1> result = manyToManyRelation.getCollectionFactory();
 		if (result == null) {
-			result = BeanRelationFixer.giveCollectionFactory((Class<C1>) manyToManyRelation.getMethodReference().getPropertyType());
+			result = Reflections.giveCollectionFactory((Class<C1>) manyToManyRelation.getMethodReference().getPropertyType());
 		}
 		return result;
 	}

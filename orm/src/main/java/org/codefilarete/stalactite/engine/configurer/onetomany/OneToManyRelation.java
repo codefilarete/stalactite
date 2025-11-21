@@ -2,13 +2,19 @@ package org.codefilarete.stalactite.engine.configurer.onetomany;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.reflection.AccessorChain.ValueInitializerOnNullValue;
+import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.AccessorDefinitionDefiner;
+import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.ValueAccessPointByMethodReference;
+import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
@@ -16,6 +22,7 @@ import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.Reflections;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
@@ -31,25 +38,25 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	/** The method that gives the "many" entities from the "one" entity */
 	private final ReversibleAccessor<SRC, S> collectionProvider;
 	
-	private final ValueAccessPointByMethodReference<SRC> methodReference;
-	
 	/** Indicator that says if source persister has table-per-class polymorphism */
 	private final BooleanSupplier sourceTablePerClassPolymorphic;
 	
 	/** Configuration used for "many" side beans persistence */
 	private final EntityMappingConfigurationProvider<TRGT, TRGTID> targetMappingConfiguration;
 	
-	private final MappedByConfiguration mappedByConfiguration = new MappedByConfiguration();
+	private final MappedByConfiguration<TRGT, SRC> mappedByConfiguration;
 	
 	/**
 	 * Source setter on target for bidirectionality (no consequence on database mapping).
 	 * Useful only for cases of association table because this case doesn't set any reverse information hence such setter can't be deduced.
 	 */
+	@Nullable
 	private SerializableBiConsumer<TRGT, SRC> reverseLink;
 	
 	/** Default relation mode is {@link RelationMode#ALL} */
 	private RelationMode relationMode = RelationMode.ALL;
 	/** Optional provider of collection instance to be used if collection value is null */
+	@Nullable
 	private Supplier<S> collectionFactory;
 	
 	/**
@@ -70,26 +77,35 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	 * instance on cycling configuration.
 	 *
 	 * @param collectionProvider provider of the property to be persisted
-	 * @param methodReference equivalent to collectionProvider
 	 * @param sourceTablePerClassPolymorphic must return true if source persister has table-per-class polymorphism
 	 * @param targetMappingConfiguration must return persistence configuration of entities stored in the target collection
 	 */
 	public OneToManyRelation(ReversibleAccessor<SRC, S> collectionProvider,
-							 ValueAccessPointByMethodReference<SRC> methodReference,
 							 BooleanSupplier sourceTablePerClassPolymorphic,
 							 EntityMappingConfigurationProvider<? super TRGT, TRGTID> targetMappingConfiguration) {
 		this.collectionProvider = collectionProvider;
-		this.methodReference = methodReference;
 		this.sourceTablePerClassPolymorphic = sourceTablePerClassPolymorphic;
 		this.targetMappingConfiguration = (EntityMappingConfigurationProvider<TRGT, TRGTID>) targetMappingConfiguration;
+		this.mappedByConfiguration = new MappedByConfiguration<>();
+	}
+	
+	private OneToManyRelation(ReversibleAccessor<SRC, S> collectionProvider,
+							  BooleanSupplier sourceTablePerClassPolymorphic,
+							  EntityMappingConfigurationProvider<? super TRGT, TRGTID> targetMappingConfiguration,
+							  MappedByConfiguration<TRGT, ?> mappedByConfiguration) {
+		this.collectionProvider = collectionProvider;
+		this.sourceTablePerClassPolymorphic = sourceTablePerClassPolymorphic;
+		this.targetMappingConfiguration = (EntityMappingConfigurationProvider<TRGT, TRGTID>) targetMappingConfiguration;
+		// Note that this cast is wrong, but left for simplicity: this constructo is used for embedded one-to-many relation, which means that the SRC
+		// type is the one that embed another one which contains the relation. In such configuration, the relation actually points to the embeddable
+		// type, not the one that embeds the relation. This the mappedBy(..) config does the same: it point to the embeddable type, not the SRC type.
+		// But fixing it has a lot of impacts due to the necessity to replace MappedByConfiguration "SRC" type by a generic <?> one with has its own
+		// complexity. I consider all these impacts doesn't worth it and I prefer to force this cast, even wrong.
+		this.mappedByConfiguration = (MappedByConfiguration<TRGT, SRC>) mappedByConfiguration;
 	}
 	
 	public ReversibleAccessor<SRC, S> getCollectionProvider() {
 		return collectionProvider;
-	}
-	
-	public ValueAccessPointByMethodReference<SRC> getMethodReference() {
-		return methodReference;
 	}
 	
 	public boolean isSourceTablePerClassPolymorphic() {
@@ -105,40 +121,35 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		return getTargetMappingConfiguration().getPolymorphismPolicy() instanceof PolymorphismPolicy.TablePerClassPolymorphism;
 	}
 	
-	@Nullable
-	public SerializableFunction<TRGT, SRC> getReverseGetter() {
-		return this.mappedByConfiguration.reverseGetter;
-	}
-	
 	public void setReverseGetter(SerializableFunction<TRGT, ? super SRC> reverseGetter) {
-		this.mappedByConfiguration.reverseGetter = (SerializableFunction<TRGT, SRC>) reverseGetter;
-	}
-	
-	@Nullable
-	public SerializableBiConsumer<TRGT, SRC> getReverseSetter() {
-		return this.mappedByConfiguration.reverseSetter;
+		this.mappedByConfiguration.setReverseGetter((SerializableFunction<TRGT, SRC>) reverseGetter);
 	}
 	
 	public void setReverseSetter(SerializableBiConsumer<TRGT, ? super SRC> reverseSetter) {
-		this.mappedByConfiguration.reverseSetter = (SerializableBiConsumer<TRGT, SRC>) reverseSetter;
+		this.mappedByConfiguration.setReverseSetter((SerializableBiConsumer<TRGT, SRC>) reverseSetter);
+	}
+	
+	@Nullable
+	public Mutator<TRGT, SRC> giveReverseSetter() {
+		return this.mappedByConfiguration.giveReverseSetter();
 	}
 	
 	@Nullable
 	public <O> Column<Table<?>, O> getReverseColumn() {
-		return (Column<Table<?>, O>) this.mappedByConfiguration.reverseColumn;
+		return (Column<Table<?>, O>) this.mappedByConfiguration.getReverseColumn();
 	}
 	
 	public void setReverseColumn(Column<?, ?> reverseColumn) {
-		this.mappedByConfiguration.reverseColumn = (Column<Table<?>, Object>) reverseColumn;
+		this.mappedByConfiguration.setReverseColumn(reverseColumn);
 	}
 	
 	@Nullable
 	public String getReverseColumnName() {
-		return this.mappedByConfiguration.reverseColumnName;
+		return this.mappedByConfiguration.getReverseColumnName();
 	}
 	
 	public void setReverseColumn(@Nullable String reverseColumnName) {
-		this.mappedByConfiguration.reverseColumnName = reverseColumnName;
+		this.mappedByConfiguration.setReverseColumnName(reverseColumnName);
 	}
 	
 	public ValueAccessPointMap<SRC, Column<Table<?>, Object>> getForeignKeyColumnMapping() {
@@ -168,7 +179,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	
 	/**
 	 * Indicates if relation is owned by target entities table
-	 * @return true if one of {@link #getReverseSetter()}, {@link #getReverseGetter()}, {@link #getReverseColumn()} is not null
+	 * @return true if one of {@link #giveReverseSetter()}, {@link #getReverseColumn()} is not null
 	 */
 	public boolean isOwnedByReverseSide() {
 		return this.mappedByConfiguration.isNotEmpty();
@@ -195,13 +206,13 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		setFetchSeparately(true);
 	}
 	
-	public void setIndexingColumn(Column<? extends Table, Integer> indexingColumn) {
+	public void setIndexingColumn(Column<?, Integer> indexingColumn) {
 		ordered();
 		this.indexingColumn = indexingColumn;
 	}
 	
 	@Nullable
-	public <T extends Table, O extends Object> Column<T, O> getIndexingColumn() {
+	public <T extends Table<T>> Column<T, Integer> getIndexingColumn() {
 		return indexingColumn;
 	}
 	
@@ -229,52 +240,81 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	 * from the "root" entity.
 	 *
 	 * @param accessor the prefix of the clone to be created
+	 * @param embeddedType the concrete type of the embeddable bean, because accessor may provide an abstraction
 	 * @return a clones of this instance prefixed with the given accessor
 	 * @param <C> the root entity type that owns the embeddable which has this relation
 	 */
-	public <C> OneToManyRelation<C, TRGT, TRGTID, S> embedInto(Accessor<C, SRC> accessor) {
+	public <C> OneToManyRelation<C, TRGT, TRGTID, S> embedInto(Accessor<C, SRC> accessor, Class<SRC> embeddedType) {
 		AccessorChain<C, S> slidedTargetProvider = new AccessorChain<>(accessor, collectionProvider);
-		slidedTargetProvider.setNullValueHandler(AccessorChain.INITIALIZE_VALUE);
-		OneToManyRelation<C, TRGT, TRGTID, S> result = new OneToManyRelation<>(slidedTargetProvider, null, this::isSourceTablePerClassPolymorphic, this.targetMappingConfiguration);
+		slidedTargetProvider.setNullValueHandler(new ValueInitializerOnNullValue() {
+			@Override
+			protected <T> T newInstance(Accessor<?, T> segmentAccessor, Class<T> valueType) {
+				if (segmentAccessor == accessor) {
+					return (T) Reflections.newInstance(embeddedType);
+				} else {
+					return super.newInstance(segmentAccessor, valueType);
+				}
+			}
+		});
+		MappedByConfiguration<TRGT, C> slidedMappedByConfiguration = this.mappedByConfiguration.embedInto(accessor);
+		
+		OneToManyRelation<C, TRGT, TRGTID, S> result = new OneToManyRelation<>(slidedTargetProvider,
+				this::isSourceTablePerClassPolymorphic,
+				this.targetMappingConfiguration,
+				slidedMappedByConfiguration);
 		result.setRelationMode(this.getRelationMode());
 		result.setFetchSeparately(this.isFetchSeparately());
 		return result;
 	}
 	
-	private class MappedByConfiguration {
+	private static class MappedByConfiguration<TRGT, SRC> {
 		
 		/** The method that gets the "one" entity from the "many" entities, may be null */
-		private SerializableFunction<TRGT, SRC> reverseGetter;
+		protected ReversibleAccessor<TRGT, SRC> reverseGetter;
 		
 		/** The method that sets the "one" entity onto the "many" entities, may be null */
-		private SerializableBiConsumer<TRGT, SRC> reverseSetter;
+		protected Mutator<TRGT, SRC> reverseSetter;
 		
 		/**
 		 * The column that stores relation, may be null.
 		 * Its type is undetermined (not forced at SRC) because it can only be a reference, such as an id.
 		 */
-		private Column<Table<?>, Object> reverseColumn;
+		protected Column<Table<?>, Object> reverseColumn;
 		
-		private String reverseColumnName;
+		protected String reverseColumnName;
 		
-		private final ValueAccessPointMap<SRC, Column<Table<?>, Object>> foreignKeyColumnMapping = new ValueAccessPointMap<>();
+		protected final ValueAccessPointMap<SRC, Column<Table<?>, Object>> foreignKeyColumnMapping = new ValueAccessPointMap<>();
 		
-		private final ValueAccessPointMap<SRC, String> foreignKeyNameMapping = new ValueAccessPointMap<>();
+		protected final ValueAccessPointMap<SRC, String> foreignKeyNameMapping = new ValueAccessPointMap<>();
 		
-		public SerializableFunction<TRGT, SRC> getReverseGetter() {
-			return reverseGetter;
+		<C> MappedByConfiguration<TRGT, C> embedInto(Accessor<C, SRC> accessor) {
+			return new SlidedMappedByConfiguration<>(accessor, this);
 		}
 		
 		public void setReverseGetter(SerializableFunction<TRGT, SRC> reverseGetter) {
-			this.reverseGetter = reverseGetter;
-		}
-		
-		public SerializableBiConsumer<TRGT, SRC> getReverseSetter() {
-			return reverseSetter;
+			this.reverseGetter = Accessors.accessor(reverseGetter);
 		}
 		
 		public void setReverseSetter(SerializableBiConsumer<TRGT, SRC> reverseSetter) {
-			this.reverseSetter = reverseSetter;
+			this.reverseSetter = Accessors.mutator(reverseSetter);
+		}
+		
+		public Mutator<TRGT, SRC> giveReverseSetter() {
+			if (this.reverseGetter != null) {
+				return this.reverseGetter.toMutator();
+			} else if (this.reverseSetter != null) {
+				return this.reverseSetter;
+			} else {
+				return null;
+			}
+		}
+		
+		public String getReverseColumnName() {
+			return reverseColumnName;
+		}
+		
+		public void setReverseColumnName(String reverseColumnName) {
+			this.reverseColumnName = reverseColumnName;
 		}
 		
 		public Column<Table<?>, ?> getReverseColumn() {
@@ -296,6 +336,72 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		public boolean isNotEmpty() {
 			return reverseSetter != null || reverseGetter != null || reverseColumn != null
 					|| !foreignKeyColumnMapping.isEmpty() || !foreignKeyNameMapping.isEmpty();
+		}
+	}
+	
+	private static class SlidedMappedByConfiguration<C, TRGT, SRC> extends MappedByConfiguration<TRGT, C> {
+		
+		private final Mutator<TRGT, C> effectiveReverseMutator;
+		
+		public SlidedMappedByConfiguration(Accessor<C, SRC> accessor, MappedByConfiguration<TRGT, SRC> mappedByConfiguration) {
+			this.reverseColumn = mappedByConfiguration.reverseColumn;
+			this.reverseColumnName = mappedByConfiguration.reverseColumnName;
+			this.foreignKeyColumnMapping.putAll((Map<? extends ValueAccessPoint<C>, ? extends Column<Table<?>, Object>>) mappedByConfiguration.foreignKeyColumnMapping);
+			this.foreignKeyNameMapping.putAll((Map<? extends ValueAccessPoint<C>, ? extends String>) mappedByConfiguration.foreignKeyNameMapping);
+			// Note that we don't set this.reverseGetter nor this.reverseSetter because it raises generics problem, and we can afford not to store them.
+			
+			if (mappedByConfiguration.reverseGetter != null) {
+				AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(accessor);
+				AccessorDefinition reverseSetterDefinition = AccessorDefinition.giveDefinition(mappedByConfiguration.reverseGetter);
+				SlidedMutator<C> reverseSetter = new SlidedMutator<>(
+						accessor,
+						new AccessorDefinition(accessorDefinition.getDeclaringClass(), accessorDefinition.getName() + "." + reverseSetterDefinition.getName(), reverseSetterDefinition.getMemberType()),
+						mappedByConfiguration.reverseGetter.toMutator());
+				this.effectiveReverseMutator = reverseSetter;
+
+			} else if (mappedByConfiguration.reverseSetter != null) {
+				AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(accessor);
+				AccessorDefinition reverseSetterDefinition = AccessorDefinition.giveDefinition(mappedByConfiguration.reverseSetter);
+				SlidedMutator<C> reverseSetter = new SlidedMutator<>(
+						accessor,
+						new AccessorDefinition(accessorDefinition.getDeclaringClass(), accessorDefinition.getName() + "." + reverseSetterDefinition.getName(), reverseSetterDefinition.getMemberType()),
+						mappedByConfiguration.reverseSetter);
+				this.effectiveReverseMutator = reverseSetter;
+			} else {
+				this.effectiveReverseMutator = null;
+			}
+		}
+		
+		@Override
+		public Mutator<TRGT, C> giveReverseSetter() {
+			return effectiveReverseMutator;
+		}
+		
+		public boolean isNotEmpty() {
+			return effectiveReverseMutator != null || super.isNotEmpty();
+		}
+		
+		private class SlidedMutator<C> implements Mutator<TRGT, C>, AccessorDefinitionDefiner<TRGT> {
+			private final Accessor<C, SRC> accessor;
+			private final AccessorDefinition accessorDefinition;
+			private final Mutator<TRGT, SRC> reverseSetter;
+			
+			public SlidedMutator(Accessor<C, SRC> accessor, AccessorDefinition accessorDefinition, Mutator<TRGT, SRC> reverseSetter) {
+				this.accessor = accessor;
+				this.accessorDefinition = accessorDefinition;
+				this.reverseSetter = reverseSetter;
+			}
+			
+			@Override
+			public void set(TRGT trgt, C c) {
+				SRC src = accessor.get(c);
+				reverseSetter.set(trgt, src);
+			}
+			
+			@Override
+			public AccessorDefinition asAccessorDefinition() {
+				return accessorDefinition;
+			}
 		}
 	}
 }

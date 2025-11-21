@@ -12,7 +12,7 @@ import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.tool.Reflections;
 
 /**
  * Class that stores elements necessary to one-to-many association configuration
@@ -60,7 +60,7 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 	private Supplier<C> buildCollectionFactory() {
 		Supplier<C> result = oneToManyRelation.getCollectionFactory();
 		if (result == null) {
-			result = BeanRelationFixer.giveCollectionFactory((Class<C>) accessorDefinition.getMemberType());
+			result = Reflections.giveCollectionFactory((Class<C>) accessorDefinition.getMemberType());
 		}
 		return result;
 	}
@@ -110,7 +110,7 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 	}
 	
 	/**
-	 * Equivalent to {@link org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation#getMethodReference()} but used for table and colum naming only.
+	 * Equivalent to {@link org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation#getCollectionProvider()}.
 	 * Collection access will be done through {@link OneToManyAssociationConfiguration#getCollectionGetter()} and {@link OneToManyAssociationConfiguration#getCollectionFactory()}
 	 */
 	public AccessorDefinition getAccessorDefinition() {

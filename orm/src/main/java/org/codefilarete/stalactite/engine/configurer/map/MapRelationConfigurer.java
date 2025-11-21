@@ -46,6 +46,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.PairIterator;
 
@@ -141,7 +142,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 		// select management
 		Supplier<M> collectionFactory = preventNull(
 				mapRelation.getMapFactory(),
-				BeanRelationFixer.giveMapFactory((Class<M>) mapProviderDefinition.getMemberType()));
+				Reflections.giveMapFactory((Class<M>) mapProviderDefinition.getMemberType()));
 		addSelectCascade(sourcePersister, relationRecordPersister, sourcePK, reverseForeignKey,
 				mapRelation.getMapProvider().toMutator()::set, collectionAccessor,
 				collectionFactory);

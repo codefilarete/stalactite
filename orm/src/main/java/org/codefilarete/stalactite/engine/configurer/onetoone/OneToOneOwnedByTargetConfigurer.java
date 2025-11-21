@@ -116,7 +116,7 @@ public class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 		if (createForeignKey) {
 			String foreignKeyName = foreignKeyNamingStrategy.giveName(rightKey, leftKey);
 			// Note that rightColumn can't be null because RelationOwnedByTargetConfigurer is used when one of cascadeOne.getReverseColumn(),
-			// cascadeOne.getReverseGetter() and cascadeOne.getReverseSetter() is not null
+			// or cascadeOne.giveReverseSetter() is not null
 			((Table) rightKey.getTable()).addForeignKey(foreignKeyName, rightKey, leftKey);
 		}
 		

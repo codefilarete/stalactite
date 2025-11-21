@@ -33,7 +33,7 @@ class KeyValueRecordMappingBuilder<K, V, I, T extends Table<T>, LEFTTABLE extend
 				if (accessor == KeyValueRecord.KEY_ACCESSOR) {
 					return Reflections.newInstance(entryKeyMapping.getClassToPersist());
 				}
-				return ValueInitializerOnNullValue.newInstance(accessor, inputType);
+				return Reflections.newInstance(inputType);
 			}));
 			result.add(key, column);
 		});
@@ -48,7 +48,7 @@ class KeyValueRecordMappingBuilder<K, V, I, T extends Table<T>, LEFTTABLE extend
 				if (accessor == KeyValueRecord.VALUE_ACCESSOR) {
 					return Reflections.newInstance(entryKeyMapping.getClassToPersist());
 				}
-				return ValueInitializerOnNullValue.newInstance(accessor, inputType);
+				return Reflections.newInstance(inputType);
 			}));
 			result.add(key, column);
 		});

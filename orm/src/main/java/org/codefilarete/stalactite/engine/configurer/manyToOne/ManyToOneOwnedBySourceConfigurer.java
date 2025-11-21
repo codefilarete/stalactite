@@ -45,6 +45,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Nullable;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.bean.FieldIterator;
 import org.codefilarete.tool.bean.InstanceFieldIterator;
 import org.codefilarete.tool.collection.Iterables;
@@ -166,7 +167,7 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 				Supplier<Collection<SRC>> reverseCollectionFactory = mappedByConfiguration.getReverseCollectionFactory();
 				if (reverseCollectionFactory == null) {
 					Class<Collection<SRC>> collectionType = AccessorDefinition.giveDefinition(collectionAccessor).getMemberType();
-					reverseCollectionFactory = BeanRelationFixer.giveCollectionFactory(collectionType);
+					reverseCollectionFactory = Reflections.giveCollectionFactory(collectionType);
 				}
 				PropertyAccessor<TRGT, Collection<SRC>> finalCollectionAccessor = collectionAccessor;
 				SerializableBiConsumer<TRGT, SRC> combiner = configuredCombiner.getOr((TRGT trgt, SRC src) -> {

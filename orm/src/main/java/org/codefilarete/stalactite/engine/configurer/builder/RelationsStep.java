@@ -23,6 +23,7 @@ import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.tool.collection.Iterables;
 
 /***
  * Configure relations using {@link RelationConfigurer}.
@@ -67,9 +68,14 @@ public class RelationsStep<C, I> {
 				.filter(EntityMappingConfiguration.class::isInstance)
 				.map(EntityMappingConfiguration.class::cast)
 				.map(EntityMappingConfiguration::getPropertiesMapping)
+				// we the configurations of all embedded bean through the configuration insets
 				.flatMap(conf -> ((Collection<Inset<C, D>>) conf.getInsets()).stream()
-						.map(inset -> new SlidedRelationalMappingConfiguration<>(rootEntityType, inset.getConfigurationProvider().getConfiguration(), inset)))
-				.forEach(relationConfigurer::configureRelations);
+						// we must check the inherited class of the embeddable because they may also define some relations
+						.flatMap(inset -> Iterables.stream(inset.getConfigurationProvider().getConfiguration().inheritanceIterable())
+								.map(confInHierarchy -> new SlidedRelationalMappingConfiguration<>(rootEntityType, confInHierarchy, inset))))
+				.forEach(slidedRelationalMappingConfiguration -> {
+					relationConfigurer.configureRelations((RelationalMappingConfiguration<C>) slidedRelationalMappingConfiguration);
+				});
 	}
 	
 	/**
@@ -105,7 +111,7 @@ public class RelationsStep<C, I> {
 		@Override
 		public <TRGT, TRGTID> List<OneToManyRelation<C, TRGT, TRGTID, Collection<TRGT>>> getOneToManys() {
 			return configuration.<TRGT, TRGTID>getOneToManys().stream()
-					.map(oneToMany -> oneToMany.embedInto(inset.getAccessor()))
+					.map(oneToMany -> oneToMany.embedInto(inset.getAccessor(), configuration.getEntityType()))
 					.collect(Collectors.toList());
 		}
 		

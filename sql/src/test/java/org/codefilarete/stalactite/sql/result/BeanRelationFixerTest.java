@@ -59,16 +59,6 @@ public class BeanRelationFixerTest {
 		assertThat(city.getCountry()).isEqualTo(target);
 	}
 	
-	@Test
-	public void giveCollectionFactory() {
-		assertThat(BeanRelationFixer.giveCollectionFactory(List.class).get().getClass()).isEqualTo(ArrayList.class);
-		assertThat(BeanRelationFixer.giveCollectionFactory(Set.class).get().getClass()).isEqualTo(HashSet.class);
-		assertThat(BeanRelationFixer.giveCollectionFactory(SortedSet.class).get().getClass()).isEqualTo(TreeSet.class);
-		assertThat(BeanRelationFixer.giveCollectionFactory(Queue.class).get().getClass()).isEqualTo(ArrayDeque.class);
-		assertThat(BeanRelationFixer.giveCollectionFactory(LinkedHashSet.class).get().getClass()).isEqualTo(LinkedHashSet.class);
-	}
-	
-	
 	private static class DummyTarget {
 		private String prop1;
 		private List<Integer> prop2;

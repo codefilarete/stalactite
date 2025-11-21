@@ -24,7 +24,6 @@ import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.ValueAccessPointByMethodReference;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
@@ -247,7 +246,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 				getterReference,
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				new AccessorByMethod<C, S>(captureLambdaMethod(getter)).toMutator());
-		return mapOneToMany(propertyAccessor, getterReference, mappingConfiguration);
+		return mapOneToMany(propertyAccessor, mappingConfiguration);
 	}
 	
 	@Override
@@ -260,16 +259,14 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
 				setterReference
 		);
-		return mapOneToMany(propertyAccessor, setterReference, mappingConfiguration);
+		return mapOneToMany(propertyAccessor, mappingConfiguration);
 	}
 	
 	private <O, J, S extends Collection<O>> FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> mapOneToMany(
 			ReversibleAccessor<C, S> propertyAccessor,
-			ValueAccessPointByMethodReference methodReference,
 			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
 		OneToManyRelation<C, O, J, S> oneToManyRelation = new OneToManyRelation<>(
 				propertyAccessor,
-				methodReference,
 				() -> false,
 				mappingConfiguration);
 		this.oneToManyRelations.add(oneToManyRelation);

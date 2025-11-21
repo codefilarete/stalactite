@@ -1,18 +1,7 @@
 package org.codefilarete.stalactite.sql.result;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -67,44 +56,6 @@ public interface BeanRelationFixer<E, I> {
 			// bidirectional assignment
 			reverseSetter.accept(i, s);
 		};
-	}
-	
-	/**
-	 * Returns a {@link Supplier} of concrete instance for given collection type : for {@link List} and {@link Set} types it respectively
-	 * returns an {@link ArrayList} instance and an {@link HashSet} instance, for any other case collectionType is expected to be concrete therefore
-	 * it will try to instantiate it.
-	 * 
-	 * @param collectionType expected to be one of List.class or Set.class or a concrete type
-	 * @return a {@link Supplier} of a concrete {@link Collection} compatible with given collectionType
-	 */
-	static <C extends Collection> Supplier<C> giveCollectionFactory(Class<C> collectionType) {
-		Class<? extends C> concreteType;
-		if (List.class.equals(collectionType)) {
-			concreteType = (Class) ArrayList.class;
-		} else if (SortedSet.class.equals(collectionType)) {
-			concreteType = (Class) TreeSet.class;
-		} else if (Set.class.equals(collectionType)) {
-			concreteType = (Class) HashSet.class;
-		} else if (Queue.class.equals(collectionType)) {
-			concreteType = (Class) ArrayDeque.class;
-		} else {
-			// given type is expected to be concrete, we'll instantiate it
-			concreteType = collectionType;
-		}
-		return () -> Reflections.newInstance(concreteType);
-	}
-	
-	static <M extends Map> Supplier<M> giveMapFactory(Class<M> mapType) {
-		Class<? extends M> concreteType;
-		if (SortedMap.class.equals(mapType)) {
-			concreteType = (Class) TreeMap.class;
-		} else if (Map.class.equals(mapType)) {
-			concreteType = (Class) HashMap.class;
-		} else {
-			// given type is expected to be concrete, we'll instantiate it
-			concreteType = mapType;
-		}
-		return () -> Reflections.newInstance(concreteType);
 	}
 	
 	/**
