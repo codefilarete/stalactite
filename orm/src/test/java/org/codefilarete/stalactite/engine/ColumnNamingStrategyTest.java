@@ -14,8 +14,8 @@ public class ColumnNamingStrategyTest {
 	
 	@Test
 	void defaultGiveName() {
-		assertThat(ColumnNamingStrategy.DEFAULT.giveName(new AccessorDefinition(Toto.class, "setName", int.class))).isEqualTo("name");
-		assertThat(ColumnNamingStrategy.DEFAULT.giveName(new AccessorDefinition(Toto.class, "getName", String.class))).isEqualTo("name");
+		assertThat(ColumnNamingStrategy.DEFAULT.giveName(new AccessorDefinition(Toto.class, "name", int.class))).isEqualTo("name");
+		assertThat(ColumnNamingStrategy.DEFAULT.giveName(new AccessorDefinition(Toto.class, "isbn", String.class))).isEqualTo("isbn");
 		
 		AccessorChain<Toto, String> accessor = AccessorChain.fromMethodReferences(Toto::getTata, Tata::getWonderfulProperty);
 		assertThat(ColumnNamingStrategy.DEFAULT.giveName(AccessorDefinition.giveDefinition(accessor))).isEqualTo("tata_wonderfulProperty");
@@ -25,6 +25,8 @@ public class ColumnNamingStrategyTest {
 		
 		private int name;
 		
+		private String isbn;
+		
 		private Tata tata;
 		
 		public int getName() {
@@ -33,6 +35,14 @@ public class ColumnNamingStrategyTest {
 		
 		public void setName(int name) {
 			this.name = name;
+		}
+		
+		public String getIsbn() {
+			return isbn;
+		}
+		
+		public void setIsbn(String isbn) {
+			this.isbn = isbn;
 		}
 		
 		public Tata getTata() {

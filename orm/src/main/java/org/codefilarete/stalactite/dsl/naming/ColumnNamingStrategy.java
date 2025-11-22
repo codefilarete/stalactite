@@ -1,11 +1,7 @@
 package org.codefilarete.stalactite.dsl.naming;
 
-import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.Strings;
 import org.codefilarete.reflection.AccessorDefinition;
-
-import static org.codefilarete.tool.Reflections.GET_SET_PREFIX_REMOVER;
-import static org.codefilarete.tool.Reflections.IS_PREFIX_REMOVER;
+import org.codefilarete.tool.Strings;
 
 /**
  * @author Guillaume Mary
@@ -15,19 +11,17 @@ public interface ColumnNamingStrategy {
 	/**
 	 * Expected to generate a name for the given method definition that maps a property to a column
 	 * 
-	 * @param accessorDefinition a representation of the method (getter or setter) that gives the property to be persisted
+	 * @param propertyAccessor a representation of the method (getter or setter) that gives the property to be persisted
 	 */
-	String giveName(AccessorDefinition accessorDefinition);
+	String giveName(AccessorDefinition propertyAccessor);
 	
 	/**
 	 * Strategy to give property name as the column name, property name is taken from method according to the Java Bean naming convention
 	 */
-	ColumnNamingStrategy DEFAULT = accessor -> {
-		String propertyPath = Reflections.onJavaBeanPropertyWrapperNameGeneric(accessor.getName(), accessor.getName(),
-				GET_SET_PREFIX_REMOVER, GET_SET_PREFIX_REMOVER, IS_PREFIX_REMOVER, s -> s);
+	ColumnNamingStrategy DEFAULT = propertyAccessor -> {
 		// The property might be an AccessorChain which is a more a path than a direct property accessor, that is transformed
 		// with dots by AccessorDefinition and is not compatible with databases, hence we change them to underscore (arbitrary character)
-		return Strings.uncapitalize(propertyPath.replace('.', '_'));
+		return Strings.uncapitalize(propertyAccessor.getName().replace('.', '_'));
 	};
 	
 	/**

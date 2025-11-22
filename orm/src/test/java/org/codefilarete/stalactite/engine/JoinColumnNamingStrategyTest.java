@@ -14,13 +14,15 @@ class JoinColumnNamingStrategyTest {
 	void defaultGiveName() {
 		Table table = new Table("DummyTable");
 		Column idColumn = table.addColumn("id", int.class);
-		assertThat(JoinColumnNamingStrategy.JOIN_DEFAULT.giveName(new AccessorDefinition(Toto.class, "setName", int.class), idColumn)).isEqualTo("nameId");
-		assertThat(JoinColumnNamingStrategy.JOIN_DEFAULT.giveName(new AccessorDefinition(Toto.class, "getName", String.class), idColumn)).isEqualTo("nameId");
+		assertThat(JoinColumnNamingStrategy.JOIN_DEFAULT.giveName(new AccessorDefinition(Toto.class, "name", int.class), idColumn)).isEqualTo("nameId");
+		assertThat(JoinColumnNamingStrategy.JOIN_DEFAULT.giveName(new AccessorDefinition(Toto.class, "isbn", String.class), idColumn)).isEqualTo("isbnId");
 	}
 	
 	private static class Toto {
 		
 		private int name;
+		
+		private String isbn;
 		
 		public int getName() {
 			return name;
@@ -28,6 +30,14 @@ class JoinColumnNamingStrategyTest {
 		
 		public void setName(int name) {
 			this.name = name;
+		}
+		
+		public String getIsbn() {
+			return isbn;
+		}
+		
+		public void setIsbn(String isbn) {
+			this.isbn = isbn;
 		}
 	}
 	
