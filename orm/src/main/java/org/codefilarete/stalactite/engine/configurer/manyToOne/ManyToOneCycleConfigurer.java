@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.engine.runtime.cycle.ManyToOneCycleLoader;
  * Expected to exist as a one-per-entity-type.
  * 
  * As a {@link PostInitializer}, will invoke every registered {@link ManyToOneRelationConfigurer}
- * {@link ManyToOneOwnedBySourceConfigurer#configureWithSelectIn2Phases(String, ConfiguredRelationalPersister, FirstPhaseCycleLoadListener) configureWithSelectIn2Phases method}
+ * {@link ManyToOneOwnedBySourceConfigurer#configureWithSelectIn2Phases(String, ConfiguredRelationalPersister, FirstPhaseCycleLoadListener, String) configureWithSelectIn2Phases method}
  * with a {@link ManyToOneCycleLoader}.
  * 
  * @param <TRGT> type of all registered {@link ManyToOneRelationConfigurer}
@@ -23,9 +23,11 @@ public class ManyToOneCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 	
 	// instantiated as a LinkedHashSet only for steady debugging purpose, could be replaced by a HashSet
 	private final Set<RelationConfigurer<?, ?, ?>> relations = new LinkedHashSet<>();
+	private final ManyToOneRelation<?, TRGT, ?, ?> manyToOneRelation;
 	
-	public ManyToOneCycleConfigurer(Class<TRGT> entityType) {
-		super(entityType);
+	public ManyToOneCycleConfigurer(Class<TRGT> targetEntityType, ManyToOneRelation<?, TRGT, ?, ?> manyToOneRelation) {
+		super(targetEntityType);
+		this.manyToOneRelation = manyToOneRelation;
 	}
 	
 	public <SRC> void addCycleSolver(String relationIdentifier,
@@ -44,7 +46,7 @@ public class ManyToOneCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 		relations.forEach((RelationConfigurer c) -> {
 			String tableAlias = c.relationName.replaceAll("\\W", "_");
 			CascadeConfigurationResult<SRC, TRGT> configurationResult = c.manyToOneRelationConfigurer.configureWithSelectIn2Phases(
-					tableAlias, targetPersister, manyToOneCycleLoader);
+					tableAlias, targetPersister, manyToOneCycleLoader, manyToOneRelation.getColumnName());
 			manyToOneCycleLoader.addRelation(c.relationName, configurationResult);
 		});
 	}

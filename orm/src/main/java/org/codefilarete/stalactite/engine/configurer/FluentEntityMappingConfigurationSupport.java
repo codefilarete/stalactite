@@ -941,6 +941,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 						manyToOneRelation.fetchSeparately();
 						return null;	// we can return null because dispatcher will return proxy
 					}
+					
+					@Override
+					public ManyToOneOptions<C, I, O, S> columnName(String columnName) {
+						manyToOneRelation.setColumnName(columnName);
+						return null;
+					}
 				}, true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderManyToOneOptions<C, I, O, S>>) (Class) FluentMappingBuilderManyToOneOptions.class);

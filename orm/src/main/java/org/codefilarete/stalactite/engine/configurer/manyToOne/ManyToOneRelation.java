@@ -49,6 +49,9 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 	 */
 	private boolean fetchSeparately;
 	
+	@javax.annotation.Nullable
+	private String columnName;
+	
 	public ManyToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider,
 											   BooleanSupplier sourceTablePerClassPolymorphic,
 											   EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration) {
@@ -106,6 +109,15 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 	
 	public void fetchSeparately() {
 		setFetchSeparately(true);
+	}
+	
+	@javax.annotation.Nullable
+	public String getColumnName() {
+		return columnName;
+	}
+	
+	public void setColumnName(@javax.annotation.Nullable String columnName) {
+		this.columnName = columnName;
 	}
 	
 	/**

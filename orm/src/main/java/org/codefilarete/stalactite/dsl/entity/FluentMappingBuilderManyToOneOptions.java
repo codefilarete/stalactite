@@ -62,4 +62,7 @@ public interface FluentMappingBuilderManyToOneOptions<C, I, O, S extends Collect
 	
 	@Override
 	FluentMappingBuilderManyToOneOptions<C, I, O, S> fetchSeparately();
+	
+	@Override
+	FluentMappingBuilderManyToOneOptions<C, I, O, S> columnName(String columnName);
 }

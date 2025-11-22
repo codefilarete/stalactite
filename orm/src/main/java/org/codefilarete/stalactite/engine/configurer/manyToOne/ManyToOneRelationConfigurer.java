@@ -62,7 +62,7 @@ public class ManyToOneRelationConfigurer<C, I, TRGT, TRGTID> extends AbstractRel
 			ManyToOneCycleConfigurer<TRGT> cycleSolver = (ManyToOneCycleConfigurer<TRGT>)
 					Iterables.find(currentBuilderContext.getBuildLifeCycleListeners(), p -> p instanceof ManyToOneCycleConfigurer && ((ManyToOneCycleConfigurer<?>) p).getEntityType() == targetEntityType);
 			if (cycleSolver == null) {
-				cycleSolver = new ManyToOneCycleConfigurer<>(targetEntityType);
+				cycleSolver = new ManyToOneCycleConfigurer<>(targetEntityType, manyToOneRelation);
 				currentBuilderContext.addBuildLifeCycleListener(cycleSolver);
 			}
 			cycleSolver.addCycleSolver(relationName, configurer);
@@ -70,7 +70,7 @@ public class ManyToOneRelationConfigurer<C, I, TRGT, TRGTID> extends AbstractRel
 			// please note that even if no table is found in configuration, build(..) will create one
 			Table targetTable = determineTargetTable(manyToOneRelation);
 			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = persisterBuilder.build(new EntityMappingConfigurationWithTable<>(targetMappingConfiguration, targetTable));
-			configurer.configure(relationName, targetPersister, manyToOneRelation.isFetchSeparately());
+			configurer.configure(relationName, targetPersister, manyToOneRelation);
 		}
 	}
 	

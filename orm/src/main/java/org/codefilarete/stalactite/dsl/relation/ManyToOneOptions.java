@@ -61,4 +61,13 @@ public interface ManyToOneOptions<C, I, O, S extends Collection<C>> extends Casc
 	 * @return the global mapping configurer
 	 */
 	ManyToOneOptions<C, I, O, S> fetchSeparately();
+	
+	/**
+	 * Give the column name of the foreign key column referencing the target entity key.
+	 * Valuable only for single key cases.
+	 *
+	 * @param columnName foreign key column name
+	 * @return the global mapping configurer
+	 */
+	ManyToOneOptions<C, I, O, S> columnName(String columnName);
 }

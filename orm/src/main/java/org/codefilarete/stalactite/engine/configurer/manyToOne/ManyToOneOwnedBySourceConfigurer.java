@@ -90,28 +90,29 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 	
 	public String configure(String tableAlias,
 							ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
-							boolean loadSeparately) {
+							ManyToOneRelation<SRC, TRGT, TRGTID, ?> manyToOneRelation) {
 		assertConfigurationIsSupported();
 		
 		// Finding joined columns
 		EntityMapping<TRGT, TRGTID, RIGHTTABLE> targetMappingStrategy = targetPersister.getMapping();
-		Duo<Key<LEFTTABLE, JOINID>, Key<RIGHTTABLE, JOINID>> foreignKeyColumns = determineForeignKeyColumns(sourcePersister.getMapping(), targetMappingStrategy);
+		Duo<Key<LEFTTABLE, JOINID>, Key<RIGHTTABLE, JOINID>> foreignKeyColumns = determineForeignKeyColumns(sourcePersister.getMapping(), targetMappingStrategy, manyToOneRelation.getColumnName());
 		
 		BeanRelationFixer<SRC, TRGT> beanRelationFixer = determineRelationFixer(targetPersister);
 		
-		String relationJoinNodeName = addSelectJoin(tableAlias, targetPersister, foreignKeyColumns.getLeft(), foreignKeyColumns.getRight(), beanRelationFixer, loadSeparately);
+		String relationJoinNodeName = addSelectJoin(tableAlias, targetPersister, foreignKeyColumns.getLeft(), foreignKeyColumns.getRight(), beanRelationFixer, manyToOneRelation.isFetchSeparately());
 		addWriteCascades(targetPersister);
 		return relationJoinNodeName;
 	}
 	
 	public CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(String tableAlias,
 																			  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
-																			  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
+																			  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener,
+																			  @javax.annotation.Nullable String leftColumnName) {
 		assertConfigurationIsSupported();
 		
 		// Finding joined columns
 		EntityMapping<TRGT, TRGTID, RIGHTTABLE> targetMappingStrategy = targetPersister.getMapping();
-		Duo<Key<LEFTTABLE, JOINID>, Key<RIGHTTABLE, JOINID>> foreignKeyColumns = determineForeignKeyColumns(sourcePersister.getMapping(), targetMappingStrategy);
+		Duo<Key<LEFTTABLE, JOINID>, Key<RIGHTTABLE, JOINID>> foreignKeyColumns = determineForeignKeyColumns(sourcePersister.getMapping(), targetMappingStrategy, leftColumnName);
 		
 		BeanRelationFixer<SRC, TRGT> beanRelationFixer = determineRelationFixer(targetPersister);
 		
@@ -189,14 +190,15 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 	}
 	
 	protected Duo<Key<LEFTTABLE, JOINID>, Key<RIGHTTABLE, JOINID>> determineForeignKeyColumns(EntityMapping<SRC, SRCID, LEFTTABLE> mappingStrategy,
-																							  EntityMapping<TRGT, TRGTID, RIGHTTABLE> targetMappingStrategy) {
+																							  EntityMapping<TRGT, TRGTID, RIGHTTABLE> targetMappingStrategy,
+																							  String leftColumnName) {
 		Key<RIGHTTABLE, JOINID> rightKey = targetMappingStrategy.getTargetTable().getPrimaryKey();
 		// adding foreign key constraint
 		KeyBuilder<LEFTTABLE, JOINID> leftKeyBuilder = Key.from(mappingStrategy.getTargetTable());
 		AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(manyToOneRelation.getTargetProvider());
 		targetMappingStrategy.getTargetTable().getPrimaryKey().getColumns().forEach(column -> {
-			String leftColumnName = joinColumnNamingStrategy.giveName(accessorDefinition, column);
-			Column<LEFTTABLE, ?> foreignKeyColumn = mappingStrategy.getTargetTable().addColumn(leftColumnName, column.getJavaType());
+			String effectiveLeftColumnName = nullable(leftColumnName).elseSet(() -> joinColumnNamingStrategy.giveName(accessorDefinition, column)).get();
+			Column<LEFTTABLE, ?> foreignKeyColumn = mappingStrategy.getTargetTable().addColumn(effectiveLeftColumnName, column.getJavaType());
 			leftKeyBuilder.addColumn(foreignKeyColumn);
 			keyColumnsMapping.put(foreignKeyColumn, column);
 		});
