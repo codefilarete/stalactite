@@ -9,9 +9,10 @@ import java.util.Set;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ValueAccessPoint;
-import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.RuntimeMappingException;
+import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
@@ -19,6 +20,7 @@ import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.mapping.EntityMapping;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
@@ -43,9 +45,14 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 	
 	protected final OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation;
 	
-	protected OneToOneConfigurerTemplate(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister, OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation) {
+	protected final IndexNamingStrategy indexNamingStrategy;
+	
+	protected OneToOneConfigurerTemplate(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
+										 OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation,
+										 IndexNamingStrategy indexNamingStrategy) {
 		this.sourcePersister = sourcePersister;
 		this.oneToOneRelation = oneToOneRelation;
+		this.indexNamingStrategy = indexNamingStrategy;
 	}
 	
 	public String configure(@Nullable String tableAlias,
@@ -56,6 +63,8 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 		// Finding joined columns
 		EntityMapping<TRGT, TRGTID, RIGHTTABLE> targetMappingStrategy = targetPersister.getMapping();
 		Duo<Key<LEFTTABLE, JOINID>, Key<RIGHTTABLE, JOINID>> foreignKeyColumns = determineForeignKeyColumns(sourcePersister.getMapping(), targetMappingStrategy);
+		
+		eventuallyAddIndex(foreignKeyColumns);
 		
 		BeanRelationFixer<SRC, TRGT> beanRelationFixer = determineRelationFixer();
 		
@@ -73,6 +82,8 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 		EntityMapping<TRGT, TRGTID, RIGHTTABLE> targetMappingStrategy = targetPersister.getMapping();
 		Duo<Key<LEFTTABLE, JOINID>, Key<RIGHTTABLE, JOINID>> foreignKeyColumns = determineForeignKeyColumns(sourcePersister.getMapping(), targetMappingStrategy);
 		
+		eventuallyAddIndex(foreignKeyColumns);
+		
 		BeanRelationFixer<SRC, TRGT> beanRelationFixer = determineRelationFixer();
 		
 		addSelectIn2Phases(tableAlias, targetPersister, foreignKeyColumns.getLeft(), foreignKeyColumns.getRight(), firstPhaseCycleLoadListener);
@@ -89,6 +100,19 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 	
 	protected abstract Duo<Key<LEFTTABLE, JOINID>, Key<RIGHTTABLE, JOINID>> determineForeignKeyColumns(EntityMapping<SRC, SRCID, LEFTTABLE> mappingStrategy,
 																									   EntityMapping<TRGT, TRGTID, RIGHTTABLE> targetMappingStrategy);
+	
+	private void eventuallyAddIndex(Duo<Key<LEFTTABLE, JOINID>, Key<RIGHTTABLE, JOINID>> foreignKeyColumns) {
+		// we only support index for single key
+		if (oneToOneRelation.isUnique() && foreignKeyColumns.getLeft().getColumns().size() == 1) {
+			if (oneToOneRelation.isRelationOwnedByTarget()) {
+				addIndex((Column<RIGHTTABLE, ?>) Iterables.first(foreignKeyColumns.getRight().getColumns()));
+			} else {
+				addIndex((Column<LEFTTABLE, ?>) Iterables.first(foreignKeyColumns.getLeft().getColumns()));
+			}
+		}
+	}
+	
+	protected abstract void addIndex(Column<?, ?> column);
 	
 	protected abstract BeanRelationFixer<SRC, TRGT> determineRelationFixer();
 	

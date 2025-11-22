@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -35,6 +36,7 @@ import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
+import org.codefilarete.stalactite.sql.ddl.structure.Index;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
@@ -42,6 +44,7 @@ import org.codefilarete.stalactite.sql.result.RowIterator;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.exception.Exceptions;
 import org.junit.jupiter.api.BeforeEach;
@@ -399,19 +402,19 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_COUNTRY_CAPITALID_CITY_ID", "COUNTRY", "CAPITALID", "CITY", "ID");
 			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
-
+			
 			class Column {
 				private final String tableName;
 				private final String name;
 				private final boolean nullable;
-
+				
 				Column(String tableName, String name, boolean nullable) {
 					this.tableName = tableName;
 					this.name = name;
 					this.nullable = nullable;
 				}
 			}
-
+			
 			ResultSetIterator<Column> columnIterator = new ResultSetIterator<Column>(currentConnection.getMetaData().getColumns(null, null, "COUNTRY", "%")) {
 				@Override
 				public Column convert(ResultSet rs) throws SQLException {
@@ -441,13 +444,13 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		void relationOwnedByTargetSide() throws SQLException {
 			ConfiguredPersister<Country, Identifier<Long>> countryPersister =
 					(ConfiguredPersister<Country, Identifier<Long>>) entityBuilder(Country.class, Identifier.LONG_TYPE)
-					// setting a foreign key naming strategy to be tested
-					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
-					.mapKey(Country::getId, ALREADY_ASSIGNED)
-					.map(Country::getName)
-					.map(Country::getDescription)
-					.mapOneToOne(Country::getCapital, cityConfiguration).mappedBy(City::getCountry).mandatory()
-					.build(persistenceContext);
+							// setting a foreign key naming strategy to be tested
+							.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
+							.mapKey(Country::getId, ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.map(Country::getDescription)
+							.mapOneToOne(Country::getCapital, cityConfiguration).mappedBy(City::getCountry).mandatory()
+							.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -467,19 +470,19 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_CITY_COUNTRYID_COUNTRY_ID", "CITY", "COUNTRYID", "COUNTRY", "ID");
 			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
-
+			
 			class Column {
 				private final String tableName;
 				private final String name;
 				private final boolean nullable;
-
+				
 				Column(String tableName, String name, boolean nullable) {
 					this.tableName = tableName;
 					this.name = name;
 					this.nullable = nullable;
 				}
 			}
-
+			
 			ResultSetIterator<Column> columnIterator = new ResultSetIterator<Column>(currentConnection.getMetaData().getColumns(null, null, "CITY", "%")) {
 				@Override
 				public Column convert(ResultSet rs) throws SQLException {
@@ -514,13 +517,13 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			ConfiguredPersister<Country, Identifier<Long>> countryPersister =
 					(ConfiguredPersister<Country, Identifier<Long>>) entityBuilder(Country.class, Identifier.LONG_TYPE)
-					// setting a foreign key naming strategy to be tested
-					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
-					.mapKey(Country::getId, ALREADY_ASSIGNED)
-					.map(Country::getName)
-					.map(Country::getDescription)
-					.mapOneToOne(Country::getCapital, cityMappingBuilder).mappedBy(stateColumn)
-					.build(persistenceContext);
+							// setting a foreign key naming strategy to be tested
+							.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
+							.mapKey(Country::getId, ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.map(Country::getDescription)
+							.mapOneToOne(Country::getCapital, cityMappingBuilder).mappedBy(stateColumn)
+							.build(persistenceContext);
 			
 			// ensuring that the foreign key is present on table, hence testing that cityTable was used, not a clone created by build(..) 
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_city_state_Country_id", "city", "state", "Country", "id");
@@ -559,13 +562,13 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			ConfiguredPersister<Country, Identifier<Long>> countryPersister =
 					(ConfiguredPersister<Country, Identifier<Long>>) entityBuilder(Country.class, Identifier.LONG_TYPE)
-					// setting a foreign key naming strategy to be tested
-					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
-					.mapKey(Country::getId, ALREADY_ASSIGNED)
-					.map(Country::getName)
-					.map(Country::getDescription)
-					.mapOneToOne(Country::getCapital, cityMappingBuilder).mappedBy(stateColumn).mappedBy(City::getCountry)
-					.build(persistenceContext);
+							// setting a foreign key naming strategy to be tested
+							.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
+							.mapKey(Country::getId, ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.map(Country::getDescription)
+							.mapOneToOne(Country::getCapital, cityMappingBuilder).mappedBy(stateColumn).mappedBy(City::getCountry)
+							.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -597,13 +600,13 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			ConfiguredPersister<Country, Identifier<Long>> countryPersister =
 					(ConfiguredPersister<Country, Identifier<Long>>) entityBuilder(Country.class, Identifier.LONG_TYPE)
-					// setting a foreign key naming strategy to be tested
-					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
-					.mapKey(Country::getId, ALREADY_ASSIGNED)
-					.map(Country::getName)
-					.map(Country::getDescription)
-					.mapOneToOne(Country::getCapital, cityMappingBuilder).mappedBy(stateColumn).mappedBy(City::setCountry)
-					.build(persistenceContext);
+							// setting a foreign key naming strategy to be tested
+							.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
+							.mapKey(Country::getId, ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.map(Country::getDescription)
+							.mapOneToOne(Country::getCapital, cityMappingBuilder).mappedBy(stateColumn).mappedBy(City::setCountry)
+							.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -773,6 +776,61 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_TOWNSHIP_COUNTRYID_COUNTRY_ID", "TOWNSHIP", "COUNTRYID", "COUNTRY", "ID");
 			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 		}
+	}
+	
+	@Test
+	void unique() {
+		entityBuilder(Country.class, Identifier.LONG_TYPE)
+				// setting a foreign key naming strategy to be tested
+				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
+				.mapKey(Country::getId, ALREADY_ASSIGNED)
+				.map(Country::getName)
+				.map(Country::getDescription)
+				.mapOneToOne(Country::getCapital, cityConfiguration).mandatory().unique()
+				.build(persistenceContext);
+		
+		Map<String, Table<?>> tablePerName = Iterables.map(DDLDeployer.collectTables(persistenceContext), Table::getName);
+		Table<?> countryTable = tablePerName.get("Country");
+		assertThat(countryTable.getIndexes())
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactly(new Index("capitalId_key", new KeepOrderSet<>(countryTable.getColumn("capitalId"))).setUnique());
+		
+	}
+	
+	@Test
+	void unique_mappedBy() {
+		entityBuilder(Country.class, Identifier.LONG_TYPE)
+				// setting a foreign key naming strategy to be tested
+				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
+				.mapKey(Country::getId, ALREADY_ASSIGNED)
+				.map(Country::getName)
+				.map(Country::getDescription)
+				.mapOneToOne(Country::getCapital, cityConfiguration).mandatory().unique().mappedBy(City::getCountry)
+				.build(persistenceContext);
+		
+		Map<String, Table<?>> tablePerName = Iterables.map(DDLDeployer.collectTables(persistenceContext), Table::getName);
+		Table<?> cityTable = tablePerName.get("City");
+		assertThat(cityTable.getIndexes())
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactly(new Index("city_country_key", new KeepOrderSet<>(cityTable.getColumn("countryId"))).setUnique());
+	}
+	
+	@Test
+	void unique_mappedByColumn() {
+		entityBuilder(Country.class, Identifier.LONG_TYPE)
+				// setting a foreign key naming strategy to be tested
+				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
+				.mapKey(Country::getId, ALREADY_ASSIGNED)
+				.map(Country::getName)
+				.map(Country::getDescription)
+				.mapOneToOne(Country::getCapital, cityConfiguration).mandatory().unique().mappedBy("country")
+				.build(persistenceContext);
+		
+		Map<String, Table<?>> tablePerName = Iterables.map(DDLDeployer.collectTables(persistenceContext), Table::getName);
+		Table<?> cityTable = tablePerName.get("City");
+		assertThat(cityTable.getIndexes())
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactly(new Index("country_capital_key", new KeepOrderSet<>(cityTable.getColumn("country"))).setUnique());
 	}
 	
 	@Test
@@ -1518,14 +1576,14 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				countryPersister.delete(persistedCountry);
 				ResultSet resultSet;
 				// Checking that we deleted what we wanted
-				resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country" 
+				resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country"
 						+ " where id = 100");
 				assertThat(resultSet.next()).isFalse();
-				resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Person" 
+				resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Person"
 						+ " where id = 42");
 				assertThat(resultSet.next()).isTrue();
 				// but we didn't delete everything !
-				resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country" 
+				resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country"
 						+ " where id = 200");
 				assertThat(resultSet.next()).isTrue();
 				resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Person where id = 666");

@@ -109,7 +109,7 @@ public class DDLGenerator implements DDLProvider {
 		List<String> indexesCreationScripts = new ArrayList<>();
 		List<String> uniqueConstraintsCreationScripts = new ArrayList<>();
 		
-		for (Table table : tables) {
+		for (Table<?> table : tables) {
 			tableCreationScripts.add(generateCreationScript(table));
 			foreignKeysCreationScripts.addAll(getForeignKeyCreationScripts(table));
 			indexesCreationScripts.addAll(generateIndexCreationScripts(table));
@@ -121,7 +121,7 @@ public class DDLGenerator implements DDLProvider {
 		return Collections.cat(tableCreationScripts, uniqueConstraintsCreationScripts, indexesCreationScripts, foreignKeysCreationScripts);
 	}
 	
-	protected String generateCreationScript(Table table) {
+	protected String generateCreationScript(Table<?> table) {
 		return this.ddlTableGenerator.generateCreateTable(table);
 	}
 	
@@ -135,7 +135,7 @@ public class DDLGenerator implements DDLProvider {
 	
 	protected List<String> generateIndexCreationScripts(Table<?> table) {
 		List<String> indexesCreationScripts = new ArrayList<>();
-		for (Index index : table.getIndexes()) {
+		for (Index<?> index : table.getIndexes()) {
 			indexesCreationScripts.add(generateCreationScript(index));
 		}
 		return indexesCreationScripts;
@@ -145,19 +145,19 @@ public class DDLGenerator implements DDLProvider {
 		return this.ddlTableGenerator.generateCreateUniqueConstraint(uniqueConstraint);
 	}
 	
-	protected String generateCreationScript(Index index) {
+	protected String generateCreationScript(Index<?> index) {
 		return this.ddlTableGenerator.generateCreateIndex(index);
 	}
 	
 	protected List<String> getForeignKeyCreationScripts(Table<?> table) {
 		List<String> foreignKeysCreationScripts = new ArrayList<>();
-		for (ForeignKey foreignKey : table.getForeignKeys()) {
+		for (ForeignKey<?, ?, ?> foreignKey : table.getForeignKeys()) {
 			foreignKeysCreationScripts.add(generateCreationScript(foreignKey));
 		}
 		return foreignKeysCreationScripts;
 	}
 	
-	protected String generateCreationScript(ForeignKey foreignKey) {
+	protected String generateCreationScript(ForeignKey<?, ?, ?> foreignKey) {
 		return this.ddlTableGenerator.generateCreateForeignKey(foreignKey);
 	}
 	
@@ -178,7 +178,7 @@ public class DDLGenerator implements DDLProvider {
 	protected List<String> generateTableDropScripts() {
 		List<String> tableCreationScripts = new ArrayList<>();
 		
-		for (Table table : tables) {
+		for (Table<?> table : tables) {
 			tableCreationScripts.add(this.ddlTableGenerator.generateDropTable(table));
 		}
 		

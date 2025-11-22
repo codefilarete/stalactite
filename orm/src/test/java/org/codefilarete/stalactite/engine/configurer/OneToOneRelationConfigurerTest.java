@@ -12,16 +12,17 @@ import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
-import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.ColumnLinkageOptions;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.SingleKeyMapping;
+import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
+import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
-import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
+import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.ColumnLinkageOptionsSupport;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.LinkageSupport;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
@@ -174,7 +175,8 @@ class OneToOneRelationConfigurerTest {
 				dialect,
 				connectionConfiguration,
 				countryPersister,
-				TableNamingStrategy.DEFAULT, JoinColumnNamingStrategy.JOIN_DEFAULT, ForeignKeyNamingStrategy.DEFAULT, PersisterBuilderContext.CURRENT.get());
+				TableNamingStrategy.DEFAULT, JoinColumnNamingStrategy.JOIN_DEFAULT, ForeignKeyNamingStrategy.DEFAULT, IndexNamingStrategy.DEFAULT,
+				PersisterBuilderContext.CURRENT.get());
 		
 		testInstance.configure(countryCapitalRelation);
 		
@@ -298,7 +300,8 @@ class OneToOneRelationConfigurerTest {
 				dialect,
 				connectionConfiguration,
 				countryPersister,
-				TableNamingStrategy.DEFAULT, JoinColumnNamingStrategy.JOIN_DEFAULT, ForeignKeyNamingStrategy.DEFAULT, PersisterBuilderContext.CURRENT.get());
+				TableNamingStrategy.DEFAULT, JoinColumnNamingStrategy.JOIN_DEFAULT, ForeignKeyNamingStrategy.DEFAULT, IndexNamingStrategy.DEFAULT,
+				PersisterBuilderContext.CURRENT.get());
 		
 		testInstance.configure(countryCapitalRelation);
 		

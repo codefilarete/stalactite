@@ -5,9 +5,10 @@ import java.util.Map;
 
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Mutator;
-import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
@@ -44,12 +45,13 @@ public class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 	private final Map<Column<LEFTTABLE, ?>, Column<RIGHTTABLE, ?>> keyColumnsMapping = new HashMap<>();
 	
 	private OneToOneOwnedBySourceEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> engine;
-	
+
 	public OneToOneOwnedBySourceConfigurer(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-									OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation,
-									JoinColumnNamingStrategy joinColumnNamingStrategy,
-									ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
-		super(sourcePersister, oneToOneRelation);
+										   OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation,
+										   JoinColumnNamingStrategy joinColumnNamingStrategy,
+										   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+										   IndexNamingStrategy indexNamingStrategy) {
+		super(sourcePersister, oneToOneRelation, indexNamingStrategy);
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 	}
@@ -87,6 +89,12 @@ public class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 		}
 		
 		return new Duo<>(leftKey, rightKey);
+	}
+	
+	@Override
+	protected void addIndex(Column<?, ?> column) {
+		String indexName = indexNamingStrategy.giveName(oneToOneRelation.getTargetProvider(), column.getExpression());
+		column.getTable().addIndex(indexName, column).setUnique();
 	}
 	
 	@Override

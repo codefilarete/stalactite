@@ -1177,7 +1177,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
 				.mapKey(Toto::setId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(Toto::getName).unique()
-				.withIndexNaming(linkage -> "myIndex")
+				.withIndexNaming((accessor, columnName) -> "myIndex")
 				.build(persistenceContext);
 		
 		assertThat(((ConfiguredPersister<Toto, Identifier<UUID>>) persister).giveImpliedTables().stream().flatMap(table -> table.getIndexes().stream())
@@ -1192,7 +1192,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 						.map(Timestamp::getCreationDate)
 						.map(Timestamp::getModificationDate).unique())
-				.withIndexNaming(linkage -> "myIndex")
+				.withIndexNaming((accessor, columnName) -> "myIndex")
 				.build(persistenceContext);
 		
 		assertThat(((ConfiguredPersister<Toto, Identifier<UUID>>) persister).giveImpliedTables().stream().flatMap(table -> table.getIndexes().stream())
@@ -1208,7 +1208,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
 				.mapKey(Toto::setId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
-						.withIndexNaming(linkage -> "myIndex")
+						.withIndexNaming((accessor, columnName) -> "myIndex")
 						.map(Timestamp::getCreationDate)
 						.map(Timestamp::getModificationDate).unique())
 				.build(persistenceContext);

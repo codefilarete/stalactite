@@ -734,6 +734,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 						oneToOneRelation.fetchSeparately();
 						return null;	// we can return null because dispatcher will return proxy
 					}
+					
+					@Override
+					public OneToOneEntityOptions<C, J, O> unique() {
+						oneToOneRelation.setUnique(true);
+						return null;	// we can return null because dispatcher will return proxy
+					}
 				}, true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderOneToOneOptions<C, I, O>>) (Class) FluentMappingBuilderOneToOneOptions.class);

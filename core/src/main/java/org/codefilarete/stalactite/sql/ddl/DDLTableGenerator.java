@@ -50,18 +50,18 @@ public class DDLTableGenerator {
 			.cat(")");
 	}
 	
-	protected void generateCreateColumn(Column column, DDLAppender sqlCreateTable) {
+	protected void generateCreateColumn(Column<?, ?> column, DDLAppender sqlCreateTable) {
 		sqlCreateTable.cat(column, " ", getSqlType(column))
 				.catIf(!column.isNullable(), " not null");
 		
 	}
 	
-	protected String getSqlType(Column column) {
+	protected String getSqlType(Column<?, ?> column) {
 		return typeMapping.getTypeName(column);
 	}
 	
-	public String generateCreateIndex(Index index) {
-		Table table = index.getTable();
+	public String generateCreateIndex(Index<?> index) {
+		Table<?> table = index.getTable();
 		StringAppender sqlCreateIndex = new DDLAppender(dmlNameProvider, "create")
 				.catIf(index.isUnique(), " unique")
 				.cat(" index ", index.getName(), " on ", table, "(")
@@ -69,8 +69,8 @@ public class DDLTableGenerator {
 		return sqlCreateIndex.cat(")").toString();
 	}
 	
-	public String generateCreateForeignKey(ForeignKey foreignKey) {
-		Table table = foreignKey.getTable();
+	public String generateCreateForeignKey(ForeignKey<?, ?, ?> foreignKey) {
+		Table<?> table = foreignKey.getTable();
 		StringAppender sqlCreateFK = new DDLAppender(dmlNameProvider, "alter table ", table)
 				.cat(" add constraint ", foreignKey.getName(), " foreign key(")
 				.ccat(foreignKey.getColumns(), ", ")
@@ -80,40 +80,40 @@ public class DDLTableGenerator {
 	}
 	
 	public String generateCreateUniqueConstraint(UniqueConstraint uniqueConstraint) {
-		Table table = uniqueConstraint.getTable();
+		Table<?> table = uniqueConstraint.getTable();
 		StringAppender sqlCreateIndex = new DDLAppender(dmlNameProvider, "alter table ")
 				.cat(table, " add constraint ", uniqueConstraint.getName(), " unique ", "(")
 				.ccat(uniqueConstraint.getColumns(), ", ");
 		return sqlCreateIndex.cat(")").toString();
 	}
 	
-	public String generateAddColumn(Column column) {
-		DDLAppender sqladdColumn = new DDLAppender(dmlNameProvider, "alter table ", column.getTable(), " add column ", column, " ", getSqlType(column));
-		return sqladdColumn.toString();
+	public String generateAddColumn(Column<?, ?> column) {
+		DDLAppender addColumnStatement = new DDLAppender(dmlNameProvider, "alter table ", column.getTable(), " add column ", column, " ", getSqlType(column));
+		return addColumnStatement.toString();
 	}
 	
-	public String generateDropTable(Table table) {
-		DDLAppender sqlCreateTable = new DDLAppender(dmlNameProvider, "drop table ", table);
-		return sqlCreateTable.toString();
+	public String generateDropTable(Table<?> table) {
+		DDLAppender dropTableStatement = new DDLAppender(dmlNameProvider, "drop table ", table);
+		return dropTableStatement.toString();
 	}
 	
-	public String generateDropTableIfExists(Table table) {
-		DDLAppender sqlCreateTable = new DDLAppender(dmlNameProvider, "drop table if exists ", table);
-		return sqlCreateTable.toString();
+	public String generateDropTableIfExists(Table<?> table) {
+		DDLAppender dropTableStatement = new DDLAppender(dmlNameProvider, "drop table if exists ", table);
+		return dropTableStatement.toString();
 	}
 	
-	public String generateDropIndex(Index index) {
-		DDLAppender sqlCreateTable = new DDLAppender(dmlNameProvider, "drop index ", index.getName());
-		return sqlCreateTable.toString();
+	public String generateDropIndex(Index<?> index) {
+		DDLAppender dropIndexStatement = new DDLAppender(dmlNameProvider, "drop index ", index.getName());
+		return dropIndexStatement.toString();
 	}
 	
-	public String generateDropForeignKey(ForeignKey foreignKey) {
-		DDLAppender sqlCreateTable = new DDLAppender(dmlNameProvider, "alter table ", foreignKey.getTable(), " drop constraint ", foreignKey.getName());
-		return sqlCreateTable.toString();
+	public String generateDropForeignKey(ForeignKey<?, ?, ?> foreignKey) {
+		DDLAppender dropConstraintStatement = new DDLAppender(dmlNameProvider, "alter table ", foreignKey.getTable(), " drop constraint ", foreignKey.getName());
+		return dropConstraintStatement.toString();
 	}
 	
-	public String generateDropColumn(Column column) {
-		DDLAppender sqlDropColumn = new DDLAppender(dmlNameProvider, "alter table ", column.getTable(), " drop column ", column);
-		return sqlDropColumn.toString();
+	public String generateDropColumn(Column<?, ?> column) {
+		DDLAppender dropColumnStatement = new DDLAppender(dmlNameProvider, "alter table ", column.getTable(), " drop column ", column);
+		return dropColumnStatement.toString();
 	}
 }

@@ -9,9 +9,10 @@ import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ValueAccessPoint;
-import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
@@ -29,6 +30,8 @@ import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.Duo;
+
+import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * @param <SRC> type of input (left/source entities)
@@ -61,9 +64,10 @@ public class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 										   OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation,
 										   JoinColumnNamingStrategy joinColumnNamingStrategy,
 										   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+										   IndexNamingStrategy indexNamingStrategy,
 										   Dialect dialect,
 										   ConnectionConfiguration connectionConfiguration) {
-		super(sourcePersister, oneToOneRelation);
+		super(sourcePersister, oneToOneRelation, indexNamingStrategy);
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 		this.dialect = dialect;
@@ -121,6 +125,21 @@ public class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 		}
 		
 		return new Duo<>(leftKey, rightKey);
+	}
+	
+	@Override
+	protected void addIndex(Column<?, ?> column) {
+		ValueAccessPoint<?> propertyAccessor;
+		if (oneToOneRelation.getReverseGetter() != null) {
+			propertyAccessor = Accessors.accessorByMethodReference(oneToOneRelation.getReverseGetter());
+		} else if (oneToOneRelation.getReverseSetter() != null) {
+			propertyAccessor = Accessors.mutatorByMethodReference(oneToOneRelation.getReverseSetter());
+		} else {
+			propertyAccessor = oneToOneRelation.getTargetProvider();
+		}
+		
+		String indexName = indexNamingStrategy.giveName(propertyAccessor, nullable(oneToOneRelation.getReverseColumn()).map(Column::getExpression).get());
+		column.getTable().addIndex(indexName, column).setUnique();
 	}
 	
 	private Key<RIGHTTABLE, SRCID> createOrUseReverseColumn(

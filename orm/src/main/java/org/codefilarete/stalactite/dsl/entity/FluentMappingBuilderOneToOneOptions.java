@@ -1,7 +1,6 @@
 package org.codefilarete.stalactite.dsl.entity;
 
 import org.codefilarete.stalactite.dsl.relation.OneToOneEntityOptions;
-import org.codefilarete.stalactite.dsl.relation.OneToOneOptions;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
@@ -75,4 +74,13 @@ public interface FluentMappingBuilderOneToOneOptions<C, I, O> extends FluentEnti
 	 */
 	@Override
 	FluentMappingBuilderOneToOneOptions<C, I, O> fetchSeparately();
+	
+	/**
+	 * {@inheritDoc}
+	 * Declaration overridden to adapt return type to this class.
+	 *
+	 * @return the global mapping configurer
+	 */
+	@Override
+	FluentMappingBuilderOneToOneOptions<C, I, O> unique();
 }

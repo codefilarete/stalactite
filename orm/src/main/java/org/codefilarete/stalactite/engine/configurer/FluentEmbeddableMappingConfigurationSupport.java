@@ -230,6 +230,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 						oneToOneRelation.fetchSeparately();
 						return null;	// we can return null because dispatcher will return proxy
 					}
+					
+					@Override
+					public OneToOneOptions<C, O> unique() {
+						oneToOneRelation.setUnique(true);
+						return null;	// we can return null because dispatcher will return proxy
+					}
 				}, true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
 				.build((Class<FluentEmbeddableMappingBuilderOneToOneOptions<C, O>>) (Class) FluentEmbeddableMappingBuilderOneToOneOptions.class);

@@ -12,26 +12,26 @@ import org.codefilarete.tool.collection.KeepOrderSet;
  * 
  * @author Guillaume Mary
  */
-public class Index {
+public class Index<T extends Table<T>> {
 	
-	private final Table table;
-	private final KeepOrderSet<Column<Table, Object>> columns;
+	private final T table;
+	private final KeepOrderSet<Column<T, ?>> columns;
 	private final String name;
 	private boolean unique = false;
 	
-	public <T extends Table> Index(String name, Column<T, ?> column, Column<T, ?> ... columns) {
-		this(name, (Iterable) Collections.addAll(Arrays.asSet(column), columns));
+	public Index(String name, Column<T, ?> column, Column<T, ?> ... columns) {
+		this(name, Collections.addAll(Arrays.asSet(column), columns));
 	}
 	
-	public <T extends Table> Index(String name, Iterable<Column<T, Object>> columns) {
+	public Index(String name, Iterable<? extends Column<T, ?>> columns) {
 		// table is took from columns
 		this.table = Iterables.first(columns).getTable();
-		this.columns = (KeepOrderSet) Iterables.copy(columns, new KeepOrderSet<>());
+		this.columns = Iterables.copy(columns, new KeepOrderSet<>());
 		this.name = name;
 	}
 	
-	public <T extends Table> Set<Column<T, Object>> getColumns() {
-		return (Set) columns;
+	public Set<Column<T, ?>> getColumns() {
+		return columns;
 	}
 	
 	public String getName() {
@@ -46,12 +46,12 @@ public class Index {
 		this.unique = unique;
 	}
 	
-	public Index setUnique() {
+	public Index<T> setUnique() {
 		setUnique(true);
 		return this;
 	}
 	
-	public Table getTable() {
+	public T getTable() {
 		return table;
 	}
 }

@@ -256,6 +256,15 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		 */
 		@Override
 		FluentMappingBuilderOneToOneOptions<C, I, O> fetchSeparately();
+		
+		/**
+		 * {@inheritDoc}
+		 * Declaration overridden to adapt return type to this class.
+		 *
+		 * @return the global mapping configurer
+		 */
+		@Override
+		FluentMappingBuilderOneToOneOptions<C, I, O> unique();
 	}
 	
 	/**

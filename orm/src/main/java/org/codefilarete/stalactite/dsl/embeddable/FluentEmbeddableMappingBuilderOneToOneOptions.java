@@ -63,4 +63,13 @@ public interface FluentEmbeddableMappingBuilderOneToOneOptions<C, O> extends Flu
 	 */
 	@Override
 	FluentEmbeddableMappingBuilderOneToOneOptions<C, O> fetchSeparately();
+	
+	/**
+	 * {@inheritDoc}
+	 * Overridden for return type accuracy
+	 *
+	 * @return the global mapping configurer
+	 */
+	@Override
+	FluentEmbeddableMappingBuilderOneToOneOptions<C, O> unique();
 }

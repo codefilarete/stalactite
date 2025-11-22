@@ -186,7 +186,7 @@ public interface AssociationTableNamingStrategy {
 				result.setLeftColumnName(column, leftColumnName);
 			});
 			Set<String> existingColumns = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-			existingColumns.addAll(result.leftColumnNames.values());
+			existingColumns.addAll(result.getLeftColumnNames().values());
 			
 			// columns pointing to right table get a name that contains accessor definition name
 			rightPrimaryKey.getColumns().forEach(column -> {

@@ -52,6 +52,8 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	 */
 	private boolean fetchSeparately;
 	
+	private boolean unique;
+	
 	public OneToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider,
 							BooleanSupplier sourceTablePerClassPolymorphic,
 							EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration) {
@@ -85,6 +87,14 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	
 	public void setNullable(boolean nullable) {
 		this.nullable = nullable;
+	}
+	
+	public void setUnique(boolean unique) {
+		this.unique = unique;
+	}
+	
+	public boolean isUnique() {
+		return unique;
 	}
 	
 	@Nullable

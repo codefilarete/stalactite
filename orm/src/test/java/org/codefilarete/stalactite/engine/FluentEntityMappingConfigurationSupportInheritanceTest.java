@@ -275,7 +275,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			EntityPersister<Car, Identifier<Long>> persister = entityBuilder(Car.class, LONG_TYPE)
 					.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Car::getModel).unique()
-					.withIndexNaming(linkage -> AccessorDefinition.giveDefinition(linkage.getAccessor()).getName() + "_UK")
+					.withIndexNaming((accessor, columnName) -> AccessorDefinition.giveDefinition(accessor).getName() + "_UK")
 					.mapSuperClass(embeddableBuilder(Vehicle.class)
 							.map(Vehicle::getColor))
 					.build(persistenceContext);
@@ -292,7 +292,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.map(Car::getModel).unique()
 					.mapSuperClass(embeddableBuilder(Vehicle.class)
 							.map(Vehicle::getColor)
-							.withIndexNaming(linkage -> AccessorDefinition.giveDefinition(linkage.getAccessor()).getName() + "_Unique_Index"))
+							.withIndexNaming((accessor, columnName) -> AccessorDefinition.giveDefinition(accessor).getName() + "_Unique_Index"))
 					.build(persistenceContext);
 			
 			assertThat(((ConfiguredPersister<Car, Identifier<Long>>) persister).giveImpliedTables().stream().flatMap(table -> table.getIndexes().stream())
@@ -305,10 +305,10 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			EntityPersister<Car, Identifier<Long>> persister = entityBuilder(Car.class, LONG_TYPE)
 					.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Car::getModel).unique()
-					.withIndexNaming(linkage -> AccessorDefinition.giveDefinition(linkage.getAccessor()).getName() + "_UK")
+					.withIndexNaming((accessor, columnName) -> AccessorDefinition.giveDefinition(accessor).getName() + "_UK")
 					.mapSuperClass(embeddableBuilder(Vehicle.class)
 							.map(Vehicle::getColor)
-							.withIndexNaming(linkage -> AccessorDefinition.giveDefinition(linkage.getAccessor()).getName() + "_Unique_Index"))
+							.withIndexNaming((accessor, columnName) -> AccessorDefinition.giveDefinition(accessor).getName() + "_Unique_Index"))
 					.build(persistenceContext);
 			
 			assertThat(((ConfiguredPersister<Car, Identifier<Long>>) persister).giveImpliedTables().stream().flatMap(table -> table.getIndexes().stream())

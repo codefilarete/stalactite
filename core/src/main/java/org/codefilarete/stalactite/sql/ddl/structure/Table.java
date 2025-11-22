@@ -53,7 +53,7 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	
 	private PrimaryKey<SELF, ?> primaryKey;
 	
-	private final Set<Index> indexes = new HashSet<>();
+	private final Set<Index<SELF>> indexes = new HashSet<>();
 	
 	private final Set<UniqueConstraint> uniqueConstraints = new HashSet<>();
 	
@@ -200,12 +200,18 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 		return (PrimaryKey<SELF, ID>) primaryKey;
 	}
 	
-	public Set<Index> getIndexes() {
+	public Set<Index<SELF>> getIndexes() {
 		return Collections.unmodifiableSet(indexes);
 	}
 	
-	public Index addIndex(String name, Column<SELF, ?> column, Column<SELF, ?> ... columns) {
-		Index newIndex = new Index(name, column, columns);
+	public Index<SELF> addIndex(String name, Column<SELF, ?> column, Column<SELF, ?> ... columns) {
+		Index<SELF> newIndex = new Index<>(name, column, columns);
+		this.indexes.add(newIndex);
+		return newIndex;
+	}
+	
+	public Index<SELF> addIndex(String name, Iterable<? extends Column<SELF, ?>> columns) {
+		Index<SELF> newIndex = new Index<>(name, columns);
 		this.indexes.add(newIndex);
 		return newIndex;
 	}

@@ -59,4 +59,10 @@ public interface OneToOneOptions<C, O> extends CascadeOptions {
 	 * @return the global mapping configurer
 	 */
 	OneToOneOptions<C, O> fetchSeparately();
+	
+	/**
+	 * Marks the relation column as a unique key.
+	 * Relevant when the unique key constraint corresponds to only a single column.
+	 */
+	OneToOneOptions<C, O> unique();
 }

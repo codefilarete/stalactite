@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine.configurer.onetoone;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.AbstractRelationConfigurer;
@@ -30,6 +31,7 @@ public class OneToOneRelationConfigurer<C, I, TRGT, TRGTID> extends AbstractRela
 	
 	private final JoinColumnNamingStrategy joinColumnNamingStrategy;
 	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
+	private final IndexNamingStrategy indexNamingStrategy;
 	
 	public OneToOneRelationConfigurer(Dialect dialect,
 									  ConnectionConfiguration connectionConfiguration,
@@ -37,10 +39,12 @@ public class OneToOneRelationConfigurer<C, I, TRGT, TRGTID> extends AbstractRela
 									  TableNamingStrategy tableNamingStrategy,
 									  JoinColumnNamingStrategy joinColumnNamingStrategy,
 									  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+									  IndexNamingStrategy indexNamingStrategy,
 									  PersisterBuilderContext currentBuilderContext) {
 		super(dialect, connectionConfiguration, sourcePersister, tableNamingStrategy, currentBuilderContext);
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
+		this.indexNamingStrategy = indexNamingStrategy;
 	}
 	
 	/**
@@ -51,9 +55,9 @@ public class OneToOneRelationConfigurer<C, I, TRGT, TRGTID> extends AbstractRela
 	public void configure(OneToOneRelation<C, TRGT, TRGTID> oneToOneRelation) {
 		OneToOneConfigurerTemplate<C, TRGT, I, TRGTID, ?, ?, I> configurer;
 		if (oneToOneRelation.isRelationOwnedByTarget()) {
-			configurer = new OneToOneOwnedByTargetConfigurer<>(sourcePersister, oneToOneRelation, joinColumnNamingStrategy, foreignKeyNamingStrategy, dialect, connectionConfiguration);
+			configurer = new OneToOneOwnedByTargetConfigurer<>(sourcePersister, oneToOneRelation, joinColumnNamingStrategy, foreignKeyNamingStrategy, indexNamingStrategy, dialect, connectionConfiguration);
 		} else {
-			configurer = new OneToOneOwnedBySourceConfigurer<>(sourcePersister, oneToOneRelation, joinColumnNamingStrategy, foreignKeyNamingStrategy);
+			configurer = new OneToOneOwnedBySourceConfigurer<>(sourcePersister, oneToOneRelation, joinColumnNamingStrategy, foreignKeyNamingStrategy, indexNamingStrategy);
 		}
 		
 		String relationName = AccessorDefinition.giveDefinition(oneToOneRelation.getTargetProvider()).getName();

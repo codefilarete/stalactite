@@ -65,6 +65,7 @@ public class RelationConfigurer<C, I> {
 				this.namingConfiguration.getTableNamingStrategy(),
 				this.namingConfiguration.getJoinColumnNamingStrategy(),
 				this.namingConfiguration.getForeignKeyNamingStrategy(),
+				this.namingConfiguration.getIndexNamingStrategy(),
 				currentBuilderContext);
 		this.oneToManyRelationConfigurer = new OneToManyRelationConfigurer<>(
 				this.sourcePersister,

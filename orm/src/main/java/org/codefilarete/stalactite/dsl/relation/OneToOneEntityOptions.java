@@ -63,6 +63,14 @@ public interface OneToOneEntityOptions<C, I, O> extends OneToOneOptions<C, O> {
 	OneToOneEntityOptions<C, I, O> fetchSeparately();
 	
 	/**
+	 * {@inheritDoc}
+	 * Overridden for return type accuracy
+	 *
+	 * @return the global mapping configurer
+	 */
+	OneToOneEntityOptions<C, I, O> unique();
+	
+	/**
 	 * Defines reverse side owning column.
 	 * Note that defining it this way will not allow relation to be fixed in memory (after select in database), prefer {@link #mappedBy(SerializableBiConsumer)}.
 	 * Use this method to define unidirectional relation.

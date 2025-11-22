@@ -215,15 +215,15 @@ public class DDLTableGeneratorTest {
 	void generateCreateIndex() {
 		DDLTableGenerator testInstance = new DDLTableGenerator(null, DMLNameProvider::new);
 		
-		Table t = new Table(null, "Toto");
-		Column colA = t.addColumn("A", String.class);
-		Column colB = t.addColumn("B", String.class);
+		Table t = new Table<>(null, "Toto");
+		Column<?, String> colA = t.addColumn("A", String.class);
+		Column<?, String> colB = t.addColumn("B", String.class);
 		
-		Index idx1 = t.addIndex("Idx1", colA);
+		Index<?> idx1 = t.addIndex("Idx1", colA);
 		String generatedCreateIndex = testInstance.generateCreateIndex(idx1);
 		assertThat(generatedCreateIndex).isEqualTo("create index Idx1 on Toto(A)");
 		
-		Index idx2 = t.addIndex("Idx2", colA, colB);
+		Index<?> idx2 = t.addIndex("Idx2", colA, colB);
 		generatedCreateIndex = testInstance.generateCreateIndex(idx2);
 		assertThat(generatedCreateIndex).isEqualTo("create index Idx2 on Toto(A, B)");
 
@@ -248,9 +248,9 @@ public class DDLTableGeneratorTest {
 		DDLTableGenerator testInstance = new DDLTableGenerator(null, DMLNameProvider::new);
 		
 		Table t = new Table(null, "Toto");
-		Column<Table, String> colA = t.addColumn("A", String.class);
+		Column<?, String> colA = t.addColumn("A", String.class);
 		
-		Index idx = t.addIndex("idx1", colA);
+		Index<?> idx = t.addIndex("idx1", colA);
 		
 		String generateDropIndex = testInstance.generateDropIndex(idx);
 		assertThat(generateDropIndex).isEqualTo("drop index idx1");
