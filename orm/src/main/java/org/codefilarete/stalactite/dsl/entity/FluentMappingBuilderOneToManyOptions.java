@@ -8,6 +8,16 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
+/**
+ * Mashup of {@link FluentEntityMappingBuilder} and {@link OneToManyEntityOptions} to let one configure both through a fluent API.
+ *
+ * @param <C> entity type
+ * @param <I> entity identifier type
+ * @param <O> type of {@link Collection} element
+ * @param <S> refined {@link Collection} type
+ *
+ * @author Guillaume Mary
+ */
 public interface FluentMappingBuilderOneToManyOptions<C, I, O, S extends Collection<O>> extends FluentEntityMappingBuilder<C, I>, OneToManyEntityOptions<C, I, O, S> {
 	
 	/**
@@ -18,7 +28,7 @@ public interface FluentMappingBuilderOneToManyOptions<C, I, O, S extends Collect
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink);
+	FluentMappingBuilderOneToManyMappedByOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink);
 	
 	/**
 	 * {@inheritDoc}
@@ -28,7 +38,7 @@ public interface FluentMappingBuilderOneToManyOptions<C, I, O, S extends Collect
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink);
+	FluentMappingBuilderOneToManyMappedByOptions<C, I, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink);
 	
 	/**
 	 * {@inheritDoc}
@@ -38,7 +48,7 @@ public interface FluentMappingBuilderOneToManyOptions<C, I, O, S extends Collect
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(Column<?, I> reverseLink);
+	FluentMappingBuilderOneToManyMappedByOptions<C, I, O, S> mappedBy(Column<?, I> reverseLink);
 	
 	/**
 	 *
@@ -46,7 +56,7 @@ public interface FluentMappingBuilderOneToManyOptions<C, I, O, S extends Collect
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(String reverseColumnName);
+	FluentMappingBuilderOneToManyMappedByOptions<C, I, O, S> mappedBy(String reverseColumnName);
 	
 	/**
 	 * {@inheritDoc}

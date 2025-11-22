@@ -7,23 +7,24 @@ import java.sql.SQLException;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
-import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
-import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
+import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
+import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyMappedByOptions;
+import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.State;
 import org.codefilarete.stalactite.engine.model.Town;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
-import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
@@ -57,11 +58,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
 import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.ALL;
 import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
 import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
 import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.READ_ONLY;
-import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 
 /**
@@ -128,6 +129,27 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			Set<String> foundForeignKey = Iterables.collect(() -> fkCityIterator, JdbcForeignKey::getSignature, HashSet::new);
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_CITY_COUNTRYID_COUNTRY_ID", "CITY", "COUNTRYID", "COUNTRY", "ID");
 			assertThat(foundForeignKey).isEqualTo(Arrays.asHashSet(expectedForeignKey.getSignature()));
+		}
+		
+		@Test
+		void mappedBy_mandatory_columnIsNotNullable() {
+			// mapping building thanks to fluent API
+			FluentMappingBuilderOneToManyMappedByOptions<Country, Identifier<Long>, City, Set<City>> xx = entityBuilder(Country.class,
+					LONG_TYPE)
+					// setting a foreign key naming strategy to be tested
+					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
+					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Country::getName)
+					.map(Country::getDescription)
+					.mapOneToMany(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry);
+			EntityPersister<Country, Identifier<Long>> countryPersister = xx
+					.mandatory()
+					.build(persistenceContext);
+
+			Map<String, Table<?>> tablePerName = Iterables.map(DDLDeployer.collectTables(persistenceContext), Table::getName);
+			Table<?> cityTable = tablePerName.get("City");
+			Column<?, Object> countryId = cityTable.getColumn("countryId");
+			assertThat(countryId.isNullable()).isFalse();
 		}
 		
 		@Test

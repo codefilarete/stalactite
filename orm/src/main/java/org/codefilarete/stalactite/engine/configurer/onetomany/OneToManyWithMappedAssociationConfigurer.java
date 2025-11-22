@@ -164,6 +164,9 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 		} // else : no reverse side mapped, this case can't happen since OneToManyWithMappedAssociationConfigurer is only
 		// invoked when reverse side is mapped (see OneToManyRelation.isOwnedByReverseSide())
 		foreignKey = foreignKeyBuilder.build();
+		if (relation.isReverseAsMandatory()) {
+			foreignKey.getColumns().stream().map(Column.class::cast).forEach(Column::notNull);
+		}
 	}
 	
 	void assignAssociationEngine(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {

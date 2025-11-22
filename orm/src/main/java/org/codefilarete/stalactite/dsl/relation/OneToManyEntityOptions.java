@@ -8,6 +8,13 @@ import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
+ * Interface for one-to-many relation options of entities (bean with identifier)
+ *
+ * @param <C> entity type
+ * @param <I> entity identifier type
+ * @param <O> type of {@link Collection} element
+ * @param <S> refined {@link Collection} type
+ *
  * @author Guillaume Mary
  */
 public interface OneToManyEntityOptions<C, I, O, S extends Collection<O>> extends OneToManyOptions<C, O, S> {

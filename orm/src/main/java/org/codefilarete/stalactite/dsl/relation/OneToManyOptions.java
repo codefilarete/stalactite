@@ -9,6 +9,12 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer;
 
 /**
+ * Interface for one-to-many relation options
+ *
+ * @param <C> entity type
+ * @param <O> type of {@link Collection} element
+ * @param <S> refined {@link Collection} type
+ *
  * @author Guillaume Mary
  */
 public interface OneToManyOptions<C, O, S extends Collection<O>> extends CascadeOptions {
@@ -102,4 +108,13 @@ public interface OneToManyOptions<C, O, S extends Collection<O>> extends Cascade
 	 * @return the global mapping configurer
 	 */
 	OneToManyOptions<C, O, S> indexed();
+	
+	/**
+	 * {@inheritDoc}
+	 * Overridden for type accuracy
+	 *
+	 * @param relationMode any {@link RelationMode}
+	 * @return the global mapping configurer
+	 */
+	OneToManyOptions<C,  O, S> cascading(RelationMode relationMode);
 }

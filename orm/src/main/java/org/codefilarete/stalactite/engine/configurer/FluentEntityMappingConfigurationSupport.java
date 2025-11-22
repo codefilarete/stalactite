@@ -40,6 +40,7 @@ import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderManyToManyOptions;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderManyToOneOptions;
+import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyMappedByOptions;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyOptions;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToOneOptions;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
@@ -518,7 +519,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 										mapRelation.setKeyEntityRelationMode(relationMode);
 										return null;
 									}, true)
-									.fallbackOn(proxyHolder.get())
+									.fallbackOn(proxyHolder)
 									.build((Class<FluentMappingBuilderKeyAsEntityMapOptions<C, I, K, V, M>>) (Class) FluentMappingBuilderKeyAsEntityMapOptions.class);
 						})
 				.redirect((SerializableBiFunction<MapOptions, EntityMappingConfigurationProvider, ValueAsEntityMapOptions>) MapOptions::withValueMapping,
@@ -529,7 +530,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 										mapRelation.setValueEntityRelationMode(relationMode);
 										return null;
 									}, true)
-									.fallbackOn(proxyHolder.get())
+									.fallbackOn(proxyHolder)
 									.build((Class<FluentMappingBuilderValueAsEntityMapOptions<C, I, K, V, M>>) (Class) FluentMappingBuilderValueAsEntityMapOptions.class);
 						})
 				.fallbackOn(this)
@@ -772,18 +773,55 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		return mapOneToMany(propertyAccessor, mappingConfiguration);
 	}
 	
-	private <O, J, S extends Collection<O>> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
+	private <TRGT, TRGTID, S extends Collection<TRGT>> FluentMappingBuilderOneToManyOptions<C, I, TRGT, S> mapOneToMany(
 			ReversibleAccessor<C, S> propertyAccessor,
-			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
-		OneToManyRelation<C, O, J, S> oneToManyRelation = new OneToManyRelation<>(
+			EntityMappingConfigurationProvider<? super TRGT, TRGTID> mappingConfiguration) {
+		OneToManyRelation<C, TRGT, TRGTID, S> oneToManyRelation = new OneToManyRelation<>(
 				propertyAccessor,
 				() -> this.polymorphismPolicy instanceof PolymorphismPolicy.TablePerClassPolymorphism,
 				mappingConfiguration);
 		this.oneToManyRelations.add(oneToManyRelation);
-		return new MethodDispatcher()
-				.redirect(OneToManyEntityOptions.class, new OneToManyEntityOptionsSupport<>(oneToManyRelation), true)	// true to allow "return null" in implemented methods
+		OneToManyOptionsSupport<C, I, TRGT, S, TRGTID> optionsSupport = new OneToManyOptionsSupport<>(oneToManyRelation);
+		// Code below is a bit complicated due to mandatory() method after mappedBy(..) ones: we must provide a support for mandatory() after them
+		// which also allow to call default oneToMany options that are available on the main proxy. Therefore we have to use Holder objects
+		// to built the complex global proxy
+		Holder<FluentMappingBuilderOneToManyOptions<C, I, TRGT, S>> result = new Holder<>();
+		FluentMappingBuilderOneToManyMappedByOptions<C, I, TRGT, S> reverseAsMandatorySupport = new MethodReferenceDispatcher()
+				.redirect(
+						(SerializableFunction<FluentMappingBuilderOneToManyMappedByOptions<C, I, TRGT, S>, FluentMappingBuilderOneToManyMappedByOptions<C, I, TRGT, S>>) FluentMappingBuilderOneToManyMappedByOptions::mandatory,
+						() -> oneToManyRelation.setReverseAsMandatory(true))
+				.fallbackOn(result)	// for all other methods, methods are called on the main proxy
+				.build((Class<FluentMappingBuilderOneToManyMappedByOptions<C, I, TRGT, S>>) (Class) FluentMappingBuilderOneToManyMappedByOptions.class);
+		FluentMappingBuilderOneToManyOptions<C, I, TRGT, S> build = new MethodReferenceDispatcher()
+				.redirect(OneToManyEntityOptions.class, optionsSupport, true)
+				.redirect(
+						(SerializableBiFunction<FluentMappingBuilderOneToManyOptions<C, I, TRGT, S>, SerializableBiConsumer<TRGT, ? super C>, FluentMappingBuilderOneToManyMappedByOptions<C, I, TRGT, S>>) FluentMappingBuilderOneToManyOptions::mappedBy,
+						(consumer) -> {
+							optionsSupport.mappedBy(consumer);
+							return reverseAsMandatorySupport;	// to let user call mandatory() special option
+						})
+				.redirect(
+						(SerializableBiFunction<FluentMappingBuilderOneToManyOptions<C, I, TRGT, S>, SerializableFunction<TRGT, ? super C>, FluentMappingBuilderOneToManyMappedByOptions<C, I, TRGT, S>>) FluentMappingBuilderOneToManyOptions::mappedBy,
+						(consumer) -> {
+							optionsSupport.mappedBy(consumer);
+							return reverseAsMandatorySupport;	// to let user call mandatory() special option
+						})
+				.redirect(
+						(SerializableBiFunction<FluentMappingBuilderOneToManyOptions<C, I, TRGT, S>, Column<?, I>, FluentMappingBuilderOneToManyMappedByOptions<C, I, TRGT, S>>) FluentMappingBuilderOneToManyOptions::mappedBy,
+						(consumer) -> {
+							optionsSupport.mappedBy(consumer);
+							return reverseAsMandatorySupport;	// to let user call mandatory() special option
+						})
+				.redirect(
+						(SerializableBiFunction<FluentMappingBuilderOneToManyOptions<C, I, TRGT, S>, String, FluentMappingBuilderOneToManyMappedByOptions<C, I, TRGT, S>>) FluentMappingBuilderOneToManyOptions::mappedBy,
+						(consumer) -> {
+							optionsSupport.mappedBy(consumer);
+							return reverseAsMandatorySupport;	// to let user call mandatory() special option
+						})
 				.fallbackOn(this)
-				.build((Class<FluentMappingBuilderOneToManyOptions<C, I, O, S>>) (Class) FluentMappingBuilderOneToManyOptions.class);
+				.build((Class<FluentMappingBuilderOneToManyOptions<C, I, TRGT, S>>) (Class) FluentMappingBuilderOneToManyOptions.class);
+		result.set(build);
+		return build;
 	}
 	
 	@Override
@@ -1408,12 +1446,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	/**
 	 * A small class for one-to-many options storage into a {@link OneToManyEntityOptions}. Acts as a wrapper over it.
 	 */
-	static class OneToManyEntityOptionsSupport<C, I, O, S extends Collection<O>>
+	static class OneToManyEntityOptionsSupport<C, I, O, S extends Collection<O>, O_ID>
 			implements OneToManyEntityOptions<C, I, O, S> {
 		
-		private final OneToManyRelation<C, O, I, S> oneToManyRelation;
+		private final OneToManyRelation<C, O, O_ID, S> oneToManyRelation;
 		
-		public OneToManyEntityOptionsSupport(OneToManyRelation<C, O, I, S> oneToManyRelation) {
+		public OneToManyEntityOptionsSupport(OneToManyRelation<C, O, O_ID, S> oneToManyRelation) {
 			this.oneToManyRelation = oneToManyRelation;
 		}
 		
@@ -1724,6 +1762,85 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		@Override
 		public boolean isIdentifierSetByFactory() {
 			return setIdentifier;
+		}
+	}
+	
+	/**
+	 * A small class for one-to-many options storage into a {@link OneToManyEntityOptions}. Acts as a wrapper over it.
+	 */
+	static class OneToManyOptionsSupport<C, I, O, S extends Collection<O>, O_ID>
+			implements OneToManyEntityOptions<C, I, O, S> {
+		
+		private final OneToManyRelation<C, O, O_ID, S> oneToManyRelation;
+		
+		public OneToManyOptionsSupport(OneToManyRelation<C, O, O_ID, S> oneToManyRelation) {
+			this.oneToManyRelation = oneToManyRelation;
+		}
+		
+		@Override
+		public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink) {
+			oneToManyRelation.setReverseSetter(reverseLink);
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
+		public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink) {
+			oneToManyRelation.setReverseGetter(reverseLink);
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
+		public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(Column<?, I> reverseLink) {
+			oneToManyRelation.setReverseColumn(reverseLink);
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
+		public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(String reverseColumnName) {
+			oneToManyRelation.setReverseColumn(reverseColumnName);
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
+		public FluentMappingBuilderOneToManyOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink) {
+			oneToManyRelation.setReverseLink(reverseLink);
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
+		public FluentMappingBuilderOneToManyOptions<C, I, O, S> initializeWith(Supplier<S> collectionFactory) {
+			oneToManyRelation.setCollectionFactory(collectionFactory);
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
+		public FluentMappingBuilderOneToManyOptions<C, I, O, S> cascading(RelationMode relationMode) {
+			oneToManyRelation.setRelationMode(relationMode);
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
+		public FluentMappingBuilderOneToManyOptions<C, I, O, S> fetchSeparately() {
+			oneToManyRelation.fetchSeparately();
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
+		public FluentMappingBuilderOneToManyOptions<C, I, O, S> indexedBy(Column<?, Integer> orderingColumn) {
+			oneToManyRelation.setIndexingColumn(orderingColumn);
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
+		public FluentMappingBuilderOneToManyOptions<C, I, O, S> indexedBy(String columnName) {
+			oneToManyRelation.setIndexingColumnName(columnName);
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
+		public FluentMappingBuilderOneToManyOptions<C, I, O, S> indexed() {
+			oneToManyRelation.ordered();
+			return null;	// we can return null because dispatcher will return proxy
 		}
 	}
 	

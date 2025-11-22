@@ -152,6 +152,14 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		this.mappedByConfiguration.setReverseColumnName(reverseColumnName);
 	}
 	
+	public boolean isReverseAsMandatory() {
+		return this.mappedByConfiguration.isMandatory();
+	}
+	
+	public void setReverseAsMandatory(boolean mandatory) {
+		this.mappedByConfiguration.setMandatory(mandatory);
+	}
+	
 	public ValueAccessPointMap<SRC, Column<Table<?>, Object>> getForeignKeyColumnMapping() {
 		return this.mappedByConfiguration.getForeignKeyColumnMapping();
 	}
@@ -283,6 +291,8 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		
 		protected String reverseColumnName;
 		
+		private boolean mandatory;
+		
 		protected final ValueAccessPointMap<SRC, Column<Table<?>, Object>> foreignKeyColumnMapping = new ValueAccessPointMap<>();
 		
 		protected final ValueAccessPointMap<SRC, String> foreignKeyNameMapping = new ValueAccessPointMap<>();
@@ -331,6 +341,14 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		
 		public ValueAccessPointMap<SRC, String> getForeignKeyNameMapping() {
 			return foreignKeyNameMapping;
+		}
+		
+		public boolean isMandatory() {
+			return mandatory;
+		}
+		
+		public void setMandatory(boolean mandatory) {
+			this.mandatory = mandatory;
 		}
 		
 		public boolean isNotEmpty() {
