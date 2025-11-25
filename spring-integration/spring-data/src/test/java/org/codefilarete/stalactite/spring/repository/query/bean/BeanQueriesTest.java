@@ -8,6 +8,7 @@ import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
 import org.codefilarete.stalactite.dsl.MappingEase;
+import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Language;
@@ -18,14 +19,19 @@ import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.query.model.Query.FluentWhereClause;
+import org.codefilarete.stalactite.query.model.QueryEase;
 import org.codefilarete.stalactite.query.model.Selectable.SimpleSelectable;
 import org.codefilarete.stalactite.spring.repository.config.EnableStalactiteRepositories;
 import org.codefilarete.stalactite.spring.repository.query.BeanQuery;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteRepositoryContextConfigurationBase;
+import org.codefilarete.stalactite.spring.repository.query.bean.AnotherBeanQueriesRepository.RepublicDto;
 import org.codefilarete.stalactite.spring.repository.query.bean.BeanQueriesRepository.NamesOnly;
 import org.codefilarete.stalactite.spring.repository.query.bean.BeanQueriesRepository.NamesOnly.SimplePerson;
 import org.codefilarete.stalactite.spring.repository.query.bean.BeanQueriesRepository.NamesOnlyWithValue;
 import org.codefilarete.stalactite.spring.repository.query.bean.BeanQueriesTest.StalactiteRepositoryContextConfiguration;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +52,7 @@ import static org.codefilarete.stalactite.query.model.Operators.containsArgNamed
 import static org.codefilarete.stalactite.query.model.Operators.endsWithArgNamed;
 import static org.codefilarete.stalactite.query.model.Operators.eq;
 import static org.codefilarete.stalactite.query.model.Operators.equalsArgNamed;
+import static org.codefilarete.stalactite.query.model.QueryEase.*;
 import static org.codefilarete.tool.function.Functions.chain;
 
 /**
@@ -86,6 +93,22 @@ public class BeanQueriesTest {
 
 		Republic loadedCountry = anotherBeanQueriesRepository.findEuropeanMember("me");
 		assertThat(loadedCountry).isEqualTo(country1);
+	}
+	
+	@Test
+	void methodHasAMatchingBeanName_beanQueryIsExecuted_query() {
+		Republic country1 = new Republic(42);
+		country1.setName("Toto");
+		country1.setEuMember(true);
+		Person president1 = new Person(666);
+		president1.setName("me");
+		country1.setPresident(president1);
+		Republic country2 = new Republic(43);
+		country2.setName("Tata");
+		beanQueriesRepository.saveAll(Arrays.asList(country1, country2));
+
+		RepublicDto loadedCountry = anotherBeanQueriesRepository.searchEuropeanMember("me");
+		assertThat(loadedCountry).usingRecursiveComparison().isEqualTo(new RepublicDto("Toto", "me"));
 	}
 	
 	@Test
@@ -272,6 +295,24 @@ public class BeanQueriesTest {
 		public ExecutableEntityQuery<Republic, ?> findEuropeanMember(EntityPersister<Republic, Identifier<Long>> countryPersister) {
 			return countryPersister.selectWhere(Republic::isEuMember, eq(true))
 					.and(fromMethodReferences(Republic::getPresident, Person::getName), equalsArgNamed("presidentName", String.class));
+		}
+		
+		@BeanQuery
+		public ExecutableQuery<RepublicDto> searchEuropeanMember(PersistenceContext persistenceContext) {
+			Table<?> republicTable = new Table("Republic");
+			Column<?, String> republicName = republicTable.addColumn("name", String.class);
+			Column<?, Long> presidentId = republicTable.addColumn("presidentId", long.class);
+			Column<?, Boolean> euMember = republicTable.addColumn("euMember", boolean.class);
+			Table<?> personTable = new Table("Person");
+			Column<?, Long> id = personTable.addColumn("id", long.class).primaryKey();
+			Column<?, String> personName = personTable.addColumn("name", String.class);
+			
+			return persistenceContext.newQuery(
+							select(republicName).add(personName, "presidentName")
+									.from(republicTable).innerJoin(presidentId, id)
+									.where(euMember, eq(true)),
+					RepublicDto.class)
+					.mapKey(RepublicDto::new, republicName, personName);
 		}
 		
 		@BeanQuery(method = "findEuropeanCountryForPresident")

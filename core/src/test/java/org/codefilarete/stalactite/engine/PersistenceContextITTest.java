@@ -22,9 +22,12 @@ import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder
 import org.codefilarete.stalactite.sql.test.DatabaseIntegrationTest;
 import org.codefilarete.tool.Strings;
 import org.codefilarete.tool.collection.Arrays;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.in;
+import static org.codefilarete.stalactite.query.model.Operators.in;
 import static org.codefilarete.tool.function.Functions.chain;
 
 /**
@@ -141,61 +144,97 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 		assertThat(records).extracting(chain(Toto::getDummyWrappedProp, Wrapper::getDelegate)).containsExactlyInAnyOrder("Hello", "World");
 	}
 	
-	@Test
-	void newQuery() throws SQLException {
-		PersistenceContext testInstance = new PersistenceContext(connectionProvider, createDialect());
-		Table totoTable = new Table("Toto");
-		Column<Table, Integer> id = totoTable.addColumn("id", int.class);
-		Column<Table, String> name = totoTable.addColumn("name", String.class);
+	@Nested
+	class NewQuery {
 		
-		DDLDeployer ddlDeployer = new DDLDeployer(testInstance);
-		ddlDeployer.getDdlGenerator().addTables(totoTable);
-		ddlDeployer.deployDDL();
+		@Test
+		void mapKey() throws SQLException {
+			PersistenceContext testInstance = new PersistenceContext(connectionProvider, createDialect());
+			Table totoTable = new Table("Toto");
+			Column<Table, Integer> id = totoTable.addColumn("id", int.class);
+			Column<Table, String> name = totoTable.addColumn("name", String.class);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(testInstance);
+			ddlDeployer.getDdlGenerator().addTables(totoTable);
+			ddlDeployer.deployDDL();
+			
+			Connection connection = testInstance.getConnectionProvider().giveConnection();
+			connection.prepareStatement("insert into Toto(id, name) values (1, 'Hello')").execute();
+			connection.prepareStatement("insert into Toto(id, name) values (2, 'World')").execute();
+			
+			Set<Toto> records = testInstance.newQuery(QueryEase.select(id, name).from(totoTable), Toto.class)
+					.mapKey(Toto::new, id, name)
+					.execute(Accumulators.toSet());
+			assertThat(records)
+					.usingRecursiveFieldByFieldElementComparator()
+					.containsExactlyInAnyOrder(new Toto(1, "Hello"), new Toto(2, "World"));
+		}
 		
-		Connection connection = testInstance.getConnectionProvider().giveConnection();
-		connection.prepareStatement("insert into Toto(id, name) values (1, 'Hello')").execute();
-		connection.prepareStatement("insert into Toto(id, name) values (2, 'World')").execute();
+		@Test
+		void inCriteria() throws SQLException {
+			PersistenceContext testInstance = new PersistenceContext(connectionProvider, createDialect());
+			Table totoTable = new Table("Toto");
+			Column<Table, Integer> id = totoTable.addColumn("id", int.class);
+			Column<Table, String> name = totoTable.addColumn("name", String.class);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(testInstance);
+			ddlDeployer.getDdlGenerator().addTables(totoTable);
+			ddlDeployer.deployDDL();
+			
+			Connection connection = testInstance.getConnectionProvider().giveConnection();
+			connection.prepareStatement("insert into Toto(id, name) values (1, 'Hello')").execute();
+			connection.prepareStatement("insert into Toto(id, name) values (2, 'World')").execute();
+			
+			Set<Toto> records1 = testInstance.newQuery(QueryEase.select(id, name).from(totoTable).where(id, Operators.inArgNamed("xx", int.class)), Toto.class)
+					.mapKey(Toto::new, id, name)
+					.set("xx", Arrays.asList(1, 2))
+					.execute(Accumulators.toSet());
+			assertThat(records1)
+					.usingRecursiveFieldByFieldElementComparator()
+					.containsExactlyInAnyOrder(new Toto(1, "Hello"), new Toto(2, "World"));
+			
+			Set<Toto> records2 = testInstance.newQuery(QueryEase.select(id, name).from(totoTable).where(name, Operators.equalsArgNamed("xx", String.class)), Toto.class)
+					.mapKey(Toto::new, id, name)
+					.set("xx", "Hello")
+					.execute(Accumulators.toSet());
+			assertThat(records2)
+					.usingRecursiveFieldByFieldElementComparator()
+					.containsExactlyInAnyOrder(new Toto(1, "Hello"));
+		}
 		
-		Set<Toto> records = testInstance.newQuery(QueryEase.select(id, name).from(totoTable), Toto.class)
-				.mapKey(Toto::new, id, name)
-				.execute(Accumulators.toSet());
-		assertThat(records)
-				.usingRecursiveFieldByFieldElementComparator()
-				.containsExactlyInAnyOrder(new Toto(1, "Hello"), new Toto(2, "World"));
-	}
-	
-	@Test
-	void newQuery_withToOneRelation() throws SQLException {
-		PersistenceContext testInstance = new PersistenceContext(connectionProvider, createDialect());
-		Table totoTable = new Table("Toto");
-		Column<Table, Integer> id = totoTable.addColumn("id", int.class);
-		Column<Table, String> name = totoTable.addColumn("name", String.class);
-		Table tataTable = new Table("Tata");
-		Column<Table, String> tataName = tataTable.addColumn("name", String.class);
-		Column<Table, Integer> totoId = tataTable.addColumn("totoId", int.class);
-		
-		DDLDeployer ddlDeployer = new DDLDeployer(testInstance);
-		ddlDeployer.getDdlGenerator().addTables(totoTable, tataTable);
-		ddlDeployer.deployDDL();
-		
-		Connection connection = connectionProvider.giveConnection();
-		connection.prepareStatement("insert into Toto(id, name) values (1, 'Hello')").execute();
-		connection.prepareStatement("insert into Tata(totoId, name) values (1, 'World')").execute();
-		connection.prepareStatement("insert into Toto(id, name) values (2, 'Bonjour')").execute();
-		connection.prepareStatement("insert into Tata(totoId, name) values (2, 'Tout le monde')").execute();
-		
-		Set<Toto> records = testInstance.newQuery(QueryEase.select(id, name).add(tataName, "tataName").from(totoTable).innerJoin(id, totoId),
-												   Toto.class)
-				.mapKey(Toto::new, id, name)
-				.map(Toto::setTata, new ResultSetRowTransformer<>(Tata.class, "tataName", DefaultResultSetReaders.STRING_READER, Tata::new))
-				.execute(Accumulators.toSet());
-		Toto expectedToto1 = new Toto(1, "Hello");
-		expectedToto1.setTata(new Tata("World"));
-		Toto expectedToto2 = new Toto(2, "Bonjour");
-		expectedToto2.setTata(new Tata("Tout le monde"));
-		assertThat(records)
-				.usingRecursiveFieldByFieldElementComparator()
-				.containsExactlyInAnyOrder(expectedToto1, expectedToto2);
+		@Test
+		void withToOneRelation() throws SQLException {
+			PersistenceContext testInstance = new PersistenceContext(connectionProvider, createDialect());
+			Table totoTable = new Table("Toto");
+			Column<Table, Integer> id = totoTable.addColumn("id", int.class);
+			Column<Table, String> name = totoTable.addColumn("name", String.class);
+			Table tataTable = new Table("Tata");
+			Column<Table, String> tataName = tataTable.addColumn("name", String.class);
+			Column<Table, Integer> totoId = tataTable.addColumn("totoId", int.class);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(testInstance);
+			ddlDeployer.getDdlGenerator().addTables(totoTable, tataTable);
+			ddlDeployer.deployDDL();
+			
+			Connection connection = connectionProvider.giveConnection();
+			connection.prepareStatement("insert into Toto(id, name) values (1, 'Hello')").execute();
+			connection.prepareStatement("insert into Tata(totoId, name) values (1, 'World')").execute();
+			connection.prepareStatement("insert into Toto(id, name) values (2, 'Bonjour')").execute();
+			connection.prepareStatement("insert into Tata(totoId, name) values (2, 'Tout le monde')").execute();
+			
+			Set<Toto> records = testInstance.newQuery(QueryEase.select(id, name).add(tataName, "tataName").from(totoTable).innerJoin(id, totoId),
+							Toto.class)
+					.mapKey(Toto::new, id, name)
+					.map(Toto::setTata, new ResultSetRowTransformer<>(Tata.class, "tataName", DefaultResultSetReaders.STRING_READER, Tata::new))
+					.execute(Accumulators.toSet());
+			Toto expectedToto1 = new Toto(1, "Hello");
+			expectedToto1.setTata(new Tata("World"));
+			Toto expectedToto2 = new Toto(2, "Bonjour");
+			expectedToto2.setTata(new Tata("Tout le monde"));
+			assertThat(records)
+					.usingRecursiveFieldByFieldElementComparator()
+					.containsExactlyInAnyOrder(expectedToto1, expectedToto2);
+		}
 	}
 	
 	@Test

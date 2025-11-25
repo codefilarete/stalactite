@@ -32,8 +32,8 @@ import org.springframework.core.annotation.AliasFor;
  * In this example the bean will be named "mySpringDataRepositoryMethodToOverride" (default Spring behavior) which is
  * the one of the Stalactite repository whom you want to override the query. This method as an argument named
  * "entityName" which is used by the <code>selectWhere(..)</code> chain.
- * Note that {@link BeanQuery#method()} is not mandatory, in this case the targeted repository method is the one that
- * matches bean name.
+ * Note that {@link BeanQuery#method() @BeanQuery method attribute} is not mandatory because in this example the targeted repository method is the
+ * one that matches bean name.
  * @author Guillaume Mary
  */
 @Retention(RetentionPolicy.RUNTIME)

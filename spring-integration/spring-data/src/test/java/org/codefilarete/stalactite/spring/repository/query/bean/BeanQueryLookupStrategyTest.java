@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
+import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.spring.repository.StalactiteRepository;
 import org.codefilarete.stalactite.spring.repository.query.BeanQuery;
 import org.codefilarete.stalactite.spring.repository.query.bean.BeanQueryLookupStrategy.BeanQueryMetadata;
@@ -64,7 +65,7 @@ class BeanQueryLookupStrategyTest {
 			when(beanFactory.findAnnotationOnBean("bean name doesn't matter", BeanQuery.class)).thenReturn(beanQuery);
 			
 			BeanQueryLookupStrategy<Object> testInstance = new BeanQueryLookupStrategy<>(beanFactory, mock(Dialect.class));
-			ExecutableEntityQuery<Object, ?> result = testInstance.findBeanQueryMetadata(findMethod(DummyRepository.class, "findBestPlayer")).getBean();
+			ExecutableQuery<Object> result = (ExecutableEntityQuery<Object, ?>) testInstance.findBeanQueryMetadata(findMethod(DummyRepository.class, "findBestPlayer")).getBean();
 
 			assertThat(result).isEqualTo(expectedQuery);
 		}
@@ -89,7 +90,7 @@ class BeanQueryLookupStrategyTest {
 			when(beanFactory.findAnnotationOnBean("bean name doesn't matter 2", BeanQuery.class)).thenReturn(beanQuery2);
 			
 			BeanQueryLookupStrategy<Object> testInstance = new BeanQueryLookupStrategy<>(beanFactory, mock(Dialect.class));
-			ExecutableEntityQuery<Object, ?> result = testInstance.findBeanQueryMetadata(findMethod(DummyRepository.class, "findBestPlayer")).getBean();
+			ExecutableQuery<Object> result = testInstance.findBeanQueryMetadata(findMethod(DummyRepository.class, "findBestPlayer")).getBean();
 			
 			assertThat(result).isEqualTo(expectedQuery2);
 		}

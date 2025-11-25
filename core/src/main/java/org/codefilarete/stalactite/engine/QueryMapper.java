@@ -13,7 +13,9 @@ import java.util.function.BiConsumer;
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.Accumulators;
@@ -41,6 +43,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
 
 import static org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder.ALWAYS_SET_NULL_INSTANCE;
+import static org.codefilarete.tool.bean.Objects.preventNull;
 
 /**
  * A class aimed at querying the database and creating Java beans from it.
@@ -79,6 +82,8 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	private final QueryMapping<C, ?> mapping = new QueryMapping<>();
 	
 	private final ReadOperationFactory readOperationFactory;
+	
+	private final Map<Selectable<?>, String> aliases = new HashMap<>();
 	
 	/**
 	 * Simple constructor
@@ -144,6 +149,10 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 		this.columnBinderRegistry = columnBinderRegistry;
 		this.methodReferenceCapturer = methodReferenceCapturer;
 		this.readOperationFactory = readOperationFactory;
+	}
+	
+	public void setColumnAliases(Map<Selectable<?>, String> aliases) {
+		this.aliases.putAll(aliases);
 	}
 	
 	@Override
@@ -463,8 +472,8 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 		}
 		this.mapping.applyTo((WholeResultSetTransformer) transformerToUse);
 		StringParamedSQL parameterizedSQL = new StringParamedSQL(this.sqlBuilder.toSQL().toString(), sqlParameterBinders);
+		parameterizedSQL.setValues(sqlArguments);
 		try (ReadOperation<String> readOperation = readOperationFactory.createInstance(parameterizedSQL, connectionProvider)) {
-			readOperation.setValues(sqlArguments);
 			return transformerToUse.transformAll(readOperation.execute(), accumulator);
 		}
 	}
@@ -474,16 +483,24 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	}
 	
 	private WholeResultSetTransformer<C, Object[]> buildComposedKeyTransformer(Set<Column> columns, SerializableFunction<Object[], C> beanFactory) {
+		Map<Column<?>, String> computedAliases = new HashMap<>();
 		Set<SingleColumnReader> columnReaders = Iterables.collect(columns, c -> {
 			ParameterBinder reader = c.getBinder();
-			return new SingleColumnReader<>(c.getName(), reader);
+			String alias;
+			if (c instanceof ColumnWrapper) {
+				alias = preventNull(aliases.get(((ColumnWrapper<?>) c).getColumn()), c.getName());
+			} else {
+				alias = c.getName();
+			}
+			computedAliases.put(c, alias);
+			return new SingleColumnReader<>(alias, reader);
 		}, HashSet::new);
 		MultipleColumnsReader<Object[]> multipleColumnsReader = new MultipleColumnsReader<>(columnReaders, resultSetRow -> {
 			// we transform all columns value into a Object[]
 			Object[] constructorArgs = new Object[columns.size()];
 			int i = 0;
 			for (Column column : columns) {
-				constructorArgs[i++] = resultSetRow.get(column.getName());
+				constructorArgs[i++] = resultSetRow.get(computedAliases.get(column));
 			}
 			return constructorArgs;
 		});
@@ -529,7 +546,18 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * @see #set(String, Iterable, Class)
 	 */
 	public <O> QueryMapper<C> set(String paramName, O value, Class<? super O> valueType) {
-		this.sqlParameterBinders.put(paramName, value == null ? ALWAYS_SET_NULL_INSTANCE : columnBinderRegistry.getBinder(valueType));
+		ParameterBinder<?> parameterBinder;
+		if (value == null) {
+			parameterBinder = ALWAYS_SET_NULL_INSTANCE;
+		} else {
+			if (value.getClass().isArray()) {
+				valueType = (Class<? super O>) Iterables.first((Object[]) value);
+			} else if (Iterable.class.isAssignableFrom(value.getClass())) {
+				valueType = (Class<? super O>) Iterables.first((Iterable) value).getClass();
+			}
+			parameterBinder = columnBinderRegistry.getBinder(valueType);
+		}
+		this.sqlParameterBinders.put(paramName, parameterBinder);
 		this.sqlArguments.put(paramName, value);
 		return this;
 	}
@@ -597,6 +625,10 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 		public ParameterBinder<T> getBinder() {
 			return columnBinderRegistry.getBinder(column);
 		}
+		
+		public org.codefilarete.stalactite.sql.ddl.structure.Column<?, T> getColumn() {
+			return column;
+		}
 	}
 	
 	/**
@@ -621,7 +653,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 			this.setter = setter;
 		}
 		
-		public Column<I> getColumn() {
+		public QueryMapper.Column<I> getColumn() {
 			return column;
 		}
 		

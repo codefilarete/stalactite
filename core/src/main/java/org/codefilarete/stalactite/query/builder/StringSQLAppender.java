@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.query.builder;
 import javax.annotation.Nullable;
 
 import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.Placeholder;
 import org.codefilarete.stalactite.query.model.QueryStatement.PseudoColumn;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
@@ -107,6 +108,8 @@ public class StringSQLAppender implements SQLAppender {
 				return super.cat(dmlNameProvider.getName((Selectable<?>) o));
 			} else if (o instanceof Selectable) {
 				return super.cat(((Selectable<?>) o).getExpression());
+			} else if (o instanceof Placeholder) {
+				return super.cat(":" + ((Placeholder<?, ?>) o).getName());
 			} else {
 				return super.cat(o);
 			}

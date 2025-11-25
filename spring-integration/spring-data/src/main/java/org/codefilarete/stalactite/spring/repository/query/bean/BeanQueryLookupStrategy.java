@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
+import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.spring.repository.StalactiteRepository;
 import org.codefilarete.stalactite.spring.repository.query.BeanQuery;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
@@ -51,7 +52,11 @@ public class BeanQueryLookupStrategy<C> implements QueryLookupStrategy {
 		BeanQueryMetadata beanQueryMetadata = findBeanQueryMetadata(method);
 		if (beanQueryMetadata != null) {
 			StalactiteQueryMethod queryMethod = new StalactiteQueryMethod(method, metadata, factory);
-			return new BeanRepositoryQuery<>(queryMethod, beanQueryMetadata.getBean(), beanQueryMetadata.getCounterBean());
+			if (beanQueryMetadata.getBean() instanceof ExecutableEntityQuery) {
+				return new BeanRepositoryQuery<>(queryMethod, (ExecutableEntityQuery) beanQueryMetadata.getBean(), beanQueryMetadata.getCounterBean());
+			} else {
+				return new QueryRepositoryQuery<>(queryMethod, beanQueryMetadata.getBean(), beanQueryMetadata.getCounterBean(), dialect);
+			}
 		} else {
 			return null;
 		}
@@ -96,7 +101,7 @@ public class BeanQueryLookupStrategy<C> implements QueryLookupStrategy {
 							.map(counterBeanName -> beanFactory.getBean(counterBeanName, ExecutableProjectionQuery.class));
 					return new BeanQueryMetadata(
 							entry.getKey(),
-							(ExecutableEntityQuery) entry.getValue(),
+							(ExecutableQuery) entry.getValue(),
 							counterBean.get(),
 							beanQueryAnnotation);
 				})
@@ -115,18 +120,18 @@ public class BeanQueryLookupStrategy<C> implements QueryLookupStrategy {
 	@VisibleForTesting
 	static class BeanQueryMetadata {
 		private final String beanName;
-		private final ExecutableEntityQuery bean;
+		private final ExecutableQuery bean;
 		private final ExecutableProjectionQuery counterBean;
 		private final BeanQuery queryAnnotation;
 		
-		private BeanQueryMetadata(String beanName, ExecutableEntityQuery bean, ExecutableProjectionQuery counterBean, BeanQuery queryAnnotation) {
+		private BeanQueryMetadata(String beanName, ExecutableQuery bean, ExecutableProjectionQuery counterBean, BeanQuery queryAnnotation) {
 			this.beanName = beanName;
 			this.bean = bean;
 			this.counterBean = counterBean;
 			this.queryAnnotation = queryAnnotation;
 		}
 		
-		public ExecutableEntityQuery getBean() {
+		public ExecutableQuery getBean() {
 			return bean;
 		}
 		

@@ -36,6 +36,7 @@ import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryEase;
 import org.codefilarete.stalactite.query.model.QueryProvider;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
@@ -232,7 +233,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	
 	@Override
 	public <C> ExecutableBeanPropertyKeyQueryMapper<C> newQuery(Query query, Class<C> beanType) {
-		return newQuery(this.dialect.getQuerySQLBuilderFactory().queryBuilder(query), beanType);
+		return newQuery(this.dialect.getQuerySQLBuilderFactory().queryBuilder(query), beanType, query.getAliases());
 	}
 	
 	@Override
@@ -243,6 +244,12 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	@Override
 	public <C> ExecutableBeanPropertyKeyQueryMapper<C> newQuery(SQLBuilder sql, Class<C> beanType) {
 		return wrapIntoExecutable(newTransformableQuery(sql, beanType));
+	}
+	
+	public <C> ExecutableBeanPropertyKeyQueryMapper<C> newQuery(SQLBuilder sql, Class<C> beanType, Map<Selectable<?>, String> aliases) {
+		QueryMapper<C> queryMapperSupport = newTransformableQuery(sql, beanType);
+		queryMapperSupport.setColumnAliases(aliases);
+		return wrapIntoExecutable(queryMapperSupport);
 	}
 	
 	private <C> ExecutableBeanPropertyKeyQueryMapper<C> wrapIntoExecutable(QueryMapper<C> queryMapperSupport) {

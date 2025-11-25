@@ -153,7 +153,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 					.getOr(() -> columnNamingStrategy.giveName(collectionProviderDefinition));
 			Column<COLLECTIONTABLE, TRGT> elementColumn = targetTable.addColumn(columnName, linkage.getComponentType());
 			// adding constraint only if Collection is a Set (because Sets don't allow duplicates) 
-			if (collectionProviderDefinition.getMemberType().isAssignableFrom(Set.class)) {
+			if (Set.class.isAssignableFrom(collectionProviderDefinition.getMemberType())) {
 				elementColumn.primaryKey();
 			}
 			elementRecordMapping = new ElementRecordMapping<>(targetTable, elementColumn, sourceIdentifierAssembler, primaryKeyForeignColumnMapping);
