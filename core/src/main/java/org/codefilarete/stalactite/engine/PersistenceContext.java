@@ -256,7 +256,14 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		ExecutableBeanPropertyQueryMapper<C> beanPropertyMappingHandler = new MethodReferenceDispatcher()
 				// since ExecutableBeanPropertyQueryMapper can be run we redirect execute() method to the underlying method
 				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, Object, Object>, Object>) ExecutableQuery::execute,
-						(Function<Accumulator<C, Object, Object>, Object>) (accumulator) -> execute(queryMapperSupport, accumulator))
+						(accumulator) -> {
+							return execute(queryMapperSupport, accumulator);
+						})
+				.redirect((SerializableTriFunction<ExecutableQuery<C>, Accumulator<C, Object, Object>, Map<String, Object>, Object>) ExecutableQuery::execute,
+						(accumulator, map) -> {
+							map.forEach(queryMapperSupport::set);
+							return execute(queryMapperSupport, accumulator);
+						})
 				.redirect(BeanPropertyQueryMapper.class, queryMapperSupport, true)
 				.build((Class<ExecutableBeanPropertyQueryMapper<C>>) (Class) ExecutableBeanPropertyQueryMapper.class);
 		

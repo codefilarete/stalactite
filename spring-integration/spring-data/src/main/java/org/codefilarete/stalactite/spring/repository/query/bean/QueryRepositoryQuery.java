@@ -65,11 +65,7 @@ public class QueryRepositoryQuery<O, R> extends AbstractRepositoryQuery<O, R> {
 					if (limit != null) {
 //						((ExecutableEntityQuery) entityQuery).limit(limit.getCount(), limit.getOffset());
 					}
-//					invocationParameters.getNamedValues().forEach(entityQuery::set);
-					
-					Map<String, Object> values = new HashMap<>();
-					values.putAll(invocationParameters.getNamedValues());
-					return (List<Object>) entityQuery.execute(Accumulators.toList());
+					return (List<Object>) entityQuery.execute(Accumulators.toList(), invocationParameters.getNamedValues());
 				};
 			}
 		};

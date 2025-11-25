@@ -105,6 +105,10 @@ public class BeanQueriesTest {
 		country1.setPresident(president1);
 		Republic country2 = new Republic(43);
 		country2.setName("Tata");
+		country2.setEuMember(true);
+		Person president2 = new Person(888);
+		president2.setName("you");
+		country2.setPresident(president2);
 		beanQueriesRepository.saveAll(Arrays.asList(country1, country2));
 
 		RepublicDto loadedCountry = anotherBeanQueriesRepository.searchEuropeanMember("me");
@@ -310,7 +314,7 @@ public class BeanQueriesTest {
 			return persistenceContext.newQuery(
 							select(republicName).add(personName, "presidentName")
 									.from(republicTable).innerJoin(presidentId, id)
-									.where(euMember, eq(true)),
+									.where(euMember, eq(true)).and(personName, equalsArgNamed("presidentName", String.class)),
 					RepublicDto.class)
 					.mapKey(RepublicDto::new, republicName, personName);
 		}

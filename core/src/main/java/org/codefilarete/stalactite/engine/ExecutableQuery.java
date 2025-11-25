@@ -2,6 +2,9 @@ package org.codefilarete.stalactite.engine;
 
 import org.codefilarete.stalactite.sql.result.Accumulator;
 
+import java.util.Collections;
+import java.util.Map;
+
 /**
  * Little interface to declare a {@link org.codefilarete.stalactite.query.model.Query} as executable.
  * 
@@ -19,6 +22,10 @@ public interface ExecutableQuery<C> {
 	 * @return beans found by the query and finalized by accumulator
 	 * @param <R> result type
 	 */
-	<R> R execute(Accumulator<C, ?, R> accumulator);
+	default <R> R execute(Accumulator<C, ?, R> accumulator) {
+		return execute(accumulator, Collections.emptyMap());
+	}
+	
+	<R> R execute(Accumulator<C, ?, R> accumulator, Map<String, Object> parametersValues);
 	
 }
