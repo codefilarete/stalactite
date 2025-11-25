@@ -43,8 +43,6 @@ public class SQLParameterParser {
 	
 	private static final Set<Character> SPECIAL_SYMBOLS = Collections.unmodifiableSet(Arrays.asHashSet(SEMI_COLON, SIMPLE_QUOTE, DOUBLE_QUOTE));
 	
-	private static final Set<Character> TEXT_MARKS = Collections.unmodifiableSet(Arrays.asHashSet(SIMPLE_QUOTE, DOUBLE_QUOTE));
-	
 	private final ParsedSQL parsedSQL;
 	private final int sqlLength;
 	private final String sql;
@@ -86,13 +84,13 @@ public class SQLParameterParser {
 					switch (currentChar) {
 						case SIMPLE_QUOTE:
 						case DOUBLE_QUOTE:
-							readQuotes();
+							appendUntilCharacter(currentChar);
 							break;
 						case SEMI_COLON:
 							readParam();
 							break;
 						default:
-							// suspicious case: symbol consumption is not implemented (developper forgetting) 
+							// suspicious case: symbol consumption is not implemented (developer forgetting) 
 							throw new RuntimeException("Symbol '" + currentChar + "' was set as blocker but its consumption is not implemented");
 					}
 					// closing sql snippet so next consumers can append chars to it without collision
@@ -142,12 +140,12 @@ public class SQLParameterParser {
 	}
 	
 	/**
-	 * Consumes quotes
+	 * Used to consume quotes
 	 */
-	private void readQuotes() {
+	private void appendUntilCharacter(char stoppingChar) {
 		StringBuilder quotes = new StringBuilder();
 		char prefix = currentChar;
-		doUntil(TEXT_MARKS, new ParsingListener() {
+		doUntil(stoppingChar, new ParsingListener() {
 			@Override
 			public void onRead() {
 				quotes.append(currentChar);
@@ -162,26 +160,35 @@ public class SQLParameterParser {
 	}
 	
 	/**
-	 * Goes foward until read character is in given characters set (stoppers). Calls {@link ParsingListener} methods during consumption.
+	 * Goes forward until read character is in given characters set (stoppers). Calls {@link ParsingListener} methods during consumption.
 	 *
 	 * @param stoppingChars characters that stops consumption
 	 * @param parsingListener listener called during characters consumption
 	 */
 	private void doUntil(Set<Character> stoppingChars, ParsingListener parsingListener) {
-		boolean charFound = true;
-		while (charFound && read()) {
-			charFound = !stoppingChars.contains(currentChar);
-			if (charFound) {
-				parsingListener.onRead();
+		boolean stoppedByTerminator = false;
+		char previousChar = 0;
+		while (read()) {
+			if (stoppingChars.contains(currentChar)
+					// we ignore escaped stopping characters because stopping chars are quotes and they may contain internal quotes escaped by '\'
+					&& previousChar != '\\') {
+				stoppedByTerminator = true;
+				break;
 			}
+			parsingListener.onRead();
+			previousChar = currentChar;
 		}
-		if (!charFound) {
+		if (stoppedByTerminator) {
 			parsingListener.onConsumptionEnd();
 		}
 	}
 	
+	private void doUntil(char stoppingChars, ParsingListener parsingListener) {
+		doUntil(Arrays.asHashSet(stoppingChars), parsingListener);
+	}
+	
 	/**
-	 * Goes foward while read character is in given characters set (continuers). Calls {@link ParsingListener} methods during consumption.
+	 * Goes forward while read character is in given characters set (continuers). Calls {@link ParsingListener} methods during consumption.
 	 *
 	 * @param continuingChars characters that must be consumed
 	 * @param parsingListener listener called during characters consumption
@@ -324,7 +331,7 @@ public class SQLParameterParser {
 			return name;
 		}
 		
-		/** Implemented for unit tests, unecessary for production use since never put into Map nor Set */
+		/** Implemented for unit tests, unnecessary for production use since never put into Map nor Set */
 		@Override
 		public boolean equals(Object o) {
 			if (this == o) return true;
@@ -333,7 +340,7 @@ public class SQLParameterParser {
 			return Objects.equals(name, parameter.name);
 		}
 		
-		/** Implemented for unit tests, unecessary for production use since never put into Map nor Set */
+		/** Implemented for unit tests, unnecessary for production use since never put into Map nor Set */
 		@Override
 		public int hashCode() {
 			return this.name.hashCode();

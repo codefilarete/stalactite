@@ -16,12 +16,7 @@ import static org.mockito.Mockito.mock;
 class NullSafeguardPreparedStatementWriterTest {
 	
 	@Test
-	void cc() {
-		System.out.println(DefaultPreparedStatementWriters.SET_LONG_WRITER.getType());
-	}
-	
-	@Test
-	public void testSet_nonNullValueIsPassedAsArgument_delegateIsInvoked() throws SQLException {
+	void set_nonNullValueIsPassedAsArgument_delegateIsInvoked() throws SQLException {
 		MutableBoolean isDelegateInvoked = new MutableBoolean(false);
 		NullSafeguardPreparedStatementWriter<Object> testInstance =
 				new NullSafeguardPreparedStatementWriter<>((preparedStatement, valueIndex, value) -> isDelegateInvoked.setTrue());
@@ -30,7 +25,7 @@ class NullSafeguardPreparedStatementWriterTest {
 	}
 	
 	@Test
-	public void testSet_nullIsPassedAsArgument_nonNPEIsThrown() {
+	void set_nullIsPassedAsArgument_nonNPEIsThrown() {
 		MutableBoolean isDelegateInvoked = new MutableBoolean(false);
 		NullSafeguardPreparedStatementWriter<Object> testInstance =
 				new NullSafeguardPreparedStatementWriter<>((preparedStatement, valueIndex, value) -> {
@@ -40,5 +35,4 @@ class NullSafeguardPreparedStatementWriterTest {
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("Trying to pass null as primitive value");
 	}
-	
 }

@@ -4,18 +4,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 
-import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.stalactite.sql.statement.SQLParameterParser.CollectionParameter;
 import org.codefilarete.stalactite.sql.statement.SQLParameterParser.Parameter;
 import org.codefilarete.stalactite.sql.statement.SQLParameterParser.ParsedSQL;
+import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.codefilarete.tool.collection.Arrays.asList;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.codefilarete.tool.collection.Arrays.asList;
 
 /**
  * @author Guillaume Mary
@@ -25,6 +24,10 @@ public class SQLParameterParserTest {
 	public static Object[][] testParse_data() {
 		Parameter paramB = new Parameter("B");
 		Parameter paramC = new Parameter("C");
+
+		Parameter paramName = new Parameter("name");
+		Parameter param023 = new Parameter("023");
+		Parameter paramY = new Parameter("Y");
 		return new Object[][] {
 				// should not break anything since no parameter
 				{ "select a from Toto where b = 1", new ParsedSQL(asList("select a from Toto where b = 1"),
@@ -44,6 +47,18 @@ public class SQLParameterParserTest {
 						Maps.asMap("B", paramB)) },
 				{ "select a from Toto where b = \"hello :D !\" and c = \":C\" and d = ':B'", new ParsedSQL(asList("select a from Toto where b = ", "\"hello :D !\"", " and c = ", "\":C\"", " and d = ", "':B'"),
 						Collections.emptyMap()) },
+				{
+						//SELECT * FROM table WHERE something="'$2\"@toto" AND other='"\':$' and id=:023 OR name=$name or value=?
+						"SELECT * FROM table WHERE something=\"':2\\\"@toto\" AND other='\"\\':X' and id=:023 OR name=:name or value=:Y",
+						new ParsedSQL(asList("SELECT * FROM table WHERE something=",
+								"\"':2\\\"@toto\"",
+								" AND other=",
+								"'\"\\':X'",
+								" and id=", param023, " OR name=", paramName, " or value=", paramY),
+								Maps.asMap("name", paramName)
+										.add("023", param023)
+										.add("Y", paramY))
+				}
 		};
 	}
 	
