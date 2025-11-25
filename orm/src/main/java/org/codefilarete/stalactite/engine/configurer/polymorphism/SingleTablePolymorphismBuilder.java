@@ -76,14 +76,6 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 		return result;
 	}
 	
-	private Map<Class<C>, Set<C>> computeEntitiesPerType(Iterable<? extends C> entities) {
-		Map<Class<C>, Set<C>> entitiesPerType = new HashMap<>();
-		entities.forEach(entity ->
-				entitiesPerType.computeIfAbsent((Class<C>) entity.getClass(), p -> new KeepOrderSet<>()).add(entity)
-		);
-		return entitiesPerType;
-	}
-	
 	private <D extends C> Map<Class<D>, ConfiguredRelationalPersister<D, I>> collectSubClassPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
 		Map<Class<D>, ConfiguredRelationalPersister<D, I>> persisterPerSubclass = new HashMap<>();
 		

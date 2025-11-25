@@ -21,7 +21,6 @@ public class AbstractRelationConfigurer<SRC, SRCID, TRGT, TRGTID> {
 	protected final TableNamingStrategy tableNamingStrategy;
 	protected final PersisterBuilderContext currentBuilderContext;
 	protected final DefaultPersisterBuilder persisterBuilder;
-//	protected final PersisterBuilderPipeline<TRGT, TRGTID> persisterBuilder;
 	
 	public AbstractRelationConfigurer(Dialect dialect,
 									  ConnectionConfiguration connectionConfiguration,
@@ -34,7 +33,6 @@ public class AbstractRelationConfigurer<SRC, SRCID, TRGT, TRGTID> {
 		this.tableNamingStrategy = tableNamingStrategy;
 		this.currentBuilderContext = currentBuilderContext;
 		this.persisterBuilder = new DefaultPersisterBuilder(dialect, connectionConfiguration, currentBuilderContext.getPersisterRegistry());
-//		this.persisterBuilder = new PersisterBuilderPipeline<>(dialect, connectionConfiguration, currentBuilderContext.getPersisterRegistry());
 	}
 
 	protected Table lookupTableInRegisteredPersisters(Class<TRGT> entityType) {

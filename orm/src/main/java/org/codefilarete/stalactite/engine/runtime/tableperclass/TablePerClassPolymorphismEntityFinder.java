@@ -83,7 +83,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 		super(mainPersister, persisterPerSubclass, connectionProvider, dialect);
 		this.mainPersister = mainPersister;
 		this.identifierAssembler = mainPersister.getMapping().getIdMapping().getIdentifierAssembler();
-		this.mainTable = (T) mainPersister.getMainTable();
+		this.mainTable = mainPersister.getMainTable();
 		// building readers and aliases for union-all query
 		this.discriminatorValues = new HashMap<>();
 		persisterPerSubclass.forEach((subEntityType, subEntityTable) -> {

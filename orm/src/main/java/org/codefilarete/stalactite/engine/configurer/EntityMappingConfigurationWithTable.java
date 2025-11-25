@@ -47,7 +47,7 @@ public class EntityMappingConfigurationWithTable<C, I> implements EntityMappingC
 	}
 	
 	@Nullable
-	public EntityFactoryProvider<C, Table> getEntityFactoryProvider() {
+	public EntityFactoryProvider<C, ?> getEntityFactoryProvider() {
 		return delegate.getEntityFactoryProvider();
 	}
 	

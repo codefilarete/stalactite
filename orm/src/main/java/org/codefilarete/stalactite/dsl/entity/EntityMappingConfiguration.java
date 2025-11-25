@@ -35,7 +35,7 @@ import org.codefilarete.tool.collection.ReadOnlyIterator;
 public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfiguration<C> {
 	
 	@Nullable
-	EntityFactoryProvider<C, Table> getEntityFactoryProvider();
+	EntityFactoryProvider<C, ?> getEntityFactoryProvider();
 	
 	/**
 	 * Gives the table owning entity data.
