@@ -15,8 +15,6 @@ import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
@@ -264,7 +262,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	}
 	
 	/**
-	 * Same as {@link #mapKey(SerializableFunction, String, Class)} but with {@link org.codefilarete.stalactite.sql.ddl.structure.Column} signature
+	 * Same as {@link #mapKey(SerializableFunction, String, Class)} but with {@link Selectable} signature
 	 *
 	 * @param <I> type of the key
 	 * @param factory the factory function that will instantiate new beans (with key as single argument)
@@ -273,13 +271,13 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 */
 	@Override
 	public <I> QueryMapper<C> mapKey(SerializableFunction<I, C> factory,
-									 org.codefilarete.stalactite.sql.ddl.structure.Column<? extends Table, I> column) {
+									 Selectable<I> column) {
 		this.rootTransformer = buildSingleColumnKeyTransformer(new ColumnWrapper<>(column), factory);
 		return this;
 	}
 	
 	/**
-	 * Same as {@link #mapKey(SerializableFunction, org.codefilarete.stalactite.sql.ddl.structure.Column)} with a 2-args constructor
+	 * Same as {@link #mapKey(SerializableFunction, Selectable)} with a 2-args constructor
 	 *
 	 * @param <I> type of the key
 	 * @param factory the factory function that will instantiate new beans (with key as single argument)
@@ -289,8 +287,8 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 */
 	@Override
 	public <I, J> QueryMapper<C> mapKey(SerializableBiFunction<I, J, C> factory,
-										org.codefilarete.stalactite.sql.ddl.structure.Column<? extends Table, I> column1,
-										org.codefilarete.stalactite.sql.ddl.structure.Column<? extends Table, J> column2
+										Selectable<I> column1,
+										Selectable<J> column2
 	) {
 		SerializableFunction<Object[], C> constructorInvokation = args -> (C) factory.apply((I) args[0], (J) args[1]);
 		this.rootTransformer = buildComposedKeyTransformer(Arrays.asSet(
@@ -301,7 +299,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	}
 	
 	/**
-	 * Same as {@link #mapKey(SerializableFunction, org.codefilarete.stalactite.sql.ddl.structure.Column)} with a 3-args constructor
+	 * Same as {@link #mapKey(SerializableFunction, Selectable)} with a 3-args constructor
 	 *
 	 * @param <I> type of the key
 	 * @param factory the factory function that will instantiate new beans (with key as single argument)
@@ -312,9 +310,9 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 */
 	@Override
 	public <I, J, K> QueryMapper<C> mapKey(SerializableTriFunction<I, J, K, C> factory,
-										   org.codefilarete.stalactite.sql.ddl.structure.Column<? extends Table, I> column1,
-										   org.codefilarete.stalactite.sql.ddl.structure.Column<? extends Table, J> column2,
-										   org.codefilarete.stalactite.sql.ddl.structure.Column<? extends Table, K> column3
+										   Selectable<I> column1,
+										   Selectable<J> column2,
+										   Selectable<K> column3
 	) {
 		SerializableFunction<Object[], C> constructorInvokation = args -> (C) factory.apply((I) args[0], (J) args[1], (K) args[2]);
 		this.rootTransformer = buildComposedKeyTransformer(Arrays.asSet(
@@ -397,7 +395,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	}
 	
 	/**
-	 * Same as {@link #map(String, BiConsumer, Class)} but with {@link org.codefilarete.stalactite.sql.ddl.structure.Column} signature
+	 * Same as {@link #map(String, BiConsumer, Class)} but with {@link Selectable} signature
 	 *
 	 * @param column the mapped column
 	 * @param setter the setter function
@@ -405,13 +403,13 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * @return this
 	 */
 	@Override
-	public <I> QueryMapper<C> map(org.codefilarete.stalactite.sql.ddl.structure.Column<? extends Table, I> column, BiConsumer<C, I> setter) {
+	public <I> QueryMapper<C> map(Selectable<I> column, BiConsumer<C, I> setter) {
 		map(new ColumnMapping<>(column, setter));
 		return this;
 	}
 	
 	/**
-	 * Same as {@link #map(org.codefilarete.stalactite.sql.ddl.structure.Column, BiConsumer)}.
+	 * Same as {@link #map(Selectable, BiConsumer)}.
 	 * Differs by providing the possibility to convert the value before setting it onto the bean.
 	 *
 	 * @param column the mapped column
@@ -422,7 +420,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * @return this
 	 */
 	@Override
-	public <I, J> QueryMapper<C> map(org.codefilarete.stalactite.sql.ddl.structure.Column<? extends Table, I> column,
+	public <I, J> QueryMapper<C> map(Selectable<I> column,
 									 BiConsumer<C, J> setter,
 									 Converter<I, J> converter) {
 		return map(column, (c, i) -> setter.accept(c, converter.convert(i)));
@@ -612,21 +610,25 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	
 	private class ColumnWrapper<T> implements QueryMapper.Column<T> {
 		
-		private final org.codefilarete.stalactite.sql.ddl.structure.Column<?, T> column;
+		private final Selectable<T> column;
 		
-		private ColumnWrapper(org.codefilarete.stalactite.sql.ddl.structure.Column<?, T> column) {
+		private ColumnWrapper(Selectable<T> column) {
 			this.column = column;
 		}
 		
 		public String getName() {
-			return column.getName();
+			return column.getExpression();
 		}
 		
 		public ParameterBinder<T> getBinder() {
-			return columnBinderRegistry.getBinder(column);
+			if (column instanceof org.codefilarete.stalactite.sql.ddl.structure.Column) {
+				return columnBinderRegistry.getBinder((org.codefilarete.stalactite.sql.ddl.structure.Column<?, T>) column);
+			} else {
+				return columnBinderRegistry.getBinder(column.getJavaType());
+			}
 		}
 		
-		public org.codefilarete.stalactite.sql.ddl.structure.Column<?, T> getColumn() {
+		public Selectable<T> getColumn() {
 			return column;
 		}
 	}
@@ -648,7 +650,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 			this.setter = setter;
 		}
 		
-		public ColumnMapping(org.codefilarete.stalactite.sql.ddl.structure.Column<?, I> column, BiConsumer<T, I> setter) {
+		public ColumnMapping(Selectable<I> column, BiConsumer<T, I> setter) {
 			this.column = new ColumnWrapper<>(column);
 			this.setter = setter;
 		}

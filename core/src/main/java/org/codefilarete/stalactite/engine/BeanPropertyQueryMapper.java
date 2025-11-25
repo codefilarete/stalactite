@@ -3,15 +3,14 @@ package org.codefilarete.stalactite.engine;
 import java.sql.ResultSet;
 import java.util.function.BiConsumer;
 
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.codefilarete.tool.function.Converter;
-import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.ResultSetRowAssembler;
 import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer;
 import org.codefilarete.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
+import org.codefilarete.tool.function.Converter;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 
 /**
  * Methods that define bean property mapping when creating an SQL query through {@link PersistenceContext#newQuery(Query, Class)}.
@@ -77,7 +76,7 @@ public interface BeanPropertyQueryMapper<C> {
 	 * @param <I> column and value type
 	 * @return an instance that allows method chaining
 	 */
-	<I> BeanPropertyQueryMapper<C> map(Column<? extends Table, I> column, BiConsumer<C, I> setter);
+	<I> BeanPropertyQueryMapper<C> map(Selectable<I> column, BiConsumer<C, I> setter);
 	
 	/**
 	 * Equivalent of {@link #map(String, SerializableBiConsumer, Converter)} with column argument.
@@ -87,7 +86,7 @@ public interface BeanPropertyQueryMapper<C> {
 	 * @param <I> column and value type
 	 * @return an instance that allows method chaining
 	 */
-	<I, J> BeanPropertyQueryMapper<C> map(Column<? extends Table, I> column, BiConsumer<C, J> setter, Converter<I, J> converter);
+	<I, J> BeanPropertyQueryMapper<C> map(Selectable<I> column, BiConsumer<C, J> setter, Converter<I, J> converter);
 	
 	/**
 	 * Associates beans created by this instance and the ones created by another converter with setter (represented as a {@link BiConsumer}).

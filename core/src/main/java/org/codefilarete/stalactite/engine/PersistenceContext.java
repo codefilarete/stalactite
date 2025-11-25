@@ -511,16 +511,16 @@ public class PersistenceContext implements DatabaseCrudOperations {
 															  String column2Name, Class<J> column2Type,
 															  String column3Name, Class<K> column3Type);
 		
-		<I> ExecutableBeanPropertyQueryMapper<C> mapKey(SerializableFunction<I, C> javaBeanCtor, Column<? extends Table, I> column);
+		<I> ExecutableBeanPropertyQueryMapper<C> mapKey(SerializableFunction<I, C> javaBeanCtor, Selectable<I> column);
 		
 		<I, J> ExecutableBeanPropertyQueryMapper<C> mapKey(SerializableBiFunction<I, J, C> javaBeanCtor,
-														   Column<? extends Table, I> column1,
-														   Column<? extends Table, J> column2);
+														   Selectable<I> column1,
+														   Selectable<J> column2);
 		
 		<I, J, K> ExecutableBeanPropertyQueryMapper<C> mapKey(SerializableTriFunction<I, J, K, C> javaBeanCtor,
-															  Column<? extends Table, I> column1,
-															  Column<? extends Table, J> column2,
-															  Column<? extends Table, K> column3
+															  Selectable<I> column1,
+															  Selectable<J> column2,
+															  Selectable<K> column3
 		);
 		
 		<I> ExecutableBeanPropertyQueryMapper<I> mapKey(String columnName, Class<I> columnType);
@@ -542,10 +542,10 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		<I, J> ExecutableBeanPropertyQueryMapper<C> map(String columnName, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
 		
 		@Override
-		<I> ExecutableBeanPropertyQueryMapper<C> map(Column<? extends Table, I> column, BiConsumer<C, I> setter);
+		<I> ExecutableBeanPropertyQueryMapper<C> map(Selectable<I> column, BiConsumer<C, I> setter);
 		
 		@Override
-		<I, J> ExecutableBeanPropertyQueryMapper<C> map(Column<? extends Table, I> column, BiConsumer<C, J> setter, Converter<I, J> converter);
+		<I, J> ExecutableBeanPropertyQueryMapper<C> map(Selectable<I> column, BiConsumer<C, J> setter, Converter<I, J> converter);
 		
 		@Override
 		<K, V> ExecutableBeanPropertyQueryMapper<C> map(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<V, K> relatedBeanCreator);

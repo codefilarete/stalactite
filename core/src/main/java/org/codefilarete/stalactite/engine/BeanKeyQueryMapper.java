@@ -2,13 +2,12 @@ package org.codefilarete.stalactite.engine;
 
 import java.sql.ResultSet;
 
+import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.tool.function.SerializableTriFunction;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
-import org.codefilarete.tool.function.SerializableTriFunction;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.model.Query;
 
 /**
  * Methods that define root bean creation when creating an SQL query through {@link PersistenceContext#newQuery(Query, Class)}.
@@ -119,10 +118,10 @@ public interface BeanKeyQueryMapper<C> {
 	 * @param <I> first identifier type
 	 * @return an instance that allows method chaining
 	 */
-	<I> BeanPropertyQueryMapper<C> mapKey(SerializableFunction<I, C> javaBeanCtor, Column<? extends Table, I> column);
+	<I> BeanPropertyQueryMapper<C> mapKey(SerializableFunction<I, C> javaBeanCtor, Selectable<I> column);
 	
 	/**
-	 * Equivalent of {@link #mapKey(SerializableFunction, Column)} with 2 columns argument.
+	 * Equivalent of {@link #mapKey(SerializableFunction, Selectable)} with 2 columns argument.
 	 * Declares a 2-args root bean constructor and its composed key from the {@link ResultSet}.
 	 *
 	 * @param javaBeanCtor bean constructor that will take column values as parameters
@@ -132,10 +131,10 @@ public interface BeanKeyQueryMapper<C> {
 	 * @param <J> second identifier type
 	 * @return an instance that allows method chaining
 	 */
-	<I, J> BeanPropertyQueryMapper<C> mapKey(SerializableBiFunction<I, J, C> javaBeanCtor, Column<? extends Table, I> column1, Column<? extends Table, J> column2);
+	<I, J> BeanPropertyQueryMapper<C> mapKey(SerializableBiFunction<I, J, C> javaBeanCtor, Selectable<I> column1, Selectable<J> column2);
 	
 	/**
-	 * Equivalent of {@link #mapKey(SerializableFunction, Column)} with 3 columns argument.
+	 * Equivalent of {@link #mapKey(SerializableFunction, Selectable)} with 3 columns argument.
 	 * Declares a 3-args root bean constructor and its composed key from the {@link ResultSet}.
 	 *
 	 * @param javaBeanCtor bean constructor that will take column values as parameters
@@ -148,9 +147,9 @@ public interface BeanKeyQueryMapper<C> {
 	 * @return an instance that allows method chaining
 	 */
 	<I, J, K> BeanPropertyQueryMapper<C> mapKey(SerializableTriFunction<I, J, K, C> javaBeanCtor,
-												Column<? extends Table, I> column1,
-												Column<? extends Table, J> column2,
-												Column<? extends Table, K> column3
+												Selectable<I> column1,
+												Selectable<J> column2,
+												Selectable<K> column3
 	);
 	
 	/**
