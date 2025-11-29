@@ -86,11 +86,7 @@ public class BeanPersister<C, I, T extends Table<T>>
 	}
 	
 	protected PersistExecutor<C> newPersistExecutor() {
-		if (this.mappingStrategy.getIdMapping().getIdentifierInsertionManager() instanceof AlreadyAssignedIdentifierManager) {
-			return new AlreadyAssignedIdentifierPersistExecutor<>(this);
-		} else {
-			return new DefaultPersistExecutor<>(this);
-		}
+		return new DefaultPersistExecutor<>(this);
 	}
 	
 	protected InsertExecutor<C, I, T> newInsertExecutor(EntityMapping<C, I, T> mappingStrategy,

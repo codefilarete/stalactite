@@ -915,14 +915,14 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		PersistenceContext persistenceContext1 = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
 		PersistenceContext persistenceContext2 = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
 		PersistenceContext persistenceContext3 = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
+		Set<Pet> persistedPet = new HashSet<>();
 		Object[][] result = new Object[][] {
 				{ "single table",
 						entityBuilder(Pet.class, PetId.class)
 								.mapCompositeKey(Pet::getId, compositeKeyBuilder(PetId.class)
 										.map(PetId::getName)
 										.map(PetId::getRace)
-										.map(PetId::getAge), p -> {
-								}, p -> false)
+										.map(PetId::getAge), persistedPet::add, persistedPet::contains)
 								.mapPolymorphism(PolymorphismPolicy.singleTable(Pet.class)
 										.addSubClass(subentityBuilder(Cat.class)
 												.mapEnum(Cat::getCatBreed), "Pet")
@@ -935,8 +935,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 								.mapCompositeKey(Pet::getId, compositeKeyBuilder(PetId.class)
 										.map(PetId::getName)
 										.map(PetId::getRace)
-										.map(PetId::getAge), p -> {
-								}, p -> false)
+										.map(PetId::getAge), persistedPet::add, persistedPet::contains)
 								.mapPolymorphism(PolymorphismPolicy.joinTable(Pet.class)
 										.addSubClass(subentityBuilder(Cat.class)
 												.mapEnum(Cat::getCatBreed))
@@ -949,8 +948,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 								.mapCompositeKey(Pet::getId, compositeKeyBuilder(PetId.class)
 										.map(PetId::getName)
 										.map(PetId::getRace)
-										.map(PetId::getAge), p -> {
-								}, p -> false)
+										.map(PetId::getAge), persistedPet::add, persistedPet::contains)
 								.mapPolymorphism(PolymorphismPolicy.tablePerClass(Pet.class)
 										.addSubClass(subentityBuilder(Cat.class)
 												.mapEnum(Cat::getCatBreed))

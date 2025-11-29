@@ -27,7 +27,6 @@ import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
-import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.operator.In;
@@ -96,14 +95,8 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 		this.dialect = dialect;
 		this.entityFinder = new RelationalEntityFinder<>(entityJoinTree, this, persister.getConnectionProvider(), dialect);
 		this.criteriaSupport = new EntityCriteriaSupport<>(entityJoinTree);
-		
-		if (persister.getMapping().getIdMapping().getIdentifierInsertionManager() instanceof AlreadyAssignedIdentifierManager) {
-			// we redirect all invocations to ourselves because targeted methods invoke their listeners
-			this.persistExecutor = new AlreadyAssignedIdentifierPersistExecutor<>(this);
-		} else {
-			// we redirect all invocations to ourselves because targeted methods invoke their listeners
-			this.persistExecutor = new DefaultPersistExecutor<>(this);
-		}
+		// we redirect all invocations to ourselves because targeted methods invoke their listeners
+		this.persistExecutor = new DefaultPersistExecutor<>(this);
 	}
 	
 	@Override
