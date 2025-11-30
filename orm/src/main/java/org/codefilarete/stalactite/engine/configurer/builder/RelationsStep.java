@@ -122,7 +122,9 @@ public class RelationsStep<C, I> {
 		
 		@Override
 		public <TRGT, TRGTID> List<ManyToOneRelation<C, TRGT, TRGTID, Collection<C>>> getManyToOnes() {
-			return Collections.emptyList();
+			return configuration.<TRGT, TRGTID>getManyToOnes().stream()
+					.map(manyToOne -> manyToOne.embedInto(inset.getAccessor()))
+					.collect(Collectors.toList());
 		}
 		
 		@Override

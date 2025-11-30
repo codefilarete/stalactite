@@ -364,8 +364,10 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <J> type of identifier of {@code O}
 	 * @return an enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
-	<O, J, S extends Collection<C>> FluentMappingBuilderManyToOneOptions<C, I, O, S> mapManyToOne(SerializableFunction<C, O> getter,
-																								  EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
+	<O, J, S extends Collection<C>>
+	FluentMappingBuilderManyToOneOptions<C, I, O, S>
+	mapManyToOne(SerializableFunction<C, O> getter,
+				 EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a many-to-one relation between current entity and some of type {@code O}.
@@ -376,8 +378,10 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <J> type of identifier of {@code O}
 	 * @return an enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
-	<O, J, S extends Collection<C>> FluentMappingBuilderManyToOneOptions<C, I, O, S> mapManyToOne(SerializableBiConsumer<C, O> setter,
-																								  EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
+	<O, J, S extends Collection<C>>
+	FluentMappingBuilderManyToOneOptions<C, I, O, S>
+	mapManyToOne(SerializableBiConsumer<C, O> setter,
+				 EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
 	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter, EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	

@@ -164,7 +164,7 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	}
 	
 	/**
-	 * Clones this object to make one with the given accessor as prefix of current one.
+	 * Clones this object to create a new one with the given accessor as prefix of current one.
 	 * Made to "slide" current instance with an accessor prefix. Used for embeddable objects with relation to make the relation being accessible
 	 * from the "root" entity.
 	 *

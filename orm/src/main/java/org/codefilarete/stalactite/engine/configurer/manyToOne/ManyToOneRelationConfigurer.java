@@ -70,7 +70,10 @@ public class ManyToOneRelationConfigurer<C, I, TRGT, TRGTID> extends AbstractRel
 			// please note that even if no table is found in configuration, build(..) will create one
 			Table targetTable = determineTargetTable(manyToOneRelation);
 			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = persisterBuilder.build(new EntityMappingConfigurationWithTable<>(targetMappingConfiguration, targetTable));
-			configurer.configure(relationName, targetPersister, manyToOneRelation);
+			// we replace dot character by underscore one to take embedded relation properties into account: their accessor is an AccessorChain
+			// which is printed with dots by AccessorDefinition
+			String tableAlias = relationName.replace('.', '_');
+			configurer.configure(tableAlias, targetPersister, manyToOneRelation);
 		}
 	}
 	

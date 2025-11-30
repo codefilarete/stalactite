@@ -477,7 +477,7 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 			// mapping building thanks to fluent API
 			EntityPersister<Answer, Identifier<Long>> answerPersister = MappingEase.entityBuilder(Answer.class, Identifier.LONG_TYPE)
 					.mapKey(Answer::getId, ALREADY_ASSIGNED)
-					// no cascade, nor reverse side
+					// no reverse side
 					.mapManyToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(READ_ONLY)
 					.build(persistenceContext);
 			

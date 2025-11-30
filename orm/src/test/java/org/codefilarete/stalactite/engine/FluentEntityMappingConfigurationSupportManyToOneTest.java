@@ -88,7 +88,6 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 			FluentEntityMappingBuilder<Device, Identifier<Long>> mappingBuilder = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Device::getName)
-					// no cascade
 					.mapManyToOne(Device::getLocation, addressConfiguration).cascading(ASSOCIATION_ONLY);
 			
 			assertThatThrownBy(() -> mappingBuilder.build(persistenceContext))
@@ -779,7 +778,6 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 		EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
 				.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Device::getName)
-				// no cascade definition
 				.mapManyToOne(Device::getManufacturer, companyConfiguration).cascading(ALL).mandatory()
 				.build(persistenceContext);
 		
@@ -808,7 +806,6 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 		EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
 				.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Device::getName)
-				// no cascade definition
 				.mapManyToOne(Device::getManufacturer, companyConfiguration).cascading(ALL).fetchSeparately()
 				.build(persistenceContext);
 		

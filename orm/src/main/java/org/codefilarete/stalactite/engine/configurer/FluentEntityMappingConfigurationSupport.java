@@ -899,51 +899,51 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	private <O, J, S extends Collection<C>> FluentMappingBuilderManyToOneOptions<C, I, O, S> wrapForAdditionalOptions(ManyToOneRelation<C, O, J, S> manyToOneRelation) {
 		// then we return an object that allows fluent settings over our OneToOne cascade instance
 		return new MethodDispatcher()
-				.redirect(ManyToOneOptions.class, new ManyToOneOptions<C, I, O, S>() {
+				.redirect(ManyToOneOptions.class, new ManyToOneOptions<C, O, S>() {
 					@Override
-					public ManyToOneOptions<C, I, O, S> cascading(RelationMode relationMode) {
+					public ManyToOneOptions<C, O, S> cascading(RelationMode relationMode) {
 						manyToOneRelation.setRelationMode(relationMode);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public ManyToOneOptions<C, I, O, S> mandatory() {
+					public ManyToOneOptions<C, O, S> mandatory() {
 						manyToOneRelation.setNullable(false);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public ManyToOneOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink) {
+					public ManyToOneOptions<C, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink) {
 						manyToOneRelation.getMappedByConfiguration().setReverseCombiner(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public ManyToOneOptions<C, I, O, S> reverseCollection(SerializableFunction<O, S> collectionAccessor) {
+					public ManyToOneOptions<C, O, S> reverseCollection(SerializableFunction<O, S> collectionAccessor) {
 						manyToOneRelation.getMappedByConfiguration().setReverseCollectionAccessor(collectionAccessor);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public ManyToOneOptions<C, I, O, S> reverseCollection(SerializableBiConsumer<O, S> collectionMutator) {
+					public ManyToOneOptions<C, O, S> reverseCollection(SerializableBiConsumer<O, S> collectionMutator) {
 						manyToOneRelation.getMappedByConfiguration().setReverseCollectionMutator(collectionMutator);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public ManyToOneOptions<C, I, O, S> reverselyInitializeWith(Supplier<S> collectionFactory) {
+					public ManyToOneOptions<C, O, S> reverselyInitializeWith(Supplier<S> collectionFactory) {
 						manyToOneRelation.getMappedByConfiguration().setReverseCollectionFactory(collectionFactory);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public ManyToOneOptions<C, I, O, S> fetchSeparately() {
+					public ManyToOneOptions<C, O, S> fetchSeparately() {
 						manyToOneRelation.fetchSeparately();
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public ManyToOneOptions<C, I, O, S> columnName(String columnName) {
+					public ManyToOneOptions<C, O, S> columnName(String columnName) {
 						manyToOneRelation.setColumnName(columnName);
 						return null;
 					}

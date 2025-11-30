@@ -4,20 +4,21 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.function.BooleanSupplier;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMethod;
 import org.codefilarete.reflection.AccessorByMethodReference;
+import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
-import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation.MappedByConfiguration;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Nullable;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
@@ -154,5 +155,23 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 	
 	private Method captureMethod(SerializableBiConsumer setter) {
 		return this.methodSpy.findMethod(setter);
+	}
+	
+	/**
+	 * Clones this object to create a new one with the given accessor as prefix of current one.
+	 * Made to "slide" current instance with an accessor prefix. Used for embeddable objects with relation to make the relation being accessible
+	 * from the "root" entity.
+	 *
+	 * @param accessor the prefix of the clone to be created
+	 * @return a clones of this instance prefixed with the given accessor
+	 * @param <E> the root entity type that owns the embeddable which has this relation
+	 */
+	public <E, CC extends Collection<E>> ManyToOneRelation<E, TRGT, TRGTID, CC> embedInto(Accessor<E, SRC> accessor) {
+		AccessorChain<E, TRGT> slidedTargetProvider = new AccessorChain<>(accessor, targetProvider);
+		ManyToOneRelation<E, TRGT, TRGTID, CC> result = new ManyToOneRelation<>(slidedTargetProvider, this::isSourceTablePerClassPolymorphic, this::getTargetMappingConfiguration);
+		result.setRelationMode(this.getRelationMode());
+		result.setNullable(this.isNullable());
+		result.setFetchSeparately(this.isFetchSeparately());
+		return result;
 	}
 }

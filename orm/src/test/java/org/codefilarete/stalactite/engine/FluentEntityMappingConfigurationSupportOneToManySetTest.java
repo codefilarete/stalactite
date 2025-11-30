@@ -444,7 +444,6 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Country::getName)
-					// no cascade
 					.mapOneToMany(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry)
 					.build(persistenceContext);
 			
@@ -533,7 +532,6 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
-				// no cascade
 				.mapOneToMany(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry)
 					.fetchSeparately()
 				.build(persistenceContext);
@@ -888,7 +886,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Country::getName)
 					.map(Country::getDescription)
-					// no cascade, nor reverse side
+					// no reverse side
 					.mapOneToMany(Country::getCities, CITY_MAPPING_CONFIGURATION).cascading(ALL)
 					.build(persistenceContext);
 			
@@ -1348,7 +1346,6 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Country::getName)
 					.map(Country::getDescription)
-					// no cascade
 					.mapOneToMany(Country::getCities, CITY_MAPPING_CONFIGURATION).mappedBy(City::setCountry).cascading(ASSOCIATION_ONLY);
 			
 			assertThatThrownBy(() -> mappingBuilder.build(persistenceContext))

@@ -10,10 +10,10 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 /**
  * @author Guillaume Mary
  */
-public interface ManyToOneOptions<C, I, O, S extends Collection<C>> extends CascadeOptions {
+public interface ManyToOneOptions<C, O, S extends Collection<C>> extends CascadeOptions {
 	
 	/** Marks the relation as mandatory. Hence joins will be inner ones and a checking for non null value will be done before insert and update */
-	ManyToOneOptions<C, I, O, S> mandatory();
+	ManyToOneOptions<C, O, S> mandatory();
 
 	/**
 	 * Defines combiner of current entity with target entity. This is a more fine-grained way to define how to combine current entity with target
@@ -24,7 +24,7 @@ public interface ManyToOneOptions<C, I, O, S extends Collection<C>> extends Casc
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	ManyToOneOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
+	ManyToOneOptions<C, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
 	
 	/**
 	 * Defines reverse collection accessor.
@@ -34,7 +34,7 @@ public interface ManyToOneOptions<C, I, O, S extends Collection<C>> extends Casc
 	 * @param collectionAccessor opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	ManyToOneOptions<C, I, O, S> reverseCollection(SerializableFunction<O, S> collectionAccessor);
+	ManyToOneOptions<C, O, S> reverseCollection(SerializableFunction<O, S> collectionAccessor);
 	
 	/**
 	 * Defines reverse collection mutator.
@@ -44,7 +44,7 @@ public interface ManyToOneOptions<C, I, O, S extends Collection<C>> extends Casc
 	 * @param collectionMutator opposite setter of the relation
 	 * @return the global mapping configurer
 	 */
-	ManyToOneOptions<C, I, O, S> reverseCollection(SerializableBiConsumer<O, S> collectionMutator);
+	ManyToOneOptions<C, O, S> reverseCollection(SerializableBiConsumer<O, S> collectionMutator);
 	
 	/**
 	 * Defines the factory of reverse collection. If not defined and collection is found null, the collection is set with a default value.
@@ -53,14 +53,14 @@ public interface ManyToOneOptions<C, I, O, S extends Collection<C>> extends Casc
 	 * @param collectionFactory opposite collection factory
 	 * @return the global mapping configurer
 	 */
-	ManyToOneOptions<C, I, O, S> reverselyInitializeWith(Supplier<S> collectionFactory);
+	ManyToOneOptions<C, O, S> reverselyInitializeWith(Supplier<S> collectionFactory);
 	
 	/**
 	 * Asks to load relation in some separate query (actually may use several queries according to association table presence or polymorphism)
 	 *
 	 * @return the global mapping configurer
 	 */
-	ManyToOneOptions<C, I, O, S> fetchSeparately();
+	ManyToOneOptions<C, O, S> fetchSeparately();
 	
 	/**
 	 * Give the column name of the foreign key column referencing the target entity key.
@@ -69,5 +69,5 @@ public interface ManyToOneOptions<C, I, O, S extends Collection<C>> extends Casc
 	 * @param columnName foreign key column name
 	 * @return the global mapping configurer
 	 */
-	ManyToOneOptions<C, I, O, S> columnName(String columnName);
+	ManyToOneOptions<C, O, S> columnName(String columnName);
 }

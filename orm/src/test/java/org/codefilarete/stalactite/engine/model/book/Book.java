@@ -14,6 +14,10 @@ public class Book extends AbstractEntity {
 
     private Set<Author> authors = new HashSet<>();
 	
+	private Publisher ebookPublisher;
+	
+	private Publisher paperBackPublisher;
+	
 	public Book() {
 	}
 	
@@ -41,5 +45,21 @@ public class Book extends AbstractEntity {
 	
 	public void setAuthors(Set<Author> authors) {
 		this.authors = authors;
+	}
+	
+	public Publisher getEbookPublisher() {
+		return ebookPublisher;
+	}
+	
+	public void setEbookPublisher(Publisher ebookPublisher) {
+		this.ebookPublisher = ebookPublisher;
+	}
+	
+	public Publisher getPaperBackPublisher() {
+		return paperBackPublisher;
+	}
+	
+	public void setPaperBackPublisher(Publisher paperBackPublisher) {
+		this.paperBackPublisher = paperBackPublisher;
 	}
 }

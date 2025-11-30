@@ -8,7 +8,7 @@ import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
 public interface FluentMappingBuilderManyToOneOptions<C, I, O, S extends Collection<C>> extends FluentEntityMappingBuilder<C, I>,
-		ManyToOneOptions<C, I, O, S> {
+		ManyToOneOptions<C, O, S> {
 	
 	@Override
 	FluentMappingBuilderManyToOneOptions<C, I, O, S> mandatory();

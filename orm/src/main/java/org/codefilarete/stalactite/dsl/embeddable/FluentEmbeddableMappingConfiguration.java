@@ -60,14 +60,30 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 */
 	FluentEmbeddableMappingConfiguration<C> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> superMappingConfiguration);
 	
+	/**
+	 * Declares a composition between current entity and some embeddable object of type {@code O}.
+	 *
+	 * @param getter the way to get the embedded bean from this entity
+	 * @param embeddableMappingBuilder the persistence configuration of the target embeddable bean
+	 * @return an enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
+	 * @param <O> embedded bean type
+	 */
 	<O> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableFunction<C, O> getter,
 																			 EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
+	/**
+	 * Declares a composition between current entity and some embeddable object of type {@code O}.
+	 *
+	 * @param setter the way to set the embedded bean on this entity
+	 * @param embeddableMappingBuilder the persistence configuration of the target embeddable bean
+	 * @return an enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
+	 * @param <O> embedded bean type
+	 */
 	<O> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableBiConsumer<C, O> setter,
 																			 EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
 	/**
-	 * Declares a direct relation between current entity and some of type {@code O}.
+	 * Declares a direct relation between current embeddable object and some entity of type {@code O}.
 	 *
 	 * @param getter the way to get the target entity
 	 * @param mappingConfiguration the mapping configuration of the target entity
@@ -79,7 +95,7 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 																		   EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
 	/**
-	 * Declares a direct relation between current entity and some of type {@code O}.
+	 * Declares a direct relation between current embeddable object and some entity of type {@code O}.
 	 *
 	 * @param setter the way to set the target entity
 	 * @param mappingConfiguration the mapping configuration of the target entity
@@ -91,13 +107,13 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 																		   EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
 	/**
-	 * Declares a relation between current entity and some of type {@code O} through a {@link Collection}.
+	 * Declares a relation between current embeddable object and some entity of type {@code O} through a {@link Collection}.
 	 * Depending on collection type, order persistence can be asked by one of the {@link OneToManyOptions#indexed()}
 	 * methods.
 	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
 	 * to handle any super type of current entity type.
 	 *
-	 * @param getter the way to get the {@link Set} from source entities
+	 * @param getter the way to get the {@link Set} from the source embeddable object
 	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
 	 * @param <O> type of {@link Collection} element
 	 * @param <J> type of identifier of {@code O}
@@ -110,13 +126,13 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
 	
 	/**
-	 * Declares a relation between current entity and some of type {@code O} through a {@link Collection}.
+	 * Declares a relation between current embeddable object and some entity of type {@code O} through a {@link Collection}.
 	 * Depending on collection type, order persistence can be asked by one of the {@link OneToManyOptions#indexed()}
 	 * methods.
 	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
 	 * to handle any super type of current entity type.
 	 *
-	 * @param setter the way to set the {@link Set} from source entities
+	 * @param setter the way to set the {@link Set} from the source embeddable object
 	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
 	 * @param <O> type of {@link Collection} element
 	 * @param <J> type of identifier of {@code O}
@@ -127,6 +143,34 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	<O, J, S extends Collection<O>>
 	FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S>
 	mapOneToMany(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	
+	/**
+	 * Declares a direct relation between current embeddable object and some entity of type {@code O}.
+	 *
+	 * @param getter the way to get the target entity
+	 * @param mappingConfiguration the mapping configuration of the target entity
+	 * @param <O> type of target entity
+	 * @param <J> type of identifier of {@code O}
+	 * @return an enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
+	 */
+	<O, J, S extends Collection<C>>
+	FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S>
+	mapManyToOne(SerializableFunction<C, O> getter,
+				 EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
+	
+	/**
+	 * Declares a many-to-one relation between current embeddable object and some entity of type {@code O}.
+	 *
+	 * @param setter the way to set the target entity
+	 * @param mappingConfiguration the mapping configuration of the target entity
+	 * @param <O> type of target entity
+	 * @param <J> type of identifier of {@code O}
+	 * @return an enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
+	 */
+	<O, J, S extends Collection<C>>
+	FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S>
+	mapManyToOne(SerializableBiConsumer<C, O> setter,
+				 EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
 	/**
 	 * Change default column naming strategy, which is {@link ColumnNamingStrategy#DEFAULT}, by the given one.

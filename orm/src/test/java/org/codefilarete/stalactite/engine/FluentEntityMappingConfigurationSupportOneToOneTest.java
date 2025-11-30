@@ -98,7 +98,6 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.mapKey(Country::getId, ALREADY_ASSIGNED)
 					.map(Country::getName)
 					.map(Country::getDescription)
-					// no cascade
 					.mapOneToOne(Country::getPresident, personConfiguration).cascading(ASSOCIATION_ONLY);
 			
 			assertThatThrownBy(() -> mappingBuilder.build(persistenceContext))
@@ -213,7 +212,6 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.mapKey(Country::getId, ALREADY_ASSIGNED)
 					.map(Country::getName)
 					.map(Country::getDescription)
-					// no cascade
 					.mapOneToOne(Country::getPresident, personConfiguration).cascading(READ_ONLY).mappedBy(Person::getCountry)
 					.build(persistenceContext);
 			
