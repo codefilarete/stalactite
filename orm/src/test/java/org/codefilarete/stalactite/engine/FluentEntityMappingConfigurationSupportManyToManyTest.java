@@ -931,7 +931,7 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 				.mapManyToMany(Book::getAuthors, authorMappingConfiguration)
 					.reverselySetBy(Author::addBook)
 					.reverselyInitializeWith(LinkedHashSet::new)
-				.map(Book::getIsbn).columnName("isbn")
+				.map(Book::getIsbn)
 				.map(Book::getPrice)
 				.map(Book::getTitle));
 		
@@ -985,7 +985,7 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 				.mapKey(Book::getId, IdentifierPolicy.databaseAutoIncrement())
 				.mapManyToMany(Book::getAuthors, authorMappingConfiguration)
 						.reverselyInitializeWith(LinkedHashSet::new)
-				.map(Book::getIsbn).columnName("isbn")
+				.map(Book::getIsbn)
 				.map(Book::getPrice)
 				.map(Book::getTitle));
 		
@@ -1026,7 +1026,7 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 				.mapKey(Book::getId, IdentifierPolicy.databaseAutoIncrement())
 				.mapManyToMany(Book::getAuthors, authorMappingConfiguration)
 						.reverseCollection(Author::getBooks)
-				.map(Book::getIsbn).columnName("isbn")
+				.map(Book::getIsbn)
 				.map(Book::getPrice)
 				.map(Book::getTitle));
 		

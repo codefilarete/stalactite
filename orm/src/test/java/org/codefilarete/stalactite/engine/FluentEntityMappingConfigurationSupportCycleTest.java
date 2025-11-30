@@ -1500,7 +1500,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 					.mapKey(Book::getId, IdentifierPolicy.databaseAutoIncrement())
 					// this is sufficient to mimic the many-to-many relation for the feature "persisting a book"
 					.mapOneToMany(Book::getAuthors, authorMappingConfiguration)
-					.map(Book::getIsbn).columnName("isbn")
+					.map(Book::getIsbn)
 					.map(Book::getPrice)
 					.map(Book::getTitle));
 			

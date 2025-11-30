@@ -480,7 +480,7 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 			
 			FluentEntityMappingBuilder<Book, Long> mappingBuilder = MappingEase.entityBuilder(Book.class, Long.class)
 					.mapKey(Book::getId, IdentifierPolicy.databaseAutoIncrement())
-					.map(Book::getIsbn).columnName("isbn")
+					.map(Book::getIsbn)
 					.map(Book::getPrice)
 					.map(Book::getTitle)
 					.embed(Book::getEbookPublisher, publisherEntityBuilder);
