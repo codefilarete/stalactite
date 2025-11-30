@@ -503,6 +503,37 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 		}
 		
 		@Test
+		void foreignKeyIsCreated_columnName() {
+			FluentEmbeddableMappingBuilder<Publisher> publisherEntityBuilder = embeddableBuilder(Publisher.class)
+					.map(Publisher::getName)
+					.mapManyToOne(Publisher::getCategory, entityBuilder(BusinessCategory.class, Long.class)
+							.mapKey(BusinessCategory::getId, databaseAutoIncrement())
+							.map(BusinessCategory::getName))
+						.columnName("catId");
+			
+			FluentEntityMappingBuilder<Address, Identifier<Long>> addressMappingBuilder = entityBuilder(Address.class, Identifier.LONG_TYPE)
+					.mapKey(Location::getId, ALREADY_ASSIGNED)
+					.map(Address::getStreet).mandatory();
+			
+			FluentEntityMappingBuilder<ImprintPublisher, Long> mappingBuilder = MappingEase.entityBuilder(ImprintPublisher.class, Long.class)
+					.mapKey(ImprintPublisher::getId, databaseAutoIncrement())
+					.mapOneToOne(ImprintPublisher::getPrintingWorkLocation, addressMappingBuilder)
+					.mapSuperClass(publisherEntityBuilder);
+			
+			mappingBuilder.build(persistenceContext);
+			
+			Map<String, Table<?>> tablePerName = Iterables.map(DDLDeployer.collectTables(persistenceContext), Table::getName);
+			
+			// ensuring that the foreign key is present on table
+			JdbcForeignKey expectedForeignKey1 = new JdbcForeignKey("FK_ImprintPublisher_printingWorkLocationId_Address_id", "ImprintPublisher", "printingWorkLocationId", "Address", "id");
+			JdbcForeignKey expectedForeignKey2 = new JdbcForeignKey("FK_ImprintPublisher_catId_BusinessCategory_id", "ImprintPublisher", "catId", "BusinessCategory", "id");
+			Comparator<JdbcForeignKey> comparing = Comparator.comparing(JdbcForeignKey::getSignature, Comparator.naturalOrder());
+			assertThat((Set<? extends ForeignKey<?, ?, ?>>) tablePerName.get("ImprintPublisher").getForeignKeys()).extracting(JdbcForeignKey::new)
+					.usingElementComparator(comparing)
+					.containsExactlyInAnyOrder(expectedForeignKey1, expectedForeignKey2);
+		}
+		
+		@Test
 		void crud() {
 			FluentEmbeddableMappingBuilder<Publisher> publisherEntityBuilder = embeddableBuilder(Publisher.class)
 					.map(Publisher::getName)
@@ -580,6 +611,34 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 			
 			// ensuring that the foreign key is present on table
 			JdbcForeignKey expectedForeignKey1 = new JdbcForeignKey("FK_Book_ebookPublisher_categoryId_BusinessCategory_id", "Book", "ebookPublisher_categoryId", "BusinessCategory", "id");
+			Comparator<JdbcForeignKey> comparing = Comparator.comparing(JdbcForeignKey::getSignature, Comparator.naturalOrder());
+			assertThat((Set<? extends ForeignKey<?, ?, ?>>) tablePerName.get("Book").getForeignKeys()).extracting(JdbcForeignKey::new)
+					.usingElementComparator(comparing)
+					.containsExactlyInAnyOrder(expectedForeignKey1);
+		}
+		
+		@Test
+		void foreignKeyIsCreated_columnName() {
+			FluentEmbeddableMappingBuilder<Publisher> publisherEntityBuilder = embeddableBuilder(Publisher.class)
+					.map(Publisher::getName)
+					.mapManyToOne(Publisher::getCategory, entityBuilder(BusinessCategory.class, Long.class)
+							.mapKey(BusinessCategory::getId, databaseAutoIncrement())
+							.map(BusinessCategory::getName))
+						.columnName("catId");
+			
+			FluentEntityMappingBuilder<Book, Long> mappingBuilder = MappingEase.entityBuilder(Book.class, Long.class)
+					.mapKey(Book::getId, databaseAutoIncrement())
+					.map(Book::getIsbn)
+					.map(Book::getPrice)
+					.map(Book::getTitle)
+					.embed(Book::getEbookPublisher, publisherEntityBuilder);
+			
+			mappingBuilder.build(persistenceContext);
+			
+			Map<String, Table<?>> tablePerName = Iterables.map(DDLDeployer.collectTables(persistenceContext), Table::getName);
+			
+			// ensuring that the foreign key is present on table
+			JdbcForeignKey expectedForeignKey1 = new JdbcForeignKey("FK_Book_catId_BusinessCategory_id", "Book", "catId", "BusinessCategory", "id");
 			Comparator<JdbcForeignKey> comparing = Comparator.comparing(JdbcForeignKey::getSignature, Comparator.naturalOrder());
 			assertThat((Set<? extends ForeignKey<?, ?, ?>>) tablePerName.get("Book").getForeignKeys()).extracting(JdbcForeignKey::new)
 					.usingElementComparator(comparing)

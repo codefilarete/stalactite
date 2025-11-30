@@ -54,8 +54,8 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 	private String columnName;
 	
 	public ManyToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider,
-											   BooleanSupplier sourceTablePerClassPolymorphic,
-											   EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration) {
+							 BooleanSupplier sourceTablePerClassPolymorphic,
+							 EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration) {
 		this.sourceTablePerClassPolymorphic = sourceTablePerClassPolymorphic;
 		this.targetMappingConfiguration = (EntityMappingConfigurationProvider<TRGT, TRGTID>) targetMappingConfiguration;
 		this.targetProvider = targetProvider;
@@ -172,6 +172,7 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 		result.setRelationMode(this.getRelationMode());
 		result.setNullable(this.isNullable());
 		result.setFetchSeparately(this.isFetchSeparately());
+		result.setColumnName(this.getColumnName());
 		return result;
 	}
 	

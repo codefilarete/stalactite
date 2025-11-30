@@ -23,33 +23,6 @@ public interface FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S extends 
 	 * {@inheritDoc}
 	 * Declaration overridden to adapt return type to this class.
 	 *
-	 * @param reverseLink opposite owner of the relation (setter)
-	 * @return the global mapping configurer
-	 */
-	FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink);
-	
-	/**
-	 * {@inheritDoc}
-	 * Declaration overridden to adapt return type to this class.
-	 *
-	 * @param reverseLink opposite owner of the relation (getter)
-	 * @return the global mapping configurer
-	 */
-	FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink);
-	
-	/**
-	 * {@inheritDoc}
-	 * Declaration overridden to adapt return type to this class.
-	 *
-	 * @param reverseColumnName opposite owner of the relation
-	 * @return the global mapping configurer
-	 */
-	FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S> mappedBy(String reverseColumnName);
-	
-	/**
-	 * {@inheritDoc}
-	 * Declaration overridden to adapt return type to this class.
-	 *
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
@@ -80,6 +53,14 @@ public interface FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S extends 
 	 * @return the global mapping configurer
 	 */
 	FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S> fetchSeparately();
+	
+	/**
+	 * {@inheritDoc}
+	 * Declaration overridden to adapt return type to this class.
+	 *
+	 * @return the global mapping configurer
+	 */
+	FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S> columnName(String columnName);
 	
 	/**
 	 * {@inheritDoc}
