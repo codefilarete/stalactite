@@ -15,6 +15,7 @@ import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.book.Book;
 import org.codefilarete.stalactite.engine.model.book.BusinessCategory;
+import org.codefilarete.stalactite.engine.model.book.ImprintPublisher;
 import org.codefilarete.stalactite.engine.model.book.Publisher;
 import org.codefilarete.stalactite.engine.model.device.Address;
 import org.codefilarete.stalactite.engine.model.device.Device;
@@ -465,6 +466,93 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 			assertThat(devicePersister.select(dummyDevice.getId())).isNull();
 			
 			assertThat(reviewPersister.select(address.getReviews().stream().map(Review::getId).collect(Collectors.toSet()))).isEmpty();
+		}
+	}
+	
+	@Nested
+	class ManyToOne_MappedSuperClass {
+		
+		@Test
+		void foreignKeyIsCreated() {
+			FluentEmbeddableMappingBuilder<Publisher> publisherEntityBuilder = embeddableBuilder(Publisher.class)
+					.map(Publisher::getName)
+					.mapManyToOne(Publisher::getCategory, entityBuilder(BusinessCategory.class, Long.class)
+							.mapKey(BusinessCategory::getId, databaseAutoIncrement())
+							.map(BusinessCategory::getName));
+			
+			FluentEntityMappingBuilder<Address, Identifier<Long>> addressMappingBuilder = entityBuilder(Address.class, Identifier.LONG_TYPE)
+					.mapKey(Location::getId, ALREADY_ASSIGNED)
+					.map(Address::getStreet).mandatory();
+			
+			FluentEntityMappingBuilder<ImprintPublisher, Long> mappingBuilder = MappingEase.entityBuilder(ImprintPublisher.class, Long.class)
+					.mapKey(ImprintPublisher::getId, databaseAutoIncrement())
+					.mapOneToOne(ImprintPublisher::getPrintingWorkLocation, addressMappingBuilder)
+					.mapSuperClass(publisherEntityBuilder);
+			
+			mappingBuilder.build(persistenceContext);
+			
+			Map<String, Table<?>> tablePerName = Iterables.map(DDLDeployer.collectTables(persistenceContext), Table::getName);
+			
+			// ensuring that the foreign key is present on table
+			JdbcForeignKey expectedForeignKey1 = new JdbcForeignKey("FK_ImprintPublisher_printingWorkLocationId_Address_id", "ImprintPublisher", "printingWorkLocationId", "Address", "id");
+			JdbcForeignKey expectedForeignKey2 = new JdbcForeignKey("FK_ImprintPublisher_categoryId_BusinessCategory_id", "ImprintPublisher", "categoryId", "BusinessCategory", "id");
+			Comparator<JdbcForeignKey> comparing = Comparator.comparing(JdbcForeignKey::getSignature, Comparator.naturalOrder());
+			assertThat((Set<? extends ForeignKey<?, ?, ?>>) tablePerName.get("ImprintPublisher").getForeignKeys()).extracting(JdbcForeignKey::new)
+					.usingElementComparator(comparing)
+					.containsExactlyInAnyOrder(expectedForeignKey1, expectedForeignKey2);
+		}
+		
+		@Test
+		void crud() {
+			FluentEmbeddableMappingBuilder<Publisher> publisherEntityBuilder = embeddableBuilder(Publisher.class)
+					.map(Publisher::getName)
+					.mapManyToOne(Publisher::getCategory, entityBuilder(BusinessCategory.class, Long.class)
+							.mapKey(BusinessCategory::getId, databaseAutoIncrement())
+							.map(BusinessCategory::getName));
+			
+			FluentEntityMappingBuilder<Address, Identifier<Long>> addressMappingBuilder = entityBuilder(Address.class, Identifier.LONG_TYPE)
+					.mapKey(Location::getId, ALREADY_ASSIGNED)
+					.map(Address::getStreet).mandatory();
+			
+			FluentEntityMappingBuilder<ImprintPublisher, Long> mappingBuilder = MappingEase.entityBuilder(ImprintPublisher.class, Long.class)
+					.mapKey(ImprintPublisher::getId, databaseAutoIncrement())
+					.mapOneToOne(ImprintPublisher::getPrintingWorkLocation, addressMappingBuilder)
+					.mapSuperClass(publisherEntityBuilder);
+			
+			EntityPersister<ImprintPublisher, Long> imprintPersister = mappingBuilder.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Address address = new Address(42);
+			address.setStreet("221B Baker Street");
+			
+			BusinessCategory academicCategory = new BusinessCategory("Academic");
+			ImprintPublisher ebookPublisher1 = new ImprintPublisher();
+			ebookPublisher1.setName("Amazon");
+			ebookPublisher1.setCategory(academicCategory);
+			
+			BusinessCategory generalCategory = new BusinessCategory("General public");
+			ImprintPublisher ebookPublisher2 = new ImprintPublisher();
+			ebookPublisher2.setName("Kobo");
+			ebookPublisher2.setCategory(generalCategory);
+			
+			imprintPersister.insert(Arrays.asList(ebookPublisher1, ebookPublisher2));
+			
+			Set<ImprintPublisher> loadedImprints;
+			loadedImprints = imprintPersister.select(ebookPublisher1.getId(), ebookPublisher2.getId());
+			assertThat(loadedImprints).usingRecursiveFieldByFieldElementComparator().containsExactlyInAnyOrder(ebookPublisher1, ebookPublisher2);
+			
+			BusinessCategory educationalCategory = new BusinessCategory("Educational");
+			ebookPublisher2.setCategory(educationalCategory);
+			
+			imprintPersister.update(ebookPublisher2);
+			
+			loadedImprints = imprintPersister.select(ebookPublisher1.getId(), ebookPublisher2.getId());
+			assertThat(loadedImprints).usingRecursiveFieldByFieldElementComparator().containsExactlyInAnyOrder(ebookPublisher1, ebookPublisher2);
+			
+			imprintPersister.delete(ebookPublisher2);
+			assertThat(imprintPersister.select(ebookPublisher2.getId())).isNull();
 		}
 	}
 	
