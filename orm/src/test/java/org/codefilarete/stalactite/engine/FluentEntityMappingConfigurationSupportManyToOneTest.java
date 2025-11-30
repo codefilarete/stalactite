@@ -369,6 +369,72 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 		}
 		
 		@Test
+		void columnName() throws SQLException {
+			MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+					// setting a foreign key naming strategy to be tested
+					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
+					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Device::getName)
+					.mapManyToOne(Device::getLocation, addressConfiguration)
+					.columnName("positionId")
+						.mandatory()
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
+			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null, "ADDRESS")) {
+				@Override
+				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+					return new JdbcForeignKey(
+							rs.getString("FK_NAME"),
+							rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+							rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+					);
+				}
+			};
+			JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
+			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_DEVICE_POSITIONID_ADDRESS_ID", "DEVICE", "POSITIONID", "ADDRESS", "ID");
+			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
+			
+			class Column {
+				private final String tableName;
+				private final String name;
+				private final boolean nullable;
+				
+				Column(String tableName, String name, boolean nullable) {
+					this.tableName = tableName;
+					this.name = name;
+					this.nullable = nullable;
+				}
+			}
+			
+			ResultSetIterator<Column> columnIterator = new ResultSetIterator<Column>(currentConnection.getMetaData().getColumns(null, null, "DEVICE", "%")) {
+				@Override
+				public Column convert(ResultSet rs) throws SQLException {
+					return new Column(
+							rs.getString("TABLE_NAME"),
+							rs.getString("COLUMN_NAME"),
+							rs.getBoolean("NULLABLE")
+					);
+				}
+			};
+			assertThat(Iterables.collectToList(() -> columnIterator, Function.identity()))
+					.usingRecursiveFieldByFieldElementComparator()
+					.withRepresentation(new StandardRepresentation() {
+						@Override
+						protected String fallbackToStringOf(Object object) {
+							return ToStringBuilder.reflectionToString(object, new MultilineRecursiveToStringStyle());
+						}
+					})
+					.containsExactlyInAnyOrder(
+							new Column("DEVICE", "ID", false),
+							new Column("DEVICE", "NAME", true),
+							new Column("DEVICE", "POSITIONID", false));
+		}
+		
+		@Test
 		void defaultBehavior_2Relations() throws SQLException {
 			MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
 					// setting a foreign key naming strategy to be tested

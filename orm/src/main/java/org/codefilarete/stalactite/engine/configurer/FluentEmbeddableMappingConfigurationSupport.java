@@ -342,25 +342,25 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					
 					@Override
 					public ManyToOneOptions<C, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink) {
-						manyToOneRelation.getMappedByConfiguration().setReverseCombiner(reverseLink);
+						manyToOneRelation.getMappedByConfiguration().setCombiner(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
 					public ManyToOneOptions<C, O, S> reverseCollection(SerializableFunction<O, S> collectionAccessor) {
-						manyToOneRelation.getMappedByConfiguration().setReverseCollectionAccessor(collectionAccessor);
+						manyToOneRelation.getMappedByConfiguration().setAccessor(collectionAccessor);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
 					public ManyToOneOptions<C, O, S> reverseCollection(SerializableBiConsumer<O, S> collectionMutator) {
-						manyToOneRelation.getMappedByConfiguration().setReverseCollectionMutator(collectionMutator);
+						manyToOneRelation.getMappedByConfiguration().setMutator(collectionMutator);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
 					public ManyToOneOptions<C, O, S> reverselyInitializeWith(Supplier<S> collectionFactory) {
-						manyToOneRelation.getMappedByConfiguration().setReverseCollectionFactory(collectionFactory);
+						manyToOneRelation.getMappedByConfiguration().setFactory(collectionFactory);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					

@@ -71,7 +71,7 @@ public interface FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S extends 
 	 * @param collectionFactory a collection factory
 	 * @return the global mapping configurer
 	 */
-	FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S> initializeWith(Supplier<S> collectionFactory);
+	FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S> reverselyInitializeWith(Supplier<S> collectionFactory);
 	
 	/**
 	 * {@inheritDoc}

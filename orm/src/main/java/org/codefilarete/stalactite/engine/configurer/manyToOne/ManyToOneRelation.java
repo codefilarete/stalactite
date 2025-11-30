@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine.configurer.manyToOne;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMethod;
@@ -18,7 +19,6 @@ import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
-import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation.MappedByConfiguration;
 import org.codefilarete.tool.Nullable;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
@@ -96,7 +96,7 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 		this.relationMode = relationMode;
 	}
 	
-	public MappedByConfiguration getMappedByConfiguration() {
+	public MappedByConfiguration<SRC, TRGT, C> getMappedByConfiguration() {
 		return mappedByConfiguration;
 	}
 	
@@ -129,8 +129,8 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 	 */
 	@javax.annotation.Nullable
 	PropertyAccessor<TRGT, C> buildReversePropertyAccessor() {
-		Nullable<AccessorByMethodReference<TRGT, C>> getterReference = nullable(mappedByConfiguration.getReverseCollectionAccessor()).map(Accessors::accessorByMethodReference);
-		Nullable<MutatorByMethodReference<TRGT, C>> setterReference = nullable(mappedByConfiguration.getReverseCollectionMutator()).map(Accessors::mutatorByMethodReference);
+		Nullable<AccessorByMethodReference<TRGT, C>> getterReference = nullable(mappedByConfiguration.getAccessor()).map(Accessors::accessorByMethodReference);
+		Nullable<MutatorByMethodReference<TRGT, C>> setterReference = nullable(mappedByConfiguration.getMutator()).map(Accessors::mutatorByMethodReference);
 		if (getterReference.isAbsent() && setterReference.isAbsent()) {
 			return null;
 		} else if (getterReference.isPresent() && setterReference.isPresent()) {
@@ -139,11 +139,11 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 		} else if (getterReference.isPresent() && setterReference.isAbsent()) {
 			// we keep close to user demand : we keep its method reference ...
 			// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
-			return new PropertyAccessor<>(getterReference.get(), new AccessorByMethod<TRGT, C>(captureMethod(mappedByConfiguration.getReverseCollectionAccessor())).toMutator());
+			return new PropertyAccessor<>(getterReference.get(), new AccessorByMethod<TRGT, C>(captureMethod(mappedByConfiguration.getAccessor())).toMutator());
 		} else {
 			// we keep close to user demand : we keep its method reference ...
 			// ... but we can't do it for getter, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
-			return new PropertyAccessor<>(new MutatorByMethod<TRGT, C>(captureMethod(mappedByConfiguration.getReverseCollectionMutator())).toAccessor(), setterReference.get());
+			return new PropertyAccessor<>(new MutatorByMethod<TRGT, C>(captureMethod(mappedByConfiguration.getMutator())).toAccessor(), setterReference.get());
 		}
 	}
 	
@@ -173,5 +173,70 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 		result.setNullable(this.isNullable());
 		result.setFetchSeparately(this.isFetchSeparately());
 		return result;
+	}
+	
+	public static class MappedByConfiguration<SRC, TRGT, C2 extends Collection<SRC>> {
+		
+		/**
+		 * Combiner of target entity with source entity
+		 */
+		@javax.annotation.Nullable
+		private SerializableBiConsumer<TRGT, SRC> combiner;
+		
+		/**
+		 * Source getter on target for bidirectionality (no consequence on database mapping).
+		 */
+		@javax.annotation.Nullable
+		private SerializableFunction<TRGT, C2> accessor;
+		
+		/**
+		 * Source setter on target for bidirectionality (no consequence on database mapping).
+		 */
+		@javax.annotation.Nullable
+		private SerializableBiConsumer<TRGT, C2> mutator;
+		
+		/** Optional provider of collection instance to be used if collection value is null */
+		@javax.annotation.Nullable
+		private Supplier<C2> factory;
+		
+		@javax.annotation.Nullable
+		public SerializableBiConsumer<TRGT, SRC> getCombiner() {
+			return combiner;
+		}
+		
+		public void setCombiner(@javax.annotation.Nullable SerializableBiConsumer<TRGT, SRC> combiner) {
+			this.combiner = combiner;
+		}
+		
+		@javax.annotation.Nullable
+		public SerializableFunction<TRGT, C2> getAccessor() {
+			return accessor;
+		}
+		
+		public void setAccessor(@javax.annotation.Nullable SerializableFunction<TRGT, C2> accessor) {
+			this.accessor = accessor;
+		}
+		
+		@javax.annotation.Nullable
+		public SerializableBiConsumer<TRGT, C2> getMutator() {
+			return mutator;
+		}
+		
+		public void setMutator(@javax.annotation.Nullable SerializableBiConsumer<TRGT, C2> mutator) {
+			this.mutator = mutator;
+		}
+		
+		@javax.annotation.Nullable
+		public Supplier<C2> getFactory() {
+			return factory;
+		}
+		
+		public void setFactory(@javax.annotation.Nullable Supplier<C2> factory) {
+			this.factory = factory;
+		}
+		
+		public boolean isEmpty() {
+			return accessor == null && mutator == null && factory == null && combiner == null;
+		}
 	}
 }

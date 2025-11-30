@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.dsl.MappingEase.embeddableBuilder;
 import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy.databaseAutoIncrement;
 import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 
 public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
@@ -475,11 +476,11 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 			FluentEmbeddableMappingBuilder<Publisher> publisherEntityBuilder = embeddableBuilder(Publisher.class)
 					.map(Publisher::getName)
 					.mapManyToOne(Publisher::getCategory, entityBuilder(BusinessCategory.class, Long.class)
-							.mapKey(BusinessCategory::getId, IdentifierPolicy.databaseAutoIncrement())
+							.mapKey(BusinessCategory::getId, databaseAutoIncrement())
 							.map(BusinessCategory::getName));
 			
 			FluentEntityMappingBuilder<Book, Long> mappingBuilder = MappingEase.entityBuilder(Book.class, Long.class)
-					.mapKey(Book::getId, IdentifierPolicy.databaseAutoIncrement())
+					.mapKey(Book::getId, databaseAutoIncrement())
 					.map(Book::getIsbn)
 					.map(Book::getPrice)
 					.map(Book::getTitle)
@@ -500,7 +501,7 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 		@Test
 		void crud() {
 			FluentEntityMappingBuilder<BusinessCategory, Long> categoryBuilder = entityBuilder(BusinessCategory.class, Long.class)
-					.mapKey(BusinessCategory::getId, IdentifierPolicy.databaseAutoIncrement())
+					.mapKey(BusinessCategory::getId, databaseAutoIncrement())
 					.map(BusinessCategory::getName);
 			
 			FluentEmbeddableMappingBuilder<Publisher> publisherEntityBuilder = embeddableBuilder(Publisher.class)
@@ -508,7 +509,7 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 					.mapManyToOne(Publisher::getCategory, categoryBuilder).cascading(RelationMode.ALL_ORPHAN_REMOVAL);
 			
 			FluentEntityMappingBuilder<Book, Long> mappingBuilder = MappingEase.entityBuilder(Book.class, Long.class)
-					.mapKey(Book::getId, IdentifierPolicy.databaseAutoIncrement())
+					.mapKey(Book::getId, databaseAutoIncrement())
 					.map(Book::getIsbn)
 					.map(Book::getPrice)
 					.map(Book::getTitle)

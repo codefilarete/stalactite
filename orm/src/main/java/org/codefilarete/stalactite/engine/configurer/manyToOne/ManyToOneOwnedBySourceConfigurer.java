@@ -25,7 +25,7 @@ import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.RuntimeMappingException;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
-import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation.MappedByConfiguration;
+import org.codefilarete.stalactite.engine.configurer.manyToOne.ManyToOneRelation.MappedByConfiguration;
 import org.codefilarete.stalactite.engine.configurer.onetoone.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
@@ -160,15 +160,15 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 				} // else : relation is not bidirectional, or not a usual one, may be set by reverse link
 			}
 			
-			Nullable<SerializableBiConsumer<TRGT, SRC>> configuredCombiner = nullable(mappedByConfiguration.getReverseCombiner());
+			Nullable<SerializableBiConsumer<TRGT, SRC>> configuredCombiner = nullable(mappedByConfiguration.getCombiner());
 			if (collectionAccessor == null) {
 				return configuredCombiner.get();
 			} else {
 				// collection factory is in priority the one configured
-				Supplier<Collection<SRC>> reverseCollectionFactory = mappedByConfiguration.getReverseCollectionFactory();
-				if (reverseCollectionFactory == null) {
+				Supplier<Collection<SRC>> collectionFactory = mappedByConfiguration.getFactory();
+				if (collectionFactory == null) {
 					Class<Collection<SRC>> collectionType = AccessorDefinition.giveDefinition(collectionAccessor).getMemberType();
-					reverseCollectionFactory = Reflections.giveCollectionFactory(collectionType);
+					collectionFactory = Reflections.giveCollectionFactory(collectionType);
 				}
 				PropertyAccessor<TRGT, Collection<SRC>> finalCollectionAccessor = collectionAccessor;
 				SerializableBiConsumer<TRGT, SRC> combiner = configuredCombiner.getOr((TRGT trgt, SRC src) -> {
@@ -176,7 +176,7 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 					finalCollectionAccessor.get(trgt).add(src);
 				});
 				
-				Supplier<Collection<SRC>> effectiveCollectionFactory = reverseCollectionFactory;
+				Supplier<Collection<SRC>> effectiveCollectionFactory = collectionFactory;
 				return (TRGT trgt, SRC src) -> {
 					// we call the collection factory to ensure that property is initialized
 					if (finalCollectionAccessor.get(trgt) == null) {
@@ -240,17 +240,16 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 		boolean writeAuthorized = manyToOneRelation.getRelationMode() != RelationMode.READ_ONLY;
 		if (writeAuthorized) {
 			// NB: "delete removed" will be treated internally by updateCascade() and deleteCascade()
-			addInsertCascade(targetPersister);
-			addUpdateCascade(targetPersister, orphanRemoval);
-			addDeleteCascade(targetPersister, orphanRemoval);
+			addInsertCascade();
+			addUpdateCascade(orphanRemoval);
+			addDeleteCascade(orphanRemoval);
 		} else {
 			// even if write is not authorized, we still have to insert and update source-to-target link, because we are in relation-owned-by-source
 			this.engine.addForeignKeyMaintainer();
 		}
 	}
 	
-	@SuppressWarnings("squid:S1172")    // argument targetPersister is used by subclasses
-	protected void addInsertCascade(ConfiguredPersister<TRGT, TRGTID> targetPersister) {
+	protected void addInsertCascade() {
 		// if cascade is mandatory, then adding nullability checking before insert
 		if (!manyToOneRelation.isNullable()) {
 			sourcePersister.addInsertListener(new MandatoryRelationAssertBeforeInsertListener<>(manyToOneRelation.getTargetProvider()));
@@ -258,7 +257,7 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 		engine.addInsertCascade();
 	}
 	
-	protected void addUpdateCascade(ConfiguredPersister<TRGT, TRGTID> targetPersister, boolean orphanRemoval) {
+	protected void addUpdateCascade(boolean orphanRemoval) {
 		// if cascade is mandatory, then adding nullability checking before insert
 		if (!manyToOneRelation.isNullable()) {
 			sourcePersister.addUpdateListener(new MandatoryRelationAssertBeforeUpdateListener<>(manyToOneRelation.getTargetProvider()));
@@ -266,7 +265,7 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 		engine.addUpdateCascade(orphanRemoval);
 	}
 	
-	protected void addDeleteCascade(ConfiguredPersister<TRGT, TRGTID> targetPersister, boolean orphanRemoval) {
+	protected void addDeleteCascade(boolean orphanRemoval) {
 		engine.addDeleteCascade(orphanRemoval);
 	}
 	
