@@ -236,6 +236,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					}
 					
 					@Override
+					public OneToOneOptions<C, O> columnName(String columnName) {
+						oneToOneRelation.setColumnName(columnName);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
 					public OneToOneOptions<C, O> unique() {
 						oneToOneRelation.setUnique(true);
 						return null;	// we can return null because dispatcher will return proxy

@@ -66,6 +66,15 @@ public interface FluentEmbeddableMappingBuilderOneToOneOptions<C, O> extends Flu
 	
 	/**
 	 * {@inheritDoc}
+	 * Declaration overridden to adapt return type to this class.
+	 *
+	 * @return the global mapping configurer
+	 */
+	@Override
+	FluentEmbeddableMappingBuilderOneToOneOptions<C, O> columnName(String columnName);
+	
+	/**
+	 * {@inheritDoc}
 	 * Overridden for return type accuracy
 	 *
 	 * @return the global mapping configurer

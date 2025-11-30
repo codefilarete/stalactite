@@ -85,6 +85,33 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 		}
 		
 		@Test
+		void foreignKeyIsCreated_columnName() {
+			FluentEmbeddableMappingBuilder<Location> locationMappingBuilder = embeddableBuilder(Location.class)
+					.mapOneToOne(Location::getCountry, entityBuilder(Country.class, Identifier.LONG_TYPE)
+							.mapKey(Country::getId, ALREADY_ASSIGNED)
+							.map(Country::getName).mandatory())
+						.columnName("country");
+			
+			FluentEntityMappingBuilder<Address, Identifier<Long>> addressMappingBuilder = entityBuilder(Address.class, Identifier.LONG_TYPE)
+					.mapKey(Location::getId, ALREADY_ASSIGNED)
+					.map(Address::getStreet).mandatory()
+					.mapOneToOne(Address::getCity, entityBuilder(City.class, Identifier.LONG_TYPE)
+							.mapKey(City::getId, ALREADY_ASSIGNED)
+							.map(City::getName).mandatory())
+					.mapSuperClass(locationMappingBuilder);
+			
+			ConfiguredPersister<Address, Identifier<Long>> addressPersister = (ConfiguredPersister) addressMappingBuilder.build(persistenceContext);
+			
+			// ensuring that the foreign key is present on table
+			JdbcForeignKey expectedForeignKey1 = new JdbcForeignKey("FK_Address_cityId_City_id", "Address", "cityId", "City", "id");
+			JdbcForeignKey expectedForeignKey2 = new JdbcForeignKey("FK_Address_country_Country_id", "Address", "country", "Country", "id");
+			Comparator<JdbcForeignKey> comparing = Comparator.comparing(JdbcForeignKey::getSignature, Comparator.naturalOrder());
+			assertThat((Set<? extends ForeignKey<?, ?, ?>>) addressPersister.getMapping().getTargetTable().getForeignKeys()).extracting(JdbcForeignKey::new)
+					.usingElementComparator(comparing)
+					.containsExactlyInAnyOrder(expectedForeignKey1, expectedForeignKey2);
+		}
+		
+		@Test
 		void crud() {
 			FluentEntityMappingBuilder<Country, Identifier<Long>> countryConfiguration = entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.mapKey(Country::getId, ALREADY_ASSIGNED)
@@ -159,6 +186,31 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 
 			// ensuring that the foreign key is present on table
 			JdbcForeignKey expectedForeignKey1 = new JdbcForeignKey("FK_Device_location_cityId_City_id", "Device", "location_cityId", "City", "id");
+			Comparator<JdbcForeignKey> comparing = Comparator.comparing(JdbcForeignKey::getSignature, Comparator.naturalOrder());
+			assertThat((Set<? extends ForeignKey<?, ?, ?>>) addressPersister.getMapping().getTargetTable().getForeignKeys()).extracting(JdbcForeignKey::new)
+					.usingElementComparator(comparing)
+					.containsExactlyInAnyOrder(expectedForeignKey1);
+		}
+		
+		@Test
+		void foreignKeyIsCreated_columnName() {
+			FluentEmbeddableMappingBuilder<Address> addressMappingBuilder = embeddableBuilder(Address.class)
+					.map(Address::getStreet)
+					.mapOneToOne(Address::getCity, entityBuilder(City.class, Identifier.LONG_TYPE)
+							.mapKey(City::getId, ALREADY_ASSIGNED)
+							.map(City::getName).mandatory())
+						.columnName("cityId");
+
+			EntityPersister<Device, Identifier<Long>> devicePersister = entityBuilder(Device.class, Identifier.LONG_TYPE)
+					.mapKey(Device::getId, ALREADY_ASSIGNED)
+					.map(Device::getName)
+					.embed(Device::setLocation, addressMappingBuilder)
+					.build(persistenceContext);
+
+			ConfiguredPersister<Device, Identifier<Long>> addressPersister = (ConfiguredPersister) devicePersister;
+
+			// ensuring that the foreign key is present on table
+			JdbcForeignKey expectedForeignKey1 = new JdbcForeignKey("FK_Device_cityId_City_id", "Device", "cityId", "City", "id");
 			Comparator<JdbcForeignKey> comparing = Comparator.comparing(JdbcForeignKey::getSignature, Comparator.naturalOrder());
 			assertThat((Set<? extends ForeignKey<?, ?, ?>>) addressPersister.getMapping().getTargetTable().getForeignKeys()).extracting(JdbcForeignKey::new)
 					.usingElementComparator(comparing)

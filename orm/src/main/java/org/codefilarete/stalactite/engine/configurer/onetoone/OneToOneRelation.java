@@ -7,6 +7,7 @@ import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
@@ -51,6 +52,8 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	 * Indicates that relation must be loaded in same main query (through join) or in some separate query
 	 */
 	private boolean fetchSeparately;
+	
+	private String columnName;
 	
 	private boolean unique;
 	
@@ -163,6 +166,14 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 		setFetchSeparately(true);
 	}
 	
+	public String getColumnName() {
+		return columnName;
+	}
+	
+	public void setColumnName(String columnName) {
+		this.columnName = columnName;
+	}
+	
 	/**
 	 * Clones this object to create a new one with the given accessor as prefix of current one.
 	 * Made to "slide" current instance with an accessor prefix. Used for embeddable objects with relation to make the relation being accessible
@@ -178,6 +189,7 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 		result.setRelationMode(this.getRelationMode());
 		result.setNullable(this.isNullable());
 		result.setFetchSeparately(this.isFetchSeparately());
+		result.setColumnName(this.getColumnName());
 		return result;
 	}
 }

@@ -68,6 +68,14 @@ public interface OneToOneEntityOptions<C, I, O> extends OneToOneOptions<C, O> {
 	 *
 	 * @return the global mapping configurer
 	 */
+	OneToOneOptions<C, O> columnName(String columnName);
+	
+	/**
+	 * {@inheritDoc}
+	 * Overridden for return type accuracy
+	 *
+	 * @return the global mapping configurer
+	 */
 	OneToOneEntityOptions<C, I, O> unique();
 	
 	/**

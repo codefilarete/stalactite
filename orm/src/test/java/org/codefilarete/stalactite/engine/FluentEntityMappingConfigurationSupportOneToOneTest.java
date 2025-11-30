@@ -439,6 +439,73 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		}
 		
 		@Test
+		void relationOwnedBySource_columnName() throws SQLException {
+			entityBuilder(Country.class, Identifier.LONG_TYPE)
+					// setting a foreign key naming strategy to be tested
+					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
+					.mapKey(Country::getId, ALREADY_ASSIGNED)
+					.map(Country::getName)
+					.map(Country::getDescription)
+					.mapOneToOne(Country::getCapital, cityConfiguration).mandatory()
+					.columnName("mainTownId")
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
+			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null, "CITY")) {
+				@Override
+				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+					return new JdbcForeignKey(
+							rs.getString("FK_NAME"),
+							rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+							rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+					);
+				}
+			};
+			JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
+			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_COUNTRY_MAINTOWNID_CITY_ID", "COUNTRY", "MAINTOWNID", "CITY", "ID");
+			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
+			
+			class Column {
+				private final String tableName;
+				private final String name;
+				private final boolean nullable;
+				
+				Column(String tableName, String name, boolean nullable) {
+					this.tableName = tableName;
+					this.name = name;
+					this.nullable = nullable;
+				}
+			}
+			
+			ResultSetIterator<Column> columnIterator = new ResultSetIterator<Column>(currentConnection.getMetaData().getColumns(null, null, "COUNTRY", "%")) {
+				@Override
+				public Column convert(ResultSet rs) throws SQLException {
+					return new Column(
+							rs.getString("TABLE_NAME"),
+							rs.getString("COLUMN_NAME"),
+							rs.getBoolean("NULLABLE")
+					);
+				}
+			};
+			assertThat(Iterables.collectToList(() -> columnIterator, Function.identity()))
+					.usingRecursiveFieldByFieldElementComparator()
+					.withRepresentation(new StandardRepresentation() {
+						@Override
+						protected String fallbackToStringOf(Object object) {
+							return ToStringBuilder.reflectionToString(object, new MultilineRecursiveToStringStyle());
+						}
+					})
+					.containsExactlyInAnyOrder(
+							new Column("COUNTRY", "ID", false),
+							new Column("COUNTRY", "NAME", true),
+							new Column("COUNTRY", "DESCRIPTION", true),
+							new Column("COUNTRY", "MAINTOWNID", false));
+		}
+		
+		@Test
 		void relationOwnedByTargetSide() throws SQLException {
 			ConfiguredPersister<Country, Identifier<Long>> countryPersister =
 					(ConfiguredPersister<Country, Identifier<Long>>) entityBuilder(Country.class, Identifier.LONG_TYPE)

@@ -362,6 +362,12 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 					}
 					
 					@Override
+					public OneToOneOptions<C, O> columnName(String columnName) {
+						oneToOneRelation.setColumnName(columnName);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
 					public OneToOneEntityOptions<C, J, O> unique() {
 						oneToOneRelation.setUnique(true);
 						return null;	// we can return null because dispatcher will return proxy

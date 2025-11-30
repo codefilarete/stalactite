@@ -61,6 +61,15 @@ public interface OneToOneOptions<C, O> extends CascadeOptions {
 	OneToOneOptions<C, O> fetchSeparately();
 	
 	/**
+	 * Give the column name of the foreign key column referencing the target entity key.
+	 * Valuable only for single key cases.
+	 *
+	 * @param columnName foreign key column name
+	 * @return the global mapping configurer
+	 */
+	OneToOneOptions<C, O> columnName(String columnName);
+	
+	/**
 	 * Marks the relation column as a unique key.
 	 * Relevant when the unique key constraint corresponds to only a single column.
 	 */
