@@ -231,7 +231,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapCollection(Person::getNicknames, String.class)
-				.withReverseJoinColumn("identifier")
+				.reverseJoinColumn("identifier")
 				.build(persistenceContext);
 		
 		Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
@@ -289,7 +289,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapCollection(Person::getNicknames, String.class)
-				.withTable(nickNamesTable)
+				.onTable(nickNamesTable)
 				.build(persistenceContext);
 		
 		Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
@@ -315,7 +315,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapCollection(Person::getNicknames, String.class)
-				.withTable("Toto")
+					.onTable("Toto")
 				.build(persistenceContext);
 		
 		Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
@@ -343,7 +343,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapCollection(Person::getNicknames, String.class)
-				.override("toto")
+					.elementColumn("toto")
 				.build(persistenceContext);
 		
 		Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);

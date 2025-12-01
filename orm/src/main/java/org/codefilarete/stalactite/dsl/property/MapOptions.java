@@ -19,15 +19,15 @@ public interface MapOptions<K, V, M extends Map<K, V>> {
 	
 	MapOptions<K, V, M> withReverseJoinColumn(String columnName);
 	
-	MapOptions<K, V, M> withKeyColumn(String columnName);
+	MapOptions<K, V, M> keyColumn(String columnName);
 	
-	MapOptions<K, V, M> withValueColumn(String columnName);
+	MapOptions<K, V, M> valueColumn(String columnName);
 	
 	MapOptions<K, V, M> withMapFactory(Supplier<? extends M> collectionFactory);
 	
-	MapOptions<K, V, M> withTable(String tableName);
+	MapOptions<K, V, M> onTable(String tableName);
 	
-	MapOptions<K, V, M> withTable(Table table);
+	MapOptions<K, V, M> onTable(Table table);
 	
 	KeyAsEntityMapOptions<K, V, M> withKeyMapping(EntityMappingConfigurationProvider<K, ?> mappingConfigurationProvider);
 	

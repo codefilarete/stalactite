@@ -333,7 +333,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getPhoneNumbers, String.class, String.class)
-				.withTable(phoneNumbersTable)
+				.onTable(phoneNumbersTable)
 				.build(persistenceContext);
 
 		Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
@@ -359,7 +359,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getPhoneNumbers, String.class, String.class)
-				.withTable("Toto")
+				.onTable("Toto")
 				.build(persistenceContext);
 
 		Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
@@ -387,7 +387,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getPhoneNumbers, String.class, String.class)
-				.withKeyColumn("toto")
+				.keyColumn("toto")
 				.build(persistenceContext);
 
 		Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
@@ -404,7 +404,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getPhoneNumbers, String.class, String.class)
-				.withValueColumn("toto")
+				.valueColumn("toto")
 				.build(persistenceContext);
 
 		Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);

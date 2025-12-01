@@ -334,13 +334,13 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> override(String columnName);
 		
 		@Override
-		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> withReverseJoinColumn(String name);
+		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> reverseJoinColumn(String name);
 		
 		@Override
-		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> withTable(Table table);
+		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> onTable(Table table);
 		
 		@Override
-		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> withTable(String tableName);
+		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> onTable(String tableName);
 	}
 	
 	interface FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S extends Collection<O>>
@@ -354,13 +354,13 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory);
 		
 		@Override
-		FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withReverseJoinColumn(String name);
+		FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> reverseJoinColumn(String name);
 		
 		@Override
-		FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withTable(Table table);
+		FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> onTable(Table table);
 		
 		@Override
-		FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withTable(String tableName);
+		FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> onTable(String tableName);
 	}
 	
 }

@@ -47,6 +47,7 @@ public class ElementCollectionRelation<SRC, TRGT, C extends Collection<TRGT>> {
 	
 	/** Complex type mapping override, to be used when {@link EmbeddableMappingConfigurationProvider} is not null */
 	private final ValueAccessPointMap<SRC, String> overriddenColumnNames = new ValueAccessPointMap<>();
+	private String elementColumn;
 	
 	/**
 	 * @param setter collection accessor
@@ -152,7 +153,7 @@ public class ElementCollectionRelation<SRC, TRGT, C extends Collection<TRGT>> {
 		return embeddableConfigurationProvider;
 	}
 	
-	public void overrideColumnName(String columnName) {
+	public void setElementColumnName(String columnName) {
 		this.elementColumnName = columnName;
 	}
 	

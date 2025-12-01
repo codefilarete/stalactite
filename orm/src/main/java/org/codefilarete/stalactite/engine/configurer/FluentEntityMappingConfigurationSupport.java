@@ -424,13 +424,13 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					}
 					
 					@Override
-					public MapOptions withKeyColumn(String columnName) {
+					public MapOptions keyColumn(String columnName) {
 						mapRelation.setKeyColumnName(columnName);
 						return null;
 					}
 					
 					@Override
-					public MapOptions withValueColumn(String columnName) {
+					public MapOptions valueColumn(String columnName) {
 						mapRelation.setValueColumnName(columnName);
 						return null;
 					}
@@ -442,13 +442,13 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					}
 					
 					@Override
-					public MapOptions withTable(String tableName) {
+					public MapOptions onTable(String tableName) {
 						mapRelation.setTargetTableName(tableName);
 						return null;
 					}
 					
 					@Override
-					public MapOptions withTable(Table table) {
+					public MapOptions onTable(Table table) {
 						mapRelation.setTargetTable(table);
 						return null;
 					}
@@ -560,8 +560,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 			ElementCollectionRelation<C, O, S> elementCollectionRelation) {
 		return new MethodReferenceDispatcher()
 				.redirect((SerializableBiFunction<FluentMappingBuilderElementCollectionOptions, String, FluentMappingBuilderElementCollectionOptions>)
-								FluentMappingBuilderElementCollectionOptions::override,
-						elementCollectionRelation::overrideColumnName)
+								FluentMappingBuilderElementCollectionOptions::elementColumn,
+						elementCollectionRelation::setElementColumnName)
 				.redirect(ElementCollectionOptions.class, wrapAsOptions(elementCollectionRelation), true)
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderElementCollectionOptions<C, I, O, S>>) (Class) FluentMappingBuilderElementCollectionOptions.class);
@@ -608,19 +608,25 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 			}
 			
 			@Override
-			public FluentMappingBuilderElementCollectionOptions<C, I, O, S> withReverseJoinColumn(String name) {
+			public ElementCollectionOptions<C, O, S> elementColumn(String columnName) {
+				elementCollectionRelation.setElementColumnName(columnName);
+				return null;
+			}
+			
+			@Override
+			public FluentMappingBuilderElementCollectionOptions<C, I, O, S> reverseJoinColumn(String name) {
 				elementCollectionRelation.setReverseColumnName(name);
 				return null;
 			}
 			
 			@Override
-			public ElementCollectionOptions<C, O, S> withTable(Table table) {
+			public ElementCollectionOptions<C, O, S> onTable(Table table) {
 				elementCollectionRelation.setTargetTable(table);
 				return null;
 			}
 			
 			@Override
-			public ElementCollectionOptions<C, O, S> withTable(String tableName) {
+			public ElementCollectionOptions<C, O, S> onTable(String tableName) {
 				elementCollectionRelation.setTargetTableName(tableName);
 				return null;
 			}

@@ -201,7 +201,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 		return new MethodReferenceDispatcher()
 				.redirect((SerializableBiFunction<FluentSubEntityMappingBuilderElementCollectionOptions, String, FluentSubEntityMappingBuilderElementCollectionOptions>)
 								FluentSubEntityMappingBuilderElementCollectionOptions::override,
-						elementCollectionRelation::overrideColumnName)
+						elementCollectionRelation::setElementColumnName)
 				.redirect(ElementCollectionOptions.class, wrapAsOptions(elementCollectionRelation), true)
 				.fallbackOn(this)
 				.build((Class<FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S>>) (Class) FluentSubEntityMappingBuilderElementCollectionOptions.class);
@@ -215,7 +215,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 		return new MethodReferenceDispatcher()
 				.redirect((SerializableBiFunction<FluentSubEntityMappingBuilderElementCollectionOptions, String, FluentSubEntityMappingBuilderElementCollectionOptions>)
 								FluentSubEntityMappingBuilderElementCollectionOptions::override,
-						elementCollectionRelation::overrideColumnName)
+						elementCollectionRelation::setElementColumnName)
 				.redirect(ElementCollectionOptions.class, wrapAsOptions(elementCollectionRelation), true)
 				.fallbackOn(this)
 				.build((Class<FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S>>) (Class) FluentSubEntityMappingBuilderElementCollectionOptions.class);
@@ -263,19 +263,25 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 			}
 			
 			@Override
-			public FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> withReverseJoinColumn(String name) {
+			public ElementCollectionOptions<C, O, S> elementColumn(String columnName) {
+				elementCollectionRelation.setElementColumnName(columnName);
+				return null;
+			}
+			
+			@Override
+			public FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> reverseJoinColumn(String name) {
 				elementCollectionRelation.setReverseColumnName(name);
 				return null;
 			}
 			
 			@Override
-			public ElementCollectionOptions<C, O, S> withTable(Table table) {
+			public ElementCollectionOptions<C, O, S> onTable(Table table) {
 				elementCollectionRelation.setTargetTable(table);
 				return null;
 			}
 			
 			@Override
-			public ElementCollectionOptions<C, O, S> withTable(String tableName) {
+			public ElementCollectionOptions<C, O, S> onTable(String tableName) {
 				elementCollectionRelation.setTargetTableName(tableName);
 				return null;
 			}
