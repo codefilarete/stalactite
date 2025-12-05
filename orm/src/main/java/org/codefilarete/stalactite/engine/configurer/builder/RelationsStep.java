@@ -117,7 +117,9 @@ public class RelationsStep<C, I> {
 		
 		@Override
 		public <TRGT, TRGTID> List<ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>>> getManyToManys() {
-			return Collections.emptyList();
+			return configuration.<TRGT, TRGTID>getManyToManys().stream()
+					.map(manyToMany -> manyToMany.embedInto(inset.getAccessor(), configuration.getEntityType()))
+					.collect(Collectors.toList());
 		}
 		
 		@Override

@@ -9,6 +9,7 @@ import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.EnumOptions;
 import org.codefilarete.stalactite.dsl.property.PropertyOptions;
+import org.codefilarete.stalactite.dsl.relation.ManyToManyOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyOptions;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -171,6 +172,48 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S>
 	mapManyToOne(SerializableBiConsumer<C, O> setter,
 				 EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
+	
+	/**
+	 * Declares a many-to-many relation between current embeddable object and some entity of type {@code O}.
+	 * Depending on collection type, order persistence can be asked by one of the {@link ManyToManyOptions#indexed()}
+	 * methods.
+	 * For bidirectional relation, you may be interested in using {@link ManyToManyOptions#reverseCollection(SerializableFunction)}
+	 * or {@link ManyToManyOptions#reverselySetBy(SerializableBiConsumer)} on returned instance.
+	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
+	 * to handle any super type of current entity type.
+	 *
+	 * @param getter the way to get the {@link Set} from source entities
+	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
+	 * @param <O> type of {@link Set} element
+	 * @param <J> type of identifier of {@code O}
+	 * @param <S1> refined source {@link Collection} type
+	 * @param <S2> refined reverse side {@link Collection} type
+	 * @return an enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
+	 */
+	<O, J, S1 extends Collection<O>, S2 extends Collection<C>>
+	FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2>
+	mapManyToMany(SerializableFunction<C, S1> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	
+	/**
+	 * Declares a many-to-many relation between current embeddable object and some entity of type {@code O}.
+	 * Depending on collection type, order persistence can be asked by one of the {@link ManyToManyOptions#indexed()}
+	 * methods.
+	 * For bidirectional relation, you may be interested in using {@link ManyToManyOptions#reverseCollection(SerializableFunction)}
+	 * or {@link ManyToManyOptions#reverselySetBy(SerializableBiConsumer)} on returned instance.
+	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
+	 * to handle any super type of current entity type.
+	 *
+	 * @param setter the way to get the {@link Set} from source entities
+	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
+	 * @param <O> type of {@link Set} element
+	 * @param <J> type of identifier of {@code O}
+	 * @param <S1> refined source {@link Collection} type
+	 * @param <S2> refined reverse side {@link Collection} type
+	 * @return an enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
+	 */
+	<O, J, S1 extends Collection<O>, S2 extends Collection<C>>
+	FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2>
+	mapManyToMany(SerializableBiConsumer<C, S1> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
 	
 	/**
 	 * Change default column naming strategy, which is {@link ColumnNamingStrategy#DEFAULT}, by the given one.

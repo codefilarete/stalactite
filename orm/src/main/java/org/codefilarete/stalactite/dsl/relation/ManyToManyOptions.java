@@ -10,7 +10,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 /**
  * @author Guillaume Mary
  */
-public interface ManyToManyOptions<C, I, O, S1 extends Collection<O>, S2 extends Collection<C>> extends CascadeOptions {
+public interface ManyToManyOptions<C, O, S1 extends Collection<O>, S2 extends Collection<C>> extends CascadeOptions {
 	
 	/**
 	 * Defines the collection factory to be used at load time to initialize property if it is null.
@@ -19,7 +19,7 @@ public interface ManyToManyOptions<C, I, O, S1 extends Collection<O>, S2 extends
 	 * @param collectionFactory a collection factory
 	 * @return the global mapping configurer
 	 */
-	ManyToManyOptions<C, I, O, S1, S2> initializeWith(Supplier<S1> collectionFactory);
+	ManyToManyOptions<C, O, S1, S2> initializeWith(Supplier<S1> collectionFactory);
 	
 	/**
 	 * Defines combiner of current entity with target entity. This is a more fine-grained way to define how to combine current entity with target
@@ -30,7 +30,7 @@ public interface ManyToManyOptions<C, I, O, S1 extends Collection<O>, S2 extends
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	ManyToManyOptions<C, I, O, S1, S2> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
+	ManyToManyOptions<C, O, S1, S2> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
 	
 	/**
 	 * Defines reverse collection accessor.
@@ -40,7 +40,7 @@ public interface ManyToManyOptions<C, I, O, S1 extends Collection<O>, S2 extends
 	 * @param collectionAccessor opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	ManyToManyOptions<C, I, O, S1, S2> reverseCollection(SerializableFunction<O, S2> collectionAccessor);
+	ManyToManyOptions<C, O, S1, S2> reverseCollection(SerializableFunction<O, S2> collectionAccessor);
 	
 	/**
 	 * Defines reverse collection mutator.
@@ -50,7 +50,7 @@ public interface ManyToManyOptions<C, I, O, S1 extends Collection<O>, S2 extends
 	 * @param collectionMutator opposite setter of the relation
 	 * @return the global mapping configurer
 	 */
-	ManyToManyOptions<C, I, O, S1, S2> reverseCollection(SerializableBiConsumer<O, S2> collectionMutator);
+	ManyToManyOptions<C, O, S1, S2> reverseCollection(SerializableBiConsumer<O, S2> collectionMutator);
 	
 	/**
 	 * Defines the factory of reverse collection. If not defined and collection is found null, the collection is set with a default value.
@@ -59,14 +59,14 @@ public interface ManyToManyOptions<C, I, O, S1 extends Collection<O>, S2 extends
 	 * @param collectionFactory opposite collection factory
 	 * @return the global mapping configurer
 	 */
-	ManyToManyOptions<C, I, O, S1, S2> reverselyInitializeWith(Supplier<S2> collectionFactory);
+	ManyToManyOptions<C, O, S1, S2> reverselyInitializeWith(Supplier<S2> collectionFactory);
 	
 	/**
 	 * Asks to load relation in some separate query (actually may use several queries according to association table presence or polymorphism)
 	 * 
 	 * @return the global mapping configurer
 	 */
-	ManyToManyOptions<C, I, O, S1, S2> fetchSeparately();
+	ManyToManyOptions<C, O, S1, S2> fetchSeparately();
 	
 	/**
 	 * Activates entity order persistence and indicates column name to be used for it.
@@ -74,7 +74,7 @@ public interface ManyToManyOptions<C, I, O, S1 extends Collection<O>, S2 extends
 	 *
 	 * @return the global mapping configurer
 	 */
-	ManyToManyOptions<C, I, O, S1, S2> indexedBy(String columnName);
+	ManyToManyOptions<C, O, S1, S2> indexedBy(String columnName);
 	
 	/**
 	 * Activates entity order persistence.
@@ -82,6 +82,6 @@ public interface ManyToManyOptions<C, I, O, S1 extends Collection<O>, S2 extends
 	 *
 	 * @return the global mapping configurer
 	 */
-	ManyToManyOptions<C, I, O, S1, S2> indexed();
+	ManyToManyOptions<C, O, S1, S2> indexed();
 	
 }

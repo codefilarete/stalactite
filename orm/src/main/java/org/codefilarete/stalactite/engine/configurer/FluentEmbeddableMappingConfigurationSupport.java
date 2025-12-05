@@ -30,6 +30,7 @@ import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder;
+import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilderManyToManyOptions;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilderManyToOneOptions;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilderOneToManyOptions;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilderOneToOneOptions;
@@ -40,10 +41,12 @@ import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.EnumOptions;
 import org.codefilarete.stalactite.dsl.property.PropertyOptions;
+import org.codefilarete.stalactite.dsl.relation.ManyToManyOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToOneOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyEntityOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToOneOptions;
+import org.codefilarete.stalactite.engine.configurer.FluentEntityMappingConfigurationSupport.ManyToManyOptionsSupport;
 import org.codefilarete.stalactite.engine.configurer.PropertyAccessorResolver.PropertyMapping;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.manyToOne.ManyToOneRelation;
@@ -82,6 +85,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	private final List<OneToOneRelation<C, ?, ?>> oneToOneRelations = new ArrayList<>();
 	
 	private final List<OneToManyRelation<C, ?, ?, ?>> oneToManyRelations = new ArrayList<>();
+	
+	private final List<ManyToManyRelation<C, ?, ?, ?, ?>> manyToManyRelations = new ArrayList<>();
 	
 	private final List<ManyToOneRelation<C, ?, ?, ?>> manyToOneRelations = new ArrayList<>();
 	
@@ -384,6 +389,41 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 				}, true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
 				.build((Class<FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S>>) (Class) FluentEmbeddableMappingBuilderManyToOneOptions.class);
+	}
+	
+	@Override
+	public <O, J, S1 extends Collection<O>, S2 extends Collection<C>> FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2> mapManyToMany(SerializableFunction<C, S1> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
+		AccessorByMethodReference<C, S1> getterReference = Accessors.accessorByMethodReference(getter);
+		ReversibleAccessor<C, S1> propertyAccessor = new PropertyAccessor<>(
+				// we keep close to user demand : we keep its method reference ...
+				getterReference,
+				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
+				new AccessorByMethod<C, S1>(captureLambdaMethod(getter)).toMutator());
+		return mapManyToMany(propertyAccessor, mappingConfiguration);
+	}
+	
+	@Override
+	public <O, J, S1 extends Collection<O>, S2 extends Collection<C>> FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2> mapManyToMany(SerializableBiConsumer<C, S1> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
+		MutatorByMethodReference<C, S1> setterReference = Accessors.mutatorByMethodReference(setter);
+		PropertyAccessor<C, S1> propertyAccessor = new PropertyAccessor<>(
+				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
+				setterReference
+		);
+		return mapManyToMany(propertyAccessor, mappingConfiguration);
+	}
+	
+	private <O, J, S1 extends Collection<O>, S2 extends Collection<C>> FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2> mapManyToMany(
+			ReversibleAccessor<C, S1> propertyAccessor,
+			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
+		ManyToManyRelation<C, O, J, S1, S2> manyToManyRelation = new ManyToManyRelation<>(
+				propertyAccessor,
+				() -> false,
+				mappingConfiguration);
+		this.manyToManyRelations.add(manyToManyRelation);
+		return new MethodDispatcher()
+				.redirect(ManyToManyOptions.class, new ManyToManyOptionsSupport<>(manyToManyRelation), true)	// true to allow "return null" in implemented methods
+				.fallbackOn(this)
+				.build((Class<FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2>>) (Class) FluentEmbeddableMappingBuilderManyToManyOptions.class);
 	}
 	
 	@Override
@@ -708,7 +748,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	
 	@Override
 	public <TRGT, TRGTID> List<ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>>> getManyToManys() {
-		return Collections.emptyList();
+		return (List) manyToManyRelations;
 	}
 	
 	@Override

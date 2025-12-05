@@ -4,7 +4,6 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -22,9 +21,9 @@ import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
 import org.codefilarete.stalactite.engine.model.book.Author;
 import org.codefilarete.stalactite.engine.model.book.Book;
-import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
+import org.codefilarete.stalactite.engine.model.survey.Answer;
+import org.codefilarete.stalactite.engine.model.survey.Choice;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
-import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
@@ -320,9 +319,9 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(answer2.getId().getDelegate());
 	}
 	
-	private static class Trio<L, M, R> {
+	public static class Trio<L, M, R> {
 		
-		private static Trio<Integer, Integer, Integer> forInteger(Integer left, Integer middle, Integer right) {
+		public static Trio<Integer, Integer, Integer> forInteger(Integer left, Integer middle, Integer right) {
 			return new Trio<>(left, middle, right);
 		}
 		
@@ -1057,138 +1056,5 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 			assertThat(author.getWrittenBooks()).isExactlyInstanceOf(HashSet.class);
 			assertThat(author.getWrittenBooks()).containsExactlyInAnyOrder(loadedBook1, loadedBook2);
 		});
-	}
-	
-	public static class Answer implements Identified<Long> {
-		
-		private Identifier<Long> id;
-		
-		private String comment;
-		
-		private Set<Choice> choices;
-		
-		private Set<Choice> secondaryChoices;
-		
-		private Answer() {
-		}
-		
-		private Answer(Long id) {
-			this(new PersistableIdentifier<>(id));
-		}
-		
-		private Answer(Identifier<Long> id) {
-			this.id = id;
-		}
-		
-		public Answer(Choice choice) {
-			this.choices.add(choice);
-		}
-		
-		@Override
-		public Identifier<Long> getId() {
-			return id;
-		}
-		
-		public String getComment() {
-			return comment;
-		}
-		
-		public void setComment(String comment) {
-			this.comment = comment;
-		}
-		
-		public Set<Choice> getChoices() {
-			return choices;
-		}
-		
-		public void addChoices(Collection<Choice> choices) {
-			this.choices.addAll(choices);
-		}
-		
-		public void addChoices(Choice... choices) {
-			if (this.choices == null) {
-				this.choices = new LinkedHashSet<>();
-			}
-			this.choices.addAll(Arrays.asList(choices));
-		}
-		
-		public void setChoices(Set<Choice> choices) {
-			this.choices = choices;
-		}
-
-		public Set<Choice> getSecondaryChoices() {
-			return secondaryChoices;
-		}
-
-		public void addSecondaryChoices(Collection<Choice> choices) {
-			this.secondaryChoices.addAll(choices);
-		}
-
-		public void addSecondaryChoices(Choice... choices) {
-			if (this.secondaryChoices == null) {
-				this.secondaryChoices = new LinkedHashSet<>();
-			}
-			this.secondaryChoices.addAll(Arrays.asList(choices));
-		}
-
-		public void setSecondaryChoices(Set<Choice> secondaryChoices) {
-			this.secondaryChoices = secondaryChoices;
-		}
-		
-		@Override
-		public String toString() {
-			return "Answer{" +
-					"id=" + id +
-					'}';
-		}
-	}
-	
-	public static class Choice implements Identified<Long> {
-		
-		private Identifier<Long> id;
-		
-		private String label;
-		
-		public Choice() {
-		}
-		
-		public Choice(long id) {
-			this.id = new PersistableIdentifier<>(id);
-		}
-		
-		public Choice(Identifier<Long> id) {
-			this.id = id;
-		}
-		
-		@Override
-		public Identifier<Long> getId() {
-			return id;
-		}
-		
-		public String getLabel() {
-			return label;
-		}
-		
-		public void setLabel(String label) {
-			this.label = label;
-		}
-		
-		@Override
-		public boolean equals(Object o) {
-			if (this == o) return true;
-			if (!(o instanceof Choice)) return false;
-			Choice choice = (Choice) o;
-			return Objects.equals(id, choice.id);
-		}
-		
-		@Override
-		public int hashCode() {
-			return Objects.hashCode(id);
-		}
-		
-		@Override
-		public String toString() {
-			return "Choice{id=" + id.getDelegate() + ", label='" + label + '\'' + '}';
-		}
 	}
 }

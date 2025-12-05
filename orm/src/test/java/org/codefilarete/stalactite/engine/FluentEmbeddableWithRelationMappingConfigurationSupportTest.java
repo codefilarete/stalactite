@@ -9,8 +9,10 @@ import java.util.stream.Collectors;
 import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
-import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.engine.FluentEntityMappingConfigurationSupportManyToManyTest.Trio;
+import org.codefilarete.stalactite.engine.model.survey.Answer;
+import org.codefilarete.stalactite.engine.model.survey.Choice;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.book.Book;
@@ -21,6 +23,7 @@ import org.codefilarete.stalactite.engine.model.device.Address;
 import org.codefilarete.stalactite.engine.model.device.Device;
 import org.codefilarete.stalactite.engine.model.device.Location;
 import org.codefilarete.stalactite.engine.model.device.Review;
+import org.codefilarete.stalactite.engine.model.security.RecoveryQuestion;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -28,10 +31,12 @@ import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -40,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.dsl.MappingEase.embeddableBuilder;
 import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
 import static org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy.databaseAutoIncrement;
+import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 
 public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
@@ -763,6 +769,153 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 					.usingRecursiveFieldByFieldElementComparator()
 					// only publisher category of book2 should remain
 					.containsExactly(generalCategory);
+		}
+	}
+	
+	@Nested
+	class ManyToMany_MappedSuperClass {
+		
+		@Test
+		void foreignKeyIsCreated() {
+			FluentEmbeddableMappingBuilder<Answer> answerBuilder = embeddableBuilder(Answer.class)
+					.map(Answer::getComment)
+					.mapManyToMany(Answer::getChoices, entityBuilder(Choice.class, LONG_TYPE)
+							.mapKey(Choice::getId, ALREADY_ASSIGNED)
+							.map(Choice::getLabel))
+					.indexed();
+			
+			FluentEntityMappingBuilder<RecoveryQuestion, Long> mappingBuilder = entityBuilder(RecoveryQuestion.class, Long.class)
+					.mapKey(RecoveryQuestion::getId, databaseAutoIncrement())
+					.embed(RecoveryQuestion::getAnswer, answerBuilder);
+			
+			mappingBuilder.build(persistenceContext);
+			
+			Map<String, Table<?>> tablePerName = Iterables.map(DDLDeployer.collectTables(persistenceContext), Table::getName);
+			
+			// ensuring that the foreign key is present on table
+			JdbcForeignKey expectedForeignKey1 = new JdbcForeignKey("FK_RecoveryQuestion_answer_choices_recoveryQuestion_id_RecoveryQuestion_id", "RecoveryQuestion_answer_choices", "recoveryQuestion_id", "RecoveryQuestion", "id");
+			JdbcForeignKey expectedForeignKey2 = new JdbcForeignKey("FK_RecoveryQuestion_answer_choices_answer_choices_id_Choice_id", "RecoveryQuestion_answer_choices", "answer_choices_id", "Choice", "id");
+			Comparator<JdbcForeignKey> comparing = Comparator.comparing(JdbcForeignKey::getSignature, Comparator.naturalOrder());
+			assertThat((Set<? extends ForeignKey<?, ?, ?>>) tablePerName.get("RecoveryQuestion_answer_choices").getForeignKeys()).extracting(JdbcForeignKey::new)
+					.usingElementComparator(comparing)
+					.containsExactlyInAnyOrder(expectedForeignKey1, expectedForeignKey2);
+			
+			assertThat(tablePerName.get("RecoveryQuestion_answer_choices").getColumn("idx")).isNotNull();
+		}
+		
+		@Test
+		void foreignKeyIsCreated_indexedBy() {
+			FluentEmbeddableMappingBuilder<Answer> answerBuilder = embeddableBuilder(Answer.class)
+					.map(Answer::getComment)
+					.mapManyToMany(Answer::getChoices, entityBuilder(Choice.class, LONG_TYPE)
+							.mapKey(Choice::getId, ALREADY_ASSIGNED)
+							.map(Choice::getLabel))
+					.indexedBy("myIdx");
+			
+			FluentEntityMappingBuilder<RecoveryQuestion, Long> mappingBuilder = entityBuilder(RecoveryQuestion.class, Long.class)
+					.mapKey(RecoveryQuestion::getId, databaseAutoIncrement())
+					.embed(RecoveryQuestion::getAnswer, answerBuilder);
+			
+			mappingBuilder.build(persistenceContext);
+			
+			Map<String, Table<?>> tablePerName = Iterables.map(DDLDeployer.collectTables(persistenceContext), Table::getName);
+			
+			// ensuring that the foreign key is present on table
+			JdbcForeignKey expectedForeignKey1 = new JdbcForeignKey("FK_RecoveryQuestion_answer_choices_recoveryQuestion_id_RecoveryQuestion_id", "RecoveryQuestion_answer_choices", "recoveryQuestion_id", "RecoveryQuestion", "id");
+			JdbcForeignKey expectedForeignKey2 = new JdbcForeignKey("FK_RecoveryQuestion_answer_choices_answer_choices_id_Choice_id", "RecoveryQuestion_answer_choices", "answer_choices_id", "Choice", "id");
+			Comparator<JdbcForeignKey> comparing = Comparator.comparing(JdbcForeignKey::getSignature, Comparator.naturalOrder());
+			assertThat((Set<? extends ForeignKey<?, ?, ?>>) tablePerName.get("RecoveryQuestion_answer_choices").getForeignKeys()).extracting(JdbcForeignKey::new)
+					.usingElementComparator(comparing)
+					.containsExactlyInAnyOrder(expectedForeignKey1, expectedForeignKey2);
+			
+			assertThat(tablePerName.get("RecoveryQuestion_answer_choices").getColumn("myIdx")).isNotNull();
+		}
+		
+		@Test
+		void crud() {
+			FluentEmbeddableMappingBuilder<Answer> answerBuilder = embeddableBuilder(Answer.class)
+					.map(Answer::getComment)
+					.mapManyToMany(Answer::getChoices, entityBuilder(Choice.class, LONG_TYPE)
+							.mapKey(Choice::getId, ALREADY_ASSIGNED)
+							.map(Choice::getLabel))
+					.indexed()
+					.initializeWith(KeepOrderSet::new);
+			
+			FluentEntityMappingBuilder<RecoveryQuestion, Long> mappingBuilder = entityBuilder(RecoveryQuestion.class, Long.class)
+					.mapKey(RecoveryQuestion::getId, databaseAutoIncrement())
+					.embed(RecoveryQuestion::getAnswer, answerBuilder);
+			
+			ConfiguredPersister<RecoveryQuestion, Long> recoveryQuestionPersister = (ConfiguredPersister) mappingBuilder.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+
+			Answer answer1 = new Answer(42L);
+			Answer answer2 = new Answer(43L);
+			Choice grenoble = new Choice(13L);
+			grenoble.setLabel("Grenoble");
+			Choice lyon = new Choice(17L);
+			lyon.setLabel("Lyon");
+			answer1.addChoices(lyon, grenoble);
+			answer2.addChoices(grenoble, lyon);
+			RecoveryQuestion question1 = new RecoveryQuestion();
+			question1.setAnswer(answer1);
+			RecoveryQuestion question2 = new RecoveryQuestion();
+			question2.setAnswer(answer2);
+			recoveryQuestionPersister.insert(Arrays.asList(question1, question2));
+			
+			ExecutableQuery<Trio<Integer, Integer, Integer>> trioExecutableQuery = persistenceContext.newQuery("select recoveryQuestion_id, answer_choices_id, idx from RecoveryQuestion_answer_choices", (Class<Trio<Integer, Integer, Integer>>) (Class) Trio.class)
+					.<Integer, Integer, Integer>mapKey(Trio::forInteger, "recoveryQuestion_id", "answer_choices_id", "idx");
+			Set<Trio<Integer, Integer, Integer>> choiceAnswerIds = trioExecutableQuery.execute(Accumulators.toSet());
+			
+			// Note that we get 1 and 2 on recoveryQuestionId because of auto-incrementation for identifier
+			assertThat(choiceAnswerIds).containsExactlyInAnyOrder(new Trio<>(1, 17, 1), new Trio<>(1, 13, 2), new Trio<>(2, 13, 1), new Trio<>(2, 17, 2));
+			
+			RecoveryQuestion loadedQuestion1 = recoveryQuestionPersister.select(question1.getId());
+			assertThat(loadedQuestion1.getAnswer().getChoices()).isInstanceOf(KeepOrderSet.class);
+			assertThat(loadedQuestion1.getAnswer().getChoices()).containsExactly(lyon, grenoble);
+			RecoveryQuestion loadedQuestion2 = recoveryQuestionPersister.select(question2.getId());
+			assertThat(loadedQuestion2.getAnswer().getChoices()).isInstanceOf(KeepOrderSet.class);
+			assertThat(loadedQuestion2.getAnswer().getChoices()).containsExactly(grenoble, lyon);
+		}
+		
+		@Test
+		void crud_bidirectionality() {
+			FluentEmbeddableMappingBuilder<Answer> answerBuilder = embeddableBuilder(Answer.class)
+					.map(Answer::getComment)
+					.mapManyToMany(Answer::getChoices, entityBuilder(Choice.class, LONG_TYPE)
+							.mapKey(Choice::getId, ALREADY_ASSIGNED)
+							.map(Choice::getLabel))
+					.reverseCollection(Choice::getAnswers);
+			
+			FluentEntityMappingBuilder<RecoveryQuestion, Long> mappingBuilder = entityBuilder(RecoveryQuestion.class, Long.class)
+					.mapKey(RecoveryQuestion::getId, databaseAutoIncrement())
+					.embed(RecoveryQuestion::getAnswer, answerBuilder);
+			
+			ConfiguredPersister<RecoveryQuestion, Long> recoveryQuestionPersister = (ConfiguredPersister) mappingBuilder.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Answer answer1 = new Answer();
+			answer1.setComment("42");
+			Answer answer2 = new Answer();
+			answer2.setComment("43");
+			Choice grenoble = new Choice(13L);
+			grenoble.setLabel("Grenoble");
+			Choice lyon = new Choice(17L);
+			lyon.setLabel("Lyon");
+			answer1.addChoices(lyon, grenoble);
+			answer2.addChoices(grenoble, lyon);
+			RecoveryQuestion question1 = new RecoveryQuestion();
+			question1.setAnswer(answer1);
+			RecoveryQuestion question2 = new RecoveryQuestion();
+			question2.setAnswer(answer2);
+			
+			recoveryQuestionPersister.insert(Arrays.asList(question1, question2));
+			
+			RecoveryQuestion loadedQuestion1 = recoveryQuestionPersister.select(question1.getId());
+			assertThat(loadedQuestion1.getAnswer().getChoices().stream().flatMap(choice -> choice.getAnswers().stream())).hasSameElementsAs(Arrays.asSet(loadedQuestion1.getAnswer()));
 		}
 	}
 }

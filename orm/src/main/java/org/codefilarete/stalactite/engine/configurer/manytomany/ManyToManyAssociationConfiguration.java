@@ -64,25 +64,14 @@ class ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1 extends Co
 		// whereas we need this information to build better association table name
 		this.orphanRemoval = orphanRemoval;
 		this.writeAuthorized = writeAuthorized;
-		this.accessorDefinition = buildAccessorDefinition();
+		this.accessorDefinition = AccessorDefinition.giveDefinition(this.manyToManyRelation.getCollectionAccessor()); //buildAccessorDefinition();
 		this.collectionFactory = buildCollectionFactory();
-	}
-	
-	private AccessorDefinition buildAccessorDefinition() {
-		// we don't use AccessorDefinition.giveMemberDefinition(..) because it gives a cross-member definition, loosing get/set for example,
-		// whereas we need this information to build a better association table name
-		return new AccessorDefinition(
-				this.manyToManyRelation.getMethodReference().getDeclaringClass(),
-				AccessorDefinition.giveDefinition(this.manyToManyRelation.getMethodReference()).getName(),
-				// we prefer the target persister type to method reference member type because the latter only gets the collection type which is not
-				// valuable information for table / column naming
-				this.manyToManyRelation.getTargetMappingConfiguration().getEntityType());
 	}
 	
 	private Supplier<C1> buildCollectionFactory() {
 		Supplier<C1> result = manyToManyRelation.getCollectionFactory();
 		if (result == null) {
-			result = Reflections.giveCollectionFactory((Class<C1>) manyToManyRelation.getMethodReference().getPropertyType());
+			result = Reflections.giveCollectionFactory((Class<C1>) this.accessorDefinition.getMemberType());
 		}
 		return result;
 	}
@@ -124,8 +113,7 @@ class ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1 extends Co
 	}
 	
 	/**
-	 * Equivalent to {@link org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation#getMethodReference()} but used for table and colum naming only.
-	 * Collection access will be done through {@link ManyToManyAssociationConfiguration#getCollectionGetter()} and {@link ManyToManyAssociationConfiguration#getCollectionFactory()}
+	 * Equivalent to {@link ManyToManyRelation#getCollectionAccessor()} but used for table and colum naming.
 	 */
 	public AccessorDefinition getAccessorDefinition() {
 		return accessorDefinition;

@@ -1,5 +1,7 @@
 package org.codefilarete.stalactite.dsl.embeddable;
 
+import java.util.Collection;
+
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
@@ -52,6 +54,28 @@ public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappi
 	@Override
 	<O, J> FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mapOneToOne(SerializableBiConsumer<C, O> setter,
 																		   EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
+	
+	@Override
+	<O, J, S extends Collection<O>>
+	FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S>
+	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	
+	@Override
+	<O, J, S extends Collection<O>>
+	FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S>
+	mapOneToMany(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	
+	@Override
+	<O, J, S extends Collection<C>>
+	FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S>
+	mapManyToOne(SerializableFunction<C, O> getter,
+				 EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
+	
+	@Override
+	<O, J, S extends Collection<C>>
+	FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S>
+	mapManyToOne(SerializableBiConsumer<C, O> setter,
+				 EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
 	@Override
 	FluentEmbeddableMappingBuilder<C> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);

@@ -36,7 +36,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	
 	/** The method that gives the "many" entities from the "one" entity */
-	private final ReversibleAccessor<SRC, S> collectionProvider;
+	private final ReversibleAccessor<SRC, S> collectionAccessor;
 	
 	/** Indicator that says if source persister has table-per-class polymorphism */
 	private final BooleanSupplier sourceTablePerClassPolymorphic;
@@ -76,27 +76,27 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	 * Constructor with lazy configuration provider. To be used when target configuration is not defined while source configuration is defined, for
 	 * instance on cycling configuration.
 	 *
-	 * @param collectionProvider provider of the property to be persisted
+	 * @param collectionAccessor provider of the property to be persisted
 	 * @param sourceTablePerClassPolymorphic must return true if source persister has table-per-class polymorphism
 	 * @param targetMappingConfiguration must return persistence configuration of entities stored in the target collection
 	 */
-	public OneToManyRelation(ReversibleAccessor<SRC, S> collectionProvider,
+	public OneToManyRelation(ReversibleAccessor<SRC, S> collectionAccessor,
 							 BooleanSupplier sourceTablePerClassPolymorphic,
 							 EntityMappingConfigurationProvider<? super TRGT, TRGTID> targetMappingConfiguration) {
-		this.collectionProvider = collectionProvider;
+		this.collectionAccessor = collectionAccessor;
 		this.sourceTablePerClassPolymorphic = sourceTablePerClassPolymorphic;
 		this.targetMappingConfiguration = (EntityMappingConfigurationProvider<TRGT, TRGTID>) targetMappingConfiguration;
 		this.mappedByConfiguration = new MappedByConfiguration<>();
 	}
 	
-	private OneToManyRelation(ReversibleAccessor<SRC, S> collectionProvider,
+	private OneToManyRelation(ReversibleAccessor<SRC, S> collectionAccessor,
 							  BooleanSupplier sourceTablePerClassPolymorphic,
 							  EntityMappingConfigurationProvider<? super TRGT, TRGTID> targetMappingConfiguration,
 							  MappedByConfiguration<TRGT, ?> mappedByConfiguration) {
-		this.collectionProvider = collectionProvider;
+		this.collectionAccessor = collectionAccessor;
 		this.sourceTablePerClassPolymorphic = sourceTablePerClassPolymorphic;
 		this.targetMappingConfiguration = (EntityMappingConfigurationProvider<TRGT, TRGTID>) targetMappingConfiguration;
-		// Note that this cast is wrong, but left for simplicity: this constructo is used for embedded one-to-many relation, which means that the SRC
+		// Note that this cast is wrong, but left for simplicity: this constructor is used for embedded one-to-many relation, which means that the SRC
 		// type is the one that embed another one which contains the relation. In such configuration, the relation actually points to the embeddable
 		// type, not the one that embeds the relation. This the mappedBy(..) config does the same: it point to the embeddable type, not the SRC type.
 		// But fixing it has a lot of impacts due to the necessity to replace MappedByConfiguration "SRC" type by a generic <?> one with has its own
@@ -104,8 +104,8 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		this.mappedByConfiguration = (MappedByConfiguration<TRGT, SRC>) mappedByConfiguration;
 	}
 	
-	public ReversibleAccessor<SRC, S> getCollectionProvider() {
-		return collectionProvider;
+	public ReversibleAccessor<SRC, S> getCollectionAccessor() {
+		return collectionAccessor;
 	}
 	
 	public boolean isSourceTablePerClassPolymorphic() {
@@ -234,12 +234,16 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		return indexingColumnName;
 	}
 	
-	public void ordered() {
-		this.ordered = true;
-	}
-	
 	public boolean isOrdered() {
 		return this.ordered;
+	}
+	
+	public void setOrdered(boolean ordered) {
+		this.ordered = ordered;
+	}
+	
+	public void ordered() {
+		this.ordered = true;
 	}
 	
 	/**
@@ -253,12 +257,18 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	 * @param <C> the root entity type that owns the embeddable which has this relation
 	 */
 	public <C> OneToManyRelation<C, TRGT, TRGTID, S> embedInto(Accessor<C, SRC> accessor, Class<SRC> embeddedType) {
-		AccessorChain<C, S> slidedTargetProvider = new AccessorChain<>(accessor, collectionProvider);
+		AccessorChain<C, S> slidedTargetProvider = new AccessorChain<>(accessor, collectionAccessor);
 		slidedTargetProvider.setNullValueHandler(new ValueInitializerOnNullValue() {
 			@Override
 			protected <T> T newInstance(Accessor<?, T> segmentAccessor, Class<T> valueType) {
 				if (segmentAccessor == accessor) {
 					return (T) Reflections.newInstance(embeddedType);
+				} else if (segmentAccessor == collectionAccessor){
+					if (collectionFactory != null) {
+						return (T) collectionFactory.get();
+					} else {
+						return super.newInstance(segmentAccessor, valueType);
+					}
 				} else {
 					return super.newInstance(segmentAccessor, valueType);
 				}
@@ -272,6 +282,9 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 				slidedMappedByConfiguration);
 		result.setRelationMode(this.getRelationMode());
 		result.setFetchSeparately(this.isFetchSeparately());
+		result.setIndexingColumnName(this.getIndexingColumnName());
+		result.setOrdered(this.isOrdered());
+		result.setCollectionFactory(this.getCollectionFactory());
 		return result;
 	}
 	

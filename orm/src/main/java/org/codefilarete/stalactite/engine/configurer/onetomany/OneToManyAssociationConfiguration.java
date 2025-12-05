@@ -49,11 +49,11 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
 		this.indexColumnNamingStrategy = indexColumnNamingStrategy;
 		this.columnName = columnName;
-		this.collectionGetter = oneToManyRelation.getCollectionProvider();
+		this.collectionGetter = oneToManyRelation.getCollectionAccessor();
 		this.setter = collectionGetter.toMutator();
 		this.orphanRemoval = orphanRemoval;
 		this.writeAuthorized = writeAuthorized;
-		this.accessorDefinition = AccessorDefinition.giveDefinition(this.oneToManyRelation.getCollectionProvider());
+		this.accessorDefinition = AccessorDefinition.giveDefinition(this.oneToManyRelation.getCollectionAccessor());
 		this.collectionFactory = buildCollectionFactory();
 	}
 	
@@ -110,7 +110,7 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 	}
 	
 	/**
-	 * Equivalent to {@link org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation#getCollectionProvider()}.
+	 * Equivalent to {@link org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation#getCollectionAccessor()}.
 	 * Collection access will be done through {@link OneToManyAssociationConfiguration#getCollectionGetter()} and {@link OneToManyAssociationConfiguration#getCollectionFactory()}
 	 */
 	public AccessorDefinition getAccessorDefinition() {

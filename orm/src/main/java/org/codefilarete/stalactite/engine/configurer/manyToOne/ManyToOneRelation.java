@@ -53,6 +53,12 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 	@javax.annotation.Nullable
 	private String columnName;
 	
+	/**
+	 *
+	 * @param targetProvider provider of the property to be persisted
+	 * @param sourceTablePerClassPolymorphic indicates that source is table-per-class polymorphic
+	 * @param targetMappingConfiguration persistence configuration provider of entities stored in the target collection
+	 */
 	public ManyToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider,
 							 BooleanSupplier sourceTablePerClassPolymorphic,
 							 EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration) {

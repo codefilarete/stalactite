@@ -25,7 +25,6 @@ import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.ValueAccessPointByMethodReference;
 import org.codefilarete.stalactite.dsl.ExtraTablePropertyOptions;
 import org.codefilarete.stalactite.dsl.InheritanceOptions;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
@@ -846,7 +845,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				getterReference,
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				new AccessorByMethod<C, S1>(captureLambdaMethod(getter)).toMutator());
-		return mapManyToMany(propertyAccessor, getterReference, mappingConfiguration);
+		return mapManyToMany(propertyAccessor, mappingConfiguration);
 	}
 	
 	@Override
@@ -859,14 +858,16 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
 				setterReference
 		);
-		return mapManyToMany(propertyAccessor, setterReference, mappingConfiguration);
+		return mapManyToMany(propertyAccessor, mappingConfiguration);
 	}
 	
 	private <O, J, S1 extends Collection<O>, S2 extends Collection<C>, T extends Table> FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> mapManyToMany(
 			ReversibleAccessor<C, S1> propertyAccessor,
-			ValueAccessPointByMethodReference methodReference,
 			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
-		ManyToManyRelation<C, O, J, S1, S2> manyToManyRelation = new ManyToManyRelation<>(propertyAccessor, methodReference, this, mappingConfiguration);
+		ManyToManyRelation<C, O, J, S1, S2> manyToManyRelation = new ManyToManyRelation<>(
+				propertyAccessor,
+				() -> this.polymorphismPolicy instanceof PolymorphismPolicy.TablePerClassPolymorphism,
+				mappingConfiguration);
 		this.manyToManyRelations.add(manyToManyRelation);
 		return new MethodDispatcher()
 				.redirect(ManyToManyOptions.class, new ManyToManyOptionsSupport<>(manyToManyRelation), true)	// true to allow "return null" in implemented methods
@@ -1544,7 +1545,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	 * A small class for one-to-many options storage into a {@link OneToManyRelation}. Acts as a wrapper over it.
 	 */
 	static class ManyToManyOptionsSupport<C, I, O, S1 extends Collection<O>, S2 extends Collection<C>>
-			implements ManyToManyOptions<C, I, O, S1, S2> {
+			implements ManyToManyOptions<C, O, S1, S2> {
 		
 		private final ManyToManyRelation<C, O, I, S1, S2> manyToManyRelation;
 		

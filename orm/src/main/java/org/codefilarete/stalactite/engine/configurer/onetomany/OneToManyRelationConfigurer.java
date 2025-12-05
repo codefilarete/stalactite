@@ -101,7 +101,7 @@ public class OneToManyRelationConfigurer<SRC, SRCID, TRGT, TRGTID> extends Abstr
 				cycleSolver = new OneToManyCycleConfigurer<>(targetEntityType);
 				currentBuilderContext.addBuildLifeCycleListener(cycleSolver);
 			}
-			String relationName = AccessorDefinition.giveDefinition(oneToManyRelation.getCollectionProvider()).getName();
+			String relationName = associationConfiguration.getAccessorDefinition().getName();
 			cycleSolver.addCycleSolver(relationName, configurer);
 		} else {
 			Table targetTable = determineTargetTable(oneToManyRelation);
