@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.configurer;
+package org.codefilarete.stalactite.engine.configurer.entity;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -8,7 +8,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -16,7 +15,6 @@ import java.util.function.Supplier;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMethod;
 import org.codefilarete.reflection.AccessorByMethodReference;
-import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
@@ -25,9 +23,7 @@ import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.dsl.ExtraTablePropertyOptions;
 import org.codefilarete.stalactite.dsl.InheritanceOptions;
-import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
@@ -43,12 +39,9 @@ import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyMappe
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyOptions;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToOneOptions;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
-import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfiguration.CompositeKeyLinkage;
 import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfigurationProvider;
-import org.codefilarete.stalactite.dsl.key.CompositeKeyOptions;
 import org.codefilarete.stalactite.dsl.key.FluentEntityMappingBuilderCompositeKeyOptions;
 import org.codefilarete.stalactite.dsl.key.FluentEntityMappingBuilderKeyOptions;
-import org.codefilarete.stalactite.dsl.key.KeyOptions;
 import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
@@ -57,13 +50,11 @@ import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
-import org.codefilarete.stalactite.dsl.property.ColumnOptions;
 import org.codefilarete.stalactite.dsl.property.ElementCollectionOptions;
 import org.codefilarete.stalactite.dsl.property.EnumOptions;
 import org.codefilarete.stalactite.dsl.property.MapOptions;
 import org.codefilarete.stalactite.dsl.property.MapOptions.KeyAsEntityMapOptions;
 import org.codefilarete.stalactite.dsl.property.MapOptions.ValueAsEntityMapOptions;
-import org.codefilarete.stalactite.dsl.property.PropertyOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToManyOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToOneOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyEntityOptions;
@@ -71,30 +62,26 @@ import org.codefilarete.stalactite.dsl.relation.OneToOneEntityOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToOneOptions;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.VersioningStrategy;
-import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.LinkageSupport;
 import org.codefilarete.stalactite.engine.configurer.builder.DefaultPersisterBuilder;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
+import org.codefilarete.stalactite.engine.configurer.embeddable.LinkageSupport;
 import org.codefilarete.stalactite.engine.configurer.manyToOne.ManyToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
-import org.codefilarete.stalactite.engine.runtime.AbstractVersioningStrategy.VersioningStrategySupport;
+import org.codefilarete.stalactite.engine.configurer.property.ColumnLinkageOptionsSupport;
+import org.codefilarete.stalactite.engine.configurer.property.LocalColumnLinkageOptions;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.ColumnedRow;
-import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.exception.NotImplementedException;
-import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.function.SerializableTriFunction;
 import org.codefilarete.tool.function.Serie;
-import org.codefilarete.tool.function.TriFunction;
 import org.codefilarete.tool.reflect.MethodDispatcher;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
@@ -156,6 +143,10 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	private EntityFactoryProviderSupport<C, Table> entityFactoryProvider;
 	
+	private LocalColumnLinkageOptions columnOptions = new ColumnLinkageOptionsSupport();
+	
+	private Field field;
+	
 	/**
 	 * Creates a builder to map the given class for persistence
 	 *
@@ -168,6 +159,14 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		this.methodSpy = new MethodReferenceCapturer();
 		
 		this.propertiesMappingConfigurationDelegate = new EntityDecoratedEmbeddableConfigurationSupport<>(this, classToPersist);
+	}
+	
+	public void setKeyMapping(KeyMapping<C, I> keyMapping) {
+		this.keyMapping = keyMapping;
+	}
+	
+	public void setEntityFactoryProvider(EntityFactoryProviderSupport<C, Table> entityFactoryProvider) {
+		this.entityFactoryProvider = entityFactoryProvider;
 	}
 	
 	@javax.annotation.Nullable
@@ -647,7 +646,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					@Override
 					public InheritanceOptions withJoinedTable(Table parentTable) {
 						inheritanceConfiguration.setJoinTable(true);
-						inheritanceConfiguration.table = parentTable;
+						inheritanceConfiguration.setTable(parentTable);
 						return null;
 					}
 				}, true)
@@ -1147,720 +1146,4 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		persistenceContext.getPersisterRegistry().addPersister(persister);
 		return persister;
 	}
-	
-	/**
-	 * Class very close to {@link FluentEmbeddableMappingConfigurationSupport}, but with dedicated methods to entity mapping such as
-	 * identifier definition or configuration override by {@link Column}
-	 */
-	static class EntityDecoratedEmbeddableConfigurationSupport<C, I> extends FluentEmbeddableMappingConfigurationSupport<C> {
-		
-		private final FluentEntityMappingConfigurationSupport<C, I> entityConfigurationSupport;
-		
-		/**
-		 * Creates a builder to map the given class for persistence
-		 *
-		 * @param persistedClass the class to create a mapping for
-		 */
-		public EntityDecoratedEmbeddableConfigurationSupport(FluentEntityMappingConfigurationSupport<C, I> entityConfigurationSupport, Class<C> persistedClass) {
-			super(persistedClass);
-			this.entityConfigurationSupport = entityConfigurationSupport;
-		}
-		
-		<E> LinkageSupport<C, E> addMapping(SerializableBiConsumer<C, E> setter) {
-			LinkageSupport<C, E> newLinkage = new LinkageSupport<>(setter);
-			mapping.add(newLinkage);
-			return newLinkage;
-		}
-		
-		<E> LinkageSupport<C, E> addMapping(SerializableFunction<C, E> getter) {
-			LinkageSupport<C, E> newLinkage = new LinkageSupport<>(getter);
-			mapping.add(newLinkage);
-			return newLinkage;
-		}
-		
-		private <O> FluentMappingBuilderPropertyOptions<C, I, O> wrapWithAdditionalPropertyOptions(LinkageSupport<C, O> newMapping) {
-			return new MethodDispatcher()
-					.redirect(ColumnOptions.class, new ColumnOptions<O>() {
-						@Override
-						public ColumnOptions<O> mandatory() {
-							newMapping.setNullable(false);
-							return null;
-						}
-						
-						@Override
-						public ColumnOptions<O> unique() {
-							newMapping.setUnique(true);
-							return null;
-						}
-						
-						@Override
-						public ColumnOptions<O> setByConstructor() {
-							newMapping.setByConstructor();
-							return null;
-						}
-						
-						@Override
-						public ColumnOptions<O> readonly() {
-							newMapping.readonly();
-							return null;
-						}
-						
-						@Override
-						public ColumnOptions<O> columnName(String name) {
-							newMapping.getColumnOptions().setColumnName(name);
-							return null;
-						}
-						
-						@Override
-						public ColumnOptions<O> columnSize(Size size) {
-							newMapping.getColumnOptions().setColumnSize(size);
-							return null;
-						}
-						
-						@Override
-						public ColumnOptions<O> column(Column<? extends Table, ? extends O> column) {
-							newMapping.setColumnOptions(new ColumnLinkageOptionsByColumn(column));
-							return null;
-						}
-						
-						@Override
-						public ColumnOptions<O> fieldName(String name) {
-							Field field = Reflections.findField(EntityDecoratedEmbeddableConfigurationSupport.this.entityConfigurationSupport.classToPersist, name);
-							if (field == null) {
-								throw new MappingConfigurationException(("Field " + name
-										+ " was not found in " + Reflections.toString(EntityDecoratedEmbeddableConfigurationSupport.this.entityConfigurationSupport.classToPersist)));
-							}
-							newMapping.setField(field);
-							return null;
-						}
-						
-						@Override
-						public ColumnOptions<O> readConverter(Converter<O, O> converter) {
-							newMapping.setReadConverter(converter);
-							return null;
-						}
-						
-						@Override
-						public ColumnOptions<O> writeConverter(Converter<O, O> converter) {
-							newMapping.setWriteConverter(converter);
-							return null;
-						}
-						
-						@Override
-						public <V> PropertyOptions<O> sqlBinder(ParameterBinder<V> parameterBinder) {
-							newMapping.setParameterBinder(parameterBinder);
-							return null;
-						}
-					}, true)
-					.redirect(ExtraTablePropertyOptions.class, name -> {
-						newMapping.setExtraTableName(name);
-						return null;
-					}, true)
-					.fallbackOn(entityConfigurationSupport)
-					.build((Class<FluentMappingBuilderPropertyOptions<C, I, O>>) (Class) FluentMappingBuilderPropertyOptions.class);
-		}
-		
-		SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy) {
-			return addKeyMapping(Accessors.accessor(getter), identifierPolicy);
-		}
-		
-		SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy, Column<?, I> column) {
-			SingleKeyLinkageSupport<C, I> linkage = addKeyMapping(Accessors.accessor(getter), identifierPolicy);
-			linkage.setColumnOptions(new ColumnLinkageOptionsByColumn(column));
-			return linkage;
-		}
-		
-		SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy, String columnName) {
-			SingleKeyLinkageSupport<C, I> linkage = addKeyMapping(Accessors.accessor(getter), identifierPolicy);
-			linkage.setColumnOptions(new ColumnLinkageOptionsSupport(columnName));
-			return linkage;
-		}
-		
-		SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy) {
-			return addKeyMapping(Accessors.mutator(setter), identifierPolicy);
-		}
-		
-		SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy, Column<?, I> column) {
-			SingleKeyLinkageSupport<C, I> linkage = addKeyMapping(Accessors.mutator(setter), identifierPolicy);
-			linkage.setColumnOptions(new ColumnLinkageOptionsByColumn(column));
-			return linkage;
-		}
-		
-		SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy, String columnName) {
-			SingleKeyLinkageSupport<C, I> linkage = addKeyMapping(Accessors.mutator(setter), identifierPolicy);
-			linkage.setColumnOptions(new ColumnLinkageOptionsSupport(columnName));
-			return linkage;
-		}
-		
-		/**
-		 * 
-		 * @param propertyAccessor
-		 * @param identifierPolicy
-		 * @return
-		 */
-		private SingleKeyLinkageSupport<C, I> addKeyMapping(ReversibleAccessor<C, I> propertyAccessor, IdentifierPolicy<I> identifierPolicy) {
-			
-			// Please note that we don't check for any id presence in inheritance since this will override parent one (see final build()) 
-			if (entityConfigurationSupport.keyMapping != null) {
-				throw new IllegalArgumentException("Identifier is already defined by " + AccessorDefinition.toString(entityConfigurationSupport.keyMapping.getAccessor()));
-			}
-			SingleKeyLinkageSupport<C, I> newLinkage = new SingleKeyLinkageSupport<>(propertyAccessor, identifierPolicy);
-			entityConfigurationSupport.keyMapping = newLinkage;
-			return newLinkage;
-		}
-		
-		/**
-		 *
-		 * @param propertyAccessor
-		 * @return
-		 */
-		private CompositeKeyLinkageSupport<C, I> addCompositeKeyMapping(ReversibleAccessor<C, I> propertyAccessor,
-																		CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder,
-																		Consumer<C> markAsPersistedFunction,
-																		Function<C, Boolean> isPersistedFunction) {
-			
-			// Please note that we don't check for any id presence in inheritance since this will override parent one (see final build()) 
-			if (entityConfigurationSupport.keyMapping != null) {
-				throw new IllegalArgumentException("Identifier is already defined by " + AccessorDefinition.toString(entityConfigurationSupport.keyMapping.getAccessor()));
-			}
-			CompositeKeyLinkageSupport<C, I> newLinkage = new CompositeKeyLinkageSupport<>(propertyAccessor, compositeKeyMappingBuilder, markAsPersistedFunction, isPersistedFunction);
-			entityConfigurationSupport.keyMapping = newLinkage;
-			return newLinkage;
-		}
-		
-		private FluentEntityMappingBuilderKeyOptions<C, I> wrapWithKeyOptions(SingleKeyLinkageSupport<C, I> keyMapping) {
-			return new MethodDispatcher()
-					.redirect(KeyOptions.class, new KeyOptions<C, I>() {
-						
-						@Override
-						public KeyOptions<C, I> usingConstructor(Supplier<C> factory) {
-							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(table -> row -> factory.get(), false);
-							return null;
-						}
-						
-						@Override
-						public KeyOptions<C, I> usingConstructor(Function<? super I, C> factory) {
-							keyMapping.setByConstructor();
-							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(table -> {
-								Column<?, I> primaryKey = (Column<?, I>) Iterables.first(((Table<?>) table).getPrimaryKey().getColumns());
-								return row -> factory.apply((I) row.get(primaryKey));
-							}, true);
-							return null;
-						}
-						
-						@Override
-						public <T extends Table<T>> KeyOptions<C, I> usingConstructor(Function<? super I, C> factory, Column<T, I> input) {
-							keyMapping.setColumnOptions(new ColumnLinkageOptionsByColumn(input));
-							keyMapping.setByConstructor();
-							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(table -> row -> factory.apply((I) row.get(input)), true);
-							return null;
-						}
-						
-						@Override
-						public KeyOptions<C, I> usingConstructor(Function<? super I, C> factory, String columnName) {
-							keyMapping.setColumnOptions(new ColumnLinkageOptionsSupport(columnName));
-							keyMapping.setByConstructor();
-							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(table -> row -> factory.apply((I) row.get(table.getColumn(columnName))), true);
-							return null;
-						}
-						
-						@Override
-						public <X, T extends Table<T>> KeyOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
-																						 Column<T, I> input1,
-																						 Column<T, X> input2) {
-							keyMapping.setColumnOptions(new ColumnLinkageOptionsByColumn(input1));
-							keyMapping.setByConstructor();
-							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(
-									table -> row -> factory.apply(
-											(I) row.get(input1),
-											(X) row.get(input2)),
-									true);
-							return null;
-						}
-						
-						@Override
-						public <X> KeyOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
-																	 String columnName1,
-																	 String columnName2) {
-							keyMapping.setColumnOptions(new ColumnLinkageOptionsSupport(columnName1));
-							keyMapping.setByConstructor();
-							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(
-									table -> row -> factory.apply(
-											(I) row.get(table.getColumn(columnName1)),
-											(X) row.get(table.getColumn(columnName2))),
-									true);
-							return null;
-						}
-						
-						
-						@Override
-						public <X, Y, T extends Table<T>> KeyOptions<C, I> usingConstructor(TriFunction<? super I, X, Y, C> factory,
-																							Column<T, I> input1,
-																							Column<T, X> input2,
-																							Column<T, Y> input3) {
-							keyMapping.setColumnOptions(new ColumnLinkageOptionsByColumn(input1));
-							keyMapping.setByConstructor();
-							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(
-									table -> row -> factory.apply(
-											(I) row.get(input1),
-											(X) row.get(input2),
-											(Y) row.get(input3)),
-									true);
-							return null;
-						}
-						
-						@Override
-						public <X, Y> KeyOptions<C, I> usingConstructor(TriFunction<? super I, X, Y, C> factory,
-																		String columnName1,
-																		String columnName2,
-																		String columnName3) {
-							keyMapping.setColumnOptions(new ColumnLinkageOptionsSupport(columnName1));
-							keyMapping.setByConstructor();
-							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(
-									table -> row -> factory.apply(
-											(I) row.get(table.getColumn(columnName1)),
-											(X) row.get(table.getColumn(columnName2)),
-											(Y) row.get(table.getColumn(columnName3))),
-									true);
-							return null;
-						}
-						
-						@Override
-						public KeyOptions<C, I> usingFactory(Function<Function<Column<?, ?>, ?>, C> factory) {
-							keyMapping.setByConstructor();
-							entityConfigurationSupport.entityFactoryProvider = new EntityFactoryProviderSupport<>(table -> row -> (C) factory.apply(row::get), true);
-							return null;
-						}
-					}, true)
-					.fallbackOn(entityConfigurationSupport)
-					.build((Class<FluentEntityMappingBuilderKeyOptions<C, I>>) (Class) FluentEntityMappingBuilderKeyOptions.class);
-		}
-		
-		private FluentEntityMappingBuilderCompositeKeyOptions<C, I> wrapWithKeyOptions(CompositeKeyLinkageSupport<C, I> keyMapping) {
-			return new MethodDispatcher()
-					.redirect(CompositeKeyOptions.class, new CompositeKeyOptions<C, I>() {
-						
-					}, true)
-					.fallbackOn(entityConfigurationSupport)
-					.build((Class<FluentEntityMappingBuilderCompositeKeyOptions<C, I>>) (Class) FluentEntityMappingBuilderCompositeKeyOptions.class);
-		}
-	}
-	
-	private static class OptimisticLockOption<C> {
-		
-		private final VersioningStrategy<Object, C> versioningStrategy;
-		
-		public OptimisticLockOption(AccessorByMethodReference<Object, C> versionAccessor, Serie<C> serie) {
-			this.versioningStrategy = new VersioningStrategySupport<>(new PropertyAccessor<>(
-					versionAccessor,
-					Accessors.mutator(versionAccessor.getDeclaringClass(), propertyName(versionAccessor.getMethodName()), versionAccessor.getPropertyType())
-			), serie);
-		}
-		
-		public VersioningStrategy getVersioningStrategy() {
-			return versioningStrategy;
-		}
-	}
-	
-	/**
-	 * A small class for one-to-many options storage into a {@link OneToManyEntityOptions}. Acts as a wrapper over it.
-	 */
-	static class OneToManyEntityOptionsSupport<C, I, O, S extends Collection<O>, O_ID>
-			implements OneToManyEntityOptions<C, I, O, S> {
-		
-		private final OneToManyRelation<C, O, O_ID, S> oneToManyRelation;
-		
-		public OneToManyEntityOptionsSupport(OneToManyRelation<C, O, O_ID, S> oneToManyRelation) {
-			this.oneToManyRelation = oneToManyRelation;
-		}
-		
-		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink) {
-			oneToManyRelation.setReverseSetter(reverseLink);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink) {
-			oneToManyRelation.setReverseGetter(reverseLink);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(Column<?, I> reverseLink) {
-			oneToManyRelation.setReverseColumn(reverseLink);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(String reverseColumnName) {
-			oneToManyRelation.setReverseColumn(reverseColumnName);
-			return null;
-		}
-		
-		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink) {
-			oneToManyRelation.setReverseLink(reverseLink);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> initializeWith(Supplier<S> collectionFactory) {
-			oneToManyRelation.setCollectionFactory(collectionFactory);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> cascading(RelationMode relationMode) {
-			oneToManyRelation.setRelationMode(relationMode);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> fetchSeparately() {
-			oneToManyRelation.fetchSeparately();
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> indexedBy(Column<?, Integer> orderingColumn) {
-			oneToManyRelation.setIndexingColumn(orderingColumn);
-			return null;
-		}
-		
-		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> indexedBy(String columnName) {
-			oneToManyRelation.setIndexingColumnName(columnName);
-			return null;
-		}
-		
-		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> indexed() {
-			oneToManyRelation.ordered();
-			return null;
-		}
-	}
-	
-	/**
-	 * A small class for one-to-many options storage into a {@link OneToManyRelation}. Acts as a wrapper over it.
-	 */
-	static class ManyToManyOptionsSupport<C, I, O, S1 extends Collection<O>, S2 extends Collection<C>>
-			implements ManyToManyOptions<C, O, S1, S2> {
-		
-		private final ManyToManyRelation<C, O, I, S1, S2> manyToManyRelation;
-		
-		public ManyToManyOptionsSupport(ManyToManyRelation<C, O, I, S1, S2> manyToManyRelation) {
-			this.manyToManyRelation = manyToManyRelation;
-		}
-		
-		@Override
-		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> initializeWith(Supplier<S1> collectionFactory) {
-			manyToManyRelation.setCollectionFactory(collectionFactory);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverselySetBy(SerializableBiConsumer<O, C> reverseLink) {
-			manyToManyRelation.getMappedByConfiguration().setReverseCombiner(reverseLink);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverseCollection(SerializableFunction<O, S2> collectionAccessor) {
-			manyToManyRelation.getMappedByConfiguration().setReverseCollectionAccessor(collectionAccessor);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverseCollection(SerializableBiConsumer<O, S2> collectionMutator) {
-			manyToManyRelation.getMappedByConfiguration().setReverseCollectionMutator(collectionMutator);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverselyInitializeWith(Supplier<S2> collectionFactory) {
-			manyToManyRelation.getMappedByConfiguration().setReverseCollectionFactory(collectionFactory);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> cascading(RelationMode relationMode) {
-			manyToManyRelation.setRelationMode(relationMode);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> fetchSeparately() {
-			manyToManyRelation.fetchSeparately();
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> indexedBy(String columnName) {
-			manyToManyRelation.setIndexingColumnName(columnName);
-			return null;
-		}
-		
-		@Override
-		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> indexed() {
-			manyToManyRelation.ordered();
-			return null;
-		}
-	}
-	
-	/**
-	 * Stores information of {@link InheritanceConfiguration}
-	 * 
-	 * @param <E> entity type
-	 * @param <I> identifier type
-	 */
-	static class InheritanceConfigurationSupport<E, I> implements InheritanceConfiguration<E, I> {
-		
-		private final EntityMappingConfiguration<E, I> configuration;
-		
-		private boolean joinTable = false;
-		
-		private Table table;
-		
-		InheritanceConfigurationSupport(EntityMappingConfiguration<E, I> configuration) {
-			this.configuration = configuration;
-		}
-		
-		@Override
-		public EntityMappingConfiguration<E, I> getConfiguration() {
-			return configuration;
-		}
-		
-		public void setJoinTable(boolean joinTable) {
-			this.joinTable = joinTable;
-		}
-
-		@Override
-		public boolean isJoinTable() {
-			return this.joinTable;
-		}
-		
-		@Override
-		public Table getTable() {
-			return this.table;
-		}
-	}
-	
-	/**
-	 * Storage for single key mapping definition. See {@link #mapKey(SerializableFunction, IdentifierPolicy)} methods.
-	 */
-	protected static class SingleKeyLinkageSupport<C, I> implements KeyMapping<C, I>, SingleKeyMapping<C, I> {
-		
-		private final ReversibleAccessor<C, I> accessor;
-		
-		private final IdentifierPolicy<I> identifierPolicy;
-		
-		@javax.annotation.Nullable
-		private ColumnLinkageOptions columnOptions;
-		
-		private boolean setByConstructor;
-		
-		public SingleKeyLinkageSupport(ReversibleAccessor<C, I> accessor, IdentifierPolicy<I> identifierPolicy) {
-			this.accessor = accessor;
-			this.identifierPolicy = identifierPolicy;
-		}
-		
-		@Override
-		public IdentifierPolicy<I> getIdentifierPolicy() {
-			return identifierPolicy;
-		}
-		
-		@Override
-		public ReversibleAccessor<C, I> getAccessor() {
-			return accessor;
-		}
-		
-		@javax.annotation.Nullable
-		public ColumnLinkageOptions getColumnOptions() {
-			return columnOptions;
-		}
-		
-		public void setColumnOptions(ColumnLinkageOptions columnOptions) {
-			this.columnOptions = columnOptions;
-		}
-		
-		public void setByConstructor() {
-			this.setByConstructor = true;
-		}
-		
-		@Override
-		public boolean isSetByConstructor() {
-			return setByConstructor;
-		}
-	}
-	
-	/**
-	 * Storage for composite key mapping definition. See {@link FluentEntityMappingBuilder#mapCompositeKey(SerializableFunction, CompositeKeyMappingConfigurationProvider, Consumer, Function)} methods.
-	 */
-	public static class CompositeKeyLinkageSupport<C, I> implements KeyMapping<C, I>, CompositeKeyMapping<C, I> {
-		
-		private final ReversibleAccessor<C, I> accessor;
-		private final CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder;
-		private final Consumer<C> markAsPersistedFunction;
-		private final Function<C, Boolean> isPersistedFunction;
-		
-		@javax.annotation.Nullable
-		private CompositeKeyLinkageOptions columnOptions;
-		
-		private boolean setByConstructor;
-		
-		public CompositeKeyLinkageSupport(ReversibleAccessor<C, I> accessor,
-										  CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder,
-										  Consumer<C> markAsPersistedFunction,
-										  Function<C, Boolean> isPersistedFunction) {
-			this.accessor = accessor;
-			this.compositeKeyMappingBuilder = compositeKeyMappingBuilder;
-			this.markAsPersistedFunction = markAsPersistedFunction;
-			this.isPersistedFunction = isPersistedFunction;
-		}
-		
-		public CompositeKeyMappingConfigurationProvider<I> getCompositeKeyMappingBuilder() {
-			return compositeKeyMappingBuilder;
-		}
-		
-		@Override
-		public ReversibleAccessor<C, I> getAccessor() {
-			return accessor;
-		}
-		
-		public void setColumnOptions(CompositeKeyLinkageOptions columnOptions) {
-			this.columnOptions = columnOptions;
-		}
-		
-		public void setByConstructor() {
-			this.setByConstructor = true;
-		}
-		
-		@Override
-		public boolean isSetByConstructor() {
-			return setByConstructor;
-		}
-		
-		public List<CompositeKeyLinkage> getPropertiesMapping() {
-			return compositeKeyMappingBuilder.getConfiguration().getPropertiesMapping();
-		}
-		
-		@Override
-		public Consumer<C> getMarkAsPersistedFunction() {
-			return markAsPersistedFunction;
-		}
-		
-		@Override
-		public Function<C, Boolean> getIsPersistedFunction() {
-			return isPersistedFunction;
-		}
-		
-		@javax.annotation.Nullable
-		@Override
-		public CompositeKeyLinkageOptions getColumnsOptions() {
-			return columnOptions;
-		}
-	}
-	
-	static class EntityFactoryProviderSupport<C, T extends Table> implements EntityFactoryProvider<C, T> {
-		
-		private final Function<Table, Function<ColumnedRow, C>> factory;
-		
-		private final boolean setIdentifier;
-		
-		EntityFactoryProviderSupport(Function<Table, Function<ColumnedRow, C>> factory, boolean setIdentifier) {
-			this.factory = factory;
-			this.setIdentifier = setIdentifier;
-		}
-		
-		@Override
-		public Function<ColumnedRow, C> giveEntityFactory(T table) {
-			return factory.apply(table);
-		}
-		
-		@Override
-		public boolean isIdentifierSetByFactory() {
-			return setIdentifier;
-		}
-	}
-	
-	/**
-	 * A small class for one-to-many options storage into a {@link OneToManyEntityOptions}. Acts as a wrapper over it.
-	 */
-	static class OneToManyOptionsSupport<C, I, O, S extends Collection<O>, O_ID>
-			implements OneToManyEntityOptions<C, I, O, S> {
-		
-		private final OneToManyRelation<C, O, O_ID, S> oneToManyRelation;
-		
-		public OneToManyOptionsSupport(OneToManyRelation<C, O, O_ID, S> oneToManyRelation) {
-			this.oneToManyRelation = oneToManyRelation;
-		}
-		
-		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink) {
-			oneToManyRelation.setReverseSetter(reverseLink);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink) {
-			oneToManyRelation.setReverseGetter(reverseLink);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(Column<?, I> reverseLink) {
-			oneToManyRelation.setReverseColumn(reverseLink);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(String reverseColumnName) {
-			oneToManyRelation.setReverseColumn(reverseColumnName);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink) {
-			oneToManyRelation.setReverseLink(reverseLink);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> initializeWith(Supplier<S> collectionFactory) {
-			oneToManyRelation.setCollectionFactory(collectionFactory);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> cascading(RelationMode relationMode) {
-			oneToManyRelation.setRelationMode(relationMode);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> fetchSeparately() {
-			oneToManyRelation.fetchSeparately();
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> indexedBy(Column<?, Integer> orderingColumn) {
-			oneToManyRelation.setIndexingColumn(orderingColumn);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> indexedBy(String columnName) {
-			oneToManyRelation.setIndexingColumnName(columnName);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentMappingBuilderOneToManyOptions<C, I, O, S> indexed() {
-			oneToManyRelation.ordered();
-			return null;	// we can return null because dispatcher will return proxy
-		}
-	}
-	
 }

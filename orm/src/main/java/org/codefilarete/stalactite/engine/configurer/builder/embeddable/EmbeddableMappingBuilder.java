@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -30,6 +31,7 @@ import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.ColumnNameProvider.ColumnLinkage;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -319,7 +321,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 		}
 		
 		protected <O> void assertMappingIsNotAlreadyDefinedByInheritance(EmbeddableLinkage<C, O> linkage, String columnNameToCheck, EmbeddableMappingConfiguration<O> mappingConfiguration) {
-			DuplicateDefinitionChecker duplicateDefinitionChecker = new DuplicateDefinitionChecker(linkage.getAccessor(), columnNameToCheck, columnNameProvider);
+			DuplicateDefinitionChecker duplicateDefinitionChecker = new DuplicateDefinitionChecker(columnNameToCheck, linkage.getAccessor(), columnNameProvider);
 			stream(mappingConfiguration.inheritanceIterable())
 					.flatMap(configuration -> (Stream<EmbeddableLinkage>) configuration.getPropertiesMapping().stream())
 					// not using equals() is voluntary since we want reference checking here to exclude same instance,
@@ -363,7 +365,9 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 		}
 		
 		private <O> String determineColumnName(EmbeddableLinkage<C, O> linkage, @Nullable String overriddenColumName) {
-			return nullable(overriddenColumName).elseSet(linkage.getColumnName()).getOr(() -> columnNameProvider.giveColumnName(linkage));
+			return nullable(overriddenColumName).getOr(
+					() -> columnNameProvider.giveColumnName(new ColumnLinkage(linkage.getColumnName(), linkage.getField(), linkage.getAccessor()))
+			);
 		}
 		
 		private <O> Size determineColumnSize(EmbeddableLinkage<C, O> linkage, @Nullable Size overriddenColumSize) {
@@ -523,7 +527,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 		private final ColumnNameProvider columnNameProvider;
 		private static final ValueAccessPointComparator VALUE_ACCESS_POINT_COMPARATOR = new ValueAccessPointComparator();
 		
-		DuplicateDefinitionChecker(ReversibleAccessor propertyAccessor, String columnNameToCheck, ColumnNameProvider columnNameProvider) {
+		DuplicateDefinitionChecker(String columnNameToCheck, ReversibleAccessor propertyAccessor, ColumnNameProvider columnNameProvider) {
 			this.columnNameToCheck = columnNameToCheck;
 			this.propertyAccessor = propertyAccessor;
 			this.columnNameProvider = columnNameProvider;
@@ -533,7 +537,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 			ReversibleAccessor accessor = pawn.getAccessor();
 			if (VALUE_ACCESS_POINT_COMPARATOR.compare(accessor, propertyAccessor) == 0) {
 				throw new MappingConfigurationException("Mapping is already defined by method " + AccessorDefinition.toString(propertyAccessor));
-			} else if (columnNameToCheck.equals(nullable(pawn.getColumnName()).getOr(() -> columnNameProvider.giveColumnName(pawn)))) {
+			} else if (columnNameToCheck.equals(columnNameProvider.giveColumnName(new ColumnLinkage(pawn.getColumnName(), pawn.getField(), pawn.getAccessor())))) {
 				throw new MappingConfigurationException("Column '" + columnNameToCheck + "' of mapping '" + AccessorDefinition.toString(propertyAccessor)
 						+ "' is already targeted by '" + AccessorDefinition.toString(pawn.getAccessor()) + "'");
 			}

@@ -108,7 +108,6 @@ public class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends Abst
 				subEntityPropertiesConverters,
 				subEntityPropertiesWriteConverters,
 				false);
-		addIdentificationToMapping(identification, (Mapping<C, ?>) subEntityMapping);
 		DefaultEntityMapping<D, I, SUBT> entityMapping = MainPersisterStep.createEntityMapping(
 				false,
 				subTable,
@@ -142,9 +141,5 @@ public class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends Abst
 	
 	private void addForeignKey(Table table) {
 		PrimaryKeyPropagationStep.applyForeignKeys(this.mainTablePrimaryKey, this.namingConfiguration.getForeignKeyNamingStrategy(), Arrays.asSet(table));
-	}
-	
-	private void addIdentificationToMapping(AbstractIdentification<C, I> identification, Mapping<C, ?> mapping) {
-		IdentifierManagerStep.addIdentificationToMapping(identification, Arrays.asSet(mapping));
 	}
 }

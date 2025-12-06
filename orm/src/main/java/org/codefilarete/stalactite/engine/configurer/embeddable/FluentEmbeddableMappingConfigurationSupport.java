@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.configurer;
+package org.codefilarete.stalactite.engine.configurer.embeddable;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
@@ -14,8 +14,6 @@ import java.util.function.Supplier;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMethod;
 import org.codefilarete.reflection.AccessorByMethodReference;
-import org.codefilarete.reflection.AccessorChain;
-import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
@@ -24,8 +22,6 @@ import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.ValueAccessPointMap;
-import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
@@ -35,7 +31,6 @@ import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilderOneToManyOptions;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilderOneToOneOptions;
 import org.codefilarete.stalactite.dsl.embeddable.ImportedEmbedOptions;
-import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.ColumnLinkageOptions;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
@@ -43,17 +38,17 @@ import org.codefilarete.stalactite.dsl.property.EnumOptions;
 import org.codefilarete.stalactite.dsl.property.PropertyOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToManyOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToOneOptions;
-import org.codefilarete.stalactite.dsl.relation.OneToManyEntityOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToOneOptions;
-import org.codefilarete.stalactite.engine.configurer.FluentEntityMappingConfigurationSupport.ManyToManyOptionsSupport;
-import org.codefilarete.stalactite.engine.configurer.PropertyAccessorResolver.PropertyMapping;
+import org.codefilarete.stalactite.engine.configurer.LambdaMethodUnsheller;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
+import org.codefilarete.stalactite.engine.configurer.entity.ManyToManyOptionsSupport;
 import org.codefilarete.stalactite.engine.configurer.manyToOne.ManyToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
+import org.codefilarete.stalactite.engine.configurer.property.ColumnLinkageOptionsByColumn;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -62,12 +57,10 @@ import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry.
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.SerializableTriFunction;
-import org.codefilarete.tool.function.ThreadSafeLazyInitializer;
 import org.codefilarete.tool.reflect.MethodDispatcher;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
-import static org.codefilarete.tool.Nullable.nullable;
 import static org.codefilarete.tool.Reflections.propertyName;
 
 /**
@@ -170,7 +163,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	
 	@Override
 	public <O, J> FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mapOneToOne(SerializableFunction<C, O> getter,
-														 EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
+																				  EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
 		// we keep close to user demand: we keep its method reference ...
 		AccessorByMethodReference<C, O> accessorByMethodReference = Accessors.accessorByMethodReference(getter);
 		// ... but we can't do it for mutator, so we use the most equivalent manner: a mutator based on getter method (fallback to property if not present)
@@ -180,7 +173,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	
 	@Override
 	public <O, J> FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mapOneToOne(SerializableBiConsumer<C, O> setter,
-														 EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
+																				  EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
 		// we keep close to user demand: we keep its method reference ...
 		Mutator<C, O> mutatorByMethodReference = Accessors.mutatorByMethodReference(setter);
 		// ... but we can't do it for accessor, so we use the most equivalent manner: an accessor based on setter method (fallback to property if not present)
@@ -260,7 +253,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	public <O, J, S extends Collection<O>> FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> mapOneToMany(
 			SerializableFunction<C, S> getter,
 			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
-		
+
 		AccessorByMethodReference<C, S> getterReference = Accessors.accessorByMethodReference(getter);
 		ReversibleAccessor<C, S> propertyAccessor = new PropertyAccessor<>(
 				// we keep close to user demand : we keep its method reference ...
@@ -445,7 +438,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	 * @return the last {@link Inset} built by {@link #newInset(SerializableFunction, EmbeddableMappingConfigurationProvider)}
 	 * or {@link #newInset(SerializableBiConsumer, EmbeddableMappingConfigurationProvider)}
 	 */
-	protected Inset<C, ?> currentInset() {
+	public Inset<C, ?> currentInset() {
 		return currentInset;
 	}
 	
@@ -567,7 +560,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		return wrapWithEnumOptions(linkage);
 	}
 	
-	<E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C, E> wrapWithEnumOptions(LinkageSupport<C, E> linkage) {
+	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C, E> wrapWithEnumOptions(LinkageSupport<C, E> linkage) {
 		return new MethodReferenceDispatcher()
 				.redirect(EnumOptions.class, new EnumOptions<E>() {
 					
@@ -683,10 +676,10 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 				// Because of ... lazyness ;) : "interface method capture" (such as done with ImportedEmbedOptions) would have required a dedicated
 				// interface (inheriting from ImportedEmbedOptions) to define overrideName(AccessorChain, String)
 				.redirect((SerializableTriFunction<FluentEmbeddableMappingConfigurationImportedEmbedOptions, SerializableFunction, String, FluentEmbeddableMappingConfigurationImportedEmbedOptions>)
-						FluentEmbeddableMappingConfigurationImportedEmbedOptions::overrideName,
+								FluentEmbeddableMappingConfigurationImportedEmbedOptions::overrideName,
 						(BiConsumer<SerializableFunction, String>) inset::overrideName)
 				.redirect((SerializableTriFunction<FluentEmbeddableMappingConfigurationImportedEmbedOptions, SerializableBiConsumer, String, FluentEmbeddableMappingConfigurationImportedEmbedOptions>)
-						FluentEmbeddableMappingConfigurationImportedEmbedOptions::overrideName,
+								FluentEmbeddableMappingConfigurationImportedEmbedOptions::overrideName,
 						(BiConsumer<SerializableBiConsumer, String>) inset::overrideName)
 				.redirect(ImportedEmbedOptions.class, new ImportedEmbedOptions<C>() {
 
@@ -764,510 +757,5 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	@Override
 	public List<MapRelation<C, ?, ?, ? extends Map>> getMaps() {
 		return Collections.emptyList();
-	}
-	
-	/**
-	 * A small class for one-to-many options storage into a {@link OneToManyEntityOptions}. Acts as a wrapper over it.
-	 */
-	static class OneToManyOptionsSupport<C, O, S extends Collection<O>>
-			implements OneToManyOptions<C, O, S> {
-		
-		private final OneToManyRelation<C, O, ?, S> oneToManyRelation;
-		
-		public OneToManyOptionsSupport(OneToManyRelation<C, O, ?, S> oneToManyRelation) {
-			this.oneToManyRelation = oneToManyRelation;
-		}
-		
-		@Override
-		public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink) {
-			oneToManyRelation.setReverseSetter(reverseLink);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink) {
-			oneToManyRelation.setReverseGetter(reverseLink);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> mappedBy(String reverseColumnName) {
-			oneToManyRelation.setReverseColumn(reverseColumnName);
-			return null;
-		}
-		
-		@Override
-		public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink) {
-			oneToManyRelation.setReverseLink(reverseLink);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> initializeWith(Supplier<S> collectionFactory) {
-			oneToManyRelation.setCollectionFactory(collectionFactory);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> cascading(RelationMode relationMode) {
-			oneToManyRelation.setRelationMode(relationMode);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> fetchSeparately() {
-			oneToManyRelation.fetchSeparately();
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
-		public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> indexedBy(String columnName) {
-			oneToManyRelation.setIndexingColumnName(columnName);
-			return null;
-		}
-		
-		@Override
-		public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> indexed() {
-			oneToManyRelation.ordered();
-			return null;
-		}
-	}
-	
-	/**
-	 * Small contract for mapping definition storage. See add(..) methods.
-	 * 
-	 * @param <T> property owner type
-	 * @param <O> property type
-	 */
-	public static class LinkageSupport<T, O> implements Linkage<T, O> {
-		
-		/** Optional binder for this mapping */
-		private ParameterBinder<?> parameterBinder;
-		
-		@Nullable
-		private EnumBindType enumBindType;
-		
-		private boolean nullable = true;
-		
-		private boolean unique;
-		
-		private boolean setByConstructor = false;
-		
-		private LocalColumnLinkageOptions columnOptions = new ColumnLinkageOptionsSupport();
-		
-		private final ThreadSafeLazyInitializer<ReversibleAccessor<T, O>> accessor;
-		
-		private SerializableFunction<T, O> getter;
-		
-		private SerializableBiConsumer<T, O> setter;
-		
-		private Field field;
-		
-		private boolean readonly;
-		
-		private String extraTableName;
-		
-		private Converter<? /* value coming from database */, O> readConverter;
-		
-		private Converter<O, ? /* value going to database */> writeConverter;
-		
-		public LinkageSupport(SerializableFunction<T, O> getter) {
-			this.getter = getter;
-			this.accessor = new AccessorFieldLazyInitializer();
-		}
-		
-		public LinkageSupport(SerializableBiConsumer<T, O> setter) {
-			this.setter = setter;
-			this.accessor = new AccessorFieldLazyInitializer();
-		}
-		
-		SerializableFunction<T, O> getGetter() {
-			return getter;
-		}
-		
-		SerializableBiConsumer<T, O> getSetter() {
-			return setter;
-		}
-		
-		@Override
-		@Nullable
-		public ParameterBinder<Object> getParameterBinder() {
-			return (ParameterBinder<Object>) parameterBinder;
-		}
-		
-		public void setParameterBinder(@Nullable ParameterBinder<?> parameterBinder) {
-			this.parameterBinder = parameterBinder;
-		}
-		
-		@Override
-		@Nullable
-		public EnumBindType getEnumBindType() {
-			return enumBindType;
-		}
-		
-		public void setEnumBindType(@Nullable EnumBindType enumBindType) {
-			this.enumBindType = enumBindType;
-		}
-		
-		@Override
-		public boolean isNullable() {
-			return nullable;
-		}
-		
-		public void setNullable(boolean nullable) {
-			this.nullable = nullable;
-		}
-		
-		public void setUnique(boolean unique) {
-			this.unique = unique;
-		}
-		
-		@Override
-		public boolean isUnique() {
-			return unique;
-		}
-		
-		public void setByConstructor() {
-			this.setByConstructor = true;
-		}
-		
-		@Override
-		public boolean isSetByConstructor() {
-			return setByConstructor;
-		}
-		
-		public LocalColumnLinkageOptions getColumnOptions() {
-			return columnOptions;
-		}
-		
-		public void setColumnOptions(LocalColumnLinkageOptions columnOptions) {
-			this.columnOptions = columnOptions;
-		}
-		
-		@Override
-		public ReversibleAccessor<T, O> getAccessor() {
-			return accessor.get();
-		}
-		
-		@Nullable
-		@Override
-		public Field getField() {
-			return field;
-		}
-		
-		public void setField(Field field) {
-			this.field = field;
-		}
-		
-		@Nullable
-		@Override
-		public String getColumnName() {
-			return nullable(this.columnOptions).map(ColumnLinkageOptions::getColumnName).get();
-		}
-		
-		@Nullable
-		@Override
-		public Size getColumnSize() {
-			return nullable(this.columnOptions).map(ColumnLinkageOptions::getColumnSize).get();
-		}
-		
-		@Override
-		public Class<O> getColumnType() {
-			return this.columnOptions instanceof ColumnLinkageOptionsByColumn
-				? (Class<O>) ((ColumnLinkageOptionsByColumn) this.columnOptions).getColumnType()
-				: AccessorDefinition.giveDefinition(this.accessor.get()).getMemberType();
-		}
-		
-		@Override
-		public boolean isReadonly() {
-			return readonly;
-		}
-		
-		public void readonly() {
-			this.readonly = true;
-		}
-		
-		@Override
-		public String getExtraTableName() {
-			return extraTableName;
-		}
-		
-		public void setExtraTableName(String extraTableName) {
-			this.extraTableName = extraTableName;
-		}
-		
-		@Override
-		public Converter<?, O> getReadConverter() {
-			return readConverter;
-		}
-		
-		public void setReadConverter(Converter<?, O> readConverter) {
-			this.readConverter = readConverter;
-		}
-		
-		@Override
-		public Converter<O, ?> getWriteConverter() {
-			return writeConverter;
-		}
-		
-		public void setWriteConverter(Converter<O, ?> writeConverter) {
-			this.writeConverter = writeConverter;
-		}
-		
-		/**
-		 * Internal class that computes a {@link PropertyAccessor} from getter or setter according to which one is set up
-		 */
-		private class AccessorFieldLazyInitializer extends ThreadSafeLazyInitializer<ReversibleAccessor<T, O>> {
-			
-			@Override
-			protected ReversibleAccessor<T, O> createInstance() {
-				return new PropertyAccessorResolver<>(new PropertyMapping<T, O>() {
-					@Override
-					public SerializableFunction<T, O> getGetter() {
-						return LinkageSupport.this.getter;
-					}
-					
-					@Override
-					public SerializableBiConsumer<T, O> getSetter() {
-						return LinkageSupport.this.setter;
-					}
-					
-					@Override
-					public Field getField() {
-						return LinkageSupport.this.getField();
-					}
-				}).resolve();
-			}
-		}
-	}
-	
-	public interface LocalColumnLinkageOptions extends ColumnLinkageOptions {
-		
-		void setColumnName(String columnName);
-		
-		void setColumnSize(Size columnSize);
-	}
-	
-	static class ColumnLinkageOptionsSupport implements LocalColumnLinkageOptions {
-		
-		private String columnName;
-		
-		private Size columnSize;
-		
-		ColumnLinkageOptionsSupport() {
-		}
-		
-		ColumnLinkageOptionsSupport(@Nullable String columnName) {
-			this.columnName = columnName;
-		}
-		
-		ColumnLinkageOptionsSupport(@Nullable Size columnSize) {
-			this.columnSize = columnSize;
-		}
-		
-		@Nullable
-		@Override
-		public String getColumnName() {
-			return this.columnName;
-		}
-		
-		@Override
-		public void setColumnName(String columnName) {
-			this.columnName = columnName;
-		}
-		
-		@Nullable
-		@Override
-		public Size getColumnSize() {
-			return columnSize;
-		}
-		
-		@Override
-		public void setColumnSize(Size columnSize) {
-			this.columnSize = columnSize;
-		}
-	}
-	
-	static class ColumnLinkageOptionsByColumn implements LocalColumnLinkageOptions {
-		
-		private final Column column;
-		
-		ColumnLinkageOptionsByColumn(Column column) {
-			this.column = column;
-		}
-		
-		public Column getColumn() {
-			return column;
-		}
-		
-		@Override
-		public String getColumnName() {
-			return this.column.getName();
-		}
-		
-		public Class<?> getColumnType() {
-			return this.column.getJavaType();
-		}
-		
-		@Nullable
-		@Override
-		public Size getColumnSize() {
-			return this.column.getSize();
-		}
-		
-		@Override
-		public void setColumnName(String columnName) {
-			// no-op, column is already defined
-		}
-		
-		@Override
-		public void setColumnSize(Size columnSize) {
-			// no-op, column is already defined
-		}
-	}
-	
-	/**
-	 * Information storage of embedded mapping defined externally by an {@link EmbeddableMappingConfigurationProvider},
-	 * see {@link #embed(SerializableFunction, EmbeddableMappingConfigurationProvider)}
-	 *
-	 * @param <SRC>
-	 * @param <TRGT>
-	 * @see #embed(SerializableFunction, EmbeddableMappingConfigurationProvider)}
-	 * @see #embed(SerializableBiConsumer, EmbeddableMappingConfigurationProvider)}
-	 */
-	public static class Inset<SRC, TRGT> {
-		
-		static <SRC, TRGT> Inset<SRC, TRGT> fromSetter(SerializableBiConsumer<SRC, TRGT> targetSetter,
-													   EmbeddableMappingConfigurationProvider<? extends TRGT> beanMappingBuilder,
-													   LambdaMethodUnsheller lambdaMethodUnsheller) {
-			Method insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetSetter);
-			return new Inset<>(insetAccessor,
-					new PropertyAccessor<>(
-							new MutatorByMethod<SRC, TRGT>(insetAccessor).toAccessor(),
-							new MutatorByMethodReference<>(targetSetter)),
-					beanMappingBuilder);
-		}
-		
-		static <SRC, TRGT> Inset<SRC, TRGT> fromGetter(SerializableFunction<SRC, TRGT> targetGetter,
-													   EmbeddableMappingConfigurationProvider<? extends TRGT> beanMappingBuilder,
-													   LambdaMethodUnsheller lambdaMethodUnsheller) {
-			Method insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetGetter);
-			return new Inset<>(insetAccessor,
-					new PropertyAccessor<>(
-							new AccessorByMethodReference<>(targetGetter),
-							new AccessorByMethod<SRC, TRGT>(insetAccessor).toMutator()),
-					beanMappingBuilder);
-		}
-		
-		private final Class<TRGT> embeddedClass;
-		private final Method insetAccessor;
-		/** Equivalent of {@link #insetAccessor} as a {@link PropertyAccessor}  */
-		private final Accessor<SRC, TRGT> accessor;
-		private final ValueAccessPointMap<SRC, String> overriddenColumnNames = new ValueAccessPointMap<>();
-		private final ValueAccessPointMap<SRC, Size> overriddenColumnSizes = new ValueAccessPointMap<>();
-		private final ValueAccessPointSet<SRC> excludedProperties = new ValueAccessPointSet<>();
-		private final EmbeddableMappingConfigurationProvider<? extends TRGT> configurationProvider;
-		private final ValueAccessPointMap<SRC, Column> overriddenColumns = new ValueAccessPointMap<>();
-		
-		
-		Inset(SerializableBiConsumer<SRC, TRGT> targetSetter,
-			  EmbeddableMappingConfigurationProvider<? extends TRGT> configurationProvider,
-			  LambdaMethodUnsheller lambdaMethodUnsheller) {
-			this.insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetSetter);
-			this.accessor = new PropertyAccessor<>(
-					new MutatorByMethod<SRC, TRGT>(insetAccessor).toAccessor(),
-					new MutatorByMethodReference<>(targetSetter));
-			// looking for the target type because it's necessary to find its persister (and other objects)
-			this.embeddedClass = Reflections.javaBeanTargetType(getInsetAccessor());
-			this.configurationProvider = configurationProvider;
-		}
-
-		Inset(Method insetAccessor,
-			  Accessor<SRC, TRGT> accessor,
-			  EmbeddableMappingConfigurationProvider<? extends TRGT> configurationProvider) {
-			this.insetAccessor = insetAccessor;
-			// looking for the target type because it's necessary to find its persister (and other objects)
-			this.embeddedClass = Reflections.javaBeanTargetType(insetAccessor);
-			this.accessor = accessor;
-			this.configurationProvider = configurationProvider;
-		}
-		
-		/**
-		 * Equivalent of {@link #insetAccessor} as a {@link PropertyAccessor}
-		 */
-		public Accessor<SRC, TRGT> getAccessor() {
-			return accessor;
-		}
-		
-		/**
-		 * Equivalent of given getter or setter at construction time as a {@link Method}
-		 */
-		public Method getInsetAccessor() {
-			return insetAccessor;
-		}
-		
-		public Class<TRGT> getEmbeddedClass() {
-			return embeddedClass;
-		}
-		
-		public ValueAccessPointSet<SRC> getExcludedProperties() {
-			return this.excludedProperties;
-		}
-		
-		public ValueAccessPointMap<SRC, String> getOverriddenColumnNames() {
-			return this.overriddenColumnNames;
-		}
-		
-		public ValueAccessPointMap<SRC, Size> getOverriddenColumnSizes() {
-			return overriddenColumnSizes;
-		}
-		
-		public ValueAccessPointMap<SRC, Column> getOverriddenColumns() {
-			return overriddenColumns;
-		}
-		
-		public EmbeddableMappingConfigurationProvider<TRGT> getConfigurationProvider() {
-			return (EmbeddableMappingConfigurationProvider<TRGT>) configurationProvider;
-		}
-		
-		public void overrideName(SerializableFunction methodRef, String columnName) {
-			this.overriddenColumnNames.put(new AccessorByMethodReference(methodRef), columnName);
-		}
-		
-		public void overrideName(SerializableBiConsumer methodRef, String columnName) {
-			this.overriddenColumnNames.put(new MutatorByMethodReference(methodRef), columnName);
-		}
-		
-		public void overrideName(AccessorChain accessorChain, String columnName) {
-			this.overriddenColumnNames.put(accessorChain, columnName);
-		}
-		
-		public void overrideSize(SerializableFunction methodRef, Size columnSize) {
-			this.overriddenColumnSizes.put(new AccessorByMethodReference(methodRef), columnSize);
-		}
-		
-		public void overrideSize(SerializableBiConsumer methodRef, Size columnSize) {
-			this.overriddenColumnSizes.put(new MutatorByMethodReference<>(methodRef), columnSize);
-		}
-		
-		public void overrideSize(AccessorChain accessorChain, Size columnSize) {
-			this.overriddenColumnSizes.put(accessorChain, columnSize);
-		}
-		
-		public void override(SerializableFunction methodRef, Column column) {
-			this.overriddenColumns.put(new AccessorByMethodReference(methodRef), column);
-		}
-		
-		public void override(SerializableBiConsumer methodRef, Column column) {
-			this.overriddenColumns.put(new MutatorByMethodReference(methodRef), column);
-		}
-		
-		public void exclude(SerializableBiConsumer methodRef) {
-			this.excludedProperties.add(new MutatorByMethodReference(methodRef));
-		}
-		
-		public void exclude(SerializableFunction methodRef) {
-			this.excludedProperties.add(new AccessorByMethodReference(methodRef));
-		}
 	}
 }

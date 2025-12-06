@@ -42,16 +42,11 @@ import static org.codefilarete.tool.collection.Iterables.first;
 
 public class IdentifierManagerStep<C, I> extends AbstractIdentificationStep<C, I> {
 	
-	public static <C, I> void addIdentificationToMapping(AbstractIdentification<C, I> identification, Iterable<Mapping<C, ?>> mappings) {
-		mappings.forEach(mapping -> mapping.registerIdentifier(identification.getIdAccessor()));
-	}
-	
 	void applyIdentifierManager(AbstractIdentification<C, I> identification,
 								MappingPerTable<C> inheritanceMappingPerTable,
 								ReversibleAccessor<C, I> idAccessor,
 								Dialect dialect,
 								ConnectionConfiguration connectionConfiguration) {
-		addIdentificationToMapping(identification, inheritanceMappingPerTable.getMappings());
 		determineIdentifierManager(identification, inheritanceMappingPerTable, idAccessor, dialect, connectionConfiguration);
 	}
 	

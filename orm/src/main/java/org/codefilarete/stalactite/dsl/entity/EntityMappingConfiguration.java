@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.dsl.entity;
 
 import javax.annotation.Nullable;
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -145,8 +146,10 @@ public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfi
 		
 		IdentifierPolicy<I> getIdentifierPolicy();
 		
-		@Nullable
 		ColumnLinkageOptions getColumnOptions();
+		
+		@Nullable
+		Field getField();
 	}
 	
 	interface CompositeKeyMapping<C, I> extends KeyMapping<C, I> {

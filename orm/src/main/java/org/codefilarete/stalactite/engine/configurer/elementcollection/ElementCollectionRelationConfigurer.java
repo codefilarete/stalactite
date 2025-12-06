@@ -162,7 +162,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 			EmbeddableMappingBuilder<TRGT, COLLECTIONTABLE> elementCollectionMappingBuilder = new EmbeddableMappingBuilder<>(embeddableConfiguration, targetTable,
 					dialect.getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
 				@Override
-				protected String giveColumnName(EmbeddableLinkage pawn) {
+				public String giveColumnName(ColumnLinkage pawn) {
 					return nullable(linkage.getOverriddenColumnNames().get(pawn.getAccessor()))
 							.getOr(() -> super.giveColumnName(pawn));
 				}

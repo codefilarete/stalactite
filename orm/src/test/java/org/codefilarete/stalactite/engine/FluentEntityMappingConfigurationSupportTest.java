@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
@@ -25,14 +26,14 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
+import org.codefilarete.stalactite.dsl.MappingConfigurationException;
+import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder.FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions;
-import org.codefilarete.stalactite.dsl.MappingConfigurationException;
-import org.codefilarete.stalactite.dsl.MappingEase;
-import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
+import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.configurer.ToStringBuilder;
+import org.codefilarete.stalactite.engine.configurer.embeddable.FluentEmbeddableMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.model.AbstractCountry;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
@@ -63,6 +64,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Index;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
+import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
 import org.codefilarete.stalactite.sql.statement.SQLStatement;
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
@@ -171,6 +173,100 @@ class FluentEntityMappingConfigurationSupportTest {
 			Toto loadedInstance = persister.select(entity.getId());
 			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was called").isTrue();
 			assertThat(loadedInstance.isConstructorWithIdWasCalled()).as("constructor with Id was called").isFalse();
+		}
+
+		@Test
+		void columnNameAndSize() throws SQLException {
+			MappingEase.entityBuilder(Toto.class, UUID.class)
+					.mapKey(Toto::getUUID, IdentifierPolicy.<Toto, UUID>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
+						.columnName("id")
+						.columnSize(Size.length(36))
+					.map(Toto::getName)
+					.build(persistenceContext);	// necessary to set table since we override Identifier binding
+
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
+			ResultSetIterator<Table> fkPersonIterator = new ResultSetIterator<Table>(currentConnection.getMetaData().getColumns(null, null,
+					"%TOTO%", "%")) {
+				
+				private final Map<String, Table> foundTables = new HashMap<>();
+				
+				@Override
+				public Table convert(ResultSet rs) throws SQLException {
+					String tableName = rs.getString("TABLE_NAME");
+					Table table = foundTables.computeIfAbsent(tableName, Table::new);
+					table.addColumn(rs.getString("COLUMN_NAME"), String.class, Size.length(rs.getInt("COLUMN_SIZE")));
+					return table;
+				}
+			};
+			Table foundTable = Iterables.first(fkPersonIterator.convert());
+			assertThat(foundTable.getColumn("ID")).isNotNull();
+			assertThat(foundTable.getColumn("ID").getSize()).usingRecursiveComparison().isEqualTo(Size.length(36));
+		}
+
+		@Test
+		void column() throws SQLException {
+			Table totoTable = new Table("Toto");
+			Column<?, UUID> uuidColumn = totoTable.addColumn("uid", UUID_TYPE, Size.length(36));
+
+			MappingEase.entityBuilder(Toto.class, UUID.class)
+					.mapKey(Toto::getUUID, IdentifierPolicy.<Toto, UUID>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
+						.column(uuidColumn)
+					.map(Toto::getName)
+					.build(persistenceContext);	// necessary to set table since we override Identifier binding
+
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
+			ResultSetIterator<Table> fkPersonIterator = new ResultSetIterator<Table>(currentConnection.getMetaData().getColumns(null, null,
+					"%TOTO%", "%")) {
+				
+				private final Map<String, Table> foundTables = new HashMap<>();
+				
+				@Override
+				public Table convert(ResultSet rs) throws SQLException {
+					String tableName = rs.getString("TABLE_NAME");
+					Table table = foundTables.computeIfAbsent(tableName, Table::new);
+					table.addColumn(rs.getString("COLUMN_NAME"), String.class, Size.length(rs.getInt("COLUMN_SIZE")));
+					return table;
+				}
+			};
+			Table foundTable = Iterables.first(fkPersonIterator.convert());
+			assertThat(foundTable.getColumn("UID")).isNotNull();
+			assertThat(foundTable.getColumn("UID").getSize()).usingRecursiveComparison().isEqualTo(Size.length(36));
+		}
+
+		@Test
+		void fieldName() throws SQLException {
+			MappingEase.entityBuilder(Toto.class, UUID.class)
+					.mapKey(Toto::getUUID, IdentifierPolicy.<Toto, UUID>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
+						.fieldName("uid")
+					.map(Toto::getName)
+					.build(persistenceContext);	// necessary to set table since we override Identifier binding
+
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
+			ResultSetIterator<Table> fkPersonIterator = new ResultSetIterator<Table>(currentConnection.getMetaData().getColumns(null, null,
+					"%TOTO%", "%")) {
+
+				private final Map<String, Table> foundTables = new HashMap<>();
+
+				@Override
+				public Table convert(ResultSet rs) throws SQLException {
+					String tableName = rs.getString("TABLE_NAME");
+					Table table = foundTables.computeIfAbsent(tableName, Table::new);
+					table.addColumn(rs.getString("COLUMN_NAME"), String.class, Size.length(rs.getInt("COLUMN_SIZE")));
+					return table;
+				}
+			};
+			Table foundTable = Iterables.first(fkPersonIterator.convert());
+			assertThat(foundTable.getColumn("UID")).isNotNull();
+			assertThat(foundTable.getColumn("UID").getSize()).usingRecursiveComparison().isEqualTo(Size.length(36));
 		}
 		
 		@Test
@@ -2393,6 +2489,8 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		private Identifier<UUID> identifier;
 		
+		private UUID uid;
+		
 		private String name;
 		
 		private String firstName;
@@ -2444,6 +2542,14 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		public void setIdentifier(Identifier<UUID> id) {
 			this.identifier = id;
+		}
+		
+		public UUID getUUID() {
+			return uid;
+		}
+		
+		public void setUUID(UUID uuid) {
+			this.uid = uuid;
 		}
 		
 		public Long getNoMatchingField() {

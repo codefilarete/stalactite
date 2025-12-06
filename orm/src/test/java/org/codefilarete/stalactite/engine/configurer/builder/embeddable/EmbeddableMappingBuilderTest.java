@@ -9,8 +9,8 @@ import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
-import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
-import org.codefilarete.stalactite.engine.configurer.FluentEntityMappingConfigurationSupport;
+import org.codefilarete.stalactite.engine.configurer.embeddable.FluentEmbeddableMappingConfigurationSupport;
+import org.codefilarete.stalactite.engine.configurer.entity.FluentEntityMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
@@ -34,7 +34,7 @@ import static org.mockito.Mockito.when;
  * @author Guillaume Mary
  */
 class EmbeddableMappingBuilderTest {
-	
+
 	@Test
 	void giveTargetTable() {
 		Table expectedResult = new Table("MyOverridingTable");
@@ -47,7 +47,7 @@ class EmbeddableMappingBuilderTest {
 		Table result = EmbeddableMappingBuilder.giveTargetTable(vehicleObjectFluentEntityMappingConfigurationSupport.getPropertiesMapping());
 		assertThat(result).isSameAs(expectedResult);
 	}
-	
+
 	@Test
 	void giveTargetTable_multipleTableFound_throwsException() {
 		Table firstTable = new Table("MyOverridingTable");
@@ -65,7 +65,7 @@ class EmbeddableMappingBuilderTest {
 				.extracting(t -> Exceptions.findExceptionInCauses(t, MappingConfigurationException.class), InstanceOfAssertFactories.THROWABLE)
 				.hasMessage("Property o.c.s.e.m.Person::getName overrides column with MyOverridingTable.myOverridingColumn but it is not part of main table MyOverridingTable2");
 	}
-	
+
 	@Test
 	void giveTargetTable_withImportedConfiguration() {
 		Table expectedResult = new Table("MyOverridingTable");
@@ -78,7 +78,7 @@ class EmbeddableMappingBuilderTest {
 		Table result = EmbeddableMappingBuilder.giveTargetTable(vehicleObjectFluentEntityMappingConfigurationSupport.getPropertiesMapping());
 		assertThat(result).isSameAs(expectedResult);
 	}
-	
+
 	@Test
 	void ensureColumnBindingInRegistry() {
 		Table countryTable = new Table("Country");
@@ -86,23 +86,23 @@ class EmbeddableMappingBuilderTest {
 		EmbeddableMappingBuilder<Country, ?> testInstance = new EmbeddableMappingBuilder(
 				new FluentEmbeddableMappingConfigurationSupport(Country.class),
 				countryTable,
-				new ColumnBinderRegistry(), 
+				new ColumnBinderRegistry(),
 				new ColumnNameProvider(ColumnNamingStrategy.DEFAULT),
 				IndexNamingStrategy.DEFAULT);
 		EmbeddableMappingBuilder<Country, ?>.InternalProcessor internalProcessor = testInstance.new InternalProcessor(false);
 		EmbeddableLinkage<Country, Set> linkageMock = mock(EmbeddableLinkage.class);
 		when(linkageMock.getAccessor()).thenReturn(Accessors.accessor(Country::getCities));
 		when(linkageMock.getColumnType()).thenReturn(Set.class);
-		
+
 		assertThatThrownBy(() -> internalProcessor.ensureColumnBindingInRegistry(linkageMock, dummyColumn))
 				.isInstanceOf(Exception.class)
 				.hasMessage("No binder found for property Country::getCities"
 						+ " : neither its column nor its type are registered (Country.dummyColumn, type j.u.Set)");
 	}
-	
+
 	@Nested
 	class InternalProcessor {
-		
+
 		@Test
 		void addColumnToTable_existingColumnDoesntMatchLinkageType_linkageAsParameterBinder_doesntThrowException() {
 			// Given a table that has a column ...
@@ -115,7 +115,7 @@ class EmbeddableMappingBuilderTest {
 					new ColumnNameProvider(ColumnNamingStrategy.DEFAULT),
 					IndexNamingStrategy.DEFAULT);
 			EmbeddableMappingBuilder.InternalProcessor testInstance = testInstanceBuilder.new InternalProcessor(false);
-			
+
 			// ... and a linkage that uses a different type
 			EmbeddableLinkage linkageMock = mock(EmbeddableLinkage.class);
 			when(linkageMock.getColumnType()).thenReturn(Date.class);
@@ -126,7 +126,7 @@ class EmbeddableMappingBuilderTest {
 					return (Class<O>) String.class;
 				}
 			});
-			
+
 			// When I add the linkage to the configurator for this column, then it doesn't fail with any exception
 			assertThatCode(() -> testInstance.addColumnToTable(linkageMock, dummyColumn.getName(), dummyColumn.getSize())).doesNotThrowAnyException();
 		}

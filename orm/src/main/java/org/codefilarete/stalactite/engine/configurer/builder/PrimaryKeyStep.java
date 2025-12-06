@@ -5,7 +5,6 @@ import java.util.Map;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
-import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.ColumnLinkageOptions;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.KeyMapping;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.SingleKeyMapping;
 import org.codefilarete.stalactite.dsl.idpolicy.GeneratedKeysPolicy;
@@ -15,9 +14,10 @@ import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.CompositeKeyIdentification;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.SingleColumnIdentification;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.ColumnNameProvider;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
-import org.codefilarete.stalactite.engine.configurer.FluentEntityMappingConfigurationSupport.CompositeKeyLinkageSupport;
+import org.codefilarete.stalactite.engine.configurer.entity.CompositeKeyLinkageSupport;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -53,10 +53,7 @@ public class PrimaryKeyStep<C, I> {
 			compositeKeyMapping.values().forEach(Column::primaryKey);
 			((CompositeKeyIdentification<C, I>) identification).setCompositeKeyMapping(compositeKeyMapping);
 		} else {
-			String columnName = nullable(((SingleKeyMapping<C, I>) keyLinkage).getColumnOptions()).map(ColumnLinkageOptions::getColumnName).get();
-			if (columnName == null) {
-				columnName = columnNamingStrategy.giveName(identifierDefinition);
-			}
+			String columnName = determineColumnName((SingleKeyMapping) keyLinkage, columnNamingStrategy);
 			Column<?, I> primaryKey = pkTable.addColumn(columnName, identifierDefinition.getMemberType());
 			primaryKey.setNullable(false);	// may not be necessary because of primary key, let for principle
 			primaryKey.primaryKey();
@@ -65,5 +62,10 @@ public class PrimaryKeyStep<C, I> {
 			}
 		}
 		return pkTable.getPrimaryKey();
+	}
+
+	private <O> String determineColumnName(SingleKeyMapping<C, O> keyLinkage, ColumnNamingStrategy columnNamingStrategy) {
+		ColumnNameProvider columnNameProvider = new ColumnNameProvider(columnNamingStrategy);
+		return columnNameProvider.giveColumnName(new ColumnNameProvider.ColumnLinkage(keyLinkage.getColumnOptions().getColumnName(), keyLinkage.getField(), keyLinkage.getAccessor()));
 	}
 }

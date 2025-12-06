@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.engine.cascade.BeforeDeleteSupport;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
-import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
+import org.codefilarete.stalactite.engine.configurer.embeddable.FluentEmbeddableMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;

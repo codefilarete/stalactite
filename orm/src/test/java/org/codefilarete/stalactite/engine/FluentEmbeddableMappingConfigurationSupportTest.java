@@ -2,12 +2,11 @@ package org.codefilarete.stalactite.engine;
 
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.MappingEase;
-import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
+import org.codefilarete.stalactite.engine.configurer.embeddable.FluentEmbeddableMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.PersonWithGender;
 import org.codefilarete.stalactite.engine.model.Timestamp;
-import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.junit.jupiter.api.Test;

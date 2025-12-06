@@ -161,7 +161,6 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 				subEntityPropertiesReadConverters,
 				subEntityPropertiesWriteConverters,
 				false);
-		addIdentificationToMapping(identification, (Mapping<C, ?>) subEntityMapping);
 		DefaultEntityMapping<D, I, SUBTABLE> entityMapping = MainPersisterStep.createEntityMapping(
 				true,    // given Identification (which is parent one) contains identifier policy
 				subTable,
@@ -192,10 +191,6 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 	
 	private void addPrimaryKey(Table table) {
 		PrimaryKeyPropagationStep.propagatePrimaryKey(this.mainPersister.getMapping().getTargetTable().getPrimaryKey(), Arrays.asSet(table));
-	}
-	
-	private void addIdentificationToMapping(AbstractIdentification<C, I> identification, Mapping<C, ?> mapping) {
-		IdentifierManagerStep.addIdentificationToMapping(identification, Arrays.asSet(mapping));
 	}
 	
 	@Override

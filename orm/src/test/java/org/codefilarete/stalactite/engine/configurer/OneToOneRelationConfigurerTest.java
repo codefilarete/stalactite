@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.configurer;
 
 import javax.annotation.Nullable;
+import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -23,8 +24,8 @@ import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
-import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.ColumnLinkageOptionsSupport;
-import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.LinkageSupport;
+import org.codefilarete.stalactite.engine.configurer.property.ColumnLinkageOptionsSupport;
+import org.codefilarete.stalactite.engine.configurer.embeddable.LinkageSupport;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer;
@@ -41,6 +42,7 @@ import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -137,12 +139,29 @@ class OneToOneRelationConfigurerTest {
 				return cityIdentifierAccessorByMethodReference;
 			}
 			
-			@Nullable
 			@Override
 			public ColumnLinkageOptions getColumnOptions() {
-				return null;
+				return new ColumnLinkageOptions() {
+					@Nullable
+					@Override
+					public String getColumnName() {
+						return null;
+					}
+
+					@Nullable
+					@Override
+					public Size getColumnSize() {
+						return null;
+					}
+				};
 			}
 			
+			@Nullable
+			@Override
+			public Field getField() {
+				return null;
+			}
+
 			@Override
 			public boolean isSetByConstructor() {
 				return false;
@@ -261,9 +280,26 @@ class OneToOneRelationConfigurerTest {
 				return cityIdentifierAccessorByMethodReference;
 			}
 			
-			@Nullable
 			@Override
 			public ColumnLinkageOptions getColumnOptions() {
+				return new ColumnLinkageOptions() {
+					@Nullable
+					@Override
+					public String getColumnName() {
+						return null;
+					}
+
+					@Nullable
+					@Override
+					public Size getColumnSize() {
+						return null;
+					}
+				};
+			}
+			
+			@Nullable
+			@Override
+			public Field getField() {
 				return null;
 			}
 			

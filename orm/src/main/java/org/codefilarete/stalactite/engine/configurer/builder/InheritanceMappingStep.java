@@ -115,7 +115,6 @@ public class InheritanceMappingStep<C, I> {
 		private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> readonlyMapping;
 		private final ValueAccessPointSet<C> propertiesSetByConstructor = new ValueAccessPointSet<>();
 		private final boolean mappedSuperClass;
-		private Duo<ReversibleAccessor<C, ?>, PrimaryKey<T, ?>> identifier;
 		private final ValueAccessPointMap<C, Converter<Object, Object>> readConverters;
 		private final ValueAccessPointMap<C, Converter<Object, Object>> writeConverters;
 		
@@ -169,14 +168,6 @@ public class InheritanceMappingStep<C, I> {
 		
 		public ValueAccessPointMap<C, Converter<Object, Object>> getWriteConverters() {
 			return writeConverters;
-		}
-		
-		void registerIdentifier(ReversibleAccessor<C, ?> identifierAccessor) {
-			this.identifier = new Duo<>(identifierAccessor, getTargetTable().getPrimaryKey());
-		}
-		
-		public Duo<ReversibleAccessor<C, ?>, PrimaryKey<T, ?>> getIdentifier() {
-			return identifier;
 		}
 		
 		public ValueAccessPointSet<C> getPropertiesSetByConstructor() {

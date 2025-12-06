@@ -177,7 +177,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 			EmbeddableMappingBuilder<K, TARGETTABLE> entryKeyMappingBuilder = new EmbeddableMappingBuilder<>(keyEmbeddableConfiguration, targetTable,
 					dialect.getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
 				@Override
-				protected String giveColumnName(EmbeddableLinkage pawn) {
+				public String giveColumnName(ColumnLinkage pawn) {
 					return nullable(mapRelation.getOverriddenKeyColumnNames().get(pawn.getAccessor()))
 							.getOr(() -> super.giveColumnName(pawn));
 				}
@@ -198,7 +198,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 			EmbeddableMappingBuilder<V, TARGETTABLE> recordKeyMappingBuilder = new EmbeddableMappingBuilder<>(valueEmbeddableConfiguration, targetTable,
 					dialect.getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
 				@Override
-				protected String giveColumnName(EmbeddableLinkage pawn) {
+				public String giveColumnName(ColumnLinkage pawn) {
 					return nullable(mapRelation.getOverriddenValueColumnNames().get(pawn.getAccessor()))
 							.getOr(() -> super.giveColumnName(pawn));
 				}

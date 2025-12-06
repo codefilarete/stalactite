@@ -8,19 +8,19 @@ import org.codefilarete.stalactite.dsl.subentity.FluentSubEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.subentity.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.subentity.SubEntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.engine.configurer.FluentCompositeKeyMappingConfigurationSupport;
-import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
-import org.codefilarete.stalactite.engine.configurer.FluentEntityMappingConfigurationSupport;
+import org.codefilarete.stalactite.engine.configurer.embeddable.FluentEmbeddableMappingConfigurationSupport;
+import org.codefilarete.stalactite.engine.configurer.entity.FluentEntityMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.configurer.FluentSubEntityMappingConfigurationSupport;
 import org.codefilarete.stalactite.mapping.EmbeddedClassMapping;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * Declares a simple entry point to start configuring a persistence mapping.
- * 
+ *
  * @author Guillaume Mary
  */
 public final class MappingEase {
-	
+
 	/**
 	 * Starts a {@link FluentEntityMappingBuilder} for a given class.
 	 *
@@ -35,7 +35,7 @@ public final class MappingEase {
 		// Note that we don't use identifierType, but it's necessary to generic type of returned instance
 		return new FluentEntityMappingConfigurationSupport<>(classToPersist);
 	}
-	
+
 	/**
 	 * Starts a {@link FluentSubEntityMappingBuilder} for a given class.
 	 *
@@ -50,7 +50,7 @@ public final class MappingEase {
 	public static <T, I> FluentSubEntityMappingBuilder<T, Object> subentityBuilder(Class<T> classToPersist) {
 		return new FluentSubEntityMappingConfigurationSupport<>(classToPersist);
 	}
-	
+
 	/**
 	 * Starts a {@link FluentSubEntityMappingBuilder} for a given class.
 	 *
@@ -67,7 +67,7 @@ public final class MappingEase {
 		// Note that we don't use identifierType, but it's necessary to generic type of returned instance
 		return new FluentSubEntityMappingConfigurationSupport<>(classToPersist);
 	}
-	
+
 	/**
 	 * Starts a {@link FluentEmbeddableMappingBuilder} for a given class.
 	 *
@@ -78,7 +78,7 @@ public final class MappingEase {
 	public static <T> FluentEmbeddableMappingBuilder<T> embeddableBuilder(Class<T> persistedClass) {
 		return new FluentEmbeddableMappingConfigurationSupport<>(persistedClass);
 	}
-	
+
 	/**
 	 * Starts a {@link FluentCompositeKeyMappingBuilder} for a given class.
 	 * To be used with {@link FluentEntityMappingBuilder#mapCompositeKey(SerializableFunction, CompositeKeyMappingConfigurationProvider, java.util.function.Consumer, java.util.function.Function)}
@@ -90,7 +90,7 @@ public final class MappingEase {
 	public static <T> FluentCompositeKeyMappingBuilder<T> compositeKeyBuilder(Class<T> persistedClass) {
 		return new FluentCompositeKeyMappingConfigurationSupport<>(persistedClass);
 	}
-	
+
 	private MappingEase() {
 		// tool class
 	}

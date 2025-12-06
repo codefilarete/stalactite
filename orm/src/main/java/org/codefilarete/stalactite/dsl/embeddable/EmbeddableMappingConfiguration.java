@@ -10,7 +10,7 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.RelationalMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
-import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.Inset;
+import org.codefilarete.stalactite.engine.configurer.embeddable.Inset;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry.EnumBindType;

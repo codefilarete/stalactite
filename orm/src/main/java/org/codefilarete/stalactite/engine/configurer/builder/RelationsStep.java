@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import org.codefilarete.stalactite.dsl.RelationalMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.Inset;
+import org.codefilarete.stalactite.engine.configurer.embeddable.Inset;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.RelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.builder.InheritanceMappingStep.Mapping;
