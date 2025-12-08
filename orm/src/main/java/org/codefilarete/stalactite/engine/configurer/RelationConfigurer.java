@@ -17,7 +17,7 @@ import org.codefilarete.stalactite.engine.configurer.map.EntityAsKeyAndValueMapR
 import org.codefilarete.stalactite.engine.configurer.map.EntityAsKeyMapRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
 import org.codefilarete.stalactite.engine.configurer.map.MapRelationConfigurer;
-import org.codefilarete.stalactite.engine.configurer.map.ValueAsKeyMapRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.map.EntityAsValueMapRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
@@ -164,7 +164,7 @@ public class RelationConfigurer<C, I> {
 			} else if (map.getValueEntityConfigurationProvider() != null) {
 				EntityMappingConfiguration<Object, Object> valueEntityConfiguration = (EntityMappingConfiguration<Object, Object>) map.getValueEntityConfigurationProvider().getConfiguration();
 				ConfiguredRelationalPersister<Object, Object> valueEntityPersister = persisterBuilder.build(valueEntityConfiguration);
-				ValueAsKeyMapRelationConfigurer valueAsKeyMapRelationConfigurer = new ValueAsKeyMapRelationConfigurer<>(
+				EntityAsValueMapRelationConfigurer entityAsValueMapRelationConfigurer = new EntityAsValueMapRelationConfigurer<>(
 						(MapRelation) map,
 						sourcePersister,
 						valueEntityPersister,
@@ -174,7 +174,7 @@ public class RelationConfigurer<C, I> {
 						dialect,
 						connectionConfiguration,
 						namingConfiguration.getIndexNamingStrategy());
-				valueAsKeyMapRelationConfigurer.configure();
+				entityAsValueMapRelationConfigurer.configure();
 			} else {
 				MapRelationConfigurer<C, I, ?, ?, ? extends Map> mapRelationConfigurer = new MapRelationConfigurer<>(
 						map,

@@ -1,12 +1,12 @@
 package org.codefilarete.stalactite.engine.configurer.builder.embeddable;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.function.Converter;
 
 /**
@@ -17,9 +17,12 @@ import org.codefilarete.tool.function.Converter;
  */
 public class EmbeddableMapping<C, T extends Table<T>> {
 	
-	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mapping = new HashMap<>();
+	// We keep the order of user definition because in the particular case of composite key definition, it helps to have stable tests
+	// However, at runtime, i'm not sure about the interest of it, except for the foreign key and its associated index impact. So it may be
+	// better to keep it as well, to let user has a way to define its column order.... even if it's tied to the order of its own line of code (DSL usage)
+	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mapping = new KeepOrderMap<>();
 	
-	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> readonlyMapping = new HashMap<>();
+	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> readonlyMapping = new KeepOrderMap<>();
 	
 	private final ValueAccessPointMap<C, Converter<Object, Object>> readConverters = new ValueAccessPointMap<>();
 	

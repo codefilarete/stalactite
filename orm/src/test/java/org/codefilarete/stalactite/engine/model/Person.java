@@ -9,6 +9,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.codefilarete.stalactite.engine.model.Car.Radio;
+import org.codefilarete.stalactite.engine.model.compositekey.House;
 import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
@@ -53,6 +54,9 @@ public class Person implements Identified<Long> {
 	private Map<String, Country> mapPropertyMadeOfEntityAsValue;
 	
 	private Map<City, Country> mapPropertyMadeOfEntityAsKeyAndValue;
+	
+	private Map<String, House> mapPropertyMadeOfCompositeIdEntityAsValue;
+	
 	
 	public Person() {
 	}
@@ -211,6 +215,14 @@ public class Person implements Identified<Long> {
 	
 	public void setMapPropertyMadeOfEntityAsKeyAndValue(Map<City, Country> mapPropertyMadeOfEntityAsKeyAndValue) {
 		this.mapPropertyMadeOfEntityAsKeyAndValue = mapPropertyMadeOfEntityAsKeyAndValue;
+	}
+	
+	public Map<String, House> getMapPropertyMadeOfCompositeIdEntityAsValue() {
+		return mapPropertyMadeOfCompositeIdEntityAsValue;
+	}
+	
+	public void setMapPropertyMadeOfCompositeIdEntityAsValue(Map<String, House> mapPropertyMadeOfCompositeIdEntityAsValue) {
+		this.mapPropertyMadeOfCompositeIdEntityAsValue = mapPropertyMadeOfCompositeIdEntityAsValue;
 	}
 	
 	@Override

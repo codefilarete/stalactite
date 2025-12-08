@@ -28,7 +28,7 @@ import static org.codefilarete.tool.Nullable.nullable;
  * This is made necessary due to double join creation between
  * - source entity table and association table on one hand
  * - association table and key-entity table on one hand
- * Look at joinAsMany(..) invocations in {@link ValueAsKeyMapRelationConfigurer#addSelectCascade(ConfiguredRelationalPersister, SimpleRelationalEntityPersister, PrimaryKey, ForeignKey, BiConsumer, Function, Supplier)}
+ * Look at joinAsMany(..) invocations in {@link EntityAsValueMapRelationConfigurer#addSelectCascade(ConfiguredRelationalPersister, SimpleRelationalEntityPersister, PrimaryKey, ForeignKey, BiConsumer, Function, Supplier)}
  * This is the goal and need, implementation differ due to simplification made after first intent. 
  *
  * Expected to be used in a {@link SelectListener} to {@link #init()} it before select and {@link #clear()} it after select.

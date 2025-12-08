@@ -149,37 +149,37 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 	}
 	
 	@Override
-	<TT extends Table<TT>, TARGETTABLE extends Table<TARGETTABLE>>
-	DefaultEntityMapping<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>, TARGETTABLE>
-	buildKeyValueRecordMapping(TARGETTABLE targetTable,
-							   IdentifierAssembler<SRCID, TT> sourceIdentifierAssembler,
-							   Map<Column<TT, ?>, Column<TARGETTABLE, ?>> primaryKeyForeignColumnMapping,
+	<SRCTABLE extends Table<SRCTABLE>, MAPTABLE extends Table<MAPTABLE>>
+	DefaultEntityMapping<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>, MAPTABLE>
+	buildKeyValueRecordMapping(MAPTABLE targetTable,
+							   IdentifierAssembler<SRCID, SRCTABLE> sourceIdentifierAssembler,
+							   Map<Column<SRCTABLE, ?>, Column<MAPTABLE, ?>> srcPrimaryKeyToForeignKeyColumns,
 							   EmbeddableMappingConfiguration<KID> keyEmbeddableConfiguration,
 							   EmbeddableMappingConfiguration<V> valueEmbeddableConfiguration) {
-		KeyValueRecordMappingBuilder<KID, V, SRCID, TARGETTABLE, TT> builder
-				= new KeyValueRecordMappingBuilder<KID, V, SRCID, TARGETTABLE, TT>(targetTable, sourceIdentifierAssembler, primaryKeyForeignColumnMapping) {
+		KeyValueRecordMappingBuilder<KID, V, SRCID, MAPTABLE, SRCTABLE> builder
+				= new KeyValueRecordMappingBuilder<KID, V, SRCID, MAPTABLE, SRCTABLE>(targetTable, sourceIdentifierAssembler, srcPrimaryKeyToForeignKeyColumns) {
 			
-			private final Map<Column<TARGETTABLE, Object>, Column<Table, Object>> foreignKeyBootstrap = new HashMap<>();
+			private final Map<Column<MAPTABLE, Object>, Column<Table, Object>> foreignKeyBootstrap = new HashMap<>();
 			
 			@Override
-			void withEntryKeyIsSingleProperty(Column<TARGETTABLE, KID> keyColumn) {
+			void withEntryKeyIsSingleProperty(Column<MAPTABLE, KID> keyColumn) {
 				super.withEntryKeyIsSingleProperty(keyColumn);
 				Column<Table, Object> column = ((SimpleIdMapping) keyEntityPersister.getMapping().getIdMapping()).getIdentifierAssembler().getColumn();
-				foreignKeyBootstrap.put((Column<TARGETTABLE, Object>) keyColumn, column);
+				foreignKeyBootstrap.put((Column<MAPTABLE, Object>) keyColumn, column);
 				keyIdColumnsProjectInAssociationTable = Key.ofSingleColumn(keyColumn);
 			}
 			
 			@Override
-			void withEntryKeyIsComplexType(EmbeddedClassMapping<KID, TARGETTABLE> entryKeyMapping) {
+			void withEntryKeyIsComplexType(EmbeddedClassMapping<KID, MAPTABLE> entryKeyMapping) {
 				super.withEntryKeyIsComplexType(entryKeyMapping);
-				KeyBuilder<TARGETTABLE, KID> keyIdColumnsProjectInAssociationTableBuilder = Key.from(targetTable);
+				KeyBuilder<MAPTABLE, KID> keyIdColumnsProjectInAssociationTableBuilder = Key.from(targetTable);
 				entryKeyMapping.getPropertyToColumn().values().forEach(keyIdColumnsProjectInAssociationTableBuilder::addColumn);
 				keyIdColumnsProjectInAssociationTable = keyIdColumnsProjectInAssociationTableBuilder.build();
 			}
 			
 			@Override
-			KeyValueRecordMapping<KID, V, SRCID, TARGETTABLE> build() {
-				KeyBuilder<TARGETTABLE, Object> keyBuilder1 = Key.from(targetTable);
+			KeyValueRecordMapping<KID, V, SRCID, MAPTABLE> build() {
+				KeyBuilder<MAPTABLE, Object> keyBuilder1 = Key.from(targetTable);
 				KeyBuilder<Table, Object> keyBuilder2 = Key.from(keyEntityPersister.getMainTable());
 				foreignKeyBootstrap.forEach((key, value) -> {
 					keyBuilder1.addColumn(key);

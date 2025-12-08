@@ -61,13 +61,17 @@ public class DefaultComposedIdentifierAssembler<I, T extends Table<T>> extends C
 	}
 
 	public Map<ReversibleAccessor<I, ?>, Column<T, ?>> getMapping() {
-		return (Map) mapping;
+		return mapping;
 	}
 
 	public Constructor<I> getDefaultConstructor() {
 		return defaultConstructor;
 	}
 
+	public Class<I> getKeyType() {
+		return getDefaultConstructor().getDeclaringClass();
+	}
+	
 	public Map<Accessor<I, ?>, Column<T, ?>> getCompositeKeyReaders() {
 		return compositeKeyReaders;
 	}

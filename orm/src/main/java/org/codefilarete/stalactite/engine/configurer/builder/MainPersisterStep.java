@@ -43,6 +43,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.function.Converter;
 
 import static org.codefilarete.tool.collection.Iterables.first;
@@ -84,7 +85,8 @@ public class MainPersisterStep<C, I> {
 				: identification.getFallbackInsertionManager();
 		IdMapping<E, I> idMappingStrategy;
 		if (identification instanceof AbstractIdentification.CompositeKeyIdentification) {
-			Map<ReversibleAccessor<I, Object>, Column<T, Object>> composedKeyMapping = Iterables.map(((CompositeKeyIdentification<E, I>) identification).getCompositeKeyMapping().entrySet(), Entry::getKey, entry -> targetTable.getColumn(entry.getValue().getName()));
+			Map<ReversibleAccessor<I, Object>, Column<Table, Object>> compositeKeyMapping = ((CompositeKeyIdentification<E, I>) identification).getCompositeKeyMapping();
+			Map<ReversibleAccessor<I, Object>, Column<T, Object>> composedKeyMapping = Iterables.map(compositeKeyMapping.entrySet(), Entry::getKey, entry -> targetTable.getColumn(entry.getValue().getName()), KeepOrderMap::new);
 			ComposedIdentifierAssembler<I, T> composedIdentifierAssembler = new DefaultComposedIdentifierAssembler<>(
 					targetTable,
 					(Class<I>) idDefinition.getMemberType(),

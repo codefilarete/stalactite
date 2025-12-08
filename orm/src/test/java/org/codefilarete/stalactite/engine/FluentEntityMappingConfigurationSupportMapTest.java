@@ -6,16 +6,18 @@ import java.time.LocalDateTime;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Function;
 
+import org.assertj.core.presentation.StandardRepresentation;
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
-import org.codefilarete.stalactite.dsl.MappingEase;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.configurer.ToStringBuilder;
 import org.codefilarete.stalactite.engine.model.Car.Radio;
 import org.codefilarete.stalactite.engine.model.City;
@@ -23,6 +25,8 @@ import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.Person.AddressBookType;
 import org.codefilarete.stalactite.engine.model.Timestamp;
+import org.codefilarete.stalactite.engine.model.compositekey.House;
+import org.codefilarete.stalactite.engine.model.compositekey.House.HouseId;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.id.Identified;
@@ -41,12 +45,15 @@ import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.codefilarete.stalactite.dsl.MappingEase.compositeKeyBuilder;
+import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
 import static org.codefilarete.tool.collection.Iterables.map;
 import static org.codefilarete.tool.function.Functions.chain;
 import static org.codefilarete.tool.function.Functions.link;
@@ -1276,6 +1283,55 @@ class FluentEntityMappingConfigurationSupportMapTest {
 					.containsExactlyInAnyOrder(
 							new ForeignKey("FK_Person_mapPropertyMadeOfEntityAsValue_id_Person_id", mapTable.getColumn("id"), personTable.getColumn("id")),
 							new ForeignKey("FK_Person_mapPropertyMadeOfEntityAsValue_value_Country_id", mapTable.getColumn("value"), countryTable.getColumn("id")));
+		}
+		
+		@Test
+		void compositeId_foreignKey_creation() {
+			Set<HouseId> persistedHouses = new HashSet<>();
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapMap(Person::getMapPropertyMadeOfCompositeIdEntityAsValue, String.class, House.class)
+					.withValueMapping(entityBuilder(House.class, HouseId.class)
+							.mapCompositeKey(House::getHouseId, compositeKeyBuilder(HouseId.class)
+									.map(HouseId::getNumber)
+									.map(HouseId::getStreet)
+									.map(HouseId::getZipCode)
+									.map(HouseId::getCity), h -> persistedHouses.add(h.getHouseId()), h -> persistedHouses.contains(h.getHouseId()))
+					)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Map<String, Table<?>> tablePerName = map(personPersister.getEntityJoinTree().giveTables(), Table::getName);
+			assertThat(tablePerName.keySet()).containsExactlyInAnyOrder("Person", "Person_mapPropertyMadeOfCompositeIdEntityAsValue", "House");
+			Table<?> personTable = tablePerName.get("Person");
+			Table<?> houseTable = tablePerName.get("House");
+			Table<?> mapTable = tablePerName.get("Person_mapPropertyMadeOfCompositeIdEntityAsValue");
+			
+			Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
+					Column::getAbsoluteName,
+					chain(Column::getJavaType, Reflections::toString));
+			Function<ForeignKey, String> fkPrinter = ToStringBuilder.of(", ",
+					ForeignKey::getName,
+					link(ForeignKey::getColumns, ToStringBuilder.asSeveral(columnPrinter)),
+					link(ForeignKey::getTargetColumns, ToStringBuilder.asSeveral(columnPrinter)));
+			
+			assertThat(mapTable.getForeignKeys())
+					.withRepresentation(new StandardRepresentation() {
+						@Override
+						protected String fallbackToStringOf(Object object) {
+							return fkPrinter.apply((ForeignKey) object);
+						}
+					})
+					.usingElementComparator(Comparator.comparing(fkPrinter))
+					.containsExactlyInAnyOrder(
+							new ForeignKey("FK_Person_mapPropertyMadeOfCompositeIdEntityAsValue_id_Person_id", mapTable.getColumn("id"), personTable.getColumn("id")),
+							new ForeignKey("FK_aee66945",
+									new KeepOrderSet<>(mapTable.getColumn("number"), mapTable.getColumn("street"), mapTable.getColumn("zipCode"), mapTable.getColumn("city")),
+									new KeepOrderSet<>(houseTable.getColumn("number"), houseTable.getColumn("street"), houseTable.getColumn("zipCode"), houseTable.getColumn("city"))
+							));
 		}
 	}
 	
