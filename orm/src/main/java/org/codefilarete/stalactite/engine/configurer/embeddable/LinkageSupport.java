@@ -38,7 +38,8 @@ public class LinkageSupport<T, O> implements EmbeddableMappingConfiguration.Link
 	@Nullable
 	private ParameterBinderRegistry.EnumBindType enumBindType;
 	
-	private boolean nullable = true;
+	@Nullable
+	private Boolean nullable;
 	
 	private boolean unique;
 	
@@ -92,8 +93,9 @@ public class LinkageSupport<T, O> implements EmbeddableMappingConfiguration.Link
 		this.enumBindType = enumBindType;
 	}
 	
+	@Nullable
 	@Override
-	public boolean isNullable() {
+	public Boolean isNullable() {
 		return nullable;
 	}
 	

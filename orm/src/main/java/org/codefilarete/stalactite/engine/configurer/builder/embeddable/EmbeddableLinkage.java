@@ -44,7 +44,12 @@ public interface EmbeddableLinkage<C, O> {
 	@Nullable
 	EnumBindType getEnumBindType();
 	
-	boolean isNullable();
+	/**
+	 *
+	 * @return null if the user didn't mention nullability, then we'll make a choice for him according to property type
+	 */
+	@Nullable
+	Boolean isNullable();
 	
 	boolean isReadonly();
 	

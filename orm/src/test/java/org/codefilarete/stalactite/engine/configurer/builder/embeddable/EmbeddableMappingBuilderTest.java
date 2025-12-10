@@ -130,5 +130,44 @@ class EmbeddableMappingBuilderTest {
 			// When I add the linkage to the configurator for this column, then it doesn't fail with any exception
 			assertThatCode(() -> testInstance.addColumnToTable(linkageMock, dummyColumn.getName(), dummyColumn.getSize())).doesNotThrowAnyException();
 		}
+		
+		@Test
+		void addColumnToTable_handlePrimitiveTypeAndNullability() {
+			// Given a table that has a column ...
+			Table countryTable = new Table("Country");
+			EmbeddableMappingBuilder<Country, ?> testInstanceBuilder = new EmbeddableMappingBuilder(
+					new FluentEmbeddableMappingConfigurationSupport(Country.class),
+					countryTable,
+					new ColumnBinderRegistry(),
+					new ColumnNameProvider(ColumnNamingStrategy.DEFAULT),
+					IndexNamingStrategy.DEFAULT);
+			EmbeddableMappingBuilder.InternalProcessor testInstance = testInstanceBuilder.new InternalProcessor(false);
+			
+			// ... and a linkage that uses a different type
+			EmbeddableLinkage linkageMock = mock(EmbeddableLinkage.class);
+			
+			// type is primitive and user didn't mention anything on nullability => we make it not nullable
+			when(linkageMock.getColumnType()).thenReturn(int.class);
+			when(linkageMock.isNullable()).thenReturn(null);
+			Column intColumn = testInstance.addColumnToTable(linkageMock, "dummyName_int", null);
+			assertThat(intColumn.isNullable()).isFalse();
+			
+			// type is Object and user didn't mention anything on nullability => we make it nullable
+			when(linkageMock.getColumnType()).thenReturn(Integer.class);
+			Column integerColumn = testInstance.addColumnToTable(linkageMock, "dummyName_integer", null);
+			assertThat(integerColumn.isNullable()).isTrue();
+			
+			// type is primitive but is overridden by user => we trust the user and make it as he asked
+			when(linkageMock.getColumnType()).thenReturn(int.class);
+			when(linkageMock.isNullable()).thenReturn(true);
+			Column intNullableColumn = testInstance.addColumnToTable(linkageMock, "dummyName_int_nullable", null);
+			assertThat(intNullableColumn.isNullable()).isTrue();
+			
+			// type is Object but is overridden by user => we trust the user and make it as he asked
+			when(linkageMock.getColumnType()).thenReturn(Integer.class);
+			when(linkageMock.isNullable()).thenReturn(false);
+			Column integerNotNullableColumn = testInstance.addColumnToTable(linkageMock, "dummyName_integer_notNullable", null);
+			assertThat(integerNotNullableColumn.isNullable()).isFalse();
+		}
 	}
 }

@@ -82,7 +82,7 @@ public interface EmbeddableMappingConfiguration<C> {
 				}
 				
 				@Override
-				public boolean isNullable() {
+				public Boolean isNullable() {
 					return false;
 				}
 				
@@ -355,8 +355,9 @@ public interface EmbeddableMappingConfiguration<C> {
 			return dslLinkage.getEnumBindType();
 		}
 		
+		@Nullable
 		@Override
-		public boolean isNullable() {
+		public Boolean isNullable() {
 			return dslLinkage.isNullable();
 		}
 		

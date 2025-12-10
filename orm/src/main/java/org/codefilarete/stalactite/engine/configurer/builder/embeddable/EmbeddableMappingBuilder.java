@@ -360,7 +360,10 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 				}
 			}
 			addedColumn = targetTable.addColumn(columnName, columnType, columnSize);
-			addedColumn.setNullable(linkage.isNullable());
+			// if user ask for nullability, then we follow his demand, else we rely on property type: primitive ones are mandatory
+			boolean isColumnNullable =
+					nullable(linkage.isNullable()).getOr(() -> !Reflections.isPrimitiveType(linkage.getColumnType()));
+			addedColumn.setNullable(isColumnNullable);
 			return addedColumn;
 		}
 		

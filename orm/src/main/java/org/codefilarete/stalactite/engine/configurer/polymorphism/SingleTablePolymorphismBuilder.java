@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
@@ -88,9 +89,9 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 	}
 	
 	private <D extends C> SimpleRelationalEntityPersister<D, I, T> buildSubclassPersister(Dialect dialect,
-																				ConnectionConfiguration connectionConfiguration,
-																				T mainTable,
-																				SubEntityMappingConfiguration<D> subConfiguration) {
+																						  ConnectionConfiguration connectionConfiguration,
+																						  T mainTable,
+																						  SubEntityMappingConfiguration<D> subConfiguration) {
 		// as a difference with other polymorphic cases, we don't use the following line to get the target table, but
 		// only to ensure that configuration is right because it raises an exception if the user gave a column that is
 		// not part of target table
@@ -102,6 +103,10 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 				this.namingConfiguration.getColumnNamingStrategy(),
 				this.namingConfiguration.getIndexNamingStrategy());
 		EmbeddableMapping<D, T> embeddableMapping = embeddableMappingBuilder.build();
+		// Primitive properties are mapped to not nullable columns, but single-table can't afford it because all columns are not set at all time
+		// so we need to set them to nullable, and we do it globally for simplicity (no primitive type check)
+		embeddableMapping.getMapping().values().forEach(column -> column.nullable(true));
+		
 		Map<ReversibleAccessor<D, Object>, Column<T, Object>> subEntityPropertiesMapping = embeddableMapping.getMapping();
 		Map<ReversibleAccessor<D, Object>, Column<T, Object>> subEntityReadonlyPropertiesMapping = embeddableMapping.getReadonlyMapping();
 		ValueAccessPointMap<D, Converter<Object, Object>> subEntityPropertiesReadConverters = embeddableMapping.getReadConverters();
