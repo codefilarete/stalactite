@@ -75,6 +75,12 @@ class EntityDecoratedEmbeddableConfigurationSupport<C, I> extends FluentEmbeddab
 					}
 					
 					@Override
+					public ColumnOptions<O> nullable() {
+						newMapping.setNullable(true);
+						return null;
+					}
+
+					@Override
 					public ColumnOptions<O> unique() {
 						newMapping.setUnique(true);
 						return null;

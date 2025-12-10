@@ -1,15 +1,34 @@
 package org.codefilarete.stalactite.engine;
 
-import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
+import java.util.Map;
+
 import org.codefilarete.stalactite.dsl.MappingEase;
+import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
+import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder;
+import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.engine.configurer.embeddable.FluentEmbeddableMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.PersonWithGender;
 import org.codefilarete.stalactite.engine.model.Timestamp;
+import org.codefilarete.stalactite.engine.model.device.Device;
+import org.codefilarete.stalactite.engine.model.device.Location;
+import org.codefilarete.stalactite.engine.model.device.Review;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
+import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
+import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.tool.collection.Iterables;
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.codefilarete.stalactite.dsl.MappingEase.embeddableBuilder;
+import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 
 /**
  * @author Guillaume Mary
@@ -159,5 +178,58 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		} catch (RuntimeException e) {
 			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
 		}
+	}
+	
+	@Test
+	void nullable() {
+		Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
+		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
+		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
+		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
+		
+		
+		FluentEntityMappingBuilder<Review, Identifier<Long>> reviewConfiguration = entityBuilder(Review.class, Identifier.LONG_TYPE)
+				.mapKey(Review::getId, ALREADY_ASSIGNED)
+				.map(Review::getRanking).nullable();
+		
+		FluentEmbeddableMappingBuilder<Location> locationMappingBuilder = embeddableBuilder(Location.class)
+				.mapOneToMany(Location::getReviews, reviewConfiguration);
+		
+		entityBuilder(Device.class, Identifier.LONG_TYPE)
+				.mapKey(Device::getId, ALREADY_ASSIGNED)
+				.map(Device::getName)
+				.embed(Device::setLocation, locationMappingBuilder)
+				.build(persistenceContext);
+		
+		Map<String, Table<?>> tablePerName = Iterables.map(DDLDeployer.collectTables(persistenceContext), Table::getName);
+		Table<?> deviceTable = tablePerName.get("Review");
+		assertThat(deviceTable.getColumn("ranking").isNullable()).isTrue();
+	}
+	
+	
+	@Test
+	void mandatory() {
+		Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
+		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
+		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
+		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
+		
+		
+		FluentEntityMappingBuilder<Review, Identifier<Long>> reviewConfiguration = entityBuilder(Review.class, Identifier.LONG_TYPE)
+				.mapKey(Review::getId, ALREADY_ASSIGNED)
+				.map(Review::getDate).mandatory();
+		
+		FluentEmbeddableMappingBuilder<Location> locationMappingBuilder = embeddableBuilder(Location.class)
+				.mapOneToMany(Location::getReviews, reviewConfiguration);
+		
+		entityBuilder(Device.class, Identifier.LONG_TYPE)
+				.mapKey(Device::getId, ALREADY_ASSIGNED)
+				.map(Device::getName)
+				.embed(Device::setLocation, locationMappingBuilder)
+				.build(persistenceContext);
+		
+		Map<String, Table<?>> tablePerName = Iterables.map(DDLDeployer.collectTables(persistenceContext), Table::getName);
+		Table<?> deviceTable = tablePerName.get("Review");
+		assertThat(deviceTable.getColumn("date").isNullable()).isFalse();
 	}
 }

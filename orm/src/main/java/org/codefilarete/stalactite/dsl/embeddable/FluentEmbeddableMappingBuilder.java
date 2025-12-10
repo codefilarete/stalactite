@@ -159,6 +159,9 @@ public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappi
 		FluentEmbeddableMappingBuilderPropertyOptions<C, O> mandatory();
 		
 		@Override
+		FluentEmbeddableMappingBuilderPropertyOptions<C, O> nullable();
+		
+		@Override
 		FluentEmbeddableMappingBuilderPropertyOptions<C, O> unique();
 
 		@Override

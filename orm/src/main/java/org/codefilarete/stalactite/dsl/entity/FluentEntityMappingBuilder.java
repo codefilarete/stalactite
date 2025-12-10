@@ -409,6 +409,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		FluentMappingBuilderPropertyOptions<C, I, O> mandatory();
 		
 		@Override
+		FluentMappingBuilderPropertyOptions<C, I, O> nullable();
+		
+		@Override
 		FluentMappingBuilderPropertyOptions<C, I, O> unique();
 		
 		@Override

@@ -20,6 +20,8 @@ public interface PropertyOptions<O> {
 	/**
 	 * Marks the property as mandatory. Note that using this method on an identifier one as no purpose because
 	 * identifiers are already mandatory.
+	 * This allows to overcome the default Stalactite behavior which relies on property type: if it's a primitive one,
+	 * then the column is not nullable, else, it is.
 	 */
 	PropertyOptions<O> mandatory();
 	

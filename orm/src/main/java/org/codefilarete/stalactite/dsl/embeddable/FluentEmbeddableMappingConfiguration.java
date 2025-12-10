@@ -304,6 +304,14 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 		@Override
 		FluentEmbeddableMappingConfigurationPropertyOptions<C, O> mandatory();
 		
+		/**
+		 * Marks the property as nullable. Note that using this method on an identifier one as no purpose because
+		 * identifiers are not allowed to be nullable.
+		 * This allows to overcome the default Stalactite behavior which relies on property type: if it's a primitive one,
+		 * then the column is not nullable, else, it is.
+		 */
+		FluentEmbeddableMappingConfigurationPropertyOptions<C, O> nullable();
+		
 		@Override
 		FluentEmbeddableMappingConfigurationPropertyOptions<C, O> unique();
 		

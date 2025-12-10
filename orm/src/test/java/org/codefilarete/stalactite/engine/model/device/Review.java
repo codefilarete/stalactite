@@ -4,11 +4,15 @@ import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 
+import java.time.LocalDateTime;
+
 public class Review implements Identified<Long> {
 	
 	private Identifier<Long> id;
 	
 	private int ranking;
+	
+	private LocalDateTime date;
 	
 	private Location location;
 	
@@ -33,6 +37,14 @@ public class Review implements Identified<Long> {
 	
 	public void setRanking(int ranking) {
 		this.ranking = ranking;
+	}
+	
+	public LocalDateTime getDate() {
+		return date;
+	}
+	
+	public void setDate(LocalDateTime date) {
+		this.date = date;
 	}
 	
 	public Location getLocation() {

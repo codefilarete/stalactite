@@ -115,6 +115,9 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		FluentSubEntityMappingBuilderPropertyOptions<C, I, O> mandatory();
 		
 		@Override
+		FluentSubEntityMappingBuilderPropertyOptions<C, I, O> nullable();
+		
+		@Override
 		FluentSubEntityMappingBuilderPropertyOptions<C, I, O> unique();
 
 		@Override

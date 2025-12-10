@@ -18,6 +18,11 @@ public interface ColumnOptions<O> extends PropertyOptions<O> {
 	@Override
 	ColumnOptions<O> mandatory();
 	
+	/**
+	 * Marks the column as nullable, by default columns are not nullable for primitive properties
+	 */
+	ColumnOptions<O> nullable();
+	
 	@Override
 	ColumnOptions<O> unique();
 	

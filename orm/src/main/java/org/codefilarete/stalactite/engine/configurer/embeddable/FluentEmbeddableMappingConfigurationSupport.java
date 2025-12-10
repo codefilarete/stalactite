@@ -542,6 +542,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 						return null;
 					}
 				}, true)
+				.redirect((SerializableFunction<FluentEmbeddableMappingConfigurationPropertyOptions<C, O>, FluentEmbeddableMappingConfigurationPropertyOptions<C, O>>)
+						FluentEmbeddableMappingConfigurationPropertyOptions::nullable, () -> linkage.setNullable(true))
 				.fallbackOn(this)
 				.build((Class<FluentEmbeddableMappingBuilderPropertyOptions<C, O>>) (Class) FluentEmbeddableMappingBuilderPropertyOptions.class);
 	}

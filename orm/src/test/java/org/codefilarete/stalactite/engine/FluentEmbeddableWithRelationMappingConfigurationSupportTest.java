@@ -375,7 +375,7 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 		void foreignKeyIsCreated() {
 			FluentEntityMappingBuilder<Review, Identifier<Long>> reviewConfiguration = entityBuilder(Review.class, Identifier.LONG_TYPE)
 					.mapKey(Review::getId, ALREADY_ASSIGNED)
-					.map(Review::getRanking).mandatory();
+					.map(Review::getRanking);
 			
 			FluentEmbeddableMappingBuilder<Location> locationMappingBuilder = embeddableBuilder(Location.class)
 					.mapOneToMany(Location::getReviews, reviewConfiguration);

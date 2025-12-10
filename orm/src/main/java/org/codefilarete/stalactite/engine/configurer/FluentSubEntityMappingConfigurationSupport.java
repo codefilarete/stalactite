@@ -537,27 +537,33 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 		
 		private <O> FluentSubEntityMappingBuilderPropertyOptions<C, I, O> wrapForAdditionalOptions(LinkageSupport<C, O> newMapping) {
 			return new MethodDispatcher()
-					.redirect(PropertyOptions.class, new PropertyOptions<O>() {
+					.redirect(ColumnOptions.class, new ColumnOptions<O>() {
 						@Override
-						public PropertyOptions<O> mandatory() {
+						public ColumnOptions<O> mandatory() {
 							newMapping.setNullable(false);
 							return null;
 						}
 						
 						@Override
-						public PropertyOptions<O> unique() {
+						public ColumnOptions<O> nullable() {
+							newMapping.setNullable(false);
+							return null;
+						}
+						
+						@Override
+						public ColumnOptions<O> unique() {
 							newMapping.setUnique(true);
 							return null;
 						}
 						
 						@Override
-						public PropertyOptions<O> setByConstructor() {
+						public ColumnOptions<O> setByConstructor() {
 							newMapping.setByConstructor();
 							return null;
 						}
 						
 						@Override
-						public PropertyOptions<O> readonly() {
+						public ColumnOptions<O> readonly() {
 							newMapping.readonly();
 							return null;
 						}
@@ -569,19 +575,19 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 						}
 						
 						@Override
-						public PropertyOptions<O> columnSize(Size size) {
+						public ColumnOptions<O> columnSize(Size size) {
 							newMapping.getColumnOptions().setColumnSize(size);
 							return null;
 						}
 						
 						@Override
-						public PropertyOptions<O> column(Column column) {
+						public ColumnOptions<O> column(Column column) {
 							newMapping.setColumnOptions(new ColumnLinkageOptionsByColumn(column));
 							return null;
 						}
 						
 						@Override
-						public PropertyOptions<O> fieldName(String name) {
+						public ColumnOptions<O> fieldName(String name) {
 							Field field = Reflections.findField(SubEntityDecoratedEmbeddableConfigurationSupport.this.entityConfigurationSupport.classToPersist, name);
 							if (field == null) {
 								throw new MappingConfigurationException(("Field " + name
@@ -592,19 +598,19 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 						}
 						
 						@Override
-						public PropertyOptions<O> readConverter(Converter<O, O> converter) {
+						public ColumnOptions<O> readConverter(Converter<O, O> converter) {
 							newMapping.setReadConverter(converter);
 							return null;
 						}
 						
 						@Override
-						public PropertyOptions<O> writeConverter(Converter<O, O> converter) {
+						public ColumnOptions<O> writeConverter(Converter<O, O> converter) {
 							newMapping.setWriteConverter(converter);
 							return null;
 						}
 						
 						@Override
-						public <V> PropertyOptions<O> sqlBinder(ParameterBinder<V> parameterBinder) {
+						public <V> ColumnOptions<O> sqlBinder(ParameterBinder<V> parameterBinder) {
 							newMapping.setParameterBinder(parameterBinder);
 							return null;
 						}
