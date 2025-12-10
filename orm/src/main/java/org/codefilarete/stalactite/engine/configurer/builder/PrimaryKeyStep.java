@@ -54,7 +54,7 @@ public class PrimaryKeyStep<C, I> {
 			((CompositeKeyIdentification<C, I>) identification).setCompositeKeyMapping(compositeKeyMapping);
 		} else {
 			String columnName = determineColumnName((SingleKeyMapping) keyLinkage, columnNamingStrategy);
-			Column<?, I> primaryKey = pkTable.addColumn(columnName, identifierDefinition.getMemberType());
+			Column<?, I> primaryKey = pkTable.addColumn(columnName, identifierDefinition.getMemberType(), ((SingleKeyMapping<C, I>) keyLinkage).getColumnOptions().getColumnSize());
 			primaryKey.setNullable(false);	// may not be necessary because of primary key, let for principle
 			primaryKey.primaryKey();
 			if (((SingleColumnIdentification<C, I>) identification).getIdentifierPolicy() instanceof GeneratedKeysPolicy) {
