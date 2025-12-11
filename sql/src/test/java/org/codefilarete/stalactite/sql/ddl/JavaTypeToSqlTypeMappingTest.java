@@ -39,6 +39,7 @@ class JavaTypeToSqlTypeMappingTest {
 		testInstance.put(String.class, "TEXT");
 		testInstance.put(String.class, "CHAR($l)", length(10));
 		testInstance.put(String.class, "VARCHAR($l)", length(100));
+		testInstance.put(String.class, "VARCHAR($l)", length(Integer.MAX_VALUE));
 		testInstance.put(Double.class, "decimal(10, 2)");
 		testInstance.put(Double.class, "decimal($p, $s)", fixedPoint(Integer.MAX_VALUE, Integer.MAX_VALUE));
 		testInstance.put(Float.class, "decimal($p)", fixedPoint(Integer.MAX_VALUE));
@@ -50,7 +51,7 @@ class JavaTypeToSqlTypeMappingTest {
 				{ testInstance, String.class, length(10), "CHAR(10)" },
 				{ testInstance, String.class, length(50), "VARCHAR(50)" },
 				{ testInstance, String.class, length(100), "VARCHAR(100)" },
-				{ testInstance, String.class, length(101), "TEXT" },
+				{ testInstance, String.class, length(101), "VARCHAR(101)" },
 				{ testInstance, Double.class, fixedPoint(7, 3), "decimal(7, 3)" },
 				{ testInstance, Double.class, null, "decimal(10, 2)" },
 				{ testInstance, Float.class, fixedPoint(10), "decimal(10)" },
