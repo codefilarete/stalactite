@@ -365,7 +365,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		}
 		
 		public boolean isNotEmpty() {
-			return reverseSetter != null || reverseGetter != null || reverseColumn != null
+			return reverseSetter != null || reverseGetter != null || reverseColumn != null || reverseColumnName != null
 					|| !foreignKeyColumnMapping.isEmpty() || !foreignKeyNameMapping.isEmpty();
 		}
 	}
