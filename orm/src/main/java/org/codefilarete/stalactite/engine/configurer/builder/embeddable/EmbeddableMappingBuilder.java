@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.configurer.builder.embeddable;
 
 import javax.annotation.Nullable;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -14,7 +15,6 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -31,7 +31,6 @@ import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
-import org.codefilarete.stalactite.engine.configurer.builder.embeddable.ColumnNameProvider.ColumnLinkage;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -159,20 +158,8 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 	private final EmbeddableMappingConfiguration<C> mainMappingConfiguration;
 	private final T targetTable;
 	private final ColumnBinderRegistry columnBinderRegistry;
-	private final ColumnNameProvider columnNameProvider;
+	private final ColumnNamingStrategy columnNamingStrategy;
 	private final IndexNamingStrategy indexNamingStrategy;
-	
-	public EmbeddableMappingBuilder(org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration<C> mappingConfiguration,
-									T targetTable,
-									ColumnBinderRegistry columnBinderRegistry,
-									ColumnNameProvider columnNameProvider,
-									IndexNamingStrategy indexNamingStrategy) {
-		this(fromEmbeddableMappingConfiguration(mappingConfiguration),
-				targetTable,
-				columnBinderRegistry,
-				columnNameProvider,
-				indexNamingStrategy);
-	}
 	
 	public EmbeddableMappingBuilder(org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration<C> mappingConfiguration,
 									T targetTable,
@@ -182,7 +169,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 		this(fromEmbeddableMappingConfiguration(mappingConfiguration),
 				targetTable,
 				columnBinderRegistry,
-				new ColumnNameProvider(columnNamingStrategy),
+				columnNamingStrategy,
 				indexNamingStrategy);
 	}
 	
@@ -194,7 +181,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 		this(fromCompositeKeyMappingConfiguration(mappingConfiguration),
 				targetTable,
 				columnBinderRegistry,
-				new ColumnNameProvider(columnNamingStrategy),
+				columnNamingStrategy,
 				indexNamingStrategy);
 	}
 	
@@ -202,11 +189,11 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 	EmbeddableMappingBuilder(EmbeddableMappingConfiguration<C> mappingConfiguration,
 							 T targetTable,
 							 ColumnBinderRegistry columnBinderRegistry,
-							 ColumnNameProvider columnNameProvider,
+							 ColumnNamingStrategy columnNameStrategy,
 							 IndexNamingStrategy indexNamingStrategy) {
 		this.mainMappingConfiguration = mappingConfiguration;
 		this.targetTable = targetTable;
-		this.columnNameProvider = columnNameProvider;
+		this.columnNamingStrategy = columnNameStrategy;
 		this.columnBinderRegistry = columnBinderRegistry;
 		this.indexNamingStrategy = indexNamingStrategy;
 	}
@@ -236,6 +223,17 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 	
 	protected T getTargetTable() {
 		return targetTable;
+	}
+	
+	protected <O> String determineColumnName(EmbeddableLinkage<C, O> linkage, @Nullable String overriddenColumName) {
+		return nullable(overriddenColumName).getOr(
+				() -> nullable(linkage.getColumnName())
+						.elseSet(nullable(linkage.getField()).map(Field::getName))
+						.getOr(() -> columnNamingStrategy.giveName(AccessorDefinition.giveDefinition(linkage.getAccessor()))));
+	}
+	
+	protected <O> Size determineColumnSize(EmbeddableLinkage<C, O> linkage, @Nullable Size overriddenColumSize) {
+		return nullable(overriddenColumSize).elseSet(linkage.getColumnSize()).get();
 	}
 	
 	/**
@@ -321,7 +319,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 		}
 		
 		protected <O> void assertMappingIsNotAlreadyDefinedByInheritance(EmbeddableLinkage<C, O> linkage, String columnNameToCheck, EmbeddableMappingConfiguration<O> mappingConfiguration) {
-			DuplicateDefinitionChecker duplicateDefinitionChecker = new DuplicateDefinitionChecker(columnNameToCheck, linkage.getAccessor(), columnNameProvider);
+			DuplicateDefinitionChecker duplicateDefinitionChecker = new DuplicateDefinitionChecker(columnNameToCheck, linkage.getAccessor(), columnNamingStrategy);
 			stream(mappingConfiguration.inheritanceIterable())
 					.flatMap(configuration -> (Stream<EmbeddableLinkage>) configuration.getPropertiesMapping().stream())
 					// not using equals() is voluntary since we want reference checking here to exclude same instance,
@@ -365,16 +363,6 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 					nullable(linkage.isNullable()).getOr(() -> !Reflections.isPrimitiveType(linkage.getColumnType()));
 			addedColumn.setNullable(isColumnNullable);
 			return addedColumn;
-		}
-		
-		private <O> String determineColumnName(EmbeddableLinkage<C, O> linkage, @Nullable String overriddenColumName) {
-			return nullable(overriddenColumName).getOr(
-					() -> columnNameProvider.giveColumnName(new ColumnLinkage(linkage.getColumnName(), linkage.getField(), linkage.getAccessor()))
-			);
-		}
-		
-		private <O> Size determineColumnSize(EmbeddableLinkage<C, O> linkage, @Nullable Size overriddenColumSize) {
-			return nullable(overriddenColumSize).elseSet(linkage.getColumnSize()).get();
 		}
 		
 		protected <O> void ensureColumnBindingInRegistry(EmbeddableLinkage<C, O> linkage, Column<?, O> column) {
@@ -443,7 +431,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 			// we include super type mapping by using a new instance of EmbeddableMappingBuilder, this is the simplest (but maybe not the most
 			// debuggable) and allows to manage inheritance of several mappedSuperClass 
 			EmbeddableMapping<C, T> superMapping = new EmbeddableMappingBuilder<>((EmbeddableMappingConfiguration<C>) superClassConfiguration, targetTable,
-					columnBinderRegistry, columnNameProvider, Objects.preventNull(superClassConfiguration.getIndexNamingStrategy(), indexNamingStrategy)).build();
+					columnBinderRegistry, columnNamingStrategy, Objects.preventNull(superClassConfiguration.getIndexNamingStrategy(), indexNamingStrategy)).build();
 			Class<?> insetBeanType = inset.getConfiguration().getBeanType();
 			superMapping.getMapping().forEach((accessor, column) -> {
 				AccessorChain prefix;
@@ -527,20 +515,21 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 		
 		private final String columnNameToCheck;
 		private final ReversibleAccessor propertyAccessor;
-		private final ColumnNameProvider columnNameProvider;
+		private final ColumnNamingStrategy columnNameStrategy;
 		private static final ValueAccessPointComparator VALUE_ACCESS_POINT_COMPARATOR = new ValueAccessPointComparator();
 		
-		DuplicateDefinitionChecker(String columnNameToCheck, ReversibleAccessor propertyAccessor, ColumnNameProvider columnNameProvider) {
+		DuplicateDefinitionChecker(String columnNameToCheck, ReversibleAccessor propertyAccessor, ColumnNamingStrategy columnNameStrategy) {
 			this.columnNameToCheck = columnNameToCheck;
 			this.propertyAccessor = propertyAccessor;
-			this.columnNameProvider = columnNameProvider;
+			this.columnNameStrategy = columnNameStrategy;
 		}
 		@Override
 		public void accept(EmbeddableLinkage pawn) {
 			ReversibleAccessor accessor = pawn.getAccessor();
 			if (VALUE_ACCESS_POINT_COMPARATOR.compare(accessor, propertyAccessor) == 0) {
 				throw new MappingConfigurationException("Mapping is already defined by method " + AccessorDefinition.toString(propertyAccessor));
-			} else if (columnNameToCheck.equals(columnNameProvider.giveColumnName(new ColumnLinkage(pawn.getColumnName(), pawn.getField(), pawn.getAccessor())))) {
+			} else if (columnNameToCheck.equals(pawn.getColumnName())
+						|| columnNameToCheck.equals(columnNameStrategy.giveName(AccessorDefinition.giveDefinition(accessor)))) {
 				throw new MappingConfigurationException("Column '" + columnNameToCheck + "' of mapping '" + AccessorDefinition.toString(propertyAccessor)
 						+ "' is already targeted by '" + AccessorDefinition.toString(pawn.getAccessor()) + "'");
 			}

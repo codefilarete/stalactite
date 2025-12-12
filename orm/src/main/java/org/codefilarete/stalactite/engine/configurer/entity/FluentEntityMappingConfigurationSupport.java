@@ -50,11 +50,12 @@ import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
+import org.codefilarete.stalactite.dsl.property.CollectionOptions;
 import org.codefilarete.stalactite.dsl.property.ElementCollectionOptions;
 import org.codefilarete.stalactite.dsl.property.EnumOptions;
 import org.codefilarete.stalactite.dsl.property.MapOptions;
-import org.codefilarete.stalactite.dsl.property.MapOptions.KeyAsEntityMapOptions;
-import org.codefilarete.stalactite.dsl.property.MapOptions.ValueAsEntityMapOptions;
+import org.codefilarete.stalactite.dsl.property.MapOptions.EmbeddableInMapOptions;
+import org.codefilarete.stalactite.dsl.property.MapOptions.EntityInMapOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToManyOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToOneOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyEntityOptions;
@@ -413,123 +414,179 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	private <K, V, M extends Map<K, V>> FluentMappingBuilderMapOptions<C, I, K, V, M> wrapWithMapOptions(MapRelation<C, K, V, M> mapRelation) {
 		Holder<FluentMappingBuilderMapOptions> proxyHolder = new Holder<>();
 		FluentMappingBuilderMapOptions<C, I, K, V, M> result = new MethodReferenceDispatcher()
-				.redirect(MapOptions.class, new MapOptions() {
+				.redirect(MapOptions.class, new MapOptions<K, V, M>() {
 					
 					@Override
-					public MapOptions withReverseJoinColumn(String columnName) {
+					public MapOptions<K, V, M> withReverseJoinColumn(String columnName) {
 						mapRelation.setReverseColumnName(columnName);
 						return null;
 					}
 					
 					@Override
-					public MapOptions keyColumn(String columnName) {
+					public MapOptions<K, V, M> keyColumn(String columnName) {
 						mapRelation.setKeyColumnName(columnName);
 						return null;
 					}
 					
 					@Override
-					public MapOptions valueColumn(String columnName) {
+					public MapOptions<K, V, M> keySize(Size columnSize) {
+						mapRelation.setKeyColumnSize(columnSize);
+						return null;
+					}
+					
+					@Override
+					public MapOptions<K, V, M> valueColumn(String columnName) {
 						mapRelation.setValueColumnName(columnName);
 						return null;
 					}
 					
 					@Override
-					public MapOptions withMapFactory(Supplier mapFactory) {
+					public MapOptions<K, V, M> valueSize(Size columnSize) {
+						mapRelation.setValueColumnSize(columnSize);
+						return null;
+					}
+					
+					@Override
+					public MapOptions<K, V, M> withMapFactory(Supplier<? extends M> mapFactory) {
 						mapRelation.setMapFactory(mapFactory);
 						return null;
 					}
 					
 					@Override
-					public MapOptions onTable(String tableName) {
+					public MapOptions<K, V, M> onTable(String tableName) {
 						mapRelation.setTargetTableName(tableName);
 						return null;
 					}
 					
 					@Override
-					public MapOptions onTable(Table table) {
+					public MapOptions<K, V, M> onTable(Table table) {
 						mapRelation.setTargetTable(table);
 						return null;
 					}
 					
 					@Override
-					public KeyAsEntityMapOptions withKeyMapping(EntityMappingConfigurationProvider mappingConfigurationProvider) {
+					public EntityInMapOptions<K, V, M> withKeyMapping(EntityMappingConfigurationProvider<K, ?> mappingConfigurationProvider) {
 						// This method is not call because it is overwritten by a dedicated redirect(..) call below
 						// mapRelation.setKeyConfigurationProvider(mappingConfigurationProvider);
 						return null;
 					}
 					
 					@Override
-					public MapOptions withKeyMapping(EmbeddableMappingConfigurationProvider mappingConfigurationProvider) {
-						mapRelation.setKeyConfigurationProvider(mappingConfigurationProvider);
+					public EmbeddableInMapOptions<K> withKeyMapping(EmbeddableMappingConfigurationProvider<K> mappingConfigurationProvider) {
+						// This method is not call because it is overwritten by a dedicated redirect(..) call below
+						// mapRelation.setKeyConfigurationProvider(mappingConfigurationProvider);
 						return null;
 					}
 					
 					@Override
-					public ValueAsEntityMapOptions withValueMapping(EntityMappingConfigurationProvider mappingConfigurationProvider) {
+					public EntityInMapOptions<K, V, M> withValueMapping(EntityMappingConfigurationProvider<V, ?> mappingConfigurationProvider) {
 						// This method is not call because it is overwritten by a dedicated redirect(..) call below
 						// mapRelation.setValueConfigurationProvider(mappingConfigurationProvider);
 						return null;
 					}
 					
 					@Override
-					public MapOptions withValueMapping(EmbeddableMappingConfigurationProvider mappingConfigurationProvider) {
-						mapRelation.setValueConfigurationProvider(mappingConfigurationProvider);
+					public EmbeddableInMapOptions<V> withValueMapping(EmbeddableMappingConfigurationProvider<V> mappingConfigurationProvider) {
+						// This method is not call because it is overwritten by a dedicated redirect(..) call below
+						// mapRelation.setValueConfigurationProvider(mappingConfigurationProvider);
 						return null;
 					}
 					
 					@Override
-					public MapOptions overrideKeyColumnName(SerializableFunction getter, String columnName) {
-						mapRelation.overrideKeyName(getter, columnName);
-						return null;
-					}
-					
-					@Override
-					public MapOptions overrideKeyColumnName(SerializableBiConsumer setter, String columnName) {
-						mapRelation.overrideKeyName(setter, columnName);
-						return null;
-					}
-					
-					@Override
-					public MapOptions overrideValueColumnName(SerializableFunction getter, String columnName) {
-						mapRelation.overrideValueName(getter, columnName);
-						return null;
-					}
-					
-					@Override
-					public MapOptions overrideValueColumnName(SerializableBiConsumer setter, String columnName) {
-						mapRelation.overrideValueName(setter, columnName);
-						return null;
-					}
-					
-					@Override
-					public MapOptions fetchSeparately() {
+					public MapOptions<K, V, M> fetchSeparately() {
 						mapRelation.fetchSeparately();
 						return null;
 					}
 				}, true)
 				// This will overwrite withKeyMapping(EntityMappingConfigurationProvider) capture to return a proxy
 				// that will let us configure cascading of the relation
-				.redirect((SerializableBiFunction<MapOptions, EntityMappingConfigurationProvider, KeyAsEntityMapOptions>) MapOptions::withKeyMapping,
+				.redirect((SerializableBiFunction<MapOptions<K, V, M>, EntityMappingConfigurationProvider<K, ?>, EntityInMapOptions<K, V, M>>) MapOptions::withKeyMapping,
 						entityMappingConfigurationProvider -> {
 							mapRelation.setKeyConfigurationProvider(entityMappingConfigurationProvider);
 							return new MethodReferenceDispatcher()
-									.redirect(KeyAsEntityMapOptions.class, relationMode -> {
+									.redirect(EntityInMapOptions.class, relationMode -> {
 										mapRelation.setKeyEntityRelationMode(relationMode);
 										return null;
 									}, true)
 									.fallbackOn(proxyHolder)
-									.build((Class<FluentMappingBuilderKeyAsEntityMapOptions<C, I, K, V, M>>) (Class) FluentMappingBuilderKeyAsEntityMapOptions.class);
+									.build((Class<FluentMappingBuilderEntityInMapOptions<C, I, K, V, M>>) (Class) FluentMappingBuilderEntityInMapOptions.class);
 						})
-				.redirect((SerializableBiFunction<MapOptions, EntityMappingConfigurationProvider, ValueAsEntityMapOptions>) MapOptions::withValueMapping,
+				.redirect((SerializableBiFunction<MapOptions<K, V, M>, EmbeddableMappingConfigurationProvider<K>, EmbeddableInMapOptions<K>>) MapOptions::withKeyMapping,
+						entityMappingConfigurationProvider -> {
+							mapRelation.setKeyConfigurationProvider(entityMappingConfigurationProvider);
+							return new MethodReferenceDispatcher()
+									.redirect(EmbeddableInMapOptions.class, new EmbeddableInMapOptions<K>() {
+										
+										@Override
+										public EmbeddableInMapOptions<K> overrideName(SerializableFunction<K, ?> getter, String columnName) {
+											mapRelation.overrideKeyName(getter, columnName);
+											return null;
+										}
+										
+										@Override
+										public EmbeddableInMapOptions<K> overrideName(SerializableBiConsumer<K, ?> setter, String columnName) {
+											mapRelation.overrideKeyName(setter, columnName);
+											return null;
+										}
+										
+										@Override
+										public EmbeddableInMapOptions<K> overrideSize(SerializableFunction<K, ?> getter, Size columnSize) {
+											mapRelation.overrideKeySize(getter, columnSize);
+											return null;
+										}
+										
+										@Override
+										public EmbeddableInMapOptions<K> overrideSize(SerializableBiConsumer<K, ?> setter, Size columnSize) {
+											mapRelation.overrideKeySize(setter, columnSize);
+											return null;
+										}
+									}, true)
+									.fallbackOn(proxyHolder)
+									.build((Class<FluentMappingBuilderEmbeddableInMapOptions<C, I, K, V, M, K>>) (Class) FluentMappingBuilderEmbeddableInMapOptions.class);
+						})
+				.redirect((SerializableBiFunction<MapOptions<K, V, M>, EntityMappingConfigurationProvider<V, ?>, EntityInMapOptions<K, V, M>>) MapOptions::withValueMapping,
 						entityMappingConfigurationProvider -> {
 							mapRelation.setValueConfigurationProvider(entityMappingConfigurationProvider);
 							return new MethodReferenceDispatcher()
-									.redirect(ValueAsEntityMapOptions.class, relationMode -> {
+									.redirect(EntityInMapOptions.class, relationMode -> {
 										mapRelation.setValueEntityRelationMode(relationMode);
 										return null;
 									}, true)
 									.fallbackOn(proxyHolder)
-									.build((Class<FluentMappingBuilderValueAsEntityMapOptions<C, I, K, V, M>>) (Class) FluentMappingBuilderValueAsEntityMapOptions.class);
+									.build((Class<FluentMappingBuilderEntityInMapOptions<C, I, K, V, M>>) (Class) FluentMappingBuilderEntityInMapOptions.class);
+						})
+				.redirect((SerializableBiFunction<MapOptions<K, V, M>, EmbeddableMappingConfigurationProvider<V>, EmbeddableInMapOptions<V>>) MapOptions::withValueMapping,
+						entityMappingConfigurationProvider -> {
+							mapRelation.setValueConfigurationProvider(entityMappingConfigurationProvider);
+							return new MethodReferenceDispatcher()
+									.redirect(EmbeddableInMapOptions.class, new EmbeddableInMapOptions<V>() {
+										
+										@Override
+										public EmbeddableInMapOptions<V> overrideName(SerializableFunction<V, ?> getter, String columnName) {
+											mapRelation.overrideValueName(getter, columnName);
+											return null;
+										}
+										
+										@Override
+										public EmbeddableInMapOptions<V> overrideName(SerializableBiConsumer<V, ?> setter, String columnName) {
+											mapRelation.overrideValueName(setter, columnName);
+											return null;
+										}
+										
+										@Override
+										public EmbeddableInMapOptions<V> overrideSize(SerializableFunction<V, ?> getter, Size columnSize) {
+											mapRelation.overrideValueSize(getter, columnSize);
+											return null;
+										}
+										
+										@Override
+										public EmbeddableInMapOptions<V> overrideSize(SerializableBiConsumer<V, ?> setter, Size columnSize) {
+											mapRelation.overrideValueSize(setter, columnSize);
+											return null;
+										}
+									}, true)
+									.fallbackOn(proxyHolder)
+									.build((Class<FluentMappingBuilderEmbeddableInMapOptions<C, I, K, V, M, V>>) (Class) FluentMappingBuilderEmbeddableInMapOptions.class);
 						})
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderMapOptions<C, I, K, V, M>>) (Class) FluentMappingBuilderMapOptions.class);
@@ -558,7 +615,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 			ElementCollectionRelation<C, O, S> elementCollectionRelation) {
 		return new MethodReferenceDispatcher()
 				.redirect((SerializableBiFunction<FluentMappingBuilderElementCollectionOptions, String, FluentMappingBuilderElementCollectionOptions>)
-								FluentMappingBuilderElementCollectionOptions::elementColumn,
+								FluentMappingBuilderElementCollectionOptions::elementColumnName,
 						elementCollectionRelation::setElementColumnName)
 				.redirect(ElementCollectionOptions.class, wrapAsOptions(elementCollectionRelation), true)
 				.fallbackOn(this)
@@ -591,7 +648,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				.redirect((SerializableTriFunction<FluentMappingBuilderElementCollectionImportEmbedOptions, SerializableFunction, String, FluentMappingBuilderElementCollectionImportEmbedOptions>)
 								FluentMappingBuilderElementCollectionImportEmbedOptions::overrideName,
 						(BiConsumer<SerializableFunction, String>) elementCollectionRelation::overrideName)
-				.redirect(ElementCollectionOptions.class, wrapAsOptions(elementCollectionRelation), true)
+				.redirect(CollectionOptions.class, wrapAsOptions(elementCollectionRelation), true)
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S>>) (Class) FluentMappingBuilderElementCollectionImportEmbedOptions.class);
 	}
@@ -606,8 +663,14 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 			}
 			
 			@Override
-			public ElementCollectionOptions<C, O, S> elementColumn(String columnName) {
+			public ElementCollectionOptions<C, O, S> elementColumnName(String columnName) {
 				elementCollectionRelation.setElementColumnName(columnName);
+				return null;
+			}
+			
+			@Override
+			public ElementCollectionOptions<C, O, S> elementColumnSize(Size columnSize) {
+				elementCollectionRelation.setElementColumnSize(columnSize);
 				return null;
 			}
 			
@@ -978,51 +1041,51 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	private <O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> support) {
 		return new MethodDispatcher()
-				.redirect(ImportedEmbedWithColumnOptions.class, new ImportedEmbedWithColumnOptions() {
+				.redirect(ImportedEmbedWithColumnOptions.class, new ImportedEmbedWithColumnOptions<O>() {
 					@Override
-					public ImportedEmbedWithColumnOptions overrideName(SerializableBiConsumer setter, String columnName) {
+					public <IN> ImportedEmbedWithColumnOptions<O> overrideName(SerializableBiConsumer<O, IN> setter, String columnName) {
 						support.overrideName(setter, columnName);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public ImportedEmbedWithColumnOptions overrideName(SerializableFunction getter, String columnName) {
+					public <IN> ImportedEmbedWithColumnOptions<O> overrideName(SerializableFunction<O, IN> getter, String columnName) {
 						support.overrideName(getter, columnName);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public ImportedEmbedWithColumnOptions overrideSize(SerializableBiConsumer setter, Size columnSize) {
+					public <IN> ImportedEmbedWithColumnOptions<O> overrideSize(SerializableBiConsumer<O, IN> setter, Size columnSize) {
 						support.overrideSize(setter, columnSize);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public ImportedEmbedWithColumnOptions overrideSize(SerializableFunction getter, Size columnSize) {
+					public <IN> ImportedEmbedWithColumnOptions<O> overrideSize(SerializableFunction<O, IN> getter, Size columnSize) {
 						support.overrideSize(getter, columnSize);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public ImportedEmbedWithColumnOptions override(SerializableBiConsumer setter, Column targetColumn) {
+					public <IN> ImportedEmbedWithColumnOptions<O> override(SerializableBiConsumer<O, IN> setter, Column<? extends Table, IN> targetColumn) {
 						propertiesMappingConfigurationDelegate.currentInset().override(setter, targetColumn);
 						return null;
 					}
 					
 					@Override
-					public ImportedEmbedWithColumnOptions override(SerializableFunction getter, Column targetColumn) {
+					public <IN> ImportedEmbedWithColumnOptions<O> override(SerializableFunction<O, IN> getter, Column<? extends Table, IN> targetColumn) {
 						propertiesMappingConfigurationDelegate.currentInset().override(getter, targetColumn);
 						return null;
 					}
 					
 					@Override
-					public ImportedEmbedWithColumnOptions exclude(SerializableBiConsumer setter) {
+					public <IN> ImportedEmbedWithColumnOptions<O> exclude(SerializableBiConsumer<O, IN> setter) {
 						support.exclude(setter);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public ImportedEmbedWithColumnOptions exclude(SerializableFunction getter) {
+					public <IN> ImportedEmbedWithColumnOptions<O> exclude(SerializableFunction<O, IN> getter) {
 						support.exclude(getter);
 						return null;	// we can return null because dispatcher will return proxy
 					}

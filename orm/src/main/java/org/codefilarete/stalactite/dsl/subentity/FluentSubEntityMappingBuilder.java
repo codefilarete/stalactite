@@ -5,19 +5,18 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.embeddable.ImportedEmbedWithColumnOptions;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
-import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToOneOptions;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.property.CollectionOptions;
 import org.codefilarete.stalactite.dsl.property.ColumnOptions;
 import org.codefilarete.stalactite.dsl.property.ElementCollectionOptions;
 import org.codefilarete.stalactite.dsl.property.EnumOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToOneEntityOptions;
-import org.codefilarete.stalactite.dsl.relation.OneToOneOptions;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -334,7 +333,11 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		@Override
 		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory);
 		
-		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> override(String columnName);
+		@Override
+		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> elementColumnName(String columnName);
+		
+		@Override
+		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> elementColumnSize(Size columnSize);
 		
 		@Override
 		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> reverseJoinColumn(String name);
@@ -347,11 +350,25 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 	}
 	
 	interface FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S extends Collection<O>>
-			extends FluentSubEntityMappingBuilder<C, I>, ElementCollectionOptions<C, O, S> {
+			extends FluentSubEntityMappingBuilder<C, I>, CollectionOptions<C, O, S>, ImportedEmbedWithColumnOptions<O> {
 		
+		@Override
 		<IN> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideName(SerializableFunction<O, IN> getter, String columnName);
 		
+		@Override
 		<IN> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideName(SerializableBiConsumer<O, IN> setter, String columnName);
+		
+		@Override
+		<IN> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideSize(SerializableFunction<O, IN> getter, Size columnSize);
+		
+		@Override
+		<IN> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideSize(SerializableBiConsumer<O, IN> setter, Size columnSize);
+		
+		@Override
+		<IN> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> exclude(SerializableFunction<O, IN> getter);
+		
+		@Override
+		<IN> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> exclude(SerializableBiConsumer<O, IN> setter);
 		
 		@Override
 		FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory);

@@ -36,6 +36,7 @@ import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifie
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
@@ -394,7 +395,8 @@ class FluentEntityMappingConfigurationSupportMapTest {
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getPhoneNumbers, String.class, String.class)
-				.keyColumn("toto")
+					.keyColumn("toto")
+					.keySize(Size.length(36))
 				.build(persistenceContext);
 
 		Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
@@ -402,6 +404,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		Table<?> nickNamesTable = tablePerName.get("Person_phoneNumbers");
 
 		assertThat(nickNamesTable.mapColumnsOnName().keySet()).containsExactlyInAnyOrder("id", "toto", "value");
+		assertThat(nickNamesTable.mapColumnsOnName().get("toto").getSize()).usingRecursiveComparison().isEqualTo(Size.length(36));
 	}
 
 
@@ -411,7 +414,8 @@ class FluentEntityMappingConfigurationSupportMapTest {
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getPhoneNumbers, String.class, String.class)
-				.valueColumn("toto")
+					.valueColumn("toto")
+					.valueSize(Size.length(36))
 				.build(persistenceContext);
 
 		Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
@@ -419,6 +423,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		Table<?> nickNamesTable = tablePerName.get("Person_phoneNumbers");
 
 		assertThat(nickNamesTable.mapColumnsOnName().keySet()).containsExactlyInAnyOrder("id", "toto", "key");
+		assertThat(nickNamesTable.mapColumnsOnName().get("toto").getSize()).usingRecursiveComparison().isEqualTo(Size.length(36));
 	}
 
 	@Test
@@ -570,14 +575,14 @@ class FluentEntityMappingConfigurationSupportMapTest {
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getMapPropertyMadeOfComplexTypes, Timestamp.class, Radio.class)
-				.withKeyMapping(MappingEase.embeddableBuilder(Timestamp.class)
-						.map(Timestamp::getCreationDate)
-						.map(Timestamp::getModificationDate)
-				)
-				.withValueMapping(MappingEase.embeddableBuilder(Radio.class)
-						.map(Radio::getSerialNumber)
-						.map(Radio::getModel)
-				)
+					.withKeyMapping(MappingEase.embeddableBuilder(Timestamp.class)
+							.map(Timestamp::getCreationDate)
+							.map(Timestamp::getModificationDate)
+					)
+					.withValueMapping(MappingEase.embeddableBuilder(Radio.class)
+							.map(Radio::getSerialNumber)
+							.map(Radio::getModel)
+					)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -627,6 +632,29 @@ class FluentEntityMappingConfigurationSupportMapTest {
 	}
 
 	@Test
+	void keyAndValueIsComplexType_schemaGeneration() {
+		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(Person::getName)
+				.mapMap(Person::getMapPropertyMadeOfComplexTypesWithColumnDuplicates, Timestamp.class, Timestamp.class)
+					.withKeyMapping(MappingEase.embeddableBuilder(Timestamp.class)
+							.map(Timestamp::getCreationDate)
+							.map(Timestamp::getModificationDate))
+						.overrideName(Timestamp::getCreationDate, "key_creation_date")
+						.overrideName(Timestamp::getModificationDate, "key_modification_date")
+					.withValueMapping(MappingEase.embeddableBuilder(Timestamp.class)
+							.map(Timestamp::getCreationDate).columnName("createdAt")
+							.map(Timestamp::getModificationDate).columnName("modifiedAt"))
+						.overrideName(Timestamp::getCreationDate, "value_creationDate")
+						.overrideName(Timestamp::getModificationDate, "value_modificationDate")
+				.build(persistenceContext);
+
+		Map<String, Table<?>> tablePerName = map(DDLDeployer.collectTables(persistenceContext), Table::getName);
+		assertThat(tablePerName.get("Person_mapPropertyMadeOfComplexTypesWithColumnDuplicates")
+				.getColumns().stream().map(Column::getName)).containsExactlyInAnyOrder("id", "key_creation_date", "key_modification_date", "value_creationDate", "value_modificationDate");
+	}
+
+	@Test
 	void crud_keyAndValueIsComplexType_overrideColumnName() {
 		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -640,8 +668,8 @@ class FluentEntityMappingConfigurationSupportMapTest {
 						.map(Timestamp::getCreationDate)
 						.map(Timestamp::getModificationDate)
 				)
-				.overrideKeyColumnName(Timestamp::getCreationDate, "key_creationDate")
-				.overrideValueColumnName(Timestamp::getModificationDate, "value_modificationDate")
+				.overrideName(Timestamp::getCreationDate, "value_creationDate")
+				.overrideName(Timestamp::getModificationDate, "value_modificationDate")
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -982,6 +1010,59 @@ class FluentEntityMappingConfigurationSupportMapTest {
 							new ForeignKey("FK_Person_mapPropertyMadeOfEntityAsKey_id_Person_id", mapTable.getColumn("id"), personTable.getColumn("id")),
 							new ForeignKey("FK_Person_mapPropertyMadeOfEntityAsKey_key_Country_id", mapTable.getColumn("key"), countryTable.getColumn("id")));
 		}
+		
+		@Test
+		void compositeId_foreignKey_creation() {
+			Set<HouseId> persistedHouses = new HashSet<>();
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapMap(Person::getMapPropertyMadeOfCompositeIdEntityAsKey, House.class, String.class)
+					.withKeyMapping(entityBuilder(House.class, HouseId.class)
+							.mapCompositeKey(House::getHouseId, compositeKeyBuilder(HouseId.class)
+									.map(HouseId::getNumber)
+									.map(HouseId::getStreet)
+									.map(HouseId::getZipCode)
+									.map(HouseId::getCity), h -> persistedHouses.add(h.getHouseId()), h -> persistedHouses.contains(h.getHouseId()))
+					)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Map<String, Table<?>> tablePerName = map(personPersister.getEntityJoinTree().giveTables(), Table::getName);
+			assertThat(tablePerName.keySet()).containsExactlyInAnyOrder("Person", "Person_mapPropertyMadeOfCompositeIdEntityAsKey", "House");
+			Table<?> personTable = tablePerName.get("Person");
+			Table<?> houseTable = tablePerName.get("House");
+			Table<?> mapTable = tablePerName.get("Person_mapPropertyMadeOfCompositeIdEntityAsKey");
+			
+			// The association table must have a primary key made of the id and the composite id columns
+			assertThat(mapTable.getPrimaryKey().getColumns().stream().map(Column::getName))
+					.containsExactly("id", "number", "street", "zipCode", "city");
+			
+			Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
+					Column::getAbsoluteName,
+					chain(Column::getJavaType, Reflections::toString));
+			Function<ForeignKey, String> fkPrinter = ToStringBuilder.of(", ",
+					ForeignKey::getName,
+					link(ForeignKey::getColumns, ToStringBuilder.asSeveral(columnPrinter)),
+					link(ForeignKey::getTargetColumns, ToStringBuilder.asSeveral(columnPrinter)));
+			
+			assertThat(mapTable.getForeignKeys())
+					.withRepresentation(new StandardRepresentation() {
+						@Override
+						protected String fallbackToStringOf(Object object) {
+							return fkPrinter.apply((ForeignKey) object);
+						}
+					})
+					.usingElementComparator(Comparator.comparing(fkPrinter))
+					.containsExactlyInAnyOrder(
+							new ForeignKey("FK_Person_mapPropertyMadeOfCompositeIdEntityAsKey_id_Person_id", mapTable.getColumn("id"), personTable.getColumn("id")),
+							new ForeignKey("FK_f8c1917",
+									new KeepOrderSet<>(mapTable.getColumn("number"), mapTable.getColumn("street"), mapTable.getColumn("zipCode"), mapTable.getColumn("city")),
+									new KeepOrderSet<>(houseTable.getColumn("number"), houseTable.getColumn("street"), houseTable.getColumn("zipCode"), houseTable.getColumn("city"))
+							));
+		}
 	}
 	
 	@Nested
@@ -1059,7 +1140,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsValue, String.class, Country.class)
-					.withValueMapping(countryPersisterConfiguration)
+						.withValueMapping(countryPersisterConfiguration)
 					.cascading(RelationMode.ASSOCIATION_ONLY)
 					.build(persistenceContext);
 
@@ -1309,6 +1390,10 @@ class FluentEntityMappingConfigurationSupportMapTest {
 			Table<?> personTable = tablePerName.get("Person");
 			Table<?> houseTable = tablePerName.get("House");
 			Table<?> mapTable = tablePerName.get("Person_mapPropertyMadeOfCompositeIdEntityAsValue");
+			
+			// The association table must have a primary key made of the id and the key column
+			assertThat(mapTable.getPrimaryKey().getColumns().stream().map(Column::getName))
+					.containsExactly("id", "key");
 			
 			Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 					Column::getAbsoluteName,

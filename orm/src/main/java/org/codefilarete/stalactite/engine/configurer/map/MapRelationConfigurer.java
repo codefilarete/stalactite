@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine.configurer.map;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,17 +15,17 @@ import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
-import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
-import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
+import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
-import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableLinkage;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
-import org.codefilarete.stalactite.engine.configurer.builder.embeddable.ColumnNameProvider;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
@@ -37,6 +38,7 @@ import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
@@ -170,19 +172,23 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 		if (keyEmbeddableConfiguration == null) {
 			String keyColumnName = nullable(mapRelation.getKeyColumnName())
 					.getOr(() -> columnNamingStrategy.giveName(ENTRY_KEY_ACCESSOR_DEFINITION));
-			Column<MAPTABLE, K> keyColumn = targetTable.addColumn(keyColumnName, mapRelation.getKeyType())
+			Column<MAPTABLE, K> keyColumn = targetTable.addColumn(keyColumnName, mapRelation.getKeyType(), mapRelation.getKeyColumnSize())
 					.primaryKey();
 			builder.withEntryKeyIsSingleProperty(keyColumn);
 		} else {
 			// a special configuration was given, we compute a EmbeddedClassMapping from it
-			EmbeddableMappingBuilder<K, MAPTABLE> entryKeyMappingBuilder = new EmbeddableMappingBuilder<>(keyEmbeddableConfiguration, targetTable,
-					dialect.getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
+			EmbeddableMappingBuilder<K, MAPTABLE> entryKeyMappingBuilder = new EmbeddableMappingBuilder<K, MAPTABLE>(keyEmbeddableConfiguration, targetTable,
+					dialect.getColumnBinderRegistry(), columnNamingStrategy, indexNamingStrategy) {
 				@Override
-				public String giveColumnName(ColumnLinkage pawn) {
-					return nullable(mapRelation.getOverriddenKeyColumnNames().get(pawn.getAccessor()))
-							.getOr(() -> super.giveColumnName(pawn));
+				protected <O> String determineColumnName(EmbeddableLinkage<K, O> linkage, @Nullable String overriddenColumName) {
+					return super.determineColumnName(linkage, mapRelation.getOverriddenKeyColumnNames().get(linkage.getAccessor()));
 				}
-			}, indexNamingStrategy);
+				
+				@Override
+				protected <O> Size determineColumnSize(EmbeddableLinkage<K, O> linkage, @Nullable Size overriddenColumSize) {
+					return super.determineColumnSize(linkage, mapRelation.getOverriddenKeyColumnSizes().get(linkage.getAccessor()));
+				}
+			};
 			EmbeddableMapping<K, MAPTABLE> entryKeyMapping = entryKeyMappingBuilder.build();
 			Map<ReversibleAccessor<K, Object>, Column<MAPTABLE, Object>> columnMapping = entryKeyMapping.getMapping();
 			
@@ -192,18 +198,22 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 		if (valueEmbeddableConfiguration == null) {
 			String valueColumnName = nullable(mapRelation.getValueColumnName())
 					.getOr(() -> columnNamingStrategy.giveName(ENTRY_VALUE_ACCESSOR_DEFINITION));
-			Column<MAPTABLE, V> valueColumn = targetTable.addColumn(valueColumnName, mapRelation.getValueType());
+			Column<MAPTABLE, V> valueColumn = targetTable.addColumn(valueColumnName, mapRelation.getValueType(), mapRelation.getValueColumnSize());
 			builder.withEntryValueIsSingleProperty(valueColumn);
 		} else {
 			// a special configuration was given, we compute a EmbeddedClassMapping from it
-			EmbeddableMappingBuilder<V, MAPTABLE> recordKeyMappingBuilder = new EmbeddableMappingBuilder<>(valueEmbeddableConfiguration, targetTable,
-					dialect.getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
+			EmbeddableMappingBuilder<V, MAPTABLE> recordKeyMappingBuilder = new EmbeddableMappingBuilder<V, MAPTABLE>(valueEmbeddableConfiguration, targetTable,
+					dialect.getColumnBinderRegistry(), columnNamingStrategy, indexNamingStrategy) {
 				@Override
-				public String giveColumnName(ColumnLinkage pawn) {
-					return nullable(mapRelation.getOverriddenValueColumnNames().get(pawn.getAccessor()))
-							.getOr(() -> super.giveColumnName(pawn));
+				protected <O> String determineColumnName(EmbeddableLinkage<V, O> linkage, @Nullable String overriddenColumName) {
+					return super.determineColumnName(linkage, mapRelation.getOverriddenValueColumnNames().get(linkage.getAccessor()));
 				}
-			}, indexNamingStrategy);
+				
+				@Override
+				protected <O> Size determineColumnSize(EmbeddableLinkage<V, O> linkage, @Nullable Size overriddenColumSize) {
+					return super.determineColumnSize(linkage, mapRelation.getOverriddenValueColumnSizes().get(linkage.getAccessor()));
+				}
+			};
 			EmbeddableMapping<V, MAPTABLE> entryValueMapping = recordKeyMappingBuilder.build();
 			Map<ReversibleAccessor<V, Object>, Column<MAPTABLE, Object>> columnMapping = entryValueMapping.getMapping();
 			

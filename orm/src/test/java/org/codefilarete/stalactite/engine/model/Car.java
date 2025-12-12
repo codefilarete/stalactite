@@ -21,6 +21,8 @@ public class Car extends Vehicle {
 	
 	private Set<String> plates = new HashSet<>();
 	
+	private Set<Timestamp> inspections = new HashSet<>();
+	
 	public Car() {
 	}
 	
@@ -64,6 +66,14 @@ public class Car extends Vehicle {
 	
 	public void addPlate(String plateNumber) {
 		this.plates.add(plateNumber);
+	}
+	
+	public Set<Timestamp> getInspections() {
+		return inspections;
+	}
+	
+	public void setInspections(Set<Timestamp> inspections) {
+		this.inspections = inspections;
 	}
 	
 	public static abstract class AbstractRadio {

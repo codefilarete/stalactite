@@ -55,6 +55,8 @@ public class Person implements Identified<Long> {
 	
 	private Map<City, Country> mapPropertyMadeOfEntityAsKeyAndValue;
 	
+	private Map<House, String> mapPropertyMadeOfCompositeIdEntityAsKey;
+	
 	private Map<String, House> mapPropertyMadeOfCompositeIdEntityAsValue;
 	
 	
@@ -215,6 +217,14 @@ public class Person implements Identified<Long> {
 	
 	public void setMapPropertyMadeOfEntityAsKeyAndValue(Map<City, Country> mapPropertyMadeOfEntityAsKeyAndValue) {
 		this.mapPropertyMadeOfEntityAsKeyAndValue = mapPropertyMadeOfEntityAsKeyAndValue;
+	}
+	
+	public Map<House, String> getMapPropertyMadeOfCompositeIdEntityAsKey() {
+		return mapPropertyMadeOfCompositeIdEntityAsKey;
+	}
+	
+	public void setMapPropertyMadeOfCompositeIdEntityAsKey(Map<House, String> mapPropertyMadeOfCompositeIdEntityAsKey) {
+		this.mapPropertyMadeOfCompositeIdEntityAsKey = mapPropertyMadeOfCompositeIdEntityAsKey;
 	}
 	
 	public Map<String, House> getMapPropertyMadeOfCompositeIdEntityAsValue() {

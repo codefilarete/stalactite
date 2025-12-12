@@ -10,15 +10,19 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.function.Function;
 
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
-import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.engine.FluentEntityMappingConfigurationSupportTest.State;
 import org.codefilarete.stalactite.engine.FluentEntityMappingConfigurationSupportTest.Toto;
 import org.codefilarete.stalactite.engine.configurer.ToStringBuilder;
+import org.codefilarete.stalactite.engine.model.AbstractVehicle;
+import org.codefilarete.stalactite.engine.model.Car;
 import org.codefilarete.stalactite.engine.model.City;
+import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.Timestamp;
+import org.codefilarete.stalactite.engine.model.Truck;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
@@ -26,19 +30,27 @@ import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifie
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
+import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
+import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.codefilarete.stalactite.dsl.MappingEase.embeddableBuilder;
 import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.MappingEase.subentityBuilder;
+import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
+import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 import static org.codefilarete.tool.collection.Iterables.map;
 import static org.codefilarete.tool.function.Functions.chain;
 import static org.codefilarete.tool.function.Functions.link;
@@ -65,7 +77,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 	
 	@Test
 	void insert() {
-		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) entityBuilder(Person.class, Identifier.LONG_TYPE)
+		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) entityBuilder(Person.class, LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapCollection(Person::getNicknames, String.class)
@@ -87,7 +99,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 	
 	@Test
 	void update_withNewObject() {
-		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) entityBuilder(Person.class, Identifier.LONG_TYPE)
+		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) entityBuilder(Person.class, LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapCollection(Person::getNicknames, String.class)
@@ -116,7 +128,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 	
 	@Test
 	void update_objectRemoval() {
-		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) entityBuilder(Person.class, Identifier.LONG_TYPE)
+		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) entityBuilder(Person.class, LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapCollection(Person::getNicknames, String.class)
@@ -143,7 +155,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 	
 	@Test
 	void delete() {
-		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) entityBuilder(Person.class, Identifier.LONG_TYPE)
+		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) entityBuilder(Person.class, LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapCollection(Person::getNicknames, String.class)
@@ -170,7 +182,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 	
 	@Test
 	void withCollectionFactory() {
-		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) entityBuilder(Person.class, Identifier.LONG_TYPE)
+		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) entityBuilder(Person.class, LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapCollection(Person::getNicknames, String.class)
@@ -200,7 +212,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 	
 	@Test
 	void foreignKeyIsPresent() {
-		entityBuilder(Person.class, Identifier.LONG_TYPE)
+		entityBuilder(Person.class, LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapCollection(Person::getNicknames, String.class)
@@ -227,7 +239,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 	
 	@Test
 	void mappedBy() {
-		entityBuilder(Person.class, Identifier.LONG_TYPE)
+		entityBuilder(Person.class, LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapCollection(Person::getNicknames, String.class)
@@ -255,7 +267,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 	
 	@Test
 	void withElementCollectionTableNaming() {
-		entityBuilder(Person.class, Identifier.LONG_TYPE)
+		entityBuilder(Person.class, LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.withElementCollectionTableNaming(accessorDefinition -> "Toto")
@@ -285,7 +297,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 	void withTable() {
 		Table nickNamesTable = new Table("Toto");
 		
-		entityBuilder(Person.class, Identifier.LONG_TYPE)
+		entityBuilder(Person.class, LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapCollection(Person::getNicknames, String.class)
@@ -311,7 +323,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 	
 	@Test
 	void withTableName() {
-		entityBuilder(Person.class, Identifier.LONG_TYPE)
+		entityBuilder(Person.class, LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapCollection(Person::getNicknames, String.class)
@@ -338,34 +350,51 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 	}
 	
 	@Test
-	void overrideColumnName() {
-		entityBuilder(Person.class, Identifier.LONG_TYPE)
+	void changeColumnName() {
+		entityBuilder(Person.class, LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapCollection(Person::getNicknames, String.class)
-					.elementColumn("toto")
+					.elementColumnName("toto")
 				.build(persistenceContext);
 		
 		Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
 		Map<String, Table<?>> tablePerName = map(tables, Table::getName);
-		Table<?> personTable = tablePerName.get("Person");
 		Table<?> nickNamesTable = tablePerName.get("Person_nicknames");
 		
 		assertThat(nickNamesTable.mapColumnsOnName().keySet()).containsExactlyInAnyOrder("id", "toto");
 	}
 	
 	@Test
+	void changeColumnSize() {
+		entityBuilder(Person.class, LONG_TYPE)
+				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(Person::getName)
+				.mapCollection(Person::getNicknames, String.class)
+					.elementColumnSize(Size.length(36))
+				.build(persistenceContext);
+		
+		Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
+		Map<String, Table<?>> tablePerName = map(tables, Table::getName);
+		Table<?> nickNamesTable = tablePerName.get("Person_nicknames");
+		
+		assertThat(nickNamesTable.mapColumnsOnName().get("nicknames").getSize())
+				.usingRecursiveComparison()
+				.isEqualTo(Size.length(36));
+	}
+	
+	@Test
 	void read_deepInTree() {
-		EntityPersister<Country, Identifier<Long>> countryPersister = entityBuilder(Country.class, Identifier.LONG_TYPE)
+		EntityPersister<Country, Identifier<Long>> countryPersister = entityBuilder(Country.class, LONG_TYPE)
 				.mapKey(Country::getId, IdentifierPolicy.<Country, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
 				.map(Country::getName)
 				.map(Country::getDescription)
-				.mapOneToOne(Country::getPresident, entityBuilder(Person.class, Identifier.LONG_TYPE)
+				.mapOneToOne(Country::getPresident, entityBuilder(Person.class, LONG_TYPE)
 						.mapKey(Person::getId, IdentifierPolicy.<Person, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
 						.map(Person::getName)
 						.mapCollection(Person::getNicknames, String.class)
 				)
-				.mapOneToMany(Country::getCities, entityBuilder(City.class, Identifier.LONG_TYPE)
+				.mapOneToMany(Country::getCities, entityBuilder(City.class, LONG_TYPE)
 						.mapKey(City::getId, IdentifierPolicy.<City, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
 						.map(City::getName))
 				.build(persistenceContext);
@@ -430,7 +459,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 				.onTable(totoTable)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(Toto::getName)
-				.mapCollection(Toto::getTimes, Timestamp.class, MappingEase.embeddableBuilder(Timestamp.class)
+				.mapCollection(Toto::getTimes, Timestamp.class, embeddableBuilder(Timestamp.class)
 						.map(Timestamp::getCreationDate)
 						.map(Timestamp::getModificationDate))
 				.build(persistenceContext);
@@ -462,7 +491,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 				.onTable(totoTable)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(Toto::getName)
-				.mapCollection(Toto::getTimes, Timestamp.class, MappingEase.embeddableBuilder(Timestamp.class)
+				.mapCollection(Toto::getTimes, Timestamp.class, embeddableBuilder(Timestamp.class)
 						.map(Timestamp::getCreationDate)
 						.map(Timestamp::getModificationDate))
 				.overrideName(Timestamp::getCreationDate, "createdAt")
@@ -488,5 +517,43 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 		
 		Toto loadedPerson = personPersister.select(person.getId());
 		assertThat(loadedPerson.getTimes()).isEqualTo(Arrays.asSet(timestamp1, timestamp2));
+	}
+	
+	@Nested
+	class OnSubEntity {
+		
+		@Test
+		void crudComplexType_overrideColumnName() {
+			
+			dialect.getColumnBinderRegistry().register(Color.class, new NullAwareParameterBinder<>(new LambdaParameterBinder<>(INTEGER_PRIMITIVE_BINDER, Color::new, Color::getRgb)));
+			dialect.getSqlTypeRegistry().put(Color.class, "int");
+			
+			entityBuilder(AbstractVehicle.class, LONG_TYPE)
+					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
+							.addSubClass(subentityBuilder(Car.class)
+											.map(Car::getId)
+											.map(Car::getModel)
+											.mapCollection(Car::getPlates, String.class)
+												.elementColumnName("toto")
+											.mapCollection(Car::getInspections, Timestamp.class, embeddableBuilder(Timestamp.class)
+													.map(Timestamp::getCreationDate).columnName("createdAt")    // this column will be overridden to "inspectionDate"
+													.map(Timestamp::getModificationDate).columnName("modifiedAt"))
+												.overrideName(Timestamp::getCreationDate, "inspectionDate")
+												.overrideSize(Timestamp::getCreationDate, Size.length(36))
+									, "CAR")
+							.addSubClass(subentityBuilder(Truck.class)
+									.map(Truck::getId)
+									.map(Truck::getColor), "TRUCK"))
+					.build(persistenceContext);
+			
+			Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
+			Map<String, Table<?>> tablePerName = map(tables, Table::getName);
+			Table<?> platesTable = tablePerName.get("Car_plates");
+			assertThat(platesTable.mapColumnsOnName().keySet()).containsExactlyInAnyOrder("id", "toto");
+			Table<?> inspectionsTable = tablePerName.get("Car_inspections");
+			assertThat(inspectionsTable.mapColumnsOnName().keySet()).containsExactlyInAnyOrder("id", "modifiedAt", "inspectionDate");
+			assertThat(inspectionsTable.mapColumnsOnName().get("inspectionDate").getSize()).usingRecursiveComparison().isEqualTo(Size.length(36));
+		}
 	}
 }

@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine.configurer.map;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -15,17 +16,17 @@ import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
-import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
-import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
-import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.configurer.DefaultComposedIdentifierAssembler;
-import org.codefilarete.stalactite.engine.configurer.builder.embeddable.ColumnNameProvider;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableLinkage;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
@@ -39,6 +40,7 @@ import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
@@ -92,7 +94,7 @@ public class EntityAsValueMapRelationConfigurer<SRC, SRCID, K, V, VID, M extends
 	private final ConfiguredRelationalPersister<V, VID> valueEntityPersister;
 	private final Function<SRC, M> mapGetter;
 	private final InMemoryRelationHolder<SRCID, K, VID, V> inMemoryRelationHolder;
-	private Key<?, VID> keyIdColumnsProjectInAssociationTable;
+	private Key<?, VID> valueIdColumnsProjectInAssociationTable;
 	private final RelationMode maintenanceMode;
 	
 	public EntityAsValueMapRelationConfigurer(
@@ -168,19 +170,19 @@ public class EntityAsValueMapRelationConfigurer<SRC, SRCID, K, V, VID, M extends
 			private final Map<Column<MAPTABLE, ?>, Column<Table, ?>> foreignKeyBootstrap = new KeepOrderMap<>();
 			
 			@Override
-			void withEntryValueIsSingleProperty(Column<MAPTABLE, VID> keyColumn) {
-				super.withEntryValueIsSingleProperty(keyColumn);
+			void withEntryValueIsSingleProperty(Column<MAPTABLE, VID> valueColumn) {
+				super.withEntryValueIsSingleProperty(valueColumn);
 				Column<Table, Object> column = ((SimpleIdMapping) valueEntityPersister.getMapping().getIdMapping()).getIdentifierAssembler().getColumn();
-				foreignKeyBootstrap.put(keyColumn, column);
-				keyIdColumnsProjectInAssociationTable = Key.ofSingleColumn(keyColumn);
+				foreignKeyBootstrap.put(valueColumn, column);
+				valueIdColumnsProjectInAssociationTable = Key.ofSingleColumn(valueColumn);
 			}
 
 			@Override
 			void withEntryValueIsComplexType(EmbeddedClassMapping<VID, MAPTABLE> entryKeyMapping) {
 				super.withEntryValueIsComplexType(entryKeyMapping);
-				KeyBuilder<MAPTABLE, VID> keyIdColumnsProjectInAssociationTableBuilder = Key.from(targetTable);
-				entryKeyMapping.getPropertyToColumn().values().forEach(keyIdColumnsProjectInAssociationTableBuilder::addColumn);
-				keyIdColumnsProjectInAssociationTable = keyIdColumnsProjectInAssociationTableBuilder.build();
+				KeyBuilder<MAPTABLE, VID> valueIdColumnsProjectInAssociationTableBuilder = Key.from(targetTable);
+				entryKeyMapping.getPropertyToColumn().values().forEach(valueIdColumnsProjectInAssociationTableBuilder::addColumn);
+				valueIdColumnsProjectInAssociationTable = valueIdColumnsProjectInAssociationTableBuilder.build();
 				entryKeyMapping.getPropertyToColumn().values().forEach(associationColumn -> {
 					Column<Table, ?> rightColumn = valueEntityPersister.<Table>getMainTable().getColumn(associationColumn.getExpression());
 					foreignKeyBootstrap.put(associationColumn, rightColumn);
@@ -203,21 +205,26 @@ public class EntityAsValueMapRelationConfigurer<SRC, SRCID, K, V, VID, M extends
 		if (keyEmbeddableConfiguration == null) {
 			String keyColumnName = nullable(mapRelation.getKeyColumnName())
 					.getOr(() -> columnNamingStrategy.giveName(ENTRY_KEY_ACCESSOR_DEFINITION));
-			Column<MAPTABLE, K> keyColumn = targetTable.addColumn(keyColumnName, mapRelation.getKeyType())
+			Column<MAPTABLE, K> keyColumn = targetTable.addColumn(keyColumnName, mapRelation.getKeyType(), mapRelation.getKeyColumnSize())
 					.primaryKey();
 			builder.withEntryKeyIsSingleProperty(keyColumn);
 		} else {
 			// a special configuration was given, we compute a EmbeddedClassMapping from it
-			EmbeddableMappingBuilder<K, MAPTABLE> entryKeyMappingBuilder = new EmbeddableMappingBuilder<>(keyEmbeddableConfiguration, targetTable,
-					dialect.getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
+			EmbeddableMappingBuilder<K, MAPTABLE> entryKeyMappingBuilder = new EmbeddableMappingBuilder<K, MAPTABLE>(keyEmbeddableConfiguration, targetTable,
+					dialect.getColumnBinderRegistry(), columnNamingStrategy, indexNamingStrategy) {
 				@Override
-				public String giveColumnName(ColumnLinkage pawn) {
-					return nullable(mapRelation.getOverriddenKeyColumnNames().get(pawn.getAccessor()))
-							.getOr(() -> super.giveColumnName(pawn));
+				protected <O> String determineColumnName(EmbeddableLinkage<K, O> linkage, @Nullable String overriddenColumName) {
+					return super.determineColumnName(linkage, mapRelation.getOverriddenValueColumnNames().get(linkage.getAccessor()));
 				}
-			}, indexNamingStrategy);
+				
+				@Override
+				protected <O> Size determineColumnSize(EmbeddableLinkage<K, O> linkage, @Nullable Size overriddenColumSize) {
+					return super.determineColumnSize(linkage, mapRelation.getOverriddenValueColumnSizes().get(linkage.getAccessor()));
+				}
+			};
 			EmbeddableMapping<K, MAPTABLE> entryKeyMapping = entryKeyMappingBuilder.build();
 			Map<ReversibleAccessor<K, Object>, Column<MAPTABLE, Object>> columnMapping = entryKeyMapping.getMapping();
+			columnMapping.values().forEach(Column::primaryKey);
 			
 			columnMapping.forEach((propertyAccessor, column) -> column.primaryKey());
 			builder.withEntryKeyIsComplexType(new EmbeddedClassMapping<>(keyEmbeddableConfiguration.getBeanType(), targetTable, columnMapping));
@@ -232,10 +239,9 @@ public class EntityAsValueMapRelationConfigurer<SRC, SRCID, K, V, VID, M extends
 		} else if (identifierAssembler instanceof DefaultComposedIdentifierAssembler) {
 			Map<ReversibleAccessor<V, ?>, Column<?, ?>> idMapping = ((DefaultComposedIdentifierAssembler) identifierAssembler).getMapping();
 			Map<ReversibleAccessor<V, ?>, Column<MAPTABLE, ?>> idMappingInMapTable = new KeepOrderMap<>();
-			idMapping.entrySet().forEach(entry -> {
-				Column<?, ?> column = entry.getValue();
+			idMapping.forEach((key, column) -> {
 				Column<MAPTABLE, ?> maptableColumn = targetTable.addColumn(column.getName(), column.getJavaType(), column.getSize());
-				idMappingInMapTable.put(entry.getKey(), maptableColumn);
+				idMappingInMapTable.put(key, maptableColumn);
 			});
 			EmbeddedClassMapping<VID, MAPTABLE> embeddedClassMapping = new EmbeddedClassMapping<>(
 					((DefaultComposedIdentifierAssembler) identifierAssembler).getKeyType(),
@@ -335,7 +341,7 @@ public class EntityAsValueMapRelationConfigurer<SRC, SRCID, K, V, VID, M extends
 		valueEntityPersister.joinAsMany(ROOT_JOIN_NAME,
 				relationRecordPersister,
 				Accessors.accessorByMethodReference(KeyValueRecord::getValue),
-				(Key<Table, VID>) keyIdColumnsProjectInAssociationTable,
+				(Key<Table, VID>) valueIdColumnsProjectInAssociationTable,
 				(PrimaryKey<?, VID>) valueEntityPersister.getMainTable().<VID>getPrimaryKey(),
                 (bean, input) -> inMemoryRelationHolder.storeEntity(bean.getId().getId(), bean.getKey(), input),
 				null,

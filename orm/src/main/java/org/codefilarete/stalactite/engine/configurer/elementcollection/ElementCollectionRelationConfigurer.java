@@ -13,20 +13,18 @@ import java.util.function.Supplier;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
-import org.codefilarete.reflection.AccessorChain.ValueInitializerOnNullValue;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
+import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
-import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
-import org.codefilarete.stalactite.engine.configurer.builder.embeddable.ColumnNameProvider;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableLinkage;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
@@ -40,6 +38,7 @@ import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
@@ -122,17 +121,17 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 	}
 	
 	private <SRCTABLE extends Table<SRCTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>> ElementCollectionMapping<SRCTABLE, COLLECTIONTABLE>
-	buildCollectionTableMapping(ElementCollectionRelation<SRC, TRGT, C> linkage, AccessorDefinition collectionProviderDefinition, PrimaryKey<SRCTABLE, I> sourcePK) {
-		String tableName = nullable(linkage.getTargetTableName()).getOr(() -> tableNamingStrategy.giveName(collectionProviderDefinition));
+	buildCollectionTableMapping(ElementCollectionRelation<SRC, TRGT, C> collectionRelation, AccessorDefinition collectionProviderDefinition, PrimaryKey<SRCTABLE, I> sourcePK) {
+		String tableName = nullable(collectionRelation.getTargetTableName()).getOr(() -> tableNamingStrategy.giveName(collectionProviderDefinition));
 		// Note that table will participate to DDL while cascading selection thanks to its join on foreignKey 
-		COLLECTIONTABLE targetTable = (COLLECTIONTABLE) nullable(linkage.getTargetTable()).getOr(() -> new Table(tableName));
+		COLLECTIONTABLE targetTable = (COLLECTIONTABLE) nullable(collectionRelation.getTargetTable()).getOr(() -> new Table(tableName));
 		Map<Column<SRCTABLE, ?>, Column<COLLECTIONTABLE, ?>> primaryKeyForeignColumnMapping = new HashMap<>();
-		Column<COLLECTIONTABLE, I> reverseColumn = (Column) linkage.getReverseColumn();
+		Column<COLLECTIONTABLE, I> reverseColumn = (Column) collectionRelation.getReverseColumn();
 		Key<COLLECTIONTABLE, I> reverseKey = nullable(reverseColumn).map(Key::ofSingleColumn)
 				.getOr(() -> {
 					KeyBuilder<COLLECTIONTABLE, I> result = Key.from(targetTable);
 					sourcePK.getColumns().forEach(col -> {
-						String reverseColumnName = nullable(linkage.getReverseColumnName()).getOr(() ->
+						String reverseColumnName = nullable(collectionRelation.getReverseColumnName()).getOr(() ->
 								columnNamingStrategy.giveName(ELEMENT_RECORD_ID_ACCESSOR_DEFINITION));
 						Column<COLLECTIONTABLE, ?> reverseCol = targetTable.addColumn(reverseColumnName, col.getJavaType())
 								.primaryKey();
@@ -145,13 +144,13 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 		registerColumnBinder(reverseForeignKey, sourcePK);	// because sourcePk binder might have been overloaded by column so we need to adjust to it
 		
 		EmbeddableMappingConfiguration<TRGT> embeddableConfiguration =
-				nullable(linkage.getEmbeddableConfigurationProvider()).map(EmbeddableMappingConfigurationProvider::getConfiguration).get();
+				nullable(collectionRelation.getEmbeddableConfigurationProvider()).map(EmbeddableMappingConfigurationProvider::getConfiguration).get();
 		DefaultEntityMapping<ElementRecord<TRGT, I>, ElementRecord<TRGT, I>, COLLECTIONTABLE> elementRecordMapping;
 		IdentifierAssembler<I, SRCTABLE> sourceIdentifierAssembler = sourcePersister.getMapping().getIdMapping().getIdentifierAssembler();
 		if (embeddableConfiguration == null) {
-			String columnName = nullable(linkage.getElementColumnName())
+			String columnName = nullable(collectionRelation.getElementColumnName())
 					.getOr(() -> columnNamingStrategy.giveName(collectionProviderDefinition));
-			Column<COLLECTIONTABLE, TRGT> elementColumn = targetTable.addColumn(columnName, linkage.getComponentType());
+			Column<COLLECTIONTABLE, TRGT> elementColumn = targetTable.addColumn(columnName, collectionRelation.getComponentType(), collectionRelation.getElementColumnSize());
 			// adding constraint only if Collection is a Set (because Sets don't allow duplicates) 
 			if (Set.class.isAssignableFrom(collectionProviderDefinition.getMemberType())) {
 				elementColumn.primaryKey();
@@ -159,14 +158,18 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 			elementRecordMapping = new ElementRecordMapping<>(targetTable, elementColumn, sourceIdentifierAssembler, primaryKeyForeignColumnMapping);
 		} else {
 			// a special configuration was given, we compute a EmbeddedClassMapping from it
-			EmbeddableMappingBuilder<TRGT, COLLECTIONTABLE> elementCollectionMappingBuilder = new EmbeddableMappingBuilder<>(embeddableConfiguration, targetTable,
-					dialect.getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
+			EmbeddableMappingBuilder<TRGT, COLLECTIONTABLE> elementCollectionMappingBuilder = new EmbeddableMappingBuilder<TRGT, COLLECTIONTABLE>(embeddableConfiguration, targetTable,
+					dialect.getColumnBinderRegistry(), columnNamingStrategy, indexNamingStrategy) {
 				@Override
-				public String giveColumnName(ColumnLinkage pawn) {
-					return nullable(linkage.getOverriddenColumnNames().get(pawn.getAccessor()))
-							.getOr(() -> super.giveColumnName(pawn));
+				protected <O> String determineColumnName(EmbeddableLinkage<TRGT, O> linkage, @javax.annotation.Nullable String overriddenColumName) {
+					return super.determineColumnName(linkage, collectionRelation.getOverriddenColumnNames().get(linkage.getAccessor()));
 				}
-			}, indexNamingStrategy);
+				
+				@Override
+				protected <O> Size determineColumnSize(EmbeddableLinkage<TRGT, O> linkage, @javax.annotation.Nullable Size overriddenColumSize) {
+					return super.determineColumnSize(linkage, collectionRelation.getOverriddenColumnSizes().get(linkage.getAccessor()));
+				}
+			};
 			Map<ReversibleAccessor<TRGT, Object>, Column<COLLECTIONTABLE, Object>> columnMapping = elementCollectionMappingBuilder.build().getMapping();
 			
 			Map<ReversibleAccessor<ElementRecord<TRGT, I>, Object>, Column<COLLECTIONTABLE, Object>> projectedColumnMap = new HashMap<>();

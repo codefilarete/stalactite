@@ -6,6 +6,7 @@ import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.engine.configurer.LambdaMethodUnsheller;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.codefilarete.reflection.AccessorByMethod;
@@ -47,7 +48,11 @@ public class ElementCollectionRelation<SRC, TRGT, C extends Collection<TRGT>> {
 	
 	/** Complex type mapping override, to be used when {@link EmbeddableMappingConfigurationProvider} is not null */
 	private final ValueAccessPointMap<SRC, String> overriddenColumnNames = new ValueAccessPointMap<>();
-	private String elementColumn;
+	
+	/** Complex type mapping override, to be used when {@link EmbeddableMappingConfigurationProvider} is not null */
+	private final ValueAccessPointMap<SRC, Size> overriddenColumnSizes = new ValueAccessPointMap<>();
+	
+	private Size elementColumnSize;
 	
 	/**
 	 * @param setter collection accessor
@@ -111,6 +116,18 @@ public class ElementCollectionRelation<SRC, TRGT, C extends Collection<TRGT>> {
 		this.overriddenColumnNames.put(new MutatorByMethodReference(methodRef), columnName);
 	}
 	
+	public void overrideSize(SerializableFunction methodRef, Size columnSize) {
+		this.overriddenColumnSizes.put(new AccessorByMethodReference(methodRef), columnSize);
+	}
+	
+	public void overrideSize(SerializableBiConsumer methodRef, Size columnSize) {
+		this.overriddenColumnSizes.put(new MutatorByMethodReference(methodRef), columnSize);
+	}
+	
+	public ValueAccessPointMap<SRC, Size> getOverriddenColumnSizes() {
+		return this.overriddenColumnSizes;
+	}
+	
 	public Table getTargetTable() {
 		return targetTable;
 	}
@@ -159,5 +176,13 @@ public class ElementCollectionRelation<SRC, TRGT, C extends Collection<TRGT>> {
 	
 	public String getElementColumnName() {
 		return elementColumnName;
+	}
+	
+	public void setElementColumnSize(Size elementColumnSize) {
+		this.elementColumnSize = elementColumnSize;
+	}
+	
+	public Size getElementColumnSize() {
+		return elementColumnSize;
 	}
 }

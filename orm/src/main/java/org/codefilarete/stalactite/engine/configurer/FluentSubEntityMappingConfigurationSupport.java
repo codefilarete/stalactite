@@ -31,20 +31,20 @@ import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder
 import org.codefilarete.stalactite.dsl.embeddable.ImportedEmbedWithColumnOptions;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.property.CollectionOptions;
 import org.codefilarete.stalactite.dsl.property.ColumnOptions;
 import org.codefilarete.stalactite.dsl.property.ElementCollectionOptions;
 import org.codefilarete.stalactite.dsl.property.EnumOptions;
-import org.codefilarete.stalactite.dsl.property.PropertyOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyEntityOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToOneEntityOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToOneOptions;
 import org.codefilarete.stalactite.dsl.subentity.FluentSubEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.subentity.FluentSubEntityMappingBuilderOneToManyOptions;
 import org.codefilarete.stalactite.dsl.subentity.SubEntityMappingConfiguration;
+import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.embeddable.FluentEmbeddableMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.configurer.embeddable.LinkageSupport;
 import org.codefilarete.stalactite.engine.configurer.entity.OneToManyEntityOptionsSupport;
-import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.manyToOne.ManyToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
@@ -202,7 +202,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 		elementCollections.add(elementCollectionRelation);
 		return new MethodReferenceDispatcher()
 				.redirect((SerializableBiFunction<FluentSubEntityMappingBuilderElementCollectionOptions, String, FluentSubEntityMappingBuilderElementCollectionOptions>)
-								FluentSubEntityMappingBuilderElementCollectionOptions::override,
+								FluentSubEntityMappingBuilderElementCollectionOptions::elementColumnName,
 						elementCollectionRelation::setElementColumnName)
 				.redirect(ElementCollectionOptions.class, wrapAsOptions(elementCollectionRelation), true)
 				.fallbackOn(this)
@@ -216,7 +216,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 		elementCollections.add(elementCollectionRelation);
 		return new MethodReferenceDispatcher()
 				.redirect((SerializableBiFunction<FluentSubEntityMappingBuilderElementCollectionOptions, String, FluentSubEntityMappingBuilderElementCollectionOptions>)
-								FluentSubEntityMappingBuilderElementCollectionOptions::override,
+								FluentSubEntityMappingBuilderElementCollectionOptions::elementColumnName,
 						elementCollectionRelation::setElementColumnName)
 				.redirect(ElementCollectionOptions.class, wrapAsOptions(elementCollectionRelation), true)
 				.fallbackOn(this)
@@ -235,7 +235,10 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 				.redirect((SerializableTriFunction<FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions, SerializableFunction, String, FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions>)
 								FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions::overrideName,
 						(BiConsumer<SerializableFunction, String>) elementCollectionRelation::overrideName)
-				.redirect(ElementCollectionOptions.class, wrapAsOptions(elementCollectionRelation), true)
+				.redirect((SerializableTriFunction<FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions, SerializableFunction, Size, FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions>)
+								FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions::overrideSize,
+						(BiConsumer<SerializableFunction, Size>) elementCollectionRelation::overrideSize)
+				.redirect(CollectionOptions.class, wrapAsOptions(elementCollectionRelation), true)
 				.fallbackOn(this)
 				.build((Class<FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S>>) (Class) FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions.class);
 	}
@@ -265,8 +268,14 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 			}
 			
 			@Override
-			public ElementCollectionOptions<C, O, S> elementColumn(String columnName) {
+			public ElementCollectionOptions<C, O, S> elementColumnName(String columnName) {
 				elementCollectionRelation.setElementColumnName(columnName);
+				return null;
+			}
+			
+			@Override
+			public ElementCollectionOptions<C, O, S> elementColumnSize(Size columnSize) {
+				elementCollectionRelation.setElementColumnSize(columnSize);
 				return null;
 			}
 			

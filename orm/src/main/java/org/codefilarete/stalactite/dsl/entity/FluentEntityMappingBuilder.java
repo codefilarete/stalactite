@@ -29,13 +29,11 @@ import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
-import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.dsl.property.CollectionOptions;
 import org.codefilarete.stalactite.dsl.property.ColumnOptions;
 import org.codefilarete.stalactite.dsl.property.ElementCollectionOptions;
 import org.codefilarete.stalactite.dsl.property.EnumOptions;
 import org.codefilarete.stalactite.dsl.property.MapOptions;
-import org.codefilarete.stalactite.dsl.property.MapOptions.KeyAsEntityMapOptions;
-import org.codefilarete.stalactite.dsl.property.MapOptions.ValueAsEntityMapOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToManyOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyOptions;
 import org.codefilarete.stalactite.engine.PersistenceContext;
@@ -551,7 +549,10 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		FluentMappingBuilderElementCollectionOptions<C, I, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory);
 		
 		@Override
-		FluentMappingBuilderElementCollectionOptions<C, I, O, S> elementColumn(String columnName);
+		FluentMappingBuilderElementCollectionOptions<C, I, O, S> elementColumnName(String columnName);
+		
+		@Override
+		FluentMappingBuilderElementCollectionOptions<C, I, O, S> elementColumnSize(Size columnSize);
 
 		@Override
 		FluentMappingBuilderElementCollectionOptions<C, I, O, S> reverseJoinColumn(String name);
@@ -574,7 +575,13 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		FluentMappingBuilderMapOptions<C, I, K, V, M> keyColumn(String columnName);
 		
 		@Override
+		FluentMappingBuilderMapOptions<C, I, K, V, M> keySize(Size columnSize);
+		
+		@Override
 		FluentMappingBuilderMapOptions<C, I, K, V, M> valueColumn(String columnName);
+		
+		@Override
+		FluentMappingBuilderMapOptions<C, I, K, V, M> valueSize(Size columnSize);
 		
 		@Override
 		FluentMappingBuilderMapOptions<C, I, K, V, M> withMapFactory(Supplier<? extends M> collectionFactory);
@@ -586,53 +593,70 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		FluentMappingBuilderMapOptions<C, I, K, V, M> onTable(Table table);
 		
 		@Override
-		FluentMappingBuilderKeyAsEntityMapOptions<C, I, K, V, M> withKeyMapping(EntityMappingConfigurationProvider<K, ?> mappingConfigurationProvider);
+		FluentMappingBuilderEntityInMapOptions<C, I, K, V, M> withKeyMapping(EntityMappingConfigurationProvider<K, ?> mappingConfigurationProvider);
 		
 		@Override
-		FluentMappingBuilderMapOptions<C, I, K, V, M> withKeyMapping(EmbeddableMappingConfigurationProvider<K> mappingConfigurationProvider);
+		FluentMappingBuilderEmbeddableInMapOptions<C, I, K, V, M, K> withKeyMapping(EmbeddableMappingConfigurationProvider<K> mappingConfigurationProvider);
 		
 		@Override
-		FluentMappingBuilderValueAsEntityMapOptions<C, I, K, V, M> withValueMapping(EntityMappingConfigurationProvider<V, ?> mappingConfigurationProvider);
+		FluentMappingBuilderEntityInMapOptions<C, I, K, V, M> withValueMapping(EntityMappingConfigurationProvider<V, ?> mappingConfigurationProvider);
 		
 		@Override
-		FluentMappingBuilderMapOptions<C, I, K, V, M> withValueMapping(EmbeddableMappingConfigurationProvider<V> mappingConfigurationProvider);
-		
-		@Override
-		<IN> FluentMappingBuilderMapOptions<C, I, K, V, M> overrideKeyColumnName(SerializableFunction<K, IN> getter, String columnName);
-		
-		@Override
-		<IN> FluentMappingBuilderMapOptions<C, I, K, V, M> overrideKeyColumnName(SerializableBiConsumer<K, IN> setter, String columnName);
-		
-		@Override
-		<IN> FluentMappingBuilderMapOptions<C, I, K, V, M> overrideValueColumnName(SerializableFunction<K, IN> getter, String columnName);
-		
-		@Override
-		<IN> FluentMappingBuilderMapOptions<C, I, K, V, M> overrideValueColumnName(SerializableBiConsumer<K, IN> setter, String columnName);
+		FluentMappingBuilderEmbeddableInMapOptions<C, I, K, V, M, V> withValueMapping(EmbeddableMappingConfigurationProvider<V> mappingConfigurationProvider);
 		
 		@Override
 		FluentMappingBuilderMapOptions<C, I, K, V, M> fetchSeparately();
 	}
 	
-	interface FluentMappingBuilderKeyAsEntityMapOptions<C, I, K, V, M extends Map<K, V>>
-			extends FluentMappingBuilderMapOptions<C, I, K, V, M>, KeyAsEntityMapOptions<K, V, M> {
+	interface FluentMappingBuilderEntityInMapOptions<C, I, K, V, M extends Map<K, V>>
+			extends FluentMappingBuilderMapOptions<C, I, K, V, M>, MapOptions.EntityInMapOptions<K, V, M> {
 		
 		@Override
-		FluentMappingBuilderKeyAsEntityMapOptions<C, I, K, V, M> cascading(RelationMode relationMode);
+		FluentMappingBuilderEntityInMapOptions<C, I, K, V, M> cascading(RelationMode relationMode);
 	}
 	
-	interface FluentMappingBuilderValueAsEntityMapOptions<C, I, K, V, M extends Map<K, V>>
-			extends FluentMappingBuilderMapOptions<C, I, K, V, M>, ValueAsEntityMapOptions<K, V, M> {
+	interface FluentMappingBuilderEmbeddableInMapOptions<C, I, K, V, M extends Map<K, V>, E>
+			extends FluentMappingBuilderMapOptions<C, I, K, V, M>, MapOptions.EmbeddableInMapOptions<E> {
 		
 		@Override
-		FluentMappingBuilderValueAsEntityMapOptions<C, I, K, V, M> cascading(RelationMode relationMode);
+		FluentMappingBuilderEmbeddableInMapOptions<C, I, K, V, M, E> overrideName(SerializableFunction<E, ?> getter, String columnName);
+		
+		@Override
+		FluentMappingBuilderEmbeddableInMapOptions<C, I, K, V, M, E> overrideName(SerializableBiConsumer<E, ?> setter, String columnName);
+		
+		@Override
+		FluentMappingBuilderEmbeddableInMapOptions<C, I, K, V, M, E> overrideSize(SerializableFunction<E, ?> getter, Size columnSize);
+
+		@Override
+		FluentMappingBuilderEmbeddableInMapOptions<C, I, K, V, M, E> overrideSize(SerializableBiConsumer<E, ?> setter, Size columnSize);
 	}
 	
 	interface FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S extends Collection<O>>
-			extends FluentEntityMappingBuilder<C, I>, ElementCollectionOptions<C, O, S> {
+			extends FluentEntityMappingBuilder<C, I>, CollectionOptions<C, O, S>, ImportedEmbedWithColumnOptions<O> {
 		
+		@Override
 		<IN> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideName(SerializableFunction<O, IN> getter, String columnName);
 		
+		@Override
 		<IN> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideName(SerializableBiConsumer<O, IN> setter, String columnName);
+		
+		@Override
+		<IN> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideSize(SerializableFunction<O, IN> getter, Size columnSize);
+		
+		@Override
+		<IN> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideSize(SerializableBiConsumer<O, IN> setter, Size columnSize);
+		
+		@Override
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> override(SerializableFunction<O, IN> getter, Column<? extends Table, IN> targetColumn);
+		
+		@Override
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> override(SerializableBiConsumer<O, IN> setter, Column<? extends Table, IN> targetColumn);
+		
+		@Override
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> exclude(SerializableBiConsumer<O, IN> setter);
+		
+		@Override
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> exclude(SerializableFunction<O, IN> getter);
 		
 		@Override
 		FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory);

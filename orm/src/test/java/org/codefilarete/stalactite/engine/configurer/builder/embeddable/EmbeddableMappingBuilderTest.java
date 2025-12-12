@@ -87,7 +87,7 @@ class EmbeddableMappingBuilderTest {
 				new FluentEmbeddableMappingConfigurationSupport(Country.class),
 				countryTable,
 				new ColumnBinderRegistry(),
-				new ColumnNameProvider(ColumnNamingStrategy.DEFAULT),
+				ColumnNamingStrategy.DEFAULT,
 				IndexNamingStrategy.DEFAULT);
 		EmbeddableMappingBuilder<Country, ?>.InternalProcessor internalProcessor = testInstance.new InternalProcessor(false);
 		EmbeddableLinkage<Country, Set> linkageMock = mock(EmbeddableLinkage.class);
@@ -112,7 +112,7 @@ class EmbeddableMappingBuilderTest {
 					new FluentEmbeddableMappingConfigurationSupport(Country.class),
 					countryTable,
 					new ColumnBinderRegistry(),
-					new ColumnNameProvider(ColumnNamingStrategy.DEFAULT),
+					ColumnNamingStrategy.DEFAULT,
 					IndexNamingStrategy.DEFAULT);
 			EmbeddableMappingBuilder.InternalProcessor testInstance = testInstanceBuilder.new InternalProcessor(false);
 
@@ -139,7 +139,7 @@ class EmbeddableMappingBuilderTest {
 					new FluentEmbeddableMappingConfigurationSupport(Country.class),
 					countryTable,
 					new ColumnBinderRegistry(),
-					new ColumnNameProvider(ColumnNamingStrategy.DEFAULT),
+					ColumnNamingStrategy.DEFAULT,
 					IndexNamingStrategy.DEFAULT);
 			EmbeddableMappingBuilder.InternalProcessor testInstance = testInstanceBuilder.new InternalProcessor(false);
 			
