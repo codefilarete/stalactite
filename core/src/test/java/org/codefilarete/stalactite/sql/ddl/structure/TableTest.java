@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.sql.ddl.structure;
 
+import org.codefilarete.stalactite.sql.ddl.Length;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.junit.jupiter.api.Test;
@@ -34,11 +35,25 @@ class TableTest {
 		assertThatThrownBy(() -> testInstance.addColumn("xx", Integer.class))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("Trying to add column 'xx' to 'toto' but it already exists with a different type : j.l.String vs j.l.Integer");
+	}
+	
+	@Test
+	void addColumn_alreadyExistsWithDifferentSize() {
+		Table testInstance = new Table("toto");
+		// empty table shouldn't throw any exception nor found anything
+		Column columnWithoutSize = testInstance.addColumn("columnWithoutSize", String.class);
+		Column columnWithSize = testInstance.addColumn("columnWithSize", String.class, length(36));
+		
+		assertThat(testInstance.addColumn("columnWithoutSize", String.class)).isSameAs(columnWithoutSize);
+		assertThat(testInstance.addColumn("columnWithoutSize", String.class, length(42)))
+				.isSameAs(columnWithoutSize)
+				.extracting(c -> ((Length) c.getSize()).getValue()).isEqualTo(42);
+		assertThat(testInstance.addColumn("columnWithSize", String.class)).isSameAs(columnWithSize);
 		
 		// same column with other type throws exception
-		assertThatThrownBy(() -> testInstance.addColumn("xx", String.class, length(12)))
+		assertThatThrownBy(() -> testInstance.addColumn("columnWithSize", String.class, length(12)))
 				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Trying to add column 'xx' to 'toto' but it already exists with a different type : j.l.String vs j.l.String(12)");
+				.hasMessage("Trying to add column 'columnWithSize' to 'toto' but it already exists with a different type : j.l.String(36) vs j.l.String(12)");
 	}
 	
 	@Test

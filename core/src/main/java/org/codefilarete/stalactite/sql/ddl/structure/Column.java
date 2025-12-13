@@ -18,7 +18,7 @@ public class Column<T extends Table, O> implements Selectable<O>, JoinLink<T, O>
 	private final String name;
 	private final Class<O> javaType;
 	@Nullable
-	private final Size size;
+	private Size size;
 	private final String absoluteName;
 	private final String alias;
 	private boolean primaryKey;
@@ -88,6 +88,10 @@ public class Column<T extends Table, O> implements Selectable<O>, JoinLink<T, O>
 	@Nullable
 	public Size getSize() {
 		return size;
+	}
+	
+	public void setSize(@Nullable Size size) {
+		this.size = size;
 	}
 	
 	public boolean isNullable() {

@@ -8,11 +8,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleMutator;
+import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
@@ -130,10 +132,19 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 		} else if (relation.getReverseColumnName() != null || relation.getReverseColumn() != null) {
 			Column<RIGHTTABLE, ?> reverseColumn;
 			if (relation.getReverseColumnName() != null) {
+				PrimaryKey<LEFTTABLE, SRCID> srcPrimaryKey = associationConfiguration.getSrcPersister().<LEFTTABLE>getMainTable().getPrimaryKey();
+				// with a reverse column name, the primary key should be a single column key
+				if (srcPrimaryKey.isComposed()) {
+					throw new MappingConfigurationException("Giving reverse column whereas the primary key is composed :"
+							+ " primary key = [" + srcPrimaryKey.getColumns().stream().map(Column::getName).collect(Collectors.joining(", ")) + "] vs "
+							+ " reverse column = " + relation.getReverseColumnName());
+				}
+				Column<LEFTTABLE, ?> pk = Iterables.first(srcPrimaryKey.getColumns());
 				reverseColumn = mainTargetTable.addColumn(
 						relation.getReverseColumnName(),
-						// with a reverse column name, we assume that the primary key is a single column key
-						Iterables.first(associationConfiguration.getSrcPersister().getMainTable().getPrimaryKey().getColumns()).getJavaType());
+						pk.getJavaType(),
+						pk.getSize()
+				);
 			} else {
 				reverseColumn = (Column<RIGHTTABLE, ?>) relation.getReverseColumn();
 			}

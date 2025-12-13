@@ -20,6 +20,7 @@ import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Database.Schema;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.collection.CaseInsensitiveMap;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Predicates;
@@ -59,7 +60,14 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	
 	private final Set<ForeignKey<SELF, ? extends Table<?>, ?>> foreignKeys = new HashSet<>();
 	
-	private final Map<String, Column<SELF, ?>> columnsPerName = new HashMap<>();
+	/**
+	 * Index {@link Column}s by their name to ease some checks and lookup.
+	 * The index is case-insensitive to avoid bothering issues, especially when the Fluent Mapping API refers to a {@link Column} but it can't be
+	 * found due to a discrepancy between schema definition (uppercased for example) and property name (CamelCase). Not finding the column will create
+	 * a duplicate, which then will raise an exception at schema generation or any SQL operation.
+	 * @see #addertColumn(Column)
+	 */
+	private final Map<String, Column<SELF, ?>> columnsPerName = new CaseInsensitiveMap<>();
 	
 	public Table(String name) {
 		this(null, name);
@@ -142,26 +150,60 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	/**
 	 * Adds with presence assertion (add + assert = addert, poor naming)
 	 * 
-	 * @param column the column to be added
+	 * @param newColumn the column to be added
 	 * @param <O> column type
 	 * @return given column
 	 */
-	private <O> Column<SELF, O> addertColumn(Column<SELF, O> column) {
-		Column<SELF, O> existingColumn = getColumn(column.getName());
-		if (existingColumn != null
-				&& (!existingColumn.getJavaType().equals(column.getJavaType())
-				|| !Predicates.equalOrNull(existingColumn.getSize(), column.getSize()))
-		) {
-			throw new IllegalArgumentException("Trying to add column '"+column.getName()+"' to '" + this.getAbsoluteName()
-					+ "' but it already exists with a different type : "
-					+ typeToString(existingColumn) + " vs " + typeToString(column));
-		}
-		if (existingColumn == null) {
-			columns.add((Column<SELF, Object>) column);
-			columnsPerName.put(column.getName(), column);
-			return column;
+	private <O> Column<SELF, O> addertColumn(Column<SELF, O> newColumn) {
+		Column<SELF, O> existingColumn = getColumn(newColumn.getName());
+		if (existingColumn != null) {
+			if (existingColumn.getJavaType().equals(newColumn.getJavaType())
+					&& applySizeIfPossible(existingColumn, newColumn)) {
+				return existingColumn;
+			} else {
+				throw new IllegalArgumentException("Trying to add column '" + newColumn.getName() + "' to '" + this.getAbsoluteName()
+						+ "' but it already exists with a different type : "
+						+ typeToString(existingColumn) + " vs " + typeToString(newColumn));
+			}
 		} else {
-			return existingColumn;
+			columns.add((Column<SELF, Object>) newColumn);
+			columnsPerName.put(newColumn.getName(), newColumn);
+			return newColumn;
+		}
+	}
+	
+	/**
+	 * Applies <code>newColumn</code> size to <code>existingColumn</code> if the latter hasn't one.
+	 * Returns false if both columns have a size that are not equal.
+	 * Does nothing if <code>existingColumn</code> has a size and <code>newColumn</code> hasn't.
+	 * Can be seen has: the one that has a size wins, if both have one, then the conflict must be raised.
+	 *
+	 * @param existingColumn the column in this {@link Table} instance
+	 * @param newColumn the new column that user wants to add
+	 * @return false if both columns have a size that are not equal, else, true
+	 * @param <O> columns Java type
+	 */
+	private <O> boolean applySizeIfPossible(Column<SELF, O> existingColumn, Column<SELF, O> newColumn) {
+		Size existingSize = existingColumn.getSize();
+		Size newSize = newColumn.getSize();
+		if (existingSize == null) {
+			if (newSize != null) {
+				existingColumn.setSize(newSize);
+			}
+			return true;
+		} else {
+			if (newSize != null) {
+				if (existingSize instanceof Length && newSize instanceof Length) {
+					return ((Length) existingSize).getValue() == ((Length) newSize).getValue();
+				} else if (existingSize instanceof FixedPoint && newSize instanceof FixedPoint) {
+					return ((FixedPoint) existingSize).getPrecision() == ((FixedPoint) newSize).getPrecision()
+							&& Predicates.equalOrNull(((FixedPoint) existingSize).getScale(), ((FixedPoint) newSize).getPrecision());
+				} else {
+					return false;
+				}
+			} else {
+				return true;
+			}
 		}
 	}
 	

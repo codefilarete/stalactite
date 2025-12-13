@@ -43,6 +43,9 @@ public interface FluentCompositeKeyMappingBuilder<C> extends FluentCompositeKeyM
 		FluentCompositeKeyMappingBuilderPropertyOptions<C> columnName(String name);
 		
 		@Override
+		FluentCompositeKeyMappingBuilderPropertyOptions<C> columnSize(Size size);
+		
+		@Override
 		FluentCompositeKeyMappingBuilderPropertyOptions<C> fieldName(String name);
 	}
 	

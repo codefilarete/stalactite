@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.dsl.key;
 
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
+import org.codefilarete.stalactite.sql.ddl.Size;
 
 /**
  * Options on a composite key property
@@ -15,6 +16,8 @@ public interface CompositeKeyPropertyOptions {
 	 * (see {@link #fieldName(String)}.
 	 */
 	CompositeKeyPropertyOptions columnName(String name);
+	
+	CompositeKeyPropertyOptions columnSize(Size size);
 	
 	/**
 	 * Sets {@link java.lang.reflect.Field} name targeted by this property. Overwrites default mechanism which

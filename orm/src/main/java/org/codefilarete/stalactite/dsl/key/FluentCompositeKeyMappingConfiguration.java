@@ -72,6 +72,9 @@ public interface FluentCompositeKeyMappingConfiguration<C> {
 		FluentCompositeKeyMappingConfigurationPropertyOptions<C> columnName(String name);
 		
 		@Override
+		FluentCompositeKeyMappingConfigurationPropertyOptions<C> columnSize(Size size);
+		
+		@Override
 		FluentCompositeKeyMappingConfigurationPropertyOptions<C> fieldName(String name);
 	}
 	

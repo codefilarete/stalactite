@@ -177,6 +177,12 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 					}
 					
 					@Override
+					public CompositeKeyPropertyOptions columnSize(Size size) {
+						linkage.setColumnSize(size);
+						return null;
+					}
+					
+					@Override
 					public CompositeKeyPropertyOptions fieldName(String name) {
 						// Note that getField(..) will throw an exception if field is not found, at the opposite of findField(..)
 						// Note that we use "classToPersist" for field lookup instead of setter/getter declaring class
@@ -223,6 +229,12 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 					@Override
 					public CompositeKeyPropertyOptions columnName(String name) {
 						linkage.setColumnName(name);
+						return null;
+					}
+					
+					@Override
+					public CompositeKeyPropertyOptions columnSize(Size size) {
+						linkage.setColumnSize(size);
 						return null;
 					}
 					
