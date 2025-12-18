@@ -208,6 +208,10 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 	}
 	
 	public EmbeddableMapping<C, T> build(boolean onlyExtraTableLinkages) {
+		return build(onlyExtraTableLinkages, new ValueAccessPointSet<>());
+	}
+	
+	private EmbeddableMapping<C, T> build(boolean onlyExtraTableLinkages, ValueAccessPointSet<C> excludedProperties) {
 		InternalProcessor internalProcessor = new InternalProcessor(onlyExtraTableLinkages);
 		// converting direct mapping
 		internalProcessor.includeDirectMapping(this.mainMappingConfiguration,
@@ -215,7 +219,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 				new ValueAccessPointMap<>(),
 				new ValueAccessPointMap<>(),
 				new ValueAccessPointMap<>(),
-				new ValueAccessPointSet<>());
+				excludedProperties);
 		// adding embeddable (no particular thought about order compared to previous direct mapping)
 		internalProcessor.includeEmbeddedMapping();
 		return internalProcessor.result;
@@ -430,8 +434,26 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 		private void includeMappedSuperClassMapping(Inset<C, ?> inset, Collection<Accessor<C, ?>> accessorPath, EmbeddableMappingConfiguration<?> superClassConfiguration) {
 			// we include super type mapping by using a new instance of EmbeddableMappingBuilder, this is the simplest (but maybe not the most
 			// debuggable) and allows to manage inheritance of several mappedSuperClass 
-			EmbeddableMapping<C, T> superMapping = new EmbeddableMappingBuilder<>((EmbeddableMappingConfiguration<C>) superClassConfiguration, targetTable,
-					columnBinderRegistry, columnNamingStrategy, Objects.preventNull(superClassConfiguration.getIndexNamingStrategy(), indexNamingStrategy)).build();
+			ValueAccessPointSet<C> excludedProperties = new ValueAccessPointSet<>();
+			// we remove overridden inset columns to avoid their creation by the EmbeddableMappingBuilder
+			// to avoid duplicates because they are already in the target table (through their creation) and the builder
+			// will create them with their default name
+			excludedProperties.addAll(inset.getOverriddenColumns().keySet());
+			EmbeddableMappingBuilder<C, T> mappedSuperClassBuilder = new EmbeddableMappingBuilder<C, T>((EmbeddableMappingConfiguration<C>) superClassConfiguration, targetTable,
+					columnBinderRegistry, columnNamingStrategy, Objects.preventNull(superClassConfiguration.getIndexNamingStrategy(), indexNamingStrategy)) {
+				
+				@Override
+				protected <O> String determineColumnName(EmbeddableLinkage<C, O> linkage, @Nullable String overriddenColumName) {
+					return super.determineColumnName(linkage, inset.getOverriddenColumnNames().get(linkage.getAccessor()));
+				}
+				
+				@Override
+				protected <O> Size determineColumnSize(EmbeddableLinkage<C, O> linkage, @Nullable Size overriddenColumSize) {
+					return super.determineColumnSize(linkage, inset.getOverriddenColumnSizes().get(linkage.getAccessor()));
+				}
+			};
+			
+			EmbeddableMapping<C, T> superMapping = mappedSuperClassBuilder.build(false, excludedProperties);
 			Class<?> insetBeanType = inset.getConfiguration().getBeanType();
 			superMapping.getMapping().forEach((accessor, column) -> {
 				AccessorChain prefix;
@@ -444,7 +466,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 				}
 				prefix = AccessorChain.fromAccessorsWithNullSafe(
 						accessors,
-						// this can look superfluous but fills the gap of instantiating right bean when configuration is a subtype of inset accessor,
+						// this can look superfluous but fills the gap with instantiating right bean when configuration is a subtype of inset accessor,
 						// case which is allowed by signature of embed(..) method : it accepts "? extend T" as parameter type of given configuration
 						// (where T is type returned by accessor, or expected as input of mutator)
 						(localAccessor, accessorInputType) -> Reflections.newInstance(insetBeanType));
