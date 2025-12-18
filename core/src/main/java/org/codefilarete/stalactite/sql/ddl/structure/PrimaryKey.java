@@ -38,7 +38,7 @@ public class PrimaryKey<T extends Table<T>, ID> implements Key<T, ID> {
 	}
 	
 	public <O> void addColumn(Column<T, O> column) {
-		this.columns.add((Column<T, Object>) column);
+		this.columns.add(column);
 	}
 	
 	@Override

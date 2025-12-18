@@ -111,7 +111,7 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 		SUBTABLE mainTable = mainPersister.getMainTable();
 		Key.KeyBuilder<SUBTABLE, JOINTYPE> projectedKeyBuilder = Key.from(mainTable);
 		((Set<Column<SUBTABLE, ?>>) foreignKey.getColumns()).forEach(column -> {
-			projectedKeyBuilder.addColumn(mainTable.addColumn(column.getName(), column.getJavaType(), column.getSize()));
+			projectedKeyBuilder.addColumn(mainTable.addColumn(column.getName(), column.getJavaType(), column.getSize(), column.getNullable()));
 		});
 		Key<SUBTABLE, JOINTYPE> projectedKey = projectedKeyBuilder.build();
 		mainPersister.getEntityJoinTree().addPassiveJoin(EntityJoinTree.ROOT_JOIN_NAME, foreignKey, projectedKey, EntityJoinTree.JoinType.INNER, java.util.Collections.emptySet());

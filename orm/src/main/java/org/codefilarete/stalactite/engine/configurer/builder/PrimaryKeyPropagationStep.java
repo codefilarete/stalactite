@@ -50,8 +50,8 @@ public class PrimaryKeyPropagationStep<C, I> {
 		Holder<PrimaryKey<?, ?>> previousPk = new Holder<>(primaryKey);
 		tables.forEach(t -> {
 			previousPk.get().getColumns().forEach(pkColumn -> {
-				Column newColumn = t.addColumn(pkColumn.getName(), pkColumn.getJavaType(), pkColumn.getSize());
-				newColumn.setNullable(false);	// may not be necessary because of primary key, let for principle
+				// nullability = false may not be necessary because of primary key, let for principle
+				Column newColumn = t.addColumn(pkColumn.getName(), pkColumn.getJavaType(), pkColumn.getSize(), false);
 				newColumn.primaryKey();
 			});
 			previousPk.set(t.getPrimaryKey());

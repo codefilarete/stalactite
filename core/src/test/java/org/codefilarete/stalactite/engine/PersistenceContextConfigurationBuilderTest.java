@@ -144,7 +144,7 @@ class PersistenceContextConfigurationBuilderTest {
 		PersistenceContextConfiguration builtConfiguration = testInstance.build();
 		T totoTable = (T) new Table("aKeyWord");
 		Column<T, Long> idColumn = totoTable.addColumn("id", long.class);
-		assertThat(builtConfiguration.getDialect().getDdlTableGenerator().generateCreateTable(totoTable)).isEqualTo("create table `aKeyWord`(id bigint not null)");
+		assertThat(builtConfiguration.getDialect().getDdlTableGenerator().generateCreateTable(totoTable)).isEqualTo("create table `aKeyWord`(id bigint)");
 		assertThat(builtConfiguration.getDialect().getDmlGenerator().buildInsert(Arrays.asSet(idColumn)).getSQL()).isEqualTo("insert into `aKeyWord`(id) values (?)");
 		assertThat(builtConfiguration.getDialect().getDmlGenerator().buildUpdate(Arrays.asSet(idColumn), Arrays.asSet(idColumn)).getSQL()).isEqualTo("update `aKeyWord` set id = ? where id = ?");
 		assertThat(builtConfiguration.getDialect().getDmlGenerator().buildDelete(totoTable, Arrays.asSet(idColumn)).getSQL()).isEqualTo("delete from `aKeyWord` where id = ?");

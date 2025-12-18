@@ -54,7 +54,7 @@ public interface Key<T extends Fromable, ID /* unused in this class, left for cl
 	class KeySupport<T extends Fromable, ID> implements Key<T, ID> {
 		
 		private final T table;
-		private final KeepOrderSet<JoinLink<T, Object>> columns;
+		private final KeepOrderSet<JoinLink<T, ?>> columns;
 		
 		private KeySupport(T table) {
 			this(table, new KeepOrderSet<>());
@@ -62,14 +62,16 @@ public interface Key<T extends Fromable, ID /* unused in this class, left for cl
 		
 		private KeySupport(T table, KeepOrderSet<? extends JoinLink<T, ?>> columns) {
 			this.table = table;
-			this.columns = (KeepOrderSet<JoinLink<T, Object>>) columns;
+			this.columns = (KeepOrderSet<JoinLink<T, ?>>) columns;
 		}
 		
+		@Override
 		public T getTable() {
 			return table;
 		}
 		
-		public KeepOrderSet<JoinLink<T, Object>> getColumns() {
+		@Override
+		public KeepOrderSet<JoinLink<T, ?>> getColumns() {
 			return columns;
 		}
 		

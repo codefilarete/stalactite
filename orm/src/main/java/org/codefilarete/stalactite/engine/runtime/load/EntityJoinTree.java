@@ -584,7 +584,7 @@ public class EntityJoinTree<C, I> {
 			Table tableClone = new Table(fromable.getName());
 			IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> columnClones = new IdentityHashMap<>(tableClone.getColumns().size());
 			(((Table<?>) fromable).getColumns()).forEach(column -> {
-				Column<?, ?> clone = tableClone.addColumn(column.getName(), column.getJavaType(), column.getSize());
+				Column<?, ?> clone = tableClone.addColumn(column.getName(), column.getJavaType(), column.getSize(), column.getNullable());
 				columnClones.put(column, clone);
 			});
 			

@@ -2,9 +2,9 @@ package org.codefilarete.stalactite.engine.model.book;
 
 public class AbstractEntity {
 	
-	private Long id;
+	private long id;
 	
-	public Long getId() {
+	public long getId() {
 		return id;
 	}
 }

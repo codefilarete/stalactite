@@ -155,7 +155,7 @@ class EmbeddableMappingBuilderTest {
 			// type is Object and user didn't mention anything on nullability => we make it nullable
 			when(linkageMock.getColumnType()).thenReturn(Integer.class);
 			Column integerColumn = testInstance.addColumnToTable(linkageMock, "dummyName_integer", null);
-			assertThat(integerColumn.isNullable()).isTrue();
+			assertThat(integerColumn.getNullable()).isNull();
 			
 			// type is primitive but is overridden by user => we trust the user and make it as he asked
 			when(linkageMock.getColumnType()).thenReturn(int.class);

@@ -52,8 +52,7 @@ public class DDLTableGenerator {
 	
 	protected void generateCreateColumn(Column<?, ?> column, DDLAppender sqlCreateTable) {
 		sqlCreateTable.cat(column, " ", getSqlType(column))
-				.catIf(!column.isNullable(), " not null");
-		
+				.catIf(Boolean.FALSE.equals(column.getNullable()), " not null");
 	}
 	
 	protected String getSqlType(Column<?, ?> column) {

@@ -143,7 +143,8 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 				reverseColumn = mainTargetTable.addColumn(
 						relation.getReverseColumnName(),
 						pk.getJavaType(),
-						pk.getSize()
+						pk.getSize(),
+						null
 				);
 			} else {
 				reverseColumn = (Column<RIGHTTABLE, ?>) relation.getReverseColumn();
@@ -162,7 +163,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 			AccessorDefinition reverseGetterDefinition = AccessorDefinition.giveDefinition(relation.giveReverseSetter());
 			primaryKey.getColumns().forEach(pkColumn -> {
 				String colName = associationConfiguration.getJoinColumnNamingStrategy().giveName(reverseGetterDefinition, pkColumn);
-				Column<RIGHTTABLE, ?> fkColumn = mainTargetTable.addColumn(colName, pkColumn.getJavaType(), pkColumn.getSize());
+				Column<RIGHTTABLE, ?> fkColumn = mainTargetTable.addColumn(colName, pkColumn.getJavaType(), pkColumn.getSize(), null);
 				foreignKeyBuilder.addColumn(fkColumn);
 				foreignKeyColumnMapping.put(pkColumn, fkColumn);
 			});
@@ -175,7 +176,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 		} // else : no reverse side mapped, this case can't happen since OneToManyWithMappedAssociationConfigurer is only
 		// invoked when reverse side is mapped (see OneToManyRelation.isOwnedByReverseSide())
 		foreignKey = foreignKeyBuilder.build();
-		if (relation.isReverseAsMandatory()) {
+		if (relation.isReverseAsMandatory() != null && relation.isReverseAsMandatory()) {
 			foreignKey.getColumns().stream().map(Column.class::cast).forEach(Column::notNull);
 		}
 	}

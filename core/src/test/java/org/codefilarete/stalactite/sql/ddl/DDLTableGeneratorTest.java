@@ -47,7 +47,7 @@ public class DDLTableGeneratorTest {
 		generatedCreateTable = testInstance.generateCreateTable(t);
 		assertThat(generatedCreateTable).isEqualTo("create table Toto(A type, B type, C type, primary key (C))");
 		
-		t.addColumn("D", Integer.TYPE);	// test isNullable
+		t.addColumn("D", Integer.TYPE, null, false);	// test isNullable
 		generatedCreateTable = testInstance.generateCreateTable(t);
 		assertThat(generatedCreateTable).isEqualTo("create table Toto(A type, B type, C type, D type not null, primary key (C))");
 		

@@ -206,7 +206,7 @@ public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 		updatePayloads.forEachRemaining(payload -> {
 			if (!payload.getValues().isEmpty()) {
 				payload.getValues().forEach((k, v) -> {
-					if (!k.getColumn().isNullable() && v == null) {
+					if (Boolean.FALSE.equals(k.getColumn().getNullable()) && v == null) {
 						throw new IllegalArgumentException("Expected non null value for column " + k.getColumn()
 								// we print the instance roughly, how could we do better ?
 								+ " on instance " + payload.getEntities().getLeft());

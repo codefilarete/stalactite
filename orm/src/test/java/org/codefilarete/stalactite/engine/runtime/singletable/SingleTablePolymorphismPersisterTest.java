@@ -832,10 +832,8 @@ class SingleTablePolymorphismPersisterTest {
 							.map(Vehicle::getColor)
 							.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 									.addSubClass(subentityBuilder(Car.class)
-											.map(Car::getId)
 											.map(Car::getModel), "Car")
-									.addSubClass(subentityBuilder(Truck.class)
-											.map(Truck::getId), "Truck")))
+									.addSubClass(subentityBuilder(Truck.class), "Truck")))
 					.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.build(persistenceContext);
 			

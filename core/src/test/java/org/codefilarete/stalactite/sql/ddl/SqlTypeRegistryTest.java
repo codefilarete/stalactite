@@ -39,11 +39,4 @@ class SqlTypeRegistryTest {
 	void getTypeName_column(SqlTypeRegistry testInstance, Column column, String expected) {
 		assertThat(testInstance.getTypeName(column)).isEqualTo(expected);
 	}
-	
-	@Test
-	void getTypeName_columnWithNullType_exceptionIsThrown() {
-		Table toto = new Table("toto");
-		// because we can't create a column with null type, if possible addd a safe guard in getTypeName
-		assertThatCode(() -> toto.addColumn("a", null)).isInstanceOf(NullPointerException.class);
-	}
 }

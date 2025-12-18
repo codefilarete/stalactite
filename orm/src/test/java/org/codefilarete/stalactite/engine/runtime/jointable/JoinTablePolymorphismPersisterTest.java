@@ -855,10 +855,8 @@ class JoinTablePolymorphismPersisterTest {
 						.map(Vehicle::getColor)
 						.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 								.addSubClass(subentityBuilder(Car.class)
-										.map(Car::getId)
 										.map(Car::getModel))
-								.addSubClass(subentityBuilder(Truck.class)
-										.map(Truck::getId))))
+								.addSubClass(subentityBuilder(Truck.class))))
 					.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.build(persistenceContext);
 

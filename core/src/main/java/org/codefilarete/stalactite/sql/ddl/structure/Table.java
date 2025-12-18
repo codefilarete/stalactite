@@ -65,7 +65,7 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	 * The index is case-insensitive to avoid bothering issues, especially when the Fluent Mapping API refers to a {@link Column} but it can't be
 	 * found due to a discrepancy between schema definition (uppercased for example) and property name (CamelCase). Not finding the column will create
 	 * a duplicate, which then will raise an exception at schema generation or any SQL operation.
-	 * @see #addertColumn(Column)
+	 * @see #upsertColumn(Column)
 	 */
 	private final Map<String, Column<SELF, ?>> columnsPerName = new CaseInsensitiveMap<>();
 	
@@ -128,7 +128,7 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	 * @return the created column or the existing one
 	 */
 	public <O> Column<SELF, O> addColumn(String name, Class<O> javaType) {
-		return addertColumn(new Column<>((SELF) this, name, javaType));
+		return upsertColumn(new Column<>((SELF) this, name, javaType));
 	}
 	
 	/**
@@ -144,7 +144,11 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	 * @return the created column or the existing one
 	 */
 	public <O> Column<SELF, O> addColumn(String name, Class<O> javaType, @Nullable Size size) {
-		return addertColumn(new Column<>((SELF) this, name, javaType, size));
+		return upsertColumn(new Column<>((SELF) this, name, javaType, size));
+	}
+	
+	public <O> Column<SELF, O> addColumn(String name, Class<O> javaType, @Nullable Size size, @Nullable Boolean nullable) {
+		return upsertColumn(new Column<>((SELF) this, name, javaType, size, nullable));
 	}
 	
 	/**
@@ -154,16 +158,18 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	 * @param <O> column type
 	 * @return given column
 	 */
-	private <O> Column<SELF, O> addertColumn(Column<SELF, O> newColumn) {
+	private <O> Column<SELF, O> upsertColumn(Column<SELF, O> newColumn) {
 		Column<SELF, O> existingColumn = getColumn(newColumn.getName());
 		if (existingColumn != null) {
 			if (existingColumn.getJavaType().equals(newColumn.getJavaType())
-					&& applySizeIfPossible(existingColumn, newColumn)) {
+					&& applySizeIfPossible(existingColumn, newColumn)
+					&& applyNullableIfPossible(existingColumn, newColumn)) {
 				return existingColumn;
 			} else {
 				throw new IllegalArgumentException("Trying to add column '" + newColumn.getName() + "' to '" + this.getAbsoluteName()
 						+ "' but it already exists with a different type : "
-						+ typeToString(existingColumn) + " vs " + typeToString(newColumn));
+						+ typeToString(existingColumn) + " vs " + typeToString(newColumn)
+						+ ", nullable " + nullableToString(existingColumn) + " vs " + nullableToString(newColumn));
 			}
 		} else {
 			columns.add((Column<SELF, Object>) newColumn);
@@ -201,6 +207,23 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 				} else {
 					return false;
 				}
+			} else {
+				return true;
+			}
+		}
+	}
+	
+	private <O> boolean applyNullableIfPossible(Column<SELF, O> existingColumn, Column<SELF, O> newColumn) {
+		Boolean existingNullable = existingColumn.getNullable();
+		Boolean newNullable = newColumn.getNullable();
+		if (existingNullable == null) {
+			if (newNullable != null) {
+				existingColumn.setNullable(newNullable);
+			}
+			return true;
+		} else {
+			if (newNullable != null) {
+				return existingNullable == newNullable;
 			} else {
 				return true;
 			}
@@ -379,6 +402,10 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 		}
 		return Reflections.toString(column.getJavaType())
 				+ (size != null ? "(" + sizeAsString + ")" : "");
+	}
+	
+	private static String nullableToString(Column column) {
+		return "" + column.isNullable();
 	}
 	
 	private static String toString(ForeignKey column) {
