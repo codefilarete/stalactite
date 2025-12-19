@@ -13,7 +13,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.Accessor;
-import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.DeleteExecutor;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.InsertExecutor;
@@ -38,7 +37,6 @@ import org.codefilarete.stalactite.engine.runtime.load.PolymorphicMergeJoinRowCo
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
-import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -111,7 +109,7 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 		SUBTABLE mainTable = mainPersister.getMainTable();
 		Key.KeyBuilder<SUBTABLE, JOINTYPE> projectedKeyBuilder = Key.from(mainTable);
 		((Set<Column<SUBTABLE, ?>>) foreignKey.getColumns()).forEach(column -> {
-			projectedKeyBuilder.addColumn(mainTable.addColumn(column.getName(), column.getJavaType(), column.getSize(), column.getNullable()));
+			projectedKeyBuilder.addColumn(mainTable.addColumn(column.getName(), column.getJavaType(), column.getSize(), column.isNullable()));
 		});
 		Key<SUBTABLE, JOINTYPE> projectedKey = projectedKeyBuilder.build();
 		mainPersister.getEntityJoinTree().addPassiveJoin(EntityJoinTree.ROOT_JOIN_NAME, foreignKey, projectedKey, EntityJoinTree.JoinType.INNER, java.util.Collections.emptySet());

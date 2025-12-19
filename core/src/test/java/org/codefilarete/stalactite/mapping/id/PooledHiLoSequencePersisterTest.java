@@ -36,7 +36,7 @@ public class PooledHiLoSequencePersisterTest {
 		assertThat(sequenceTable.mapColumnsOnName().get(PooledHiLoSequenceStorageOptions.DEFAULT.getValueColumn()))
 			.extracting(Column::getJavaType).isEqualTo(long.class);
 		assertThat(sequenceTable.mapColumnsOnName().get(PooledHiLoSequenceStorageOptions.DEFAULT.getValueColumn()))
-			.extracting(Column::isNullable).isEqualTo(false);
+			.extracting(Column::isNullable).isNull();
 	}
 	
 	@Test
@@ -56,7 +56,7 @@ public class PooledHiLoSequencePersisterTest {
 		assertThat(sequenceTable.mapColumnsOnName().get(storageOptions.getValueColumn()))
 			.extracting(Column::getJavaType).isEqualTo(long.class);
 		assertThat(sequenceTable.mapColumnsOnName().get(storageOptions.getValueColumn()))
-			.extracting(Column::isNullable).isEqualTo(false);
+			.extracting(Column::isNullable).isNull();
 	}
 	
 	@Test

@@ -214,8 +214,8 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	}
 	
 	private <O> boolean applyNullableIfPossible(Column<SELF, O> existingColumn, Column<SELF, O> newColumn) {
-		Boolean existingNullable = existingColumn.getNullable();
-		Boolean newNullable = newColumn.getNullable();
+		Boolean existingNullable = existingColumn.isNullable();
+		Boolean newNullable = newColumn.isNullable();
 		if (existingNullable == null) {
 			if (newNullable != null) {
 				existingColumn.setNullable(newNullable);

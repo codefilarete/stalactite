@@ -104,7 +104,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			SUBTABLE subTable = subPersister.getMainTable();
 			KeyBuilder<SUBTABLE, JOINTYPE> projectedKeyBuilder = Key.from(subTable);
 			((Set<Column<SUBTABLE, ?>>) foreignKey.getColumns()).forEach(column -> {
-				Column<SUBTABLE, ?> subtableColumn = subTable.addColumn(column.getName(), column.getJavaType(), column.getSize(), column.getNullable());
+				Column<SUBTABLE, ?> subtableColumn = subTable.addColumn(column.getName(), column.getJavaType(), column.getSize(), column.isNullable());
 				projectedKeyBuilder.addColumn(subtableColumn);
 				subPersister.getEntityJoinTree().getRoot().getOriginalColumnsToLocalOnes().put(subtableColumn, subtableColumn);
 			});
@@ -239,7 +239,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 				
 				Map<Column<T, ?>, Column<SUBENTITYTABLE, ?>> projectedColumnMap = new HashMap<>(provider.getColumns().size());
 				provider.getColumns().forEach(c -> {
-					Column<SUBENTITYTABLE, ?> projectedColumn = subEntityPersister.<SUBENTITYTABLE>getMapping().getTargetTable().addColumn(c.getName(), c.getJavaType(), c.getSize(), c.getNullable());
+					Column<SUBENTITYTABLE, ?> projectedColumn = subEntityPersister.<SUBENTITYTABLE>getMapping().getTargetTable().addColumn(c.getName(), c.getJavaType(), c.getSize(), c.isNullable());
 					projectedColumnMap.put(c, projectedColumn);
 				});
 				return new ShadowColumnValueProvider<D, SUBENTITYTABLE>() {

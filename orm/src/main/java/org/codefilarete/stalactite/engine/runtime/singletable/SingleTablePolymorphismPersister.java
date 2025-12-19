@@ -120,7 +120,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 		SUBTABLE subTable = mainPersister.getMainTable();
 		Key.KeyBuilder<SUBTABLE, JOINTYPE> projectedKeyBuilder = Key.from(subTable);
 		((Set<Column<SUBTABLE, ?>>) foreignKey.getColumns()).forEach(column -> {
-			projectedKeyBuilder.addColumn(subTable.addColumn(column.getName(), column.getJavaType(), column.getSize(), column.getNullable()));
+			projectedKeyBuilder.addColumn(subTable.addColumn(column.getName(), column.getJavaType(), column.getSize(), column.isNullable()));
 		});
 		Key<SUBTABLE, JOINTYPE> projectedKey = projectedKeyBuilder.build();
 		mainPersister.getEntityJoinTree().addPassiveJoin(EntityJoinTree.ROOT_JOIN_NAME, foreignKey, projectedKey, EntityJoinTree.JoinType.INNER, java.util.Collections.emptySet());

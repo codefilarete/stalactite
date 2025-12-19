@@ -34,7 +34,7 @@ class TableTest {
 		// same column with other type throws exception
 		assertThatThrownBy(() -> testInstance.addColumn("xx", Integer.class))
 				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Trying to add column 'xx' to 'toto' but it already exists with a different type : j.l.String vs j.l.Integer, nullable false vs false");
+				.hasMessage("Trying to add column 'xx' to 'toto' but it already exists with a different type : j.l.String vs j.l.Integer, nullable null vs null");
 	}
 	
 	@Test
@@ -53,7 +53,7 @@ class TableTest {
 		// same column with other type throws exception
 		assertThatThrownBy(() -> testInstance.addColumn("columnWithSize", String.class, length(12)))
 				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Trying to add column 'columnWithSize' to 'toto' but it already exists with a different type : j.l.String(36) vs j.l.String(12), nullable false vs false");
+				.hasMessage("Trying to add column 'columnWithSize' to 'toto' but it already exists with a different type : j.l.String(36) vs j.l.String(12), nullable null vs null");
 	}
 	
 	@Test

@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.sql.ddl.structure;
 
 import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.sql.ddl.DDLAppender;
 import org.codefilarete.stalactite.sql.ddl.Size;
 
 import javax.annotation.Nullable;
@@ -105,13 +106,14 @@ public class Column<T extends Table, O> implements Selectable<O>, JoinLink<T, O>
 		this.size = size;
 	}
 	
+	/**
+	 *
+	 * @return null if the property wasn't set, certainly meaning that the column is left nullable
+	 * @see org.codefilarete.stalactite.sql.ddl.DDLTableGenerator#generateCreateColumn(Column, DDLAppender)
+	 */
 	@Nullable
-	public Boolean getNullable() {
+	public Boolean isNullable() {
 		return nullable;
-	}
-	
-	public boolean isNullable() {
-		return Boolean.TRUE.equals(nullable);
 	}
 	
 	public void setNullable(Boolean nullable) {

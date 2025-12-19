@@ -102,7 +102,7 @@ public class InsertExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 	
 	private void assertMandatoryColumnsHaveNonNullValues(Map<Column<T, ?>, ?> insertValues) {
 		Set<Column> nonNullColumnsWithNullValues = Iterables.collect(insertValues.entrySet(),
-				e -> Boolean.FALSE.equals(e.getKey().getNullable()) && e.getValue() == null, Entry::getKey, HashSet::new);
+				e -> Boolean.FALSE.equals(e.getKey().isNullable()) && e.getValue() == null, Entry::getKey, HashSet::new);
 		if (!nonNullColumnsWithNullValues.isEmpty()) {
 			throw new BindingException("Expected non null value for : "
 					// we sort result only to stabilize message for tests assertion, do not get it as a business rule
