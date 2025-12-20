@@ -84,10 +84,18 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 					// Don't give null Mutator to avoir NPE later
 				}
 		);
-		return new MapRelation<>(
+		MapRelation<SRC, KID, V, MM> result = new MapRelation<>(
 				propertyAccessor,
 				keyEntityPersister.getMapping().getIdMapping().getIdentifierInsertionManager().getIdentifierType(),
 				mapRelation.getValueType());
+		result.setTargetTable(mapRelation.getTargetTable());
+		result.setTargetTableName(mapRelation.getTargetTableName());
+		result.setValueColumnName(mapRelation.getValueColumnName());
+		result.setValueColumnSize(mapRelation.getValueColumnSize());
+		result.setReverseColumnName(mapRelation.getReverseColumnName());
+		result.setMapFactory((Supplier<? extends MM>) mapRelation.getMapFactory());
+		result.setKeyEntityRelationMode(mapRelation.getKeyEntityRelationMode());
+		return result;
 	}
 	
 	

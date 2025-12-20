@@ -1191,6 +1191,11 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
+	public FluentEntityMappingBuilder<C, I> onTable(String tableName) {
+		return onTable(new Table<>(tableName));
+	}
+	
+	@Override
 	public FluentEntityMappingBuilder<C, I> onTable(Table table) {
 		this.targetTable = table;
 		return this;

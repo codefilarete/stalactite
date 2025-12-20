@@ -46,6 +46,7 @@ import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.BeforeEach;
@@ -713,6 +714,30 @@ class FluentEntityMappingConfigurationSupportMapTest {
 	class KeyIsEntity {
 		
 		@Test
+		void schemaCreation() {
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapMap(Person::getMapPropertyMadeOfEntityAsKey, Country.class, String.class)
+					.withKeyMapping(MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.map(Country::getDescription)
+					)
+					// we set a name to the table relation to check that iti is taken into account
+					.onTable("Toto")
+					.valueColumn("Oo")
+					.withReverseJoinColumn("my_id")
+					.build(persistenceContext);
+			
+			Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
+			Map<String, Table<?>> tablePerName = map(tables, Table::getName);
+			assertThat(tablePerName.keySet()).containsExactlyInAnyOrder("Toto", "Person", "Country");
+			assertThat(tablePerName.get("Toto").getColumn("Oo")).isNotNull();
+			assertThat(tablePerName.get("Toto").getColumn("my_Id")).isNotNull();
+		}
+		
+		@Test
 		void crud() {
 			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -1067,6 +1092,30 @@ class FluentEntityMappingConfigurationSupportMapTest {
 	
 	@Nested
 	class ValueIsEntity {
+		
+		@Test
+		void schemaCreation() {
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapMap(Person::getMapPropertyMadeOfEntityAsValue, String.class, Country.class)
+					.withValueMapping(MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.map(Country::getDescription)
+					)
+					// we set a name to the table relation to check that iti is taken into account
+					.onTable("Toto")
+					.keyColumn("Oo")
+					.withReverseJoinColumn("my_id")
+					.build(persistenceContext);
+			
+			Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
+			Map<String, Table<?>> tablePerName = map(tables, Table::getName);
+			assertThat(tablePerName.keySet()).containsExactlyInAnyOrder("Toto", "Person", "Country");
+			assertThat(tablePerName.get("Toto").getColumn("Oo")).isNotNull();
+			assertThat(tablePerName.get("Toto").getColumn("my_Id")).isNotNull();
+		}
 		
 		@Test
 		void crud() {
