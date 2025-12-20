@@ -434,10 +434,10 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		FluentMappingBuilderPropertyOptions<C, I, O> extraTableName(String name);
 		
 		@Override
-		FluentMappingBuilderPropertyOptions<C, I, O> readConverter(Converter<O, O> converter);
+		<X> FluentMappingBuilderPropertyOptions<C, I, O> readConverter(Converter<X, O> converter);
 		
 		@Override
-		FluentMappingBuilderPropertyOptions<C, I, O> writeConverter(Converter<O, O> converter);
+		<X> FluentMappingBuilderPropertyOptions<C, I, O> writeConverter(Converter<O, X> converter);
 		
 		@Override
 		<V> FluentMappingBuilderPropertyOptions<C, I, O> sqlBinder(ParameterBinder<V> parameterBinder);
@@ -522,10 +522,10 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		FluentMappingBuilderEnumOptions<C, I, E> fieldName(String name);
 		
 		@Override
-		FluentMappingBuilderEnumOptions<C, I, E> readConverter(Converter<E, E> converter);
+		<X> FluentMappingBuilderEnumOptions<C, I, E> readConverter(Converter<X, E> converter);
 		
 		@Override
-		FluentMappingBuilderEnumOptions<C, I, E> writeConverter(Converter<E, E> converter);
+		<X> FluentMappingBuilderEnumOptions<C, I, E> writeConverter(Converter<E, X> converter);
 		
 		@Override
 		<V> FluentMappingBuilderEnumOptions<C, I, E> sqlBinder(ParameterBinder<V> parameterBinder);

@@ -78,16 +78,26 @@ public interface PropertyOptions<O> {
 	PropertyOptions<O> fieldName(String name);
 	
 	/**
-	 * Applies some converter onto data coming from database before setting it to the property
+	 * Applies some converter onto data coming from database before setting it to the property.
+	 * If the database column type highly defers from data type expected by the converter, setting an SQL binder might be necessary to convert the
+	 * data at low level.
+	 *
 	 * @param converter the converter that will adapt database value
+	 * @param <X> the column data type
+	 * @see #sqlBinder(ParameterBinder)
 	 */
-	PropertyOptions<O> readConverter(Converter<O, O> converter);
+	<X> PropertyOptions<O> readConverter(Converter<X, O> converter);
 	
 	/**
-	 * Applies some converter onto property value before writing it to the database
+	 * Applies some converter onto property value before writing it to the database.
+	 * If the database column type highly defers from data type expected by the converter, setting an SQL binder might be necessary to convert the
+	 * data at low level.
+	 *
 	 * @param converter the converter that will adapt property value
+	 * @param <X> the column data type
+	 * @see #sqlBinder(ParameterBinder)
 	 */
-	PropertyOptions<O> writeConverter(Converter<O, O> converter);
+	<X> PropertyOptions<O> writeConverter(Converter<O, X> converter);
 	
 	/**
 	 * Sets a low-level adapter of read/written value from/to the database. To be used when property type and column

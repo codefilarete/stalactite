@@ -45,10 +45,10 @@ public interface ColumnOptions<O> extends PropertyOptions<O> {
 	ColumnOptions<O> fieldName(String name);
 	
 	@Override
-	ColumnOptions<O> readConverter(Converter<O, O> converter);
+	<X> ColumnOptions<O> readConverter(Converter<X, O> converter);
 	
 	@Override
-	ColumnOptions<O> writeConverter(Converter<O, O> converter);
+	<X> ColumnOptions<O> writeConverter(Converter<O, X> converter);
 	
 	@Override
 	<V> PropertyOptions<O> sqlBinder(ParameterBinder<V> parameterBinder);

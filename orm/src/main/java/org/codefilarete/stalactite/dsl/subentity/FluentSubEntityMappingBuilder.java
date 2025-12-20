@@ -138,10 +138,10 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		FluentSubEntityMappingBuilderPropertyOptions<C, I, O> fieldName(String name);
 		
 		@Override
-		FluentSubEntityMappingBuilderPropertyOptions<C, I, O> readConverter(Converter<O, O> converter);
+		<X> FluentSubEntityMappingBuilderPropertyOptions<C, I, O> readConverter(Converter<X, O> converter);
 		
 		@Override
-		FluentSubEntityMappingBuilderPropertyOptions<C, I, O> writeConverter(Converter<O, O> converter);
+		<X> FluentSubEntityMappingBuilderPropertyOptions<C, I, O> writeConverter(Converter<O, X> converter);
 		
 		@Override
 		<V> FluentSubEntityMappingBuilderPropertyOptions<C, I,O> sqlBinder(ParameterBinder<V> parameterBinder);
@@ -180,10 +180,10 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		FluentSubEntityMappingConfigurationEnumOptions<C, I, E> fieldName(String name);
 		
 		@Override
-		FluentSubEntityMappingConfigurationEnumOptions<C, I, E> readConverter(Converter<E, E> converter);
+		<X> FluentSubEntityMappingConfigurationEnumOptions<C, I, E> readConverter(Converter<X, E> converter);
 		
 		@Override
-		FluentSubEntityMappingConfigurationEnumOptions<C, I, E> writeConverter(Converter<E, E> converter);
+		<X> FluentSubEntityMappingConfigurationEnumOptions<C, I, E> writeConverter(Converter<E, X> converter);
 		
 		@Override
 		<V> FluentSubEntityMappingConfigurationEnumOptions<C, I, E> sqlBinder(ParameterBinder<V> parameterBinder);

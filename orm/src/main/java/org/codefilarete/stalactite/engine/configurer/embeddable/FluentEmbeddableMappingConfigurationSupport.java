@@ -525,13 +525,13 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					}
 					
 					@Override
-					public PropertyOptions<O> readConverter(Converter<O, O> converter) {
+					public <X> PropertyOptions<O> readConverter(Converter<X, O> converter) {
 						linkage.setReadConverter(converter);
 						return null;
 					}
 					
 					@Override
-					public PropertyOptions<O> writeConverter(Converter<O, O> converter) {
+					public <X> PropertyOptions<O> writeConverter(Converter<O, X> converter) {
 						linkage.setWriteConverter(converter);
 						return null;
 					}
@@ -632,13 +632,13 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					}
 					
 					@Override
-					public EnumOptions<E> readConverter(Converter<E, E> converter) {
+					public <X> EnumOptions<E> readConverter(Converter<X, E> converter) {
 						linkage.setReadConverter(converter);
 						return null;
 					}
 					
 					@Override
-					public EnumOptions<E> writeConverter(Converter<E, E> converter) {
+					public <X> EnumOptions<E> writeConverter(Converter<E, X> converter) {
 						linkage.setWriteConverter(converter);
 						return null;
 					}

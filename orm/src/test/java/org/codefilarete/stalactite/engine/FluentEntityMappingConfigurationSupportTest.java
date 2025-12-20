@@ -72,7 +72,6 @@ import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter.LambdaPreparedStatementWriter;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader.LambdaResultSetReader;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.test.DefaultDialect;
@@ -83,6 +82,7 @@ import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.function.Converter;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -762,7 +762,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
 				.onTable(totoTable)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
-				.map(Toto::getName).readConverter(String::toUpperCase)
+				.map(Toto::getName).<String>readConverter(String::toUpperCase)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -780,6 +780,47 @@ class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
+	void map_withReadConverter_complexCase() {
+		Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
+		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
+		
+		Table totoTable = new Table("Toto");
+		Column<?, UUID> id = totoTable.addColumn("id", UUID_TYPE).primaryKey();
+		Column<?, String> name = totoTable.addColumn("name", String.class);
+		Column<?, String> possibleStates = totoTable.addColumn("possibleStates", String.class);
+		// binder creation for our identifier
+		dialect.getColumnBinderRegistry().register(id, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
+		dialect.getSqlTypeRegistry().put(id, "varchar(255)");
+		
+		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.onTable(totoTable)
+				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+				.map(Toto::getPossibleStates).readConverter((Converter<String, Set<State>>) input -> {
+					String[] split = input.split(", ");
+					Set<State> result = EnumSet.noneOf(State.class);
+					for (String element : split) {
+						result.add(State.valueOf(element));
+					}
+					return result;
+				})
+				.sqlBinder(DefaultParameterBinders.STRING_BINDER)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Identifier<UUID> totoId = new PersistedIdentifier<>(UUID.randomUUID());
+		persistenceContext.insert(totoTable)
+				.set(id, totoId)
+				.set(possibleStates, "IN_PROGRESS, DONE")
+				.execute();
+		
+		Toto select = persister.select(totoId);
+		
+		assertThat(select.getPossibleStates()).containsExactlyInAnyOrder(State.IN_PROGRESS, State.DONE);
+	}
+	
+	@Test
 	void map_withReadConverter_converterIsUsed_readOnlyProperty() {
 		Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
@@ -794,7 +835,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
 				.onTable(totoTable)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
-				.map(Toto::getName).readonly().readConverter(String::toUpperCase)
+				.map(Toto::getName).readonly().<String>readConverter(String::toUpperCase)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

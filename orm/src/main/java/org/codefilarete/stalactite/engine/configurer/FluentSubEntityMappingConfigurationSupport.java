@@ -607,13 +607,13 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 						}
 						
 						@Override
-						public ColumnOptions<O> readConverter(Converter<O, O> converter) {
+						public <X> ColumnOptions<O> readConverter(Converter<X, O> converter) {
 							newMapping.setReadConverter(converter);
 							return null;
 						}
 						
 						@Override
-						public ColumnOptions<O> writeConverter(Converter<O, O> converter) {
+						public <X> ColumnOptions<O> writeConverter(Converter<O, X> converter) {
 							newMapping.setWriteConverter(converter);
 							return null;
 						}

@@ -290,10 +290,10 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 		FluentEmbeddableMappingConfigurationEnumOptions<C, E> fieldName(String name);
 		
 		@Override
-		FluentEmbeddableMappingConfigurationEnumOptions<C, E> readConverter(Converter<E, E> converter);
+		<X> FluentEmbeddableMappingConfigurationEnumOptions<C, E> readConverter(Converter<X, E> converter);
 		
 		@Override
-		FluentEmbeddableMappingConfigurationEnumOptions<C, E> writeConverter(Converter<E, E> converter);
+		<X> FluentEmbeddableMappingConfigurationEnumOptions<C, E> writeConverter(Converter<E, X> converter);
 		
 		@Override
 		<V> FluentEmbeddableMappingConfigurationEnumOptions<C, E> sqlBinder(ParameterBinder<V> parameterBinder);
@@ -334,10 +334,10 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 		FluentEmbeddableMappingConfigurationPropertyOptions<C, O> fieldName(String name);
 		
 		@Override
-		FluentEmbeddableMappingConfigurationPropertyOptions<C, O> readConverter(Converter<O, O> converter);
+		<X> FluentEmbeddableMappingConfigurationPropertyOptions<C, O> readConverter(Converter<X, O> converter);
 		
 		@Override
-		FluentEmbeddableMappingConfigurationPropertyOptions<C, O> writeConverter(Converter<O, O> converter);
+		<X> FluentEmbeddableMappingConfigurationPropertyOptions<C, O> writeConverter(Converter<O, X> converter);
 		
 		@Override
 		<V> FluentEmbeddableMappingConfigurationPropertyOptions<C, O> sqlBinder(ParameterBinder<V> parameterBinder);

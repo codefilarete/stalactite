@@ -39,10 +39,10 @@ public interface EnumOptions<E extends Enum<E>> extends PropertyOptions<E> {
 	EnumOptions<E> fieldName(String name);
 	
 	@Override
-	EnumOptions<E> readConverter(Converter<E, E> converter);
+	<X> EnumOptions<E> readConverter(Converter<X, E> converter);
 	
 	@Override
-	EnumOptions<E> writeConverter(Converter<E, E> converter);
+	<X> EnumOptions<E> writeConverter(Converter<E, X> converter);
 	
 	@Override
 	<V> PropertyOptions<E> sqlBinder(ParameterBinder<V> parameterBinder);
