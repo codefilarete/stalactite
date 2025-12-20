@@ -119,7 +119,6 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 					return result.build();
 				});
 		ForeignKey<MAPTABLE, SRCTABLE, ID> reverseForeignKey = targetTable.addForeignKey(this.foreignKeyNamingStrategy::giveName, reverseKey, sourcePK);
-		registerColumnBinder(reverseForeignKey, sourcePK);    // because sourcePk binder might have been overloaded by column so we need to adjust to it
 		
 		EmbeddableMappingConfiguration<K> keyEmbeddableConfiguration =
 				nullable(mapRelation.getKeyEmbeddableConfigurationProvider()).map(EmbeddableMappingConfigurationProvider::getConfiguration).get();
@@ -221,14 +220,6 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 		}
 		relationRecordMapping = builder.build();
 		return relationRecordMapping;
-	}
-	
-	private void registerColumnBinder(ForeignKey<?, ?, ID> reverseColumn, PrimaryKey<?, ID> sourcePK) {
-		PairIterator<? extends Column<?, ?>, ? extends Column<?, ?>> pairIterator = new PairIterator<>(reverseColumn.getColumns(), sourcePK.getColumns());
-		pairIterator.forEachRemaining(col -> {
-			dialect.getColumnBinderRegistry().register(col.getLeft(), dialect.getColumnBinderRegistry().getBinder(col.getRight()));
-			dialect.getSqlTypeRegistry().put(col.getLeft(), dialect.getSqlTypeRegistry().getTypeName(col.getRight()));
-		});
 	}
 	
 	protected void addInsertCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,
