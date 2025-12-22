@@ -111,7 +111,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 					sourcePK.getColumns().forEach(col -> {
 						String reverseColumnName = nullable(mapRelation.getReverseColumnName()).getOr(() ->
 								columnNamingStrategy.giveName(KEY_VALUE_RECORD_ID_ACCESSOR_DEFINITION));
-						Column<MAPTABLE, ?> reverseCol = targetTable.addColumn(reverseColumnName, col.getJavaType())
+						Column<MAPTABLE, ?> reverseCol = targetTable.addColumn(reverseColumnName, col.getJavaType(), col.getSize())
 								.primaryKey();
 						srcPrimaryKeyToForeignKeyColumns.put(col, reverseCol);
 						result.addColumn(reverseCol);

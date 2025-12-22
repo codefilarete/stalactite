@@ -143,9 +143,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 				reverseColumn = mainTargetTable.addColumn(
 						relation.getReverseColumnName(),
 						pk.getJavaType(),
-						pk.getSize(),
-						null
-				);
+						pk.getSize());
 			} else {
 				reverseColumn = (Column<RIGHTTABLE, ?>) relation.getReverseColumn();
 			}
