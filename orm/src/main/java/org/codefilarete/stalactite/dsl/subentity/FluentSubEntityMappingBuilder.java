@@ -331,7 +331,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 			extends FluentSubEntityMappingBuilder<C, I>, ElementCollectionOptions<C, O, S> {
 		
 		@Override
-		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory);
+		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> initializeWith(Supplier<? extends S> collectionFactory);
 		
 		@Override
 		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> elementColumnName(String columnName);
@@ -371,7 +371,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		<IN> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> exclude(SerializableBiConsumer<O, IN> setter);
 		
 		@Override
-		FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory);
+		FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> initializeWith(Supplier<? extends S> collectionFactory);
 		
 		@Override
 		FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> reverseJoinColumn(String name);

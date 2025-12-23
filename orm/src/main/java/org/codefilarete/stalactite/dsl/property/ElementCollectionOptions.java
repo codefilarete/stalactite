@@ -12,7 +12,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 public interface ElementCollectionOptions<C, O, S extends Collection<O>> extends CollectionOptions<C, O, S> {
 	
 	@Override
-	ElementCollectionOptions<C, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory);
+	ElementCollectionOptions<C, O, S> initializeWith(Supplier<? extends S> collectionFactory);
 	
 	ElementCollectionOptions<C, O, S> elementColumnName(String columnName);
 	

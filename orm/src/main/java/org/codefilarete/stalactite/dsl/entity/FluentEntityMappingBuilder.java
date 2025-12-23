@@ -544,7 +544,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 			extends FluentEntityMappingBuilder<C, I>, ElementCollectionOptions<C, O, S> {
 		
 		@Override
-		FluentMappingBuilderElementCollectionOptions<C, I, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory);
+		FluentMappingBuilderElementCollectionOptions<C, I, O, S> initializeWith(Supplier<? extends S> collectionFactory);
 		
 		@Override
 		FluentMappingBuilderElementCollectionOptions<C, I, O, S> elementColumnName(String columnName);
@@ -567,7 +567,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 			extends FluentEntityMappingBuilder<C, I>, MapOptions<K, V, M> {
 		
 		@Override
-		FluentMappingBuilderMapOptions<C, I, K, V, M> withReverseJoinColumn(String columnName);
+		FluentMappingBuilderMapOptions<C, I, K, V, M> reverseJoinColumn(String columnName);
 		
 		@Override
 		FluentMappingBuilderMapOptions<C, I, K, V, M> keyColumn(String columnName);
@@ -582,7 +582,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		FluentMappingBuilderMapOptions<C, I, K, V, M> valueSize(Size columnSize);
 		
 		@Override
-		FluentMappingBuilderMapOptions<C, I, K, V, M> withMapFactory(Supplier<? extends M> collectionFactory);
+		FluentMappingBuilderMapOptions<C, I, K, V, M> initializeWith(Supplier<? extends M> collectionFactory);
 		
 		@Override
 		FluentMappingBuilderMapOptions<C, I, K, V, M> onTable(String tableName);
@@ -657,7 +657,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> exclude(SerializableFunction<O, IN> getter);
 		
 		@Override
-		FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory);
+		FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> initializeWith(Supplier<? extends S> collectionFactory);
 		
 		@Override
 		FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> reverseJoinColumn(String name);

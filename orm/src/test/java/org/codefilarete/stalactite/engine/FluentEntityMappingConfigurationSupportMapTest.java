@@ -46,7 +46,6 @@ import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.BeforeEach;
@@ -218,7 +217,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getPhoneNumbers, String.class, String.class)
-				.withMapFactory(() -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER.reversed()))
+				.initializeWith(() -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER.reversed()))
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -273,7 +272,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getPhoneNumbers, String.class, String.class)
-				.withReverseJoinColumn("identifier")
+				.reverseJoinColumn("identifier")
 				.build(persistenceContext);
 
 		Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
@@ -727,7 +726,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 					// we set a name to the table relation to check that iti is taken into account
 					.onTable("Toto")
 					.valueColumn("Oo")
-					.withReverseJoinColumn("my_id")
+					.reverseJoinColumn("my_id")
 					.build(persistenceContext);
 			
 			Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
@@ -1107,7 +1106,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 					// we set a name to the table relation to check that iti is taken into account
 					.onTable("Toto")
 					.keyColumn("Oo")
-					.withReverseJoinColumn("my_id")
+					.reverseJoinColumn("my_id")
 					.build(persistenceContext);
 			
 			Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);

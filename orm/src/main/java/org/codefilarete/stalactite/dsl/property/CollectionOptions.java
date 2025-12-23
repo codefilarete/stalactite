@@ -10,7 +10,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  */
 public interface CollectionOptions<C, O, S extends Collection<O>> {
 	
-	CollectionOptions<C, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory);
+	CollectionOptions<C, O, S> initializeWith(Supplier<? extends S> collectionFactory);
 	
 	/**
 	 * Sets reverse column name (foreign key one)

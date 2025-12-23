@@ -17,7 +17,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
  */
 public interface MapOptions<K, V, M extends Map<K, V>> {
 	
-	MapOptions<K, V, M> withReverseJoinColumn(String columnName);
+	MapOptions<K, V, M> reverseJoinColumn(String columnName);
 	
 	MapOptions<K, V, M> keyColumn(String columnName);
 	
@@ -27,7 +27,7 @@ public interface MapOptions<K, V, M extends Map<K, V>> {
 	
 	MapOptions<K, V, M> valueSize(Size columnSize);
 	
-	MapOptions<K, V, M> withMapFactory(Supplier<? extends M> collectionFactory);
+	MapOptions<K, V, M> initializeWith(Supplier<? extends M> collectionFactory);
 	
 	MapOptions<K, V, M> onTable(String tableName);
 	

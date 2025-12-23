@@ -417,7 +417,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				.redirect(MapOptions.class, new MapOptions<K, V, M>() {
 					
 					@Override
-					public MapOptions<K, V, M> withReverseJoinColumn(String columnName) {
+					public MapOptions<K, V, M> reverseJoinColumn(String columnName) {
 						mapRelation.setReverseColumnName(columnName);
 						return null;
 					}
@@ -447,7 +447,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					}
 					
 					@Override
-					public MapOptions<K, V, M> withMapFactory(Supplier<? extends M> mapFactory) {
+					public MapOptions<K, V, M> initializeWith(Supplier<? extends M> mapFactory) {
 						mapRelation.setMapFactory(mapFactory);
 						return null;
 					}
@@ -657,7 +657,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		return new ElementCollectionOptions<C, O, S>() {
 			
 			@Override
-			public ElementCollectionOptions<C, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory) {
+			public ElementCollectionOptions<C, O, S> initializeWith(Supplier<? extends S> collectionFactory) {
 				elementCollectionRelation.setCollectionFactory(collectionFactory);
 				return null;
 			}

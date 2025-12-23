@@ -262,7 +262,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 		return new ElementCollectionOptions<C, O, S>() {
 			
 			@Override
-			public ElementCollectionOptions<C, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory) {
+			public ElementCollectionOptions<C, O, S> initializeWith(Supplier<? extends S> collectionFactory) {
 				elementCollectionRelation.setCollectionFactory(collectionFactory);
 				return null;
 			}

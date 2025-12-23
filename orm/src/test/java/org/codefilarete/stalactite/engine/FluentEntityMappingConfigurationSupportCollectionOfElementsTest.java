@@ -186,7 +186,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapCollection(Person::getNicknames, String.class)
-				.withCollectionFactory(() -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER.reversed()))
+				.initializeWith(() -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER.reversed()))
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
