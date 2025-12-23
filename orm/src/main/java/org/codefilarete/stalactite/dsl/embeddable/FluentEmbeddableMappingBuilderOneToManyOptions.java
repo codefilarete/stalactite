@@ -42,7 +42,7 @@ public interface FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S extends 
 	 * @param reverseColumnName opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> mappedBy(String reverseColumnName);
+	FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> reverseJoinColumn(String reverseColumnName);
 	
 	/**
 	 * {@inheritDoc}

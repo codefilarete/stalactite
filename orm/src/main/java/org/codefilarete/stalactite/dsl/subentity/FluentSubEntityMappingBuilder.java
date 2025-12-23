@@ -229,7 +229,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		 * @return the global mapping configurer
 		 */
 		@Override
-		FluentMappingBuilderOneToOneOptions<C, I, O> mappedBy(Column<?, I> reverseLink);
+		FluentMappingBuilderOneToOneOptions<C, I, O> reverseJoinColumn(Column<?, I> reverseLink);
 		
 		/**
 		 * {@inheritDoc}
@@ -239,7 +239,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		 * @return the global mapping configurer
 		 */
 		@Override
-		FluentMappingBuilderOneToOneOptions<C, I, O> mappedBy(String reverseColumnName);
+		FluentMappingBuilderOneToOneOptions<C, I, O> reverseJoinColumn(String reverseColumnName);
 		
 		/**
 		 * {@inheritDoc}

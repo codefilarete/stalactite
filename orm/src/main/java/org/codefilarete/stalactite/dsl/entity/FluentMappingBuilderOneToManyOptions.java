@@ -56,7 +56,7 @@ public interface FluentMappingBuilderOneToManyOptions<C, I, O, S extends Collect
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentMappingBuilderOneToManyMappedByOptions<C, I, O, S> mappedBy(String reverseColumnName);
+	FluentMappingBuilderOneToManyMappedByOptions<C, I, O, S> reverseJoinColumn(String reverseColumnName);
 	
 	/**
 	 * {@inheritDoc}

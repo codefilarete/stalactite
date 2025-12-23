@@ -361,13 +361,13 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 					}
 					
 					@Override
-					public OneToOneEntityOptions<C, J, O> mappedBy(Column<?, J> reverseLink) {
+					public OneToOneEntityOptions<C, J, O> reverseJoinColumn(Column<?, J> reverseLink) {
 						oneToOneRelation.setReverseColumn(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneEntityOptions<C, J, O> mappedBy(String reverseColumnName) {
+					public OneToOneEntityOptions<C, J, O> reverseJoinColumn(String reverseColumnName) {
 						oneToOneRelation.setReverseColumn(reverseColumnName);
 						return null;	// we can return null because dispatcher will return proxy
 					}

@@ -45,7 +45,7 @@ public interface FluentMappingBuilderOneToOneOptions<C, I, O> extends FluentEnti
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentMappingBuilderOneToOneOptions<C, I, O> mappedBy(Column<?, I> reverseLink);
+	FluentMappingBuilderOneToOneOptions<C, I, O> reverseJoinColumn(Column<?, I> reverseLink);
 	
 	/**
 	 * {@inheritDoc}
@@ -55,7 +55,7 @@ public interface FluentMappingBuilderOneToOneOptions<C, I, O> extends FluentEnti
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentMappingBuilderOneToOneOptions<C, I, O> mappedBy(String reverseColumnName);
+	FluentMappingBuilderOneToOneOptions<C, I, O> reverseJoinColumn(String reverseColumnName);
 	
 	/**
 	 * {@inheritDoc}

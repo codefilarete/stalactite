@@ -587,7 +587,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 							.mapKey(Country::getId, ALREADY_ASSIGNED)
 							.map(Country::getName)
 							.map(Country::getDescription)
-							.mapOneToOne(Country::getCapital, cityMappingBuilder).mappedBy(stateColumn)
+							.mapOneToOne(Country::getCapital, cityMappingBuilder).reverseJoinColumn(stateColumn)
 							.build(persistenceContext);
 			
 			// ensuring that the foreign key is present on table, hence testing that cityTable was used, not a clone created by build(..) 
@@ -632,7 +632,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 							.mapKey(Country::getId, ALREADY_ASSIGNED)
 							.map(Country::getName)
 							.map(Country::getDescription)
-							.mapOneToOne(Country::getCapital, cityMappingBuilder).mappedBy(stateColumn).mappedBy(City::getCountry)
+							.mapOneToOne(Country::getCapital, cityMappingBuilder).reverseJoinColumn(stateColumn).mappedBy(City::getCountry)
 							.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -670,7 +670,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 							.mapKey(Country::getId, ALREADY_ASSIGNED)
 							.map(Country::getName)
 							.map(Country::getDescription)
-							.mapOneToOne(Country::getCapital, cityMappingBuilder).mappedBy(stateColumn).mappedBy(City::setCountry)
+							.mapOneToOne(Country::getCapital, cityMappingBuilder).reverseJoinColumn(stateColumn).mappedBy(City::setCountry)
 							.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -888,7 +888,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				.mapKey(Country::getId, ALREADY_ASSIGNED)
 				.map(Country::getName)
 				.map(Country::getDescription)
-				.mapOneToOne(Country::getCapital, cityConfiguration).mandatory().unique().mappedBy("country")
+				.mapOneToOne(Country::getCapital, cityConfiguration).mandatory().unique().reverseJoinColumn("country")
 				.build(persistenceContext);
 		
 		Map<String, Table<?>> tablePerName = Iterables.map(DDLDeployer.collectTables(persistenceContext), Table::getName);
@@ -1107,7 +1107,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			EntityPersister<Country, Identifier<Long>> countryPersister = entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.mapKey(Country::getId, ALREADY_ASSIGNED)
 					.map(Country::getDescription)
-					.mapOneToOne(Country::getCapital, cityConfigurer).cascading(ALL).mappedBy(countryId)
+					.mapOneToOne(Country::getCapital, cityConfigurer).cascading(ALL).reverseJoinColumn(countryId)
 					.build(persistenceContext);
 			
 			assertCascadeAll(countryPersister);
@@ -1122,7 +1122,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			EntityPersister<Country, Identifier<Long>> countryPersister = entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.mapKey(Country::getId, ALREADY_ASSIGNED)
 					.map(Country::getDescription)
-					.mapOneToOne(Country::getCapital, cityConfigurer).cascading(ALL).mappedBy("countryId")
+					.mapOneToOne(Country::getCapital, cityConfigurer).cascading(ALL).reverseJoinColumn("countryId")
 					.build(persistenceContext);
 			
 			assertCascadeAll(countryPersister);

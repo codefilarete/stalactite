@@ -786,13 +786,13 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					}
 					
 					@Override
-					public OneToOneEntityOptions<C, J, O> mappedBy(Column<?, J> reverseLink) {
+					public OneToOneEntityOptions<C, J, O> reverseJoinColumn(Column<?, J> reverseLink) {
 						oneToOneRelation.setReverseColumn(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneEntityOptions<C, J, O> mappedBy(String reverseColumnName) {
+					public OneToOneEntityOptions<C, J, O> reverseJoinColumn(String reverseColumnName) {
 						oneToOneRelation.setReverseColumn(reverseColumnName);
 						return null;	// we can return null because dispatcher will return proxy
 					}
@@ -886,9 +886,9 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 							return reverseAsMandatorySupport;	// to let user call mandatory() special option
 						})
 				.redirect(
-						(SerializableBiFunction<FluentMappingBuilderOneToManyOptions<C, I, TRGT, S>, String, FluentMappingBuilderOneToManyMappedByOptions<C, I, TRGT, S>>) FluentMappingBuilderOneToManyOptions::mappedBy,
+						(SerializableBiFunction<FluentMappingBuilderOneToManyOptions<C, I, TRGT, S>, String, FluentMappingBuilderOneToManyMappedByOptions<C, I, TRGT, S>>) FluentMappingBuilderOneToManyOptions::reverseJoinColumn,
 						(consumer) -> {
-							optionsSupport.mappedBy(consumer);
+							optionsSupport.reverseJoinColumn(consumer);
 							return reverseAsMandatorySupport;	// to let user call mandatory() special option
 						})
 				.fallbackOn(this)

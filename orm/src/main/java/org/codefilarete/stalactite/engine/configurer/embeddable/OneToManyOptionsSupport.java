@@ -35,7 +35,7 @@ class OneToManyOptionsSupport<C, O, S extends Collection<O>>
 	}
 	
 	@Override
-	public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> mappedBy(String reverseColumnName) {
+	public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> reverseJoinColumn(String reverseColumnName) {
 		oneToManyRelation.setReverseColumn(reverseColumnName);
 		return null;
 	}

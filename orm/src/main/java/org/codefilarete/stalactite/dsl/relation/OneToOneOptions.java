@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.dsl.relation;
 
 import org.codefilarete.stalactite.dsl.property.CascadeOptions;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
@@ -41,7 +40,7 @@ public interface OneToOneOptions<C, O> extends CascadeOptions {
 	OneToOneOptions<C, O> mappedBy(SerializableFunction<? super O, C> reverseLink);
 	
 	/**
-	 * Defines reverse side owning column name.
+	 * Defines reverse column name that stores the relation.
 	 * Note that defining it this way will not allow relation to be fixed in memory (after select in database), prefer {@link #mappedBy(SerializableBiConsumer)}.
 	 * Use this method to define unidirectional relation.
 	 *
@@ -50,8 +49,9 @@ public interface OneToOneOptions<C, O> extends CascadeOptions {
 	 *
 	 * @param reverseColumnName opposite owner of the relation
 	 * @return the global mapping configurer
+	 * @see #columnName(String)
 	 */
-	OneToOneOptions<C, O> mappedBy(String reverseColumnName);
+	OneToOneOptions<C, O> reverseJoinColumn(String reverseColumnName);
 	
 	/**
 	 * Asks to load the relation in some separate query (actually may use several queries according to association table presence or polymorphism)
@@ -61,11 +61,12 @@ public interface OneToOneOptions<C, O> extends CascadeOptions {
 	OneToOneOptions<C, O> fetchSeparately();
 	
 	/**
-	 * Give the column name of the foreign key column referencing the target entity key.
+	 * Gives the name of the column referencing the target entity key (when the relation is owned by current entity)
 	 * Valuable only for single key cases.
 	 *
 	 * @param columnName foreign key column name
 	 * @return the global mapping configurer
+	 * @see #reverseJoinColumn(String)
 	 */
 	OneToOneOptions<C, O> columnName(String columnName);
 	

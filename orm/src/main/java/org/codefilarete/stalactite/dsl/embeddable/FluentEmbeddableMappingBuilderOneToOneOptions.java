@@ -43,7 +43,7 @@ public interface FluentEmbeddableMappingBuilderOneToOneOptions<C, O> extends Flu
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mappedBy(String reverseColumnName);
+	FluentEmbeddableMappingBuilderOneToOneOptions<C, O> reverseJoinColumn(String reverseColumnName);
 	
 	/**
 	 * {@inheritDoc}

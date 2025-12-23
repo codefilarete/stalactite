@@ -41,7 +41,7 @@ public class OneToManyEntityOptionsSupport<C, I, O, S extends Collection<O>, O_I
 	}
 	
 	@Override
-	public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(String reverseColumnName) {
+	public FluentMappingBuilderOneToManyOptions<C, I, O, S> reverseJoinColumn(String reverseColumnName) {
 		oneToManyRelation.setReverseColumn(reverseColumnName);
 		return null;
 	}

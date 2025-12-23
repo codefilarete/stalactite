@@ -21,9 +21,9 @@ public interface OneToOneEntityOptions<C, I, O> extends OneToOneOptions<C, O> {
 	
 	/**
 	 * Defines the bidirectional relation.
-	 * No need to additionally call {@link #mappedBy(SerializableFunction)} or {@link #mappedBy(Column)}.
+	 * No need to additionally call {@link #mappedBy(SerializableFunction)} or {@link #reverseJoinColumn(Column)}.
 	 *
-	 * If the relation is already defined through {@link #mappedBy(Column)} or {@link #mappedBy(SerializableFunction)} then there's no
+	 * If the relation is already defined through {@link #reverseJoinColumn(Column)} or {@link #mappedBy(SerializableFunction)} then there's no
 	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToOneRelationConfigurer}.
 	 *
 	 * Overridden for return type accuracy
@@ -35,9 +35,9 @@ public interface OneToOneEntityOptions<C, I, O> extends OneToOneOptions<C, O> {
 	
 	/**
 	 * Defines the bidirectional relation.
-	 * No need to additionally call {@link #mappedBy(SerializableBiConsumer)} or {@link #mappedBy(Column)}.
+	 * No need to additionally call {@link #mappedBy(SerializableBiConsumer)} or {@link #reverseJoinColumn(Column)}.
 	 *
-	 * If the relation is already defined through {@link #mappedBy(Column)} or {@link #mappedBy(SerializableBiConsumer)} then there's no
+	 * If the relation is already defined through {@link #reverseJoinColumn(Column)} or {@link #mappedBy(SerializableBiConsumer)} then there's no
 	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToOneRelationConfigurer}.
 	 *
 	 * @param reverseLink opposite owner of the relation (getter)
@@ -52,7 +52,20 @@ public interface OneToOneEntityOptions<C, I, O> extends OneToOneOptions<C, O> {
 	 * @param reverseColumnName opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	OneToOneEntityOptions<C, I, O> mappedBy(String reverseColumnName);
+	OneToOneEntityOptions<C, I, O> reverseJoinColumn(String reverseColumnName);
+	
+	/**
+	 * Defines reverse side owning column.
+	 * Note that defining it this way will not allow relation to be fixed in memory (after select in database), prefer {@link #mappedBy(SerializableBiConsumer)}.
+	 * Use this method to define unidirectional relation.
+	 *
+	 * If the relation is already defined through {@link #mappedBy(SerializableFunction)} or {@link #mappedBy(SerializableBiConsumer)} then there's no
+	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToOneRelationConfigurer}.
+	 *
+	 * @param reverseLink opposite owner of the relation
+	 * @return the global mapping configurer
+	 */
+	OneToOneEntityOptions<C, I, O> reverseJoinColumn(Column<?, I> reverseLink);
 	
 	/**
 	 * {@inheritDoc}
@@ -77,18 +90,5 @@ public interface OneToOneEntityOptions<C, I, O> extends OneToOneOptions<C, O> {
 	 * @return the global mapping configurer
 	 */
 	OneToOneEntityOptions<C, I, O> unique();
-	
-	/**
-	 * Defines reverse side owning column.
-	 * Note that defining it this way will not allow relation to be fixed in memory (after select in database), prefer {@link #mappedBy(SerializableBiConsumer)}.
-	 * Use this method to define unidirectional relation.
-	 *
-	 * If the relation is already defined through {@link #mappedBy(SerializableFunction)} or {@link #mappedBy(SerializableBiConsumer)} then there's no
-	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToOneRelationConfigurer}.
-	 *
-	 * @param reverseLink opposite owner of the relation
-	 * @return the global mapping configurer
-	 */
-	OneToOneEntityOptions<C, I, O> mappedBy(Column<?, I> reverseLink);
 	
 }

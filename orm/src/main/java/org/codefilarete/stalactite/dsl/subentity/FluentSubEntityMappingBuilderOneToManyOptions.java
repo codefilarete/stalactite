@@ -48,7 +48,7 @@ public interface FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S extend
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(String reverseColumnName);
+	FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S> reverseJoinColumn(String reverseColumnName);
 	
 	/**
 	 * {@inheritDoc}

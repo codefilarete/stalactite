@@ -61,7 +61,7 @@ public interface OneToManyOptions<C, O, S extends Collection<O>> extends Cascade
 	 * @param reverseColumnName opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	OneToManyOptions<C, O, S> mappedBy(String reverseColumnName);
+	OneToManyOptions<C, O, S> reverseJoinColumn(String reverseColumnName);
 	
 	/**
 	 * Defines setter of current entity on target entity, which is only interesting while dealing with relation mapped

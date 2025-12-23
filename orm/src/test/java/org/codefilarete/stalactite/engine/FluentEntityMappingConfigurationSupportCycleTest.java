@@ -145,7 +145,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 							.mapOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
 									.mapKey(Address::getId, ALREADY_ASSIGNED)
 									.map(Address::getLocation))
-							.mapOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration()).mappedBy(reverseGardenerId)
+							.mapOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration()).reverseJoinColumn(reverseGardenerId)
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 			);
@@ -226,7 +226,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 					.onTable(personTable)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)
-					.mapOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).mappedBy(reversePartnerId));
+					.mapOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).reverseJoinColumn(reversePartnerId));
 			
 			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext);
 			
@@ -322,7 +322,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 					.onTable(personTable)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)
-					.mapOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).mappedBy(reversePartnerId)
+					.mapOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).reverseJoinColumn(reversePartnerId)
 					.mapOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
 							.mapKey(House::getId, ALREADY_ASSIGNED)
 							.mapOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
@@ -437,7 +437,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 					.onTable(personTable)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)
-					.mapOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).mappedBy(reversePartnerId)
+					.mapOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).reverseJoinColumn(reversePartnerId)
 					.mapOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
 							.mapKey(House::getId, ALREADY_ASSIGNED)
 							.mapOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
@@ -543,7 +543,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 					.onTable(personTable)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)
-					.mapOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).mappedBy(reversePartnerId)
+					.mapOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).reverseJoinColumn(reversePartnerId)
 					.mapOneToOne(Person::getHouse, houseMapping).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapOneToOne(Person::getHouse1, houseMapping).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 			);
