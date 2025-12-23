@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.dsl.embeddable;
 
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -13,6 +14,24 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  * @author Guillaume Mary
  */
 public interface ImportedEmbedWithColumnOptions<C> extends ImportedEmbedOptions<C> {
+	
+	@Override
+	<IN> ImportedEmbedWithColumnOptions<C> overrideName(SerializableFunction<C, IN> getter, String columnName);
+	
+	@Override
+	<IN> ImportedEmbedWithColumnOptions<C> overrideName(SerializableBiConsumer<C, IN> setter, String columnName);
+	
+	@Override
+	<IN> ImportedEmbedWithColumnOptions<C> overrideSize(SerializableFunction<C, IN> getter, Size columnSize);
+	
+	@Override
+	<IN> ImportedEmbedWithColumnOptions<C> overrideSize(SerializableBiConsumer<C, IN> setter, Size columnSize);
+	
+	@Override
+	<IN> ImportedEmbedWithColumnOptions<C> exclude(SerializableFunction<C, IN> getter);
+	
+	@Override
+	<IN> ImportedEmbedWithColumnOptions<C> exclude(SerializableBiConsumer<C, IN> setter);
 	
 	/**
 	 * Overrides embedding with an existing target column

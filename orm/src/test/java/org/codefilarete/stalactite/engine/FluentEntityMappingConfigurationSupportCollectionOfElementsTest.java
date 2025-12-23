@@ -30,6 +30,7 @@ import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifie
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
+import org.codefilarete.stalactite.sql.ddl.Length;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
@@ -495,6 +496,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 						.map(Timestamp::getCreationDate)
 						.map(Timestamp::getModificationDate))
 				.overrideName(Timestamp::getCreationDate, "createdAt")
+				.overrideSize(Timestamp::getCreationDate, Size.length(36))	// stupid value for a timestamp, just for testing purpose
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -505,6 +507,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 		Table<?> totoTimesTable = tablePerName.get("Toto_times");
 		Map<String, ? extends Column<?, ?>> timesTableColumn = totoTimesTable.mapColumnsOnName();
 		assertThat(timesTableColumn.get("createdAt")).isNotNull();
+		assertThat(timesTableColumn.get("createdAt").getSize()).extracting(Length.class::cast).extracting(Length::getValue).isEqualTo(36);
 		
 		Toto person = new Toto();
 		person.setName("toto");
@@ -541,6 +544,8 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 													.map(Timestamp::getModificationDate).columnName("modifiedAt"))
 												.overrideName(Timestamp::getCreationDate, "inspectionDate")
 												.overrideSize(Timestamp::getCreationDate, Size.length(36))
+												.reverseJoinColumn("car_id")
+												.onTable("inspections")
 									, "CAR")
 							.addSubClass(subentityBuilder(Truck.class)
 									.map(Truck::getId)
@@ -551,8 +556,8 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 			Map<String, Table<?>> tablePerName = map(tables, Table::getName);
 			Table<?> platesTable = tablePerName.get("Car_plates");
 			assertThat(platesTable.mapColumnsOnName().keySet()).containsExactlyInAnyOrder("id", "toto");
-			Table<?> inspectionsTable = tablePerName.get("Car_inspections");
-			assertThat(inspectionsTable.mapColumnsOnName().keySet()).containsExactlyInAnyOrder("id", "modifiedAt", "inspectionDate");
+			Table<?> inspectionsTable = tablePerName.get("inspections");
+			assertThat(inspectionsTable.mapColumnsOnName().keySet()).containsExactlyInAnyOrder("car_id", "modifiedAt", "inspectionDate");
 			assertThat(inspectionsTable.mapColumnsOnName().get("inspectionDate").getSize()).usingRecursiveComparison().isEqualTo(Size.length(36));
 		}
 	}

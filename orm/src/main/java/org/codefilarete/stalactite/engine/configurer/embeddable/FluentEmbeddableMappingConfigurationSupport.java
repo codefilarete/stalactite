@@ -8,7 +8,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import org.codefilarete.reflection.Accessor;
@@ -34,6 +33,8 @@ import org.codefilarete.stalactite.dsl.embeddable.ImportedEmbedOptions;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
+import org.codefilarete.stalactite.dsl.property.ElementCollectionOptions;
+import org.codefilarete.stalactite.dsl.property.EmbeddableCollectionOptions;
 import org.codefilarete.stalactite.dsl.property.EnumOptions;
 import org.codefilarete.stalactite.dsl.property.PropertyOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToManyOptions;
@@ -56,7 +57,6 @@ import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry.EnumBindType;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.function.Converter;
-import org.codefilarete.tool.function.SerializableTriFunction;
 import org.codefilarete.tool.reflect.MethodDispatcher;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
@@ -82,6 +82,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	private final List<ManyToManyRelation<C, ?, ?, ?, ?>> manyToManyRelations = new ArrayList<>();
 	
 	private final List<ManyToOneRelation<C, ?, ?, ?>> manyToOneRelations = new ArrayList<>();
+	
+	private final List<ElementCollectionRelation<C, ?, ? extends Collection>> elementCollections = new ArrayList<>();
 	
 	@Nullable
 	private ColumnNamingStrategy columnNamingStrategy;
@@ -654,6 +656,146 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	}
 	
 	@Override
+	public <O, S extends Collection<O>> FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> mapCollection(SerializableFunction<C, S> getter,
+																											   Class<O> componentType) {
+		ElementCollectionRelation<C, O, S> elementCollectionRelation = new ElementCollectionRelation<>(getter, componentType, this, null);
+		elementCollections.add(elementCollectionRelation);
+		return wrapWithElementCollectionOptions(elementCollectionRelation);
+	}
+	
+	@Override
+	public <O, S extends Collection<O>> FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> mapCollection(SerializableBiConsumer<C, S> setter,
+																											   Class<O> componentType) {
+		ElementCollectionRelation<C, O, S> elementCollectionRelation = new ElementCollectionRelation<>(setter, componentType, null);
+		elementCollections.add(elementCollectionRelation);
+		return wrapWithElementCollectionOptions(elementCollectionRelation);
+	}
+	
+	private <O, S extends Collection<O>> FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> wrapWithElementCollectionOptions(
+			ElementCollectionRelation<C, O, S> elementCollectionRelation) {
+		return new MethodReferenceDispatcher()
+				.redirect(ElementCollectionOptions.class, wrapAsOptions(elementCollectionRelation), true)
+				.fallbackOn(this)
+				.build((Class<FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S>>) (Class) FluentEmbeddableMappingConfigurationElementCollectionOptions.class);
+	}
+	
+	@Override
+	public <O, S extends Collection<O>> FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> mapCollection(SerializableFunction<C, S> getter,
+																														  Class<O> componentType,
+																														  EmbeddableMappingConfigurationProvider<O> embeddableConfiguration) {
+		ElementCollectionRelation<C, O, S> elementCollectionRelation = new ElementCollectionRelation<>(getter, componentType, this, embeddableConfiguration);
+		elementCollections.add(elementCollectionRelation);
+		return wrapWithElementCollectionImportOptions(elementCollectionRelation);
+	}
+	
+	@Override
+	public <O, S extends Collection<O>> FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> mapCollection(SerializableBiConsumer<C, S> setter,
+																														  Class<O> componentType,
+																														  EmbeddableMappingConfigurationProvider<O> embeddableConfiguration) {
+		ElementCollectionRelation<C, O, S> elementCollectionRelation = new ElementCollectionRelation<>(setter, componentType, embeddableConfiguration);
+		elementCollections.add(elementCollectionRelation);
+		return wrapWithElementCollectionImportOptions(elementCollectionRelation);
+	}
+	
+	private <O, S extends Collection<O>> FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> wrapWithElementCollectionImportOptions(
+			ElementCollectionRelation<C, O, S> elementCollectionRelation) {
+		return new MethodReferenceDispatcher()
+				.redirect(EmbeddableCollectionOptions.class, new EmbeddableCollectionOptions<C, O, S>() {
+					
+					@Override
+					public <IN> EmbeddableCollectionOptions<C, O, S> overrideName(SerializableFunction<O, IN> getter, String columnName) {
+						elementCollectionRelation.overrideName(getter, columnName);
+						return null;
+					}
+					
+					@Override
+					public <IN> EmbeddableCollectionOptions<C, O, S> overrideName(SerializableBiConsumer<O, IN> setter, String columnName) {
+						elementCollectionRelation.overrideName(setter, columnName);
+						return null;
+					}
+					
+					@Override
+					public <IN> EmbeddableCollectionOptions<C, O, S> overrideSize(SerializableFunction<O, IN> getter, Size columnSize) {
+						elementCollectionRelation.overrideSize(getter, columnSize);
+						return null;
+					}
+					
+					@Override
+					public <IN> EmbeddableCollectionOptions<C, O, S> overrideSize(SerializableBiConsumer<O, IN> setter, Size columnSize) {
+						elementCollectionRelation.overrideSize(setter, columnSize);
+						return null;
+					}
+					
+					@Override
+					public EmbeddableCollectionOptions<C, O, S> initializeWith(Supplier<? extends S> collectionFactory) {
+						elementCollectionRelation.setCollectionFactory(collectionFactory);
+						return null;
+					}
+					
+					@Override
+					public EmbeddableCollectionOptions<C, O, S> reverseJoinColumn(String name) {
+						elementCollectionRelation.setReverseColumnName(name);
+						return null;
+					}
+					
+					@Override
+					public EmbeddableCollectionOptions<C, O, S> onTable(Table table) {
+						elementCollectionRelation.setTargetTable(table);
+						return null;
+					}
+					
+					@Override
+					public EmbeddableCollectionOptions<C, O, S> onTable(String tableName) {
+						elementCollectionRelation.setTargetTableName(tableName);
+						return null;
+					}
+				}, true)
+				.fallbackOn(this)
+				.build((Class<FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S>>) (Class) FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions.class);
+	}
+	
+	private <O, S extends Collection<O>> ElementCollectionOptions<C, O, S> wrapAsOptions(ElementCollectionRelation<C, O, S> elementCollectionRelation) {
+		return new ElementCollectionOptions<C, O, S>() {
+			
+			@Override
+			public ElementCollectionOptions<C, O, S> initializeWith(Supplier<? extends S> collectionFactory) {
+				elementCollectionRelation.setCollectionFactory(collectionFactory);
+				return null;
+			}
+			
+			@Override
+			public ElementCollectionOptions<C, O, S> elementColumnName(String columnName) {
+				elementCollectionRelation.setElementColumnName(columnName);
+				return null;
+			}
+			
+			@Override
+			public ElementCollectionOptions<C, O, S> elementColumnSize(Size columnSize) {
+				elementCollectionRelation.setElementColumnSize(columnSize);
+				return null;
+			}
+			
+			@Override
+			public FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> reverseJoinColumn(String name) {
+				elementCollectionRelation.setReverseColumnName(name);
+				return null;
+			}
+			
+			@Override
+			public ElementCollectionOptions<C, O, S> onTable(Table table) {
+				elementCollectionRelation.setTargetTable(table);
+				return null;
+			}
+			
+			@Override
+			public ElementCollectionOptions<C, O, S> onTable(String tableName) {
+				elementCollectionRelation.setTargetTableName(tableName);
+				return null;
+			}
+		};
+	}
+	
+	@Override
 	public FluentEmbeddableMappingBuilder<C> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> superMappingConfiguration) {
 		this.superMappingBuilder = superMappingConfiguration;
 		return this;
@@ -674,15 +816,6 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	private <O> FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> addImportedInset(Inset<C, O> inset) {
 		insets.add((Inset<C, Object>) inset);
 		return new MethodReferenceDispatcher()
-				// Why capturing overrideName(AccessorChain, String) this way ? (I mean with the "one method" capture instead of the usual "interface methods capture")
-				// Because of ... lazyness ;) : "interface method capture" (such as done with ImportedEmbedOptions) would have required a dedicated
-				// interface (inheriting from ImportedEmbedOptions) to define overrideName(AccessorChain, String)
-				.redirect((SerializableTriFunction<FluentEmbeddableMappingConfigurationImportedEmbedOptions, SerializableFunction, String, FluentEmbeddableMappingConfigurationImportedEmbedOptions>)
-								FluentEmbeddableMappingConfigurationImportedEmbedOptions::overrideName,
-						(BiConsumer<SerializableFunction, String>) inset::overrideName)
-				.redirect((SerializableTriFunction<FluentEmbeddableMappingConfigurationImportedEmbedOptions, SerializableBiConsumer, String, FluentEmbeddableMappingConfigurationImportedEmbedOptions>)
-								FluentEmbeddableMappingConfigurationImportedEmbedOptions::overrideName,
-						(BiConsumer<SerializableBiConsumer, String>) inset::overrideName)
 				.redirect(ImportedEmbedOptions.class, new ImportedEmbedOptions<C>() {
 
 					@Override
@@ -753,7 +886,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	
 	@Override
 	public <TRGT> List<ElementCollectionRelation<C, TRGT, ? extends Collection<TRGT>>> getElementCollections() {
-		return Collections.emptyList();
+		return (List) elementCollections;
 	}
 	
 	@Override

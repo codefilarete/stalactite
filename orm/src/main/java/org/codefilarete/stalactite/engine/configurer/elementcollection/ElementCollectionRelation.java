@@ -2,22 +2,28 @@ package org.codefilarete.stalactite.engine.configurer.elementcollection;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Map;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.AccessorByMethod;
+import org.codefilarete.reflection.AccessorByMethodReference;
+import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.reflection.AccessorChain.ValueInitializerOnNullValue;
+import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.MutatorByMethodReference;
+import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.engine.configurer.LambdaMethodUnsheller;
 import org.codefilarete.stalactite.sql.ddl.Size;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.codefilarete.reflection.AccessorByMethod;
-import org.codefilarete.reflection.AccessorByMethodReference;
-import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.MutatorByMethodReference;
-import org.codefilarete.reflection.PropertyAccessor;
-import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.Reflections;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 
 import static org.codefilarete.tool.Reflections.propertyName;
 
@@ -26,13 +32,13 @@ import static org.codefilarete.tool.Reflections.propertyName;
  * 
  * @author Guillaume Mary
  */
-public class ElementCollectionRelation<SRC, TRGT, C extends Collection<TRGT>> {
+public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 	
 	/** The method that gives the entities from the "root" entity */
-	private final ReversibleAccessor<SRC, C> collectionProvider;
+	private final ReversibleAccessor<SRC, S> collectionAccessor;
 	private final Class<TRGT> componentType;
 	/** Optional provider of collection instance to be used if collection value is null */
-	private Supplier<C> collectionFactory;
+	private Supplier<S> collectionFactory;
 	
 	private Table targetTable;
 	private String targetTableName;
@@ -59,11 +65,11 @@ public class ElementCollectionRelation<SRC, TRGT, C extends Collection<TRGT>> {
 	 * @param componentType element type in collection
 	 * @param embeddableConfigurationProvider complex type mapping, null when element is a simple type (String, Integer, ...)
 	 */
-	public ElementCollectionRelation(SerializableBiConsumer<SRC, C> setter,
+	public ElementCollectionRelation(SerializableBiConsumer<SRC, S> setter,
 									 Class<TRGT> componentType,
 									 @Nullable EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider) {
-		MutatorByMethodReference<SRC, C> setterReference = Accessors.mutatorByMethodReference(setter);
-		this.collectionProvider = new PropertyAccessor<>(
+		MutatorByMethodReference<SRC, S> setterReference = Accessors.mutatorByMethodReference(setter);
+		this.collectionAccessor = new PropertyAccessor<>(
 				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
 				setterReference
 		);
@@ -77,30 +83,38 @@ public class ElementCollectionRelation<SRC, TRGT, C extends Collection<TRGT>> {
 	 * @param lambdaMethodUnsheller engine to capture getter method reference
 	 * @param embeddableConfigurationProvider complex type mapping, null when element is a simple type (String, Integer, ...)
 	 */
-	public ElementCollectionRelation(SerializableFunction<SRC, C> getter,
+	public ElementCollectionRelation(SerializableFunction<SRC, S> getter,
 									 Class<TRGT> componentType,
 									 LambdaMethodUnsheller lambdaMethodUnsheller,
 									 @Nullable EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider) {
-		AccessorByMethodReference<SRC, C> getterReference = Accessors.accessorByMethodReference(getter);
-		this.collectionProvider = new PropertyAccessor<>(
+		AccessorByMethodReference<SRC, S> getterReference = Accessors.accessorByMethodReference(getter);
+		this.collectionAccessor = new PropertyAccessor<>(
 				// we keep close to user demand : we keep its method reference ...
 				getterReference,
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
-				new AccessorByMethod<SRC, C>(lambdaMethodUnsheller.captureLambdaMethod(getter)).toMutator());
+				new AccessorByMethod<SRC, S>(lambdaMethodUnsheller.captureLambdaMethod(getter)).toMutator());
 		this.componentType = componentType;
 		this.embeddableConfigurationProvider = embeddableConfigurationProvider;
 	}
 	
-	public ReversibleAccessor<SRC, C> getCollectionProvider() {
-		return collectionProvider;
+	public ElementCollectionRelation(ReversibleAccessor<SRC, S> collectionAccessor ,
+									 Class<TRGT> componentType,
+									 @Nullable EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider) {
+		this.collectionAccessor = collectionAccessor;
+		this.componentType = componentType;
+		this.embeddableConfigurationProvider = embeddableConfigurationProvider;
 	}
 	
-	public Supplier<C> getCollectionFactory() {
+	public ReversibleAccessor<SRC, S> getCollectionAccessor() {
+		return collectionAccessor;
+	}
+	
+	public Supplier<S> getCollectionFactory() {
 		return collectionFactory;
 	}
 	
-	public ElementCollectionRelation<SRC, TRGT, C> setCollectionFactory(Supplier<? extends C> collectionFactory) {
-		this.collectionFactory = (Supplier<C>) collectionFactory;
+	public ElementCollectionRelation<SRC, TRGT, S> setCollectionFactory(Supplier<? extends S> collectionFactory) {
+		this.collectionFactory = (Supplier<S>) collectionFactory;
 		return this;
 	}
 
@@ -140,7 +154,7 @@ public class ElementCollectionRelation<SRC, TRGT, C extends Collection<TRGT>> {
 		return targetTableName;
 	}
 	
-	public ElementCollectionRelation<SRC, TRGT, C> setTargetTableName(String targetTableName) {
+	public ElementCollectionRelation<SRC, TRGT, S> setTargetTableName(String targetTableName) {
 		this.targetTableName = targetTableName;
 		return this;
 	}
@@ -157,7 +171,7 @@ public class ElementCollectionRelation<SRC, TRGT, C extends Collection<TRGT>> {
 		return reverseColumnName;
 	}
 	
-	public ElementCollectionRelation<SRC, TRGT, C> setReverseColumnName(String reverseColumnName) {
+	public ElementCollectionRelation<SRC, TRGT, S> setReverseColumnName(String reverseColumnName) {
 		this.reverseColumnName = reverseColumnName;
 		return this;
 	}
@@ -184,5 +198,47 @@ public class ElementCollectionRelation<SRC, TRGT, C extends Collection<TRGT>> {
 	
 	public Size getElementColumnSize() {
 		return elementColumnSize;
+	}
+	
+	/**
+	 * Clones this object to make one with the given accessor as prefix of current one.
+	 * Made to "slide" current instance with an accessor prefix. Used for embeddable objects with relation to make the relation being accessible
+	 * from the "root" entity.
+	 *
+	 * @param accessor the prefix of the clone to be created
+	 * @param embeddedType the concrete type of the embeddable bean, because accessor may provide an abstraction
+	 * @return a clones of this instance prefixed with the given accessor
+	 * @param <C> the root entity type that owns the embeddable which has this relation
+	 */
+	public <C> ElementCollectionRelation<C, TRGT, S> embedInto(Accessor<C, SRC> accessor, Class<SRC> embeddedType) {
+		AccessorChain<C, S> shiftedTargetProvider = new AccessorChain<>(accessor, collectionAccessor);
+		shiftedTargetProvider.setNullValueHandler(new ValueInitializerOnNullValue() {
+			@Override
+			protected <T> T newInstance(Accessor<?, T> segmentAccessor, Class<T> valueType) {
+				if (segmentAccessor == accessor) {
+					return (T) Reflections.newInstance(embeddedType);
+				} else if (segmentAccessor == collectionAccessor){
+					if (collectionFactory != null) {
+						return (T) collectionFactory.get();
+					} else {
+						return super.newInstance(segmentAccessor, valueType);
+					}
+				} else {
+					return super.newInstance(segmentAccessor, valueType);
+				}
+			}
+		});
+		ElementCollectionRelation<C, TRGT, S> result = new ElementCollectionRelation<C, TRGT, S>(shiftedTargetProvider, componentType, embeddableConfigurationProvider);
+		
+		result.setElementColumnName(this.getElementColumnName());
+		result.setElementColumnSize(this.getElementColumnSize());
+		result.setTargetTable(this.getTargetTable());
+		result.setTargetTableName(this.getTargetTableName());
+		result.setReverseColumn(this.getReverseColumn());
+		result.setReverseColumnName(this.getReverseColumnName());
+		result.getOverriddenColumnNames().putAll((Map<? extends ValueAccessPoint<C>, ? extends String>) this.getOverriddenColumnNames());
+		result.getOverriddenColumnSizes().putAll((Map<? extends ValueAccessPoint<C>, ? extends Size>) this.getOverriddenColumnSizes());
+		result.setCollectionFactory(this.getCollectionFactory());
+		return result;
 	}
 }

@@ -12,6 +12,8 @@ public class Review implements Identified<Long> {
 	
 	private int ranking;
 	
+	private String comment;
+	
 	private LocalDateTime date;
 	
 	private Location location;
@@ -37,6 +39,14 @@ public class Review implements Identified<Long> {
 	
 	public void setRanking(int ranking) {
 		this.ranking = ranking;
+	}
+	
+	public String getComment() {
+		return comment;
+	}
+	
+	public void setComment(String comment) {
+		this.comment = comment;
 	}
 	
 	public LocalDateTime getDate() {

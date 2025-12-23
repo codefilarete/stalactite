@@ -275,15 +275,6 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 	private <O> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> addImportedInset(Inset<C, O> inset) {
 		insets.add(inset);
 		return new MethodReferenceDispatcher()
-				// Why capturing overrideName(AccessorChain, String) this way ? (I mean with the "one method" capture instead of the usual "interface methods capture")
-				// Because of ... lazyness ;) : "interface method capture" (such as done with ImportedEmbedOptions) would have required a dedicated
-				// interface (inheriting from ImportedEmbedOptions) to define overrideName(AccessorChain, String)
-				.redirect((SerializableTriFunction<FluentCompositeKeyMappingConfigurationImportedEmbedOptions, SerializableFunction, String, FluentCompositeKeyMappingConfigurationImportedEmbedOptions>)
-						FluentCompositeKeyMappingConfigurationImportedEmbedOptions::overrideName,
-						(BiConsumer<SerializableFunction, String>) inset::overrideName)
-				.redirect((SerializableTriFunction<FluentCompositeKeyMappingConfigurationImportedEmbedOptions, SerializableBiConsumer, String, FluentCompositeKeyMappingConfigurationImportedEmbedOptions>)
-						FluentCompositeKeyMappingConfigurationImportedEmbedOptions::overrideName,
-						(BiConsumer<SerializableBiConsumer, String>) inset::overrideName)
 				.redirect(ImportedEmbedOptions.class, new ImportedEmbedOptions<C>() {
 
 					@Override

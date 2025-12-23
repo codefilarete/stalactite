@@ -1,13 +1,11 @@
 package org.codefilarete.stalactite.engine.configurer.entity;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -50,8 +48,8 @@ import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
-import org.codefilarete.stalactite.dsl.property.CollectionOptions;
 import org.codefilarete.stalactite.dsl.property.ElementCollectionOptions;
+import org.codefilarete.stalactite.dsl.property.EmbeddableCollectionOptions;
 import org.codefilarete.stalactite.dsl.property.EnumOptions;
 import org.codefilarete.stalactite.dsl.property.MapOptions;
 import org.codefilarete.stalactite.dsl.property.MapOptions.EmbeddableInMapOptions;
@@ -71,8 +69,6 @@ import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelati
 import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
-import org.codefilarete.stalactite.engine.configurer.property.ColumnLinkageOptionsSupport;
-import org.codefilarete.stalactite.engine.configurer.property.LocalColumnLinkageOptions;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -81,7 +77,6 @@ import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.tool.function.Hanger.Holder;
-import org.codefilarete.tool.function.SerializableTriFunction;
 import org.codefilarete.tool.function.Serie;
 import org.codefilarete.tool.reflect.MethodDispatcher;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -143,10 +138,6 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	private PolymorphismPolicy<C> polymorphismPolicy;
 	
 	private EntityFactoryProviderSupport<C, Table> entityFactoryProvider;
-	
-	private LocalColumnLinkageOptions columnOptions = new ColumnLinkageOptionsSupport();
-	
-	private Field field;
 	
 	/**
 	 * Creates a builder to map the given class for persistence
@@ -614,9 +605,6 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	private <O, S extends Collection<O>> FluentMappingBuilderElementCollectionOptions<C, I, O, S> wrapWithElementCollectionOptions(
 			ElementCollectionRelation<C, O, S> elementCollectionRelation) {
 		return new MethodReferenceDispatcher()
-				.redirect((SerializableBiFunction<FluentMappingBuilderElementCollectionOptions, String, FluentMappingBuilderElementCollectionOptions>)
-								FluentMappingBuilderElementCollectionOptions::elementColumnName,
-						elementCollectionRelation::setElementColumnName)
 				.redirect(ElementCollectionOptions.class, wrapAsOptions(elementCollectionRelation), true)
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderElementCollectionOptions<C, I, O, S>>) (Class) FluentMappingBuilderElementCollectionOptions.class);
@@ -645,10 +633,56 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	private <O, S extends Collection<O>> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> wrapWithElementCollectionImportOptions(
 			ElementCollectionRelation<C, O, S> elementCollectionRelation) {
 		return new MethodReferenceDispatcher()
-				.redirect((SerializableTriFunction<FluentMappingBuilderElementCollectionImportEmbedOptions, SerializableFunction, String, FluentMappingBuilderElementCollectionImportEmbedOptions>)
-								FluentMappingBuilderElementCollectionImportEmbedOptions::overrideName,
-						(BiConsumer<SerializableFunction, String>) elementCollectionRelation::overrideName)
-				.redirect(CollectionOptions.class, wrapAsOptions(elementCollectionRelation), true)
+				.redirect(EmbeddableCollectionOptions.class, new EmbeddableCollectionOptions<C, O, S>() {
+					
+					@Override
+					public <IN> EmbeddableCollectionOptions<C, O, S> overrideName(SerializableFunction<O, IN> getter, String columnName) {
+						elementCollectionRelation.overrideName(getter, columnName);
+						return null;
+					}
+					
+					@Override
+					public <IN> EmbeddableCollectionOptions<C, O, S> overrideName(SerializableBiConsumer<O, IN> setter, String columnName) {
+						elementCollectionRelation.overrideName(setter, columnName);
+						return null;
+					}
+					
+					@Override
+					public <IN> EmbeddableCollectionOptions<C, O, S> overrideSize(SerializableFunction<O, IN> getter, Size columnSize) {
+						elementCollectionRelation.overrideSize(getter, columnSize);
+						return null;
+					}
+					
+					@Override
+					public <IN> EmbeddableCollectionOptions<C, O, S> overrideSize(SerializableBiConsumer<O, IN> setter, Size columnSize) {
+						elementCollectionRelation.overrideSize(setter, columnSize);
+						return null;
+					}
+					
+					@Override
+					public EmbeddableCollectionOptions<C, O, S> initializeWith(Supplier<? extends S> collectionFactory) {
+						elementCollectionRelation.setCollectionFactory(collectionFactory);
+						return null;
+					}
+					
+					@Override
+					public EmbeddableCollectionOptions<C, O, S> reverseJoinColumn(String name) {
+						elementCollectionRelation.setReverseColumnName(name);
+						return null;
+					}
+					
+					@Override
+					public EmbeddableCollectionOptions<C, O, S> onTable(Table table) {
+						elementCollectionRelation.setTargetTable(table);
+						return null;
+					}
+					
+					@Override
+					public EmbeddableCollectionOptions<C, O, S> onTable(String tableName) {
+						elementCollectionRelation.setTargetTableName(tableName);
+						return null;
+					}
+				}, true)
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S>>) (Class) FluentMappingBuilderElementCollectionImportEmbedOptions.class);
 	}

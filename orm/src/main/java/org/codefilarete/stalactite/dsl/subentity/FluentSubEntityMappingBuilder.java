@@ -15,6 +15,7 @@ import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.CollectionOptions;
 import org.codefilarete.stalactite.dsl.property.ColumnOptions;
 import org.codefilarete.stalactite.dsl.property.ElementCollectionOptions;
+import org.codefilarete.stalactite.dsl.property.EmbeddableCollectionOptions;
 import org.codefilarete.stalactite.dsl.property.EnumOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToOneEntityOptions;
 import org.codefilarete.stalactite.sql.ddl.Size;
@@ -350,7 +351,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 	}
 	
 	interface FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S extends Collection<O>>
-			extends FluentSubEntityMappingBuilder<C, I>, CollectionOptions<C, O, S>, ImportedEmbedWithColumnOptions<O> {
+			extends FluentSubEntityMappingBuilder<C, I>, EmbeddableCollectionOptions<C, O, S> {
 		
 		@Override
 		<IN> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideName(SerializableFunction<O, IN> getter, String columnName);
@@ -363,12 +364,6 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		
 		@Override
 		<IN> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideSize(SerializableBiConsumer<O, IN> setter, Size columnSize);
-		
-		@Override
-		<IN> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> exclude(SerializableFunction<O, IN> getter);
-		
-		@Override
-		<IN> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> exclude(SerializableBiConsumer<O, IN> setter);
 		
 		@Override
 		FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> initializeWith(Supplier<? extends S> collectionFactory);

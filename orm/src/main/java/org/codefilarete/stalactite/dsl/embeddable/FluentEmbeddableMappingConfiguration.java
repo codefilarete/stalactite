@@ -2,11 +2,14 @@ package org.codefilarete.stalactite.dsl.embeddable;
 
 import java.util.Collection;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
+import org.codefilarete.stalactite.dsl.property.ElementCollectionOptions;
+import org.codefilarete.stalactite.dsl.property.EmbeddableCollectionOptions;
 import org.codefilarete.stalactite.dsl.property.EnumOptions;
 import org.codefilarete.stalactite.dsl.property.PropertyOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToManyOptions;
@@ -53,6 +56,20 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C, E> mapEnum(SerializableBiConsumer<C, E> setter);
 	
 	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C, E> mapEnum(SerializableFunction<C, E> getter);
+	
+	<O, S extends Collection<O>> FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> mapCollection(SerializableFunction<C, S> getter,
+																													 Class<O> componentType);
+	
+	<O, S extends Collection<O>> FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> mapCollection(SerializableBiConsumer<C, S> setter,
+																													 Class<O> componentType);
+	
+	<O, S extends Collection<O>> FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> mapCollection(SerializableFunction<C, S> getter,
+																																Class<O> componentType,
+																																EmbeddableMappingConfigurationProvider<O> embeddableConfiguration);
+	
+	<O, S extends Collection<O>> FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> mapCollection(SerializableBiConsumer<C, S> setter,
+																																Class<O> componentType,
+																																EmbeddableMappingConfigurationProvider<O> embeddableConfiguration);
 	
 	/**
 	 * Please note that we can't create a generic type for {@code ? super C} by prefixing the method signature with {@code <X super C>}
@@ -341,5 +358,56 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 		
 		@Override
 		<V> FluentEmbeddableMappingConfigurationPropertyOptions<C, O> sqlBinder(ParameterBinder<V> parameterBinder);
+	}
+	
+	interface FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S extends Collection<O>>
+			extends FluentEmbeddableMappingBuilder<C>, ElementCollectionOptions<C, O, S> {
+		
+		@Override
+		FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> initializeWith(Supplier<? extends S> collectionFactory);
+		
+		@Override
+		FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> elementColumnName(String columnName);
+		
+		@Override
+		FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> elementColumnSize(Size columnSize);
+		
+		@Override
+		FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> reverseJoinColumn(String name);
+		
+		@Override
+		FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> onTable(Table table);
+		
+		@Override
+		FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> onTable(String tableName);
+		
+	}
+	
+	interface FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S extends Collection<O>>
+			extends FluentEmbeddableMappingBuilder<C>, EmbeddableCollectionOptions<C, O, S> {
+		
+		@Override
+		<IN> FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> overrideName(SerializableFunction<O, IN> getter, String columnName);
+		
+		@Override
+		<IN> FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> overrideName(SerializableBiConsumer<O, IN> setter, String columnName);
+		
+		@Override
+		<IN> FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> overrideSize(SerializableFunction<O, IN> getter, Size columnSize);
+		
+		@Override
+		<IN> FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> overrideSize(SerializableBiConsumer<O, IN> setter, Size columnSize);
+		
+		@Override
+		FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> initializeWith(Supplier<? extends S> collectionFactory);
+		
+		@Override
+		FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> reverseJoinColumn(String name);
+		
+		@Override
+		FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> onTable(Table table);
+		
+		@Override
+		FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> onTable(String tableName);
 	}
 }

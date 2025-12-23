@@ -29,9 +29,9 @@ import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
-import org.codefilarete.stalactite.dsl.property.CollectionOptions;
 import org.codefilarete.stalactite.dsl.property.ColumnOptions;
 import org.codefilarete.stalactite.dsl.property.ElementCollectionOptions;
+import org.codefilarete.stalactite.dsl.property.EmbeddableCollectionOptions;
 import org.codefilarete.stalactite.dsl.property.EnumOptions;
 import org.codefilarete.stalactite.dsl.property.MapOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToManyOptions;
@@ -630,7 +630,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	}
 	
 	interface FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S extends Collection<O>>
-			extends FluentEntityMappingBuilder<C, I>, CollectionOptions<C, O, S>, ImportedEmbedWithColumnOptions<O> {
+			extends FluentEntityMappingBuilder<C, I>, EmbeddableCollectionOptions<C, O, S> {
 		
 		@Override
 		<IN> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideName(SerializableFunction<O, IN> getter, String columnName);
@@ -643,18 +643,6 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		
 		@Override
 		<IN> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideSize(SerializableBiConsumer<O, IN> setter, Size columnSize);
-		
-		@Override
-		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> override(SerializableFunction<O, IN> getter, Column<? extends Table, IN> targetColumn);
-		
-		@Override
-		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> override(SerializableBiConsumer<O, IN> setter, Column<? extends Table, IN> targetColumn);
-		
-		@Override
-		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> exclude(SerializableBiConsumer<O, IN> setter);
-		
-		@Override
-		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> exclude(SerializableFunction<O, IN> getter);
 		
 		@Override
 		FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> initializeWith(Supplier<? extends S> collectionFactory);

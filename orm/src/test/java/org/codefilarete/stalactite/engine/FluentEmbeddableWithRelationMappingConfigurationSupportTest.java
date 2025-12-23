@@ -29,6 +29,8 @@ import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
+import org.codefilarete.stalactite.sql.ddl.Length;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
@@ -916,6 +918,107 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 			
 			RecoveryQuestion loadedQuestion1 = recoveryQuestionPersister.select(question1.getId());
 			assertThat(loadedQuestion1.getAnswer().getChoices().stream().flatMap(choice -> choice.getAnswers().stream())).hasSameElementsAs(Arrays.asSet(loadedQuestion1.getAnswer()));
+		}
+	}
+	
+	@Nested
+	class ElementCollection_Embedded {
+		
+		@Test
+		void foreignKeyIsCreated() {
+			FluentEmbeddableMappingBuilder<Address> addressMappingBuilder = embeddableBuilder(Address.class)
+					.map(Address::getStreet)
+					.mapCollection(Address::getReviews, Review.class, embeddableBuilder(Review.class)
+							.map(Review::getRanking)
+							.map(Review::getComment));
+			
+			EntityPersister<Device, Identifier<Long>> devicePersister = entityBuilder(Device.class, Identifier.LONG_TYPE)
+					.mapKey(Device::getId, ALREADY_ASSIGNED)
+					.map(Device::getName)
+					.embed(Device::setLocation, addressMappingBuilder)
+					.build(persistenceContext);
+			
+			ConfiguredPersister<Device, Identifier<Long>> addressPersister = (ConfiguredPersister) devicePersister;
+			
+			// ensuring that the foreign key is present on table
+			Map<String, Table<?>> tablePerName = Iterables.map(DDLDeployer.collectTables(persistenceContext), Table::getName);
+			JdbcForeignKey expectedForeignKey1 = new JdbcForeignKey("FK_Device_location_reviews_id_Device_id", "Device_location_reviews", "id", "Device", "id");
+			Comparator<JdbcForeignKey> comparing = Comparator.comparing(JdbcForeignKey::getSignature, Comparator.naturalOrder());
+			assertThat((Set<? extends ForeignKey<?, ?, ?>>) tablePerName.get("Device_location_reviews").getForeignKeys()).extracting(JdbcForeignKey::new)
+					.usingElementComparator(comparing)
+					.containsExactlyInAnyOrder(expectedForeignKey1);
+		}
+		
+		@Test
+		void foreignKeyIsCreated_reverseJoinColumn() {
+			FluentEmbeddableMappingBuilder<Address> addressMappingBuilder = embeddableBuilder(Address.class)
+					.map(Address::getStreet)
+					.mapCollection(Address::getReviews, Review.class, embeddableBuilder(Review.class)
+							.map(Review::getRanking).mandatory()
+							.map(Review::getComment)
+					)
+					.overrideName(Review::getComment, "verbatim")
+					.overrideSize(Review::getComment, Size.length(2000));
+			
+			EntityPersister<Device, Identifier<Long>> devicePersister = entityBuilder(Device.class, Identifier.LONG_TYPE)
+					.mapKey(Device::getId, ALREADY_ASSIGNED)
+					.map(Device::getName)
+					.embed(Device::setLocation, addressMappingBuilder)
+					.build(persistenceContext);
+			
+			// ensuring that the foreign key is present on table
+			Map<String, Table<?>> tablePerName = Iterables.map(DDLDeployer.collectTables(persistenceContext), Table::getName);
+			assertThat(tablePerName.get("Device_location_reviews").getColumn("verbatim")).isNotNull();
+			assertThat(tablePerName.get("Device_location_reviews").getColumn("verbatim").getSize()).extracting(Length.class::cast).extracting(Length::getValue).isEqualTo(2000);
+		}
+		
+		@Test
+		void crud() {
+			FluentEmbeddableMappingBuilder<Address> addressMappingBuilder = embeddableBuilder(Address.class)
+					.map(Address::getStreet)
+					.mapCollection(Address::getReviews, Review.class, embeddableBuilder(Review.class)
+							.map(Review::getRanking).mandatory()
+							.map(Review::getComment)
+					)
+					.overrideName(Review::getComment, "verbatim")
+					.overrideSize(Review::getComment, Size.length(2000));
+			
+			EntityPersister<Device, Identifier<Long>> devicePersister = entityBuilder(Device.class, Identifier.LONG_TYPE)
+					.mapKey(Device::getId, ALREADY_ASSIGNED)
+					.map(Device::getName)
+					.embed(Device::setLocation, addressMappingBuilder)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Device dummyDevice = new Device(13);
+			dummyDevice.setName("UPS");
+			Address address = new Address();
+			address.setStreet("221B Baker Street");
+			Review review = new Review();
+			review.setComment("fine place");
+			review.setRanking(4);
+			address.setReviews(Arrays.asHashSet(review));
+			dummyDevice.setLocation(address);
+			
+			devicePersister.insert(dummyDevice);
+			Device loadedDevice;
+			loadedDevice = devicePersister.select(dummyDevice.getId());
+			assertThat(loadedDevice).usingRecursiveComparison().isEqualTo(dummyDevice);
+			
+			Review anotherReview = new Review();
+			anotherReview.setComment("awesome");
+			anotherReview.setRanking(5);
+			address.getReviews().add(anotherReview);
+			
+			devicePersister.update(dummyDevice);
+			
+			loadedDevice = devicePersister.select(dummyDevice.getId());
+			assertThat(loadedDevice).usingRecursiveComparison().isEqualTo(dummyDevice);
+			
+			devicePersister.delete(dummyDevice);
+			assertThat(devicePersister.select(dummyDevice.getId())).isNull();
 		}
 	}
 }

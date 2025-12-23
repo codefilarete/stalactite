@@ -131,7 +131,9 @@ public class RelationsStep<C, I> {
 		
 		@Override
 		public <TRGT> List<ElementCollectionRelation<C, TRGT, ? extends Collection<TRGT>>> getElementCollections() {
-			return Collections.emptyList();
+			return configuration.<TRGT>getElementCollections().stream()
+					.map(collectionRelation -> collectionRelation.embedInto(inset.getAccessor(), configuration.getEntityType()))
+					.collect(Collectors.toList());
 		}
 		
 		@Override

@@ -91,7 +91,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 	
 	public <SRCTABLE extends Table<SRCTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>> void
 	configure(ElementCollectionRelation<SRC, TRGT, C> elementCollectionRelation) {
-		AccessorDefinition collectionProviderDefinition = AccessorDefinition.giveDefinition(elementCollectionRelation.getCollectionProvider());
+		AccessorDefinition collectionProviderDefinition = AccessorDefinition.giveDefinition(elementCollectionRelation.getCollectionAccessor());
 		// schema configuration
 		PrimaryKey<SRCTABLE, I> sourcePK = sourcePersister.<SRCTABLE>getMapping().getTargetTable().getPrimaryKey();
 		
@@ -102,7 +102,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 				new ElementRecordPersister<>(elementCollectionMapping.elementRecordMapping, dialect, connectionConfiguration);
 		
 		// insert management
-		Accessor<SRC, C> collectionAccessor = elementCollectionRelation.getCollectionProvider();
+		Accessor<SRC, C> collectionAccessor = elementCollectionRelation.getCollectionAccessor();
 		addInsertCascade(sourcePersister, collectionPersister, collectionAccessor);
 		
 		// update management
@@ -116,13 +116,18 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 				elementCollectionRelation.getCollectionFactory(),
 				Reflections.giveCollectionFactory((Class<C>) collectionProviderDefinition.getMemberType()));
 		addSelectCascade(sourcePersister, collectionPersister, sourcePK, elementCollectionMapping.reverseForeignKey,
-				elementCollectionRelation.getCollectionProvider().toMutator()::set, collectionAccessor,
+				elementCollectionRelation.getCollectionAccessor().toMutator()::set, collectionAccessor,
 				collectionFactory);
 	}
 	
 	private <SRCTABLE extends Table<SRCTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>> ElementCollectionMapping<SRCTABLE, COLLECTIONTABLE>
 	buildCollectionTableMapping(ElementCollectionRelation<SRC, TRGT, C> collectionRelation, AccessorDefinition collectionProviderDefinition, PrimaryKey<SRCTABLE, I> sourcePK) {
-		String tableName = nullable(collectionRelation.getTargetTableName()).getOr(() -> tableNamingStrategy.giveName(collectionProviderDefinition));
+		String tableName = nullable(collectionRelation.getTargetTableName()).getOr(() -> {
+			String generatedTableName = tableNamingStrategy.giveName(collectionProviderDefinition);
+			// we replace dot character by underscore one to take embedded relation properties into account: their accessor is an AccessorChain
+			// which is printed with dots by AccessorDefinition
+			return generatedTableName.replace('.', '_');
+		});
 		// Note that table will participate to DDL while cascading selection thanks to its join on foreignKey 
 		COLLECTIONTABLE targetTable = (COLLECTIONTABLE) nullable(collectionRelation.getTargetTable()).getOr(() -> new Table(tableName));
 		Map<Column<SRCTABLE, ?>, Column<COLLECTIONTABLE, ?>> primaryKeyForeignColumnMapping = new HashMap<>();
