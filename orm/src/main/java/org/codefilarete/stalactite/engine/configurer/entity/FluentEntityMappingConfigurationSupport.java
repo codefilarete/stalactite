@@ -1197,64 +1197,38 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		return this;
 	}
 	
-	/**
-	 * Defines the versioning property of beans. This implies that Optmistic Locking will be applied on those beans.
-	 * Versioning policy is supported for following types:
-	 * <ul>
-	 * <li>{@link Integer} : a "+1" policy will be applied, see {@link Serie#INTEGER_SERIE}</li>
-	 * <li>{@link Long} : a "+1" policy will be applied, see {@link Serie#LONG_SERIE}</li>
-	 * <li>{@link Date} : a "now" policy will be applied, see {@link Serie#NOW_SERIE}</li>
-	 * </ul>
-	 * 
-	 * @param getter the funciton that gives access to the versioning property
-	 * @param <V> type of the versioning property, determines versioning policy
-	 * @return this
-	 * @see #versionedBy(SerializableFunction, Serie)
-	 */
 	@Override
 	public <V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter) {
-		AccessorByMethodReference<C, V> methodReference = Accessors.accessorByMethodReference(getter);
-		return versionedBy(methodReference, findSerie(methodReference.getPropertyType()));
-	}
-	
-	private <V> Serie<V> findSerie(Class<V> propertyType) {
-		Serie<V> serie;
-		if (Integer.class.isAssignableFrom(propertyType) || int.class.isAssignableFrom(propertyType)) {
-			serie = (Serie<V>) Serie.INTEGER_SERIE;
-		} else if (Long.class.isAssignableFrom(propertyType) || long.class.isAssignableFrom(propertyType)) {
-			serie = (Serie<V>) Serie.LONG_SERIE;
-		} else if (Date.class.isAssignableFrom(propertyType)) {
-			serie = (Serie<V>) Serie.NOW_SERIE;
-		} else {
-			throw new NotImplementedException("Type of versioned property is not implemented, please provide a "
-					+ Serie.class.getSimpleName() + " for it : " + Reflections.toString(propertyType));
-		}
-		return serie;
+		optimisticLockOption = new OptimisticLockOption<>(getter, null);
+		return this;
 	}
 	
 	@Override
 	public <V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Serie<V> serie) {
-		return versionedBy(new AccessorByMethodReference<>(getter), serie);
+		optimisticLockOption = new OptimisticLockOption<>(getter, serie);
+		return this;
 	}
 	
-	private <V> FluentEntityMappingBuilder<C, I> versionedBy(AccessorByMethodReference<C, V> methodReference, Serie<V> serie) {
-		optimisticLockOption = new OptimisticLockOption<>(methodReference, serie);
+	@Override
+	public <V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableBiConsumer<C, V> setter) {
+		optimisticLockOption = new OptimisticLockOption<>(setter, null);
+		return this;
+	}
+	
+	@Override
+	public <V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableBiConsumer<C, V> setter, Serie<V> serie) {
+		optimisticLockOption = new OptimisticLockOption<>(setter, serie);
 		return this;
 	}
 	
 	@Override
 	public <V> FluentEntityMappingBuilder<C, I> versionedBy(String fieldName) {
-		AccessorByField<C, V> accessor = Accessors.accessorByField(getEntityType(), fieldName);
-		return versionedBy(fieldName, accessor, findSerie(accessor.getPropertyType()));
+		return versionedBy(fieldName, null);
 	}
 	
 	@Override
 	public <V> FluentEntityMappingBuilder<C, I> versionedBy(String fieldName, Serie<V> serie) {
-		return versionedBy(fieldName, Accessors.accessorByField(getEntityType(), fieldName), serie);
-	}
-	
-	private <V> FluentEntityMappingBuilder<C, I> versionedBy(String fieldName, AccessorByField<C, V> methodReference, Serie<V> serie) {
-		optimisticLockOption = new OptimisticLockOption<>(new PropertyAccessor<>(methodReference), serie);
+		optimisticLockOption = new OptimisticLockOption<>(classToPersist, fieldName, serie);
 		return this;
 	}
 	

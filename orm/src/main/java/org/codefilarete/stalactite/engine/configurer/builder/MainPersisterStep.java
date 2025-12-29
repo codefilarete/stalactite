@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.configurer.builder;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Constructor;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -48,8 +49,11 @@ import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
+import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.tool.function.Converter;
+import org.codefilarete.tool.function.Serie;
 
+import static org.codefilarete.tool.Nullable.nullable;
 import static org.codefilarete.tool.collection.Iterables.first;
 
 public class MainPersisterStep<C, I> {
@@ -219,9 +223,25 @@ public class MainPersisterStep<C, I> {
 		
 		VersioningStrategy<C, V> versioningStrategy = null;
 		if (optimisticLockOption != null) {
-			versioningStrategy = new VersioningStrategySupport<>(optimisticLockOption.getVersionAccessor(), optimisticLockOption.getSerie());
+			Serie<V> serie = nullable(optimisticLockOption.getSerie()).getOr(() -> findSerie(AccessorDefinition.giveDefinition(optimisticLockOption.getVersionAccessor()).getMemberType()));
+			versioningStrategy = new VersioningStrategySupport<>(optimisticLockOption.getVersionAccessor(), serie);
 		}
 		return new SimpleRelationalEntityPersister<>(mappingStrategy, versioningStrategy, dialect, connectionConfiguration);
+	}
+	
+	private <V> Serie<V> findSerie(Class<V> propertyType) {
+		Serie<V> serie;
+		if (Integer.class.isAssignableFrom(propertyType) || int.class.isAssignableFrom(propertyType)) {
+			serie = (Serie<V>) Serie.INTEGER_SERIE;
+		} else if (Long.class.isAssignableFrom(propertyType) || long.class.isAssignableFrom(propertyType)) {
+			serie = (Serie<V>) Serie.LONG_SERIE;
+		} else if (Date.class.isAssignableFrom(propertyType)) {
+			serie = (Serie<V>) Serie.NOW_SERIE;
+		} else {
+			throw new NotImplementedException("Type of versioned property is not implemented, please provide a "
+					+ Serie.class.getSimpleName() + " for it : " + Reflections.toString(propertyType));
+		}
+		return serie;
 	}
 	
 	private <T extends Table<T>> void applyExtraTableConfigurations(EntityMappingConfiguration<C, I> entityMappingConfiguration,

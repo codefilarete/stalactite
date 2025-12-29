@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.dsl.entity;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -437,12 +438,100 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	
 	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter, EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
+	/**
+	 * Defines the versioning property of beans. This implies that Optimistic Locking will be applied on those beans.
+	 * Versioning policy is supported for following types:
+	 * <ul>
+	 * <li>{@link Integer} : a "+1" policy will be applied, see {@link Serie#INTEGER_SERIE}</li>
+	 * <li>{@link Long} : a "+1" policy will be applied, see {@link Serie#LONG_SERIE}</li>
+	 * <li>{@link Date} : a "now" policy will be applied, see {@link Serie#NOW_SERIE}</li>
+	 * </ul>
+	 *
+	 * @param getter the function that gives access to the versioning property
+	 * @param <V> type of the versioning property, determines versioning policy
+	 * @return this
+	 * @see #versionedBy(SerializableFunction, Serie)
+	 */
 	<V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter);
 	
+	/**
+	 * Defines the versioning property of beans. This implies that Optimistic Locking will be applied on those beans.
+	 * Versioning policy is supported for following types:
+	 * <ul>
+	 * <li>{@link Integer} : a "+1" policy will be applied, see {@link Serie#INTEGER_SERIE}</li>
+	 * <li>{@link Long} : a "+1" policy will be applied, see {@link Serie#LONG_SERIE}</li>
+	 * <li>{@link Date} : a "now" policy will be applied, see {@link Serie#NOW_SERIE}</li>
+	 * </ul>
+	 *
+	 * @param getter the function that gives access to the versioning property
+	 * @param sequence the {@link Serie} that manage version value increment
+	 * @param <V> type of the versioning property, determines versioning policy
+	 * @return this
+	 */
 	<V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Serie<V> sequence);
 	
+	/**
+	 * Defines the versioning property of beans. This implies that Optimistic Locking will be applied on those beans.
+	 * Versioning policy is supported for following types:
+	 * <ul>
+	 * <li>{@link Integer} : a "+1" policy will be applied, see {@link Serie#INTEGER_SERIE}</li>
+	 * <li>{@link Long} : a "+1" policy will be applied, see {@link Serie#LONG_SERIE}</li>
+	 * <li>{@link Date} : a "now" policy will be applied, see {@link Serie#NOW_SERIE}</li>
+	 * </ul>
+	 *
+	 * @param setter the function that gives access to the versioning property
+	 * @param <V> type of the versioning property, determines versioning policy
+	 * @return this
+	 * @see #versionedBy(SerializableFunction, Serie)
+	 */
+	<V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableBiConsumer<C, V> setter);
+	
+	/**
+	 * Defines the versioning property of beans. This implies that Optimistic Locking will be applied on those beans.
+	 * Versioning policy is supported for following types:
+	 * <ul>
+	 * <li>{@link Integer} : a "+1" policy will be applied, see {@link Serie#INTEGER_SERIE}</li>
+	 * <li>{@link Long} : a "+1" policy will be applied, see {@link Serie#LONG_SERIE}</li>
+	 * <li>{@link Date} : a "now" policy will be applied, see {@link Serie#NOW_SERIE}</li>
+	 * </ul>
+	 *
+	 * @param setter the function that gives access to the versioning property
+	 * @param sequence the {@link Serie} that manage version value increment
+	 * @param <V> type of the versioning property, determines versioning policy
+	 * @return this
+	 */
+	<V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableBiConsumer<C, V> setter, Serie<V> sequence);
+	
+	/**
+	 * Defines the versioning property of beans. This implies that Optimistic Locking will be applied on those beans.
+	 * Versioning policy is supported for following types:
+	 * <ul>
+	 * <li>{@link Integer} : a "+1" policy will be applied, see {@link Serie#INTEGER_SERIE}</li>
+	 * <li>{@link Long} : a "+1" policy will be applied, see {@link Serie#LONG_SERIE}</li>
+	 * <li>{@link Date} : a "now" policy will be applied, see {@link Serie#NOW_SERIE}</li>
+	 * </ul>
+	 *
+	 * @param fieldName the field name that gives access to the versioning property
+	 * @param <V> type of the versioning property, determines versioning policy
+	 * @return this
+	 * @see #versionedBy(SerializableFunction, Serie)
+	 */
 	<V> FluentEntityMappingBuilder<C, I> versionedBy(String fieldName);
 	
+	/**
+	 * Defines the versioning property of beans. This implies that Optimistic Locking will be applied on those beans.
+	 * Versioning policy is supported for following types:
+	 * <ul>
+	 * <li>{@link Integer} : a "+1" policy will be applied, see {@link Serie#INTEGER_SERIE}</li>
+	 * <li>{@link Long} : a "+1" policy will be applied, see {@link Serie#LONG_SERIE}</li>
+	 * <li>{@link Date} : a "now" policy will be applied, see {@link Serie#NOW_SERIE}</li>
+	 * </ul>
+	 *
+	 * @param fieldName the field name that gives access to the versioning property
+	 * @param sequence the {@link Serie} that manage version value increment
+	 * @param <V> type of the versioning property, determines versioning policy
+	 * @return this
+	 */
 	<V> FluentEntityMappingBuilder<C, I> versionedBy(String fieldName, Serie<V> sequence);
 	
 	FluentEntityMappingBuilder<C, I> onTable(String tableName);
