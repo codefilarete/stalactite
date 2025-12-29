@@ -148,7 +148,7 @@ public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfi
 		ColumnLinkageOptions getColumnOptions();
 		
 		@Nullable
-		Field getField();
+		String getFieldName();
 	}
 	
 	interface CompositeKeyMapping<C, I> extends KeyMapping<C, I> {

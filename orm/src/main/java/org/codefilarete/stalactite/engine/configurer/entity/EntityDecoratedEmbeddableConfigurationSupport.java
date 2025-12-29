@@ -124,12 +124,7 @@ class EntityDecoratedEmbeddableConfigurationSupport<C, I> extends FluentEmbeddab
 					
 					@Override
 					public ColumnOptions<O> fieldName(String name) {
-						Field field = Reflections.findField(EntityDecoratedEmbeddableConfigurationSupport.this.entityConfigurationSupport.getEntityType(), name);
-						if (field == null) {
-							throw new MappingConfigurationException(("Field " + name
-									+ " was not found in " + Reflections.toString(EntityDecoratedEmbeddableConfigurationSupport.this.entityConfigurationSupport.getEntityType())));
-						}
-						newMapping.setField(field);
+						newMapping.setField(EntityDecoratedEmbeddableConfigurationSupport.this.entityConfigurationSupport.getEntityType(), name);
 						return null;
 					}
 					
@@ -247,11 +242,7 @@ class EntityDecoratedEmbeddableConfigurationSupport<C, I> extends FluentEmbeddab
 					
 					@Override
 					public KeyOptions<C, I> fieldName(String name) {
-						// Note that getField(..) will throw an exception if field is not found, at the opposite of findField(..)
-						// Note that we use "classToPersist" for field lookup instead of setter/getter declaring class
-						// because this one can be abstract/interface
-						Field field = Reflections.getField(entityConfigurationSupport.getEntityType(), name);
-						keyMapping.setField(field);
+						keyMapping.setField(entityConfigurationSupport.getEntityType(), name);
 						return null;
 					}
 					

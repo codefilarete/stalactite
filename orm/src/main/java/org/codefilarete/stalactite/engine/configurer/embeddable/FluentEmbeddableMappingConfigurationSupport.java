@@ -518,11 +518,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					
 					@Override
 					public PropertyOptions<O> fieldName(String name) {
-						// Note that getField(..) will throw an exception if field is not found, at the opposite of findField(..)
-						// Note that we use "classToPersist" for field lookup instead of setter/getter declaring class
-						// because this one can be abstract/interface
-						Field field = Reflections.getField(FluentEmbeddableMappingConfigurationSupport.this.classToPersist, name);
-						linkage.setField(field);
+						linkage.setField(FluentEmbeddableMappingConfigurationSupport.this.classToPersist, name);
 						return null;
 					}
 					
@@ -624,12 +620,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					
 					@Override
 					public EnumOptions<E> fieldName(String name) {
-						Field field = Reflections.findField(FluentEmbeddableMappingConfigurationSupport.this.classToPersist, name);
-						if (field == null) {
-							throw new MappingConfigurationException(("Field " + name
-									+ " was not found in " + Reflections.toString(FluentEmbeddableMappingConfigurationSupport.this.classToPersist)));
-						}
-						linkage.setField(field);
+						linkage.setField(FluentEmbeddableMappingConfigurationSupport.this.classToPersist, name);
 						return null;
 					}
 					

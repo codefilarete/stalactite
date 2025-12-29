@@ -635,12 +635,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 						
 						@Override
 						public ColumnOptions<O> fieldName(String name) {
-							Field field = Reflections.findField(SubEntityDecoratedEmbeddableConfigurationSupport.this.entityConfigurationSupport.classToPersist, name);
-							if (field == null) {
-								throw new MappingConfigurationException(("Field " + name
-										+ " was not found in " + Reflections.toString(SubEntityDecoratedEmbeddableConfigurationSupport.this.entityConfigurationSupport.classToPersist)));
-							}
-							newMapping.setField(field);
+							newMapping.setField(SubEntityDecoratedEmbeddableConfigurationSupport.this.entityConfigurationSupport.classToPersist, name);
 							return null;
 						}
 						

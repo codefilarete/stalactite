@@ -78,7 +78,7 @@ public interface EmbeddableMappingConfiguration<C> extends RelationalMappingConf
 		ReversibleAccessor<C, O> getAccessor();
 		
 		@Nullable
-		Field getField();
+		String getFieldName();
 		
 		@Nullable
 		String getColumnName();

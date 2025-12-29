@@ -1,16 +1,13 @@
 package org.codefilarete.stalactite.engine.configurer.entity;
 
 import javax.annotation.Nullable;
-import java.lang.reflect.Field;
 
-import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.SingleKeyMapping;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
-import org.codefilarete.stalactite.engine.configurer.PropertyAccessorResolver;
+import org.codefilarete.stalactite.engine.configurer.ValueAccessPointVariantSupport;
 import org.codefilarete.stalactite.engine.configurer.property.ColumnLinkageOptionsSupport;
 import org.codefilarete.stalactite.engine.configurer.property.LocalColumnLinkageOptions;
-import org.codefilarete.tool.function.ThreadSafeLazyInitializer;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
@@ -25,24 +22,24 @@ class SingleKeyLinkageSupport<C, I> implements SingleKeyMapping<C, I> {
 	
 	private boolean setByConstructor;
 	
-	private final ThreadSafeLazyInitializer<ReversibleAccessor<C, I>> accessor;
+	private final ValueAccessPointVariantSupport<C, I> accessor;
 	
-	private SerializableFunction<C, I> getter;
-	
-	private SerializableBiConsumer<C, I> setter;
-	
-	private Field field;
+	@Nullable
+	private String fieldName;
 	
 	public SingleKeyLinkageSupport(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy) {
-		this.getter = getter;
+		this.accessor = new ValueAccessPointVariantSupport<>(getter);
 		this.identifierPolicy = identifierPolicy;
-		this.accessor = new AccessorFieldLazyInitializer();
 	}
 	
 	public SingleKeyLinkageSupport(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy) {
-		this.setter = setter;
+		this.accessor = new ValueAccessPointVariantSupport<>(setter);
 		this.identifierPolicy = identifierPolicy;
-		this.accessor = new AccessorFieldLazyInitializer();
+	}
+	
+	public SingleKeyLinkageSupport(Class<C> classToPersist, String fieldName, IdentifierPolicy<I> identifierPolicy) {
+		this.accessor = new ValueAccessPointVariantSupport<>(classToPersist, fieldName);
+		this.identifierPolicy = identifierPolicy;
 	}
 	
 	@Override
@@ -52,7 +49,7 @@ class SingleKeyLinkageSupport<C, I> implements SingleKeyMapping<C, I> {
 	
 	@Override
 	public ReversibleAccessor<C, I> getAccessor() {
-		return accessor.get();
+		return accessor.getAccessor();
 	}
 	
 	@Override
@@ -70,42 +67,17 @@ class SingleKeyLinkageSupport<C, I> implements SingleKeyMapping<C, I> {
 	
 	@Override
 	@Nullable
-	public Field getField() {
-		return field;
+	public String getFieldName() {
+		return fieldName;
 	}
 	
-	public void setField(Field field) {
-		this.field = field;
+	public void setField(Class<C> classToPersist, String fieldName) {
+		this.fieldName = fieldName;
+		this.accessor.setField(classToPersist, fieldName);
 	}
 	
 	@Override
 	public boolean isSetByConstructor() {
 		return setByConstructor;
-	}
-	
-	/**
-	 * Internal class that computes a {@link PropertyAccessor} from getter or setter according to which one is set up
-	 */
-	private class AccessorFieldLazyInitializer extends ThreadSafeLazyInitializer<ReversibleAccessor<C, I>> {
-		
-		@Override
-		protected ReversibleAccessor<C, I> createInstance() {
-			return new PropertyAccessorResolver<>(new PropertyAccessorResolver.PropertyMapping<C, I>() {
-				@Override
-				public SerializableFunction<C, I> getGetter() {
-					return SingleKeyLinkageSupport.this.getter;
-				}
-				
-				@Override
-				public SerializableBiConsumer<C, I> getSetter() {
-					return SingleKeyLinkageSupport.this.setter;
-				}
-				
-				@Override
-				public Field getField() {
-					return SingleKeyLinkageSupport.this.getField();
-				}
-			}).resolve();
-		}
 	}
 }

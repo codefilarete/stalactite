@@ -184,11 +184,7 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 					
 					@Override
 					public CompositeKeyPropertyOptions fieldName(String name) {
-						// Note that getField(..) will throw an exception if field is not found, at the opposite of findField(..)
-						// Note that we use "classToPersist" for field lookup instead of setter/getter declaring class
-						// because this one can be abstract/interface
-						Field field = Reflections.getField(FluentCompositeKeyMappingConfigurationSupport.this.classToPersist, name);
-						linkage.setField(field);
+						linkage.setField(FluentCompositeKeyMappingConfigurationSupport.this.classToPersist, name);
 						return null;
 					}
 				}, true)
@@ -240,11 +236,7 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 					
 					@Override
 					public CompositeKeyPropertyOptions fieldName(String name) {
-						// Note that getField(..) will throw an exception if field is not found, at the opposite of findField(..)
-						// Note that we use "classToPersist" for field lookup instead of setter/getter declaring class
-						// because this one can be abstract/interface
-						Field field = Reflections.getField(FluentCompositeKeyMappingConfigurationSupport.this.classToPersist, name);
-						linkage.setField(field);
+						linkage.setField(FluentCompositeKeyMappingConfigurationSupport.this.classToPersist, name);
 						return null;
 					}
 				}, true)
@@ -341,20 +333,16 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 		@Nullable
 		private Size columnSize;
 		
-		private final AccessorFieldLazyInitializer accessor = new AccessorFieldLazyInitializer();
+		private final ValueAccessPointVariantSupport<T, O> accessor;
 		
-		private SerializableFunction<T, O> getter;
-		
-		private SerializableBiConsumer<T, O> setter;
-		
-		private Field field;
+		private String fieldName;
 		
 		public LinkageSupport(SerializableFunction<T, O> getter) {
-			this.getter = getter;
+			this.accessor = new ValueAccessPointVariantSupport<>(getter);
 		}
 		
 		public LinkageSupport(SerializableBiConsumer<T, O> setter) {
-			this.setter = setter;
+			this.accessor = new ValueAccessPointVariantSupport<>(setter);
 		}
 		
 		@Override
@@ -399,49 +387,26 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 		
 		@Override
 		public ReversibleAccessor<T, O> getAccessor() {
-			return accessor.get();
+			return accessor.getAccessor();
 		}
 		
 		@Nullable
 		@Override
-		public Field getField() {
-			return field;
+		public String getFieldName() {
+			return fieldName;
 		}
 		
-		public void setField(Field field) {
-			this.field = field;
+		public void setField(Class<T> classToPersist, String fieldName) {
+			this.fieldName = fieldName;
+			// Note that getField(..) will throw an exception if field is not found, at the opposite of findField(..)
+			this.accessor.setField(classToPersist, fieldName);
 		}
 		
 		@Override
 		public Class<O> getColumnType() {
-			return (Class<O>) AccessorDefinition.giveDefinition(this.accessor.get()).getMemberType();
+			return (Class<O>) AccessorDefinition.giveDefinition(this.accessor.getAccessor()).getMemberType();
 		}
 		
-		/**
-		 * Internal class that computes a {@link PropertyAccessor} from getter or setter according to which one is set up
-		 */
-		private class AccessorFieldLazyInitializer extends ThreadSafeLazyInitializer<ReversibleAccessor<T, O>> {
-			
-			@Override
-			protected ReversibleAccessor<T, O> createInstance() {
-				return new PropertyAccessorResolver<>(new PropertyMapping<T, O>() {
-					@Override
-					public SerializableFunction<T, O> getGetter() {
-							return LinkageSupport.this.getter;
-					}
-					
-					@Override
-					public SerializableBiConsumer<T, O> getSetter() {
-						return LinkageSupport.this.setter;
-					}
-					
-					@Override
-					public Field getField() {
-						return LinkageSupport.this.getField();
-					}
-				}).resolve();
-			}
-		}
 	}
 	
 	/**

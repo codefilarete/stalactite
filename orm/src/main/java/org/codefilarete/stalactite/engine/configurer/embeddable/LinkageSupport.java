@@ -1,24 +1,19 @@
 package org.codefilarete.stalactite.engine.configurer.embeddable;
 
 import javax.annotation.Nullable;
-import java.lang.reflect.Field;
 
-import org.codefilarete.reflection.AccessorByField;
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
-import org.codefilarete.stalactite.engine.configurer.PropertyAccessorResolver;
+import org.codefilarete.stalactite.engine.configurer.ValueAccessPointVariantSupport;
 import org.codefilarete.stalactite.engine.configurer.property.ColumnLinkageOptionsByColumn;
 import org.codefilarete.stalactite.engine.configurer.property.ColumnLinkageOptionsSupport;
 import org.codefilarete.stalactite.engine.configurer.property.LocalColumnLinkageOptions;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry;
-import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.function.Converter;
-import org.codefilarete.tool.function.ThreadSafeLazyInitializer;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
@@ -49,13 +44,10 @@ public class LinkageSupport<T, O> implements EmbeddableMappingConfiguration.Link
 	
 	private LocalColumnLinkageOptions columnOptions = new ColumnLinkageOptionsSupport();
 	
-	private final ThreadSafeLazyInitializer<ReversibleAccessor<T, O>> accessor;
+	private final ValueAccessPointVariantSupport<T, O> accessor;
 	
-	private SerializableFunction<T, O> getter;
-	
-	private SerializableBiConsumer<T, O> setter;
-	
-	private Field field;
+	@Nullable
+	private String fieldName;
 	
 	private boolean readonly;
 	
@@ -65,23 +57,17 @@ public class LinkageSupport<T, O> implements EmbeddableMappingConfiguration.Link
 	
 	private Converter<O, ? /* value going to database */> writeConverter;
 	
+	
 	public LinkageSupport(SerializableFunction<T, O> getter) {
-		this.getter = getter;
-		this.accessor = new AccessorFieldLazyInitializer();
+		this.accessor = new ValueAccessPointVariantSupport<>(getter);
 	}
 	
 	public LinkageSupport(SerializableBiConsumer<T, O> setter) {
-		this.setter = setter;
-		this.accessor = new AccessorFieldLazyInitializer();
+		this.accessor = new ValueAccessPointVariantSupport<>(setter);
 	}
 	
 	public LinkageSupport(Class persistedClass, String fieldName) {
-		this.accessor = new ThreadSafeLazyInitializer<ReversibleAccessor<T, O>>() {
-			@Override
-			protected ReversibleAccessor<T, O> createInstance() {
-				return new AccessorByField<>(Reflections.getField(persistedClass, fieldName));
-			}
-		};
+		this.accessor = new ValueAccessPointVariantSupport<>(persistedClass, fieldName);
 	}
 	
 	@Override
@@ -142,17 +128,19 @@ public class LinkageSupport<T, O> implements EmbeddableMappingConfiguration.Link
 	
 	@Override
 	public ReversibleAccessor<T, O> getAccessor() {
-		return accessor.get();
+		return accessor.getAccessor();
 	}
 	
-	@Nullable
 	@Override
-	public Field getField() {
-		return field;
+	@Nullable
+	public String getFieldName() {
+		return fieldName;
 	}
 	
-	public void setField(Field field) {
-		this.field = field;
+	public void setField(Class<T> classToPersist, String fieldName) {
+		this.fieldName = fieldName;
+		// Note that getField(..) will throw an exception if field is not found, at the opposite of findField(..)
+		this.accessor.setField(classToPersist, fieldName);
 	}
 	
 	@Nullable
@@ -171,7 +159,7 @@ public class LinkageSupport<T, O> implements EmbeddableMappingConfiguration.Link
 	public Class<O> getColumnType() {
 		return this.columnOptions instanceof ColumnLinkageOptionsByColumn
 				? (Class<O>) ((ColumnLinkageOptionsByColumn) this.columnOptions).getColumnType()
-				: AccessorDefinition.giveDefinition(this.accessor.get()).getMemberType();
+				: AccessorDefinition.giveDefinition(this.accessor.getAccessor()).getMemberType();
 	}
 	
 	@Override
@@ -208,31 +196,5 @@ public class LinkageSupport<T, O> implements EmbeddableMappingConfiguration.Link
 	
 	public void setWriteConverter(Converter<O, ?> writeConverter) {
 		this.writeConverter = writeConverter;
-	}
-	
-	/**
-	 * Internal class that computes a {@link PropertyAccessor} from getter or setter according to which one is set up
-	 */
-	private class AccessorFieldLazyInitializer extends ThreadSafeLazyInitializer<ReversibleAccessor<T, O>> {
-		
-		@Override
-		protected ReversibleAccessor<T, O> createInstance() {
-			return new PropertyAccessorResolver<>(new PropertyAccessorResolver.PropertyMapping<T, O>() {
-				@Override
-				public SerializableFunction<T, O> getGetter() {
-					return LinkageSupport.this.getter;
-				}
-				
-				@Override
-				public SerializableBiConsumer<T, O> getSetter() {
-					return LinkageSupport.this.setter;
-				}
-				
-				@Override
-				public Field getField() {
-					return LinkageSupport.this.getField();
-				}
-			}).resolve();
-		}
 	}
 }

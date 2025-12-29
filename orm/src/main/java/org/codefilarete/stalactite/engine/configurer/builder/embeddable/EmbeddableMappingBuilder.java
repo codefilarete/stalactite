@@ -230,14 +230,15 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 	}
 	
 	protected <O> String determineColumnName(EmbeddableLinkage<C, O> linkage, @Nullable String overriddenColumName) {
-		return nullable(overriddenColumName).getOr(
-				() -> nullable(linkage.getColumnName())
-						.elseSet(nullable(linkage.getField()).map(Field::getName))
-						.getOr(() -> columnNamingStrategy.giveName(AccessorDefinition.giveDefinition(linkage.getAccessor()))));
+		return nullable(overriddenColumName)
+				.elseSet(linkage::getColumnName)
+				.elseSet(linkage::getFieldName)
+				.elseSet(() -> columnNamingStrategy.giveName(AccessorDefinition.giveDefinition(linkage.getAccessor())))
+				.get();
 	}
 	
 	protected <O> Size determineColumnSize(EmbeddableLinkage<C, O> linkage, @Nullable Size overriddenColumSize) {
-		return nullable(overriddenColumSize).elseSet(linkage.getColumnSize()).get();
+		return nullable(overriddenColumSize).elseSet(linkage::getColumnSize).get();
 	}
 	
 	/**

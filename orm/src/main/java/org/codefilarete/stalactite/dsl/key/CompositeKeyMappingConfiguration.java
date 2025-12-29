@@ -42,7 +42,7 @@ public interface CompositeKeyMappingConfiguration<C> {
 		ReversibleAccessor<C, O> getAccessor();
 		
 		@Nullable
-		Field getField();
+		String getFieldName();
 		
 		@Nullable
 		String getColumnName();

@@ -101,10 +101,10 @@ class OneToOneRelationConfigurerTest {
 				(IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class, c -> {}, c -> false));
 		
 		LinkageSupport<City, Identifier<Long>> identifierLinkage = new LinkageSupport<>(City::getId);
-		identifierLinkage.setField(Reflections.findField(City.class, "id"));
+		identifierLinkage.setField(City.class, "id");
 		identifierLinkage.setColumnOptions(new ColumnLinkageOptionsSupport("id"));
 		LinkageSupport<City, String> nameLinkage = new LinkageSupport<>(City::getName);
-		nameLinkage.setField(Reflections.findField(City.class, "name"));
+		nameLinkage.setField(City.class, "name");
 		nameLinkage.setColumnOptions(new ColumnLinkageOptionsSupport("name"));
 		
 		// defining City mapping
@@ -140,6 +140,11 @@ class OneToOneRelationConfigurerTest {
 			}
 			
 			@Override
+			public String getFieldName() {
+				return null;
+			}
+			
+			@Override
 			public ColumnLinkageOptions getColumnOptions() {
 				return new ColumnLinkageOptions() {
 					@Nullable
@@ -156,12 +161,6 @@ class OneToOneRelationConfigurerTest {
 				};
 			}
 			
-			@Nullable
-			@Override
-			public Field getField() {
-				return null;
-			}
-
 			@Override
 			public boolean isSetByConstructor() {
 				return false;
@@ -250,10 +249,10 @@ class OneToOneRelationConfigurerTest {
 		);
 		
 		LinkageSupport<City, Identifier<Long>> identifierLinkage = new LinkageSupport<>(City::getId);
-		identifierLinkage.setField(Reflections.findField(City.class, "id"));
+		identifierLinkage.setField(City.class, "id");
 		identifierLinkage.setColumnOptions(new ColumnLinkageOptionsSupport("id"));
 		LinkageSupport<City, String> nameLinkage = new LinkageSupport<>(City::getName);
-		nameLinkage.setField(Reflections.findField(City.class, "name"));
+		nameLinkage.setField(City.class, "name");
 		nameLinkage.setColumnOptions(new ColumnLinkageOptionsSupport("name"));
 		
 		EmbeddableMappingConfiguration<City> cityPropertiesMapping = mock(EmbeddableMappingConfiguration.class);
@@ -281,6 +280,11 @@ class OneToOneRelationConfigurerTest {
 			}
 			
 			@Override
+			public String getFieldName() {
+				return null;
+			}
+			
+			@Override
 			public ColumnLinkageOptions getColumnOptions() {
 				return new ColumnLinkageOptions() {
 					@Nullable
@@ -295,12 +299,6 @@ class OneToOneRelationConfigurerTest {
 						return null;
 					}
 				};
-			}
-			
-			@Nullable
-			@Override
-			public Field getField() {
-				return null;
 			}
 			
 			@Override

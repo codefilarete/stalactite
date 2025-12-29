@@ -38,10 +38,8 @@ public interface EmbeddableMappingConfiguration<C> {
 				
 				@Nullable
 				@Override
-				public Field getField() {
-					// this code serves little purpose since mapKey() doesn't give access to field override, maybe EmbeddableLinkage
-					// contract should be specialized for Key mapping.
-					return embeddableLinkage.getField();
+				public String getFieldName() {
+					return embeddableLinkage.getFieldName();
 				}
 				
 				@Nullable
@@ -316,8 +314,8 @@ public interface EmbeddableMappingConfiguration<C> {
 		
 		@Nullable
 		@Override
-		public Field getField() {
-			return dslLinkage.getField();
+		public String getFieldName() {
+			return dslLinkage.getFieldName();
 		}
 		
 		@Nullable

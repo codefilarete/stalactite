@@ -14,9 +14,8 @@ import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.CompositeKeyIdentification;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.SingleColumnIdentification;
-import org.codefilarete.stalactite.engine.configurer.builder.embeddable.ColumnNameProvider;
-import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
 import org.codefilarete.stalactite.engine.configurer.entity.CompositeKeyLinkageSupport;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
@@ -65,7 +64,9 @@ public class PrimaryKeyStep<C, I> {
 	}
 
 	private <O> String determineColumnName(SingleKeyMapping<C, O> keyLinkage, ColumnNamingStrategy columnNamingStrategy) {
-		ColumnNameProvider columnNameProvider = new ColumnNameProvider(columnNamingStrategy);
-		return columnNameProvider.giveColumnName(new ColumnNameProvider.ColumnLinkage(keyLinkage.getColumnOptions().getColumnName(), keyLinkage.getField(), keyLinkage.getAccessor()));
+		return nullable(keyLinkage.getColumnOptions().getColumnName())
+				.elseSet(keyLinkage::getFieldName)
+				.elseSet(() -> columnNamingStrategy.giveName(AccessorDefinition.giveDefinition(keyLinkage.getAccessor())))
+				.get();
 	}
 }
