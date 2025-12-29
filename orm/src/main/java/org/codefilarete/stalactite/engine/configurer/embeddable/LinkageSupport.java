@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine.configurer.embeddable;
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 
+import org.codefilarete.reflection.AccessorByField;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
@@ -15,6 +16,7 @@ import org.codefilarete.stalactite.engine.configurer.property.LocalColumnLinkage
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.ThreadSafeLazyInitializer;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -71,6 +73,15 @@ public class LinkageSupport<T, O> implements EmbeddableMappingConfiguration.Link
 	public LinkageSupport(SerializableBiConsumer<T, O> setter) {
 		this.setter = setter;
 		this.accessor = new AccessorFieldLazyInitializer();
+	}
+	
+	public LinkageSupport(Class persistedClass, String fieldName) {
+		this.accessor = new ThreadSafeLazyInitializer<ReversibleAccessor<T, O>>() {
+			@Override
+			protected ReversibleAccessor<T, O> createInstance() {
+				return new AccessorByField<>(Reflections.getField(persistedClass, fieldName));
+			}
+		};
 	}
 	
 	@Override

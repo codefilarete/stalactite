@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +16,8 @@ import org.codefilarete.stalactite.engine.runtime.AbstractVersioningStrategy.Ver
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.PersistentFieldHarvester;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
+import org.codefilarete.stalactite.mapping.SimpleIdMapping;
+import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.id.manager.JDBCGeneratedKeysIdentifierManager;
@@ -35,6 +38,7 @@ import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders;
 import org.codefilarete.stalactite.test.PairSetList;
+import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
@@ -145,20 +149,25 @@ class InsertExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(connectionProviderMock);
 		
 		T totoTable = (T) new Table("toto");
-		Column pk = totoTable.addColumn("id", Integer.class).primaryKey();
-		Column versionColumn = totoTable.addColumn("version", Long.class);
+		Column<T, Integer> pk = totoTable.addColumn("id", Integer.class).primaryKey();
+		Column<T, Long> versionColumn = totoTable.addColumn("version", Long.class);
+		PropertyAccessor<VersionnedToto, Integer> identifierAccessor = PropertyAccessor.fromMethodReference(VersionnedToto::getA, VersionnedToto::setA);
 		Map<ReversibleAccessor, Column> mapping = Maps.forHashMap((Class<ReversibleAccessor>) null, (Class<Column>) null)
 				.add(PropertyAccessor.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion), versionColumn)
-				.add(PropertyAccessor.fromMethodReference(VersionnedToto::getA, VersionnedToto::setA), pk);
+				.add(identifierAccessor, pk);
+		PropertyAccessor<VersionnedToto, Long> versioningAttributeAccessor = PropertyAccessor.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion);
+		SimpleIdMapping<VersionnedToto, Integer> idMapping = new SimpleIdMapping<>(identifierAccessor, new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {}, c -> false), new SingleIdentifierAssembler<>(pk));
 		testInstance = new InsertExecutor<>(new DefaultEntityMapping<VersionnedToto, Integer, T>(
 				VersionnedToto.class,
 				totoTable,
 				(Map) mapping,
-				PropertyAccessor.fromMethodReference(VersionnedToto::getA, VersionnedToto::setA),
-				new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {}, c -> false)),
+				Collections.emptyMap(),
+				new Duo<>(versioningAttributeAccessor, versionColumn),
+				idMapping,
+				null,
+				false),
 				new ConnectionConfigurationSupport(connectionProvider, 3), dmlGenerator, new WriteOperationFactory(), 3);
 		
-		PropertyAccessor<VersionnedToto, Long> versioningAttributeAccessor = PropertyAccessor.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion);
 		testInstance.setVersioningStrategy(new VersioningStrategySupport<>(versioningAttributeAccessor, input -> ++input));
 		
 		VersionnedToto toto = new VersionnedToto(42, 17, 23);
@@ -249,31 +258,6 @@ class InsertExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 		}
 	}
 	
-	protected static class VersionnedToto extends Toto {
-		protected long version;
-		
-		public VersionnedToto(int a, int b, int c) {
-			super(a, b, c);
-		}
-		
-		public Integer getA() {
-			return a;
-		}
-		
-		public void setA(Integer a) {
-			this.a = a;
-		}
-		
-		public long getVersion() {
-			return version;
-		}
-		
-		public void setVersion(long version) {
-			this.version = version;
-		}
-		
-	}
-
 	public static class GeneratedKeysReaderAsInt extends GeneratedKeysReader<Integer> {
 		public GeneratedKeysReaderAsInt(String keyName) {
 			super(keyName, DefaultResultSetReaders.INTEGER_PRIMITIVE_READER);

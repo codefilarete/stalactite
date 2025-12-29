@@ -13,12 +13,12 @@ import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration.Linkage;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.InheritanceConfiguration;
+import org.codefilarete.stalactite.dsl.entity.OptimisticLockOption;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
-import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.tool.Duo;
@@ -81,8 +81,8 @@ public class InheritanceMappingStep<C, I> {
 	}
 	
 	/**
-	 * Visits parent {@link EntityMappingConfiguration} of current entity mapping configuration (including itself), this is an optional operation
-	 * because current configuration may not have a direct entity ancestor.
+	 * Visits parent {@link EntityMappingConfiguration} of given entity mapping configuration (including itself), this is an optional operation
+	 * because given configuration may not have a direct entity ancestor.
 	 * Then visits mapped super classes as {@link EmbeddableMappingConfiguration} of the last visited {@link EntityMappingConfiguration}, optional
 	 * operation too.
 	 * This is because inheritance can only have 2 paths:
@@ -113,6 +113,7 @@ public class InheritanceMappingStep<C, I> {
 		private final T targetTable;
 		private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mapping;
 		private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> readonlyMapping;
+		private final Duo<ReversibleAccessor<C, Object>, Column<T, Object>> versioningMapping;
 		private final ValueAccessPointSet<C> propertiesSetByConstructor = new ValueAccessPointSet<>();
 		private final boolean mappedSuperClass;
 		private final ValueAccessPointMap<C, Converter<Object, Object>> readConverters;
@@ -122,6 +123,7 @@ public class InheritanceMappingStep<C, I> {
 					   T targetTable,
 					   Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> mapping,
 					   Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> readonlyMapping,
+					   Duo<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> versioningMapping,
 					   ValueAccessPointMap<C, ? extends Converter<Object, Object>> readConverters,
 					   ValueAccessPointMap<C, ? extends Converter<Object, Object>> writeConverters,
 					   boolean mappedSuperClass) {
@@ -129,6 +131,7 @@ public class InheritanceMappingStep<C, I> {
 			this.targetTable = targetTable;
 			this.mapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mapping;
 			this.readonlyMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) readonlyMapping;
+			this.versioningMapping = (Duo<ReversibleAccessor<C, Object>, Column<T, Object>>) versioningMapping;
 			this.readConverters = (ValueAccessPointMap<C, Converter<Object, Object>>) readConverters;
 			this.writeConverters = (ValueAccessPointMap<C, Converter<Object, Object>>) writeConverters;
 			this.mappedSuperClass = mappedSuperClass;
@@ -162,6 +165,10 @@ public class InheritanceMappingStep<C, I> {
 			return readonlyMapping;
 		}
 		
+		public Duo<ReversibleAccessor<C, Object>, Column<T, Object>> getVersioningMapping() {
+			return versioningMapping;
+		}
+		
 		public ValueAccessPointMap<C, Converter<Object, Object>> getReadConverters() {
 			return readConverters;
 		}
@@ -184,11 +191,12 @@ public class InheritanceMappingStep<C, I> {
 				T table,
 				Map<ReversibleAccessor<C, Object>, Column<T, Object>> mapping,
 				Map<ReversibleAccessor<C, Object>, Column<T, Object>> readonlyMapping,
+				Duo<ReversibleAccessor<C, ?>, Column<T, ?>> versioningMapping,
 				ValueAccessPointMap<C, ? extends Converter<Object, Object>> readConverters,
 				ValueAccessPointMap<C, ? extends Converter<Object, Object>> writeConverters,
 				boolean mappedSuperClass) {
 			Mapping<C, T> newMapping = new Mapping<>(mappingConfiguration, table,
-					mapping, readonlyMapping,
+					mapping, readonlyMapping, versioningMapping,
 					readConverters,
 					writeConverters,
 					mappedSuperClass);
@@ -228,6 +236,8 @@ public class InheritanceMappingStep<C, I> {
 		
 		private Map<ReversibleAccessor<C, Object>, Column<T, Object>> currentReadonlyColumnMap;
 		
+		private Duo<ReversibleAccessor<C, ?>, Column<T, ?>> currentVersioningMapping;
+		
 		private final ValueAccessPointMap<C, Converter<Object, Object>> readConverters;
 		
 		private final ValueAccessPointMap<C, Converter<Object, Object>> writeConverters;
@@ -238,8 +248,8 @@ public class InheritanceMappingStep<C, I> {
 		
 		private boolean mappedSuperClass;
 		
-		private ColumnBinderRegistry columnBinderRegistry;
-		private ColumnNamingStrategy columnNamingStrategy;
+		private final ColumnBinderRegistry columnBinderRegistry;
+		private final ColumnNamingStrategy columnNamingStrategy;
 		private final IndexNamingStrategy indexNamingStrategy;
 		
 		InheritanceMappingCollector(MappingPerTable<C> result,
@@ -267,6 +277,15 @@ public class InheritanceMappingStep<C, I> {
 		}
 		
 		public void accept(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
+			// we collection the versioning strategy before calling accept(..) to fill currentVersioningMapping that will be passed to the result
+			OptimisticLockOption<C, ?> optimisticLockOption = entityMappingConfiguration.getOptimisticLockOption();
+			if (optimisticLockOption != null) {
+				AccessorDefinition versioningDefinition = AccessorDefinition.giveDefinition(optimisticLockOption.getVersionAccessor());
+				String versioningColumnName = this.columnNamingStrategy.giveName(versioningDefinition);
+				Column<T, ?> versioningColumn = currentTable.addColumn(versioningColumnName, versioningDefinition.getMemberType());
+				this.currentVersioningMapping = new Duo<>(optimisticLockOption.getVersionAccessor(), versioningColumn);
+			}
+			
 			accept(entityMappingConfiguration.getPropertiesMapping());
 		}
 		
@@ -296,14 +315,14 @@ public class InheritanceMappingStep<C, I> {
 			if (currentMapping == null) {
 				currentMapping = result.add(preventNull(currentKey, embeddableMappingConfiguration), currentTable,
 						// Note that we clone maps because ours are reused while iterating
-						currentColumnMap, currentReadonlyColumnMap,
+						currentColumnMap, currentReadonlyColumnMap, currentVersioningMapping,
 						new ValueAccessPointMap<>(readConverters),
 						new ValueAccessPointMap<>(writeConverters),
 						mappedSuperClass);
 			} else {
 				currentMapping = result.add(embeddableMappingConfiguration, currentTable,
 						// Note that we clone maps because ours are reused while iterating
-						currentColumnMap, currentReadonlyColumnMap,
+						currentColumnMap, currentReadonlyColumnMap, currentVersioningMapping,
 						new ValueAccessPointMap<>(readConverters),
 						new ValueAccessPointMap<>(writeConverters),
 						mappedSuperClass);

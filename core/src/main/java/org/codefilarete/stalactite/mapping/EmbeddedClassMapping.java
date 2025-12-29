@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.mapping;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,6 +27,8 @@ import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.Predicates;
+
+import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * Persistence strategy for "embedded" bean (no identifier nor relation managed here) : straight mapping betwen some properties
@@ -83,14 +86,14 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	 * @param propertyToColumn a mapping between Field and Column, expected to be coherent (fields of same class, column of same table)
 	 */
 	public EmbeddedClassMapping(Class<C> classToPersist, T targetTable, Map<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> propertyToColumn) {
-		this(classToPersist, targetTable, propertyToColumn, new HashMap<>(), row -> Reflections.newInstance(classToPersist));
+		this(classToPersist, targetTable, propertyToColumn, new HashMap<>(), null);
 	}
 	
 	public EmbeddedClassMapping(Class<C> classToPersist,
 								T targetTable,
 								Map<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> propertiesMapping,
 								Map<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> readonlyPropertiesMapping,
-								Function<ColumnedRow, C> beanFactory) {
+								@Nullable Function<ColumnedRow, C> beanFactory) {
 		this.classToPersist = classToPersist;
 		this.targetTable = targetTable;
 		this.propertyToColumn = new KeepOrderMap<>(propertiesMapping);
@@ -99,7 +102,7 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 		this.readonlyPropertyToColumn = new KeepOrderMap<>(readonlyPropertiesMapping);
 		Map<Column<T, ?>, Mutator> columnToField = Iterables.map(propertiesMapping.entrySet(), Entry::getValue, e -> e.getKey().toMutator(), KeepOrderMap::new);
 		readonlyPropertiesMapping.forEach((accessor, column) -> columnToField.put(column, accessor.toMutator()));
-		this.rowTransformer = new EmbeddedBeanRowTransformer(beanFactory, (Map) columnToField);
+		this.rowTransformer = new EmbeddedBeanRowTransformer(nullable(beanFactory).getOr(() -> row -> Reflections.newInstance(classToPersist)), (Map) columnToField);
 		this.columns = (Set<Column<T, Object>>) (Set) new KeepOrderSet<>(rowTransformer.getColumnToMember().keySet());
 		
 		// computing insertable columns

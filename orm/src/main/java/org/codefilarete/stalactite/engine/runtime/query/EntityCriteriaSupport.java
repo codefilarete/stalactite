@@ -197,11 +197,12 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	/**
 	 * Maps a {@link List} of {@link ValueAccessPoint} to a {@link Selectable} column.
 	 * Can be though as a duplicate of {@link org.codefilarete.reflection.ValueAccessPointMap}, but the goal is not the same: whereas
-	 * ValueAccessPointMap is used to map a single {@link ValueAccessPoint}, this class is intended to map a {@link List} of {@link ValueAccessPoint},
-	 * meaning that it may handle a {@link List} of {@link org.codefilarete.reflection.Mutator} or {@link Accessor}, or a mix of both, to fulfill the
-	 * external usage of declaring the query criteria according to accessor or mutator.
+	 * {@link org.codefilarete.reflection.ValueAccessPointMap} is used to map a single {@link ValueAccessPoint}, this class is intended to map
+	 * a {@link List} of {@link ValueAccessPoint}, meaning that it may handle a {@link List} of {@link org.codefilarete.reflection.Mutator} or
+	 * {@link Accessor}, or a mix of both, to fulfill the external usage of declaring the query criteria according to accessor or mutator.
 	 * 
-	 * The implementation is a {@link HashedMap} that uses the {@link AccessorDefinition} of each {@link ValueAccessPoint} to compute the hashCode and equality.
+	 * The implementation is a {@link HashedMap} that uses the {@link AccessorDefinition} of each {@link ValueAccessPoint} to compute the hashCode
+	 * and equality.
 	 */
 	@VisibleForTesting
 	static class AccessorToColumnMap extends HashedMap<List<? extends ValueAccessPoint<?>>, JoinLink<?, ?>> {

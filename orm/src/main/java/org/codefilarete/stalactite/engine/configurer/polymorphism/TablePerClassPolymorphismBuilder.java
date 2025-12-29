@@ -154,11 +154,6 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 		subEntityReadonlyPropertiesMapping.putAll((Map) projectedMainReadonlyMapping);
 		subEntityPropertiesReadConverters.putAll((Map) mainReadConverters);
 		subEntityPropertiesWriteConverters.putAll((Map) mainWriteConverters);
-		Mapping<D, SUBTABLE> subEntityMapping = new Mapping<>(subConfiguration, subTable,
-				subEntityPropertiesMapping, subEntityReadonlyPropertiesMapping,
-				subEntityPropertiesReadConverters,
-				subEntityPropertiesWriteConverters,
-				false);
 		DefaultEntityMapping<D, I, SUBTABLE> entityMapping = MainPersisterStep.createEntityMapping(
 				true,    // given Identification (which is parent one) contains identifier policy
 				subTable,

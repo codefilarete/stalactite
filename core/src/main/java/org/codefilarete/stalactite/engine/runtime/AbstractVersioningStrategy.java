@@ -4,48 +4,47 @@ import org.codefilarete.stalactite.engine.VersioningStrategy;
 import org.codefilarete.tool.function.Serie;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.PropertyAccessor;
 
 /**
  * A template for implementing a {@link VersioningStrategy} that let user defines type of the versioning attribute and its sequence.
  * See {@link VersioningStrategySupport} for a complete implementation.
  *
- * @param <I> versionned bean type
- * @param <C> versioning attribute type
+ * @param <C> versioned entity type
+ * @param <V> versioning attribute type
  * @author Guillaume Mary
  */
-public abstract class AbstractVersioningStrategy<I, C> implements VersioningStrategy<I, C>, Serie<C> {
+public abstract class AbstractVersioningStrategy<C, V> implements VersioningStrategy<C, V>, Serie<V> {
 	
-	private final ReversibleAccessor<I, C> versionAccessor;
-	/** {@link Mutator} took from {@link #versionAccessor} to prevent to ask for it at every upgrade because the toMutator() may be costy */
-	private final Mutator<I, C> versionMutator;
+	private final ReversibleAccessor<C, V> versionAccessor;
+	/** {@link Mutator} took from {@link #versionAccessor} to prevent to ask for it at every upgrade because the toMutator() may be costly */
+	private final Mutator<C, V> versionMutator;
 	
-	public AbstractVersioningStrategy(ReversibleAccessor<I, C> versioningAttributeAccessor) {
+	public AbstractVersioningStrategy(ReversibleAccessor<C, V> versioningAttributeAccessor) {
 		this.versionAccessor = versioningAttributeAccessor;
 		this.versionMutator = versionAccessor.toMutator();
 	}
 	
 	@Override
-	public ReversibleAccessor<I, C> getVersionAccessor() {
+	public ReversibleAccessor<C, V> getVersionAccessor() {
 		return versionAccessor;
 	}
 	
 	@Override
-	public C getVersion(I o) {
+	public V getVersion(C o) {
 		return versionAccessor.get(o);
 	}
 	
 	@Override
-	public C upgrade(I o) {
-		C currentVersion = getVersion(o);
-		C nextVersion = next(currentVersion);
+	public V upgrade(C o) {
+		V currentVersion = getVersion(o);
+		V nextVersion = next(currentVersion);
 		versionMutator.set(o, nextVersion);
 		return currentVersion;
 	}
 	
 	@Override
-	public C revert(I o, C previousValue) {
-		C currentVersion = getVersion(o);
+	public V revert(C o, V previousValue) {
+		V currentVersion = getVersion(o);
 		versionMutator.set(o, previousValue);
 		return currentVersion;
 	}
@@ -53,20 +52,20 @@ public abstract class AbstractVersioningStrategy<I, C> implements VersioningStra
 	/**
 	 * {@link VersioningStrategy} for simple cases
 	 * 
-	 * @param <I> versionned bean type
-	 * @param <C> versioning attribute type
+	 * @param <E> versioned entity type
+	 * @param <V> versioning attribute type
 	 */
-	public static class VersioningStrategySupport<I, C> extends AbstractVersioningStrategy<I, C> {
+	public static class VersioningStrategySupport<E, V> extends AbstractVersioningStrategy<E, V> {
 		
-		private final Serie<C> sequence;
+		private final Serie<V> sequence;
 		
-		public VersioningStrategySupport(PropertyAccessor<I, C> versioningAttributeAccessor, Serie<C> sequence) {
+		public VersioningStrategySupport(ReversibleAccessor<E, V> versioningAttributeAccessor, Serie<V> sequence) {
 			super(versioningAttributeAccessor);
 			this.sequence = sequence;
 		}
 		
 		@Override
-		public C next(C previousVersion) {
+		public V next(V previousVersion) {
 			return sequence.next(previousVersion);
 		}
 	}

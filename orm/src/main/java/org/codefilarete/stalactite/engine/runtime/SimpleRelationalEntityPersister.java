@@ -14,6 +14,7 @@ import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.PersistExecutor;
+import org.codefilarete.stalactite.engine.VersioningStrategy;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecordMapping.KeyValueRecordIdMapping;
 import org.codefilarete.stalactite.engine.configurer.map.RecordId;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
@@ -97,6 +98,24 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 		this.criteriaSupport = new EntityCriteriaSupport<>(entityJoinTree);
 		// we redirect all invocations to ourselves because targeted methods invoke their listeners
 		this.persistExecutor = new DefaultPersistExecutor<>(this);
+	}
+	
+	public SimpleRelationalEntityPersister(DefaultEntityMapping<C, I, T> mainMappingStrategy,
+										   @Nullable VersioningStrategy<C, ?> versioningStrategy,
+										   Dialect dialect,
+										   ConnectionConfiguration connectionConfiguration) {
+		this.persister = new BeanPersister<>(mainMappingStrategy, dialect, connectionConfiguration);
+		this.entityJoinTree = new EntityJoinTree<>(new EntityMappingAdapter<>(persister.getMapping()), persister.getMapping().getTargetTable());
+		this.dialect = dialect;
+		this.entityFinder = new RelationalEntityFinder<>(entityJoinTree, this, persister.getConnectionProvider(), dialect);
+		this.criteriaSupport = new EntityCriteriaSupport<>(entityJoinTree);
+		// we redirect all invocations to ourselves because targeted methods invoke their listeners
+		this.persistExecutor = new DefaultPersistExecutor<>(this);
+		
+		if (versioningStrategy != null) {
+			getUpdateExecutor().setVersioningStrategy(versioningStrategy);
+			getInsertExecutor().setVersioningStrategy(versioningStrategy);
+		}
 	}
 	
 	@Override

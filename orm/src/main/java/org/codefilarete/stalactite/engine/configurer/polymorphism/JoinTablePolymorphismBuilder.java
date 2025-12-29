@@ -103,11 +103,6 @@ public class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends Abst
 		ValueAccessPointMap<D, Converter<Object, Object>> subEntityPropertiesWriteConverters = embeddableMapping.getWriteConverters();
 		addPrimarykey(subTable);
 		addForeignKey(subTable);
-		Mapping<D, SUBT> subEntityMapping = new Mapping<>(subConfiguration, subTable,
-				subEntityPropertiesMapping, subEntityReadonlyPropertiesMapping,
-				subEntityPropertiesConverters,
-				subEntityPropertiesWriteConverters,
-				false);
 		DefaultEntityMapping<D, I, SUBT> entityMapping = MainPersisterStep.createEntityMapping(
 				false,
 				subTable,

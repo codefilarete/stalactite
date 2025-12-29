@@ -65,6 +65,12 @@ class EntityDecoratedEmbeddableConfigurationSupport<C, I> extends FluentEmbeddab
 		return newLinkage;
 	}
 	
+	<E> LinkageSupport<C, E> addMapping(String fieldName) {
+		LinkageSupport<C, E> newLinkage = new LinkageSupport<>(getEntityType(), fieldName);
+		mapping.add(newLinkage);
+		return newLinkage;
+	}
+	
 	public <O> FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions<C, I, O> wrapWithAdditionalPropertyOptions(LinkageSupport<C, O> newMapping) {
 		return new MethodDispatcher()
 				.redirect(ColumnOptions.class, new ColumnOptions<O>() {

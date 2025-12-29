@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine.configurer.entity;
 
+import javax.annotation.Nullable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -11,6 +12,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.AccessorByField;
 import org.codefilarete.reflection.AccessorByMethod;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.Accessors;
@@ -36,6 +38,7 @@ import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderManyToOneOptio
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyMappedByOptions;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyOptions;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToOneOptions;
+import org.codefilarete.stalactite.dsl.entity.OptimisticLockOption;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.key.FluentEntityMappingBuilderCompositeKeyOptions;
@@ -60,7 +63,6 @@ import org.codefilarete.stalactite.dsl.relation.OneToManyEntityOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToOneEntityOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToOneOptions;
 import org.codefilarete.stalactite.engine.PersistenceContext;
-import org.codefilarete.stalactite.engine.VersioningStrategy;
 import org.codefilarete.stalactite.engine.configurer.builder.DefaultPersisterBuilder;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.embeddable.LinkageSupport;
@@ -73,7 +75,6 @@ import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.tool.function.Hanger.Holder;
@@ -131,7 +132,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	private MapEntryTableNamingStrategy mapEntryTableNamingStrategy = MapEntryTableNamingStrategy.DEFAULT;
 	
-	private OptimisticLockOption optimisticLockOption;
+	@Nullable
+	private OptimisticLockOption<C, ?> optimisticLockOption;
 	
 	private InheritanceConfigurationSupport<? super C, I> inheritanceConfiguration;
 	
@@ -214,9 +216,10 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		return propertiesMappingConfigurationDelegate;
 	}
 	
+	@Nullable
 	@Override
-	public VersioningStrategy getOptimisticLockOption() {
-		return Nullable.nullable(this.optimisticLockOption).map(OptimisticLockOption::getVersioningStrategy).get();
+	public OptimisticLockOption<C, ?> getOptimisticLockOption() {
+		return this.optimisticLockOption;
 	}
 	
 	@Override
@@ -356,15 +359,27 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
+	public <O> FluentMappingBuilderPropertyOptions<C, I, O> map(SerializableFunction<C, O> getter) {
+		LinkageSupport<C, O> mapping = propertiesMappingConfigurationDelegate.addMapping(getter);
+		return this.propertiesMappingConfigurationDelegate.wrapWithAdditionalPropertyOptions(mapping);
+	}
+	
+	@Override
 	public <O> FluentMappingBuilderPropertyOptions<C, I, O> map(SerializableBiConsumer<C, O> setter) {
 		LinkageSupport<C, O> mapping = propertiesMappingConfigurationDelegate.addMapping(setter);
 		return this.propertiesMappingConfigurationDelegate.wrapWithAdditionalPropertyOptions(mapping);
 	}
 	
 	@Override
-	public <O> FluentMappingBuilderPropertyOptions<C, I, O> map(SerializableFunction<C, O> getter) {
-		LinkageSupport<C, O> mapping = propertiesMappingConfigurationDelegate.addMapping(getter);
+	public <O> FluentMappingBuilderPropertyOptions<C, I, O> map(String fieldName) {
+		LinkageSupport<C, O> mapping = propertiesMappingConfigurationDelegate.addMapping(fieldName);
 		return this.propertiesMappingConfigurationDelegate.wrapWithAdditionalPropertyOptions(mapping);
+	}
+	
+	@Override
+	public <E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I, E> mapEnum(SerializableFunction<C, E> getter) {
+		LinkageSupport<C, E> linkage = propertiesMappingConfigurationDelegate.addMapping(getter);
+		return wrapEnumOptions(propertiesMappingConfigurationDelegate.wrapWithEnumOptions(linkage));
 	}
 	
 	@Override
@@ -374,8 +389,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I, E> mapEnum(SerializableFunction<C, E> getter) {
-		LinkageSupport<C, E> linkage = propertiesMappingConfigurationDelegate.addMapping(getter);
+	public <E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I, E> mapEnum(String fieldName) {
+		LinkageSupport<C, E> linkage = propertiesMappingConfigurationDelegate.addMapping(fieldName);
 		return wrapEnumOptions(propertiesMappingConfigurationDelegate.wrapWithEnumOptions(linkage));
 	}
 	
@@ -1198,29 +1213,48 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	 */
 	@Override
 	public <V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter) {
-		AccessorByMethodReference methodReference = Accessors.accessorByMethodReference(getter);
+		AccessorByMethodReference<C, V> methodReference = Accessors.accessorByMethodReference(getter);
+		return versionedBy(methodReference, findSerie(methodReference.getPropertyType()));
+	}
+	
+	private <V> Serie<V> findSerie(Class<V> propertyType) {
 		Serie<V> serie;
-		if (Integer.class.isAssignableFrom(methodReference.getPropertyType())) {
+		if (Integer.class.isAssignableFrom(propertyType) || int.class.isAssignableFrom(propertyType)) {
 			serie = (Serie<V>) Serie.INTEGER_SERIE;
-		} else if (Long.class.isAssignableFrom(methodReference.getPropertyType())) {
+		} else if (Long.class.isAssignableFrom(propertyType) || long.class.isAssignableFrom(propertyType)) {
 			serie = (Serie<V>) Serie.LONG_SERIE;
-		} else if (Date.class.isAssignableFrom(methodReference.getPropertyType())) {
+		} else if (Date.class.isAssignableFrom(propertyType)) {
 			serie = (Serie<V>) Serie.NOW_SERIE;
 		} else {
 			throw new NotImplementedException("Type of versioned property is not implemented, please provide a "
-					+ Serie.class.getSimpleName() + " for it : " + Reflections.toString(methodReference.getPropertyType()));
+					+ Serie.class.getSimpleName() + " for it : " + Reflections.toString(propertyType));
 		}
-		return versionedBy(getter, methodReference, serie);
+		return serie;
 	}
 	
 	@Override
 	public <V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Serie<V> serie) {
-		return versionedBy(getter, new AccessorByMethodReference<>(getter), serie);
+		return versionedBy(new AccessorByMethodReference<>(getter), serie);
 	}
 	
-	private <V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, AccessorByMethodReference methodReference, Serie<V> serie) {
+	private <V> FluentEntityMappingBuilder<C, I> versionedBy(AccessorByMethodReference<C, V> methodReference, Serie<V> serie) {
 		optimisticLockOption = new OptimisticLockOption<>(methodReference, serie);
-		map(getter);
+		return this;
+	}
+	
+	@Override
+	public <V> FluentEntityMappingBuilder<C, I> versionedBy(String fieldName) {
+		AccessorByField<C, V> accessor = Accessors.accessorByField(getEntityType(), fieldName);
+		return versionedBy(fieldName, accessor, findSerie(accessor.getPropertyType()));
+	}
+	
+	@Override
+	public <V> FluentEntityMappingBuilder<C, I> versionedBy(String fieldName, Serie<V> serie) {
+		return versionedBy(fieldName, Accessors.accessorByField(getEntityType(), fieldName), serie);
+	}
+	
+	private <V> FluentEntityMappingBuilder<C, I> versionedBy(String fieldName, AccessorByField<C, V> methodReference, Serie<V> serie) {
+		optimisticLockOption = new OptimisticLockOption<>(new PropertyAccessor<>(methodReference), serie);
 		return this;
 	}
 	

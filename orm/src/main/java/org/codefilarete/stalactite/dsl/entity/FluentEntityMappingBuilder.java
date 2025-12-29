@@ -150,13 +150,65 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 																		Consumer<C> markAsPersistedFunction,
 																		Function<C, Boolean> isPersistedFunction);
 	
-	<O> FluentMappingBuilderPropertyOptions<C, I, O> map(SerializableBiConsumer<C, O> setter);
-	
+	/**
+	 * Declares the attribute behind given accessor reference as persistent.
+	 *
+	 * @param getter the accessor that gets the property
+	 * @return an object for configuration chaining
+	 * @param <O> the attribute type
+	 */
 	<O> FluentMappingBuilderPropertyOptions<C, I, O> map(SerializableFunction<C, O> getter);
 	
+	/**
+	 * Declares the attribute behind given mutator reference as persistent.
+	 *
+	 * @param setter the mutator that sets the property
+	 * @return an object for configuration chaining
+	 * @param <O> the attribute type
+	 */
+	<O> FluentMappingBuilderPropertyOptions<C, I, O> map(SerializableBiConsumer<C, O> setter);
+	
+	/**
+	 * Declares the attribute behind given field name as persistent.
+	 *
+	 * @param fieldName the field name that owns the attribute value
+	 * @return an object for configuration chaining
+	 * @param <O> the attribute type
+	 */
+	<O> FluentMappingBuilderPropertyOptions<C, I, O> map(String fieldName);
+	
+	/**
+	 * Declares the enum-typed attribute behind given accessor reference as persistent.
+	 * Can be done with default {@link #map(SerializableFunction)} method, but this signature ensures the type to be an enum and the returned object
+	 * provides some specific configuration dedicated to enum attribute.
+	 *
+	 * @param getter the accessor that gets the property
+	 * @return an object for configuration chaining
+	 * @param <E> the enum type
+	 */
+	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I, E> mapEnum(SerializableFunction<C, E> getter);
+	
+	/**
+	 * Declares the enum-typed attribute behind given mutator reference as persistent.
+	 * Can be done with default {@link #map(SerializableBiConsumer)} method, but this signature ensures the type to be an enum and the returned object
+	 * provides some specific configuration dedicated to enum attribute.
+	 *
+	 * @param setter the mutator that gets the property
+	 * @return an object for configuration chaining
+	 * @param <E> the enum type
+	 */
 	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I, E> mapEnum(SerializableBiConsumer<C, E> setter);
 	
-	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I, E> mapEnum(SerializableFunction<C, E> getter);
+	/**
+	 * Declares the enum-typed attribute behind given mutator reference as persistent.
+	 * Can be done with default {@link #map(String)} method, but this signature ensures the type to be an enum and the returned object
+	 * provides some specific configuration dedicated to enum attribute.
+	 *
+	 * @param fieldName the field name that owns the attribute value
+	 * @return an object for configuration chaining
+	 * @param <E> the enum type
+	 */
+	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I, E> mapEnum(String fieldName);
 	
 	<K, V, M extends Map<K, V>> FluentMappingBuilderMapOptions<C, I, K, V, M> mapMap(SerializableFunction<C, M> getter, Class<K> keyType, Class<V> valueType);
 	
@@ -388,6 +440,10 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	<V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter);
 	
 	<V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Serie<V> sequence);
+	
+	<V> FluentEntityMappingBuilder<C, I> versionedBy(String fieldName);
+	
+	<V> FluentEntityMappingBuilder<C, I> versionedBy(String fieldName, Serie<V> sequence);
 	
 	FluentEntityMappingBuilder<C, I> onTable(String tableName);
 	

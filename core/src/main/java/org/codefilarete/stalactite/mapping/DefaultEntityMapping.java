@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.mapping;
 
+import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collection;
@@ -27,6 +28,7 @@ import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
+import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -73,7 +75,8 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	
 	private final IdMapping<C, I> idMapping;
 	
-	private final Map<ReversibleAccessor<C, ?>, Column<T, ?>> versioningMapping = new KeepOrderMap<>();
+	@Nullable
+	private final Duo<ReversibleAccessor<C, ?>, Column<T, ?>> versioningMapping;
 	
 	private final boolean identifierSetByBeanFactory;
 	
@@ -112,6 +115,7 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 		}
 		this.idMapping = new SimpleIdMapping<>(identifierProperty, identifierInsertionManager, new SingleIdentifierAssembler<>(identifierColumn));
 		this.identifierSetByBeanFactory = false;
+		this.versioningMapping = null;
 		fillInsertableColumns();
 		fillUpdatableColumns();
 		fillSelectableColumns();
@@ -132,7 +136,7 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 								T targetTable,
 								Map<? extends ReversibleAccessor<C, ?>, Column<T, ?>> propertyToColumn,
 								IdMapping<C, I> idMapping) {
-		this(new EmbeddedClassMapping<>(classToPersist, targetTable, propertyToColumn), idMapping, false);
+		this(classToPersist, targetTable, propertyToColumn, Collections.emptyMap(), null, idMapping, null, false);
 	}
 	
 	/**
@@ -148,24 +152,28 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	 */
 	public DefaultEntityMapping(Class<C> classToPersist,
 								T targetTable,
-								Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> propertyToColumn,
-								Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> readonlyColumns,
+								Map<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> propertyToColumn,
+								Map<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> readonlyColumns,
+								@Nullable Duo<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> versioningMapping,
 								IdMapping<C, I> idMapping,
-								Function<ColumnedRow, C> entityFactory,
+								@Nullable Function<ColumnedRow, C> entityFactory,
 								boolean identifierSetByBeanFactory) {
-		this(new EmbeddedClassMapping<>(classToPersist, targetTable, propertyToColumn, readonlyColumns, entityFactory), idMapping, identifierSetByBeanFactory);
-	}
-	
-	private DefaultEntityMapping(EmbeddedClassMapping<C, T> mainMapping, IdMapping<C, I> idMapping, boolean identifierSetByBeanFactory) {
 		if (idMapping.getIdAccessor() == null) {
-			throw new UnsupportedOperationException("No identifier property defined for " + Reflections.toString(mainMapping.getClassToPersist()));
+			throw new UnsupportedOperationException("No identifier property defined for " + Reflections.toString(classToPersist));
 		}
-		if (mainMapping.getTargetTable().getPrimaryKey() == null) {
-			throw new UnsupportedOperationException("No primary key column defined for " + mainMapping.getTargetTable().getAbsoluteName());
+		if (targetTable.getPrimaryKey() == null) {
+			throw new UnsupportedOperationException("No primary key column defined for " + targetTable.getAbsoluteName());
 		}
-		this.mainMapping = mainMapping;
+		
+		// adding versioning columns to properties for reading
+		Map<ReversibleAccessor<C, ?>, Column<T, ?>> readonlyPropertiesMapping = new KeepOrderMap<>(readonlyColumns);
+		if (versioningMapping != null) {
+			readonlyPropertiesMapping.put(versioningMapping.getLeft(), versioningMapping.getRight());
+		}
+		this.mainMapping = new EmbeddedClassMapping<>(classToPersist, targetTable, propertyToColumn, readonlyPropertiesMapping, entityFactory);
 		this.idMapping = idMapping;
 		this.identifierSetByBeanFactory = identifierSetByBeanFactory;
+		this.versioningMapping = (Duo<ReversibleAccessor<C, ?>, Column<T, ?>>) versioningMapping;
 		fillInsertableColumns();
 		fillUpdatableColumns();
 		fillSelectableColumns();
@@ -228,6 +236,12 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	}
 	
 	@Override
+	@Nullable
+	public Duo<ReversibleAccessor<C, ?>, Column<T, ?>> getVersioningMapping() {
+		return versioningMapping;
+	}
+	
+	@Override
 	public ValueAccessPointMap<C, Converter<Object, Object>> getReadConverters() {
 		return mainMapping.getReadConverters();
 	}
@@ -280,10 +294,6 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	public void addShadowColumns(DefaultEntityMapping<C, I, T> entityMapping) {
 		entityMapping.mainMapping.getShadowColumnsForInsert().forEach(this::addShadowColumnInsert);
 		entityMapping.mainMapping.getShadowColumnsForUpdate().forEach(this::addShadowColumnUpdate);
-	}
-	
-	public void addVersionedColumn(ReversibleAccessor propertyAccessor, Column<T, Object> column) {
-		this.versioningMapping.put(propertyAccessor, column);
 	}
 	
 	@Override
@@ -395,9 +405,11 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 		addInsertableColumns(mainMapping);
 		insertableColumns.addAll(getIdMapping().<T>getIdentifierAssembler().getColumns());
 		embeddedMappings.values().forEach(this::addInsertableColumns);
-		insertableColumns.addAll(versioningMapping.values());
+		if (versioningMapping != null) {
+			insertableColumns.add(versioningMapping.getRight());
+		}
 		// NB : generated keys are never inserted but left because DMLGenerator needs its presence to detect it
-		// and also it prevents to generate not empty statement when they are Alone in the Dark ;) 
+		// and also it prevents to generate empty statement when they are Alone in the Dark ;)
 	}
 	
 	private void addInsertableColumns(EmbeddedBeanMapping<?, T> embeddedBeanMapping) {
@@ -411,7 +423,9 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 		updatableColumns.clear();
 		addUpdatableColumns(mainMapping);
 		embeddedMappings.values().forEach(this::addUpdatableColumns);
-		updatableColumns.addAll(versioningMapping.values());
+		if (versioningMapping != null) {
+			updatableColumns.add(versioningMapping.getRight());
+		}
 		// keys are never updated
 		updatableColumns.removeAll(getTargetTable().getPrimaryKey().getColumns());
 		updatableColumns.removeIf(Column::isAutoGenerated);
@@ -425,7 +439,9 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 		selectableColumns.clear();
 		addSelectableColumns(mainMapping);
 		selectableColumns.addAll(getIdMapping().<T>getIdentifierAssembler().getColumns());
-		selectableColumns.addAll(versioningMapping.values());
+		if (versioningMapping != null) {
+			selectableColumns.add(versioningMapping.getRight());
+		}
 		embeddedMappings.values().forEach(this::addSelectableColumns);
 	}
 	
@@ -437,21 +453,18 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	public Map<Column<T, ?>, ?> getVersionedKeyValues(C c) {
 		Map<Column<T, ?>, Object> toReturn = new HashMap<>();
 		toReturn.putAll(getIdMapping().<T>getIdentifierAssembler().getColumnValues(getId(c)));
-		toReturn.putAll(getVersionedColumnsValues(c));
-		return toReturn;
-	}
-	
-	private Map<Column<T, ?>, ?> getVersionedColumnsValues(C c) {
-		Map<Column<T, ?>, Object> toReturn = new HashMap<>();
-		for (Entry<ReversibleAccessor<C, ?>, Column<T, ?>> columnEntry : versioningMapping.entrySet()) {
-			toReturn.put(columnEntry.getValue(), columnEntry.getKey().get(c));
+		if (versioningMapping != null) {
+			toReturn.put(versioningMapping.getRight(), versioningMapping.getLeft().get(c));
 		}
 		return toReturn;
 	}
 	
 	@Override
 	public Iterable<Column<T, ?>> getVersionedKeys() {
-		Set<Column<T, ?>> columns = new HashSet<>(versioningMapping.values());
+		Set<Column<T, ?>> columns = new HashSet<>();
+		if (versioningMapping != null) {
+			columns.add(versioningMapping.getRight());
+		}
 		columns.addAll(getTargetTable().getPrimaryKey().getColumns());
 		return Collections.unmodifiableSet(columns);
 	}

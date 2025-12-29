@@ -26,6 +26,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.MutatorByField;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
@@ -574,6 +576,20 @@ class FluentEntityMappingConfigurationSupportTest {
 			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was called").isFalse();
 			assertThat(loadedInstance.getName()).isEqualTo("Hello by constructor");
 		}
+	}
+	
+	@Test
+	void map_fieldName_targetedPropertyNameIsTaken() {
+		ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+				.map("fieldWithoutAccessor")
+				.build(persistenceContext);
+		
+		// column should be correctly created
+		assertThat(persister.getMapping().getTargetTable().getName()).isEqualTo("Toto");
+		Column columnForProperty = persister.getMapping().getTargetTable().mapColumnsOnName().get("fieldWithoutAccessor");
+		assertThat(columnForProperty).isNotNull();
+		assertThat(columnForProperty.getJavaType()).isEqualTo(String.class);
 	}
 	
 	@Test
@@ -1809,6 +1825,32 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
+		void fieldName() {
+			ConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = (ConfiguredPersister<PersonWithGender, Identifier<Long>>) MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapEnum("fieldWithoutAccessor")
+					.build(persistenceContext);
+			
+			Column gender = (Column) personPersister.getMapping().getTargetTable().mapColumnsOnName().get("fieldWithoutAccessor");
+			dialect.getSqlTypeRegistry().put(gender, "VARCHAR(255)");
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			PersonWithGender person = new PersonWithGender(new PersistableIdentifier<>(1L));
+			person.setName("toto");
+			Accessors.mutatorByField(PersonWithGender.class, "fieldWithoutAccessor").set(person, Gender.FEMALE);
+			personPersister.insert(person);
+			
+			// checking that name was used
+			ExecutableQuery<Integer> integerExecutableQuery = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
+					.mapKey(Integer::new, "fieldWithoutAccessor", Integer.class);
+			Set<Integer> result = integerExecutableQuery.execute(Accumulators.toSet());
+			assertThat(result).containsExactly(1);
+		}
+		
+		@Test
 		void mandatory_onMissingValue_throwsException() {
 			ConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = (ConfiguredPersister<PersonWithGender, Identifier<Long>>) MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -1846,7 +1888,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		void mappedByOrdinal() {
+		void byOrdinal() {
 			ConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = (ConfiguredPersister<PersonWithGender, Identifier<Long>>) MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
@@ -1873,15 +1915,12 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		
 		@Test
-		void mappedByName() {
+		void byName() {
 			ConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = (ConfiguredPersister<PersonWithGender, Identifier<Long>>) MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapEnum(PersonWithGender::getGender).byName()
 					.build(persistenceContext);
-			
-//			Column gender = (Column) personPersister.getMapping().getTargetTable().mapColumnsOnName().get("gender");
-//			dialect.getSqlTypeRegistry().put(gender, "INT");
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -1899,7 +1938,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		void columnMappedByOrdinal() {
+		void column_byOrdinal() {
 			Table personTable = new Table<>("PersonWithGender");
 			Column<Table, Gender> genderColumn = personTable.addColumn("gender", Gender.class);
 			
@@ -2196,6 +2235,8 @@ class FluentEntityMappingConfigurationSupportTest {
 		private boolean setIdWasCalled;
 		private boolean constructorWithIdWasCalled;
 		private boolean constructorWith2ArgsWasCalled;
+		
+		private String fieldWithoutAccessor;
 		
 		public Toto() {
 			super();

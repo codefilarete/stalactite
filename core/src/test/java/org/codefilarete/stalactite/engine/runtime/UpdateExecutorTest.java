@@ -1,20 +1,29 @@
 package org.codefilarete.stalactite.engine.runtime;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import org.codefilarete.reflection.AccessorByField;
 import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.StaleStateObjectException;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener.UpdatePayload;
+import org.codefilarete.stalactite.engine.runtime.AbstractVersioningStrategy.VersioningStrategySupport;
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
+import org.codefilarete.stalactite.mapping.SimpleIdMapping;
+import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
 import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -288,5 +297,59 @@ class UpdateExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 		private SimpleEntity() {
 		}
 		
+	}
+	
+	@Test
+	void update_withVersioningStrategy() throws SQLException {
+		UpdateExecutor<VersionnedToto, Integer, ?> testInstance;
+		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter(), DMLNameProvider::new);
+		
+		PreparedStatement preparedStatement = mock(PreparedStatement.class);
+		when(preparedStatement.executeLargeBatch()).thenReturn(new long[] { 1 });
+		Connection connection = mock(Connection.class);
+		when(connection.prepareStatement(anyString())).thenReturn(preparedStatement);
+		when(connection.prepareStatement(anyString(), anyInt())).thenReturn(preparedStatement);
+		
+		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class);
+		when(connectionProviderMock.giveConnection()).thenReturn(connection);
+		
+		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(connectionProviderMock);
+		
+		T totoTable = (T) new Table("toto");
+		Column<T, Integer> pk = totoTable.addColumn("id", Integer.class).primaryKey();
+		Column<T, Integer> modifiedColumn = totoTable.addColumn("c", Integer.class);
+		Column<T, Long> versionColumn = totoTable.addColumn("version", Long.class);
+		PropertyAccessor<VersionnedToto, Integer> identifierAccessor = PropertyAccessor.fromMethodReference(VersionnedToto::getA, VersionnedToto::setA);
+		Map<ReversibleAccessor, Column> mapping = Maps.forHashMap((Class<ReversibleAccessor>) null, (Class<Column>) null)
+				.add(PropertyAccessor.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion), versionColumn)
+				.add(Accessors.accessorByField(VersionnedToto.class, "c"), modifiedColumn)
+				.add(identifierAccessor, pk);
+		PropertyAccessor<VersionnedToto, Long> versioningAttributeAccessor = PropertyAccessor.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion);
+		SimpleIdMapping<VersionnedToto, Integer> idMapping = new SimpleIdMapping<>(identifierAccessor, new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {}, c -> false), new SingleIdentifierAssembler<>(pk));
+		testInstance = new UpdateExecutor<>(new DefaultEntityMapping<VersionnedToto, Integer, T>(
+				VersionnedToto.class,
+				totoTable,
+				(Map) mapping,
+				Collections.emptyMap(),
+				new Duo<>(versioningAttributeAccessor, versionColumn),
+				idMapping,
+				null,
+				false),
+				new ConnectionConfigurationSupport(connectionProvider, 3), dmlGenerator, new WriteOperationFactory(), 3);
+		
+		testInstance.setVersioningStrategy(new VersioningStrategySupport<>(versioningAttributeAccessor, input -> ++input));
+		
+		VersionnedToto toto1 = new VersionnedToto(42, 17, 23);
+		VersionnedToto toto2 = new VersionnedToto(42, 17, 24);
+		testInstance.update(Arrays.asList(new Duo<>(toto2, toto1)), true);
+		assertThat(toto2.getVersion()).isEqualTo(1);
+		
+		// a rollback must revert sequence increment
+		testInstance.getConnectionProvider().giveConnection().rollback();
+		assertThat(toto2.getVersion()).isEqualTo(0);
+		
+		// multiple rollbacks don't imply multiple sequence decrement
+		testInstance.getConnectionProvider().giveConnection().rollback();
+		assertThat(toto2.getVersion()).isEqualTo(0);
 	}
 }

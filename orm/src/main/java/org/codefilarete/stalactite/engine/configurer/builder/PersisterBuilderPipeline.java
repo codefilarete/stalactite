@@ -34,7 +34,6 @@ public class PersisterBuilderPipeline<C, I> {
 	private final ParentPersistersStep<C, I> parentPersistersStep;
 	private final Dialect dialect;
 	private final ConnectionConfiguration connectionConfiguration;
-	private final VersioningStep<C, I> versioningStep;
 	private final PersisterRegistry persisterRegistry;
 	
 	private PersisterBuilderContext persisterBuilderContext;
@@ -54,7 +53,6 @@ public class PersisterBuilderPipeline<C, I> {
 		this.polymorphismStep = new PolymorphismStep<>();
 		this.alreadyAssignedMarkerStep = new AlreadyAssignedMarkerStep<>();
 		this.parentPersistersStep = new ParentPersistersStep<>();
-		this.versioningStep = new VersioningStep<>();
 		this.persisterRegistry = persisterRegistry;
 	}
 	
@@ -131,8 +129,6 @@ public class PersisterBuilderPipeline<C, I> {
 		alreadyAssignedMarkerStep.handleAlreadyAssignedMarker(identification, result);
 		
 		parentPersistersStep.buildParentPersisters(mainPersister, identification, inheritanceMappingPerTable, dialect, connectionConfiguration);
-		
-		versioningStep.handleVersioningStrategy(entityMappingConfiguration.getOptimisticLockOption(), mainPersister);
 		
 		return result;
 	}

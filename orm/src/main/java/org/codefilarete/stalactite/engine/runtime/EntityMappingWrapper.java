@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine.runtime;
 
+import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Set;
 
@@ -14,6 +15,7 @@ import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
+import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.function.Converter;
 
 /**
@@ -73,6 +75,12 @@ public class EntityMappingWrapper<C, I, T extends Table<T>> implements EntityMap
 	@Override
 	public Map<Column<T, ?>, ?> getVersionedKeyValues(C c) {
 		return delegate.getVersionedKeyValues(c);
+	}
+	
+	@Nullable
+	@Override
+	public Duo<ReversibleAccessor<C, ?>, Column<T, ?>> getVersioningMapping() {
+		return delegate.getVersioningMapping();
 	}
 	
 	@Override

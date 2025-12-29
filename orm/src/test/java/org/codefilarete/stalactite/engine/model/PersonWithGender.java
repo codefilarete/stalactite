@@ -10,6 +10,8 @@ public class PersonWithGender extends Person {
 	
 	private Gender gender;
 	
+	private Gender fieldWithoutAccessor;
+	
 	public PersonWithGender() {
 	}
 	

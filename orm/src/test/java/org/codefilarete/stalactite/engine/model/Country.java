@@ -42,6 +42,8 @@ public class Country extends AbstractCountry implements Identified<Long> {
 	
 	private int version;
 	
+	private int versionWithoutAccessor;
+	
 	private LocalDateTime modificationDate;
 	
 	private Timestamp timestamp;

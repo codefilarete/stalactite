@@ -31,7 +31,6 @@ import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport.Ac
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.EmbeddedBeanMapping;
-import org.codefilarete.stalactite.mapping.EmbeddedClassMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;

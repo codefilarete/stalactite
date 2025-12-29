@@ -23,6 +23,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Maps;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
@@ -54,10 +55,10 @@ public class AssociationRecordMapping<
 			Map<Column<TARGETTABLE, ?>, Column<ASSOCIATIONTABLE, ?>> identifierColumnMapping,
 			IdentifierAssembler<ID, TARGETTABLE> identifierAssembler,
 			SerializableFunction<AssociationRecord, Object> valueAccessor,
-			BiConsumer<AssociationRecord, Object> valueMutator) {
+			SerializableBiConsumer<AssociationRecord, Object> valueMutator) {
 		Map<ReversibleAccessor<AssociationRecord, Object>, Column<ASSOCIATIONTABLE, Object>> result = new HashMap<>();
 		if (identifierAssembler instanceof SingleIdentifierAssembler) {
-			ReversibleAccessor<AssociationRecord, Object> reversibleAccessor = new PropertyAccessor<>(valueAccessor::apply, valueMutator::accept);
+			ReversibleAccessor<AssociationRecord, Object> reversibleAccessor = PropertyAccessor.fromMethodReference(valueAccessor, valueMutator);
 			Column<TARGETTABLE, ID> column = ((SingleIdentifierAssembler<ID, TARGETTABLE>) identifierAssembler).getColumn();
 			Column<ASSOCIATIONTABLE, ID> associationtableColumn = (Column<ASSOCIATIONTABLE, ID>) identifierColumnMapping.get(column);
 			result.put(reversibleAccessor, (Column<ASSOCIATIONTABLE, Object>) associationtableColumn);

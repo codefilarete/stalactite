@@ -22,7 +22,6 @@ import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
-import org.codefilarete.stalactite.engine.VersioningStrategy;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
@@ -56,7 +55,7 @@ public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfi
 	EmbeddableMappingConfiguration<C> getPropertiesMapping();
 	
 	@Nullable
-	VersioningStrategy getOptimisticLockOption();
+	OptimisticLockOption<C, ?> getOptimisticLockOption();
 	
 	/** Gives inheritance information if inheritance has been defined, else returns null */
 	@SuppressWarnings("squid:S1452" /* Can't remove wildcard here because it requires to create a local generic "super" type which is forbidden */)

@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.mapping;
 
+import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Set;
 
@@ -7,6 +8,7 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.Duo;
 
 /**
  * The interface defining methods necessary to persist an entity (ie an object with an id)
@@ -37,6 +39,9 @@ public interface EntityMapping<C, I, T extends Table<T>> extends Mapping<C, T>, 
 	Iterable<Column<T, ?>> getVersionedKeys();
 	
 	Map<Column<T, ?>, ?> getVersionedKeyValues(C c);
+	
+	@Nullable
+	Duo<ReversibleAccessor<C, ?>, Column<T, ?>> getVersioningMapping();
 	
 	Map<ReversibleAccessor<C, ?>, EmbeddedBeanMapping<?, T>> getEmbeddedBeanStrategies();
 }

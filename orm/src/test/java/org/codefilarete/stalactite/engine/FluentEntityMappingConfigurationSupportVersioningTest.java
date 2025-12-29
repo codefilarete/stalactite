@@ -9,7 +9,8 @@ import java.util.List;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.data.TemporalUnitWithinOffset;
-import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
+import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.Accessors;
 import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
 import org.codefilarete.stalactite.engine.model.Country;
@@ -57,11 +58,9 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	}
 	
 	@Test
-	public void build_versionedPropertyIsOfUnsupportedType_throwsException() {
+	void build_versionedPropertyIsOfUnsupportedType_throwsException() {
 		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
 		assertThatCode(() -> MappingEase.entityBuilder(Country.class, LONG_TYPE)
-				// setting a foreign key naming strategy to be tested
-				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getName)
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
@@ -71,13 +70,11 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	}
 	
 	@Test
-	public void update_versionIsUpgraded_integerVersion() {
+	void update_versionIsUpgraded_integerVersion() {
 		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(new CurrentThreadConnectionProvider(dataSource));
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		// mapping building thanks to fluent API
 		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, LONG_TYPE)
-				// setting a foreign key naming strategy to be tested
-				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getVersion, new IntegerSerie())
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
@@ -115,14 +112,12 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	}
 	
 	@Test
-	public void update_versionIsUpgraded_dateVersion() {
+	void update_versionIsUpgraded_dateVersion() {
 		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(new CurrentThreadConnectionProvider(dataSource));
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		
 		List<LocalDateTime> nowHistory = new ArrayList<>();
 		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, LONG_TYPE)
-				// setting a foreign key naming strategy to be tested
-				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getModificationDate, new NowSerie() {
 					@Override
 					public LocalDateTime next(LocalDateTime input) {
@@ -174,13 +169,11 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	}
 	
 	@Test
-	public void update_entityIsOutOfSync_databaseIsNotUpdated() throws SQLException {
+	void update_entityIsOutOfSync_databaseIsNotUpdated() throws SQLException {
 		persistenceContext = new PersistenceContext(dataSource, DIALECT);
 		ConnectionProvider connectionProvider = persistenceContext.getConnectionProvider();
 		
 		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, LONG_TYPE)
-				// setting a foreign key naming strategy to be tested
-				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getVersion, new IntegerSerie())
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
@@ -221,5 +214,50 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		// check that version is robust to multiple rollback
 		connectionProvider.giveConnection().rollback();
 		assertThat(dummyCountryClone.getVersion()).isEqualTo(1);
+	}
+	
+	@Test
+	void versionByFieldName_update_happyPath() {
+		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(new CurrentThreadConnectionProvider(dataSource));
+		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
+		// mapping building thanks to fluent API
+		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, LONG_TYPE)
+				.versionedBy("versionWithoutAccessor")
+				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(Country::getName)
+				.map(Country::getDescription)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		// creation of test data
+		LongProvider countryIdProvider = new LongProvider();
+		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+		dummyCountry.setName("France");
+		countryPersister.insert(dummyCountry);
+		
+		
+		// test case: the version of an updated entity is upgraded
+		Country dummyCountryClone1 = countryPersister.select(dummyCountry.getId());
+		dummyCountryClone1.setName("Toto");
+		countryPersister.update(dummyCountryClone1, dummyCountry, true);
+		
+		
+		Accessor<Country, Integer> versionWithoutAccessor = Accessors.accessor(Country.class, "versionWithoutAccessor");
+		
+		// checking
+		assertThat(versionWithoutAccessor.get(dummyCountryClone1)).isEqualTo(2);
+		assertThat(versionWithoutAccessor.get(dummyCountry)).isEqualTo(1);
+		
+		// the reloaded version should be up-to-date
+		Country dummyCountryClone2 = countryPersister.select(dummyCountry.getId());
+		assertThat(versionWithoutAccessor.get(dummyCountryClone2)).isEqualTo(2);
+		
+		// another update should upgrade the entity again
+		dummyCountryClone2.setName("Tutu");
+		countryPersister.update(dummyCountryClone2, dummyCountryClone1, true);
+		assertThat(versionWithoutAccessor.get(dummyCountryClone2)).isEqualTo(3);
+		assertThat(versionWithoutAccessor.get(dummyCountry)).isEqualTo(1);
 	}
 }
