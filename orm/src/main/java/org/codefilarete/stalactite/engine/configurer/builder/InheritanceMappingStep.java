@@ -22,6 +22,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -282,7 +283,10 @@ public class InheritanceMappingStep<C, I> {
 			if (optimisticLockOption != null) {
 				AccessorDefinition versioningDefinition = AccessorDefinition.giveDefinition(optimisticLockOption.getVersionAccessor());
 				String versioningColumnName = this.columnNamingStrategy.giveName(versioningDefinition);
-				Column<T, ?> versioningColumn = currentTable.addColumn(versioningColumnName, versioningDefinition.getMemberType());
+				boolean isColumnNullable = !Reflections.isPrimitiveType(versioningDefinition.getMemberType());
+				// Column addition should be shared in EmbeddableMappingBuilder but the class is shared by different use cases for which the
+				// versioning is not relevant, so this particularity is left here
+				Column<T, ?> versioningColumn = currentTable.addColumn(versioningColumnName, versioningDefinition.getMemberType(), null, isColumnNullable);
 				this.currentVersioningMapping = new Duo<>(optimisticLockOption.getVersionAccessor(), versioningColumn);
 			}
 			

@@ -5,7 +5,9 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.data.TemporalUnitWithinOffset;
@@ -22,8 +24,10 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.exception.Exceptions;
 import org.codefilarete.tool.function.Serie.IntegerSerie;
 import org.codefilarete.tool.function.Serie.NowSerie;
@@ -67,6 +71,22 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 				.map(Country::getDescription)
 				.build(persistenceContext))
 				.isInstanceOf(UnsupportedOperationException.class);
+	}
+	
+	@Test
+	void schemaIsCorrect() {
+		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(new CurrentThreadConnectionProvider(dataSource));
+		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
+		// mapping building thanks to fluent API
+		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, LONG_TYPE)
+				.versionedBy(Country::getVersion, new IntegerSerie())
+				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(Country::getName)
+				.map(Country::getDescription)
+				.build(persistenceContext);
+		
+		Map<String, Table<?>> tablePerName = Iterables.map(DDLDeployer.collectTables(persistenceContext), Table::getName);
+		assertThat(tablePerName.get("Country").mapColumnsOnName().get("version").isNullable()).isFalse();
 	}
 	
 	@Test

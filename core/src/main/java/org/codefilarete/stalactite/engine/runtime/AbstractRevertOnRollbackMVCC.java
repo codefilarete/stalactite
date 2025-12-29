@@ -26,7 +26,9 @@ abstract class AbstractRevertOnRollbackMVCC<E, V, T extends Table<T>> {
 	 * @param <C> a {@link ConnectionProvider} that notifies rollback.
 	 * {@link ConnectionProvider#giveConnection()} is not used here, simple mark to help understanding
 	 */
-	protected <C extends RollbackObserver & ConnectionProvider> AbstractRevertOnRollbackMVCC(VersioningStrategy<E, V> versioningStrategy, Column<T, V> versionColumn, RollbackObserver rollbackObserver) {
+	protected <C extends RollbackObserver & ConnectionProvider> AbstractRevertOnRollbackMVCC(VersioningStrategy<E, V> versioningStrategy,
+																							 Column<T, V> versionColumn,
+																							 RollbackObserver rollbackObserver) {
 		this.versioningStrategy = versioningStrategy;
 		this.versionColumn = versionColumn;
 		this.rollbackObserver = rollbackObserver;
