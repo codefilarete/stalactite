@@ -62,7 +62,7 @@ public interface ForeignKeyNamingStrategy {
 	/**
 	 * Generates same name as Hibernate (4.3.7) does. From org.hibernate.mapping.Constraint#generateName(String, Table, Column... columns)
 	 */
-	ForeignKeyNamingStrategy HIBERNATE = new ForeignKeyNamingStrategy() {
+	ForeignKeyNamingStrategy HIBERNATE_4 = new ForeignKeyNamingStrategy() {
 		@Override
 		public <SOURCETABLE extends Table<SOURCETABLE>, TARGETTABLE extends Table<TARGETTABLE>, ID> String giveName(Key<SOURCETABLE, ID> src, Key<TARGETTABLE, ID> target) {
 			// Use a concatenation that guarantees uniqueness, even if identical names
@@ -71,6 +71,27 @@ public interface ForeignKeyNamingStrategy {
 			
 			// We ensure a consistent ordering of columns, regardless of the order they were bound.
 			target.getColumns().stream().sorted(COLUMN_COMPARATOR).forEach(column -> sb.append("column`").append(column.getExpression()).append("`"));
+			return "FK" + hashName(sb.toString());
+		}
+	};
+	
+	/**
+	 * Generates a hash for a foreign key represented by given arguments
+	 * Implementation that returns the same hash as Hibernate 7 does.
+	 * From org.hibernate.boot.model.naming.NamingHelper#generateHashedFkName(String, Identifier, Identifier, List&lt;Identifier&gt;...)
+	 */
+	ForeignKeyNamingStrategy HIBERNATE_7 = new ForeignKeyNamingStrategy() {
+		@Override
+		public <SOURCETABLE extends Table<SOURCETABLE>, TARGETTABLE extends Table<TARGETTABLE>, ID> String giveName(Key<SOURCETABLE, ID> src, Key<TARGETTABLE, ID> target) {
+			// Use a concatenation that guarantees uniqueness, even if identical names
+			// exist between all table and column identifiers.
+			StringBuilder sb = new StringBuilder("table`" + src.getTable().getName() + "`")
+					.append("references`").append(target.getTable().getName()).append("`");
+			
+			// Note that referenced columns are not taken into account because the primary key is automatically targeted by database engines (same
+			// principle as Hibernate 7).
+			// We ensure a consistent ordering of columns, regardless of the order they were bound.
+			src.getColumns().stream().sorted(COLUMN_COMPARATOR).forEach(column -> sb.append("column`").append(column.getExpression()).append("`"));
 			return "FK" + hashName(sb.toString());
 		}
 	};

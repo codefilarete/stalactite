@@ -7,6 +7,8 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy.HIBERNATE_4;
+import static org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy.HIBERNATE_7;
 
 class ForeignKeyNamingStrategyTest {
 
@@ -44,5 +46,25 @@ class ForeignKeyNamingStrategyTest {
 						.addColumn(rightBColumn)
 						.build());
 		assertThat(fk1).isNotEqualTo(fk2);
+	}
+	
+	@Test
+	void HIBERNATE_4() {
+		Table<?> leftTable = new Table<>("REALM_LOCALIZATIONS");
+		Column<?, String> leftAColumn = leftTable.addColumn("REALM_ID", String.class);
+		Table<?> rightTable = new Table<>("REALM");
+		Column<?, String> rightAColumn = rightTable.addColumn("ID", String.class);
+		assertThat(HIBERNATE_4.giveName(Key.ofSingleColumn(leftAColumn), Key.ofSingleColumn(rightAColumn)))
+				.isEqualTo("FK1blbhbjlnf1e81ldaagxa7tkx");
+	}
+	
+	@Test
+	void HIBERNATE_7() {
+		Table<?> leftTable = new Table<>("REALM_LOCALIZATIONS");
+		Column<?, String> leftAColumn = leftTable.addColumn("REALM_ID", String.class);
+		Table<?> rightTable = new Table<>("REALM");
+		Column<?, String> rightAColumn = rightTable.addColumn("ID", String.class);
+		assertThat(HIBERNATE_7.giveName(Key.ofSingleColumn(leftAColumn), Key.ofSingleColumn(rightAColumn)))
+				.isEqualTo("FK5clnlbiyqndc1hroe5ei5cnox");
 	}
 }
