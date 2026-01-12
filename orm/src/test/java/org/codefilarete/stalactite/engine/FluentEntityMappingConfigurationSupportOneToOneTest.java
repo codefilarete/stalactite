@@ -858,7 +858,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		Table<?> countryTable = tablePerName.get("Country");
 		assertThat(countryTable.getIndexes())
 				.usingRecursiveFieldByFieldElementComparator()
-				.containsExactly(new Index("capitalId_key", new KeepOrderSet<>(countryTable.getColumn("capitalId"))).setUnique());
+				.containsExactly(new Index("country_capital_id_key", new KeepOrderSet<>(countryTable.getColumn("capitalId"))).setUnique());
 		
 	}
 	

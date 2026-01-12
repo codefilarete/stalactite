@@ -5,6 +5,7 @@ import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration.Linkage;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
 import org.codefilarete.tool.Strings;
+import org.codefilarete.tool.bean.Objects;
 
 import javax.annotation.Nullable;
 
@@ -31,17 +32,14 @@ public interface IndexNamingStrategy {
 		
 		@Override
 		public String giveName(ValueAccessPoint<?> propertyAccessor, @Nullable String columnName) {
-			if (columnName != null) {
-				return columnName + "_" + DEFAULT_SUFFIX;
-			} else {
-				AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(propertyAccessor);
-				// we create a unique name because most of the time (always), database index names have a schema scope,
-				// not a table one, thus their uniqueness must be on that scope too.
-				return Strings.snakeCase(
-						accessorDefinition.getDeclaringClass().getSimpleName()
-								+ "_" + accessorDefinition.getName()
-								+ "_" + DEFAULT_SUFFIX);
-			}
+			AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(propertyAccessor);
+			String columnSegment = Objects.preventNull(columnName, accessorDefinition.getName());
+			// we create a unique name because most of the time (always), database index names have a schema scope,
+			// not a table one, thus their uniqueness must be on that scope too.
+			return Strings.snakeCase(
+					accessorDefinition.getDeclaringClass().getSimpleName()
+							+ "_" + columnSegment
+							+ "_" + DEFAULT_SUFFIX);
 		}
 	}
 }

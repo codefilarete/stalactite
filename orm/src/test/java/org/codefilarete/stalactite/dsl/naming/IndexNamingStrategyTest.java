@@ -25,9 +25,15 @@ class IndexNamingStrategyTest {
 		when(personMainBicycle.getAccessor()).thenReturn(PropertyAccessor.fromMethodReference(
 				PersonWithGender::getMainBicycle, PersonWithGender::setMainBicycle
 		));
+		Linkage personMainBicycle_withOverriddenName = Mockito.mock(Linkage.class);
+		when(personMainBicycle_withOverriddenName.getAccessor()).thenReturn(PropertyAccessor.fromMethodReference(
+				PersonWithGender::getMainBicycle, PersonWithGender::setMainBicycle
+		));
+		when(personMainBicycle_withOverriddenName.getColumnName()).thenReturn("principalBike");
 		return Arrays.asList(
 				arguments(abstractVehicleTimestamp, "abstract_vehicle_timestamp_key"),
-				arguments(personMainBicycle, "person_main_bicycle_key")
+				arguments(personMainBicycle, "person_main_bicycle_key"),
+				arguments(personMainBicycle_withOverriddenName, "person_principal_bike_key")
 				);
 	}
 	
