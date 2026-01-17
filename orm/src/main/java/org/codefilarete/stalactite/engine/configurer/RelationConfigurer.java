@@ -99,6 +99,7 @@ public class RelationConfigurer<C, I> {
 				sourcePersister,
 				this.namingConfiguration.getForeignKeyNamingStrategy(),
 				this.namingConfiguration.getColumnNamingStrategy(),
+				this.namingConfiguration.getIndexColumnNamingStrategy(),
 				this.namingConfiguration.getElementCollectionTableNamingStrategy(),
 				dialect,
 				this.connectionConfiguration,

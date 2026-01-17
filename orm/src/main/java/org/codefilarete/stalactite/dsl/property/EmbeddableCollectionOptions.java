@@ -32,6 +32,12 @@ public interface EmbeddableCollectionOptions<C, O, S extends Collection<O>> exte
 	EmbeddableCollectionOptions<C, O, S> reverseJoinColumn(String name);
 	
 	@Override
+	EmbeddableCollectionOptions<C, O, S> indexed();
+	
+	@Override
+	EmbeddableCollectionOptions<C, O, S> indexedBy(String columnName);
+	
+	@Override
 	EmbeddableCollectionOptions<C, O, S> onTable(Table table);
 	
 	@Override

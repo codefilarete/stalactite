@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine;
 import javax.sql.DataSource;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Set;
@@ -95,7 +96,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 		personPersister.insert(person);
 		
 		Person loadedPerson = personPersister.select(person.getId());
-		assertThat(loadedPerson.getNicknames()).isEqualTo(Arrays.asSet("tonton"));
+		assertThat(loadedPerson.getNicknames()).containsExactlyInAnyOrder("tonton");
 	}
 	
 	@Test
@@ -118,13 +119,13 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 		personPersister.insert(person);
 		
 		Person loadedPerson = personPersister.select(person.getId());
-		assertThat(loadedPerson.getNicknames()).isEqualTo(Arrays.asSet("tintin", "tonton"));
+		assertThat(loadedPerson.getNicknames()).containsExactlyInAnyOrder("tintin", "tonton");
 		
 		
 		loadedPerson.addNickname("toutou");
 		personPersister.update(loadedPerson, person, true);
 		loadedPerson = personPersister.select(person.getId());
-		assertThat(loadedPerson.getNicknames()).isEqualTo(Arrays.asSet("tintin", "tonton", "toutou"));
+		assertThat(loadedPerson.getNicknames()).containsExactlyInAnyOrder("tintin", "tonton", "toutou");
 	}
 	
 	@Test
@@ -151,7 +152,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 		person.getNicknames().remove("tintin");
 		personPersister.update(person, loadedPerson, true);
 		loadedPerson = personPersister.select(person.getId());
-		assertThat(loadedPerson.getNicknames()).isEqualTo(Arrays.asSet("tonton"));
+		assertThat(loadedPerson.getNicknames()).containsExactlyInAnyOrder("tonton");
 	}
 	
 	@Test
@@ -181,6 +182,82 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 		assertThat(remainingNickNames).isEmpty();
 	}
 	
+	@Nested
+	class KeepOrder {
+		
+		@Test
+		void insert() {
+			ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) entityBuilder(Person.class, LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapCollection(Person::getMiddleNames, String.class).indexed()
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person person = new Person(new PersistableIdentifier<>(1L));
+			person.setName("toto");
+			person.setMiddleNames(Arrays.asList("Toto", "Tata", "Titi"));
+			Collections.shuffle(person.getMiddleNames());
+			
+			personPersister.insert(person);
+			
+			Person loadedPerson = personPersister.select(person.getId());
+			assertThat(loadedPerson.getMiddleNames()).containsExactlyElementsOf(person.getMiddleNames());
+		}
+		
+		@Test
+		void update() {
+			ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) entityBuilder(Person.class, LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapCollection(Person::getMiddleNames, String.class).indexed()
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person person = new Person(new PersistableIdentifier<>(1L));
+			person.setName("toto");
+			person.setMiddleNames(Arrays.asList("Toto", "Tata", "Titi"));
+			
+			personPersister.insert(person);
+			
+			Person loadedPerson = personPersister.select(person.getId());
+			loadedPerson.getMiddleNames().add(1, "Tutu");
+			loadedPerson.getMiddleNames().remove("Tata");
+			personPersister.update(loadedPerson, person, true);
+			loadedPerson = personPersister.select(person.getId());
+			assertThat(loadedPerson.getMiddleNames()).containsExactlyInAnyOrder("Toto", "Tutu", "Titi");
+		}
+		
+		@Test
+		void delete() {
+			ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) entityBuilder(Person.class, LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapCollection(Person::getMiddleNames, String.class).indexed()
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person person = new Person(new PersistableIdentifier<>(1L));
+			person.setName("toto");
+			person.setMiddleNames(Arrays.asList("Toto", "Tata", "Titi"));
+			
+			personPersister.insert(person);
+			
+			Person loadedPerson = personPersister.select(person.getId());
+			personPersister.delete(loadedPerson);
+			Set<String> remainingMiddleNames = persistenceContext.newQuery("select middleNames from Person_middleNames", String.class)
+					.mapKey("middleNames", String.class)
+					.execute(Accumulators.toSet());
+			assertThat(remainingMiddleNames).isEmpty();
+		}
+	}
+	
 	@Test
 	void withCollectionFactory() {
 		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) entityBuilder(Person.class, LONG_TYPE)
@@ -202,13 +279,13 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 		person.addNickname("b");
 		
 		// because nickNames is initialized with HashSet we get this order
-		assertThat(person.getNicknames()).isEqualTo(Arrays.asSet("a", "b", "c", "d"));
+		assertThat(person.getNicknames()).containsExactly("a", "b", "c", "d");
 		
 		personPersister.insert(person);
 		
 		Person loadedPerson = personPersister.select(person.getId());
 		// because nickNames is initialized with TreeSet with reversed order we get this order
-		assertThat(loadedPerson.getNicknames()).isEqualTo(Arrays.asSet("d", "c", "b", "a"));
+		assertThat(loadedPerson.getNicknames()).containsExactly("d", "c", "b", "a");
 	}
 	
 	@Test
@@ -420,106 +497,109 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 		assertThat(loadedCountry.getPresident().getNicknames()).containsExactlyInAnyOrderElementsOf(country.getPresident().getNicknames());
 	}
 	
-	
-	@Test
-	void crudEnum() {
-		Table totoTable = new Table("Toto");
-		Column idColumn = totoTable.addColumn("id", UUID_TYPE);
-		dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
-		dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
+	@Nested
+	class Complex_CRUD {
 		
-		ConfiguredPersister<Toto, Identifier<UUID>> personPersister = (ConfiguredPersister<Toto, Identifier<UUID>>) entityBuilder(Toto.class, UUID_TYPE)
-				.onTable(totoTable)
-				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
-				.map(Toto::getName)
-				.mapCollection(Toto::getPossibleStates, State.class)
-				.build(persistenceContext);
+		@Test
+		void crudEnum() {
+			Table totoTable = new Table("Toto");
+			Column idColumn = totoTable.addColumn("id", UUID_TYPE);
+			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
+			
+			ConfiguredPersister<Toto, Identifier<UUID>> personPersister = (ConfiguredPersister<Toto, Identifier<UUID>>) entityBuilder(Toto.class, UUID_TYPE)
+					.onTable(totoTable)
+					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+					.map(Toto::getName)
+					.mapCollection(Toto::getPossibleStates, State.class)
+					.build(persistenceContext);
+
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto person = new Toto();
+			person.setName("toto");
+			person.getPossibleStates().add(State.DONE);
+			person.getPossibleStates().add(State.IN_PROGRESS);
+			
+			personPersister.insert(person);
+			
+			Toto loadedPerson = personPersister.select(person.getId());
+			assertThat(loadedPerson.getPossibleStates()).containsExactlyInAnyOrder(State.DONE, State.IN_PROGRESS);
+		}
 		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
+		@Test
+		void crudComplexType() {
+			Table totoTable = new Table("Toto");
+			Column idColumn = totoTable.addColumn("id", UUID_TYPE);
+			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
+			
+			ConfiguredPersister<Toto, Identifier<UUID>> personPersister = (ConfiguredPersister<Toto, Identifier<UUID>>) entityBuilder(Toto.class, UUID_TYPE)
+					.onTable(totoTable)
+					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+					.map(Toto::getName)
+					.mapCollection(Toto::getTimes, Timestamp.class, embeddableBuilder(Timestamp.class)
+							.map(Timestamp::getCreationDate)
+							.map(Timestamp::getModificationDate))
+					.build(persistenceContext);
+
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto person = new Toto();
+			person.setName("toto");
+			Timestamp timestamp1 = new Timestamp(LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(1));
+			Timestamp timestamp2 = new Timestamp(LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(2));
+			person.getTimes().add(timestamp1);
+			person.getTimes().add(timestamp2);
+			
+			personPersister.insert(person);
+			
+			Toto loadedPerson = personPersister.select(person.getId());
+			assertThat(loadedPerson.getTimes()).isEqualTo(Arrays.asSet(timestamp1, timestamp2));
+		}
 		
-		Toto person = new Toto();
-		person.setName("toto");
-		person.getPossibleStates().add(State.DONE);
-		person.getPossibleStates().add(State.IN_PROGRESS);
-		
-		personPersister.insert(person);
-		
-		Toto loadedPerson = personPersister.select(person.getId());
-		assertThat(loadedPerson.getPossibleStates()).isEqualTo(Arrays.asSet(State.DONE, State.IN_PROGRESS));
-	}
-	
-	@Test
-	void crudComplexType() {
-		Table totoTable = new Table("Toto");
-		Column idColumn = totoTable.addColumn("id", UUID_TYPE);
-		dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
-		dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
-		
-		ConfiguredPersister<Toto, Identifier<UUID>> personPersister = (ConfiguredPersister<Toto, Identifier<UUID>>) entityBuilder(Toto.class, UUID_TYPE)
-				.onTable(totoTable)
-				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
-				.map(Toto::getName)
-				.mapCollection(Toto::getTimes, Timestamp.class, embeddableBuilder(Timestamp.class)
-						.map(Timestamp::getCreationDate)
-						.map(Timestamp::getModificationDate))
-				.build(persistenceContext);
-		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		Toto person = new Toto();
-		person.setName("toto");
-		Timestamp timestamp1 = new Timestamp(LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(1));
-		Timestamp timestamp2 = new Timestamp(LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(2));
-		person.getTimes().add(timestamp1);
-		person.getTimes().add(timestamp2);
-		
-		personPersister.insert(person);
-		
-		Toto loadedPerson = personPersister.select(person.getId());
-		assertThat(loadedPerson.getTimes()).isEqualTo(Arrays.asSet(timestamp1, timestamp2));
-	}
-	
-	@Test
-	void crudComplexType_overrideColumnName() {
-		Table totoTable = new Table("toto");
-		Column idColumn = totoTable.addColumn("id", UUID_TYPE);
-		dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
-		dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
-		
-		ConfiguredPersister<Toto, Identifier<UUID>> personPersister = (ConfiguredPersister<Toto, Identifier<UUID>>) entityBuilder(Toto.class, UUID_TYPE)
-				.onTable(totoTable)
-				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
-				.map(Toto::getName)
-				.mapCollection(Toto::getTimes, Timestamp.class, embeddableBuilder(Timestamp.class)
-						.map(Timestamp::getCreationDate)
-						.map(Timestamp::getModificationDate))
-				.overrideName(Timestamp::getCreationDate, "createdAt")
-				.overrideSize(Timestamp::getCreationDate, Size.length(36))	// stupid value for a timestamp, just for testing purpose
-				.build(persistenceContext);
-		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
-		Map<String, Table<?>> tablePerName = map(tables, Table::getName);
-		Table<?> totoTimesTable = tablePerName.get("Toto_times");
-		Map<String, ? extends Column<?, ?>> timesTableColumn = totoTimesTable.mapColumnsOnName();
-		assertThat(timesTableColumn.get("createdAt")).isNotNull();
-		assertThat(timesTableColumn.get("createdAt").getSize()).extracting(Length.class::cast).extracting(Length::getValue).isEqualTo(36);
-		
-		Toto person = new Toto();
-		person.setName("toto");
-		Timestamp timestamp1 = new Timestamp(LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(1));
-		Timestamp timestamp2 = new Timestamp(LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(2));
-		person.getTimes().add(timestamp1);
-		person.getTimes().add(timestamp2);
-		
-		personPersister.insert(person);
-		
-		Toto loadedPerson = personPersister.select(person.getId());
-		assertThat(loadedPerson.getTimes()).isEqualTo(Arrays.asSet(timestamp1, timestamp2));
+		@Test
+		void crudComplexType_overrideColumnName() {
+			Table totoTable = new Table("toto");
+			Column idColumn = totoTable.addColumn("id", UUID_TYPE);
+			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
+			
+			ConfiguredPersister<Toto, Identifier<UUID>> personPersister = (ConfiguredPersister<Toto, Identifier<UUID>>) entityBuilder(Toto.class, UUID_TYPE)
+					.onTable(totoTable)
+					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+					.map(Toto::getName)
+					.mapCollection(Toto::getTimes, Timestamp.class, embeddableBuilder(Timestamp.class)
+							.map(Timestamp::getCreationDate)
+							.map(Timestamp::getModificationDate))
+					.overrideName(Timestamp::getCreationDate, "createdAt")
+					.overrideSize(Timestamp::getCreationDate, Size.length(36))	// stupid value for a timestamp, just for testing purpose
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
+			Map<String, Table<?>> tablePerName = map(tables, Table::getName);
+			Table<?> totoTimesTable = tablePerName.get("Toto_times");
+			Map<String, ? extends Column<?, ?>> timesTableColumn = totoTimesTable.mapColumnsOnName();
+			assertThat(timesTableColumn.get("createdAt")).isNotNull();
+			assertThat(timesTableColumn.get("createdAt").getSize()).extracting(Length.class::cast).extracting(Length::getValue).isEqualTo(36);
+			
+			Toto person = new Toto();
+			person.setName("toto");
+			Timestamp timestamp1 = new Timestamp(LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(1));
+			Timestamp timestamp2 = new Timestamp(LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(2));
+			person.getTimes().add(timestamp1);
+			person.getTimes().add(timestamp2);
+			
+			personPersister.insert(person);
+			
+			Toto loadedPerson = personPersister.select(person.getId());
+			assertThat(loadedPerson.getTimes()).isEqualTo(Arrays.asSet(timestamp1, timestamp2));
+		}
 	}
 	
 	@Nested

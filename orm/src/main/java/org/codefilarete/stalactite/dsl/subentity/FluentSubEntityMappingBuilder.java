@@ -344,6 +344,12 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> reverseJoinColumn(String name);
 		
 		@Override
+		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> indexed();
+		
+		@Override
+		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> indexedBy(String columnName);
+		
+		@Override
 		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> onTable(Table table);
 		
 		@Override
@@ -370,6 +376,12 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		
 		@Override
 		FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> reverseJoinColumn(String name);
+		
+		@Override
+		FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> indexed();
+		
+		@Override
+		FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> indexedBy(String columnName);
 		
 		@Override
 		FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> onTable(Table table);

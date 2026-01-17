@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.model;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -36,6 +37,8 @@ public class Person implements Identified<Long> {
 	private Set<Bicycle> bicycles;
 	
 	private Set<String> nicknames;
+	
+	private List<String> middleNames;
 	
 	private Map<String, String> phoneNumbers;
 	
@@ -145,6 +148,18 @@ public class Person implements Identified<Long> {
 	
 	public void addNickname(String nickname) {
 		this.nicknames.add(nickname);
+	}
+	
+	public List<String> getMiddleNames() {
+		return middleNames;
+	}
+	
+	public void setMiddleNames(List<String> middleNames) {
+		this.middleNames = middleNames;
+	}
+	
+	public void addMiddleName(String middleName) {
+		this.middleNames.add(middleName);
 	}
 	
 	public Map<String, String> getPhoneNumbers() {

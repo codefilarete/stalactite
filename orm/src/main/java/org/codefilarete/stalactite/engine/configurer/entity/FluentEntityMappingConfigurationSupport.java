@@ -51,6 +51,7 @@ import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
+import org.codefilarete.stalactite.dsl.property.CollectionOptions;
 import org.codefilarete.stalactite.dsl.property.ElementCollectionOptions;
 import org.codefilarete.stalactite.dsl.property.EmbeddableCollectionOptions;
 import org.codefilarete.stalactite.dsl.property.EnumOptions;
@@ -687,6 +688,18 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					}
 					
 					@Override
+					public EmbeddableCollectionOptions<C, O, S> indexed() {
+						elementCollectionRelation.ordered();
+						return null;
+					}
+					
+					@Override
+					public EmbeddableCollectionOptions<C, O, S> indexedBy(String columnName) {
+						elementCollectionRelation.setIndexingColumnName(columnName);
+						return null;
+					}
+					
+					@Override
 					public EmbeddableCollectionOptions<C, O, S> onTable(Table table) {
 						elementCollectionRelation.setTargetTable(table);
 						return null;
@@ -726,6 +739,18 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 			@Override
 			public FluentMappingBuilderElementCollectionOptions<C, I, O, S> reverseJoinColumn(String name) {
 				elementCollectionRelation.setReverseColumnName(name);
+				return null;
+			}
+			
+			@Override
+			public FluentMappingBuilderElementCollectionOptions<C, I, O, S> indexed() {
+				elementCollectionRelation.ordered();
+				return null;
+			}
+			
+			@Override
+			public FluentMappingBuilderElementCollectionOptions<C, I, O, S> indexedBy(String columnName) {
+				elementCollectionRelation.setIndexingColumnName(columnName);
 				return null;
 			}
 			

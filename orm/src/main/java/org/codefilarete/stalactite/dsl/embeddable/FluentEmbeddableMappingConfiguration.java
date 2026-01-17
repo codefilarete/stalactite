@@ -376,6 +376,12 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 		FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> reverseJoinColumn(String name);
 		
 		@Override
+		FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> indexed();
+		
+		@Override
+		FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> indexedBy(String columnName);
+		
+		@Override
 		FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> onTable(Table table);
 		
 		@Override
@@ -403,6 +409,12 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 		
 		@Override
 		FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> reverseJoinColumn(String name);
+		
+		@Override
+		FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> indexed();
+		
+		@Override
+		FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> indexedBy(String columnName);
 		
 		@Override
 		FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> onTable(Table table);

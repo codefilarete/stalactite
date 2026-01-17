@@ -25,6 +25,12 @@ public interface ElementCollectionOptions<C, O, S extends Collection<O>> extends
 	ElementCollectionOptions<C, O, S> reverseJoinColumn(String name);
 	
 	@Override
+	ElementCollectionOptions<C, O, S> indexed();
+	
+	@Override
+	ElementCollectionOptions<C, O, S> indexedBy(String columnName);
+	
+	@Override
 	ElementCollectionOptions<C, O, S> onTable(Table table);
 	
 	@Override

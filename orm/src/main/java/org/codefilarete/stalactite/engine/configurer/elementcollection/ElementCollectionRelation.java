@@ -37,6 +37,8 @@ public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 	/** The method that gives the entities from the "root" entity */
 	private final ReversibleAccessor<SRC, S> collectionAccessor;
 	private final Class<TRGT> componentType;
+	/** Indicator to store element indices in the database, retrieve them, and sort the collection while loading the entities */
+	private boolean ordered = false;
 	/** Optional provider of collection instance to be used if collection value is null */
 	private Supplier<S> collectionFactory;
 	
@@ -47,6 +49,8 @@ public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 	
 	/** Element column name override, used in simple case : {@link EmbeddableMappingConfigurationProvider} null, aka not when element is a complex type */
 	private String elementColumnName;
+	/** Index column name override */
+	private String indexingColumnName;
 	
 	/** Complex type mapping, optional */
 	@Nullable
@@ -107,6 +111,27 @@ public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 	
 	public ReversibleAccessor<SRC, S> getCollectionAccessor() {
 		return collectionAccessor;
+	}
+	
+	public boolean isOrdered() {
+		return this.ordered;
+	}
+	
+	public void setOrdered(boolean ordered) {
+		this.ordered = ordered;
+	}
+	
+	public void ordered() {
+		this.ordered = true;
+	}
+	
+	public void setIndexingColumnName(String columnName) {
+		ordered();
+		this.indexingColumnName = columnName;
+	}
+	
+	public String getIndexingColumnName() {
+		return indexingColumnName;
 	}
 	
 	public Supplier<S> getCollectionFactory() {
@@ -238,6 +263,8 @@ public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 		result.setReverseColumnName(this.getReverseColumnName());
 		result.getOverriddenColumnNames().putAll((Map<? extends ValueAccessPoint<C>, ? extends String>) this.getOverriddenColumnNames());
 		result.getOverriddenColumnSizes().putAll((Map<? extends ValueAccessPoint<C>, ? extends Size>) this.getOverriddenColumnSizes());
+		result.setOrdered(this.isOrdered());
+		result.setIndexingColumnName(this.getIndexingColumnName());
 		result.setCollectionFactory(this.getCollectionFactory());
 		return result;
 	}

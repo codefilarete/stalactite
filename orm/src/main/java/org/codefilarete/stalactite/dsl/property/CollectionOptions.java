@@ -17,6 +17,10 @@ public interface CollectionOptions<C, O, S extends Collection<O>> {
 	 */
 	CollectionOptions<C, O, S> reverseJoinColumn(String name);
 	
+	CollectionOptions<C, O, S> indexed();
+	
+	CollectionOptions<C, O, S> indexedBy(String columnName);
+	
 	CollectionOptions<C, O, S> onTable(Table table);
 	
 	CollectionOptions<C, O, S> onTable(String tableName);

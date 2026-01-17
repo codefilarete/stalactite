@@ -701,6 +701,12 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		FluentMappingBuilderElementCollectionOptions<C, I, O, S> reverseJoinColumn(String name);
 		
 		@Override
+		FluentMappingBuilderElementCollectionOptions<C, I, O, S> indexed();
+		
+		@Override
+		FluentMappingBuilderElementCollectionOptions<C, I, O, S> indexedBy(String columnName);
+		
+		@Override
 		FluentMappingBuilderElementCollectionOptions<C, I, O, S> onTable(Table table);
 
 		@Override

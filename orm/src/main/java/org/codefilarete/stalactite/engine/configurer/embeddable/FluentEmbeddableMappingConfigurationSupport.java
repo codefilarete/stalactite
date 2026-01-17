@@ -730,6 +730,18 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					}
 					
 					@Override
+					public EmbeddableCollectionOptions<C, O, S> indexed() {
+						elementCollectionRelation.ordered();
+						return null;
+					}
+					
+					@Override
+					public EmbeddableCollectionOptions<C, O, S> indexedBy(String columnName) {
+						elementCollectionRelation.setIndexingColumnName(columnName);
+						return null;
+					}
+					
+					@Override
 					public EmbeddableCollectionOptions<C, O, S> onTable(Table table) {
 						elementCollectionRelation.setTargetTable(table);
 						return null;
@@ -769,6 +781,18 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 			@Override
 			public FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> reverseJoinColumn(String name) {
 				elementCollectionRelation.setReverseColumnName(name);
+				return null;
+			}
+			
+			@Override
+			public ElementCollectionOptions<C, O, S> indexed() {
+				elementCollectionRelation.ordered();
+				return null;
+			}
+			
+			@Override
+			public ElementCollectionOptions<C, O, S> indexedBy(String columnName) {
+				elementCollectionRelation.setIndexingColumnName(columnName);
 				return null;
 			}
 			
