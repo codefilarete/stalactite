@@ -1022,7 +1022,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		// removes hour + minute part only on creation date
 		Date toDayAsDate = Date.from(Dates.today().atStartOfDay(ZoneId.systemDefault()).toInstant());
 		Timestamp expected = new Timestamp(toDayAsDate, timestamp.getModificationDate());
-		assertThat(select.getTimestamp()).isEqualTo(expected);
+		assertThat(select.getTimestamp()).usingRecursiveComparison().isEqualTo(expected);
 	}
 	
 	@Test

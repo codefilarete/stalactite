@@ -27,6 +27,7 @@ import org.codefilarete.stalactite.engine.model.Truck;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
+import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
@@ -255,6 +256,47 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 					.mapKey("middleNames", String.class)
 					.execute(Accumulators.toSet());
 			assertThat(remainingMiddleNames).isEmpty();
+		}
+		
+		
+		@Test
+		void crudComplexType() {
+			Table totoTable = new Table("Toto");
+			Column idColumn = totoTable.addColumn("id", UUID_TYPE);
+			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
+			
+			ConfiguredPersister<Toto, Identifier<UUID>> personPersister = (ConfiguredPersister<Toto, Identifier<UUID>>) entityBuilder(Toto.class, UUID_TYPE)
+					.onTable(totoTable)
+					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+					.usingConstructor(uuidIdentifier -> new Toto((PersistedIdentifier<UUID>) uuidIdentifier))
+					.map(Toto::getName)
+					.mapCollection(Toto::getTimes, Timestamp.class, embeddableBuilder(Timestamp.class)
+							.map(Timestamp::getCreationDate)
+							.map(Timestamp::getModificationDate)).indexed()
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto person = new Toto();
+			person.setName("toto");
+			Timestamp timestamp1 = new Timestamp(LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(1));
+			Timestamp timestamp2 = new Timestamp(LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(2));
+			person.setTimes(Arrays.asSet(timestamp1, timestamp2));
+			
+			personPersister.insert(person);
+			
+			Toto loadedPerson;
+			loadedPerson = personPersister.select(person.getId());
+			assertThat(loadedPerson.getTimes()).usingRecursiveFieldByFieldElementComparator().containsExactly(timestamp1, timestamp2);
+			
+			// Removing timestamp1
+			loadedPerson.getTimes().removeIf(timestamp -> timestamp.getCreationDate().equals(timestamp1.getCreationDate()) && timestamp.getModificationDate().equals(timestamp1.getModificationDate()));
+			personPersister.update(loadedPerson, person, true);
+			
+			loadedPerson = personPersister.select(person.getId());
+			assertThat(loadedPerson.getTimes()).usingRecursiveFieldByFieldElementComparator().containsExactly(timestamp2);
 		}
 	}
 	
@@ -557,7 +599,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 			personPersister.insert(person);
 			
 			Toto loadedPerson = personPersister.select(person.getId());
-			assertThat(loadedPerson.getTimes()).isEqualTo(Arrays.asSet(timestamp1, timestamp2));
+			assertThat(loadedPerson.getTimes()).usingRecursiveFieldByFieldElementComparator().containsExactlyInAnyOrder(timestamp1, timestamp2);
 		}
 		
 		@Test
@@ -598,7 +640,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 			personPersister.insert(person);
 			
 			Toto loadedPerson = personPersister.select(person.getId());
-			assertThat(loadedPerson.getTimes()).isEqualTo(Arrays.asSet(timestamp1, timestamp2));
+			assertThat(loadedPerson.getTimes()).usingRecursiveFieldByFieldElementComparator().containsExactlyInAnyOrder(timestamp1, timestamp2);
 		}
 	}
 	

@@ -155,7 +155,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 		
 		EmbeddableMappingConfiguration<TRGT> embeddableConfiguration =
 				nullable(collectionRelation.getEmbeddableConfigurationProvider()).map(EmbeddableMappingConfigurationProvider::getConfiguration).get();
-		DefaultEntityMapping<ER, ER, COLLECTIONTABLE> elementRecordMapping = null;
+		DefaultEntityMapping<ER, ER, COLLECTIONTABLE> elementRecordMapping;
 		IdentifierAssembler<I, SRCTABLE> sourceIdentifierAssembler = sourcePersister.getMapping().getIdMapping().getIdentifierAssembler();
 		if (embeddableConfiguration == null) {
 			String columnName = nullable(collectionRelation.getElementColumnName())
@@ -202,20 +202,30 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 				});
 				
 				projectedColumnMap.put(accessorChain, column);
-				column.primaryKey();
 			});
 			
-			Class<ElementRecord<TRGT, I>> elementRecordClass = (Class) ElementRecord.class;
-			EmbeddedClassMapping<ElementRecord<TRGT, I>, COLLECTIONTABLE> elementRecordMappingStrategy = new EmbeddedClassMapping<>(elementRecordClass, targetTable, projectedColumnMap);
-			elementRecordMapping = (DefaultEntityMapping<ER, ER, COLLECTIONTABLE>) new ElementRecordMapping<>(targetTable, elementRecordMappingStrategy, sourceIdentifierAssembler, primaryKeyForeignColumnMapping);
+			if (collectionRelation.isOrdered()) {
+				String indexingColumnName = nullable(collectionRelation.getIndexingColumnName()).getOr(() -> indexColumnNamingStrategy.giveName(ELEMENT_RECORD_INDEX_ACCESSOR_DEFINITION));
+				Column<COLLECTIONTABLE, Integer> indexColumn = targetTable.addColumn(indexingColumnName, Integer.class);
+				// adding a constraint on the index column, not on the element one (like for Set), to allow duplicates
+				indexColumn.primaryKey();
+				
+				EmbeddedClassMapping<IndexedElementRecord<TRGT, I>, COLLECTIONTABLE> elementRecordMappingStrategy = new EmbeddedClassMapping<>((Class) IndexedElementRecord.class, targetTable, projectedColumnMap);
+				elementRecordMapping = (DefaultEntityMapping<ER, ER, COLLECTIONTABLE>) new IndexedElementRecordMapping<>(targetTable, elementRecordMappingStrategy, indexColumn, sourceIdentifierAssembler, primaryKeyForeignColumnMapping);
+			} else {
+				// adding a constraint on the element column because Sets don't allow duplicates
+				columnMapping.values().forEach(Column::primaryKey);
+				
+				EmbeddedClassMapping<ElementRecord<TRGT, I>, COLLECTIONTABLE> elementRecordMappingStrategy = new EmbeddedClassMapping<>((Class) ElementRecord.class, targetTable, projectedColumnMap);
+				elementRecordMapping = (DefaultEntityMapping<ER, ER, COLLECTIONTABLE>) new ElementRecordMapping<>(targetTable, elementRecordMappingStrategy, sourceIdentifierAssembler, primaryKeyForeignColumnMapping);
+			}
 		}
 		// Returns collection mapping based on collection type
-		if (Set.class.isAssignableFrom(collectionProviderDefinition.getMemberType())) {
-			return new ElementCollectionMapping<>(reverseForeignKey, elementRecordMapping);
-		} else if (List.class.isAssignableFrom(collectionProviderDefinition.getMemberType())) {
+		if (collectionRelation.isOrdered()) {
 			return (ElementCollectionMapping) new IndexedElementCollectionMapping<>(reverseForeignKey, (DefaultEntityMapping<IndexedElementRecord<TRGT, I>, IndexedElementRecord<TRGT, I>, COLLECTIONTABLE>) elementRecordMapping);
+		} else {
+			return new ElementCollectionMapping<>(reverseForeignKey, elementRecordMapping);
 		}
-		return null;
 	}
 	
 	private class ElementCollectionMapping<SRCTABLE extends Table<SRCTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>, ER extends ElementRecord<TRGT, I>> {

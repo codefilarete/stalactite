@@ -16,7 +16,6 @@ import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
-import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Maps;
 
 /**
@@ -25,7 +24,6 @@ import org.codefilarete.tool.collection.Maps;
  */
 public class IndexedElementRecordMapping<C, I, T extends Table<T>> extends DefaultEntityMapping<IndexedElementRecord<C, I>, IndexedElementRecord<C, I>, T> {
 	
-	@VisibleForTesting
 	public <LEFTTABLE extends Table<LEFTTABLE>> IndexedElementRecordMapping(T targetTable,
 																			Column<T, C> elementColumn,
 																			Column<T, Integer> indexColumn,
@@ -41,12 +39,14 @@ public class IndexedElementRecordMapping<C, I, T extends Table<T>> extends Defau
 	
 	<LEFTTABLE extends Table<LEFTTABLE>> IndexedElementRecordMapping(T targetTable,
 																	 EmbeddedClassMapping<IndexedElementRecord<C, I>, T> embeddableMapping,
+																	 Column<T, Integer> indexColumn,
 																	 IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
 																	 Map<Column<LEFTTABLE, ?>, Column<T, ?>> foreignKeyColumnMapping) {
 		super((Class) IndexedElementRecord.class,
 				targetTable,
-				embeddableMapping.getPropertyToColumn(),
-				new IndexedElementRecordIdMapping<>(targetTable, embeddableMapping, sourceIdentifierAssembler, foreignKeyColumnMapping));
+				(Map) Maps.putAll(Maps.forHashMap(ReversibleAccessor.class, Column.class)
+						.add(IndexedElementRecord.INDEX_ACCESSOR, indexColumn), embeddableMapping.getPropertyToColumn()),
+				new IndexedElementRecordIdMapping<>(targetTable, embeddableMapping, indexColumn, sourceIdentifierAssembler, foreignKeyColumnMapping));
 	}
 	
 	/**
@@ -73,13 +73,14 @@ public class IndexedElementRecordMapping<C, I, T extends Table<T>> extends Defau
 		public <LEFTTABLE extends Table<LEFTTABLE>> IndexedElementRecordIdMapping(
 				T targetTable,
 				EmbeddedClassMapping<IndexedElementRecord<C, I>, T> elementMapping,
+				Column<T, Integer> indexColumn,
 				IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
 				Map<Column<LEFTTABLE, ?>, Column<T, ?>> foreignKeyColumnMapping) {
 			super(new IndexedElementRecordIdAccessor<>(),
 					new AlreadyAssignedIdentifierManager<>((Class<IndexedElementRecord<C, I>>) (Class) IndexedElementRecord.class,
 							IndexedElementRecord::markAsPersisted,
 							IndexedElementRecord::isPersisted),
-					new IndexedElementRecordIdentifierAssembler<>(targetTable, elementMapping, sourceIdentifierAssembler, foreignKeyColumnMapping));
+					new IndexedElementRecordIdentifierAssembler<>(targetTable, elementMapping, indexColumn, sourceIdentifierAssembler, foreignKeyColumnMapping));
 		}
 		
 		/**
@@ -184,16 +185,19 @@ public class IndexedElementRecordMapping<C, I, T extends Table<T>> extends Defau
 			private final EmbeddedClassMapping<IndexedElementRecord<TRGT, ID>, T> elementMapping;
 			private final IdentifierAssembler<ID, ?> sourceIdentifierAssembler;
 			private final Map<Column<?, ?>, Column<T, ?>> foreignKeyColumnMapping;
+			private Column<T, ?> indexColumn;
 			
 			private <LEFTTABLE extends Table<LEFTTABLE>> IndexedElementRecordIdentifierAssembler(
 					T targetTable,
 					EmbeddedClassMapping<IndexedElementRecord<TRGT, ID>, T> elementMapping,
+					Column<T, ?> indexColumn,
 					IdentifierAssembler<ID, LEFTTABLE> sourceIdentifierAssembler,
 					Map<Column<LEFTTABLE, ?>, Column<T, ?>> foreignKeyColumnMapping) {
 				super(targetTable);
 				this.elementMapping = elementMapping;
 				this.sourceIdentifierAssembler = sourceIdentifierAssembler;
 				this.foreignKeyColumnMapping = (Map) foreignKeyColumnMapping;
+				this.indexColumn = indexColumn;
 			}
 			
 			public EmbeddedClassMapping<IndexedElementRecord<TRGT, ID>, T> getElementMapping() {
@@ -211,7 +215,7 @@ public class IndexedElementRecordMapping<C, I, T extends Table<T>> extends Defau
 				Map<Column<T, ?>, Object> idColumnValues = Maps.innerJoin(foreignKeyColumnMapping, sourceColumnValues);
 				Map<Column<T, ?>, Object> result = new HashMap<>();
 				result.putAll(idColumnValues);
-				result.putAll(elementMapping.getInsertValues(id));
+				result.put(indexColumn, id.getIndex());
 				return result;
 			}
 		}
