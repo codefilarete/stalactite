@@ -30,11 +30,24 @@ class IndexNamingStrategyTest {
 				PersonWithGender::getMainBicycle, PersonWithGender::setMainBicycle
 		));
 		when(personMainBicycle_withOverriddenName.getColumnName()).thenReturn("principalBike");
+		Linkage PersonWithGenderGender_withOverriddenName = Mockito.mock(Linkage.class);
+		when(PersonWithGenderGender_withOverriddenName.getAccessor()).thenReturn(PropertyAccessor.fromMethodReference(
+				PersonWithGender::getGender, PersonWithGender::setGender
+		));
+		when(PersonWithGenderGender_withOverriddenName.getColumnName()).thenReturn("GENDER");
+		Linkage personMainBicycle_withOverriddenUpperCasedName = Mockito.mock(Linkage.class);
+		when(personMainBicycle_withOverriddenUpperCasedName.getAccessor()).thenReturn(PropertyAccessor.fromMethodReference(
+				PersonWithGender::getMainBicycle, PersonWithGender::setMainBicycle
+		));
+		when(personMainBicycle_withOverriddenUpperCasedName.getColumnName()).thenReturn("PRINCIPALBike");
 		return Arrays.asList(
 				arguments(abstractVehicleTimestamp, "abstract_vehicle_timestamp_key"),
 				arguments(personMainBicycle, "person_main_bicycle_key"),
-				arguments(personMainBicycle_withOverriddenName, "person_principal_bike_key")
-				);
+				arguments(personMainBicycle_withOverriddenName, "person_principal_bike_key"),
+				arguments(PersonWithGenderGender_withOverriddenName, "person_with_gender_gender_key"),
+				arguments(personMainBicycle_withOverriddenName, "person_principal_bike_key"),
+				arguments(personMainBicycle_withOverriddenUpperCasedName, "person_principalbike_key")
+		);
 	}
 	
 	@ParameterizedTest
