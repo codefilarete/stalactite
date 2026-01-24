@@ -56,7 +56,7 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	
 	private final Set<Index<SELF>> indexes = new HashSet<>();
 	
-	private final Set<UniqueConstraint> uniqueConstraints = new HashSet<>();
+	private final Set<UniqueConstraint<SELF>> uniqueConstraints = new HashSet<>();
 	
 	private final Set<ForeignKey<SELF, ? extends Table<?>, ?>> foreignKeys = new HashSet<>();
 	
@@ -380,12 +380,12 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 		return existingForeignKeyWithSameColumns;
 	}
 	
-	public Set<UniqueConstraint> getUniqueConstraints() {
+	public Set<UniqueConstraint<SELF>> getUniqueConstraints() {
 		return uniqueConstraints;
 	}
 	
-	public UniqueConstraint addUniqueConstraint(String name, Column<SELF, ?> column, Column<SELF, ?> ... columns) {
-		UniqueConstraint newUniqueConstraint = new UniqueConstraint(name, column, columns);
+	public UniqueConstraint<SELF> addUniqueConstraint(String name, Column<SELF, ?> column, Column<SELF, ?> ... columns) {
+		UniqueConstraint<SELF> newUniqueConstraint = new UniqueConstraint<>(name, column, columns);
 		this.uniqueConstraints.add(newUniqueConstraint);
 		return newUniqueConstraint;
 	}

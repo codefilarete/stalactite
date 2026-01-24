@@ -7,33 +7,37 @@ import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 
-public class UniqueConstraint {
+/**
+ * Represents a unique constraint on a table.
+ * 
+ * @author Guillaume Mary
+ */
+public class UniqueConstraint<T extends Table<T>> {
 	
-	private final Table table;
-	private final KeepOrderSet<Column<Table, Object>> columns;
+	private final T table;
+	private final KeepOrderSet<Column<T, ?>> columns;
 	private final String name;
-	private boolean unique = false;
 	
-	public <T extends Table> UniqueConstraint(String name, Column<T, ?> column, Column<T, ?> ... columns) {
-		this(name, (Iterable) Collections.addAll(Arrays.asSet(column), columns));
+	public UniqueConstraint(String name, Column<T, ?> column, Column<T, ?> ... columns) {
+		this(name, Collections.addAll(new KeepOrderSet<>(column), columns));
 	}
 	
-	public <T extends Table> UniqueConstraint(String name, Iterable<Column<T, Object>> columns) {
-		// table is took from columns
+	public UniqueConstraint(String name, Iterable<Column<T, ?>> columns) {
+		// table is taken from columns
 		this.table = Iterables.first(columns).getTable();
-		this.columns = (KeepOrderSet) Iterables.copy(columns, new KeepOrderSet<>());
+		this.columns = Iterables.copy(columns, new KeepOrderSet<>());
 		this.name = name;
 	}
 	
-	public <T extends Table> Set<Column<T, Object>> getColumns() {
-		return (Set) columns;
+	public Set<Column<T, ?>> getColumns() {
+		return columns;
 	}
 	
 	public String getName() {
 		return name;
 	}
 	
-	public Table getTable() {
+	public T getTable() {
 		return table;
 	}
 }

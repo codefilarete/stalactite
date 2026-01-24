@@ -95,8 +95,8 @@ public class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 	
 	@Override
 	protected void addIndex(Column<?, ?> column) {
-		String indexName = indexNamingStrategy.giveName(oneToOneRelation.getTargetProvider(), column.getExpression());
-		column.getTable().addIndex(indexName, column).setUnique();
+		String indexName = indexNamingStrategy.giveName(oneToOneRelation.getTargetProvider(), column);
+		column.getTable().addUniqueConstraint(indexName, column);
 	}
 	
 	@Override

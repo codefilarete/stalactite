@@ -34,6 +34,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Index;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.ddl.structure.UniqueConstraint;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
@@ -280,8 +281,9 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 							.map(Vehicle::getColor))
 					.build(persistenceContext);
 			
-			assertThat(((ConfiguredPersister<Car, Identifier<Long>>) persister).giveImpliedTables().stream().flatMap(table -> table.getIndexes().stream())
-					.map(Index::getName)
+			assertThat(((ConfiguredPersister<Car, Identifier<Long>>) persister).giveImpliedTables().stream()
+					.flatMap(table -> table.getUniqueConstraints().stream())
+					.map(UniqueConstraint::getName)
 					.collect(Collectors.toList())).containsExactlyInAnyOrder("model_UK");
 		}
 		
@@ -295,8 +297,9 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 							.withIndexNaming((accessor, columnName) -> AccessorDefinition.giveDefinition(accessor).getName() + "_Unique_Index"))
 					.build(persistenceContext);
 			
-			assertThat(((ConfiguredPersister<Car, Identifier<Long>>) persister).giveImpliedTables().stream().flatMap(table -> table.getIndexes().stream())
-					.map(Index::getName)
+			assertThat(((ConfiguredPersister<Car, Identifier<Long>>) persister).giveImpliedTables().stream()
+					.flatMap(table -> table.getUniqueConstraints().stream())
+					.map(UniqueConstraint::getName)
 					.collect(Collectors.toList())).containsExactlyInAnyOrder("model_Unique_Index");
 		}
 		
@@ -311,8 +314,9 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 							.withIndexNaming((accessor, columnName) -> AccessorDefinition.giveDefinition(accessor).getName() + "_Unique_Index"))
 					.build(persistenceContext);
 			
-			assertThat(((ConfiguredPersister<Car, Identifier<Long>>) persister).giveImpliedTables().stream().flatMap(table -> table.getIndexes().stream())
-					.map(Index::getName)
+			assertThat(((ConfiguredPersister<Car, Identifier<Long>>) persister).giveImpliedTables().stream()
+					.flatMap(table -> table.getUniqueConstraints().stream())
+					.map(UniqueConstraint::getName)
 					.collect(Collectors.toList())).containsExactlyInAnyOrder("model_UK");
 		}
 		

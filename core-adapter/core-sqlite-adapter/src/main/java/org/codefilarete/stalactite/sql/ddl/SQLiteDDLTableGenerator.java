@@ -22,7 +22,7 @@ public class SQLiteDDLTableGenerator extends DDLTableGenerator {
 	 * @return the generated DDL order to add the unique constraint
 	 */
 	@Override
-	public String generateCreateUniqueConstraint(UniqueConstraint uniqueConstraint) {
+	public String generateCreateUniqueConstraint(UniqueConstraint<?> uniqueConstraint) {
 		Table table = uniqueConstraint.getTable();
 		StringAppender sqlCreateIndex = new DDLAppender(dmlNameProvider, "create unique index ")
 				.cat(uniqueConstraint.getName(), " on ", table, "(")
@@ -31,7 +31,7 @@ public class SQLiteDDLTableGenerator extends DDLTableGenerator {
 	}
 	
 	@Override
-	public String generateCreateForeignKey(ForeignKey foreignKey) {
+	public String generateCreateForeignKey(ForeignKey<?, ?, ?> foreignKey) {
 		// SQLite doesn't support any kind of foreign key creation out of the table creation SQL statement
 		// The only way to add the foreign key is to recreate the table with it : hence the process is a bit complex
 		// since you have to create a duplicate of your table, with the foreign key, copy the data to it, remove the

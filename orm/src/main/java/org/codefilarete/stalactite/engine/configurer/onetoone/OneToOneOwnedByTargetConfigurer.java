@@ -138,8 +138,8 @@ public class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 			propertyAccessor = oneToOneRelation.getTargetProvider();
 		}
 		
-		String indexName = indexNamingStrategy.giveName(propertyAccessor, nullable(oneToOneRelation.getReverseColumn()).map(Column::getExpression).get());
-		column.getTable().addIndex(indexName, column).setUnique();
+		String indexName = indexNamingStrategy.giveName(propertyAccessor, column);
+		column.getTable().addUniqueConstraint(indexName, column);
 	}
 	
 	private Key<RIGHTTABLE, SRCID> createOrUseReverseColumn(

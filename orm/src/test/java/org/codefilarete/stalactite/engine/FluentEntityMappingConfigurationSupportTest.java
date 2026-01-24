@@ -65,6 +65,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Index;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.ddl.structure.UniqueConstraint;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
@@ -1333,8 +1334,9 @@ class FluentEntityMappingConfigurationSupportTest {
 				.withIndexNaming((accessor, columnName) -> "myIndex")
 				.build(persistenceContext);
 		
-		assertThat(((ConfiguredPersister<Toto, Identifier<UUID>>) persister).giveImpliedTables().stream().flatMap(table -> table.getIndexes().stream())
-				.map(Index::getName)
+		assertThat(((ConfiguredPersister<Toto, Identifier<UUID>>) persister).giveImpliedTables().stream()
+				.flatMap(table -> table.getUniqueConstraints().stream())
+				.map(UniqueConstraint::getName)
 				.collect(Collectors.toList())).containsExactlyInAnyOrder("myIndex");
 	}
 	
@@ -1348,12 +1350,13 @@ class FluentEntityMappingConfigurationSupportTest {
 				.withIndexNaming((accessor, columnName) -> "myIndex")
 				.build(persistenceContext);
 		
-		assertThat(((ConfiguredPersister<Toto, Identifier<UUID>>) persister).giveImpliedTables().stream().flatMap(table -> table.getIndexes().stream())
-				.map(Index::getName)
+		assertThat(((ConfiguredPersister<Toto, Identifier<UUID>>) persister).giveImpliedTables().stream()
+				.flatMap(table -> table.getUniqueConstraints().stream())
+				.map(UniqueConstraint::getName)
 				.collect(Collectors.toList())).containsExactlyInAnyOrder("myIndex");
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		assertThat(ddlDeployer.getCreationScripts()).contains("create unique index myIndex on Toto(modificationDate)");
+		assertThat(ddlDeployer.getCreationScripts()).contains("alter table Toto add constraint myIndex unique (modificationDate)");
 	}
 	
 	@Test
@@ -1366,12 +1369,13 @@ class FluentEntityMappingConfigurationSupportTest {
 						.map(Timestamp::getModificationDate).unique())
 				.build(persistenceContext);
 		
-		assertThat(((ConfiguredPersister<Toto, Identifier<UUID>>) persister).giveImpliedTables().stream().flatMap(table -> table.getIndexes().stream())
-				.map(Index::getName)
+		assertThat(((ConfiguredPersister<Toto, Identifier<UUID>>) persister).giveImpliedTables().stream()
+				.flatMap(table -> table.getUniqueConstraints().stream())
+				.map(UniqueConstraint::getName)
 				.collect(Collectors.toList())).containsExactlyInAnyOrder("myIndex");
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		assertThat(ddlDeployer.getCreationScripts()).contains("create unique index myIndex on Toto(modificationDate)");
+		assertThat(ddlDeployer.getCreationScripts()).contains("alter table Toto add constraint myIndex unique (modificationDate)");
 	}
 	
 	@Test

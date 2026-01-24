@@ -78,7 +78,7 @@ public class DDLTableGenerator {
 		return sqlCreateFK.cat(")").toString();
 	}
 	
-	public String generateCreateUniqueConstraint(UniqueConstraint uniqueConstraint) {
+	public String generateCreateUniqueConstraint(UniqueConstraint<?> uniqueConstraint) {
 		Table<?> table = uniqueConstraint.getTable();
 		StringAppender sqlCreateIndex = new DDLAppender(dmlNameProvider, "alter table ")
 				.cat(table, " add constraint ", uniqueConstraint.getName(), " unique ", "(")

@@ -307,10 +307,9 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 			Column<T, O> column = nullable(overriddenColumn).getOr(() -> addColumnToTable(linkage, columnName, columnSize));
 			
 			if (linkage.isUnique() && linkage instanceof EmbeddableLinkageSupport) {
-				targetTable.addIndex(
-								Objects.preventNull(beanMappingConfiguration.getIndexNamingStrategy(), indexNamingStrategy).giveName(((EmbeddableLinkageSupport) linkage).getDslLinkage()),
-								column)
-						.setUnique();
+				targetTable.addUniqueConstraint(
+								Objects.preventNull(beanMappingConfiguration.getIndexNamingStrategy(), indexNamingStrategy).giveName(linkage.getAccessor(), column),
+								column);
 			}
 			
 			ensureColumnBindingInRegistry(linkage, column);

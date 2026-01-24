@@ -38,6 +38,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Index;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.ddl.structure.UniqueConstraint;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.result.RowIterator;
@@ -856,9 +857,9 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		Map<String, Table<?>> tablePerName = Iterables.map(DDLDeployer.collectTables(persistenceContext), Table::getName);
 		Table<?> countryTable = tablePerName.get("Country");
-		assertThat(countryTable.getIndexes())
+		assertThat(countryTable.getUniqueConstraints())
 				.usingRecursiveFieldByFieldElementComparator()
-				.containsExactly(new Index("country_capital_id_key", new KeepOrderSet<>(countryTable.getColumn("capitalId"))).setUnique());
+				.containsExactly(new UniqueConstraint("country_capital_id_key", new KeepOrderSet<>(countryTable.getColumn("capitalId"))));
 		
 	}
 	
@@ -875,9 +876,9 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		Map<String, Table<?>> tablePerName = Iterables.map(DDLDeployer.collectTables(persistenceContext), Table::getName);
 		Table<?> cityTable = tablePerName.get("City");
-		assertThat(cityTable.getIndexes())
+		assertThat(cityTable.getUniqueConstraints())
 				.usingRecursiveFieldByFieldElementComparator()
-				.containsExactly(new Index("city_country_key", new KeepOrderSet<>(cityTable.getColumn("countryId"))).setUnique());
+				.containsExactly(new UniqueConstraint("city_country_id_key", new KeepOrderSet<>(cityTable.getColumn("countryId"))));
 	}
 	
 	@Test
@@ -893,9 +894,9 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		Map<String, Table<?>> tablePerName = Iterables.map(DDLDeployer.collectTables(persistenceContext), Table::getName);
 		Table<?> cityTable = tablePerName.get("City");
-		assertThat(cityTable.getIndexes())
+		assertThat(cityTable.getUniqueConstraints())
 				.usingRecursiveFieldByFieldElementComparator()
-				.containsExactly(new Index("country_capital_key", new KeepOrderSet<>(cityTable.getColumn("country"))).setUnique());
+				.containsExactly(new UniqueConstraint("city_country_key", new KeepOrderSet<>(cityTable.getColumn("country"))));
 	}
 	
 	@Test
