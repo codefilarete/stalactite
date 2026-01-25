@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.engine;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -25,9 +24,9 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.sql.DataSource;
 
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.MutatorByField;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
@@ -63,7 +62,6 @@ import org.codefilarete.stalactite.sql.ddl.Length;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
-import org.codefilarete.stalactite.sql.ddl.structure.Index;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.ddl.structure.UniqueConstraint;
 import org.codefilarete.stalactite.sql.result.Accumulators;
@@ -1327,11 +1325,11 @@ class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	void withIndexNaming() {
+	void withUniqueConstraintNaming() {
 		EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
 				.mapKey(Toto::setId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(Toto::getName).unique()
-				.withIndexNaming((accessor, columnName) -> "myIndex")
+				.withUniqueConstraintNaming((accessor, columnName) -> "myIndex")
 				.build(persistenceContext);
 		
 		assertThat(((ConfiguredPersister<Toto, Identifier<UUID>>) persister).giveImpliedTables().stream()
@@ -1341,13 +1339,13 @@ class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	void withIndexNaming_isAppliedToEmbedded() {
+	void withUniqueConstraintNaming_isAppliedToEmbedded() {
 		EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
 				.mapKey(Toto::setId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 						.map(Timestamp::getCreationDate)
 						.map(Timestamp::getModificationDate).unique())
-				.withIndexNaming((accessor, columnName) -> "myIndex")
+				.withUniqueConstraintNaming((accessor, columnName) -> "myIndex")
 				.build(persistenceContext);
 		
 		assertThat(((ConfiguredPersister<Toto, Identifier<UUID>>) persister).giveImpliedTables().stream()
@@ -1360,11 +1358,11 @@ class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	void withIndexNaming_onEmbedded() {
+	void withUniqueConstraintNaming_onEmbedded() {
 		EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
 				.mapKey(Toto::setId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
-						.withIndexNaming((accessor, columnName) -> "myIndex")
+						.withUniqueConstraintNaming((accessor, columnName) -> "myIndex")
 						.map(Timestamp::getCreationDate)
 						.map(Timestamp::getModificationDate).unique())
 				.build(persistenceContext);

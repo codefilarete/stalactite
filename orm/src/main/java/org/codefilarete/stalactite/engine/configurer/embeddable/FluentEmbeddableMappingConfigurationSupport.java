@@ -1,7 +1,5 @@
 package org.codefilarete.stalactite.engine.configurer.embeddable;
 
-import javax.annotation.Nullable;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -9,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMethod;
@@ -21,7 +20,6 @@ import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder;
@@ -32,7 +30,7 @@ import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder
 import org.codefilarete.stalactite.dsl.embeddable.ImportedEmbedOptions;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.ElementCollectionOptions;
 import org.codefilarete.stalactite.dsl.property.EmbeddableCollectionOptions;
 import org.codefilarete.stalactite.dsl.property.EnumOptions;
@@ -55,7 +53,6 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry.EnumBindType;
-import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.reflect.MethodDispatcher;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -89,7 +86,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	private ColumnNamingStrategy columnNamingStrategy;
 	
 	@Nullable
-	private IndexNamingStrategy indexNamingStrategy;
+	private UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy;
 
 	/** Mapping definitions */
 	protected final List<Linkage> mapping = new ArrayList<>();
@@ -139,8 +136,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	
 	@Nullable
 	@Override
-	public IndexNamingStrategy getIndexNamingStrategy() {
-		return indexNamingStrategy;
+	public UniqueConstraintNamingStrategy getUniqueConstraintNamingStrategy() {
+		return uniqueConstraintNamingStrategy;
 	}
 
 	@Override
@@ -428,8 +425,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	}
 	
 	@Override
-	public FluentEmbeddableMappingBuilder<C> withIndexNaming(IndexNamingStrategy indexNamingStrategy) {
-		this.indexNamingStrategy = indexNamingStrategy;
+	public FluentEmbeddableMappingBuilder<C> withUniqueConstraintNaming(UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy) {
+		this.uniqueConstraintNamingStrategy = uniqueConstraintNamingStrategy;
 		return this;
 	}
 

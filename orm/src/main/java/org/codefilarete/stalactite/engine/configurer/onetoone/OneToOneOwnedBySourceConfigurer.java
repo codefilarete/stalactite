@@ -6,8 +6,8 @@ import java.util.Map;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
@@ -52,8 +52,8 @@ public class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 										   OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation,
 										   JoinColumnNamingStrategy joinColumnNamingStrategy,
 										   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-										   IndexNamingStrategy indexNamingStrategy) {
-		super(sourcePersister, oneToOneRelation, indexNamingStrategy);
+										   UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy) {
+		super(sourcePersister, oneToOneRelation, uniqueConstraintNamingStrategy);
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 	}
@@ -94,9 +94,9 @@ public class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 	}
 	
 	@Override
-	protected void addIndex(Column<?, ?> column) {
-		String indexName = indexNamingStrategy.giveName(oneToOneRelation.getTargetProvider(), column);
-		column.getTable().addUniqueConstraint(indexName, column);
+	protected void addUniqueConstraint(Column<?, ?> column) {
+		String constraintName = uniqueConstraintNamingStrategy.giveName(oneToOneRelation.getTargetProvider(), column);
+		column.getTable().addUniqueConstraint(constraintName, column);
 	}
 	
 	@Override

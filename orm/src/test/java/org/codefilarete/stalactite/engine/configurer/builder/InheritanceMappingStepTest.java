@@ -11,8 +11,8 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.builder.InheritanceMappingStep.MappingPerTable;
 import org.codefilarete.stalactite.engine.model.AbstractVehicle;
 import org.codefilarete.stalactite.engine.model.Car;
@@ -57,7 +57,7 @@ class InheritanceMappingStepTest {
 				new TableMappingStep<Car, Identifier<Long>>().mapEntityConfigurationToTable(configuration, dummyTable, TableNamingStrategy.DEFAULT),
 				new ColumnBinderRegistry(),
 				ColumnNamingStrategy.DEFAULT,
-				IndexNamingStrategy.DEFAULT
+				UniqueConstraintNamingStrategy.DEFAULT
 		);
 
 		// NB: containsOnly() doesn't work : returns false whereas result is good
@@ -101,7 +101,7 @@ class InheritanceMappingStepTest {
 				new TableMappingStep<Car, Identifier<Long>>().mapEntityConfigurationToTable(configuration, dummyTable, TableNamingStrategy.DEFAULT),
 				new ColumnBinderRegistry(),
 				ColumnNamingStrategy.DEFAULT,
-				IndexNamingStrategy.DEFAULT
+				UniqueConstraintNamingStrategy.DEFAULT
 		);
 
 		// NB: AssertJ containsOnly() doesn't work : returns false whereas result is good
@@ -157,7 +157,7 @@ class InheritanceMappingStepTest {
 				new TableMappingStep<Car, Identifier<Long>>().mapEntityConfigurationToTable(configuration, carTable, TableNamingStrategy.DEFAULT),
 				new ColumnBinderRegistry(),
 				ColumnNamingStrategy.DEFAULT,
-				IndexNamingStrategy.DEFAULT
+				UniqueConstraintNamingStrategy.DEFAULT
 		);
 
 		assertThat(mappingPerTable.giveTables())
@@ -233,7 +233,7 @@ class InheritanceMappingStepTest {
 				new TableMappingStep<Car, Identifier<Long>>().mapEntityConfigurationToTable(configuration, dummyTable, TableNamingStrategy.DEFAULT),
 				new ColumnBinderRegistry(),
 				ColumnNamingStrategy.DEFAULT,
-				IndexNamingStrategy.DEFAULT
+				UniqueConstraintNamingStrategy.DEFAULT
 		);
 
 		// NB: containsOnly() doesn't work : returns false whereas result is good

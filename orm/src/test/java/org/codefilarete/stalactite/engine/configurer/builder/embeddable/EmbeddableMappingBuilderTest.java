@@ -5,10 +5,10 @@ import java.util.Set;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.MappingEase;
-import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.embeddable.FluentEmbeddableMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.configurer.entity.FluentEntityMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.model.Color;
@@ -88,7 +88,7 @@ class EmbeddableMappingBuilderTest {
 				countryTable,
 				new ColumnBinderRegistry(),
 				ColumnNamingStrategy.DEFAULT,
-				IndexNamingStrategy.DEFAULT);
+				UniqueConstraintNamingStrategy.DEFAULT);
 		EmbeddableMappingBuilder<Country, ?>.InternalProcessor internalProcessor = testInstance.new InternalProcessor(false);
 		EmbeddableLinkage<Country, Set> linkageMock = mock(EmbeddableLinkage.class);
 		when(linkageMock.getAccessor()).thenReturn(Accessors.accessor(Country::getCities));
@@ -113,7 +113,7 @@ class EmbeddableMappingBuilderTest {
 					countryTable,
 					new ColumnBinderRegistry(),
 					ColumnNamingStrategy.DEFAULT,
-					IndexNamingStrategy.DEFAULT);
+					UniqueConstraintNamingStrategy.DEFAULT);
 			EmbeddableMappingBuilder.InternalProcessor testInstance = testInstanceBuilder.new InternalProcessor(false);
 
 			// ... and a linkage that uses a different type
@@ -140,7 +140,7 @@ class EmbeddableMappingBuilderTest {
 					countryTable,
 					new ColumnBinderRegistry(),
 					ColumnNamingStrategy.DEFAULT,
-					IndexNamingStrategy.DEFAULT);
+					UniqueConstraintNamingStrategy.DEFAULT);
 			EmbeddableMappingBuilder.InternalProcessor testInstance = testInstanceBuilder.new InternalProcessor(false);
 			
 			// ... and a linkage that uses a different type

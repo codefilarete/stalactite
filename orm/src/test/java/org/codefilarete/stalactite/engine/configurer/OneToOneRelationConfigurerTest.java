@@ -1,12 +1,11 @@
 package org.codefilarete.stalactite.engine.configurer;
 
-import javax.annotation.Nullable;
-import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.Accessors;
@@ -20,15 +19,15 @@ import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.SingleK
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
-import org.codefilarete.stalactite.engine.configurer.property.ColumnLinkageOptionsSupport;
-import org.codefilarete.stalactite.engine.configurer.embeddable.LinkageSupport;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
+import org.codefilarete.stalactite.engine.configurer.embeddable.LinkageSupport;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.property.ColumnLinkageOptionsSupport;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
@@ -49,7 +48,6 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.test.DefaultDialect;
-import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
@@ -193,7 +191,7 @@ class OneToOneRelationConfigurerTest {
 				dialect,
 				connectionConfiguration,
 				countryPersister,
-				TableNamingStrategy.DEFAULT, JoinColumnNamingStrategy.JOIN_DEFAULT, ForeignKeyNamingStrategy.DEFAULT, IndexNamingStrategy.DEFAULT,
+				TableNamingStrategy.DEFAULT, JoinColumnNamingStrategy.JOIN_DEFAULT, ForeignKeyNamingStrategy.DEFAULT, UniqueConstraintNamingStrategy.DEFAULT,
 				PersisterBuilderContext.CURRENT.get());
 		
 		testInstance.configure(countryCapitalRelation);
@@ -334,7 +332,7 @@ class OneToOneRelationConfigurerTest {
 				dialect,
 				connectionConfiguration,
 				countryPersister,
-				TableNamingStrategy.DEFAULT, JoinColumnNamingStrategy.JOIN_DEFAULT, ForeignKeyNamingStrategy.DEFAULT, IndexNamingStrategy.DEFAULT,
+				TableNamingStrategy.DEFAULT, JoinColumnNamingStrategy.JOIN_DEFAULT, ForeignKeyNamingStrategy.DEFAULT, UniqueConstraintNamingStrategy.DEFAULT,
 				PersisterBuilderContext.CURRENT.get());
 		
 		testInstance.configure(countryCapitalRelation);

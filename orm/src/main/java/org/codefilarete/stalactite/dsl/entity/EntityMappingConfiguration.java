@@ -1,12 +1,11 @@
 package org.codefilarete.stalactite.dsl.entity;
 
-import javax.annotation.Nullable;
-import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
@@ -18,10 +17,10 @@ import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
@@ -66,7 +65,7 @@ public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfi
 	ForeignKeyNamingStrategy getForeignKeyNamingStrategy();
 	
 	@Nullable
-	IndexNamingStrategy getIndexNamingStrategy();
+	UniqueConstraintNamingStrategy getUniqueConstraintNamingStrategy();
 	
 	@Nullable
 	AssociationTableNamingStrategy getAssociationTableNamingStrategy();

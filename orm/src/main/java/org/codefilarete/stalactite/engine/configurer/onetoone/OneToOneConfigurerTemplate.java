@@ -1,17 +1,17 @@
 package org.codefilarete.stalactite.engine.configurer.onetoone;
 
-import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.RuntimeMappingException;
-import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
@@ -45,14 +45,14 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 	
 	protected final OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation;
 	
-	protected final IndexNamingStrategy indexNamingStrategy;
+	protected final UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy;
 	
 	protected OneToOneConfigurerTemplate(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 										 OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation,
-										 IndexNamingStrategy indexNamingStrategy) {
+										 UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy) {
 		this.sourcePersister = sourcePersister;
 		this.oneToOneRelation = oneToOneRelation;
-		this.indexNamingStrategy = indexNamingStrategy;
+		this.uniqueConstraintNamingStrategy = uniqueConstraintNamingStrategy;
 	}
 	
 	public String configure(@Nullable String tableAlias,
@@ -105,14 +105,14 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 		// we only support index for single key
 		if (oneToOneRelation.isUnique() && foreignKeyColumns.getLeft().getColumns().size() == 1) {
 			if (oneToOneRelation.isRelationOwnedByTarget()) {
-				addIndex((Column<RIGHTTABLE, ?>) Iterables.first(foreignKeyColumns.getRight().getColumns()));
+				addUniqueConstraint((Column<RIGHTTABLE, ?>) Iterables.first(foreignKeyColumns.getRight().getColumns()));
 			} else {
-				addIndex((Column<LEFTTABLE, ?>) Iterables.first(foreignKeyColumns.getLeft().getColumns()));
+				addUniqueConstraint((Column<LEFTTABLE, ?>) Iterables.first(foreignKeyColumns.getLeft().getColumns()));
 			}
 		}
 	}
 	
-	protected abstract void addIndex(Column<?, ?> column);
+	protected abstract void addUniqueConstraint(Column<?, ?> column);
 	
 	protected abstract BeanRelationFixer<SRC, TRGT> determineRelationFixer();
 	

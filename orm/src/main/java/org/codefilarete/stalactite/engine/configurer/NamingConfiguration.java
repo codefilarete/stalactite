@@ -4,7 +4,7 @@ import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
@@ -20,7 +20,7 @@ public class NamingConfiguration {
 	private final TableNamingStrategy tableNamingStrategy;
 	private final ColumnNamingStrategy columnNamingStrategy;
 	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
-	private final IndexNamingStrategy indexNamingStrategy;
+	private final UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy;
 	private final ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy;
 	private final MapEntryTableNamingStrategy mapEntryTableNamingStrategy;
 	private final JoinColumnNamingStrategy joinColumnNamingStrategy;
@@ -30,7 +30,7 @@ public class NamingConfiguration {
 	public NamingConfiguration(TableNamingStrategy tableNamingStrategy,
 							   ColumnNamingStrategy columnNamingStrategy,
 							   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-							   IndexNamingStrategy indexNamingStrategy,
+							   UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy,
 							   ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy,
 							   MapEntryTableNamingStrategy mapEntryTableNamingStrategy,
 							   JoinColumnNamingStrategy joinColumnNamingStrategy,
@@ -39,7 +39,7 @@ public class NamingConfiguration {
 		this.tableNamingStrategy = tableNamingStrategy;
 		this.columnNamingStrategy = columnNamingStrategy;
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
-		this.indexNamingStrategy = indexNamingStrategy;
+		this.uniqueConstraintNamingStrategy = uniqueConstraintNamingStrategy;
 		this.elementCollectionTableNamingStrategy = elementCollectionTableNamingStrategy;
 		this.mapEntryTableNamingStrategy = mapEntryTableNamingStrategy;
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
@@ -59,8 +59,8 @@ public class NamingConfiguration {
 		return foreignKeyNamingStrategy;
 	}
 	
-	public IndexNamingStrategy getIndexNamingStrategy() {
-		return indexNamingStrategy;
+	public UniqueConstraintNamingStrategy getIndexNamingStrategy() {
+		return uniqueConstraintNamingStrategy;
 	}
 	
 	public ElementCollectionTableNamingStrategy getElementCollectionTableNamingStrategy() {

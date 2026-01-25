@@ -1,10 +1,10 @@
 package org.codefilarete.stalactite.engine;
 
-import javax.sql.DataSource;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.sql.DataSource;
 
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
@@ -32,7 +32,6 @@ import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
-import org.codefilarete.stalactite.sql.ddl.structure.Index;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.ddl.structure.UniqueConstraint;
 import org.codefilarete.stalactite.sql.result.Accumulators;
@@ -276,7 +275,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			EntityPersister<Car, Identifier<Long>> persister = entityBuilder(Car.class, LONG_TYPE)
 					.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Car::getModel).unique()
-					.withIndexNaming((accessor, columnName) -> AccessorDefinition.giveDefinition(accessor).getName() + "_UK")
+					.withUniqueConstraintNaming((accessor, columnName) -> AccessorDefinition.giveDefinition(accessor).getName() + "_UK")
 					.mapSuperClass(embeddableBuilder(Vehicle.class)
 							.map(Vehicle::getColor))
 					.build(persistenceContext);
@@ -294,7 +293,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.map(Car::getModel).unique()
 					.mapSuperClass(embeddableBuilder(Vehicle.class)
 							.map(Vehicle::getColor)
-							.withIndexNaming((accessor, columnName) -> AccessorDefinition.giveDefinition(accessor).getName() + "_Unique_Index"))
+							.withUniqueConstraintNaming((accessor, columnName) -> AccessorDefinition.giveDefinition(accessor).getName() + "_Unique_Index"))
 					.build(persistenceContext);
 			
 			assertThat(((ConfiguredPersister<Car, Identifier<Long>>) persister).giveImpliedTables().stream()
@@ -308,10 +307,10 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			EntityPersister<Car, Identifier<Long>> persister = entityBuilder(Car.class, LONG_TYPE)
 					.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Car::getModel).unique()
-					.withIndexNaming((accessor, columnName) -> AccessorDefinition.giveDefinition(accessor).getName() + "_UK")
+					.withUniqueConstraintNaming((accessor, columnName) -> AccessorDefinition.giveDefinition(accessor).getName() + "_UK")
 					.mapSuperClass(embeddableBuilder(Vehicle.class)
 							.map(Vehicle::getColor)
-							.withIndexNaming((accessor, columnName) -> AccessorDefinition.giveDefinition(accessor).getName() + "_Unique_Index"))
+							.withUniqueConstraintNaming((accessor, columnName) -> AccessorDefinition.giveDefinition(accessor).getName() + "_Unique_Index"))
 					.build(persistenceContext);
 			
 			assertThat(((ConfiguredPersister<Car, Identifier<Long>>) persister).giveImpliedTables().stream()

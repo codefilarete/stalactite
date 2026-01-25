@@ -7,7 +7,7 @@ import java.util.function.Supplier;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.ElementCollectionOptions;
 import org.codefilarete.stalactite.dsl.property.EmbeddableCollectionOptions;
 import org.codefilarete.stalactite.dsl.property.EnumOptions;
@@ -241,7 +241,7 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 */
 	FluentEmbeddableMappingConfiguration<C> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	
-	FluentEmbeddableMappingConfiguration<C> withIndexNaming(IndexNamingStrategy indexNamingStrategy);
+	FluentEmbeddableMappingConfiguration<C> withUniqueConstraintNaming(UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy);
 	
 	/**
 	 * A mashup that allows to come back to the "main" options as well as continue configuration of an "imported bean mapping"

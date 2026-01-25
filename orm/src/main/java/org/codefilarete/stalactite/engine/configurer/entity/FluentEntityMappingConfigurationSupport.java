@@ -1,18 +1,16 @@
 package org.codefilarete.stalactite.engine.configurer.entity;
 
-import javax.annotation.Nullable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
-import org.codefilarete.reflection.AccessorByField;
 import org.codefilarete.reflection.AccessorByMethod;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.Accessors;
@@ -47,11 +45,10 @@ import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
-import org.codefilarete.stalactite.dsl.property.CollectionOptions;
+import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.ElementCollectionOptions;
 import org.codefilarete.stalactite.dsl.property.EmbeddableCollectionOptions;
 import org.codefilarete.stalactite.dsl.property.EnumOptions;
@@ -76,8 +73,6 @@ import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.function.Serie;
 import org.codefilarete.tool.reflect.MethodDispatcher;
@@ -121,7 +116,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	private ForeignKeyNamingStrategy foreignKeyNamingStrategy = ForeignKeyNamingStrategy.DEFAULT;
 	
-	private IndexNamingStrategy indexNamingStrategy;
+	private UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy;
 	
 	private JoinColumnNamingStrategy joinColumnNamingStrategy = JoinColumnNamingStrategy.JOIN_DEFAULT;
 	
@@ -266,8 +261,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	@javax.annotation.Nullable
 	@Override
-	public IndexNamingStrategy getIndexNamingStrategy() {
-		return indexNamingStrategy;
+	public UniqueConstraintNamingStrategy getUniqueConstraintNamingStrategy() {
+		return uniqueConstraintNamingStrategy;
 	}
 
 	@Override
@@ -1199,8 +1194,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public FluentEntityMappingBuilder<C, I> withIndexNaming(IndexNamingStrategy indexNamingStrategy) {
-		this.indexNamingStrategy = indexNamingStrategy;
+	public FluentEntityMappingBuilder<C, I> withUniqueConstraintNaming(UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy) {
+		this.uniqueConstraintNamingStrategy = uniqueConstraintNamingStrategy;
 		return this;
 	}
 

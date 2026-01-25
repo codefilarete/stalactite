@@ -1,11 +1,10 @@
 package org.codefilarete.stalactite.engine.configurer.builder.embeddable;
 
-import javax.annotation.Nullable;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.PropertyAccessor;
@@ -14,7 +13,7 @@ import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration.Linkage;
 import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfiguration;
-import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
@@ -173,8 +172,8 @@ public interface EmbeddableMappingConfiguration<C> {
 			}
 			
 			@Override
-			public IndexNamingStrategy getIndexNamingStrategy() {
-				// no IndexNamingStrategy for compositeKey, this would be nonsense.
+			public UniqueConstraintNamingStrategy getUniqueConstraintNamingStrategy() {
+				// no UniqueConstraintNamingStrategy for compositeKey, this would be nonsense.
 				return null;
 			}
 		};
@@ -249,8 +248,8 @@ public interface EmbeddableMappingConfiguration<C> {
 			}
 			
 			@Override
-			public IndexNamingStrategy getIndexNamingStrategy() {
-				return embeddableMappingConfiguration.getIndexNamingStrategy();
+			public UniqueConstraintNamingStrategy getUniqueConstraintNamingStrategy() {
+				return embeddableMappingConfiguration.getUniqueConstraintNamingStrategy();
 			}
 		};
 	}
@@ -266,7 +265,7 @@ public interface EmbeddableMappingConfiguration<C> {
 	
 	Collection<Inset<C, Object>> getInsets();
 	
-	IndexNamingStrategy getIndexNamingStrategy();
+	UniqueConstraintNamingStrategy getUniqueConstraintNamingStrategy();
 	
 	/**
 	 * @return an iterable for all inheritance configurations, including this

@@ -15,13 +15,13 @@ import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
-import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
-import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
-import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
-import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
@@ -112,7 +112,7 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 			MapEntryTableNamingStrategy tableNamingStrategy,
 			Dialect dialect,
 			ConnectionConfiguration connectionConfiguration,
-			IndexNamingStrategy indexNamingStrategy) {
+			UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy) {
 		super(convertEntityMapToIdentifierMap(mapRelation, keyEntityPersister, valueEntityPersister),
 				sourcePersister,
 				foreignKeyNamingStrategy,
@@ -120,7 +120,7 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 				tableNamingStrategy,
 				dialect,
 				connectionConfiguration,
-				indexNamingStrategy);
+				uniqueConstraintNamingStrategy);
 		this.originalMapRelation = mapRelation;
 		this.keyEntityPersister = keyEntityPersister;
 		this.valueEntityPersister = valueEntityPersister;

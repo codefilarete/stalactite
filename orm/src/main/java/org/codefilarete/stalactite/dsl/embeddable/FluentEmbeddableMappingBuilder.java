@@ -5,7 +5,7 @@ import java.util.Collection;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -81,7 +81,7 @@ public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappi
 	FluentEmbeddableMappingBuilder<C> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	
 	@Override
-	FluentEmbeddableMappingBuilder<C> withIndexNaming(IndexNamingStrategy indexNamingStrategy);
+	FluentEmbeddableMappingBuilder<C> withUniqueConstraintNaming(UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy);
 	
 	interface FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O>
 			extends FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O>,

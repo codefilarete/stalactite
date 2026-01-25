@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.engine.configurer.map;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -10,6 +9,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorDefinition;
@@ -19,8 +19,8 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteCollectionCascader;
@@ -114,7 +114,7 @@ public class EntityAsValueMapRelationConfigurer<SRC, SRCID, K, V, VID, M extends
 			MapEntryTableNamingStrategy tableNamingStrategy,
 			Dialect dialect,
 			ConnectionConfiguration connectionConfiguration,
-			IndexNamingStrategy indexNamingStrategy) {
+			UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy) {
 		super(convertEntityMapToIdentifierMap(mapRelation, valueEntityPersister),
 				sourcePersister,
 				foreignKeyNamingStrategy,
@@ -122,7 +122,7 @@ public class EntityAsValueMapRelationConfigurer<SRC, SRCID, K, V, VID, M extends
 				tableNamingStrategy,
 				dialect,
 				connectionConfiguration,
-				indexNamingStrategy);
+				uniqueConstraintNamingStrategy);
 		this.originalMapRelation = mapRelation;
 		this.valueEntityPersister = valueEntityPersister;
 		this.mapGetter = originalMapRelation.getMapProvider()::get;
@@ -219,7 +219,7 @@ public class EntityAsValueMapRelationConfigurer<SRC, SRCID, K, V, VID, M extends
 		} else {
 			// a special configuration was given, we compute a EmbeddedClassMapping from it
 			EmbeddableMappingBuilder<K, MAPTABLE> entryKeyMappingBuilder = new EmbeddableMappingBuilder<K, MAPTABLE>(keyEmbeddableConfiguration, targetTable,
-					dialect.getColumnBinderRegistry(), columnNamingStrategy, indexNamingStrategy) {
+					dialect.getColumnBinderRegistry(), columnNamingStrategy, uniqueConstraintNamingStrategy) {
 				@Override
 				protected <O> String determineColumnName(EmbeddableLinkage<K, O> linkage, @Nullable String overriddenColumName) {
 					return super.determineColumnName(linkage, mapRelation.getOverriddenValueColumnNames().get(linkage.getAccessor()));

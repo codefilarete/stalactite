@@ -18,9 +18,8 @@ import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
-import static org.mockito.Mockito.when;
 
-class IndexNamingStrategyTest {
+class UniqueConstraintNamingStrategyTest {
 	
 	static Iterable<Arguments> defaultImplementation_data() {
 		Table abstractVehicleTable = new Table(null, "AbstractVehicle");
@@ -53,8 +52,8 @@ class IndexNamingStrategyTest {
 	@ParameterizedTest
 	@MethodSource("defaultImplementation_data")
 	void defaultImplementation(ReversibleAccessor accessor, Column column, String expectedIndexName) {
-		String indexName = IndexNamingStrategy.DEFAULT.giveName(accessor, column);
-		assertThat(indexName).isEqualTo(expectedIndexName);
+		String constraintName = UniqueConstraintNamingStrategy.DEFAULT.giveName(accessor, column);
+		assertThat(constraintName).isEqualTo(expectedIndexName);
 	}
 	
 }

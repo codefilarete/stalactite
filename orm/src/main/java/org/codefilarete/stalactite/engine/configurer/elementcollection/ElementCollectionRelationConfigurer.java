@@ -4,9 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -21,7 +19,7 @@ import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableLinkage;
@@ -74,7 +72,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 	private final ElementCollectionTableNamingStrategy tableNamingStrategy;
 	private final Dialect dialect;
 	private final ConnectionConfiguration connectionConfiguration;
-	private final IndexNamingStrategy indexNamingStrategy;
+	private final UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy;
 	
 	public ElementCollectionRelationConfigurer(ConfiguredRelationalPersister<SRC, I> sourcePersister,
 											   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
@@ -83,7 +81,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 											   ElementCollectionTableNamingStrategy tableNamingStrategy,
 											   Dialect dialect,
 											   ConnectionConfiguration connectionConfiguration,
-											   IndexNamingStrategy indexNamingStrategy) {
+											   UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy) {
 		this.sourcePersister = sourcePersister;
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 		this.columnNamingStrategy = columnNamingStrategy;
@@ -91,7 +89,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 		this.tableNamingStrategy = tableNamingStrategy;
 		this.dialect = dialect;
 		this.connectionConfiguration = connectionConfiguration;
-		this.indexNamingStrategy = indexNamingStrategy;
+		this.uniqueConstraintNamingStrategy = uniqueConstraintNamingStrategy;
 	}
 	
 	public <SRCTABLE extends Table<SRCTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>> void
@@ -175,7 +173,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 		} else {
 			// a special configuration was given, we compute a EmbeddedClassMapping from it
 			EmbeddableMappingBuilder<TRGT, COLLECTIONTABLE> elementCollectionMappingBuilder = new EmbeddableMappingBuilder<TRGT, COLLECTIONTABLE>(embeddableConfiguration, targetTable,
-					dialect.getColumnBinderRegistry(), columnNamingStrategy, indexNamingStrategy) {
+					dialect.getColumnBinderRegistry(), columnNamingStrategy, uniqueConstraintNamingStrategy) {
 				@Override
 				protected <O> String determineColumnName(EmbeddableLinkage<TRGT, O> linkage, @javax.annotation.Nullable String overriddenColumName) {
 					return super.determineColumnName(linkage, collectionRelation.getOverriddenColumnNames().get(linkage.getAccessor()));

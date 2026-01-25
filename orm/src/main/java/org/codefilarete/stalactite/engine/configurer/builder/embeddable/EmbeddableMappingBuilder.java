@@ -1,7 +1,5 @@
 package org.codefilarete.stalactite.engine.configurer.builder.embeddable;
 
-import javax.annotation.Nullable;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -17,6 +15,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
@@ -30,7 +29,7 @@ import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -159,30 +158,30 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 	private final T targetTable;
 	private final ColumnBinderRegistry columnBinderRegistry;
 	private final ColumnNamingStrategy columnNamingStrategy;
-	private final IndexNamingStrategy indexNamingStrategy;
+	private final UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy;
 	
 	public EmbeddableMappingBuilder(org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration<C> mappingConfiguration,
 									T targetTable,
 									ColumnBinderRegistry columnBinderRegistry,
 									ColumnNamingStrategy columnNamingStrategy,
-									IndexNamingStrategy indexNamingStrategy) {
+									UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy) {
 		this(fromEmbeddableMappingConfiguration(mappingConfiguration),
 				targetTable,
 				columnBinderRegistry,
 				columnNamingStrategy,
-				indexNamingStrategy);
+				uniqueConstraintNamingStrategy);
 	}
 	
 	public EmbeddableMappingBuilder(CompositeKeyMappingConfiguration<C> mappingConfiguration,
 									T targetTable,
 									ColumnBinderRegistry columnBinderRegistry,
 									ColumnNamingStrategy columnNamingStrategy,
-									IndexNamingStrategy indexNamingStrategy) {
+									UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy) {
 		this(fromCompositeKeyMappingConfiguration(mappingConfiguration),
 				targetTable,
 				columnBinderRegistry,
 				columnNamingStrategy,
-				indexNamingStrategy);
+				uniqueConstraintNamingStrategy);
 	}
 	
 	@VisibleForTesting
@@ -190,12 +189,12 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 							 T targetTable,
 							 ColumnBinderRegistry columnBinderRegistry,
 							 ColumnNamingStrategy columnNameStrategy,
-							 IndexNamingStrategy indexNamingStrategy) {
+							 UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy) {
 		this.mainMappingConfiguration = mappingConfiguration;
 		this.targetTable = targetTable;
 		this.columnNamingStrategy = columnNameStrategy;
 		this.columnBinderRegistry = columnBinderRegistry;
-		this.indexNamingStrategy = indexNamingStrategy;
+		this.uniqueConstraintNamingStrategy = uniqueConstraintNamingStrategy;
 	}
 	
 	/**
@@ -308,7 +307,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 			
 			if (linkage.isUnique() && linkage instanceof EmbeddableLinkageSupport) {
 				targetTable.addUniqueConstraint(
-								Objects.preventNull(beanMappingConfiguration.getIndexNamingStrategy(), indexNamingStrategy).giveName(linkage.getAccessor(), column),
+								Objects.preventNull(beanMappingConfiguration.getUniqueConstraintNamingStrategy(), uniqueConstraintNamingStrategy).giveName(linkage.getAccessor(), column),
 								column);
 			}
 			
@@ -439,7 +438,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 			// will create them with their default name
 			excludedProperties.addAll(inset.getOverriddenColumns().keySet());
 			EmbeddableMappingBuilder<C, T> mappedSuperClassBuilder = new EmbeddableMappingBuilder<C, T>((EmbeddableMappingConfiguration<C>) superClassConfiguration, targetTable,
-					columnBinderRegistry, columnNamingStrategy, Objects.preventNull(superClassConfiguration.getIndexNamingStrategy(), indexNamingStrategy)) {
+					columnBinderRegistry, columnNamingStrategy, Objects.preventNull(superClassConfiguration.getUniqueConstraintNamingStrategy(), uniqueConstraintNamingStrategy)) {
 				
 				@Override
 				protected <O> String determineColumnName(EmbeddableLinkage<C, O> linkage, @Nullable String overriddenColumName) {

@@ -10,8 +10,8 @@ import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
@@ -30,8 +30,6 @@ import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.Duo;
-
-import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * @param <SRC> type of input (left/source entities)
@@ -64,10 +62,10 @@ public class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 										   OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation,
 										   JoinColumnNamingStrategy joinColumnNamingStrategy,
 										   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-										   IndexNamingStrategy indexNamingStrategy,
+										   UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy,
 										   Dialect dialect,
 										   ConnectionConfiguration connectionConfiguration) {
-		super(sourcePersister, oneToOneRelation, indexNamingStrategy);
+		super(sourcePersister, oneToOneRelation, uniqueConstraintNamingStrategy);
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 		this.dialect = dialect;
@@ -128,7 +126,7 @@ public class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 	}
 	
 	@Override
-	protected void addIndex(Column<?, ?> column) {
+	protected void addUniqueConstraint(Column<?, ?> column) {
 		ValueAccessPoint<?> propertyAccessor;
 		if (oneToOneRelation.getReverseGetter() != null) {
 			propertyAccessor = Accessors.accessorByMethodReference(oneToOneRelation.getReverseGetter());
@@ -138,8 +136,8 @@ public class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 			propertyAccessor = oneToOneRelation.getTargetProvider();
 		}
 		
-		String indexName = indexNamingStrategy.giveName(propertyAccessor, column);
-		column.getTable().addUniqueConstraint(indexName, column);
+		String constraintName = uniqueConstraintNamingStrategy.giveName(propertyAccessor, column);
+		column.getTable().addUniqueConstraint(constraintName, column);
 	}
 	
 	private Key<RIGHTTABLE, SRCID> createOrUseReverseColumn(

@@ -40,7 +40,7 @@ class PrimaryKeyStepTest {
 				new TableMappingStep<AbstractVehicle, Identifier<Long>>().mapEntityConfigurationToTable(identifyingConfiguration, mainTable, TableNamingStrategy.DEFAULT),
 				new ColumnBinderRegistry(),
 				identifyingConfiguration.getColumnNamingStrategy(),
-				identifyingConfiguration.getIndexNamingStrategy());
+				identifyingConfiguration.getUniqueConstraintNamingStrategy());
 		
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 				Column::getAbsoluteName,
@@ -75,7 +75,7 @@ class PrimaryKeyStepTest {
 				new TableMappingStep<AbstractVehicle, Identifier<Long>>().mapEntityConfigurationToTable(identifyingConfiguration, mainTable, TableNamingStrategy.DEFAULT),
 				new ColumnBinderRegistry(),
 				identifyingConfiguration.getColumnNamingStrategy(),
-				identifyingConfiguration.getIndexNamingStrategy());
+				identifyingConfiguration.getUniqueConstraintNamingStrategy());
 		
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 				Column::getAbsoluteName,
@@ -102,7 +102,7 @@ class PrimaryKeyStepTest {
 				new TableMappingStep<AbstractVehicle, Identifier<Long>>().mapEntityConfigurationToTable(identifyingConfiguration, mainTable, TableNamingStrategy.DEFAULT),
 				new ColumnBinderRegistry(),
 				identifyingConfiguration.getColumnNamingStrategy(),
-				identifyingConfiguration.getIndexNamingStrategy());
+				identifyingConfiguration.getUniqueConstraintNamingStrategy());
 
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 				Column::getAbsoluteName,

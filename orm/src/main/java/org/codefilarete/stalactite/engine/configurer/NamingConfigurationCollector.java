@@ -8,10 +8,10 @@ import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.function.Hanger.Holder;
 
@@ -63,17 +63,17 @@ public class NamingConfigurationCollector {
 		});
 		ForeignKeyNamingStrategy foreignKeyNamingStrategy = optionalForeignKeyNamingStrategy.getOr(ForeignKeyNamingStrategy.DEFAULT);
 		
-		Nullable<IndexNamingStrategy> optionalIndexNamingStrategy = empty();
+		Nullable<UniqueConstraintNamingStrategy> optionalUniqueConstraintNamingStrategy = empty();
 		visitInheritedEmbeddableMappingConfigurations(configuration -> {
-			if (configuration.getIndexNamingStrategy() != null && !optionalIndexNamingStrategy.isPresent()) {
-				optionalIndexNamingStrategy.set(configuration.getIndexNamingStrategy());
+			if (configuration.getUniqueConstraintNamingStrategy() != null && !optionalUniqueConstraintNamingStrategy.isPresent()) {
+				optionalUniqueConstraintNamingStrategy.set(configuration.getUniqueConstraintNamingStrategy());
 			}
 		}, embeddableMappingConfiguration -> {
-			if (embeddableMappingConfiguration.getIndexNamingStrategy() != null && !optionalIndexNamingStrategy.isPresent()) {
-				optionalIndexNamingStrategy.set(embeddableMappingConfiguration.getIndexNamingStrategy());
+			if (embeddableMappingConfiguration.getUniqueConstraintNamingStrategy() != null && !optionalUniqueConstraintNamingStrategy.isPresent()) {
+				optionalUniqueConstraintNamingStrategy.set(embeddableMappingConfiguration.getUniqueConstraintNamingStrategy());
 			}
 		});
-		IndexNamingStrategy indexNamingStrategy = optionalIndexNamingStrategy.getOr(IndexNamingStrategy.DEFAULT);
+		UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy = optionalUniqueConstraintNamingStrategy.getOr(UniqueConstraintNamingStrategy.DEFAULT);
 		
 		Nullable<JoinColumnNamingStrategy> optionalJoinColumnNamingStrategy = empty();
 		visitInheritedEntityMappingConfigurations(configuration -> {
@@ -119,7 +119,7 @@ public class NamingConfigurationCollector {
 				tableNamingStrategy,
 				columnNamingStrategy,
 				foreignKeyNamingStrategy,
-				indexNamingStrategy,
+				uniqueConstraintNamingStrategy,
 				elementCollectionTableNamingStrategy,
 				mapEntryTableNamingStrategy,
 				joinColumnNamingStrategy,

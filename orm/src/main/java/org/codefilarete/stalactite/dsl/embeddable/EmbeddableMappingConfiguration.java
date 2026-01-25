@@ -1,15 +1,14 @@
 package org.codefilarete.stalactite.dsl.embeddable;
 
-import javax.annotation.Nullable;
-import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.RelationalMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.IndexNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.embeddable.Inset;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
@@ -38,7 +37,7 @@ public interface EmbeddableMappingConfiguration<C> extends RelationalMappingConf
 	ColumnNamingStrategy getColumnNamingStrategy();
 	
 	@Nullable
-	IndexNamingStrategy getIndexNamingStrategy();
+	UniqueConstraintNamingStrategy getUniqueConstraintNamingStrategy();
 	
 	/**
 	 * @return an iterable for all inheritance configurations, including this
