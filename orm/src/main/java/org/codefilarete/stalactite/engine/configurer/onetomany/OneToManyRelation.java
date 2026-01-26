@@ -152,6 +152,15 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		this.mappedByConfiguration.setReverseColumnName(reverseColumnName);
 	}
 	
+	@Nullable
+	public String getAssociationTableName() {
+		return this.mappedByConfiguration.getAssociationTableName();
+	}
+	
+	public void setAssociationTableName(@Nullable String tableName) {
+		this.mappedByConfiguration.setAssociationTableName(tableName);
+	}
+	
 	public Boolean isReverseAsMandatory() {
 		return this.mappedByConfiguration.isMandatory();
 	}
@@ -300,9 +309,14 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		 * The column that stores relation, may be null.
 		 * Its type is undetermined (not forced at SRC) because it can only be a reference, such as an id.
 		 */
+		@Nullable
 		protected Column<Table<?>, Object> reverseColumn;
 		
+		@Nullable
 		protected String reverseColumnName;
+		
+		@Nullable
+		protected String associationTableName;
 		
 		private Boolean mandatory;
 		
@@ -332,19 +346,31 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 			}
 		}
 		
+		@Nullable
 		public String getReverseColumnName() {
 			return reverseColumnName;
 		}
 		
-		public void setReverseColumnName(String reverseColumnName) {
+		public void setReverseColumnName(@Nullable String reverseColumnName) {
 			this.reverseColumnName = reverseColumnName;
 		}
 		
+		
+		@Nullable
+		public String getAssociationTableName() {
+			return associationTableName;
+		}
+		
+		public void setAssociationTableName(@Nullable String associationTableName) {
+			this.associationTableName = associationTableName;
+		}
+		
+		@Nullable
 		public Column<Table<?>, ?> getReverseColumn() {
 			return reverseColumn;
 		}
 		
-		public void setReverseColumn(Column<?, ?> reverseColumn) {
+		public void setReverseColumn(@Nullable Column<?, ?> reverseColumn) {
 			this.reverseColumn = (Column<Table<?>, Object>) reverseColumn;
 		}
 		

@@ -54,6 +54,16 @@ public interface FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S extend
 	 * {@inheritDoc}
 	 * Declaration overridden to adapt return type to this class.
 	 *
+	 * @param tableName the table name of the association table
+	 * @return the global mapping configurer
+	 */
+	@Override
+	FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S> joinTable(String tableName);
+	
+	/**
+	 * {@inheritDoc}
+	 * Declaration overridden to adapt return type to this class.
+	 *
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
 	 */

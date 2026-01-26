@@ -47,6 +47,12 @@ class OneToManyOptionsSupport<C, I, O, S extends Collection<O>, O_ID>
 	}
 	
 	@Override
+	public FluentMappingBuilderOneToManyOptions<C, I, O, S> joinTable(String tableName) {
+		oneToManyRelation.setAssociationTableName(tableName);
+		return null;    // we can return null because dispatcher will return proxy
+	}
+	
+	@Override
 	public FluentMappingBuilderOneToManyOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink) {
 		oneToManyRelation.setReverseLink(reverseLink);
 		return null;    // we can return null because dispatcher will return proxy

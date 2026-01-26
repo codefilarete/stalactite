@@ -178,6 +178,51 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		}
 		
 		@Test
+		void withJoinTable_schemaIsCorrect() throws SQLException {
+			Table cityTable = new Table("City");
+			cityTable.addColumn("id", LONG_TYPE);
+			cityTable.addColumn("name", String.class).notNull();
+			
+			// mapping building thanks to fluent API
+			EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
+							Identifier.LONG_TYPE)
+					// setting a foreign key naming strategy to be tested
+					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
+					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Country::getName)
+					.map(Country::getDescription)
+					.mapOneToMany(Country::getCities, entityBuilder(City.class, Identifier.LONG_TYPE)
+							.onTable(cityTable)
+							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.map(City::getName))
+						.joinTable("myJoinTable")
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
+			
+			ResultSetIterator<Table> fkPersonIterator = new ResultSetIterator<Table>(currentConnection.getMetaData().getColumns(null, null,
+					"MYJOINTABLE", "%")) {
+				
+				private final Map<String, Table> foundTables = new HashMap<>();
+				
+				@Override
+				public Table convert(ResultSet rs) throws SQLException {
+					String tableName = rs.getString("TABLE_NAME");
+					Table table = foundTables.computeIfAbsent(tableName, Table::new);
+					Column column = table.addColumn(rs.getString("COLUMN_NAME"), String.class, Size.length(rs.getInt("COLUMN_SIZE")));
+					column.setNullable(rs.getBoolean("NULLABLE"));
+					return table;
+				}
+			};
+			Table foundTable = Iterables.first(fkPersonIterator.convert());
+			assertThat(foundTable.getColumn("COUNTRY_ID")).isNotNull();
+			assertThat(foundTable.getColumn("CITIES_ID")).isNotNull();
+		}
+		
+		@Test
 		void mappedBy_mandatory_columnIsNotNullable() {
 			// mapping building thanks to fluent API
 			FluentMappingBuilderOneToManyMappedByOptions<Country, Identifier<Long>, City, Set<City>> xx = entityBuilder(Country.class,

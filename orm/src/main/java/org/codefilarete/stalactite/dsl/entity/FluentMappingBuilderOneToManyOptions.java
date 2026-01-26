@@ -51,12 +51,24 @@ public interface FluentMappingBuilderOneToManyOptions<C, I, O, S extends Collect
 	FluentMappingBuilderOneToManyMappedByOptions<C, I, O, S> mappedBy(Column<?, I> reverseLink);
 	
 	/**
-	 *
+	 * {@inheritDoc}
+	 * Declaration overridden to adapt return type to this class.
+	 * 
 	 * @param reverseColumnName opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
 	@Override
 	FluentMappingBuilderOneToManyMappedByOptions<C, I, O, S> reverseJoinColumn(String reverseColumnName);
+	
+	/**
+	 * {@inheritDoc}
+	 * Declaration overridden to adapt return type to this class.
+	 * 
+	 * @param tableName the table name of the association table
+	 * @return the global mapping configurer
+	 */
+	@Override
+	FluentMappingBuilderOneToManyOptions<C, I, O, S> joinTable(String tableName);
 	
 	/**
 	 * {@inheritDoc}

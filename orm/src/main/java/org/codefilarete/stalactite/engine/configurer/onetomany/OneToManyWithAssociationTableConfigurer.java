@@ -22,6 +22,8 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
+import static org.codefilarete.tool.Nullable.nullable;
+
 /**
  * Configurer dedicated to association that needs an intermediary table between source and target entities
  * @author Guillaume Mary
@@ -60,8 +62,8 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 		// case : Collection mapping without reverse property : an association table is needed
 		PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey = targetPersister.<RIGHTTABLE>getMapping().getTargetTable().getPrimaryKey();
 		
-		String associationTableName = associationTableNamingStrategy.giveName(accessorDefinitionForTableNaming,
-				associationConfiguration.getLeftPrimaryKey(), rightPrimaryKey);
+		String associationTableName = nullable(associationConfiguration.getOneToManyRelation().getAssociationTableName()).getOr(() -> associationTableNamingStrategy.giveName(accessorDefinitionForTableNaming,
+				associationConfiguration.getLeftPrimaryKey(), rightPrimaryKey));
 		if (associationConfiguration.getOneToManyRelation().isOrdered()) {
 			return assignEngineForIndexedAssociation(rightPrimaryKey, associationTableName, targetPersister);
 		} else {
