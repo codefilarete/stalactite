@@ -2232,7 +2232,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		private Set<State> possibleStates = new HashSet<>();
 		
-		private Set<Timestamp> times = new HashSet<>();
+		private Set<Timestamp> times;
 		
 		private boolean setIdWasCalled;
 		private boolean constructorWithIdWasCalled;

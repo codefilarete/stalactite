@@ -44,6 +44,7 @@ import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -273,7 +274,9 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 					.map(Toto::getName)
 					.mapCollection(Toto::getTimes, Timestamp.class, embeddableBuilder(Timestamp.class)
 							.map(Timestamp::getCreationDate)
-							.map(Timestamp::getModificationDate)).indexed()
+							.map(Timestamp::getModificationDate))
+						.initializeWith(KeepOrderSet::new)
+						.indexed()
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -289,7 +292,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 			
 			Toto loadedPerson;
 			loadedPerson = personPersister.select(person.getId());
-			assertThat(loadedPerson.getTimes()).usingRecursiveFieldByFieldElementComparator().containsExactly(timestamp1, timestamp2);
+			assertThat(loadedPerson.getTimes()).usingRecursiveFieldByFieldElementComparator().containsExactlyElementsOf(person.getTimes());
 			
 			// Removing timestamp1
 			loadedPerson.getTimes().removeIf(timestamp -> timestamp.getCreationDate().equals(timestamp1.getCreationDate()) && timestamp.getModificationDate().equals(timestamp1.getModificationDate()));
@@ -593,8 +596,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 			person.setName("toto");
 			Timestamp timestamp1 = new Timestamp(LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(1));
 			Timestamp timestamp2 = new Timestamp(LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(2));
-			person.getTimes().add(timestamp1);
-			person.getTimes().add(timestamp2);
+			person.setTimes(Arrays.asSet(timestamp1, timestamp2));
 			
 			personPersister.insert(person);
 			
@@ -634,8 +636,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 			person.setName("toto");
 			Timestamp timestamp1 = new Timestamp(LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(1));
 			Timestamp timestamp2 = new Timestamp(LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(2));
-			person.getTimes().add(timestamp1);
-			person.getTimes().add(timestamp2);
+			person.setTimes(Arrays.asSet(timestamp1, timestamp2));
 			
 			personPersister.insert(person);
 			
