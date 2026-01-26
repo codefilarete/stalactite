@@ -33,6 +33,7 @@ import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderManyToManyOptions;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderManyToOneOptions;
+import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyJoinTableOptions;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyMappedByOptions;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyOptions;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToOneOptions;
@@ -58,6 +59,7 @@ import org.codefilarete.stalactite.dsl.property.MapOptions.EntityInMapOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToManyOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToOneOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyEntityOptions;
+import org.codefilarete.stalactite.dsl.relation.OneToManyJoinTableOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToOneEntityOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToOneOptions;
 import org.codefilarete.stalactite.engine.PersistenceContext;
@@ -934,6 +936,15 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 						() -> oneToManyRelation.setReverseAsMandatory(true))
 				.fallbackOn(result)	// for all other methods, methods are called on the main proxy
 				.build((Class<FluentMappingBuilderOneToManyMappedByOptions<C, I, TRGT, S>>) (Class) FluentMappingBuilderOneToManyMappedByOptions.class);
+		FluentMappingBuilderOneToManyJoinTableOptions<C, I, TRGT, S> joinTableOptionsSupport = new MethodReferenceDispatcher()
+				.redirect(
+						(SerializableBiFunction<FluentMappingBuilderOneToManyJoinTableOptions<C, I, TRGT, S>, String, FluentMappingBuilderOneToManyJoinTableOptions<C, I, TRGT, S>>) FluentMappingBuilderOneToManyJoinTableOptions::sourceJoinColumn,
+						oneToManyRelation::setSourceJoinColumnName)
+				.redirect(
+						(SerializableBiFunction<FluentMappingBuilderOneToManyJoinTableOptions<C, I, TRGT, S>, String, FluentMappingBuilderOneToManyJoinTableOptions<C, I, TRGT, S>>) FluentMappingBuilderOneToManyJoinTableOptions::targetJoinColumn,
+						oneToManyRelation::setTargetJoinColumnName)
+				.fallbackOn(result)	// for all other methods, methods are called on the main proxy
+				.build((Class<FluentMappingBuilderOneToManyJoinTableOptions<C, I, TRGT, S>>) (Class) FluentMappingBuilderOneToManyJoinTableOptions.class);
 		FluentMappingBuilderOneToManyOptions<C, I, TRGT, S> build = new MethodReferenceDispatcher()
 				.redirect(OneToManyEntityOptions.class, optionsSupport, true)
 				.redirect(
@@ -959,6 +970,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 						(consumer) -> {
 							optionsSupport.reverseJoinColumn(consumer);
 							return reverseAsMandatorySupport;	// to let user call mandatory() special option
+						})
+				.redirect(
+						(SerializableBiFunction<OneToManyEntityOptions<C, I, TRGT, S>, String, OneToManyJoinTableOptions<C, TRGT, S>>) OneToManyEntityOptions::joinTable,
+						(consumer) -> {
+							optionsSupport.joinTable(consumer);
+							return joinTableOptionsSupport;	// to let user call mandatory() special option
 						})
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderOneToManyOptions<C, I, TRGT, S>>) (Class) FluentMappingBuilderOneToManyOptions.class);

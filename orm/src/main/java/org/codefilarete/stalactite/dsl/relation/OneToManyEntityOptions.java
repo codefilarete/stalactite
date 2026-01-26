@@ -41,4 +41,17 @@ public interface OneToManyEntityOptions<C, I, O, S extends Collection<O>> extend
 	 */
 	OneToManyEntityOptions<C, I, O, S> indexedBy(Column<?, Integer> orderingColumn);
 	
+	/**
+	 * Defines the table name of the association table.
+	 * This is not compatible with defining {@link #reverseJoinColumn(String)} because it would lead to ambiguity, hence
+	 * there's no guarantee about which one will be taken first. Algorithm is defined in {@link OneToManyRelationConfigurer}.
+	 * 
+	 * Note that we don't define it for embeddable types (meaning putting this method in @link {@link OneToManyOptions})
+	 * because fixing the association table name for a reusable configuration means that all data will be stored in
+	 * the same table which will cause name collision on foreign keys.
+	 * 
+	 * @param tableName the table name of the association table
+	 * @return the global mapping configurer
+	 */
+	OneToManyJoinTableOptions<C, O, S> joinTable(String tableName);
 }

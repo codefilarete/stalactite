@@ -14,6 +14,7 @@ import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy.ReferencedColumnNames;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
@@ -284,13 +285,16 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 			// per entity) which databases do not allow
 			boolean createOneSideForeignKey = !(associationConfiguration.getManyToManyRelation().isSourceTablePerClassPolymorphic());
 			boolean createManySideForeignKey = !associationConfiguration.getManyToManyRelation().isTargetTablePerClassPolymorphic();
+			ReferencedColumnNames<LEFTTABLE, RIGHTTABLE> columnNames = associationTableNamingStrategy.giveColumnNames(
+					associationConfiguration.getAccessorDefinition(),
+					associationConfiguration.getLeftPrimaryKey(),
+					rightPrimaryKey);
 			ASSOCIATIONTABLE intermediaryTable = (ASSOCIATIONTABLE) new AssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>(
 					associationConfiguration.getLeftPrimaryKey().getTable().getSchema(),
 					associationTableName,
 					associationConfiguration.getLeftPrimaryKey(),
 					rightPrimaryKey,
-					associationConfiguration.getAccessorDefinition(),
-					associationTableNamingStrategy,
+					columnNames,
 					associationConfiguration.getForeignKeyNamingStrategy(),
 					createOneSideForeignKey,
 					createManySideForeignKey
@@ -330,14 +334,17 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 			// per entity) which databases do not allow
 			boolean createOneSideForeignKey = !relation.isSourceTablePerClassPolymorphic();
 			boolean createManySideForeignKey = !relation.isTargetTablePerClassPolymorphic();
+			ReferencedColumnNames<LEFTTABLE, RIGHTTABLE> columnNames = associationTableNamingStrategy.giveColumnNames(
+					associationConfiguration.getAccessorDefinition(),
+					associationConfiguration.getLeftPrimaryKey(),
+					rightPrimaryKey);
 			// NB: index column is part of the primary key
 			ASSOCIATIONTABLE intermediaryTable = (ASSOCIATIONTABLE) new IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>(
 					associationConfiguration.getLeftPrimaryKey().getTable().getSchema(),
 					associationTableName,
 					associationConfiguration.getLeftPrimaryKey(),
 					rightPrimaryKey,
-					associationConfiguration.getAccessorDefinition(),
-					associationTableNamingStrategy,
+					columnNames,
 					associationConfiguration.getForeignKeyNamingStrategy(),
 					createOneSideForeignKey,
 					createManySideForeignKey,

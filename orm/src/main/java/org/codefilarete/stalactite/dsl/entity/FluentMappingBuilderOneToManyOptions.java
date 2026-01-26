@@ -68,7 +68,7 @@ public interface FluentMappingBuilderOneToManyOptions<C, I, O, S extends Collect
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentMappingBuilderOneToManyOptions<C, I, O, S> joinTable(String tableName);
+	FluentMappingBuilderOneToManyJoinTableOptions<C, I, O, S> joinTable(String tableName);
 	
 	/**
 	 * {@inheritDoc}

@@ -38,13 +38,16 @@ class AssociationRecordMappingTest {
 			RIGHTTABLE rightTable = (RIGHTTABLE) new Table<>("rightTable");
 			Column<RIGHTTABLE, Integer> rightTableIdColumn = rightTable.addColumn("id", int.class).primaryKey();
 			PrimaryKey<RIGHTTABLE, Integer> rightTablePrimaryKey = rightTable.getPrimaryKey();
-
+			
+			AssociationTableNamingStrategy.ReferencedColumnNames<LEFTTABLE, RIGHTTABLE> columnNames = AssociationTableNamingStrategy.DEFAULT.giveColumnNames(
+					new AccessorDefinition(Country.class, "cities", City.class),
+					leftTablePrimaryKey,
+					rightTablePrimaryKey);
 			AssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, Integer, Integer> associationTable = new AssociationTable<>(null,
 					"associationTable",
 					leftTablePrimaryKey,
 					rightTablePrimaryKey,
-					new AccessorDefinition(Country.class, "cities", City.class),
-					AssociationTableNamingStrategy.DEFAULT,
+					columnNames,
 					ForeignKeyNamingStrategy.DEFAULT,
 					true,
 					true);
@@ -83,13 +86,16 @@ class AssociationRecordMappingTest {
 			Column<RIGHTTABLE, String> rightTableArtefactIdColumn = rightTable.addColumn("artefactId", String.class).primaryKey();
 			Column<RIGHTTABLE, String> rightTableVersionColumn = rightTable.addColumn("version", String.class).primaryKey();
 			PrimaryKey<RIGHTTABLE, MavenProject> rightTablePrimaryKey = rightTable.getPrimaryKey();
-
+			
+			AssociationTableNamingStrategy.ReferencedColumnNames<LEFTTABLE, RIGHTTABLE> columnNames = AssociationTableNamingStrategy.DEFAULT.giveColumnNames(
+					new AccessorDefinition(MavenProject.class, "dependencies", MavenProject.class),
+					leftTablePrimaryKey,
+					rightTablePrimaryKey);
 			ASSOCIATIONTABLE associationTable = (ASSOCIATIONTABLE) new AssociationTable<>(null,
 					"associationTable",
 					leftTablePrimaryKey,
 					rightTablePrimaryKey,
-					new AccessorDefinition(MavenProject.class, "dependencies", MavenProject.class),
-					AssociationTableNamingStrategy.DEFAULT,
+					columnNames,
 					ForeignKeyNamingStrategy.DEFAULT,
 					true,
 					true);

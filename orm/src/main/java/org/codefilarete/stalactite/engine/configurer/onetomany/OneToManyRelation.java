@@ -161,6 +161,24 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		this.mappedByConfiguration.setAssociationTableName(tableName);
 	}
 	
+	@Nullable
+	public String getSourceJoinColumnName() {
+		return this.mappedByConfiguration.getSourceJoinColumnName();
+	}
+	
+	public void setSourceJoinColumnName(@Nullable String sourceJoinColumnName) {
+		this.mappedByConfiguration.setSourceJoinColumnName(sourceJoinColumnName);
+	}
+	
+	@Nullable
+	public String getTargetJoinColumnName() {
+		return this.mappedByConfiguration.getTargetJoinColumnName();
+	}
+	
+	public void setTargetJoinColumnName(@Nullable String targetJoinColumnName) {
+		this.mappedByConfiguration.setTargetJoinColumnName(targetJoinColumnName);
+	}
+	
 	public Boolean isReverseAsMandatory() {
 		return this.mappedByConfiguration.isMandatory();
 	}
@@ -318,6 +336,12 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		@Nullable
 		protected String associationTableName;
 		
+		@Nullable
+		protected String sourceJoinColumnName;
+		
+		@Nullable
+		protected String targetJoinColumnName;
+		
 		private Boolean mandatory;
 		
 		protected final ValueAccessPointMap<SRC, Column<Table<?>, Object>> foreignKeyColumnMapping = new ValueAccessPointMap<>();
@@ -363,6 +387,24 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		
 		public void setAssociationTableName(@Nullable String associationTableName) {
 			this.associationTableName = associationTableName;
+		}
+		
+		@Nullable
+		public String getSourceJoinColumnName() {
+			return sourceJoinColumnName;
+		}
+		
+		public void setSourceJoinColumnName(@Nullable String sourceJoinColumnName) {
+			this.sourceJoinColumnName = sourceJoinColumnName;
+		}
+		
+		@Nullable
+		public String getTargetJoinColumnName() {
+			return targetJoinColumnName;
+		}
+		
+		public void setTargetJoinColumnName(@Nullable String targetJoinColumnName) {
+			this.targetJoinColumnName = targetJoinColumnName;
 		}
 		
 		@Nullable

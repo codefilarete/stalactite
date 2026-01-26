@@ -3,8 +3,6 @@ package org.codefilarete.stalactite.engine.runtime;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy.ReferencedColumnNames;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -53,22 +51,30 @@ public class AssociationTable<
 	
 	private final Map<Column<RIGHTTABLE, ?>, Column<SELF, ?>> rightIdentifierColumnMapping = new HashMap<>();
 	
+	/**
+	 * @param schema the database schema
+	 * @param name the table name
+	 * @param oneSideKey primary key of the "one" side table
+	 * @param manySideKey primary key of the "many" side table
+	 * @param columnNames column names of the association table
+	 * @param foreignKeyNamingStrategy strategy for naming foreign keys
+	 * @param createOneSideForeignKey whether to create a foreign key for the one side
+	 * @param createManySideForeignKey whether to create a foreign key for the many side
+	 */
 	public AssociationTable(Schema schema,
 							String name,
 							PrimaryKey<LEFTTABLE, LEFTID> oneSideKey,
 							PrimaryKey<RIGHTTABLE, RIGHTID> manySideKey,
-							AccessorDefinition accessorDefinition,
-							AssociationTableNamingStrategy namingStrategy,
+							ReferencedColumnNames<LEFTTABLE, RIGHTTABLE> columnNames,
 							ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 							boolean createOneSideForeignKey,
 							boolean createManySideForeignKey) {
 		super(schema, name);
 		this.oneSideKey = oneSideKey;
 		this.manySideKey = manySideKey;
-		ReferencedColumnNames<LEFTTABLE, RIGHTTABLE> columnNames = namingStrategy.giveColumnNames(accessorDefinition, oneSideKey, manySideKey);
 		KeyBuilder<SELF, LEFTID> leftForeignKeyBuilder = Key.from((SELF) this);
 		oneSideKey.getColumns().forEach(oneSideKeyColumn -> {
-			Column<SELF, ?> column = addColumn(columnNames.getLeftColumnName(oneSideKeyColumn), oneSideKeyColumn.getJavaType());
+			Column<SELF, ?> column = addColumn(columnNames.getLeftColumnName(oneSideKeyColumn), oneSideKeyColumn.getJavaType(), oneSideKeyColumn.getSize(), false);
 			column.primaryKey();
 			leftForeignKeyBuilder.addColumn(column);
 			leftIdentifierColumnMapping.put(oneSideKeyColumn, column);
@@ -83,7 +89,7 @@ public class AssociationTable<
 		// building many side key (eventually foreign key) 
 		KeyBuilder<SELF, RIGHTID> rightForeignKeyBuilder = Key.from((SELF) this);
 		manySideKey.getColumns().forEach(manySideKeyColumn -> {
-			Column<SELF, ?> column = addColumn(columnNames.getRightColumnName(manySideKeyColumn), manySideKeyColumn.getJavaType());
+			Column<SELF, ?> column = addColumn(columnNames.getRightColumnName(manySideKeyColumn), manySideKeyColumn.getJavaType(), manySideKeyColumn.getSize(), false);
 			column.primaryKey();
 			rightForeignKeyBuilder.addColumn(column);
 			rightIdentifierColumnMapping.put(manySideKeyColumn, column);
@@ -94,16 +100,6 @@ public class AssociationTable<
 		} else {
 			this.manySideForeignKey = rightForeignKey;
 		}
-	}
-	
-	public AssociationTable(Schema schema,
-							String name,
-							PrimaryKey<LEFTTABLE, LEFTID> oneSideKey,
-							PrimaryKey<RIGHTTABLE, RIGHTID> manySideKey,
-							AccessorDefinition accessorDefinition,
-							AssociationTableNamingStrategy namingStrategy,
-							ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
-		this(schema, name, oneSideKey, manySideKey, accessorDefinition, namingStrategy, foreignKeyNamingStrategy, true, true);
 	}
 	
 	/**

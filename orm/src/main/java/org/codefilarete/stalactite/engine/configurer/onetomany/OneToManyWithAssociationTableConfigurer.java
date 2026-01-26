@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine.configurer.onetomany;
 import java.util.Collection;
 
 import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy.ReferencedColumnNames;
 import org.codefilarete.stalactite.engine.configurer.AssociationRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.configurer.IndexedAssociationRecordMapping;
@@ -21,6 +22,7 @@ import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.collection.Iterables;
 
 import static org.codefilarete.tool.Nullable.nullable;
 
@@ -100,13 +102,22 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 		// per entity) which databases do not allow
 		boolean createOneSideForeignKey = !(associationConfiguration.getOneToManyRelation().isSourceTablePerClassPolymorphic());
 		boolean createManySideForeignKey = !associationConfiguration.getOneToManyRelation().isTargetTablePerClassPolymorphic();
+		ReferencedColumnNames<LEFTTABLE, RIGHTTABLE> columnNames = associationTableNamingStrategy.giveColumnNames(
+				accessorDefinitionForTableNaming,
+				associationConfiguration.getLeftPrimaryKey(),
+				rightPrimaryKey);
+		if (associationConfiguration.getOneToManyRelation().getSourceJoinColumnName() != null) {
+			columnNames.setLeftColumnName(Iterables.first(associationConfiguration.getLeftPrimaryKey().getColumns()), associationConfiguration.getOneToManyRelation().getSourceJoinColumnName());
+		}
+		if (associationConfiguration.getOneToManyRelation().getSourceJoinColumnName() != null) {
+			columnNames.setRightColumnName(Iterables.first(rightPrimaryKey.getColumns()), associationConfiguration.getOneToManyRelation().getTargetJoinColumnName());
+		}
 		ASSOCIATIONTABLE intermediaryTable = (ASSOCIATIONTABLE) new AssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>(
 				associationConfiguration.getLeftPrimaryKey().getTable().getSchema(),
 				associationTableName,
 				associationConfiguration.getLeftPrimaryKey(),
 				rightPrimaryKey,
-				accessorDefinitionForTableNaming,
-				associationTableNamingStrategy,
+				columnNames,
 				associationConfiguration.getForeignKeyNamingStrategy(),
 				createOneSideForeignKey,
 				createManySideForeignKey
@@ -137,21 +148,30 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 	private <ASSOCIATIONTABLE extends IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
 	OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE>
 	assignEngineForIndexedAssociation(PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey,
-										   String associationTableName,
-										   ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+									  String associationTableName,
+									  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		
 		// we don't create foreign key for table-per-class because source columns should reference different tables (the one
 		// per entity) which databases do not allow
 		boolean createOneSideForeignKey = !(associationConfiguration.getOneToManyRelation().isSourceTablePerClassPolymorphic());
 		boolean createManySideForeignKey = !associationConfiguration.getOneToManyRelation().isTargetTablePerClassPolymorphic();
+		ReferencedColumnNames<LEFTTABLE, RIGHTTABLE> columnNames = associationTableNamingStrategy.giveColumnNames(
+				accessorDefinitionForTableNaming,
+				associationConfiguration.getLeftPrimaryKey(),
+				rightPrimaryKey);
+		if (associationConfiguration.getOneToManyRelation().getSourceJoinColumnName() != null) {
+			columnNames.setLeftColumnName(Iterables.first(associationConfiguration.getLeftPrimaryKey().getColumns()), associationConfiguration.getOneToManyRelation().getSourceJoinColumnName());
+		}
+		if (associationConfiguration.getOneToManyRelation().getSourceJoinColumnName() != null) {
+			columnNames.setRightColumnName(Iterables.first(rightPrimaryKey.getColumns()), associationConfiguration.getOneToManyRelation().getTargetJoinColumnName());
+		}
 		// NB: index column is part of the primary key
 		ASSOCIATIONTABLE intermediaryTable = (ASSOCIATIONTABLE) new IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>(
 				associationConfiguration.getLeftPrimaryKey().getTable().getSchema(),
 				associationTableName,
 				associationConfiguration.getLeftPrimaryKey(),
 				rightPrimaryKey,
-				accessorDefinitionForTableNaming,
-				associationTableNamingStrategy,
+				columnNames,
 				associationConfiguration.getForeignKeyNamingStrategy(),
 				createOneSideForeignKey,
 				createManySideForeignKey,

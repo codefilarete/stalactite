@@ -64,16 +64,6 @@ public interface OneToManyOptions<C, O, S extends Collection<O>> extends Cascade
 	OneToManyOptions<C, O, S> reverseJoinColumn(String reverseColumnName);
 	
 	/**
-	 * Defines the table name of the association table.
-	 * This is not compatible with defining {@link #reverseJoinColumn(String)} because it would lead to ambiguity, hence
-	 * there's no guarantee about which one will be taken first. Algorithm is defined in {@link OneToManyRelationConfigurer}.
-	 * 
-	 * @param tableName the table name of the association table
-	 * @return the global mapping configurer
-	 */
-	OneToManyOptions<C, O, S> joinTable(String tableName);
-	
-	/**
 	 * Defines setter of current entity on target entity, which is only interesting while dealing with relation mapped
 	 * through an association table (no use of {@link #mappedBy(SerializableFunction)}) because reverse setter can't be
 	 * deduced.

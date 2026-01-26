@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine.configurer.entity;
 import java.util.Collection;
 import java.util.function.Supplier;
 
+import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyJoinTableOptions;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyEntityOptions;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
@@ -47,7 +48,7 @@ class OneToManyOptionsSupport<C, I, O, S extends Collection<O>, O_ID>
 	}
 	
 	@Override
-	public FluentMappingBuilderOneToManyOptions<C, I, O, S> joinTable(String tableName) {
+	public FluentMappingBuilderOneToManyJoinTableOptions<C, I, O, S> joinTable(String tableName) {
 		oneToManyRelation.setAssociationTableName(tableName);
 		return null;    // we can return null because dispatcher will return proxy
 	}

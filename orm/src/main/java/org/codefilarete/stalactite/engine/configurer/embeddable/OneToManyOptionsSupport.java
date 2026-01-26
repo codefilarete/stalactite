@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilderOneToManyOptions;
+import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyJoinTableOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyEntityOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyOptions;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
@@ -37,12 +38,6 @@ class OneToManyOptionsSupport<C, O, S extends Collection<O>>
 	@Override
 	public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> reverseJoinColumn(String reverseColumnName) {
 		oneToManyRelation.setReverseColumn(reverseColumnName);
-		return null;
-	}
-	
-	@Override
-	public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> joinTable(String tableName) {
-		oneToManyRelation.setAssociationTableName(tableName);
 		return null;
 	}
 	

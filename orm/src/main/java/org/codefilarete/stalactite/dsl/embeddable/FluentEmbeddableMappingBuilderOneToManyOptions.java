@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.dsl.embeddable;
 import java.util.Collection;
 import java.util.function.Supplier;
 
+import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyJoinTableOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyOptions;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
@@ -43,15 +44,6 @@ public interface FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S extends 
 	 * @return the global mapping configurer
 	 */
 	FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> reverseJoinColumn(String reverseColumnName);
-	
-	/**
-	 * {@inheritDoc}
-	 * Declaration overridden to adapt return type to this class.
-	 *
-	 * @param tableName the table name of the association table
-	 * @return the global mapping configurer
-	 */
-	FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> joinTable(String tableName);
 	
 	/**
 	 * {@inheritDoc}

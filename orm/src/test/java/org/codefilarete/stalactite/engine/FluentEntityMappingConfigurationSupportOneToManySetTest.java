@@ -196,6 +196,8 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(City::getName))
 						.joinTable("myJoinTable")
+							.sourceJoinColumn("mycountry_id")
+							.targetJoinColumn("mycity_id")
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -218,8 +220,8 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 				}
 			};
 			Table foundTable = Iterables.first(fkPersonIterator.convert());
-			assertThat(foundTable.getColumn("COUNTRY_ID")).isNotNull();
-			assertThat(foundTable.getColumn("CITIES_ID")).isNotNull();
+			assertThat(foundTable.getColumn("MYCOUNTRY_ID")).isNotNull();
+			assertThat(foundTable.getColumn("MYCITY_ID")).isNotNull();
 		}
 		
 		@Test

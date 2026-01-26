@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.dsl.subentity;
 import java.util.Collection;
 import java.util.function.Supplier;
 
+import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyJoinTableOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyEntityOptions;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -58,7 +59,7 @@ public interface FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S extend
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S> joinTable(String tableName);
+	FluentMappingBuilderOneToManyJoinTableOptions<C, I, O, S> joinTable(String tableName);
 	
 	/**
 	 * {@inheritDoc}
