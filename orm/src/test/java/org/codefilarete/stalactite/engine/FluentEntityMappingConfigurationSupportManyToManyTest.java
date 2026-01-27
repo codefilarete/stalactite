@@ -965,7 +965,7 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 		
 		List<String> creationScripts = ddlDeployer.getCreationScripts();
 		assertThat(creationScripts).containsExactlyInAnyOrder(
-				"create table Book_authors(book_id bigint, authors_id bigint, unique (book_id, authors_id))",
+				"create table Book_authors(book_id bigint not null, authors_id bigint not null, unique (book_id, authors_id))",
 				"create table Author(name varchar(255), id bigint GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, unique (id))",
 				"create table Book(isbn varchar(255), price double, title varchar(255), id bigint GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, unique (id))",
 				"alter table Book_authors add constraint FK_Book_authors_authors_id_Author_id foreign key(authors_id) references Author(id)",

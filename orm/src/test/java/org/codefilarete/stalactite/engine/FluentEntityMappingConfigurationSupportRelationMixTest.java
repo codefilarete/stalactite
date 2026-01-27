@@ -497,7 +497,7 @@ public class FluentEntityMappingConfigurationSupportRelationMixTest {
 			assertThat(ddlDeployer.getCreationScripts()).containsExactlyInAnyOrder(
 					"create table Bicycle(color int, id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, unique (id))",
 					"create table Person(name varchar(255), id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, unique (id))",
-					"create table Person_bicycles(person_id int, bicycles_id int, unique (person_id, bicycles_id))",
+					"create table Person_bicycles(person_id int not null, bicycles_id int not null, unique (person_id, bicycles_id))",
 					"create table Vehicle(id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, ownerId int, unique (id))",
 					"alter table Person_bicycles add constraint FK_Person_bicycles_person_id_Person_id foreign key(person_id) references Person(id)",
 					"alter table Person_bicycles add constraint FK_Person_bicycles_bicycles_id_Bicycle_id foreign key(bicycles_id) references Bicycle(id)",
