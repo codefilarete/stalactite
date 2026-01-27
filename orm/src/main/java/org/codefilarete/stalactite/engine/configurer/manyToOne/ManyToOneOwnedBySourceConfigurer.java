@@ -198,7 +198,7 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 		AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(manyToOneRelation.getTargetProvider());
 		targetMappingStrategy.getTargetTable().getPrimaryKey().getColumns().forEach(column -> {
 			String effectiveLeftColumnName = nullable(leftColumnName).elseSet(() -> joinColumnNamingStrategy.giveName(accessorDefinition, column)).get();
-			Column<LEFTTABLE, ?> foreignKeyColumn = mappingStrategy.getTargetTable().addColumn(effectiveLeftColumnName, column.getJavaType());
+			Column<LEFTTABLE, ?> foreignKeyColumn = mappingStrategy.getTargetTable().addColumn(effectiveLeftColumnName, column.getJavaType(), column.getSize());
 			leftKeyBuilder.addColumn(foreignKeyColumn);
 			keyColumnsMapping.put(foreignKeyColumn, column);
 		});
