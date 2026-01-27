@@ -339,18 +339,11 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 			Class<O> columnType;
 			if (linkage.getColumnType().isEnum()) {
 				if (linkage.getEnumBindType() == null) {
-					columnType = (Class<O>) Integer.class;
+					columnType = (Class<O>) Enum.class;
 				} else {
-					switch (linkage.getEnumBindType()) {
-						case NAME:
-							columnType = (Class<O>) String.class;
-							break;
-						case ORDINAL:
-							columnType = (Class<O>) Integer.class;
-							break;
-						default:
-							columnType = (Class<O>) Integer.class;
-					}
+					columnType = linkage.getEnumBindType() == EnumBindType.NAME
+							? (Class<O>) String.class
+							: (Class<O>) Integer.class;
 				}
 			} else {
 				if (linkage.getParameterBinder() != null) {

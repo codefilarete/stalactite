@@ -21,5 +21,6 @@ public class PostgreSQLTypeMapping extends DefaultTypeMapping {
         put(float.class, "float4");
         put(Float.class, "float4");
 		put(Instant.class, "timestamp(6) with time zone");
+		put(Enum.class, "smallint");
     }
 }
