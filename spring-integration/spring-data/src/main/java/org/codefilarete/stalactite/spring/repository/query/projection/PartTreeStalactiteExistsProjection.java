@@ -5,9 +5,9 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.codefilarete.stalactite.engine.ExecutableProjection.ProjectionDataProvider;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.ProjectionQueryCriteriaSupport;
-import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.spring.repository.query.derivation.ToCriteriaPartTreeTransformer;
 import org.codefilarete.stalactite.spring.repository.query.derivation.ToCriteriaPartTreeTransformer.Condition;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -28,7 +28,7 @@ public class PartTreeStalactiteExistsProjection<C> implements RepositoryQuery {
 	
 	private final QueryMethod method;
 	private final AdvancedEntityPersister<C, ?> entityPersister;
-	private final Accumulator<Function<Selectable<Object>, Object>, MutableBoolean, Boolean> accumulator;
+	private final Accumulator<ProjectionDataProvider, MutableBoolean, Boolean> accumulator;
 	private final ToCriteriaPartTreeTransformer<C> criteriaAppender;
 	
 	/**
@@ -41,14 +41,14 @@ public class PartTreeStalactiteExistsProjection<C> implements RepositoryQuery {
 											  PartTree partTree) {
 		this.method = method;
 		this.entityPersister = entityPersister;
-		accumulator = new Accumulator<Function<Selectable<Object>, Object>, MutableBoolean, Boolean>() {
+		accumulator = new Accumulator<ProjectionDataProvider, MutableBoolean, Boolean>() {
 			@Override
 			public Supplier<MutableBoolean> supplier() {
 				return () -> new MutableBoolean(false);
 			}
 			
 			@Override
-			public BiConsumer<MutableBoolean, Function<Selectable<Object>, Object>> aggregator() {
+			public BiConsumer<MutableBoolean, ProjectionDataProvider> aggregator() {
 				return (mutableBoolean, selectableObjectFunction) -> {
 					mutableBoolean.setTrue();
 				};

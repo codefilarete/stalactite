@@ -283,7 +283,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	
 	/**
 	 * Creates a projection query which criteria target mapped properties.
-	 * {@link Select} must be modified by given select adapter (by default all column that would allow to load the entity are present).
+	 * {@link Select} must be modified by given select adapter (by default all columns that would allow to load the entity are present).
 	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link org.codefilarete.stalactite.query.model.Selectable}
 	 * ({@link org.codefilarete.stalactite.sql.ddl.structure.Column} or {@link org.codefilarete.stalactite.query.model.operator.SQLFunction}).
 	 * Consumption and aggregation of query result is left to the user that must implement its {@link Accumulator}
@@ -303,7 +303,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	
 	/**
 	 * Creates a projection query which criteria target mapped properties.
-	 * {@link Select} must be modified by given select adapter (by default all column that would allow to load the entity are present).
+	 * {@link Select} must be modified by given select adapter (by default all columns that would allow to load the entity are present).
 	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link org.codefilarete.stalactite.query.model.Selectable}
 	 * ({@link org.codefilarete.stalactite.sql.ddl.structure.Column} or {@link org.codefilarete.stalactite.query.model.operator.SQLFunction}).
 	 * Consumption and aggregation of query result is left to the user that must implement its {@link Accumulator}
@@ -324,7 +324,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	
 	/**
 	 * Creates a projection query which criteria target mapped properties.
-	 * {@link Select} must be modified by given select adapter (by default all column that would allow to load the entity are present).
+	 * {@link Select} must be modified by given select adapter (by default all columns that would allow to load the entity are present).
 	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link org.codefilarete.stalactite.query.model.Selectable}
 	 * ({@link org.codefilarete.stalactite.sql.ddl.structure.Column} or {@link org.codefilarete.stalactite.query.model.operator.SQLFunction}).
 	 * Consumption and aggregation of query result is left to the user that must implement its {@link Accumulator}
@@ -352,7 +352,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	
 	/**
 	 * Creates a projection query which criteria target mapped properties.
-	 * {@link Select} must be modified by given select adapter (by default all column that would allow to load the entity are present).
+	 * {@link Select} must be modified by given select adapter (by default all columns that would allow to load the entity are present).
 	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link org.codefilarete.stalactite.query.model.Selectable}
 	 * ({@link org.codefilarete.stalactite.sql.ddl.structure.Column} or {@link org.codefilarete.stalactite.query.model.operator.SQLFunction}).
 	 * Consumption and aggregation of query result is left to the user that must implement its {@link Accumulator}
@@ -363,6 +363,33 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 */
 	ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter);
+	
+	
+	default <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Set<CriteriaPath<C, ?>> selectAdapter, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
+		return selectProjectionWhere(selectAdapter).and(getter, operator);
+	}
+	
+	default <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Set<CriteriaPath<C, ?>> selectAdapter, SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
+		return selectProjectionWhere(selectAdapter).and(setter, operator);
+	}
+	
+	default <O, A> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Set<CriteriaPath<C, ?>> selectAdapter, SerializableFunction<C, A> getter1, SerializableFunction<A, O> getter2, ConditionalOperator<O, ?> operator) {
+		return selectProjectionWhere(selectAdapter, AccessorChain.fromMethodReferences(getter1, getter2).getAccessors(), operator);
+	}
+	
+	default <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Set<CriteriaPath<C, ?>> selectAdapter, List<? extends ValueAccessPoint<?>> accessorChain, ConditionalOperator<O, ?> operator) {
+		return selectProjectionWhere(selectAdapter).and(accessorChain, operator);
+	}
+	
+	default <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Set<CriteriaPath<C, ?>> selectAdapter, CriteriaPath<C, ?> accessorChain, ConditionalOperator<O, ?> operator) {
+		return selectProjectionWhere(selectAdapter, accessorChain.getAccessors(), operator);
+	}
+	
+	default <O, S extends Collection<O>, NEXT> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Set<CriteriaPath<C, ?>> selectAdapter, SerializableCollectionFunction<C, S, O> accessor1, SerializableFunction<O, NEXT> accessor2, ConditionalOperator<O, ?> operator) {
+		return selectProjectionWhere(selectAdapter, new CriteriaPath<>(accessor1, accessor2), operator);
+	}
+	
+	ExecutableProjectionQuery<C, ?> selectProjectionWhere(Set<CriteriaPath<C, ?>> selectAdapter);
 	
 	Set<C> selectAll();
 	

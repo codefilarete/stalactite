@@ -13,15 +13,15 @@ import java.util.function.Supplier;
 import org.codefilarete.reflection.AccessorByMember;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
 import org.codefilarete.stalactite.engine.EntityCriteria.OrderByChain.Order;
+import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
+import org.codefilarete.stalactite.engine.ExecutableProjection.ProjectionDataProvider;
 import org.codefilarete.stalactite.engine.runtime.ProjectionQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.ProjectionQueryCriteriaSupport.ProjectionQueryPageSupport;
 import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Limit;
-import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.spring.repository.query.execution.AbstractQueryExecutor;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
+import org.codefilarete.stalactite.spring.repository.query.execution.AbstractQueryExecutor;
 import org.codefilarete.stalactite.spring.repository.query.execution.StalactiteQueryMethodInvocationParameters;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.springframework.data.domain.Sort.Direction;
@@ -40,7 +40,7 @@ import static org.codefilarete.stalactite.spring.repository.query.execution.Abst
 class ProjectionQueryExecutor<C> extends AbstractQueryExecutor<List<Object>, Object> {
 	
 	private final ProjectionQueryCriteriaSupport<C, ?> projectionQueryCriteriaSupport;
-	private final Accumulator<Function<Selectable<Object>, Object>, List<Map<String, Object>>, List<Map<String, Object>>> accumulator;
+	private final Accumulator<ProjectionDataProvider, List<Map<String, Object>>, List<Map<String, Object>>> accumulator;
 	
 	public ProjectionQueryExecutor(StalactiteQueryMethod method,
 								   ProjectionQueryCriteriaSupport<C, ?> defaultProjectionQueryCriteriaSupport,
@@ -101,7 +101,7 @@ class ProjectionQueryExecutor<C> extends AbstractQueryExecutor<List<Object>, Obj
 		return result;
 	}
 	
-	private static class TupleAccumulator<C> implements Accumulator<Function<Selectable<Object>, Object>, List<Map<String, Object>>, List<Map<String, Object>>> {
+	private static class TupleAccumulator<C> implements Accumulator<ProjectionDataProvider, List<Map<String, Object>>, List<Map<String, Object>>> {
 		private final IdentityHashMap<JoinLink<?, ?>, AccessorChain<C, ?>> columnToProperties;
 		
 		public TupleAccumulator(IdentityHashMap<JoinLink<?, ?>, AccessorChain<C, ?>> columnToProperties) {
@@ -114,12 +114,12 @@ class ProjectionQueryExecutor<C> extends AbstractQueryExecutor<List<Object>, Obj
 		}
 		
 		@Override
-		public BiConsumer<List<Map<String, Object>>, Function<Selectable<Object>, Object>> aggregator() {
+		public BiConsumer<List<Map<String, Object>>, ProjectionDataProvider> aggregator() {
 			return (finalResult, databaseRowDataProvider) -> {
 				Map<String, Object> row = new HashMap<>();
 				finalResult.add(row);
 				for (Entry<JoinLink<?, ?>, AccessorChain<C, ?>> entry : columnToProperties.entrySet()) {
-					PartTreeStalactiteProjection.buildHierarchicMap(entry.getValue(), databaseRowDataProvider.apply((Selectable<Object>) entry.getKey()), row);
+					PartTreeStalactiteProjection.buildHierarchicMap(entry.getValue(), databaseRowDataProvider.getValue(entry.getKey()), row);
 				}
 			};
 		}

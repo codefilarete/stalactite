@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.engine.runtime.singletable;
 
-import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.sql.Array;
 import java.sql.Connection;
@@ -16,20 +15,22 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.sql.DataSource;
 
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
+import org.codefilarete.stalactite.engine.ExecutableProjection.ProjectionDataProvider;
 import org.codefilarete.stalactite.engine.InMemoryCounterIdentifierGenerator;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
-import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
-import org.codefilarete.stalactite.dsl.PolymorphismPolicy.SingleTablePolymorphism;
-import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListener;
+import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.model.Car;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Engine;
@@ -50,7 +51,6 @@ import org.codefilarete.stalactite.mapping.PersistentFieldHarvester;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.query.model.Operators;
-import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.Selectable.SimpleSelectable;
 import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
@@ -58,17 +58,17 @@ import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
-import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
-import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
-import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
+import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
+import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.test.PairSetList;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
@@ -703,16 +703,16 @@ class SingleTablePolymorphismPersisterTest {
 				select.clear();
 				select.add(count, "count");
 			}, AbstractToto::getX, Operators.eq(77));
-			long countValue = totoRelationalExecutableEntityQuery.execute(new Accumulator<Function<Selectable<Long>, Long>, MutableLong, Long>() {
+			long countValue = totoRelationalExecutableEntityQuery.execute(new Accumulator<ProjectionDataProvider, MutableLong, Long>() {
 				@Override
 				public Supplier<MutableLong> supplier() {
 					return MutableLong::new;
 				}
 				
 				@Override
-				public BiConsumer<MutableLong, Function<Selectable<Long>, Long>> aggregator() {
+				public BiConsumer<MutableLong, ProjectionDataProvider> aggregator() {
 					return (modifiableInt, selectableObjectFunction) -> {
-						Long apply = selectableObjectFunction.apply(count);
+						Long apply = selectableObjectFunction.getValue(count);
 						modifiableInt.reset(apply);
 					};
 				}

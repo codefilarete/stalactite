@@ -3,8 +3,11 @@ package org.codefilarete.stalactite.engine.runtime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.codefilarete.reflection.AbstractReflector;
 import org.codefilarete.reflection.AccessorByMethodReference;
@@ -15,21 +18,23 @@ import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.EntityCriteria;
 import org.codefilarete.stalactite.engine.EntityCriteria.CriteriaPath;
-import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
 import org.codefilarete.stalactite.engine.EntityCriteria.LimitAware;
 import org.codefilarete.stalactite.engine.EntityCriteria.OrderByChain;
 import org.codefilarete.stalactite.engine.EntityCriteria.OrderByChain.Order;
+import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
 import org.codefilarete.stalactite.engine.ExecutableProjection;
+import org.codefilarete.stalactite.engine.ExecutableProjection.ProjectionDataProvider;
 import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
+import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.EntityFinder;
-import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -79,6 +84,30 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 		this.selectAdapter = selectAdapter;
 	}
 	
+	public ProjectionQueryCriteriaSupport(EntityFinder<C, I> entityFinder, Set<CriteriaPath<C, ?>> selectAdapter) {
+		this(entityFinder, entityFinder.newCriteriaSupport().getEntityCriteriaSupport(), new ProjectionQueryPageSupport<>(), selectAdapter);
+	}
+	
+	public ProjectionQueryCriteriaSupport(EntityFinder<C, I> entityFinder, EntityCriteriaSupport<C> entityCriteriaSupport, Set<CriteriaPath<C, ?>> selectAdapter) {
+		this(entityFinder, entityCriteriaSupport, new ProjectionQueryPageSupport<>(), selectAdapter);
+	}
+	
+	public ProjectionQueryCriteriaSupport(EntityFinder<C, I> entityFinder,
+										  EntityCriteriaSupport<C> entityCriteriaSupport,
+										  ProjectionQueryPageSupport<C> queryPageSupport,
+										  Set<CriteriaPath<C, ?>> selectAdapter) {
+		this.entityFinder = entityFinder;
+		this.entityCriteriaSupport = entityCriteriaSupport;
+		this.queryPageSupport = queryPageSupport;
+		this.selectAdapter = selectables -> {
+			selectables.clear();
+			selectAdapter.forEach(propertyPath -> {
+				Column<?, ?> joinLink = (Column<?, ?>) entityCriteriaSupport.getAggregateColumnMapping().giveColumn(propertyPath.getAccessors());
+				selectables.add(joinLink, joinLink.getAlias());
+			});
+		};
+	}
+	
 	/**
 	 * Makes a copy of this instance merged with given one
 	 * Made to handle Spring Data's different ways of sorting (should have been put closer to its usage, but was too complex)
@@ -106,7 +135,7 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 		Map<String, Object> values = new HashMap<>();
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
-				.redirect((SerializableBiFunction<ExecutableProjection, Accumulator<? super Function<? extends Selectable, Object>, Object, Object>, Object>) ExecutableProjection::execute,
+				.redirect((SerializableBiFunction<ExecutableProjection, Accumulator<? super ProjectionDataProvider, Object, Object>, Object>) ExecutableProjection::execute,
 						wrapProjectionLoad(values))
 				.redirect((SerializableTriFunction<ExecutableProjectionQuery<?, ?>, String, Object, Object>) ExecutableProjectionQuery::set,
 						// Don't use "values::put" because its signature returns previous value, which means it is a Function
@@ -126,9 +155,9 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 				.build((Class<ExecutableProjectionQuery<C, ?>>) (Class) ExecutableProjectionQuery.class);
 	}
 	
-	private <R> Function<Accumulator<? super Function<? extends Selectable, Object>, Object, R>, R> wrapProjectionLoad(
+	private <R> Function<Accumulator<? super ProjectionDataProvider, Object, R>, R> wrapProjectionLoad(
 			Map<String, Object> values) {
-		return (Accumulator<? super Function<? extends Selectable, Object>, Object, R> accumulator) -> {
+		return (Accumulator<? super ProjectionDataProvider, Object, R> projectionDataProvider) -> {
 			OrderBy orderBy = new OrderBy();
 			queryPageSupport.getOrderBy().forEach(duo -> {
 				Selectable column = entityCriteriaSupport.getAggregateColumnMapping().giveColumn(duo.getProperty());
@@ -140,6 +169,35 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 								? org.codefilarete.stalactite.query.model.OrderByChain.Order.ASC
 								: org.codefilarete.stalactite.query.model.OrderByChain.Order.DESC);
 			});
+			
+			// creating an Accumulator that wraps the given one (projectionDataProvider) to plug the ProjectionDataProvider
+			// onto the Function<Selectable<Object>, ?> that is consumed by the entityFinder.selectProjection(..) method
+			Accumulator<Function<Selectable<Object>, ?>, Object, R> accumulator = new Accumulator<Function<Selectable<Object>, ?>, Object, R>() {
+				@Override
+				public Supplier<Object> supplier() {
+					return projectionDataProvider.supplier();
+				}
+				
+				@Override
+				public BiConsumer<Object, Function<Selectable<Object>, ?>> aggregator() {
+					return (o, selectableFunction) -> projectionDataProvider.aggregator().accept(o, new ProjectionDataProvider() {
+						@Override
+						public <O> O getValue(Selectable<O> selectable) {
+							return (O) selectableFunction.apply((Selectable<Object>) selectable);
+						}
+						
+						@Override
+						public <O> O getValue(CriteriaPath<?, O> selectable) {
+							return (O) selectableFunction.apply((Selectable<Object>) entityCriteriaSupport.getAggregateColumnMapping().giveColumn(selectable.getAccessors()));
+						}
+					});
+				}
+				
+				@Override
+				public Function<Object, R> finisher() {
+					return projectionDataProvider.finisher();
+				}
+			};
 			
 		return entityFinder.selectProjection(selectAdapter, values, accumulator, entityCriteriaSupport, queryPageSupport.isDistinct(),
 					orderBy,

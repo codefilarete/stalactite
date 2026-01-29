@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.codefilarete.stalactite.engine.EntityCriteria.CriteriaPath;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.result.Accumulator;
@@ -38,8 +39,13 @@ public interface ExecutableProjection {
 	 * @param accumulator projection result finalizer, {@link java.sql.ResultSet} values are read through the given {@link Function}
 	 * @return beans found by the query and finalized by accumulator
 	 * @param <R> result type
-	 * @param <O> intermediary type that helps to read the values coming form the database 
 	 */
-	<R, O> R execute(Accumulator<? super Function<Selectable<O>, O>, ?, R> accumulator);
+	<R> R execute(Accumulator<? super ProjectionDataProvider, ?, R> accumulator);
 	
+	interface ProjectionDataProvider {
+		
+		<O> O getValue(Selectable<O> selectable);
+		
+		<O> O getValue(CriteriaPath<?, O> selectable);
+	}
 }

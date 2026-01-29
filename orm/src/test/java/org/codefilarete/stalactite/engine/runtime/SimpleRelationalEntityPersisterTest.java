@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.engine.runtime;
 
-import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.sql.Array;
 import java.sql.Connection;
@@ -18,17 +17,20 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.sql.DataSource;
 
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
+import org.codefilarete.stalactite.engine.EntityCriteria.CriteriaPath;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
-import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
+import org.codefilarete.stalactite.engine.ExecutableProjection.ProjectionDataProvider;
 import org.codefilarete.stalactite.engine.InMemoryCounterIdentifierGenerator;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
-import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListener;
+import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
@@ -48,13 +50,11 @@ import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierM
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Operators;
-import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.Selectable.SimpleSelectable;
 import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.query.model.operator.Equals;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
-import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -64,6 +64,7 @@ import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.test.PairSetList;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
@@ -87,8 +88,8 @@ import org.mockito.stubbing.Answer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy.alreadyAssigned;
 import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy.alreadyAssigned;
 import static org.codefilarete.stalactite.query.model.Operators.equalsArgNamed;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.doNothing;
@@ -707,16 +708,16 @@ class SimpleRelationalEntityPersisterTest {
 				select.clear();
 				select.add(count, "count");
 			}, Toto::getA, Operators.eq(77));
-			long countValue = totoRelationalExecutableEntityQuery.execute(new Accumulator<Function<Selectable<Long>, Long>, MutableLong, Long>() {
+			long countValue = totoRelationalExecutableEntityQuery.execute(new Accumulator<ProjectionDataProvider, MutableLong, Long>() {
 				@Override
 				public Supplier<MutableLong> supplier() {
 					return MutableLong::new;
 				}
 				
 				@Override
-				public BiConsumer<MutableLong, Function<Selectable<Long>, Long>> aggregator() {
+				public BiConsumer<MutableLong, ProjectionDataProvider> aggregator() {
 					return (modifiableInt, selectableObjectFunction) -> {
-						Long apply = selectableObjectFunction.apply(count);
+						Long apply = selectableObjectFunction.getValue(count);
 						modifiableInt.reset(apply);
 					};
 				}
@@ -735,6 +736,47 @@ class SimpleRelationalEntityPersisterTest {
 			assertCapturedPairsEqual(expectedPairs);
 			
 			assertThat(countValue).isEqualTo(42);
+		}
+		
+		@Test
+		void selectProjectionWhere_selectByMethodReference() throws SQLException {
+			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
+			ResultSet resultSet = new InMemoryResultSet(Arrays.asList(
+					Maps.asMap("Toto_a", 42)
+			));
+			when(preparedStatement.executeQuery()).thenAnswer((Answer<ResultSet>) invocation -> resultSet);
+			
+			CriteriaPath<Toto, Integer> Toto_getA = new CriteriaPath<>(Toto::getA);
+			ExecutableProjectionQuery<Toto, ?> totoRelationalExecutableEntityQuery = testInstance.selectProjectionWhere(
+					Arrays.asSet(Toto_getA)).and(Toto::getA, Operators.eq(77));
+			Set<Object> countValue = totoRelationalExecutableEntityQuery.execute(new Accumulator<ProjectionDataProvider, Set<Object>, Set<Object>>() {
+				@Override
+				public Supplier<Set<Object>> supplier() {
+					return KeepOrderSet::new;
+				}
+				
+				@Override
+				public BiConsumer<Set<Object>, ProjectionDataProvider> aggregator() {
+					return (result, selectableObjectFunction) -> {
+						Integer apply = selectableObjectFunction.getValue(Toto_getA);
+						result.add(apply);
+					};
+				}
+				
+				@Override
+				public Function<Set<Object>, Set<Object>> finisher() {
+					return Function.identity();
+				}
+			});
+			
+			verify(preparedStatement, times(1)).executeQuery();
+			verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
+					"select Toto.a as Toto_a from Toto where Toto.a = ?"));
+			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 77);
+			assertCapturedPairsEqual(expectedPairs);
+
+			assertThat(countValue).containsExactly(42);
 		}
 	}
 		

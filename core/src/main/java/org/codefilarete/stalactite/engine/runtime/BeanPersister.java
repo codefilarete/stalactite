@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import org.codefilarete.stalactite.engine.EntityCriteria;
 import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
@@ -183,6 +184,11 @@ public class BeanPersister<C, I, T extends Table<T>>
 	
 	@Override
 	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter) {
+		throw new NotImplementedException("Not yet implemented");
+	}
+	
+	@Override
+	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Set<EntityCriteria.CriteriaPath<C, ?>> selectAdapter) {
 		throw new NotImplementedException("Not yet implemented");
 	}
 	

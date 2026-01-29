@@ -6,6 +6,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.stalactite.engine.EntityCriteria.CriteriaPath;
 import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
@@ -113,6 +114,12 @@ public abstract class AbstractPolymorphismPersister<C, I>
 	
 	@Override
 	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter) {
+		ProjectionQueryCriteriaSupport<C, I> projectionSupport = new ProjectionQueryCriteriaSupport<>(entityFinder, selectAdapter);
+		return projectionSupport.wrapIntoExecutable();
+	}
+	
+	@Override
+	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Set<CriteriaPath<C, ?>> selectAdapter) {
 		ProjectionQueryCriteriaSupport<C, I> projectionSupport = new ProjectionQueryCriteriaSupport<>(entityFinder, selectAdapter);
 		return projectionSupport.wrapIntoExecutable();
 	}

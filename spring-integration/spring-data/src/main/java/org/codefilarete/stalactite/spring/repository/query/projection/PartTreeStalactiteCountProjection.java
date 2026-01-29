@@ -5,11 +5,11 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.codefilarete.stalactite.engine.ExecutableProjection.ProjectionDataProvider;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.ProjectionQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport.EntityQueryPageSupport;
 import org.codefilarete.stalactite.query.model.Operators;
-import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.spring.repository.query.derivation.ToCriteriaPartTreeTransformer;
 import org.codefilarete.stalactite.spring.repository.query.derivation.ToCriteriaPartTreeTransformer.Condition;
@@ -32,7 +32,7 @@ public class PartTreeStalactiteCountProjection<C> implements RepositoryQuery {
 	private final Count count;
 	private final QueryMethod method;
 	private final AdvancedEntityPersister<C, ?> entityPersister;
-	private final Accumulator<Function<Selectable<Long>, Long>, MutableLong, Long> accumulator;
+	private final Accumulator<ProjectionDataProvider, MutableLong, Long> accumulator;
 	private final ToCriteriaPartTreeTransformer<C> criteriaAppender;
 	
 	/**
@@ -50,16 +50,16 @@ public class PartTreeStalactiteCountProjection<C> implements RepositoryQuery {
 		if (partTree.isDistinct()) {
 			count.distinct();
 		}
-		accumulator = new Accumulator<Function<Selectable<Long>, Long>, MutableLong, Long>() {
+		accumulator = new Accumulator<ProjectionDataProvider, MutableLong, Long>() {
 			@Override
 			public Supplier<MutableLong> supplier() {
 				return MutableLong::new;
 			}
 			
 			@Override
-			public BiConsumer<MutableLong, Function<Selectable<Long>, Long>> aggregator() {
+			public BiConsumer<MutableLong, ProjectionDataProvider> aggregator() {
 				return (modifiableLong, rowDataProvider) -> {
-					modifiableLong.reset(rowDataProvider.apply(count));
+					modifiableLong.reset(rowDataProvider.getValue(count));
 				};
 			}
 			

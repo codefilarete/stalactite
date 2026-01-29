@@ -8,7 +8,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.codefilarete.reflection.Accessor;
-import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.stalactite.engine.EntityCriteria;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
@@ -70,6 +70,11 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	
 	@Override
 	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter) {
+		return delegate.selectProjectionWhere(selectAdapter);
+	}
+	
+	@Override
+	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Set<EntityCriteria.CriteriaPath<C, ?>> selectAdapter) {
 		return delegate.selectProjectionWhere(selectAdapter);
 	}
 	

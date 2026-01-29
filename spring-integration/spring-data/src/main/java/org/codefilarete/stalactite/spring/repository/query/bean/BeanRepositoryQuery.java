@@ -1,23 +1,24 @@
 package org.codefilarete.stalactite.spring.repository.query.bean;
 
-import javax.annotation.Nullable;
 import java.lang.reflect.Executable;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
+import org.codefilarete.stalactite.engine.ExecutableProjection.ProjectionDataProvider;
 import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.spring.repository.query.BeanQuery;
+import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
 import org.codefilarete.stalactite.spring.repository.query.execution.AbstractQueryExecutor;
 import org.codefilarete.stalactite.spring.repository.query.execution.AbstractRepositoryQuery;
-import org.codefilarete.stalactite.spring.repository.query.BeanQuery;
 import org.codefilarete.stalactite.spring.repository.query.execution.StalactiteQueryMethodInvocationParameters;
-import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.tool.Reflections;
@@ -80,16 +81,16 @@ public class BeanRepositoryQuery<C, R> extends AbstractRepositoryQuery<C, R> {
 				countSelectable.set((Selectable<Long>) Iterables.first(select));
 			});
 			invocationParameters.getNamedValues().forEach(countQuery::set);
-			return countQuery.execute(new Accumulator<Function<Selectable<Long>, Long>, MutableLong, Long>() {
+			return countQuery.execute(new Accumulator<ProjectionDataProvider, MutableLong, Long>() {
 				@Override
 				public Supplier<MutableLong> supplier() {
 					return MutableLong::new;
 				}
 				
 				@Override
-				public BiConsumer<MutableLong, Function<Selectable<Long>, Long>> aggregator() {
+				public BiConsumer<MutableLong, ProjectionDataProvider> aggregator() {
 					return (modifiableInt, selectableObjectFunction) -> {
-						Long apply = selectableObjectFunction.apply(countSelectable.get());
+						Long apply = selectableObjectFunction.getValue(countSelectable.get());
 						modifiableInt.reset(apply);
 					};
 				}

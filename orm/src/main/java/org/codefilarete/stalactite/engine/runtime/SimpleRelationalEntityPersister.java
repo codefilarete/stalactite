@@ -183,6 +183,12 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 		return projectionSupport.wrapIntoExecutable();
 	}
 	
+	@Override
+	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Set<CriteriaPath<C, ?>> selectAdapter) {
+		ProjectionQueryCriteriaSupport<C, I> projectionSupport = new ProjectionQueryCriteriaSupport<>(entityFinder, selectAdapter);
+		return projectionSupport.wrapIntoExecutable();
+	}
+	
 	/**
 	 * Select all instances with all relations fetched.
 	 * 
