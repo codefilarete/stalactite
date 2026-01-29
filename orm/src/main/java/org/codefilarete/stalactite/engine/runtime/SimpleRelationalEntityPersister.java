@@ -13,6 +13,8 @@ import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.stalactite.engine.EntityCriteria;
+import org.codefilarete.stalactite.engine.EntityCriteria.CriteriaPath;
 import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.VersioningStrategy;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecordMapping.KeyValueRecordIdMapping;

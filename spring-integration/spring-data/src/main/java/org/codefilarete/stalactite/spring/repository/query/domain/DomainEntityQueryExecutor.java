@@ -6,7 +6,7 @@ import java.util.function.Supplier;
 import org.codefilarete.reflection.AccessorByMember;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
+import org.codefilarete.stalactite.engine.EntityCriteria.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.ExecutableEntityQueryCriteria;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;

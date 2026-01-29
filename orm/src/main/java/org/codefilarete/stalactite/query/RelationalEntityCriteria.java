@@ -1,6 +1,6 @@
 package org.codefilarete.stalactite.query;
 
-import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
+import org.codefilarete.stalactite.engine.EntityCriteria;
 
 /**
  * @author Guillaume Mary

@@ -10,12 +10,12 @@ import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.stalactite.engine.EntityCriteria;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
-import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -182,7 +182,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * @param <C> type of object returned by query execution
 	 */
 	interface ExecutableEntityQueryCriteria<C, SELF extends ExecutableEntityQueryCriteria<C, SELF>>
-			extends ExecutableEntityQuery<C, SELF>, RelationalEntityCriteria<C, SELF>, OrderByChain<C, SELF> {
+			extends ExecutableEntityQuery<C, SELF>, RelationalEntityCriteria<C, SELF>, EntityCriteria.OrderByChain<C, SELF> {
 		
 	}
 }

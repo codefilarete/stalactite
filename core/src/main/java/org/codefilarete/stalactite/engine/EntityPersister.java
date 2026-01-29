@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +11,9 @@ import java.util.function.Function;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.stalactite.engine.EntityCriteria.CriteriaPath;
+import org.codefilarete.stalactite.engine.EntityCriteria.FluentOrderByClause;
+import org.codefilarete.stalactite.engine.EntityCriteria.SerializableCollectionFunction;
 import org.codefilarete.stalactite.engine.listener.PersisterListener;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
@@ -241,6 +245,14 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 		return selectWhere(accessorChain.getAccessors(), operator);
 	}
 	
+	default <O> ExecutableEntityQuery<C, ?> selectWhere(CriteriaPath<C, ?> accessorChain, ConditionalOperator<O, ?> operator) {
+		return selectWhere(accessorChain.getAccessors(), operator);
+	}
+	
+	default <O, S extends Collection<O>, NEXT> ExecutableEntityQuery<C, ?> selectWhere(SerializableCollectionFunction<C, S, O> accessor1, SerializableFunction<O, NEXT> accessor2, ConditionalOperator<NEXT, ?> operator) {
+		return selectWhere(new CriteriaPath<>(accessor1, accessor2), operator);
+	}
+	
 	/**
 	 * Creates a query which criteria target mapped properties.
 	 * Please note that the whole bean graph is loaded, not only entities that satisfy criteria.
@@ -328,7 +340,15 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 */
 	default <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter, List<? extends ValueAccessPoint<?>> accessorChain, ConditionalOperator<O, ?> operator) {
 		return selectProjectionWhere(selectAdapter).and(accessorChain, operator);
-	};
+	}
+	
+	default <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter, CriteriaPath<C, ?> accessorChain, ConditionalOperator<O, ?> operator) {
+		return selectProjectionWhere(selectAdapter, accessorChain.getAccessors(), operator);
+	}
+	
+	default <O, S extends Collection<O>, NEXT> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableCollectionFunction<C, S, O> accessor1, SerializableFunction<O, NEXT> accessor2, ConditionalOperator<O, ?> operator) {
+		return selectProjectionWhere(selectAdapter, new CriteriaPath<>(accessor1, accessor2), operator);
+	}
 	
 	/**
 	 * Creates a projection query which criteria target mapped properties.
@@ -393,147 +413,5 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 		 * {@inheritDoc}
 		 */
 		ExecutableProjectionQuery<C, SELF> endNested();
-	}
-	
-	/**
-	 * Contract that allows to create some query criteria based on property accessors
-	 * 
-	 * @param <C> type of object returned by query execution
-	 */
-	interface EntityCriteria<C, SELF extends EntityCriteria<C, SELF>> {
-		
-		/**
-		 * Combines with "and" given criteria on property  
-		 *
-		 * @param getter a method reference to a getter
-		 * @param operator operator of the criteria (will be the condition on the matching column)
-		 * @param <O> getter return type, also criteria value
-		 * @return this
-		 * @throws IllegalArgumentException if column matching getter was not found
-		 */
-		<O> SELF and(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator);
-		
-		/**
-		 * Combines with "and" given criteria on property  
-		 *
-		 * @param setter a method reference to a setter
-		 * @param operator operator of the criteria (will be the condition on the matching column)
-		 * @param <O> getter return type, also criteria value
-		 * @return this
-		 * @throws IllegalArgumentException if column matching setter was not found
-		 */
-		<O> SELF and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
-		
-		/**
-		 * Combines with "or" given criteria on property  
-		 *
-		 * @param getter a method reference to a getter
-		 * @param operator operator of the criteria (will be the condition on the matching column)
-		 * @param <O> getter return type, also criteria value
-		 * @return this
-		 * @throws IllegalArgumentException if column matching getter was not found
-		 */
-		<O> SELF or(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator);
-		
-		/**
-		 * Combines with "or" given criteria on property  
-		 *
-		 * @param setter a method reference to a setter
-		 * @param operator operator of the criteria (will be the condition on the matching column)
-		 * @param <O> getter return type, also criteria value
-		 * @return this
-		 * @throws IllegalArgumentException if column matching setter was not found
-		 */
-		<O> SELF or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
-		
-		/**
-		 * Starts a nested condition and returns it. At SQL rendering time, it should be embedded between parenthesis.
-		 * Result must be used to fill the nested condition, not current instance.
-		 * After filling it, it must be closed by {@link #endNested()}
-		 * 
-		 * @return a nested condition to be filled
-		 */
-		EntityCriteria<C, SELF> beginNested();
-		
-		/**
-		 * Ends a nested condition started with {@link #beginNested()}. It returns the enclosing instance (the one on which {@link #beginNested()}
-		 * was called).
-		 * 
-		 * @return the enclosing condition
-		 */
-		EntityCriteria<C, SELF> endNested();
-		
-		/**
-		 * Combines with "and" given criteria on an embedded or one-to-one bean property
-		 *
-		 * @param getter1 a method reference to the embedded bean
-		 * @param getter2 a method reference to the embedded bean property
-		 * @param operator operator of the criteria (will be the condition on the matching column)
-		 * @param <A> embedded bean type
-		 * @param <B> embedded bean property type, also criteria value
-		 * @return this
-		 * @throws IllegalArgumentException if column matching getter was not found
-		 */
-		<A, B> SELF and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator);
-		
-		default <O> SELF and(ValueAccessPoint<C> accessor, ConditionalOperator<O, ?> operator) {
-			if (accessor instanceof AccessorChain) {
-				return and(((AccessorChain<?, ?>) accessor).getAccessors(), operator);
-			} else {
-				return and(Arrays.asList(accessor), operator);
-			}
-		}
-		
-		default <O> SELF or(ValueAccessPoint<C> accessor, ConditionalOperator<O, ?> operator) {
-			if (accessor instanceof AccessorChain) {
-				return or(((AccessorChain<?, ?>) accessor).getAccessors(), operator);
-			} else {
-				return or(Arrays.asList(accessor), operator);
-			}
-		}
-		
-		<O> SELF and(List<? extends ValueAccessPoint<?>> accessors, ConditionalOperator<O, ?> operator);
-		
-		<O> SELF or(List<? extends ValueAccessPoint<?>> accessors, ConditionalOperator<O, ?> operator);
-	}
-	
-	
-	interface OrderByChain<C, SELF extends OrderByChain<C, SELF>> {
-		
-		default SELF orderBy(SerializableFunction<C, ?> getter) {
-			return orderBy(getter, Order.ASC);
-		}
-		
-		default SELF orderBy(SerializableBiConsumer<C, ?> setter) {
-			return orderBy(setter, Order.ASC);
-		}
-		
-		default SELF orderBy(AccessorChain<C, ?> getter) {
-			return orderBy(getter, Order.ASC);
-		}
-		
-		SELF orderBy(SerializableFunction<C, ?> getter, Order order);
-		
-		SELF orderBy(SerializableBiConsumer<C, ?> setter, Order order);
-		
-		SELF orderBy(AccessorChain<C, ?> getter, Order order);
-		
-		SELF orderBy(AccessorChain<C, ?> getter, Order order, boolean ignoreCase);
-		
-		enum Order {
-			ASC,
-			DESC
-		}
-	}
-	
-	interface LimitAware<R> {
-		
-		R limit(int value);
-		
-		R limit(int value, Integer offset);
-	}
-	
-	interface FluentOrderByClause<C, SELF extends FluentOrderByClause<C, SELF>> extends OrderByChain<C, SELF>, LimitAware<SELF> {
-		
 	}
 }

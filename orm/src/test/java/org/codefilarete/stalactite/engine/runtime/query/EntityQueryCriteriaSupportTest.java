@@ -5,7 +5,7 @@ import java.util.TreeSet;
 
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.MutatorByMethodReference;
-import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
+import org.codefilarete.stalactite.engine.EntityCriteria.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport.EntityQueryPageSupport.OrderByItem;

@@ -14,7 +14,7 @@ import org.codefilarete.reflection.AccessorByMember;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
-import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
+import org.codefilarete.stalactite.engine.EntityCriteria.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.runtime.ProjectionQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.ProjectionQueryCriteriaSupport.ProjectionQueryPageSupport;
 import org.codefilarete.stalactite.query.model.JoinLink;

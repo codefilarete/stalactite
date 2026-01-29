@@ -5,9 +5,9 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.codefilarete.reflection.AccessorChain;
-import org.codefilarete.stalactite.engine.EntityPersister.LimitAware;
-import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain;
-import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
+import org.codefilarete.stalactite.engine.EntityCriteria.LimitAware;
+import org.codefilarete.stalactite.engine.EntityCriteria.OrderByChain;
+import org.codefilarete.stalactite.engine.EntityCriteria.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.runtime.ProjectionQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;

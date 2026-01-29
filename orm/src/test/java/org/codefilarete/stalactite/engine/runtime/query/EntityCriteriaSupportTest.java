@@ -1,12 +1,15 @@
 package org.codefilarete.stalactite.engine.runtime.query;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
-import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.dsl.MappingEase;
+import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
+import org.codefilarete.stalactite.engine.EntityCriteria;
+import org.codefilarete.stalactite.engine.EntityCriteria.CriteriaPath;
+import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
@@ -14,6 +17,7 @@ import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.id.Identifier;
+import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
@@ -22,14 +26,20 @@ import org.codefilarete.stalactite.query.model.LogicalOperator;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
+import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
+import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -112,5 +122,44 @@ class EntityCriteriaSupportTest {
 		};
 		testInstance.and(Person::getNicknames, Operators.eq(""));
 		assertThat(testInstance.hasCollectionCriteria()).isTrue();
+	}
+	
+	/**
+	 * Tests the ability to query entities based on criteria that involve elements of a collection property.
+	 */
+	@Test
+	void selectWhere_withCollectionCriteria() {
+		
+		Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
+		
+		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
+		// binder creation for our identifier
+		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
+		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
+		
+		EntityPersister<Country, Identifier<Long>> countryPersister = entityBuilder(Country.class, LONG_TYPE)
+				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.mapOneToMany(Country::getCities, entityBuilder(City.class, LONG_TYPE)
+						.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.map(City::getName))
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Country country = new Country(new PersistableIdentifier<>(1L));
+		City grenoble = new City(new PersistableIdentifier<>(13L));
+		grenoble.setName("Grenoble");
+		country.addCity(grenoble);
+		City lyon = new City(new PersistableIdentifier<>(17L));
+		lyon.setName("Lyon");
+		country.addCity(lyon);
+		countryPersister.insert(country);
+		
+		// we create a condition using criteria applied to a property of an element within the cities collection
+		Country loadedCountry = countryPersister.selectWhere(Country::getCities, City::getName, Operators.eq("Grenoble")).execute(Accumulators.getFirstUnique());
+		assertThat(loadedCountry).isNotNull();
+		// we ensure that the whole aggregate is loaded, not a subset of the collection
+		assertThat(loadedCountry.getCities().stream().map(City::getName).collect(Collectors.toSet())).containsExactlyInAnyOrder("Grenoble", "Lyon");
 	}
 }

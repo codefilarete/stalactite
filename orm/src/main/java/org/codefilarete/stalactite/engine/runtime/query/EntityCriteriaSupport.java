@@ -11,7 +11,7 @@ import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.ValueAccessPoint;
-import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
+import org.codefilarete.stalactite.engine.EntityCriteria;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode;
@@ -134,6 +134,11 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	}
 	
 	@Override
+	public <O> EntityCriteriaSupport<C> and(CriteriaPath<C, O> propertyPath, ConditionalOperator<O, ?> operator) {
+		return add(AND, propertyPath.getAccessors(), operator);
+	}
+	
+	@Override
 	public <O> EntityCriteriaSupport<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
 		return add(OR, Arrays.asList(new AccessorByMethodReference<>(getter)), operator);
 	}
@@ -141,6 +146,11 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	@Override
 	public <O> EntityCriteriaSupport<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
 		return add(OR, Arrays.asList(new MutatorByMethodReference<>(setter)), operator);
+	}
+	
+	@Override
+	public <O> EntityCriteriaSupport<C> or(CriteriaPath<C, O> propertyPath, ConditionalOperator<O, ?> operator) {
+		return add(OR, propertyPath.getAccessors(), operator);
 	}
 	
 	@Override
