@@ -227,9 +227,7 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 		} else {
 			return (target, input) -> {
 				targetSetter.set(target, input);
-				if (reverseCombiner != null) {
-					reverseCombiner.accept(input, target);
-				}
+				reverseCombiner.accept(input, target);
 			};
 		}
 	}

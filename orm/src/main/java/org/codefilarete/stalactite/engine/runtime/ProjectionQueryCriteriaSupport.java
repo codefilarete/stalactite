@@ -74,16 +74,6 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 		this(entityFinder, entityCriteriaSupport, new ProjectionQueryPageSupport<>(), selectAdapter);
 	}
 	
-	public ProjectionQueryCriteriaSupport(EntityFinder<C, I> entityFinder,
-										  EntityCriteriaSupport<C> entityCriteriaSupport,
-										  ProjectionQueryPageSupport<C> queryPageSupport,
-										  Consumer<Select> selectAdapter) {
-		this.entityFinder = entityFinder;
-		this.entityCriteriaSupport = entityCriteriaSupport;
-		this.queryPageSupport = queryPageSupport;
-		this.selectAdapter = selectAdapter;
-	}
-	
 	public ProjectionQueryCriteriaSupport(EntityFinder<C, I> entityFinder, Set<CriteriaPath<C, ?>> selectAdapter) {
 		this(entityFinder, entityFinder.newCriteriaSupport().getEntityCriteriaSupport(), new ProjectionQueryPageSupport<>(), selectAdapter);
 	}
@@ -96,16 +86,23 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 										  EntityCriteriaSupport<C> entityCriteriaSupport,
 										  ProjectionQueryPageSupport<C> queryPageSupport,
 										  Set<CriteriaPath<C, ?>> selectAdapter) {
+		this(entityFinder, entityCriteriaSupport, queryPageSupport, select -> {
+			select.clear();
+			selectAdapter.forEach(propertyPath -> {
+				Column<?, ?> joinLink = (Column<?, ?>) entityCriteriaSupport.getAggregateColumnMapping().giveColumn(propertyPath.getAccessors());
+				select.add(joinLink, joinLink.getAlias());
+			});
+		});
+	}
+	
+	public ProjectionQueryCriteriaSupport(EntityFinder<C, I> entityFinder,
+										  EntityCriteriaSupport<C> entityCriteriaSupport,
+										  ProjectionQueryPageSupport<C> queryPageSupport,
+										  Consumer<Select> selectAdapter) {
 		this.entityFinder = entityFinder;
 		this.entityCriteriaSupport = entityCriteriaSupport;
 		this.queryPageSupport = queryPageSupport;
-		this.selectAdapter = selectables -> {
-			selectables.clear();
-			selectAdapter.forEach(propertyPath -> {
-				Column<?, ?> joinLink = (Column<?, ?>) entityCriteriaSupport.getAggregateColumnMapping().giveColumn(propertyPath.getAccessors());
-				selectables.add(joinLink, joinLink.getAlias());
-			});
-		};
+		this.selectAdapter = selectAdapter;
 	}
 	
 	/**

@@ -89,7 +89,7 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 		this.projectionMappingFinder.lookup(method.getDomainClass());
 		// by default, we don't customize the select clause because it will be adapted at very last time, during execution according to the projection
 		// type which can be dynamic
-		this.defaultProjectionQueryCriteriaSupport = entityPersister.newProjectionCriteriaSupport(selectables -> {});
+		this.defaultProjectionQueryCriteriaSupport = entityPersister.newProjectionCriteriaSupport(select -> {});
 		this.projectionCriteriaAppender = new ToCriteriaPartTreeTransformer<>(partTree, entityPersister.getClassToPersist());
 		this.projectionCriteriaAppender.applyTo(
 				defaultProjectionQueryCriteriaSupport.getEntityCriteriaSupport(),

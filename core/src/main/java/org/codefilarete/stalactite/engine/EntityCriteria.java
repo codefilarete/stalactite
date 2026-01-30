@@ -20,56 +20,92 @@ import java.util.List;
 public interface EntityCriteria<C, SELF extends EntityCriteria<C, SELF>> {
 	
 	/**
-	 * Combines with "and" given criteria on property
-	 *
-	 * @param getter   a method reference to a getter
+	 * Adds a criteria to the current instance with an {@code and} condition for the specified property
+	 * and the given operator.
+	 * 
+	 * @param getter a method reference to the getter of the property to be evaluated.
 	 * @param operator operator of the criteria (will be the condition on the matching column)
-	 * @param <O>      getter return type, also criteria value
-	 * @return this
-	 * @throws IllegalArgumentException if column matching getter was not found
+	 * @return this instance for method chaining.
+	 * @param <O> getter return type, also criteria value
+	 * @throws IllegalArgumentException if the column matching the getter is not found.
 	 */
 	<O> SELF and(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator);
 	
 	/**
-	 * Combines with "and" given criteria on property
-	 *
-	 * @param setter   a method reference to a setter
+	 * Adds a criteria to the current instance with an {@code and} condition for the specified property
+	 * and the given operator.
+	 * 
+	 * @param setter a method reference to the setter of the property to be evaluated.
 	 * @param operator operator of the criteria (will be the condition on the matching column)
-	 * @param <O>      getter return type, also criteria value
+	 * @param <O> getter return type, also criteria value
 	 * @return this
-	 * @throws IllegalArgumentException if column matching setter was not found
+	 * @throws IllegalArgumentException if the column matching the setter was not found
 	 */
 	<O> SELF and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
 	
+	/**
+	 * Particular version of {@link #and(SerializableFunction, ConditionalOperator)} for an embedded or one-to-one bean
+	 * property.
+	 * 
+	 * @param getter1 a method reference to the embedded bean
+	 * @param getter2 a method reference to the getter of the embedded property to be evaluated.
+	 * @param operator operator of the criteria (will be the condition on the matching column)
+	 * @param <A> embedded bean type
+	 * @param <B> embedded bean property type, also criteria value
+	 * @return this
+	 * @throws IllegalArgumentException if the column matching the getter was not found
+	 */
+	<A, B> SELF and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator);
+	
+	/**
+	 * Generic version of {@link #and(SerializableFunction, ConditionalOperator)} with a (long) path to a property 
+	 * 
+	 * @param propertyPath a path representing access to the property to be evaluated.
+	 * @param operator operator of the criteria (will be the condition on the matching column)
+	 * @param <O> getter return type, also criteria value
+	 * @return this
+	 * @throws IllegalArgumentException if the column matching the propertyPath was not found
+	 */
 	<O> SELF and(CriteriaPath<C, O> propertyPath, ConditionalOperator<O, ?> operator);
 	
 	/**
-	 * Combines with "or" given criteria on property
+	 * Adds a criteria to the current instance with an {@code or} condition for the specified property
+	 * and the given operator.
 	 *
-	 * @param getter   a method reference to a getter
+	 * @param getter a method reference to the getter of the property to be evaluated.
 	 * @param operator operator of the criteria (will be the condition on the matching column)
-	 * @param <O>      getter return type, also criteria value
+	 * @param <O> getter return type, also criteria value
 	 * @return this
-	 * @throws IllegalArgumentException if column matching getter was not found
+	 * @throws IllegalArgumentException if the column matching the getter was not found
 	 */
 	<O> SELF or(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator);
 	
 	/**
-	 * Combines with "or" given criteria on property
+	 * Adds a criteria to the current instance with an {@code or} condition for the specified property
+	 * and the given operator.
 	 *
-	 * @param setter   a method reference to a setter
+	 * @param setter a method reference to the setter of the property to be evaluated.
 	 * @param operator operator of the criteria (will be the condition on the matching column)
-	 * @param <O>      getter return type, also criteria value
+	 * @param <O> getter return type, also criteria value
 	 * @return this
-	 * @throws IllegalArgumentException if column matching setter was not found
+	 * @throws IllegalArgumentException if the column matching the setter was not found
 	 */
 	<O> SELF or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
 	
+	/**
+	 * Generic version of {@link #or(SerializableFunction, ConditionalOperator)} with a (long) path to a property 
+	 *
+	 * @param propertyPath a path representing access to the property to be evaluated.
+	 * @param operator operator of the criteria (will be the condition on the matching column)
+	 * @param <O> getter return type, also criteria value
+	 * @return this
+	 * @throws IllegalArgumentException if the column matching the propertyPath was not found
+	 */
 	<O> SELF or(CriteriaPath<C, O> propertyPath, ConditionalOperator<O, ?> operator);
 	
 	/**
 	 * Starts a nested condition and returns it. At SQL rendering time, it should be embedded between parenthesis.
-	 * Result must be used to fill the nested condition, not current instance.
+	 * Result must be used to fill the nested condition, not the current instance.
 	 * After filling it, it must be closed by {@link #endNested()}
 	 *
 	 * @return a nested condition to be filled
@@ -83,19 +119,6 @@ public interface EntityCriteria<C, SELF extends EntityCriteria<C, SELF>> {
 	 * @return the enclosing condition
 	 */
 	EntityCriteria<C, SELF> endNested();
-	
-	/**
-	 * Combines with "and" given criteria on an embedded or one-to-one bean property
-	 *
-	 * @param getter1  a method reference to the embedded bean
-	 * @param getter2  a method reference to the embedded bean property
-	 * @param operator operator of the criteria (will be the condition on the matching column)
-	 * @param <A>      embedded bean type
-	 * @param <B>      embedded bean property type, also criteria value
-	 * @return this
-	 * @throws IllegalArgumentException if column matching getter was not found
-	 */
-	<A, B> SELF and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator);
 	
 	default <O> SELF and(ValueAccessPoint<C> accessor, ConditionalOperator<O, ?> operator) {
 		if (accessor instanceof AccessorChain) {
@@ -156,21 +179,21 @@ public interface EntityCriteria<C, SELF extends EntityCriteria<C, SELF>> {
 		
 	}
 	
+	/**
+	 * Represents a path of property to be given as a criteria. 
+	 * 
+	 * @param <IN> the input type, representing the source object type
+	 * @param <OUT> the output type, representing the target property type
+	 */
 	class CriteriaPath<IN, OUT> {
 		
-		private final List<ValueAccessPoint<?>> accessors;
-		
-		public CriteriaPath() {
-			this.accessors = new ArrayList<>();
-		}
+		private final List<ValueAccessPoint<?>> accessors = new ArrayList<>();
 		
 		public CriteriaPath(SerializableFunction<IN, OUT> accessor) {
-			this();
 			this.accessors.add(Accessors.accessorByMethodReference(accessor));
 		}
 		
 		public <S extends Collection<O>, O> CriteriaPath(SerializableCollectionFunction<IN, S, O> collectionAccessor, SerializableFunction<O, OUT> elementPropertyAccessor) {
-			this();
 			this.accessors.add(Accessors.accessorByMethodReference(collectionAccessor));
 			this.accessors.add(Accessors.accessorByMethodReference(elementPropertyAccessor));
 		}
@@ -190,6 +213,15 @@ public interface EntityCriteria<C, SELF extends EntityCriteria<C, SELF>> {
 		}
 	}
 	
+	/**
+	 * Specialized version of {@link SerializableFunction} for collection accessors: the output type is the collection
+	 * element type, which makes this not really a {@link SerializableFunction} but useful in the context of {@link CriteriaPath} 
+	 * 
+	 * @param <T> the input type
+	 * @param <S> the collection type
+	 * @param <O> the collection element type
+	 * @author Guillaume Mary
+	 */
 	@FunctionalInterface
 	interface SerializableCollectionFunction<T, S extends Collection<O>, O> extends SerializableFunction<T, S> {
 		
