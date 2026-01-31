@@ -7,7 +7,7 @@ import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.engine.ExecutableProjection.ProjectionDataProvider;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
-import org.codefilarete.stalactite.engine.runtime.ProjectionQueryCriteriaSupport;
+import org.codefilarete.stalactite.engine.runtime.projection.ProjectionQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport.EntityQueryPageSupport;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.operator.Count;
@@ -76,7 +76,6 @@ public class PartTreeStalactiteCountProjection<C> implements RepositoryQuery {
 	@Override
 	public Long execute(Object[] parameters) {
 		ProjectionQueryCriteriaSupport<C, ?> executableEntityQuery = entityPersister.newProjectionCriteriaSupport(select -> {
-			select.clear();
 			select.add(count, "row_count");
 		});
 		// because order-by and limit clauses are compatible with count operator, we pass a page support which is not the one the executable query,

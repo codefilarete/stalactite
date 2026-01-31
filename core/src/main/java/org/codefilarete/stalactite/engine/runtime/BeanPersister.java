@@ -183,12 +183,7 @@ public class BeanPersister<C, I, T extends Table<T>>
 	}
 	
 	@Override
-	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter) {
-		throw new NotImplementedException("Not yet implemented");
-	}
-	
-	@Override
-	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Set<EntityCriteria.CriteriaPath<C, ?>> selectAdapter) {
+	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<SelectAdapter<C>> selectAdapter) {
 		throw new NotImplementedException("Not yet implemented");
 	}
 	

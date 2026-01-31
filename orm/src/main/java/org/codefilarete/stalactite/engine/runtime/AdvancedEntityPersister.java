@@ -3,9 +3,9 @@ package org.codefilarete.stalactite.engine.runtime;
 import java.util.function.Consumer;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.engine.runtime.projection.ProjectionQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.query.EntityFinder;
-import org.codefilarete.stalactite.query.model.Select;
 
 /**
  * In the following, "public" means "for the very end-user".
@@ -25,7 +25,7 @@ public interface AdvancedEntityPersister<C, I> extends ConfiguredPersister<C, I>
 	 */
 	EntityQueryCriteriaSupport<C, I> newCriteriaSupport();
 	
-	ProjectionQueryCriteriaSupport<C, I> newProjectionCriteriaSupport(Consumer<Select> selectAdapter);
+	ProjectionQueryCriteriaSupport<C, I> newProjectionCriteriaSupport(Consumer<SelectAdapter<C>> selectAdapter);
 	
 	EntityJoinTree<C, I> getEntityJoinTree();
 	

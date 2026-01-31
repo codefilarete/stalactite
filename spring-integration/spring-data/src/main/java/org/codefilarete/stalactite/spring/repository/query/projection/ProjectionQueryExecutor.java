@@ -16,8 +16,8 @@ import org.codefilarete.reflection.Accessors;
 import org.codefilarete.stalactite.engine.EntityCriteria.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
 import org.codefilarete.stalactite.engine.ExecutableProjection.ProjectionDataProvider;
-import org.codefilarete.stalactite.engine.runtime.ProjectionQueryCriteriaSupport;
-import org.codefilarete.stalactite.engine.runtime.ProjectionQueryCriteriaSupport.ProjectionQueryPageSupport;
+import org.codefilarete.stalactite.engine.runtime.projection.ProjectionQueryCriteriaSupport;
+import org.codefilarete.stalactite.engine.runtime.projection.ProjectionQueryPageSupport;
 import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
@@ -49,7 +49,6 @@ class ProjectionQueryExecutor<C> extends AbstractQueryExecutor<List<Object>, Obj
 		IdentityHashMap<JoinLink<?, ?>, String> aliases = buildAliases(columnToProperties);
 		// we "clone" the default projection query to make our own, dedicated to the derived query
 		this.projectionQueryCriteriaSupport = defaultProjectionQueryCriteriaSupport.copyFor(select -> {
-			select.clear();
 			columnToProperties.keySet().forEach(selectable -> {
 				select.add(selectable, aliases.get(selectable));
 			});

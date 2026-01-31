@@ -700,7 +700,6 @@ class SingleTablePolymorphismPersisterTest {
 			
 			Count count = Operators.count(new SimpleSelectable<>("id", Integer.class));
 			ExecutableProjectionQuery<AbstractToto, ?> totoRelationalExecutableEntityQuery = testInstance.selectProjectionWhere(select ->  {
-				select.clear();
 				select.add(count, "count");
 			}, AbstractToto::getX, Operators.eq(77));
 			long countValue = totoRelationalExecutableEntityQuery.execute(new Accumulator<ProjectionDataProvider, MutableLong, Long>() {

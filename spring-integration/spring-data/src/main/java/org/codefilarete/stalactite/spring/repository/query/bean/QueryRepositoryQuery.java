@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.MethodReferenceCapturer;
+import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
 import org.codefilarete.stalactite.engine.ExecutableProjection.ProjectionDataProvider;
 import org.codefilarete.stalactite.engine.ExecutableQuery;

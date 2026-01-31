@@ -19,6 +19,7 @@ import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Select;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Experimental;
@@ -277,7 +278,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @param <O> value type returned by property accessor
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 */
-	default <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
+	default <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<SelectAdapter<C>> selectAdapter, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
 		return selectProjectionWhere(selectAdapter).and(getter, operator);
 	}
 	
@@ -297,7 +298,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @param <O> value type returned by property accessor
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 */
-	default <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
+	default <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<SelectAdapter<C>> selectAdapter, SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
 		return selectProjectionWhere(selectAdapter).and(setter, operator);
 	}
 	
@@ -318,7 +319,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @param <O> value type returned by property accessor
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 */
-	default <O, A> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableFunction<C, A> getter1, SerializableFunction<A, O> getter2, ConditionalOperator<O, ?> operator) {
+	default <O, A> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<SelectAdapter<C>> selectAdapter, SerializableFunction<C, A> getter1, SerializableFunction<A, O> getter2, ConditionalOperator<O, ?> operator) {
 		return selectProjectionWhere(selectAdapter, AccessorChain.fromMethodReferences(getter1, getter2).getAccessors(), operator);
 	}
 	
@@ -338,15 +339,15 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @param <O> value type returned by property accessor
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 */
-	default <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter, List<? extends ValueAccessPoint<?>> accessorChain, ConditionalOperator<O, ?> operator) {
+	default <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<SelectAdapter<C>> selectAdapter, List<? extends ValueAccessPoint<?>> accessorChain, ConditionalOperator<O, ?> operator) {
 		return selectProjectionWhere(selectAdapter).and(accessorChain, operator);
 	}
 	
-	default <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter, CriteriaPath<C, ?> accessorChain, ConditionalOperator<O, ?> operator) {
+	default <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<SelectAdapter<C>> selectAdapter, CriteriaPath<C, ?> accessorChain, ConditionalOperator<O, ?> operator) {
 		return selectProjectionWhere(selectAdapter, accessorChain.getAccessors(), operator);
 	}
 	
-	default <O, S extends Collection<O>, NEXT> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableCollectionFunction<C, S, O> accessor1, SerializableFunction<O, NEXT> accessor2, ConditionalOperator<O, ?> operator) {
+	default <O, S extends Collection<O>, NEXT> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<SelectAdapter<C>> selectAdapter, SerializableCollectionFunction<C, S, O> accessor1, SerializableFunction<O, NEXT> accessor2, ConditionalOperator<O, ?> operator) {
 		return selectProjectionWhere(selectAdapter, new CriteriaPath<>(accessor1, accessor2), operator);
 	}
 	
@@ -362,34 +363,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @param selectAdapter the {@link Select} clause modifier
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 */
-	ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter);
-	
-	
-	default <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Set<CriteriaPath<C, ?>> selectAdapter, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
-		return selectProjectionWhere(selectAdapter).and(getter, operator);
-	}
-	
-	default <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Set<CriteriaPath<C, ?>> selectAdapter, SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
-		return selectProjectionWhere(selectAdapter).and(setter, operator);
-	}
-	
-	default <O, A> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Set<CriteriaPath<C, ?>> selectAdapter, SerializableFunction<C, A> getter1, SerializableFunction<A, O> getter2, ConditionalOperator<O, ?> operator) {
-		return selectProjectionWhere(selectAdapter, AccessorChain.fromMethodReferences(getter1, getter2).getAccessors(), operator);
-	}
-	
-	default <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Set<CriteriaPath<C, ?>> selectAdapter, List<? extends ValueAccessPoint<?>> accessorChain, ConditionalOperator<O, ?> operator) {
-		return selectProjectionWhere(selectAdapter).and(accessorChain, operator);
-	}
-	
-	default <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Set<CriteriaPath<C, ?>> selectAdapter, CriteriaPath<C, ?> accessorChain, ConditionalOperator<O, ?> operator) {
-		return selectProjectionWhere(selectAdapter, accessorChain.getAccessors(), operator);
-	}
-	
-	default <O, S extends Collection<O>, NEXT> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Set<CriteriaPath<C, ?>> selectAdapter, SerializableCollectionFunction<C, S, O> accessor1, SerializableFunction<O, NEXT> accessor2, ConditionalOperator<O, ?> operator) {
-		return selectProjectionWhere(selectAdapter, new CriteriaPath<>(accessor1, accessor2), operator);
-	}
-	
-	ExecutableProjectionQuery<C, ?> selectProjectionWhere(Set<CriteriaPath<C, ?>> selectAdapter);
+	ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<SelectAdapter<C>> selectAdapter);
 	
 	Set<C> selectAll();
 	
@@ -440,5 +414,35 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 		 * {@inheritDoc}
 		 */
 		ExecutableProjectionQuery<C, SELF> endNested();
+	}
+	
+	/**
+	 * Abstraction to configure the select clause of a query.
+	 *
+	 * @param <C> the type of context or entity for which the selection is configured
+	 */
+	interface SelectAdapter<C> {
+		
+		Set<Selectable<?>> getColumns();
+		
+		SelectAdapter<C> distinct();
+		
+		SelectAdapter<C> setDistinct(boolean distinct);
+		
+		SelectAdapter<C> add(Selectable<?> column);
+		
+		SelectAdapter<C> add(Selectable<?> column, String alias);
+		
+		default SelectAdapter<C> add(CriteriaPath<C, ?> property) {
+			return add(property.getAccessors());
+		}
+		
+		default SelectAdapter<C> add(CriteriaPath<C, ?> property, String alias) {
+			return add(property.getAccessors(), alias);
+		}
+		
+		SelectAdapter<C> add(List<ValueAccessPoint<?>> property);
+		
+		SelectAdapter<C> add(List<ValueAccessPoint<?>> property, String alias);
 	}
 }

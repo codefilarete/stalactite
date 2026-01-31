@@ -69,12 +69,7 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	}
 	
 	@Override
-	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter) {
-		return delegate.selectProjectionWhere(selectAdapter);
-	}
-	
-	@Override
-	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Set<EntityCriteria.CriteriaPath<C, ?>> selectAdapter) {
+	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<SelectAdapter<C>> selectAdapter) {
 		return delegate.selectProjectionWhere(selectAdapter);
 	}
 	

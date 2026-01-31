@@ -7,7 +7,7 @@ import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.engine.ExecutableProjection.ProjectionDataProvider;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
-import org.codefilarete.stalactite.engine.runtime.ProjectionQueryCriteriaSupport;
+import org.codefilarete.stalactite.engine.runtime.projection.ProjectionQueryCriteriaSupport;
 import org.codefilarete.stalactite.spring.repository.query.derivation.ToCriteriaPartTreeTransformer;
 import org.codefilarete.stalactite.spring.repository.query.derivation.ToCriteriaPartTreeTransformer.Condition;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -70,7 +70,6 @@ public class PartTreeStalactiteExistsProjection<C> implements RepositoryQuery {
 		// It is the way JPA does it too https://vladmihalcea.com/spring-data-exists-query/
 		Set<Column<Table, ?>> pkColumns = entityPersister.<Table>getMapping().getTargetTable().getPrimaryKey().getColumns();
 		ProjectionQueryCriteriaSupport<C, ?> executableEntityQuery = entityPersister.newProjectionCriteriaSupport(select -> {
-			select.clear();
 			pkColumns.forEach(column -> {
 				select.add(column, column.getAlias());
 			});

@@ -705,7 +705,6 @@ class SimpleRelationalEntityPersisterTest {
 			
 			Count count = Operators.count(new SimpleSelectable<>("id", Integer.class));
 			ExecutableProjectionQuery<Toto, ?> totoRelationalExecutableEntityQuery = testInstance.selectProjectionWhere(select ->  {
-				select.clear();
 				select.add(count, "count");
 			}, Toto::getA, Operators.eq(77));
 			long countValue = totoRelationalExecutableEntityQuery.execute(new Accumulator<ProjectionDataProvider, MutableLong, Long>() {
@@ -747,8 +746,7 @@ class SimpleRelationalEntityPersisterTest {
 			when(preparedStatement.executeQuery()).thenAnswer((Answer<ResultSet>) invocation -> resultSet);
 			
 			CriteriaPath<Toto, Integer> Toto_getA = new CriteriaPath<>(Toto::getA);
-			ExecutableProjectionQuery<Toto, ?> totoRelationalExecutableEntityQuery = testInstance.selectProjectionWhere(
-					Arrays.asSet(Toto_getA)).and(Toto::getA, Operators.eq(77));
+			ExecutableProjectionQuery<Toto, ?> totoRelationalExecutableEntityQuery = testInstance.selectProjectionWhere(selectAdapter -> selectAdapter.add(Toto_getA), Toto::getA, Operators.eq(77));
 			Set<Object> countValue = totoRelationalExecutableEntityQuery.execute(new Accumulator<ProjectionDataProvider, Set<Object>, Set<Object>>() {
 				@Override
 				public Supplier<Set<Object>> supplier() {
@@ -772,7 +770,7 @@ class SimpleRelationalEntityPersisterTest {
 			verify(preparedStatement, times(1)).executeQuery();
 			verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"select Toto.a as Toto_a from Toto where Toto.a = ?"));
+					"select Toto.a from Toto where Toto.a = ?"));
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 77);
 			assertCapturedPairsEqual(expectedPairs);
 

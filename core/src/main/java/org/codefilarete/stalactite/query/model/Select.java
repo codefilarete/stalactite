@@ -30,10 +30,6 @@ public class Select implements FluentSelect<Select> {
 		this.distinct = another.distinct;
 	}
 	
-	public Map<Selectable<?>, String> getColumnPerAlias() {
-		return columns;
-	}
-	
 	@Override
 	public KeepOrderSet<Selectable<?>> getColumns() {
 		return new KeepOrderSet<>(columns.keySet());

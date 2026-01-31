@@ -12,8 +12,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.SelectExecutor;
-import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListener;
+import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
@@ -256,7 +256,17 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 		Map<Selectable<?>, ResultSetReader<?>> columnReaders = Iterables.map(queryClone.getColumns(), Function.identity(), selectable -> dialect.getColumnBinderRegistry().getBinder(selectable.getJavaType()));
 		
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(values);
-		return readProjection(preparedSQL, columnReaders, queryClone.getAliases(), accumulator);
+		Map<Selectable<?>, String> aliases = queryClone.getAliases();
+		
+		// Propagating aliases from the original query to clone if the user didn't mention the alias
+		// This avoids the later thrown exception "Column doesn't exist : null" because the column reading is based on the alias (which doesn't exist)
+		Map<Selectable<?>, String> defaultAliases = query.getAliases();
+		aliases.entrySet().forEach(alias -> {
+			if (alias.getValue() == null) {
+				alias.setValue(defaultAliases.get(alias.getKey()));
+			}
+		});
+		return readProjection(preparedSQL, columnReaders, aliases, accumulator);
 	}
 	
 	private <R, O> R readProjection(PreparedSQL preparedSQL,

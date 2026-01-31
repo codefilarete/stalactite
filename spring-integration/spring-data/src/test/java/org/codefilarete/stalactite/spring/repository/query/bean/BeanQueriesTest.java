@@ -358,7 +358,6 @@ public class BeanQueriesTest {
 		@Bean
 		public ExecutableProjectionQuery<Republic, ?> aMethodThatDoesntMatchAnyRepositoryMethodName_count(EntityPersister<Republic, Identifier<Long>> countryPersister) {
 			return countryPersister.selectProjectionWhere(select -> {
-						select.clear();
 						select.add(Operators.count(new SimpleSelectable<>("*", long.class)), "count");
 					}, Republic::isEuMember, eq(true))
 					.and(fromMethodReferences(Republic::getPresident, Person::getName), endsWithArgNamed("presidentName", String.class));

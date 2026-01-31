@@ -6,16 +6,15 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import org.codefilarete.reflection.AccessorChain;
-import org.codefilarete.stalactite.engine.EntityCriteria.CriteriaPath;
 import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.engine.runtime.projection.ProjectionQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.query.model.Operators;
-import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
@@ -108,18 +107,12 @@ public abstract class AbstractPolymorphismPersister<C, I>
 		return entityFinder.newCriteriaSupport();
 	}
 	
-	public ProjectionQueryCriteriaSupport<C, I> newProjectionCriteriaSupport(Consumer<Select> selectAdapter) {
+	public ProjectionQueryCriteriaSupport<C, I> newProjectionCriteriaSupport(Consumer<SelectAdapter<C>> selectAdapter) {
 		return new ProjectionQueryCriteriaSupport<>(entityFinder, newCriteriaSupport().getEntityCriteriaSupport(), selectAdapter);
 	}
 	
 	@Override
-	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter) {
-		ProjectionQueryCriteriaSupport<C, I> projectionSupport = new ProjectionQueryCriteriaSupport<>(entityFinder, selectAdapter);
-		return projectionSupport.wrapIntoExecutable();
-	}
-	
-	@Override
-	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Set<CriteriaPath<C, ?>> selectAdapter) {
+	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<SelectAdapter<C>> selectAdapter) {
 		ProjectionQueryCriteriaSupport<C, I> projectionSupport = new ProjectionQueryCriteriaSupport<>(entityFinder, selectAdapter);
 		return projectionSupport.wrapIntoExecutable();
 	}

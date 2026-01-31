@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine;
 
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -25,7 +26,7 @@ public interface ExecutableProjection {
 	 * 
 	 * @param select the select clause adapter that will get a copy of the final Select clause
 	 */
-	void selectInspector(Consumer<Select> select);
+	void selectInspector(Consumer<Set<Selectable<?>>> select);
 	
 	/**
 	 * Marks this projection to apply the <code>distinct</code> SQL keyword

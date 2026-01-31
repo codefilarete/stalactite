@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.engine.runtime;
 
-import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -8,13 +7,13 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.EntityCriteria;
-import org.codefilarete.stalactite.engine.EntityCriteria.CriteriaPath;
 import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.VersioningStrategy;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecordMapping.KeyValueRecordIdMapping;
@@ -23,6 +22,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
+import org.codefilarete.stalactite.engine.runtime.projection.ProjectionQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
@@ -31,7 +31,6 @@ import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.query.EntityFinder;
-import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.operator.In;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
@@ -173,18 +172,12 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	}
 	
 	@Override
-	public ProjectionQueryCriteriaSupport<C, I> newProjectionCriteriaSupport(Consumer<Select> selectAdapter) {
+	public ProjectionQueryCriteriaSupport<C, I> newProjectionCriteriaSupport(Consumer<SelectAdapter<C>> selectAdapter) {
 		return new ProjectionQueryCriteriaSupport<>(entityFinder, newCriteriaSupport().getEntityCriteriaSupport(), selectAdapter);
 	}
 	
 	@Override
-	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter) {
-		ProjectionQueryCriteriaSupport<C, I> projectionSupport = new ProjectionQueryCriteriaSupport<>(entityFinder, selectAdapter);
-		return projectionSupport.wrapIntoExecutable();
-	}
-	
-	@Override
-	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Set<CriteriaPath<C, ?>> selectAdapter) {
+	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<SelectAdapter<C>> selectAdapter) {
 		ProjectionQueryCriteriaSupport<C, I> projectionSupport = new ProjectionQueryCriteriaSupport<>(entityFinder, selectAdapter);
 		return projectionSupport.wrapIntoExecutable();
 	}
