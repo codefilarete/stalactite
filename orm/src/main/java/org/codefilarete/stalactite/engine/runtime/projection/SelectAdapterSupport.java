@@ -6,7 +6,6 @@ import java.util.Set;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.EntityPersister.SelectAdapter;
 import org.codefilarete.stalactite.engine.runtime.query.AggregateAccessPointToColumnMapping;
-import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 
@@ -59,15 +58,7 @@ public class SelectAdapterSupport<C> implements SelectAdapter<C> {
 	}
 	
 	@Override
-	public SelectAdapter<C> add(List<ValueAccessPoint<?>> property) {
-		JoinLink<?, ?> propertyColumn = accessPointToColumn.giveColumn(property);
-		this.select.add(propertyColumn);
-		return this;
-	}
-	
-	@Override
-	public SelectAdapter<C> add(List<ValueAccessPoint<?>> property, String alias) {
-		JoinLink<?, ?> propertyColumn = accessPointToColumn.giveColumn(property);
-		return this.add(propertyColumn, alias);
+	public Selectable<?> giveColumn(List<ValueAccessPoint<?>> property) {
+		return accessPointToColumn.giveColumn(property);
 	}
 }

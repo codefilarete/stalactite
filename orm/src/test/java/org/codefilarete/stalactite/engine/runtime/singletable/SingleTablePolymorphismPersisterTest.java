@@ -96,6 +96,7 @@ import static org.codefilarete.stalactite.engine.runtime.singletable.SingleTable
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
+import static org.codefilarete.stalactite.query.model.Operators.count;
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -698,9 +699,8 @@ class SingleTablePolymorphismPersisterTest {
 			));
 			when(preparedStatement.executeQuery()).thenAnswer((Answer<ResultSet>) invocation -> resultSet);
 			
-			Count count = Operators.count(new SimpleSelectable<>("id", Integer.class));
 			ExecutableProjectionQuery<AbstractToto, ?> totoRelationalExecutableEntityQuery = testInstance.selectProjectionWhere(select ->  {
-				select.add(count, "count");
+				select.add(count(select.giveColumn(AbstractToto::getId)), "count");
 			}, AbstractToto::getX, Operators.eq(77));
 			long countValue = totoRelationalExecutableEntityQuery.execute(new Accumulator<ProjectionDataProvider, MutableLong, Long>() {
 				@Override
@@ -711,7 +711,7 @@ class SingleTablePolymorphismPersisterTest {
 				@Override
 				public BiConsumer<MutableLong, ProjectionDataProvider> aggregator() {
 					return (modifiableInt, selectableObjectFunction) -> {
-						Long apply = selectableObjectFunction.getValue(count);
+						Long apply = selectableObjectFunction.getValue("count", long.class);
 						modifiableInt.reset(apply);
 					};
 				}
@@ -725,7 +725,7 @@ class SingleTablePolymorphismPersisterTest {
 			verify(preparedStatement, times(1)).executeQuery();
 			verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"select count(id) as count from Toto where Toto.x = ?"));
+					"select count(Toto.id) as count from Toto where Toto.x = ?"));
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 77);
 			assertCapturedPairsEqual(expectedPairs);
 			

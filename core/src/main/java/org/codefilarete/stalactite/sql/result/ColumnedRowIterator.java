@@ -70,13 +70,27 @@ public class ColumnedRowIterator extends ResultSetIterator<ColumnedRow> {
 	 */
 	@Override
 	public ColumnedRow convert(ResultSet rs) throws SQLException {
-		MapBasedColumnedRow toReturn = new MapBasedColumnedRow();
+		Row toReturn = new Row();
 		for (Decoder columnEntry : decoders) {
 			Selectable<?> column = columnEntry.getColumn();
-			Object columnValue = columnEntry.getReader().get(rs, aliases.get(column));
-			toReturn.put(column, columnValue);
+			String alias = aliases.get(column);
+			Object columnValue = columnEntry.getReader().get(rs, alias);
+			toReturn.put(alias, columnValue);
 		}
-		return toReturn;
+		return new ColumnedRow() {
+			@Override
+			public <E> E get(Selectable<E> column) {
+				String alias;
+				// we simplify data access for projected columns with an alias (like "count") because they are mainly
+				// (only ?) created by the end user who, without it, must share the operator, which is quite cumbersome
+				if (column instanceof Selectable.SimpleSelectable) {
+					alias = column.getExpression();
+				} else {
+					alias = aliases.get(column);
+				}
+				return (E) toReturn.get(alias);
+			}
+		};
 	}
 	
 	/**

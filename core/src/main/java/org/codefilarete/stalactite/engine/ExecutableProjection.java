@@ -45,6 +45,20 @@ public interface ExecutableProjection {
 	
 	interface ProjectionDataProvider {
 		
+		/**
+		 * Get a column value from its alias.
+		 * Made for cases of projected value like {@code count} operator to easily retrieve the value by its alias
+		 * instead of sharing the {@link org.codefilarete.stalactite.query.model.operator.Count} instance which is cumbersome.
+		 * 
+		 * @param alias the column alias to retrieve data for
+		 * @param columnType the expected data type
+		 * @return the column value in the result set
+		 * @param <O> data type
+		 */
+		default <O> O getValue(String alias, Class<O> columnType) {
+			return getValue(new Selectable.SimpleSelectable<>(alias, columnType));
+		}
+		
 		<O> O getValue(Selectable<O> selectable);
 		
 		<O> O getValue(CriteriaPath<?, O> selectable);

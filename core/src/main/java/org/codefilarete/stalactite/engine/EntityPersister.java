@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ValueAccessPoint;
@@ -18,6 +19,7 @@ import org.codefilarete.stalactite.engine.listener.PersisterListener;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.result.Accumulator;
@@ -441,8 +443,22 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 			return add(property.getAccessors(), alias);
 		}
 		
-		SelectAdapter<C> add(List<ValueAccessPoint<?>> property);
+		default SelectAdapter<C> add(List<ValueAccessPoint<?>> property) {
+			return add(giveColumn(property));
+		}
 		
-		SelectAdapter<C> add(List<ValueAccessPoint<?>> property, String alias);
+		default SelectAdapter<C> add(List<ValueAccessPoint<?>> property, String alias) {
+			return this.add(giveColumn(property), alias);
+		}
+		
+		default Selectable<?> giveColumn(ValueAccessPoint<?> property) {
+			return giveColumn(Arrays.asList(property));
+		}
+		
+		default Selectable<?> giveColumn(SerializableFunction<C, ?> property) {
+			return giveColumn(Accessors.accessorByMethodReference(property));
+		}
+		
+		Selectable<?> giveColumn(List<ValueAccessPoint<?>> property);
 	}
 }
