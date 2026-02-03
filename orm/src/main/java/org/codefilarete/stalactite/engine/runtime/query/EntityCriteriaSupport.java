@@ -9,6 +9,7 @@ import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.EntityCriteria;
@@ -139,6 +140,11 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	}
 	
 	@Override
+	public <S extends Collection<O>, O> EntityCriteriaSupport<C> and(SerializableCollectionFunction<C, S, O> collectionAccessor, ConditionalOperator<O, ?> operator) {
+		return and(Accessors.accessorByMethodReference(collectionAccessor), operator);
+	}
+	
+	@Override
 	public <O> EntityCriteriaSupport<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
 		return add(OR, Arrays.asList(new AccessorByMethodReference<>(getter)), operator);
 	}
@@ -146,6 +152,11 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	@Override
 	public <O> EntityCriteriaSupport<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
 		return add(OR, Arrays.asList(new MutatorByMethodReference<>(setter)), operator);
+	}
+	
+	@Override
+	public <S extends Collection<O>, O> EntityCriteriaSupport<C> or(SerializableCollectionFunction<C, S, O> collectionAccessor, ConditionalOperator<O, ?> operator) {
+		return or(Accessors.accessorByMethodReference(collectionAccessor), operator);
 	}
 	
 	@Override

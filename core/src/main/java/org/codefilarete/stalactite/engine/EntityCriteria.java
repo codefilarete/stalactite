@@ -23,7 +23,7 @@ public interface EntityCriteria<C, SELF extends EntityCriteria<C, SELF>> {
 	 * Adds a criteria to the current instance with an {@code and} condition for the specified property
 	 * and the given operator.
 	 * 
-	 * @param getter a method reference to the getter of the property to be evaluated.
+	 * @param getter a method reference to the getter of the property to be evaluated
 	 * @param operator operator of the criteria (will be the condition on the matching column)
 	 * @return this instance for method chaining.
 	 * @param <O> getter return type, also criteria value
@@ -35,7 +35,7 @@ public interface EntityCriteria<C, SELF extends EntityCriteria<C, SELF>> {
 	 * Adds a criteria to the current instance with an {@code and} condition for the specified property
 	 * and the given operator.
 	 * 
-	 * @param setter a method reference to the setter of the property to be evaluated.
+	 * @param setter a method reference to the setter of the property to be evaluated
 	 * @param operator operator of the criteria (will be the condition on the matching column)
 	 * @param <O> getter return type, also criteria value
 	 * @return this
@@ -58,9 +58,22 @@ public interface EntityCriteria<C, SELF extends EntityCriteria<C, SELF>> {
 	<A, B> SELF and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator);
 	
 	/**
+	 * Particular version of {@link #and(SerializableFunction, ConditionalOperator)} for a collection property to be
+	 * able to target its component type with a {@link ConditionalOperator}. Without it, operators can only apply to
+	 * the collection itself, which is rarely what is needed and not supported by Stalactite.
+	 *
+	 * @param collectionAccessor a method reference to the collection setter of the property to be evaluated
+	 * @param operator operator of the criteria (will be the condition on the matching column)
+	 * @param <O> getter return type, also criteria value
+	 * @return this
+	 * @throws IllegalArgumentException if the column matching the setter was not found
+	 */
+	<S extends Collection<O>, O> SELF and(SerializableCollectionFunction<C, S, O> collectionAccessor, ConditionalOperator<O, ?> operator);
+	
+	/**
 	 * Generic version of {@link #and(SerializableFunction, ConditionalOperator)} with a (long) path to a property 
 	 * 
-	 * @param propertyPath a path representing access to the property to be evaluated.
+	 * @param propertyPath a path representing access to the property to be evaluated
 	 * @param operator operator of the criteria (will be the condition on the matching column)
 	 * @param <O> getter return type, also criteria value
 	 * @return this
@@ -72,7 +85,7 @@ public interface EntityCriteria<C, SELF extends EntityCriteria<C, SELF>> {
 	 * Adds a criteria to the current instance with an {@code or} condition for the specified property
 	 * and the given operator.
 	 *
-	 * @param getter a method reference to the getter of the property to be evaluated.
+	 * @param getter a method reference to the getter of the property to be evaluated
 	 * @param operator operator of the criteria (will be the condition on the matching column)
 	 * @param <O> getter return type, also criteria value
 	 * @return this
@@ -84,7 +97,7 @@ public interface EntityCriteria<C, SELF extends EntityCriteria<C, SELF>> {
 	 * Adds a criteria to the current instance with an {@code or} condition for the specified property
 	 * and the given operator.
 	 *
-	 * @param setter a method reference to the setter of the property to be evaluated.
+	 * @param setter a method reference to the setter of the property to be evaluated
 	 * @param operator operator of the criteria (will be the condition on the matching column)
 	 * @param <O> getter return type, also criteria value
 	 * @return this
@@ -93,9 +106,22 @@ public interface EntityCriteria<C, SELF extends EntityCriteria<C, SELF>> {
 	<O> SELF or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
 	
 	/**
+	 * Particular version of {@link #or(SerializableFunction, ConditionalOperator)} for a collection property to be
+	 * able to target its component type with a {@link ConditionalOperator}. Without it, operators can only apply to
+	 * the collection itself, which is rarely what is needed and not supported by Stalactite.
+	 *
+	 * @param collectionAccessor a method reference to the collection setter of the property to be evaluated
+	 * @param operator operator of the criteria (will be the condition on the matching column)
+	 * @param <O> getter return type, also criteria value
+	 * @return this
+	 * @throws IllegalArgumentException if the column matching the setter was not found
+	 */
+	<S extends Collection<O>, O> SELF or(SerializableCollectionFunction<C, S, O> collectionAccessor, ConditionalOperator<O, ?> operator);
+	
+	/**
 	 * Generic version of {@link #or(SerializableFunction, ConditionalOperator)} with a (long) path to a property 
 	 *
-	 * @param propertyPath a path representing access to the property to be evaluated.
+	 * @param propertyPath a path representing access to the property to be evaluated
 	 * @param operator operator of the criteria (will be the condition on the matching column)
 	 * @param <O> getter return type, also criteria value
 	 * @return this
