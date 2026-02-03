@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.codefilarete.reflection.Accessor;
@@ -100,8 +101,8 @@ public class AggregateAccessPointToColumnMapping<C> {
 	}
 	
 	private void collectPropertiesMapping() {
-		Deque<Accessor<?, ?>> accessorPath = new ArrayDeque<>();
-		Map<List<ValueAccessPoint<?>>, Selectable<?>> rootProperties = collectPropertiesMapping(tree.getRoot(), accessorPath);
+		Deque<RelationJoinNode<?, ?, ?, ?, ?>> accessorPath = new ArrayDeque<>();
+		Map<List<ValueAccessPoint<?>>, Selectable<?>> rootProperties = collectPropertiesMapping(tree.getRoot(), accessorPath.stream().map(RelationJoinNode::getPropertyAccessor).collect(Collectors.toSet()));
 		rootProperties.forEach((valueAccessPoints, selectable) -> {
 			this.propertyToColumn.put(valueAccessPoints, tree.getRoot().getOriginalColumnsToLocalOnes().get(selectable));
 		});
@@ -111,14 +112,16 @@ public class AggregateAccessPointToColumnMapping<C> {
 			AbstractJoinNode<?, ?, ?, ?> abstractJoinNode = stack.poll();
 			if (abstractJoinNode instanceof RelationJoinNode) {
 				RelationJoinNode<?, ?, ?, ?, ?> relationJoinNode = (RelationJoinNode<?, ?, ?, ?, ?>) abstractJoinNode;
-				accessorPath.add(relationJoinNode.getPropertyAccessor());
-				Map<List<ValueAccessPoint<?>>, Selectable<?>> joinNodeProperties = collectPropertiesMapping(relationJoinNode, accessorPath);
+				accessorPath.add(relationJoinNode);
+				Map<List<ValueAccessPoint<?>>, Selectable<?>> joinNodeProperties = collectPropertiesMapping(relationJoinNode, accessorPath.stream().map(RelationJoinNode::getPropertyAccessor).collect(Collectors.toSet()));
 				joinNodeProperties.forEach((valueAccessPoints, selectable) -> {
 					this.propertyToColumn.put(valueAccessPoints, relationJoinNode.getOriginalColumnsToLocalOnes().get(selectable));
 				});
 				if (abstractJoinNode.getJoins().isEmpty()) {
-					// no more joins, this is a leaf
-					accessorPath.removeLast();
+					// no more joins, this is a leaf, we remove the whole branch
+					do {
+						accessorPath.removeLast();
+					} while ((accessorPath.peekLast() != null ? accessorPath.peekLast().getJoins().size() : 0) == 1);
 				}
 			}
 			stack.addAll(abstractJoinNode.getJoins());
@@ -130,7 +133,7 @@ public class AggregateAccessPointToColumnMapping<C> {
 	 *
 	 * @param joinNode the node from which we can get a {@link EntityMapping} to collect all properties from
 	 */
-	private <E> Map<List<ValueAccessPoint<?>>, Selectable<?>> collectPropertiesMapping(JoinNode<E, ?> joinNode, Deque<Accessor<?, ?>> accessorPath) {
+	private <E> Map<List<ValueAccessPoint<?>>, Selectable<?>> collectPropertiesMapping(JoinNode<E, ?> joinNode, Collection<Accessor<?, ?>> accessorPath) {
 		EntityInflater<E, ?> entityInflater;
 		if (joinNode instanceof JoinRoot) {
 			if (joinNode instanceof TablePerClassRootJoinNode) {

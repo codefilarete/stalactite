@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.MappingEase;
+import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.EntityCriteria;
 import org.codefilarete.stalactite.engine.EntityCriteria.CriteriaPath;
@@ -15,15 +16,28 @@ import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
+import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.ExecutableEntityQueryCriteria;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
+import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.query.model.GroupBy;
+import org.codefilarete.stalactite.query.model.Having;
+import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.LogicalOperator;
 import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.query.model.OrderBy;
+import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.Select;
+import org.codefilarete.stalactite.query.model.Where;
+import org.codefilarete.stalactite.query.model.operator.Equals;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
@@ -40,6 +54,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
+import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -87,6 +102,66 @@ class EntityCriteriaSupportTest {
 	}
 	
 	@Test
+	void sqlGeneration() {
+		Dialect dialect = new DefaultDialect();
+		
+		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
+		dialect.getSqlTypeRegistry().put(Identifier.class, "bigint");
+		
+		FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions<City, Identifier<Long>, String> map = entityBuilder(City.class, LONG_TYPE)
+				.mapKey(City::getId, ALREADY_ASSIGNED)
+				.map(City::getName);
+		RelationalEntityPersister<Country, Identifier<Long>> persister = (RelationalEntityPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				.mapKey(Country::getId, IdentifierPolicy.databaseAutoIncrement())
+				.mapOneToOne(Country::getCapital, map)
+				.mapOneToOne(Country::getPresident, entityBuilder(Person.class, Identifier.LONG_TYPE)
+						.mapKey(Person::getId, ALREADY_ASSIGNED)
+						.mapCollection(Person::getNicknames, String.class)
+				)
+				.mapOneToMany(Country::getCities, map)
+				.build(new PersistenceContext(mock(ConnectionProvider.class), dialect));
+		
+		EntityCriteriaSupport<Country> testInstance = new EntityCriteriaSupport<>(persister.getEntityJoinTree(), true);
+		testInstance
+				.and(Country::getCapital, City::getId, Operators.gteq("11"))
+				.and(Country::getPresident, Person::getNicknames, Operators.gteq("11"))
+				.and(new CriteriaPath<>(Country::getCities, City::getId), Operators.isNull())
+		;
+		
+		EntityTreeQuery<Country> entityTreeQuery = new EntityTreeQueryBuilder<>(persister.getEntityJoinTree(), dialect.getColumnBinderRegistry()).buildSelectQuery();
+		
+		Query queryClone = new Query(
+				entityTreeQuery.getQuery().getSelectDelegate(),
+				entityTreeQuery.getQuery().getFromDelegate(),
+				new Where<>(testInstance.getCriteria()),
+				new GroupBy(),
+				new Having(),
+				new OrderBy(),
+				new Limit());
+		
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone);
+		String sql = sqlQueryBuilder.toSQL();
+		assertThat(sql).isEqualTo("select"
+				+ " Country.id as Country_id,"
+				+ " capital.name as capital_name,"
+				+ " capital.id as capital_id,"
+				+ " president.id as president_id,"
+				+ " president_Person_nicknames.nicknames as president_Person_nicknames_nicknames,"
+				+ " president_Person_nicknames.id as president_Person_nicknames_id,"
+				+ " Country_cities_City.name as Country_cities_City_name,"
+				+ " Country_cities_City.id as Country_cities_City_id"
+				+ " from Country"
+				+ " left outer join City as capital on Country.capitalId = capital.id"
+				+ " left outer join Person as president on Country.presidentId = president.id"
+				+ " left outer join Country_cities as Country_cities on Country.id = Country_cities.country_id"
+				+ " left outer join Person_nicknames as president_Person_nicknames on president.id = president_Person_nicknames.id"
+				+ " left outer join City as Country_cities_City on Country_cities.cities_id = Country_cities_City.id"
+				+ " where capital.id >= '11'"
+				+ " and president_Person_nicknames.nicknames >= '11'"
+				+ " and Country_cities_City.id is null");
+	}
+	
+	@Test
 	void hasCollectionCriteria_noCollectionCriteria_returnsFalse() {
 		Table personTable = new Table("Person");
 		Column nameColumn = personTable.addColumn("name", String.class);
@@ -120,7 +195,7 @@ class EntityCriteriaSupportTest {
 				// overridden to do nothing because it's too complex and that's not the goal of our test method
 			}
 		};
-		testInstance.and(Person::getNicknames, Operators.eq(""));
+		testInstance.and(Person::getNicknames, Operators.<String>eq(""));
 		assertThat(testInstance.hasCollectionCriteria()).isTrue();
 	}
 	
