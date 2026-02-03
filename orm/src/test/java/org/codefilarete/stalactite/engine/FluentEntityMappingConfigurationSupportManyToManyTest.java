@@ -209,6 +209,52 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 					new JdbcForeignKey("FK_ANSWER_CHOICES_CHOICES_ID_POSSIBLECHOICES_ID", "ANSWER_CHOICES", "CHOICES_ID", "POSSIBLECHOICES", "ID").getSignature()
 			);
 		}
+		
+		@Test
+		void withJoinTable_joinTableIsUsed() throws SQLException {
+			EntityPersister<Answer, Identifier<Long>> answerPersister = entityBuilder(Answer.class, LONG_TYPE)
+					.mapKey(Answer::getId, ALREADY_ASSIGNED)
+					.mapManyToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION)
+						.joinTable("Toto")
+							.sourceJoinColumn("left_side_id")
+							.targetJoinColumn("right_side_id")
+					.cascading(READ_ONLY)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
+			
+			ResultSetIterator<Table> tableIterator = new ResultSetIterator<Table>(currentConnection.getMetaData().getTables(null, currentConnection.getSchema(),
+					null, null)) {
+				@Override
+				public Table convert(ResultSet rs) throws SQLException {
+					return new Table(
+							rs.getString("TABLE_NAME")
+					);
+				}
+			};
+			Set<String> foundTables = Iterables.collect(() -> tableIterator, Table::getName, HashSet::new);
+			assertThat(foundTables).containsExactlyInAnyOrder("ANSWER", "CHOICE", "TOTO");
+			
+			ResultSetIterator<JdbcForeignKey> fkChoiceIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getImportedKeys(null, null,
+					"TOTO")) {
+				@Override
+				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+					return new JdbcForeignKey(
+							rs.getString("FK_NAME"),
+							rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+							rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+					);
+				}
+			};
+			Set<String> foundForeignKey = Iterables.collect(() -> fkChoiceIterator, JdbcForeignKey::getSignature, HashSet::new);
+			assertThat(foundForeignKey).containsExactlyInAnyOrder(
+					new JdbcForeignKey("FK_TOTO_LEFT_SIDE_ID_ANSWER_ID", "TOTO", "LEFT_SIDE_ID", "ANSWER", "ID").getSignature(),
+					new JdbcForeignKey("FK_TOTO_RIGHT_SIDE_ID_CHOICE_ID", "TOTO", "RIGHT_SIDE_ID", "CHOICE", "ID").getSignature()
+			);
+		}
 	}
 	
 	@Test

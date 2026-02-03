@@ -171,8 +171,8 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 			RIGHTTABLE rightTable = targetPersister.<RIGHTTABLE>getMapping().getTargetTable();
 			PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey = rightTable.getPrimaryKey();
 			
-			String associationTableName = associationTableNamingStrategy.giveName(associationConfiguration.getAccessorDefinition(),
-					associationConfiguration.getLeftPrimaryKey(), rightPrimaryKey);
+			String associationTableName = nullable(associationConfiguration.getManyToManyRelation().getAssociationTableName()).getOr(() -> associationTableNamingStrategy.giveName(associationConfiguration.getAccessorDefinition(),
+					associationConfiguration.getLeftPrimaryKey(), rightPrimaryKey));
 			if (associationConfiguration.getManyToManyRelation().isOrdered()) {
 				assignEngineForIndexedAssociation(rightPrimaryKey, associationTableName, targetPersister);
 			} else {
@@ -289,6 +289,14 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 					associationConfiguration.getAccessorDefinition(),
 					associationConfiguration.getLeftPrimaryKey(),
 					rightPrimaryKey);
+			
+			if (associationConfiguration.getManyToManyRelation().getSourceJoinColumnName() != null) {
+				columnNames.setLeftColumnName(Iterables.first(associationConfiguration.getLeftPrimaryKey().getColumns()), associationConfiguration.getManyToManyRelation().getSourceJoinColumnName());
+			}
+			if (associationConfiguration.getManyToManyRelation().getSourceJoinColumnName() != null) {
+				columnNames.setRightColumnName(Iterables.first(rightPrimaryKey.getColumns()), associationConfiguration.getManyToManyRelation().getTargetJoinColumnName());
+			}
+			
 			ASSOCIATIONTABLE intermediaryTable = (ASSOCIATIONTABLE) new AssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>(
 					associationConfiguration.getLeftPrimaryKey().getTable().getSchema(),
 					associationTableName,
@@ -328,7 +336,6 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 				ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 			
 			ManyToManyRelation<SRC, TRGT, TRGTID, C1, C2> relation = associationConfiguration.getManyToManyRelation();
-			String indexingColumnName = nullable(relation.getIndexingColumnName()).getOr(() -> associationConfiguration.getIndexColumnNamingStrategy().giveName(associationConfiguration.getAccessorDefinition()));
 			
 			// we don't create foreign key for table-per-class because source columns should reference different tables (the one
 			// per entity) which databases do not allow
@@ -338,6 +345,9 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 					associationConfiguration.getAccessorDefinition(),
 					associationConfiguration.getLeftPrimaryKey(),
 					rightPrimaryKey);
+			
+			String indexingColumnName = nullable(relation.getIndexingColumnName()).getOr(() -> associationConfiguration.getIndexColumnNamingStrategy().giveName(associationConfiguration.getAccessorDefinition()));
+			
 			// NB: index column is part of the primary key
 			ASSOCIATIONTABLE intermediaryTable = (ASSOCIATIONTABLE) new IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>(
 					associationConfiguration.getLeftPrimaryKey().getTable().getSchema(),

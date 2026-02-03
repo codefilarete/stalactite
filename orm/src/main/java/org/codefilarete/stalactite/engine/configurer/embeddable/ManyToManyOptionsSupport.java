@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.configurer.entity;
+package org.codefilarete.stalactite.engine.configurer.embeddable;
 
 import java.util.Collection;
 import java.util.function.Supplier;

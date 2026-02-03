@@ -33,8 +33,8 @@ public interface OneToManyEntityOptions<C, I, O, S extends Collection<O>> extend
 	OneToManyEntityOptions<C, I, O, S> mappedBy(Column<?, I> reverseLink);
 	
 	/**
-	 * Activates entity order persistence and indicates {@link Column} to be used for it.
-	 * Collection that stores data is expected to support ordering by index (as List or LinkedHashSet)
+	 * Activates entity order persistence and indicates the column name to be used for it.
+	 * The collection type that stores data is expected to support ordering by index (as List or LinkedHashSet)
 	 *
 	 * @param orderingColumn the column to be used for order persistence
 	 * @return the global mapping configurer
@@ -46,7 +46,7 @@ public interface OneToManyEntityOptions<C, I, O, S extends Collection<O>> extend
 	 * This is not compatible with defining {@link #reverseJoinColumn(String)} because it would lead to ambiguity, hence
 	 * there's no guarantee about which one will be taken first. Algorithm is defined in {@link OneToManyRelationConfigurer}.
 	 * 
-	 * Note that we don't define it for embeddable types (meaning putting this method in @link {@link OneToManyOptions})
+	 * Note that we don't define it for embeddable types (meaning putting this method in {@link OneToManyOptions})
 	 * because fixing the association table name for a reusable configuration means that all data will be stored in
 	 * the same table which will cause name collision on foreign keys.
 	 * 

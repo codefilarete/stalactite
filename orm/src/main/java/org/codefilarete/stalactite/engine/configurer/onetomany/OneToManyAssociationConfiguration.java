@@ -26,7 +26,7 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 	private final JoinColumnNamingStrategy joinColumnNamingStrategy;
 	private final ColumnNamingStrategy indexColumnNamingStrategy;
 	private final ReversibleAccessor<SRC, C> collectionGetter;
-	private final String columnName;
+	private final String indexingColumnName;
 	private final Mutator<SRC, C> setter;
 	private final boolean orphanRemoval;
 	private final boolean writeAuthorized;
@@ -39,7 +39,7 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 									  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 									  JoinColumnNamingStrategy joinColumnNamingStrategy,
 									  ColumnNamingStrategy indexColumnNamingStrategy,
-									  String columnName,
+									  String indexingColumnName,
 									  boolean orphanRemoval,
 									  boolean writeAuthorized) {
 		this.oneToManyRelation = oneToManyRelation;
@@ -48,7 +48,7 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
 		this.indexColumnNamingStrategy = indexColumnNamingStrategy;
-		this.columnName = columnName;
+		this.indexingColumnName = indexingColumnName;
 		this.collectionGetter = oneToManyRelation.getCollectionAccessor();
 		this.setter = collectionGetter.toMutator();
 		this.orphanRemoval = orphanRemoval;
@@ -89,8 +89,8 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 		return indexColumnNamingStrategy;
 	}
 	
-	public String getColumnName() {
-		return columnName;
+	public String getIndexingColumnName() {
+		return indexingColumnName;
 	}
 	
 	public ReversibleAccessor<SRC, C> getCollectionGetter() {

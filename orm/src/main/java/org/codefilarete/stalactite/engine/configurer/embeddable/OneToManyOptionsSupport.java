@@ -4,15 +4,13 @@ import java.util.Collection;
 import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilderOneToManyOptions;
-import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyJoinTableOptions;
-import org.codefilarete.stalactite.dsl.relation.OneToManyEntityOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyOptions;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
- * A small class for one-to-many options storage into a {@link OneToManyEntityOptions}. Acts as a wrapper over it.
+ * A small class for one-to-many options storage into a {@link OneToManyOptions}. Acts as a wrapper over it.
  */
 class OneToManyOptionsSupport<C, O, S extends Collection<O>>
 		implements OneToManyOptions<C, O, S> {

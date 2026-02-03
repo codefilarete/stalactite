@@ -151,22 +151,27 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 									  String associationTableName,
 									  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		
+		OneToManyRelation<SRC, TRGT, TRGTID, C> relation = associationConfiguration.getOneToManyRelation();
+		
 		// we don't create foreign key for table-per-class because source columns should reference different tables (the one
 		// per entity) which databases do not allow
-		boolean createOneSideForeignKey = !(associationConfiguration.getOneToManyRelation().isSourceTablePerClassPolymorphic());
-		boolean createManySideForeignKey = !associationConfiguration.getOneToManyRelation().isTargetTablePerClassPolymorphic();
+		boolean createOneSideForeignKey = !(relation.isSourceTablePerClassPolymorphic());
+		boolean createManySideForeignKey = !relation.isTargetTablePerClassPolymorphic();
 		ReferencedColumnNames<LEFTTABLE, RIGHTTABLE> columnNames = associationTableNamingStrategy.giveColumnNames(
 				accessorDefinitionForTableNaming,
 				associationConfiguration.getLeftPrimaryKey(),
 				rightPrimaryKey);
-		if (associationConfiguration.getOneToManyRelation().getSourceJoinColumnName() != null) {
-			columnNames.setLeftColumnName(Iterables.first(associationConfiguration.getLeftPrimaryKey().getColumns()), associationConfiguration.getOneToManyRelation().getSourceJoinColumnName());
+		if (relation.getSourceJoinColumnName() != null) {
+			columnNames.setLeftColumnName(Iterables.first(associationConfiguration.getLeftPrimaryKey().getColumns()), relation.getSourceJoinColumnName());
 		}
-		if (associationConfiguration.getOneToManyRelation().getSourceJoinColumnName() != null) {
-			columnNames.setRightColumnName(Iterables.first(rightPrimaryKey.getColumns()), associationConfiguration.getOneToManyRelation().getTargetJoinColumnName());
+		if (relation.getSourceJoinColumnName() != null) {
+			columnNames.setRightColumnName(Iterables.first(rightPrimaryKey.getColumns()), relation.getTargetJoinColumnName());
 		}
+		
+		String indexingColumnName = nullable(associationConfiguration.getIndexingColumnName()).getOr(() -> associationConfiguration.getIndexColumnNamingStrategy().giveName(accessorDefinitionForTableNaming));
+		
 		// NB: index column is part of the primary key
-		ASSOCIATIONTABLE intermediaryTable = (ASSOCIATIONTABLE) new IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>(
+		ASSOCIATIONTABLE intermediaryTable = (ASSOCIATIONTABLE) new IndexedAssociationTable<>(
 				associationConfiguration.getLeftPrimaryKey().getTable().getSchema(),
 				associationTableName,
 				associationConfiguration.getLeftPrimaryKey(),
@@ -175,7 +180,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 				associationConfiguration.getForeignKeyNamingStrategy(),
 				createOneSideForeignKey,
 				createManySideForeignKey,
-				associationConfiguration.getOneToManyRelation().getIndexingColumn());
+				indexingColumnName);
 		
 		AssociationRecordPersister<IndexedAssociationRecord, ASSOCIATIONTABLE> indexedAssociationPersister =
 				new AssociationRecordPersister<>(
@@ -190,7 +195,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 				associationConfiguration.getCollectionGetter(),
 				associationConfiguration.getSetter()::set,
 				associationConfiguration.getCollectionFactory(),
-				associationConfiguration.getOneToManyRelation().getReverseLink(),
+				relation.getReverseLink(),
 				associationConfiguration.getSrcPersister()::getId
 		);
 		return new OneToManyWithIndexedAssociationTableEngine<>(

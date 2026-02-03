@@ -31,6 +31,7 @@ import org.codefilarete.stalactite.dsl.embeddable.ImportedEmbedWithColumnOptions
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
+import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderManyToManyJoinTableOptions;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderManyToManyOptions;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderManyToOneOptions;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyJoinTableOptions;
@@ -56,7 +57,8 @@ import org.codefilarete.stalactite.dsl.property.EnumOptions;
 import org.codefilarete.stalactite.dsl.property.MapOptions;
 import org.codefilarete.stalactite.dsl.property.MapOptions.EmbeddableInMapOptions;
 import org.codefilarete.stalactite.dsl.property.MapOptions.EntityInMapOptions;
-import org.codefilarete.stalactite.dsl.relation.ManyToManyOptions;
+import org.codefilarete.stalactite.dsl.relation.ManyToManyEntityOptions;
+import org.codefilarete.stalactite.dsl.relation.ManyToManyJoinTableOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToOneOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyEntityOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyJoinTableOptions;
@@ -925,7 +927,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				() -> this.polymorphismPolicy instanceof PolymorphismPolicy.TablePerClassPolymorphism,
 				mappingConfiguration);
 		this.oneToManyRelations.add(oneToManyRelation);
-		OneToManyOptionsSupport<C, I, TRGT, S, TRGTID> optionsSupport = new OneToManyOptionsSupport<>(oneToManyRelation);
+		OneToManyEntityOptionsSupport<C, I, TRGT, S, TRGTID> optionsSupport = new OneToManyEntityOptionsSupport<>(oneToManyRelation);
 		// Code below is a bit complicated due to mandatory() method after mappedBy(..) ones: we must provide a support for mandatory() after them
 		// which also allow to call default oneToMany options that are available on the main proxy. Therefore we have to use Holder objects
 		// to built the complex global proxy
@@ -1017,10 +1019,32 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				() -> this.polymorphismPolicy instanceof PolymorphismPolicy.TablePerClassPolymorphism,
 				mappingConfiguration);
 		this.manyToManyRelations.add(manyToManyRelation);
-		return new MethodDispatcher()
-				.redirect(ManyToManyOptions.class, new ManyToManyOptionsSupport<>(manyToManyRelation), true)	// true to allow "return null" in implemented methods
+		
+		Holder<FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>> result = new Holder<>();
+		
+		FluentMappingBuilderManyToManyJoinTableOptions<C, I, O, S1, S2> joinTableOptionsSupport = new MethodReferenceDispatcher()
+				.redirect(
+						(SerializableBiFunction<FluentMappingBuilderManyToManyJoinTableOptions<C, I, O, S1, S2>, String, FluentMappingBuilderManyToManyJoinTableOptions<C, I, O, S1, S2>>) FluentMappingBuilderManyToManyJoinTableOptions::sourceJoinColumn,
+						manyToManyRelation::setSourceJoinColumnName)
+				.redirect(
+						(SerializableBiFunction<FluentMappingBuilderManyToManyJoinTableOptions<C, I, O, S1, S2>, String, FluentMappingBuilderManyToManyJoinTableOptions<C, I, O, S1, S2>>) FluentMappingBuilderManyToManyJoinTableOptions::targetJoinColumn,
+						manyToManyRelation::setTargetJoinColumnName)
+				.fallbackOn(result)	// for all other methods, methods are called on the main proxy
+				.build((Class<FluentMappingBuilderManyToManyJoinTableOptions<C, I, O, S1, S2>>) (Class) FluentMappingBuilderManyToManyJoinTableOptions.class);
+		
+		ManyToManyEntityOptionsSupport<C, J, O, S1, S2> optionsSupport = new ManyToManyEntityOptionsSupport<>(manyToManyRelation);
+		FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> build = new MethodReferenceDispatcher()
+				.redirect(ManyToManyEntityOptions.class, optionsSupport, true)	// true to allow "return null" in implemented methods
+				.redirect(
+						(SerializableBiFunction<ManyToManyEntityOptions<C, O, S1, S2>, String, ManyToManyJoinTableOptions<C, O, S1, S2>>) ManyToManyEntityOptions::joinTable,
+						(consumer) -> {
+							optionsSupport.joinTable(consumer);
+							return joinTableOptionsSupport;	// to let user call mandatory() special option
+						})
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>>) (Class) FluentMappingBuilderManyToManyOptions.class);
+		result.set(build);
+		return build;
 	}
 	
 	@Override

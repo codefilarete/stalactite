@@ -1,9 +1,9 @@
 package org.codefilarete.stalactite.engine.configurer.manytomany;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
@@ -122,6 +122,33 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 		return mappedByConfiguration;
 	}
 	
+	@Nullable
+	public String getAssociationTableName() {
+		return this.mappedByConfiguration.getAssociationTableName();
+	}
+	
+	public void setAssociationTableName(@Nullable String tableName) {
+		this.mappedByConfiguration.setAssociationTableName(tableName);
+	}
+	
+	@Nullable
+	public String getSourceJoinColumnName() {
+		return this.mappedByConfiguration.getSourceJoinColumnName();
+	}
+	
+	public void setSourceJoinColumnName(@Nullable String sourceJoinColumnName) {
+		this.mappedByConfiguration.setSourceJoinColumnName(sourceJoinColumnName);
+	}
+	
+	@Nullable
+	public String getTargetJoinColumnName() {
+		return this.mappedByConfiguration.getTargetJoinColumnName();
+	}
+	
+	public void setTargetJoinColumnName(@Nullable String targetJoinColumnName) {
+		this.mappedByConfiguration.setTargetJoinColumnName(targetJoinColumnName);
+	}
+	
 	public void setIndexingColumnName(String columnName) {
 		ordered();
 		this.indexingColumnName = columnName;
@@ -222,6 +249,15 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 		private Supplier<C2> reverseCollectionFactory;
 		
 		@Nullable
+		protected String associationTableName;
+		
+		@Nullable
+		protected String sourceJoinColumnName;
+		
+		@Nullable
+		protected String targetJoinColumnName;
+		
+		@Nullable
 		public SerializableBiConsumer<TRGT, SRC> getReverseCombiner() {
 			return reverseCombiner;
 		}
@@ -255,6 +291,33 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 		
 		public void setReverseCollectionFactory(@Nullable Supplier<C2> reverseCollectionFactory) {
 			this.reverseCollectionFactory = reverseCollectionFactory;
+		}
+		
+		@Nullable
+		public String getAssociationTableName() {
+			return associationTableName;
+		}
+		
+		public void setAssociationTableName(@Nullable String associationTableName) {
+			this.associationTableName = associationTableName;
+		}
+		
+		@Nullable
+		public String getSourceJoinColumnName() {
+			return sourceJoinColumnName;
+		}
+		
+		public void setSourceJoinColumnName(@Nullable String sourceJoinColumnName) {
+			this.sourceJoinColumnName = sourceJoinColumnName;
+		}
+		
+		@Nullable
+		public String getTargetJoinColumnName() {
+			return targetJoinColumnName;
+		}
+		
+		public void setTargetJoinColumnName(@Nullable String targetJoinColumnName) {
+			this.targetJoinColumnName = targetJoinColumnName;
 		}
 		
 		public boolean isEmpty() {

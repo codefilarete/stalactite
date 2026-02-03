@@ -66,11 +66,11 @@ public class OneToManyRelationConfigurer<SRC, SRCID, TRGT, TRGTID> extends Abstr
 		// selection is always present (else configuration is nonsense !)
 		boolean orphanRemoval = maintenanceMode == RelationMode.ALL_ORPHAN_REMOVAL;
 		boolean writeAuthorized = maintenanceMode != RelationMode.READ_ONLY;
-		String columnName = oneToManyRelation.getIndexingColumnName();
+		String indexingColumnName = oneToManyRelation.getIndexingColumnName();
 		
 		OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, ?, ?> associationConfiguration = new OneToManyAssociationConfiguration<>(oneToManyRelation,
 				sourcePersister, leftPrimaryKey,
-				foreignKeyNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy, columnName,
+				foreignKeyNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy, indexingColumnName,
 				orphanRemoval, writeAuthorized);
 		OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, ?, ?> configurer;
 		if (oneToManyRelation.isOwnedByReverseSide()) {

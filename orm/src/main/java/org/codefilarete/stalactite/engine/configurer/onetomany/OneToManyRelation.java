@@ -65,7 +65,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	private boolean fetchSeparately;
 	
 	@Nullable
-	private Column indexingColumn;
+	private Column<?, Integer> indexingColumn;
 	
 	@Nullable
 	private String indexingColumnName;
@@ -241,14 +241,14 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		setFetchSeparately(true);
 	}
 	
-	public void setIndexingColumn(Column<?, Integer> indexingColumn) {
+	public void setIndexingColumn(@Nullable Column<?, Integer> indexingColumn) {
 		ordered();
 		this.indexingColumn = indexingColumn;
 	}
 	
 	@Nullable
 	public <T extends Table<T>> Column<T, Integer> getIndexingColumn() {
-		return indexingColumn;
+		return (Column<T, Integer>) indexingColumn;
 	}
 	
 	public void setIndexingColumnName(String columnName) {
