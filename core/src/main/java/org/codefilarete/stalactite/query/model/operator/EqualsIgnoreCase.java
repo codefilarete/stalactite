@@ -9,7 +9,7 @@ import org.codefilarete.tool.collection.Arrays;
  *
  * @author Guillaume Mary
  */
-public class EqualsIgnoreCase<O> extends BiOperandOperator<O> {
+public class EqualsIgnoreCase<O> extends BiOperandOperator<O, O> {
 	
 	public EqualsIgnoreCase() {
 	}

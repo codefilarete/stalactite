@@ -9,6 +9,7 @@ import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.query.model.operator.Equals;
 import org.codefilarete.stalactite.query.model.operator.Greater;
 import org.codefilarete.stalactite.query.model.operator.In;
+import org.codefilarete.stalactite.query.model.operator.InIgnoreCase;
 import org.codefilarete.stalactite.query.model.operator.IsNull;
 import org.codefilarete.stalactite.query.model.operator.Lesser;
 import org.codefilarete.stalactite.query.model.operator.Like;
@@ -27,7 +28,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
  * Value of the operator is intentionally left vague (Object), except for String operation, because some operators prefer {@link Column}, while
  * others prefers {@link Comparable}.
  * 
- * Static methods should be used to ease a fluent write of queries.
+ * Static methods should be used to ease a fluent writing of queries.
  * 
  * @author Guillaume Mary
  */
@@ -37,13 +38,13 @@ public interface Operators {
 		return new Equals<>(value);
 	}
 	
-	static <I extends ConditionalOperator> I not(I operator) {
+	static <I extends ConditionalOperator<T, V>, T, V> I not(I operator) {
 		operator.not();
 		return operator;
 	}
 	
 	/**
-	 * Shortcut to <code>new Lesser(value)</code> to ease a fluent write of queries for "lesser than" comparisons
+	 * Shortcut to <code>new Lesser(value)</code> to ease a fluent writing of queries for "lesser than" comparisons
 	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder})
 	 * @return a new instance of {@link Lesser}
 	 */
@@ -52,7 +53,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Lesser(value, true)</code> to ease a fluent write of queries for "lesser than equals" comparisons
+	 * Shortcut to <code>new Lesser(value, true)</code> to ease a fluent writing of queries for "lesser than equals" comparisons
 	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder})
 	 * @return a new instance of {@link Lesser} with equals checking
 	 */
@@ -61,7 +62,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Greater(value)</code> to ease a fluent write of queries for "greater than" comparisons
+	 * Shortcut to <code>new Greater(value)</code> to ease a fluent writing of queries for "greater than" comparisons
 	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder})
 	 * @return a new instance of {@link Greater}
 	 */
@@ -70,7 +71,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Greater(value, true)</code> to ease a fluent write of queries for "greater than equals" comparisons
+	 * Shortcut to <code>new Greater(value, true)</code> to ease a fluent writing of queries for "greater than equals" comparisons
 	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder})
 	 * @return a new instance of {@link Greater} with equals checking
 	 */
@@ -79,7 +80,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Between(value1, value2)</code> to ease a fluent write of queries for "between" comparisons
+	 * Shortcut to <code>new Between(value1, value2)</code> to ease a fluent writing of queries for "between" comparisons
 	 * @param value1 a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder}) if both values are
 	 * @param value2 a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder}) if both values are
 	 * @return a new instance of {@link Between} with equals checking
@@ -89,7 +90,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new In(value)</code> to ease a fluent write of queries for "in" comparisons
+	 * Shortcut to <code>new In(value)</code> to ease a fluent writing of queries for "in" comparisons
 	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder})
 	 * @return a new instance of {@link In}
 	 */
@@ -98,35 +99,48 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new In(value)</code> to ease a fluent write of queries for "in" comparisons.
+	 * Shortcut to <code>new In(value)</code> to ease a fluent writing of queries for "in" comparisons.
 	 * Note that this signature won't transform null values to "is null" by {@link OperatorSQLBuilder}), prefers {@link #in(Iterable)} for it.
 	 * 
-	 * @param value a value, null accepted <b>but won't be transformed</b> to "is null" by {@link OperatorSQLBuilder})
+	 * @param values a value, null accepted <b>but won't be transformed</b> to "is null" by {@link OperatorSQLBuilder})
 	 * @return a new instance of {@link In}
 	 * @see #in(Iterable)
 	 */
-	static <O> In<O> in(O ... value) {
-		return new In<>(value);
+	static <O> In<O> in(O... values) {
+		return new In<>(values);
 	}
 	
 	/**
-	 * Shortcut to <code>new IsNull()</code> to ease a fluent write of queries for "is null" comparisons
+	 * Shortcut to <code>new InIgnoreCase(value)</code> to ease a fluent writing of queries for "in" comparisons
+	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder})
+	 * @return a new instance of {@link In}
+	 */
+	static InIgnoreCase inIgnoringCase(Iterable<String> value) {
+		return new InIgnoreCase(value);
+	}
+	
+	static InIgnoreCase inIgnoringCase(String... values) {
+		return new InIgnoreCase(values);
+	}
+	
+	/**
+	 * Shortcut to <code>new IsNull()</code> to ease a fluent writing of queries for "is null" comparisons
 	 * @return a new instance of {@link IsNull}
 	 */
-	static IsNull isNull() {
-		return new IsNull();
+	static <O> IsNull<O> isNull() {
+		return new IsNull<>();
 	}
 	
 	/**
-	 * Shortcut to <code>not(new IsNull())</code> to ease a fluent write of queries for "is not null" comparisons
+	 * Shortcut to <code>not(new IsNull())</code> to ease a fluent writing of queries for "is not null" comparisons
 	 * @return a new instance, negative form, of {@link IsNull}
 	 */
-	static IsNull isNotNull() {
+	static <O> IsNull<O> isNotNull() {
 		return not(isNull());
 	}
 	
 	/**
-	 * Shortcut to <code>new Trim(value)</code> to ease a fluent write of queries for "trim" functions
+	 * Shortcut to <code>new Trim(value)</code> to ease a fluent writing of queries for "trim" functions
 	 * @return a new instance of {@link Trim}
 	 */
 	static <V extends CharSequence> Trim<V> trim(V value) {
@@ -134,7 +148,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Trim(value)</code> to ease a fluent write of queries for "trim" functions
+	 * Shortcut to <code>new Trim(value)</code> to ease a fluent writing of queries for "trim" functions
 	 * @return a new instance of {@link Trim}
 	 */
 	static <V extends CharSequence> Trim<Selectable<V>> trim(Selectable<V> value) {
@@ -142,7 +156,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Trim(value)</code> to ease a fluent write of queries for "trim" functions
+	 * Shortcut to <code>new Trim(value)</code> to ease a fluent writing of queries for "trim" functions
 	 * @return a new instance of {@link Trim}
 	 */
 	static <V extends CharSequence> Trim<SQLFunction<?, CharSequence>> trim(SQLFunction<?, CharSequence> value) {
@@ -150,7 +164,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new UpperCase(value)</code> to ease a fluent write of queries for "upper" functions
+	 * Shortcut to <code>new UpperCase(value)</code> to ease a fluent writing of queries for "upper" functions
 	 * @return a new instance of {@link Trim}
 	 */
 	static <V extends CharSequence> UpperCase<V> upperCase(V value) {
@@ -158,7 +172,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new UpperCase(value)</code> to ease a fluent write of queries for "upper" functions
+	 * Shortcut to <code>new UpperCase(value)</code> to ease a fluent writing of queries for "upper" functions
 	 * @return a new instance of {@link Trim}
 	 */
 	static <V extends CharSequence> UpperCase<Selectable<V>> upperCase(Selectable<V> value) {
@@ -166,7 +180,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new UpperCase(value)</code> to ease a fluent write of queries for "upper" functions
+	 * Shortcut to <code>new UpperCase(value)</code> to ease a fluent writing of queries for "upper" functions
 	 * @return a new instance of {@link Trim}
 	 */
 	static <V extends CharSequence> UpperCase<SQLFunction<?, V>> upperCase(SQLFunction<?, V> value) {
@@ -174,7 +188,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new UpperCase(value)</code> to ease a fluent write of queries for "lower" functions
+	 * Shortcut to <code>new UpperCase(value)</code> to ease a fluent writing of queries for "lower" functions
 	 * @return a new instance of {@link Trim}
 	 */
 	static <V extends CharSequence> LowerCase<V> lowerCase(V value) {
@@ -182,7 +196,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new UpperCase(value)</code> to ease a fluent write of queries for "lower" functions
+	 * Shortcut to <code>new UpperCase(value)</code> to ease a fluent writing of queries for "lower" functions
 	 * @return a new instance of {@link Trim}
 	 */
 	static <V extends CharSequence> LowerCase<Selectable<V>> lowerCase(Selectable<V> value) {
@@ -190,7 +204,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new UpperCase(value)</code> to ease a fluent write of queries for "lower" functions
+	 * Shortcut to <code>new UpperCase(value)</code> to ease a fluent writing of queries for "lower" functions
 	 * @return a new instance of {@link Trim}
 	 */
 	static <V extends CharSequence> LowerCase<SQLFunction<?, V>> lowerCase(SQLFunction<?, V> value) {
@@ -198,7 +212,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Substring(value, from)</code> to ease a fluent write of queries for "substring" functions
+	 * Shortcut to <code>new Substring(value, from)</code> to ease a fluent writing of queries for "substring" functions
 	 * @return a new instance of {@link Trim}
 	 */
 	static <V extends CharSequence> Substring<V> substring(V value, int from) {
@@ -206,7 +220,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Substring(value, from, to)</code> to ease a fluent write of queries for "substring" functions
+	 * Shortcut to <code>new Substring(value, from, to)</code> to ease a fluent writing of queries for "substring" functions
 	 * @return a new instance of {@link Trim}
 	 */
 	static <V extends CharSequence> Substring<V> substring(V value, int from, int to) {
@@ -214,7 +228,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Substring(value, from)</code> to ease a fluent write of queries for "substring" functions
+	 * Shortcut to <code>new Substring(value, from)</code> to ease a fluent writing of queries for "substring" functions
 	 * @return a new instance of {@link Trim}
 	 */
 	static <V extends CharSequence> Substring<V> substring(Selectable<V> value, int from) {
@@ -222,7 +236,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Substring(value, from, to)</code> to ease a fluent write of queries for "substring" functions
+	 * Shortcut to <code>new Substring(value, from, to)</code> to ease a fluent writing of queries for "substring" functions
 	 * @return a new instance of {@link Trim}
 	 */
 	static <V extends CharSequence> Substring<V> substring(Selectable<V> value, int from, int to) {
@@ -230,7 +244,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Substring(value, from)</code> to ease a fluent write of queries for "substring" functions
+	 * Shortcut to <code>new Substring(value, from)</code> to ease a fluent writing of queries for "substring" functions
 	 * @return a new instance of {@link Trim}
 	 */
 	static <V extends CharSequence> Substring<V> substring(SQLFunction<?, V> value, int from) {
@@ -238,7 +252,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Substring(value, from, to)</code> to ease a fluent write of queries for "substring" functions
+	 * Shortcut to <code>new Substring(value, from, to)</code> to ease a fluent writing of queries for "substring" functions
 	 * @return a new instance of {@link Trim}
 	 */
 	static <V extends CharSequence> Substring<V> substring(SQLFunction<?, V> value, int from, int to) {
@@ -246,7 +260,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Like(value)</code> to ease a fluent write of queries for "like" comparisons
+	 * Shortcut to <code>new Like(value)</code> to ease a fluent writing of queries for "like" comparisons
 	 * @return a new instance of {@link Like}
 	 */
 	static <V extends CharSequence> Like<V> like(V value) {
@@ -254,7 +268,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Like(value)</code> to ease a fluent write of queries for "like" comparisons
+	 * Shortcut to <code>new Like(value)</code> to ease a fluent writing of queries for "like" comparisons
 	 * @return a new instance of {@link Like}
 	 */
 	static <V extends CharSequence> Like<SQLFunction<?, V>> like(SQLFunction<?, V> value) {
@@ -262,7 +276,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Like(value, true, true)</code> to ease a fluent write of queries for "contains" comparisons
+	 * Shortcut to <code>new Like(value, true, true)</code> to ease a fluent writing of queries for "contains" comparisons
 	 * @return a new instance of {@link Like}
 	 */
 	static <V extends CharSequence> Like<V> contains(V value) {
@@ -270,7 +284,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Like(value, true, true)</code> to ease a fluent write of queries for "contains" comparisons
+	 * Shortcut to <code>new Like(value, true, true)</code> to ease a fluent writing of queries for "contains" comparisons
 	 * @return a new instance of {@link Like}
 	 */
 	static <V extends CharSequence> Like<SQLFunction<?, V>> contains(SQLFunction<?, V> value) {
@@ -278,7 +292,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Like(value, false, true)</code> to ease a fluent write of queries for "startsWith" comparisons
+	 * Shortcut to <code>new Like(value, false, true)</code> to ease a fluent writing of queries for "startsWith" comparisons
 	 * @return a new instance of {@link Like}
 	 */
 	static <V extends CharSequence> Like<V> startsWith(V value) {
@@ -286,7 +300,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Like(value, false, true)</code> to ease a fluent write of queries for "startsWith" comparisons
+	 * Shortcut to <code>new Like(value, false, true)</code> to ease a fluent writing of queries for "startsWith" comparisons
 	 * @return a new instance of {@link Like}
 	 */
 	static <V extends CharSequence> Like<SQLFunction<?, V>> startsWith(SQLFunction<?, V> value) {
@@ -294,7 +308,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Like(value, true, false)</code> to ease a fluent write of queries for "endsWith" comparisons
+	 * Shortcut to <code>new Like(value, true, false)</code> to ease a fluent writing of queries for "endsWith" comparisons
 	 * @return a new instance of {@link Like}
 	 */
 	static <V extends CharSequence> Like<V> endsWith(V value) {
@@ -302,7 +316,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Like(value, true, false)</code> to ease a fluent write of queries for "endsWith" comparisons
+	 * Shortcut to <code>new Like(value, true, false)</code> to ease a fluent writing of queries for "endsWith" comparisons
 	 * @return a new instance of {@link Like}
 	 */
 	static <V extends CharSequence> Like<SQLFunction<?, V>> endsWith(SQLFunction<?, V> value) {
@@ -310,7 +324,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Sum(column)</code> to ease a fluent write of queries for "sum" operation
+	 * Shortcut to <code>new Sum(column)</code> to ease a fluent writing of queries for "sum" operation
 	 * @return a new instance of {@link Sum}
 	 */
 	static <N extends Number> Sum<N> sum(Selectable<N> column) {
@@ -318,7 +332,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Count(column)</code> to ease a fluent write of queries for "count" operation
+	 * Shortcut to <code>new Count(column)</code> to ease a fluent writing of queries for "count" operation
 	 * @return a new instance of {@link Count}
 	 */
 	static Count count(Selectable<?>... columns) {
@@ -326,7 +340,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Count(column)</code> to ease a fluent write of queries for "count" operation
+	 * Shortcut to <code>new Count(column)</code> to ease a fluent writing of queries for "count" operation
 	 * @return a new instance of {@link Count}
 	 */
 	static Count count(Iterable<? extends Selectable<?>> columns) {
@@ -334,7 +348,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Min(column)</code> to ease a fluent write of queries for "min" operation
+	 * Shortcut to <code>new Min(column)</code> to ease a fluent writing of queries for "min" operation
 	 * @return a new instance of {@link Min}
 	 */
 	static <N extends Number> Min<N> min(Selectable<N> column) {
@@ -342,7 +356,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Max(column)</code> to ease a fluent write of queries for "max" operation
+	 * Shortcut to <code>new Max(column)</code> to ease a fluent writing of queries for "max" operation
 	 * @return a new instance of {@link Max}
 	 */
 	static <N extends Number> Max<N> max(Selectable<N> column) {
@@ -350,7 +364,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Cast(expression, javaType)</code> to ease a fluent write of queries for "cast" operation
+	 * Shortcut to <code>new Cast(expression, javaType)</code> to ease a fluent writing of queries for "cast" operation
 	 * @return a new instance of {@link Cast}
 	 */
 	static <O> Cast<?, O> cast(String expression, Class<O> javaType) {
@@ -358,7 +372,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Cast(expression, javaType)</code> to ease a fluent write of queries for "cast" operation
+	 * Shortcut to <code>new Cast(expression, javaType)</code> to ease a fluent writing of queries for "cast" operation
 	 * @return a new instance of {@link Cast}
 	 */
 	static <C, O> Cast<C, O> cast(Selectable<C> expression, Class<O> javaType) {
@@ -366,7 +380,7 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Coalesce(column, columns)</code> to ease a fluent write of queries for "coalesce" operation
+	 * Shortcut to <code>new Coalesce(column, columns)</code> to ease a fluent writing of queries for "coalesce" operation
 	 * @return a new instance of {@link Coalesce}
 	 */
 	static <C> Coalesce<C> coalesce(Selectable<C> column, Selectable<C>... columns) {

@@ -8,6 +8,7 @@ import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.Funct
 import org.codefilarete.stalactite.query.builder.OperatorSQLBuilderFactory.OperatorSQLBuilder;
 import org.codefilarete.stalactite.query.builder.OperatorSQLBuilderFactory.OperatorSQLBuilder.LikePatternAppender;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Selectable.SimpleSelectable;
 import org.codefilarete.stalactite.query.model.Variable;
 import org.codefilarete.stalactite.query.model.operator.Cast;
@@ -87,16 +88,16 @@ class OperatorSQLBuilderTest {
 		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
 		StringSQLAppender result = new StringSQLAppender(dmlNameProvider);
 		
-		testInstance.catIsNull(new IsNull(), result);
+		testInstance.catIsNull(new IsNull<>(), result);
 		assertThat(result.getSQL()).isEqualTo("is null");
 		
 		result = new StringSQLAppender(dmlNameProvider);
-		testInstance.catIsNull(not(new IsNull()), result);
+		testInstance.catIsNull(Operators.<IsNull<Object>, Object, Object>not(new IsNull<>()), result);
 		assertThat(result.getSQL()).isEqualTo("is not null");
 		
 		// nothing happens on a value set on is null
 		result = new StringSQLAppender(dmlNameProvider);
-		IsNull isNull = new IsNull();
+		IsNull<Integer> isNull = new IsNull<>();
 		isNull.setValue(42);
 		testInstance.catIsNull(isNull, result);
 		assertThat(result.getSQL()).isEqualTo("is null");

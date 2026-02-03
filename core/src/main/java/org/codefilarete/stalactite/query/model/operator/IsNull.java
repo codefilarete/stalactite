@@ -8,10 +8,10 @@ import org.codefilarete.stalactite.query.model.Variable;
  * 
  * @author Guillaume Mary
  */
-public class IsNull extends UnitaryOperator<Object> {
+public class IsNull<O> extends UnitaryOperator<O> {
 	
 	public IsNull() {
-		super(null);
+		super((O) null);
 	}
 	
 	/**
@@ -19,7 +19,7 @@ public class IsNull extends UnitaryOperator<Object> {
 	 * @param value any object
 	 */
 	@Override
-	public void setValue(Variable<Object> value) {
+	public void setValue(Variable<O> value) {
 		// setting a value on this as no effect because it has no sense
 	}
 	

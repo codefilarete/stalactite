@@ -88,7 +88,7 @@ public class OperatorSQLBuilderFactory {
 			sql.cat("is").catIf(not, " not").cat(" null");
 		}
 		
-		void catIsNull(IsNull isNull, SQLAppender sql) {
+		void catIsNull(IsNull<?> isNull, SQLAppender sql) {
 			catNullValue(isNull.isNot(), sql);
 		}
 		

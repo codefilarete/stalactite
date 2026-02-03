@@ -9,7 +9,7 @@ import org.codefilarete.tool.collection.Arrays;
  *
  * @author Guillaume Mary
  */
-public class LikeIgnoreCase<O> extends BiOperandOperator<O> {
+public class LikeIgnoreCase<O> extends BiOperandOperator<O, O> {
 	
 	private final boolean leadingStar;
 	private final boolean endingStar;

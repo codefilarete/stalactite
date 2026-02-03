@@ -12,7 +12,7 @@ import org.codefilarete.stalactite.query.model.Variable;
  * @param <V> value type
  * @author Guillaume Mary
  */
-public abstract class BiOperandOperator<V> extends ConditionalOperator<V, V> {
+public abstract class BiOperandOperator<T, V> extends ConditionalOperator<T, V> {
 	
 	/** Value of the operator */
 	private Variable<V> value;

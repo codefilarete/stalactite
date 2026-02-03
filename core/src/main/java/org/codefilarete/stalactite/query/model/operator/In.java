@@ -44,6 +44,6 @@ public class In<O> extends ConditionalOperator<O, Iterable<O>> {
 	}
 	
 	public InIgnoreCase ignoringCase() {
-		return new InIgnoreCase((In<CharSequence>) this);
+		return new InIgnoreCase((In<String>) this);
 	}
 }
