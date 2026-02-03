@@ -63,7 +63,7 @@ public class QueryRepositoryQuery<O, R> extends AbstractRepositoryQuery<O, R> {
 				return () -> {
 					Limit limit = invocationParameters.getLimit();
 					if (limit != null) {
-//						((ExecutableEntityQuery) entityQuery).limit(limit.getCount(), limit.getOffset());
+						((EntityPersister.ExecutableEntityQuery) entityQuery).limit(limit.getCount(), limit.getOffset());
 					}
 					return (List<Object>) entityQuery.execute(Accumulators.toList(), invocationParameters.getNamedValues());
 				};

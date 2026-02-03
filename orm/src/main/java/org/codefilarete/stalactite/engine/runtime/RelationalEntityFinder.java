@@ -87,7 +87,7 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 		this.selectExecutor = selectExecutor;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
-		this.entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();;
+		this.entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		this.criteriaSupport = new EntityCriteriaSupport<>(this.entityJoinTree);
 		
 		PersisterBuilderContext.CURRENT.get().addBuildLifeCycleListener(new BuildLifeCycleListener() {
@@ -109,7 +109,7 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 		this.entityJoinTree = mainPersister.getEntityJoinTree();
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
-		this.entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();;
+		this.entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		this.criteriaSupport = new EntityCriteriaSupport<>(this.entityJoinTree, withImmediateQueryBuild);
 	}
 	

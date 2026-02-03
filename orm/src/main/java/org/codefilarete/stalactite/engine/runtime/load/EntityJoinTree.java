@@ -400,36 +400,6 @@ public class EntityJoinTree<C, I> {
 		});
 	}
 	
-	@VisibleForTesting
-	Set<Table<?>> lookupTable(PseudoTable pseudoTable) {
-		Set<Table<?>> result = new HashSet<>();
-		Set<Query> queries;
-		if (pseudoTable.getQueryStatement() instanceof Query) {
-			queries = Arrays.asSet((Query) pseudoTable.getQueryStatement());
-		} else if (pseudoTable.getQueryStatement() instanceof Union) {
-			queries = ((Union) pseudoTable.getQueryStatement()).getQueries();
-		} else {
-			throw new IllegalArgumentException("Pseudo table type is not supported: " + Reflections.toString(pseudoTable.getClass()));
-		}
-		queries.forEach(query -> {
-			Fromable rightTable =  query.getFromDelegate().getRoot();
-			if (rightTable instanceof Table) {
-				result.add((Table) rightTable);
-			} else if (rightTable instanceof PseudoTable) {
-				result.addAll(lookupTable((PseudoTable) rightTable));
-			}
-		});
-		queries.forEach(query -> query.getFromDelegate().getJoins().forEach(join -> {
-			Fromable rightTable = join.getRightTable();
-			if (rightTable instanceof Table) {
-				result.add((Table) rightTable);
-			} else if (rightTable instanceof PseudoTable) {
-				result.addAll(lookupTable((PseudoTable) rightTable));
-			}
-		}));
-		return result;
-	}
-	
 	/**
 	 * Shortcut for {@code joinIterator().forEachRemaining()}.
 	 * Goes down this tree by breadth first. Made to avoid everyone implements node iteration.
