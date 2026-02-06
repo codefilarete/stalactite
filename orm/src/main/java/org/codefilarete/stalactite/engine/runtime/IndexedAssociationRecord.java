@@ -1,11 +1,14 @@
 package org.codefilarete.stalactite.engine.runtime;
 
+import java.util.Objects;
+
 import org.codefilarete.reflection.ReversibleAccessor;
 
 import static org.codefilarete.reflection.Accessors.accessorByMethodReference;
 
 /**
- * Same as {@link AssociationRecord} but with an index field to store indexed collection such as {@link java.util.List} or {@link java.util.LinkedHashSet}
+ * Same as {@link AssociationRecord} but with an index field to store indexed collections such as {@link java.util.List}
+ * or {@link java.util.LinkedHashSet}
  * 
  * @author Guillaume Mary
  */
@@ -31,5 +34,20 @@ public class IndexedAssociationRecord extends AssociationRecord {
 	
 	public void setIndex(int index) {
 		this.index = index;
+	}
+	
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof IndexedAssociationRecord)) return false;
+		IndexedAssociationRecord that = (IndexedAssociationRecord) o;
+		return Objects.equals(left, that.left) &&
+				Objects.equals(right, that.right) &&
+				index == that.index;
+	}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hash(left, right, index);
 	}
 }

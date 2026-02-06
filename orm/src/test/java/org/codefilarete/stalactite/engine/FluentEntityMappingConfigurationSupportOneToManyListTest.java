@@ -506,7 +506,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 							.from(answerChoicesTable).orderBy(answerChoicesTableIdx), RawAnswer.class);
 			ExecutableQuery<RawAnswer> rawAnswerExecutableQuery = query
 					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId);
-			Set<RawAnswer> persistedChoices = rawAnswerExecutableQuery.execute(Accumulators.toKeepingOrderSet());
+			List<RawAnswer> persistedChoices = rawAnswerExecutableQuery.execute(Accumulators.toList());
 			assertThat(persistedChoices).extracting(RawAnswer::getChoiceId).containsExactly(10L, 20L, 20L, 30L);
 			// stating that indexes are in same order than instances
 			assertThat(persistedChoices).extracting(RawAnswer::getChoiceIdx).containsExactly(1, 2, 3, 4);

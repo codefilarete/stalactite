@@ -135,10 +135,10 @@ class BeanPersisterTest {
 		testInstance.persist(unPersisted);
 		verify(persistListener).beforePersist(eq(Arrays.asSet(unPersisted)));
 		verify(persistListener).afterPersist(eq(Arrays.asSet(unPersisted)));
-		verify(insertListener).beforeInsert(eq(Arrays.asList(unPersisted)));
-		verify(insertListener).afterInsert(eq(Arrays.asList(unPersisted)));
-		verify(identifierManagerInsertListenerMock).beforeInsert(eq(Arrays.asList(unPersisted)));
-		verify(identifierManagerInsertListenerMock).afterInsert(eq(Arrays.asList(unPersisted)));
+		verify(insertListener).beforeInsert(eq(Arrays.asSet(unPersisted)));
+		verify(insertListener).afterInsert(eq(Arrays.asSet(unPersisted)));
+		verify(identifierManagerInsertListenerMock).beforeInsert(eq(Arrays.asSet(unPersisted)));
+		verify(identifierManagerInsertListenerMock).afterInsert(eq(Arrays.asSet(unPersisted)));
 		// no invocation of select listener because target of persist(..) method wasn't persisted
 		verify(identifierManagerSelectListenerMock, never()).beforeSelect(anyIterable());
 		verify(identifierManagerSelectListenerMock, never()).afterSelect(anySet());
@@ -158,10 +158,10 @@ class BeanPersisterTest {
 		Toto totoModifiedFromDatabase = new Toto(1, 2, 4);
 		
 		testInstance.persist(Arrays.asList(unPersisted, totoModifiedFromDatabase));
-		verify(insertListener).beforeInsert(eq(Arrays.asList(unPersisted)));
-		verify(insertListener).afterInsert(eq(Arrays.asList(unPersisted)));
-		verify(identifierManagerInsertListenerMock).beforeInsert(eq(Arrays.asList(unPersisted)));
-		verify(identifierManagerInsertListenerMock).afterInsert(eq(Arrays.asList(unPersisted)));
+		verify(insertListener).beforeInsert(eq(Arrays.asSet(unPersisted)));
+		verify(insertListener).afterInsert(eq(Arrays.asSet(unPersisted)));
+		verify(identifierManagerInsertListenerMock).beforeInsert(eq(Arrays.asSet(unPersisted)));
+		verify(identifierManagerInsertListenerMock).afterInsert(eq(Arrays.asSet(unPersisted)));
 		verify(identifierManagerSelectListenerMock).beforeSelect(eq(Arrays.asHashSet(1)));
 		verify(identifierManagerSelectListenerMock).afterSelect(eq(Arrays.asHashSet(totoInDatabase)));
 		verify(updateListener).beforeUpdate(updateArgCaptor.capture(), eq(true));

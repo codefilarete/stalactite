@@ -992,11 +992,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			abstractVehiclePersister.persist(dummyCar);
 			verify(persistListenerMock).beforePersist(Arrays.asHashSet(dummyCar));
 			verify(persistListenerMock).afterPersist(Arrays.asHashSet(dummyCar));
-			verify(insertListenerMock).beforeInsert(Arrays.asList(dummyCar));
-			verify(insertListenerMock).afterInsert(Arrays.asList(dummyCar));
-			// No select on persist due to already-assigned identifier policy
-			verify(selectListenerMock, never()).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
-			verify(selectListenerMock, never()).afterSelect(Collections.emptySet());	// empty set because entities were deleted earlier
+			verify(insertListenerMock).beforeInsert(Arrays.asHashSet(dummyCar));
+			verify(insertListenerMock).afterInsert(Arrays.asHashSet(dummyCar));
+			// Select is due to already-assigned identifier policy that requires a database check on persist to find
+			// already existing entities
+			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
+			verify(selectListenerMock).afterSelect(Collections.emptySet());	// empty set because entities were deleted earlier
 			
 			clearInvocations(selectListenerMock);
 			dummyCar.setModel("Peugeot");
@@ -1351,11 +1352,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			abstractVehiclePersister.persist(dummyCar);
 			verify(persistListenerMock).beforePersist(Arrays.asHashSet(dummyCar));
 			verify(persistListenerMock).afterPersist(Arrays.asHashSet(dummyCar));
-			verify(insertListenerMock).beforeInsert(Arrays.asList(dummyCar));
-			verify(insertListenerMock).afterInsert(Arrays.asList(dummyCar));
-			// No select on persist due to already-assigned identifier policy
-			verify(selectListenerMock, never()).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
-			verify(selectListenerMock, never()).afterSelect(Collections.emptySet());	// empty set because entities were deleted earlier
+			verify(insertListenerMock).beforeInsert(Arrays.asHashSet(dummyCar));
+			verify(insertListenerMock).afterInsert(Arrays.asHashSet(dummyCar));
+			// Select is due to already-assigned identifier policy that requires a database check on persist to find
+			// already existing entities
+			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
+			verify(selectListenerMock).afterSelect(Collections.emptySet());	// empty set because entities were deleted earlier
 			
 			clearInvocations(selectListenerMock);
 			dummyCar.setModel("Peugeot");
@@ -1683,11 +1685,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			abstractVehiclePersister.persist(dummyCar);
 			verify(persistListenerMock).beforePersist(Arrays.asHashSet(dummyCar));
 			verify(persistListenerMock).afterPersist(Arrays.asHashSet(dummyCar));
-			verify(insertListenerMock).beforeInsert(Arrays.asList(dummyCar));
-			verify(insertListenerMock).afterInsert(Arrays.asList(dummyCar));
-			// No select on persist due to already-assigned identifier policy
-			verify(selectListenerMock, never()).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
-			verify(selectListenerMock, never()).afterSelect(Collections.emptySet());	// empty set because entities were deleted earlier
+			verify(insertListenerMock).beforeInsert(Arrays.asHashSet(dummyCar));
+			verify(insertListenerMock).afterInsert(Arrays.asHashSet(dummyCar));
+			// Select is due to already-assigned identifier policy that requires a database check on persist to find
+			// already existing entities
+			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
+			verify(selectListenerMock).afterSelect(Collections.emptySet());	// empty set because entities were deleted earlier
 			
 			clearInvocations(selectListenerMock);
 			dummyCar.setModel("Peugeot");

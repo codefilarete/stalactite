@@ -13,6 +13,7 @@ import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSuppo
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
+import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
@@ -64,7 +65,11 @@ public abstract class AbstractPolymorphismPersister<C, I>
 		this.mainPersister = mainPersister;
 		this.subEntitiesPersisters = (Map<Class<C>, ConfiguredRelationalPersister<C, I>>) subEntitiesPersisters;
 		this.entityFinder = entityFinder;
-		this.persistExecutor = new DefaultPersistExecutor<>(this);
+		if (mainPersister.getMapping().getIdMapping().getIdentifierInsertionManager() instanceof AlreadyAssignedIdentifierManager) {
+			this.persistExecutor = new AlreadyAssignedIdentifierPersistExecutor<>(this);
+		} else {
+			this.persistExecutor = new DefaultPersistExecutor<>(this);
+		}
 	}
 	
 	@Override

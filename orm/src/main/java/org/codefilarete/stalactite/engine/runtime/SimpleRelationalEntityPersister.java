@@ -30,6 +30,7 @@ import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
+import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.query.model.operator.In;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
@@ -98,7 +99,11 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 		this.entityFinder = new RelationalEntityFinder<>(entityJoinTree, this, persister.getConnectionProvider(), dialect);
 		this.criteriaSupport = new EntityCriteriaSupport<>(entityJoinTree);
 		// we redirect all invocations to ourselves because targeted methods invoke their listeners
-		this.persistExecutor = new DefaultPersistExecutor<>(this);
+		if (mainMappingStrategy.getIdMapping().getIdentifierInsertionManager() instanceof AlreadyAssignedIdentifierManager) {
+			this.persistExecutor = new AlreadyAssignedIdentifierPersistExecutor<>(this);
+		} else {
+			this.persistExecutor = new DefaultPersistExecutor<>(this);
+		}
 	}
 	
 	public SimpleRelationalEntityPersister(DefaultEntityMapping<C, I, T> mainMappingStrategy,
@@ -111,7 +116,11 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 		this.entityFinder = new RelationalEntityFinder<>(entityJoinTree, this, persister.getConnectionProvider(), dialect);
 		this.criteriaSupport = new EntityCriteriaSupport<>(entityJoinTree);
 		// we redirect all invocations to ourselves because targeted methods invoke their listeners
-		this.persistExecutor = new DefaultPersistExecutor<>(this);
+		if (mainMappingStrategy.getIdMapping().getIdentifierInsertionManager() instanceof AlreadyAssignedIdentifierManager) {
+			this.persistExecutor = new AlreadyAssignedIdentifierPersistExecutor<>(this);
+		} else {
+			this.persistExecutor = new DefaultPersistExecutor<>(this);
+		}
 		
 		if (versioningStrategy != null) {
 			getUpdateExecutor().setVersioningStrategy(versioningStrategy);

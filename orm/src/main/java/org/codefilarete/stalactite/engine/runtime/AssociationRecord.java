@@ -10,8 +10,8 @@ import java.util.Objects;
  */
 public class AssociationRecord {
 	
-	private Object left;
-	private Object right;
+	protected Object left;
+	protected Object right;
 	private boolean persisted = false;
 	
 	public AssociationRecord() {
