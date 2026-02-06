@@ -90,7 +90,7 @@ public class CollectionDiffer<C> {
 		removeds.forEach(e -> result.add(new IndexedDiff<>(REMOVED, e, null, beforeIndexes.get(e), new HashSet<>())));
 		
 		// Added instances are found with a simple minus (reverse order of removed)
-		Set<C> addeds = Iterables.minus(afterIndexes.keySet(), beforeIndexes.keySet(), (Function<Collection<C>, KeepOrderSet<C>>) KeepOrderSet::new);
+		Set<C> addeds = Iterables.minus(afterIndexes.keySet(), beforeIndexes.keySet(), (Function<Collection<? extends C>, Set<C>>) KeepOrderSet::new);
 		addeds.forEach(e -> result.add(new IndexedDiff<>(ADDED, null, e, new HashSet<>(), afterIndexes.get(e))));
 		
 		// There are several cases for "held" instances (those existing on both sides)

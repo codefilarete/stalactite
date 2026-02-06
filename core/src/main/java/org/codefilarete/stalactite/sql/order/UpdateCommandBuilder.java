@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.sql.order;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -63,10 +64,10 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 		setClauseAppender.cat("update ");
 		
 		// looking for additional Tables : more than the updated one, can be found in conditions
-		Set<Column<Table, Object>> whereColumns = new LinkedHashSet<>();
+		Set<Column<Table<?>, Object>> whereColumns = new LinkedHashSet<>();
 		update.getCriteria().forEach(c -> {
 			if (c instanceof ColumnCriterion && ((ColumnCriterion) c).getColumn() instanceof Column) {
-				whereColumns.add((Column<Table, Object>) ((ColumnCriterion) c).getColumn());
+				whereColumns.add((Column<Table<?>, Object>) ((ColumnCriterion) c).getColumn());
 				Object condition = ((ColumnCriterion) c).getCondition();
 				if (condition instanceof UnitaryOperator
 						&& ((UnitaryOperator) condition).getValue() instanceof ValuedVariable
@@ -75,9 +76,9 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 				}
 			}
 		});
-		Set<Table> additionalTables = Iterables.minus(
-				Iterables.collect(whereColumns, Column::getTable, HashSet::new),
-				Arrays.asList(this.update.getTargetTable()));
+		Collection<? extends Table<?>> tablesInCondition = Iterables.collect(whereColumns, Column::getTable, HashSet::new);
+		tablesInCondition.remove(this.update.getTargetTable());
+		Collection<? extends Table<?>> additionalTables = tablesInCondition;
 		
 		// update of the single-table-marker
 		dmlNameProvider.setMultiTable(!additionalTables.isEmpty());
@@ -85,7 +86,7 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 		setClauseAppender.cat(dmlNameProvider.getName(this.update.getTargetTable()))
 				.catIf(dmlNameProvider.isMultiTable(), ", ");
 		// additional tables (with optional alias)
-		Iterator<Table> iterator = additionalTables.iterator();
+		Iterator<? extends Table<?>> iterator = additionalTables.iterator();
 		while (iterator.hasNext()) {
 			Table next = iterator.next();
 			setClauseAppender.cat(dmlNameProvider.getName(next)).catIf(iterator.hasNext(), ", ");

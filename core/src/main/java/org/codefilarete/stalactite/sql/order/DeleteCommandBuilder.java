@@ -1,6 +1,6 @@
 package org.codefilarete.stalactite.sql.order;
 
-import javax.annotation.Nullable;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -8,6 +8,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 import org.codefilarete.stalactite.query.builder.ExpandableSQLAppender;
 import org.codefilarete.stalactite.query.builder.PreparableSQLBuilder;
@@ -27,7 +28,6 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.trace.MutableInt;
 
@@ -70,10 +70,10 @@ public class DeleteCommandBuilder<T extends Table<T>> implements SQLBuilder, Pre
 		target.cat("delete from ");
 		
 		// looking for additional Tables : more than the updated one, can be found in conditions
-		Set<Column<Table, Object>> whereColumns = new LinkedHashSet<>();
+		Set<Column<Table<?>, Object>> whereColumns = new LinkedHashSet<>();
 		delete.getCriteria().forEach(c -> {
 			if (c instanceof ColumnCriterion && ((ColumnCriterion) c).getColumn() instanceof Column) {
-				whereColumns.add((Column<Table, Object>) ((ColumnCriterion) c).getColumn());
+				whereColumns.add((Column<Table<?>, Object>) ((ColumnCriterion) c).getColumn());
 				Object condition = ((ColumnCriterion) c).getCondition();
 				if (condition instanceof UnitaryOperator
 						&& ((UnitaryOperator) condition).getValue() instanceof ValuedVariable
@@ -82,9 +82,9 @@ public class DeleteCommandBuilder<T extends Table<T>> implements SQLBuilder, Pre
 				}
 			}
 		});
-		Set<Table> additionalTables = Iterables.minus(
-				Iterables.collect(whereColumns, Column::getTable, HashSet::new),
-				Arrays.asList(this.delete.getTargetTable()));
+		Collection<? extends Table<?>> tablesInCondition = Iterables.collect(whereColumns, Column::getTable, HashSet::new);
+		tablesInCondition.remove(this.delete.getTargetTable());
+		Collection<? extends Table<?>> additionalTables = tablesInCondition;
 		
 		// update of the single-table-marker
 		dmlNameProvider.setMultiTable(!additionalTables.isEmpty());
@@ -92,7 +92,7 @@ public class DeleteCommandBuilder<T extends Table<T>> implements SQLBuilder, Pre
 		target.cat(this.delete.getTargetTable().getAbsoluteName())    // main table is always referenced with name (not alias)
 				.catIf(dmlNameProvider.isMultiTable(), ", ");
 		// additional tables (with optional alias)
-		Iterator<Table> iterator = additionalTables.iterator();
+		Iterator<? extends Table<?>> iterator = additionalTables.iterator();
 		while (iterator.hasNext()) {
 			Table next = iterator.next();
 			target.cat(next.getAbsoluteName()).catIf(iterator.hasNext(), ", ");
