@@ -104,10 +104,10 @@ public class PersisterBuilderPipeline<C, I> {
 				dialect.getColumnBinderRegistry(),
 				namingConfiguration.getColumnNamingStrategy(),
 				namingConfiguration.getIndexNamingStrategy());
-		this.primaryKeyPropagationStep.propagate(primaryKey, inheritanceMappingPerTable, namingConfiguration.getForeignKeyNamingStrategy());
+		primaryKeyPropagationStep.propagate(primaryKey, inheritanceMappingPerTable, namingConfiguration.getForeignKeyNamingStrategy());
 		// determining insertion manager must be done AFTER primary key addition, else it would fall into NullPointerException
-		this.identifierManagerStep.applyIdentifierManager(identification, inheritanceMappingPerTable, identification.getIdAccessor(), dialect, connectionConfiguration);
-		SimpleRelationalEntityPersister<C, I, ?> mainPersister = this.mainPersisterStep.buildMainPersister(
+		identifierManagerStep.applyIdentifierManager(identification, inheritanceMappingPerTable, identification.getIdAccessor(), dialect, connectionConfiguration);
+		SimpleRelationalEntityPersister<C, I, ?> mainPersister = mainPersisterStep.buildMainPersister(
 				entityMappingConfiguration,
 				identification,
 				inheritanceMappingPerTable,
@@ -115,9 +115,9 @@ public class PersisterBuilderPipeline<C, I> {
 				dialect,
 				connectionConfiguration);
 		
-		this.relationsStep.configureRelations(mainPersister, inheritanceMappingPerTable, persisterBuilderContext, namingConfiguration, dialect, connectionConfiguration);
+		relationsStep.configureRelations(mainPersister, inheritanceMappingPerTable, persisterBuilderContext, namingConfiguration, dialect, connectionConfiguration);
 		
-		ConfiguredRelationalPersister<C, I> result = this.polymorphismStep.eventuallyTransformToPolymorphicPersister(mainPersister,
+		ConfiguredRelationalPersister<C, I> result = polymorphismStep.eventuallyTransformToPolymorphicPersister(mainPersister,
 				entityMappingConfiguration,
 				identification,
 				(Mapping<C, ?>) first(inheritanceMappingPerTable.getMappings()),
@@ -126,7 +126,7 @@ public class PersisterBuilderPipeline<C, I> {
 				connectionConfiguration,
 				persisterBuilderContext);
 		
-		alreadyAssignedMarkerStep.handleAlreadyAssignedMarker(identification, result);
+		alreadyAssignedMarkerStep.handleAlreadyAssignedMarker(result);
 		
 		parentPersistersStep.buildParentPersisters(mainPersister, identification, inheritanceMappingPerTable, dialect, connectionConfiguration);
 		

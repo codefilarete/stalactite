@@ -143,8 +143,7 @@ public abstract class AbstractIdentification<C, I> {
 		
 		private Map<ReversibleAccessor<I, Object>, Column<Table, Object>> compositeKeyMapping;
 		
-		@VisibleForTesting
-		public CompositeKeyIdentification(EntityMappingConfiguration<C, I> identificationDefiner,
+		private CompositeKeyIdentification(EntityMappingConfiguration<C, I> identificationDefiner,
 										   Consumer<C> markAsPersistedFunction,
 										   Function<C, Boolean> isPersistedFunction) {
 			super(identificationDefiner);

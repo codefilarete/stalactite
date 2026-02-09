@@ -25,9 +25,6 @@ import org.codefilarete.tool.exception.Exceptions;
  */
 public class JDBCGeneratedKeysIdentifierManager<T, I> implements IdentifierInsertionManager<T, I> {
 	
-	private static final InsertListener NOOP_INSERT_LISTENER = new InsertListener() {};
-	private static final SelectListener NOOP_SELECT_LISTENER = new SelectListener() {};
-	
 	private final Class<I> identifierType;
 	
 	private final AfterInsertIdentifierFixer<T, I> identifierFixer;
@@ -47,16 +44,6 @@ public class JDBCGeneratedKeysIdentifierManager<T, I> implements IdentifierInser
 	@Override
 	public JDBCBatchingIterator<T> buildJDBCBatchingIterator(Iterable<? extends T> entities, WriteOperation<? extends Column<? extends Table, ?>> writeOperation, int batchSize) {
 		return new JDBCBatchingIteratorGeneratedKeysAware<>(entities, writeOperation, batchSize, generatedKeysReader, identifierFixer);
-	}
-	
-	@Override
-	public InsertListener<T> getInsertListener() {
-		return NOOP_INSERT_LISTENER;
-	}
-	
-	@Override
-	public SelectListener<T, I> getSelectListener() {
-		return NOOP_SELECT_LISTENER;
 	}
 	
 	/**

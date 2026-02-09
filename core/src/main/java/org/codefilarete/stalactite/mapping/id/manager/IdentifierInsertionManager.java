@@ -29,8 +29,5 @@ public interface IdentifierInsertionManager<C, I> {
 	 * @return a new {@link JDBCBatchingIterator} 
 	 */
 	JDBCBatchingIterator<C> buildJDBCBatchingIterator(Iterable<? extends C> entities, WriteOperation<? extends Column<? extends Table, ?>> writeOperation, int batchSize);
-	
-	InsertListener<C> getInsertListener();
-	
-	SelectListener<C,I> getSelectListener();
+
 }

@@ -80,10 +80,6 @@ public class BeanPersister<C, I, T extends Table<T>>
 		this.deleteExecutor = newDeleteExecutor(this.mappingStrategy, this.connectionConfiguration, dmlGenerator,
 				writeOperationFactory, dialect.getInOperatorMaxSize());
 		this.selectExecutor = newSelectExecutor(this.mappingStrategy, this.connectionConfiguration, dialect);
-		
-		// Transferring identifier manager InsertListener to here
-		addInsertListener(getMapping().getIdMapping().getIdentifierInsertionManager().getInsertListener());
-		addSelectListener(getMapping().getIdMapping().getIdentifierInsertionManager().getSelectListener());
 	}
 	
 	protected PersistExecutor<C> newPersistExecutor() {

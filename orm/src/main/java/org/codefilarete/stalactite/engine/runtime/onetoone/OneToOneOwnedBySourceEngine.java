@@ -25,8 +25,6 @@ import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.function.Functions.NullProofFunction;
 import org.codefilarete.tool.function.Predicates;
 
-import static org.codefilarete.tool.function.Predicates.not;
-
 public class OneToOneOwnedBySourceEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
 	extends AbstractOneToOneEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> {
 	
@@ -78,7 +76,7 @@ public class OneToOneOwnedBySourceEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 			@Override
 			public void beforeUpdate(Iterable<? extends Duo<SRC, SRC>> payloads, boolean allColumnsStatement) {
 				// we only insert new instances
-				targetPersister.insert(Iterables.stream(payloads).map(duo -> targetProviderAsFunction.apply(duo.getLeft()))
+				targetPersister.persist(Iterables.stream(payloads).map(duo -> targetProviderAsFunction.apply(duo.getLeft()))
 						.filter(newInstancePredicate).collect(Collectors.toSet()));
 			}
 		});
@@ -109,10 +107,9 @@ public class OneToOneOwnedBySourceEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 	public void addDeleteCascade(boolean orphanRemoval) {
 		if (orphanRemoval) {
 			// adding cascade treatment: target is deleted after source deletion (because of foreign key constraint)
-			Predicate<TRGT> deletionPredicate = ((Predicate<TRGT>) Objects::nonNull).and(not(targetPersister.getMapping().getIdMapping()::isNew));
-			sourcePersister.addDeleteListener(new AfterDeleteSupport<>(targetPersister::delete, targetAccessor::get, deletionPredicate));
+			sourcePersister.addDeleteListener(new AfterDeleteSupport<>(targetPersister::delete, targetAccessor::get, Objects::nonNull));
 			// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
-			sourcePersister.addDeleteByIdListener(new AfterDeleteByIdSupport<>(targetPersister::delete, targetAccessor::get, deletionPredicate));
+			sourcePersister.addDeleteByIdListener(new AfterDeleteByIdSupport<>(targetPersister::delete, targetAccessor::get, Objects::nonNull));
 		} // else : no target entities deletion asked (no delete orphan) : nothing more to do than deleting the source entity
 	}
 	

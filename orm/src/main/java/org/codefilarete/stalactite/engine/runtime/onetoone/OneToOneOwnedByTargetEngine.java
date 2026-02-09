@@ -33,11 +33,11 @@ import org.codefilarete.stalactite.sql.statement.PreparedUpdate;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.IdentityMap;
+import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 
 import static org.codefilarete.tool.Nullable.nullable;
 import static org.codefilarete.tool.collection.Iterables.stream;
-import static org.codefilarete.tool.function.Predicates.not;
 
 public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
 		extends AbstractOneToOneEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> {
@@ -215,8 +215,19 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 					} // else both sides are null => nothing to do
 				}
 				
-				targetPersister.insert(newObjects);
-				targetPersister.update(existingEntities, allColumnsStatement);
+				// we look for entities to persist: left elements are the modified ones
+				Set<TRGT> toPersist = Iterables.stream(payloads)
+						.map(duo -> {
+							if (duo.getLeft() != null) {
+								// modified or newly-set entity in the relation, we add it for persistence
+								return getTarget(duo.getLeft());
+							} else {
+								return (TRGT) null;
+							}
+						}).filter(Objects::nonNull)
+						.collect(Collectors.toSet());
+				targetPersister.persist(toPersist);
+				
 				if (!orphanRemoval) {
 					targetPersister.updateById(nullifiedRelations);
 				}
@@ -241,10 +252,9 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 	public void addDeleteCascade(boolean orphanRemoval) {
 		if (orphanRemoval) {
 			// adding cascade treatment: target is deleted before source deletion (because of foreign key constraint)
-			Predicate<TRGT> deletionPredicate = ((Predicate<TRGT>) Objects::nonNull).and(not(targetPersister.getMapping().getIdMapping()::isNew));
-			sourcePersister.addDeleteListener(new BeforeDeleteSupport<>(targetPersister::delete, targetAccessor::get, deletionPredicate));
+			sourcePersister.addDeleteListener(new BeforeDeleteSupport<>(targetPersister::delete, targetAccessor::get, Objects::nonNull));
 			// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
-			sourcePersister.addDeleteByIdListener(new BeforeDeleteByIdSupport<>(targetPersister::delete, targetAccessor::get, deletionPredicate));
+			sourcePersister.addDeleteByIdListener(new BeforeDeleteByIdSupport<>(targetPersister::delete, targetAccessor::get, Objects::nonNull));
 		} else {
 			// no target entities deletion asked (no delete orphan) : we only need to nullify the relation
 			sourcePersister.addDeleteListener(new NullifyRelationColumnBeforeDelete(targetAccessor, targetPersister));
@@ -337,9 +347,7 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 		}
 		
 		private TRGT getTarget(SRC src) {
-			TRGT target = targetEntityProvider.get(src);
-			// We only delete persisted instances (for logic and to prevent from non matching row count error)
-			return target != null && !targetPersister.getMapping().getIdMapping().isNew(target) ? target : null;
+			return targetEntityProvider.get(src);
 		}
 	}
 	

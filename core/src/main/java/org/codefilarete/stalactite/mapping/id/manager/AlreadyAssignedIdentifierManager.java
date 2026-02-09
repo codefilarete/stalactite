@@ -64,12 +64,10 @@ public class AlreadyAssignedIdentifierManager<C, I> implements IdentifierInserti
 		return new JDBCBatchingIterator<>(entities, writeOperation, batchSize);
 	}
 	
-	@Override
 	public InsertListener<C> getInsertListener() {
 		return this.setPersistedFlagAfterInsertListener;
 	}
 	
-	@Override
 	public SelectListener<C, I> getSelectListener() {
 		return this.setPersistedFlagAfterSelectListener;
 	}

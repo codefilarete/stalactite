@@ -149,8 +149,7 @@ public class IdentifierManagerStep<C, I> extends AbstractIdentificationStep<C, I
 			Function<E, Boolean> isPersistedFunction = identifierType.isPrimitive()
 					? c -> PRIMITIVE_DEFAULT_VALUES.get(identifierType) == idAccessor.get(c)
 					: c -> idAccessor.get(c) != null;
-			fallbackMappingIdentifierManager = new AlreadyAssignedIdentifierManager<>(identifierType, c -> {
-			}, isPersistedFunction);
+			fallbackMappingIdentifierManager = new AlreadyAssignedIdentifierManager<>(identifierType, c -> {}, isPersistedFunction);
 		}
 		return fallbackMappingIdentifierManager;
 	}

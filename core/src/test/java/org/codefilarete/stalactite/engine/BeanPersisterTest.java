@@ -48,37 +48,6 @@ import static org.mockito.Mockito.when;
 class BeanPersisterTest {
 	
 	@Test
-	void constructor_mustIncludeIdMappingListener() {
-		TotoTable totoTable = new TotoTable("TotoTable");
-		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
-		ReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
-		Map<? extends ReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps.asMap(identifier, primaryKey);
-		IdentifierInsertionManager<Toto, Long> identifierInsertionManagerMock = mock(IdentifierInsertionManager.class);
-		when(identifierInsertionManagerMock.getIdentifierType()).thenReturn(Long.class);
-		InsertListener identifierManagerInsertListenerMock = mock(InsertListener.class);
-		when(identifierInsertionManagerMock.getInsertListener()).thenReturn(identifierManagerInsertListenerMock);
-		DefaultEntityMapping<Toto, Long, TotoTable> entityMapping = new DefaultEntityMapping<>(Toto.class, totoTable,
-																					  mapping, identifier,
-																					  identifierInsertionManagerMock);
-		BeanPersister<Toto, Long, TotoTable> testInstance = new BeanPersister<Toto, Long, TotoTable>(entityMapping, new DefaultDialect(),
-				new ConnectionConfigurationSupport(mock(CurrentThreadTransactionalConnectionProvider.class), 0)) {
-			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
-			@Override
-			protected void doInsert(Iterable entities) {
-			}
-			
-			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
-			@Override
-			protected void doUpdateById(Iterable<? extends Toto> entities) {
-			}
-		};
-		
-		Toto toto = new Toto();
-		testInstance.insert(toto);
-		verify(identifierManagerInsertListenerMock).afterInsert(ArgumentMatchers.eq(Arrays.asList(toto)));
-	}
-	
-	@Test
 	void persist() {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Integer> primaryKey = totoTable.addColumn("a", Integer.class).primaryKey();
@@ -86,10 +55,6 @@ class BeanPersisterTest {
 		Map<? extends ReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps.asMap(identifier, primaryKey);
 		IdentifierInsertionManager<Toto, Integer> identifierInsertionManagerMock = mock(IdentifierInsertionManager.class);
 		when(identifierInsertionManagerMock.getIdentifierType()).thenReturn(Integer.class);
-		InsertListener identifierManagerInsertListenerMock = mock(InsertListener.class);
-		when(identifierInsertionManagerMock.getInsertListener()).thenReturn(identifierManagerInsertListenerMock);
-		SelectListener identifierManagerSelectListenerMock = mock(SelectListener.class);
-		when(identifierInsertionManagerMock.getSelectListener()).thenReturn(identifierManagerSelectListenerMock);
 		DefaultEntityMapping<Toto, Integer, TotoTable> entityMapping = new DefaultEntityMapping<>(Toto.class, totoTable,
 																						 mapping, identifier,
 																						 identifierInsertionManagerMock);
@@ -124,8 +89,6 @@ class BeanPersisterTest {
 		verifyNoMoreInteractions(persistListener);
 		verifyNoMoreInteractions(insertListener);
 		verifyNoMoreInteractions(updateListener);
-		verifyNoMoreInteractions(identifierManagerInsertListenerMock);
-		verifyNoMoreInteractions(identifierManagerSelectListenerMock);
 		
 		// On persist of a never persisted instance (no id), insertion chain must be invoked 
 		Toto unPersisted = new Toto();
@@ -137,11 +100,7 @@ class BeanPersisterTest {
 		verify(persistListener).afterPersist(eq(Arrays.asSet(unPersisted)));
 		verify(insertListener).beforeInsert(eq(Arrays.asSet(unPersisted)));
 		verify(insertListener).afterInsert(eq(Arrays.asSet(unPersisted)));
-		verify(identifierManagerInsertListenerMock).beforeInsert(eq(Arrays.asSet(unPersisted)));
-		verify(identifierManagerInsertListenerMock).afterInsert(eq(Arrays.asSet(unPersisted)));
 		// no invocation of select listener because target of persist(..) method wasn't persisted
-		verify(identifierManagerSelectListenerMock, never()).beforeSelect(anyIterable());
-		verify(identifierManagerSelectListenerMock, never()).afterSelect(anySet());
 		
 		// On persist of a already persisted instance (with id), "rough update" chain must be invoked
 		testInstance.persist(persisted);
@@ -151,7 +110,7 @@ class BeanPersisterTest {
 		verify(updateListener).afterUpdate(updateArgCaptor.capture(), eq(true));
 		assertThat(updateArgCaptor.getValue()).containsExactly(new Duo<>(persisted, persisted));
 		
-		clearInvocations(insertListener, identifierManagerInsertListenerMock, updateListener, identifierManagerSelectListenerMock);
+		clearInvocations(insertListener, updateListener);
 		// mix
 		Toto totoInDatabase = new Toto(1, 2, 3);
 		mockedSelectAnswer.set(totoInDatabase);	// filling mock
@@ -160,10 +119,6 @@ class BeanPersisterTest {
 		testInstance.persist(Arrays.asList(unPersisted, totoModifiedFromDatabase));
 		verify(insertListener).beforeInsert(eq(Arrays.asSet(unPersisted)));
 		verify(insertListener).afterInsert(eq(Arrays.asSet(unPersisted)));
-		verify(identifierManagerInsertListenerMock).beforeInsert(eq(Arrays.asSet(unPersisted)));
-		verify(identifierManagerInsertListenerMock).afterInsert(eq(Arrays.asSet(unPersisted)));
-		verify(identifierManagerSelectListenerMock).beforeSelect(eq(Arrays.asHashSet(1)));
-		verify(identifierManagerSelectListenerMock).afterSelect(eq(Arrays.asHashSet(totoInDatabase)));
 		verify(updateListener).beforeUpdate(updateArgCaptor.capture(), eq(true));
 		assertThat(updateArgCaptor.getValue()).containsExactly(new Duo<>(totoModifiedFromDatabase, totoInDatabase));
 		verify(updateListener).afterUpdate(updateArgCaptor.capture(), eq(true));
@@ -180,7 +135,6 @@ class BeanPersisterTest {
 		IdentifierInsertionManager<Toto, Long> identifierInsertionManagerMock = mock(IdentifierInsertionManager.class);
 		when(identifierInsertionManagerMock.getIdentifierType()).thenReturn(Long.class);
 		InsertListener identifierManagerInsertListenerMock = mock(InsertListener.class);
-		when(identifierInsertionManagerMock.getInsertListener()).thenReturn(identifierManagerInsertListenerMock);
 		DefaultEntityMapping<Toto, Long, TotoTable> entityMapping = new DefaultEntityMapping<>(Toto.class, totoTable,
 																					  mapping, identifier,
 																					  identifierInsertionManagerMock);
@@ -205,8 +159,6 @@ class BeanPersisterTest {
 		testInstance.insert(toBeInserted);
 		verify(insertListener).beforeInsert(eq(Arrays.asList(toBeInserted)));
 		verify(insertListener).afterInsert(eq(Arrays.asList(toBeInserted)));
-		verify(identifierManagerInsertListenerMock).beforeInsert(eq(Arrays.asList(toBeInserted)));
-		verify(identifierManagerInsertListenerMock).afterInsert(eq(Arrays.asList(toBeInserted)));
 	}
 	
 	@Test
@@ -361,44 +313,5 @@ class BeanPersisterTest {
 		testInstance.deleteById(toBeDeleted);
 		verify(deleteListener).beforeDeleteById(eq(Arrays.asList(toBeDeleted)));
 		verify(deleteListener).afterDeleteById(eq(Arrays.asList(toBeDeleted)));
-	}
-	
-	@Test
-	void select() {
-		TotoTable totoTable = new TotoTable("TotoTable");
-		Column<TotoTable, Integer> primaryKey = totoTable.addColumn("a", Integer.class).primaryKey();
-		ReversibleAccessor<Toto, Integer> identifier = Accessors.accessorByField(Toto.class, "a");
-		Map<? extends ReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps.asMap(identifier, primaryKey);
-		IdentifierInsertionManager<Toto, Integer> identifierInsertionManagerMock = mock(IdentifierInsertionManager.class);
-		when(identifierInsertionManagerMock.getIdentifierType()).thenReturn(Integer.class);
-		InsertListener identifierManagerInsertListenerMock = mock(InsertListener.class);
-		when(identifierInsertionManagerMock.getInsertListener()).thenReturn(identifierManagerInsertListenerMock);
-		SelectListener identifierManagerSelectListenerMock = mock(SelectListener.class);
-		when(identifierInsertionManagerMock.getSelectListener()).thenReturn(identifierManagerSelectListenerMock);
-		DefaultEntityMapping<Toto, Integer, TotoTable> entityMapping = new DefaultEntityMapping<>(Toto.class, totoTable,
-																						 mapping, identifier,
-																						 identifierInsertionManagerMock);
-		BeanPersister<Toto, Integer, TotoTable> testInstance = new BeanPersister<Toto, Integer, TotoTable>(entityMapping, new DefaultDialect(),
-				new ConnectionConfigurationSupport(mock(CurrentThreadTransactionalConnectionProvider.class), 0)) {
-			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
-			@Override
-			protected void doInsert(Iterable entities) {
-			}
-			
-			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
-			@Override
-			protected void doUpdate(Iterable<? extends Duo<Toto, Toto>> entities, boolean allColumnsStatement) {
-			}
-			
-			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
-			@Override
-			protected Set<Toto> doSelect(Iterable<Integer> ids) {
-				return Iterables.collect(ids, id -> new Toto(id, null, null), HashSet::new);
-			}
-		};
-		
-		Toto selectedToto = testInstance.select(1);
-		verify(identifierManagerSelectListenerMock).beforeSelect(eq(Arrays.asSet(1)));
-		verify(identifierManagerSelectListenerMock).afterSelect(eq(Arrays.asHashSet(selectedToto)));
 	}
 }
