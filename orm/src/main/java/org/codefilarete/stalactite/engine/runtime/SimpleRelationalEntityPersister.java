@@ -99,11 +99,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 		this.entityFinder = new RelationalEntityFinder<>(entityJoinTree, this, persister.getConnectionProvider(), dialect);
 		this.criteriaSupport = new EntityCriteriaSupport<>(entityJoinTree);
 		// we redirect all invocations to ourselves because targeted methods invoke their listeners
-		if (mainMappingStrategy.getIdMapping().getIdentifierInsertionManager() instanceof AlreadyAssignedIdentifierManager) {
-			this.persistExecutor = new AlreadyAssignedIdentifierPersistExecutor<>(this);
-		} else {
-			this.persistExecutor = new DefaultPersistExecutor<>(this);
-		}
+		this.persistExecutor = PersistExecutor.forPersister(this);
 	}
 	
 	public SimpleRelationalEntityPersister(DefaultEntityMapping<C, I, T> mainMappingStrategy,
@@ -116,11 +112,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 		this.entityFinder = new RelationalEntityFinder<>(entityJoinTree, this, persister.getConnectionProvider(), dialect);
 		this.criteriaSupport = new EntityCriteriaSupport<>(entityJoinTree);
 		// we redirect all invocations to ourselves because targeted methods invoke their listeners
-		if (mainMappingStrategy.getIdMapping().getIdentifierInsertionManager() instanceof AlreadyAssignedIdentifierManager) {
-			this.persistExecutor = new AlreadyAssignedIdentifierPersistExecutor<>(this);
-		} else {
-			this.persistExecutor = new DefaultPersistExecutor<>(this);
-		}
+		this.persistExecutor = PersistExecutor.forPersister(this);
 		
 		if (versioningStrategy != null) {
 			getUpdateExecutor().setVersioningStrategy(versioningStrategy);

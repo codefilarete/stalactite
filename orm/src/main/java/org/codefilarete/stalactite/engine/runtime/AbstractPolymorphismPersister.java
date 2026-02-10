@@ -65,11 +65,7 @@ public abstract class AbstractPolymorphismPersister<C, I>
 		this.mainPersister = mainPersister;
 		this.subEntitiesPersisters = (Map<Class<C>, ConfiguredRelationalPersister<C, I>>) subEntitiesPersisters;
 		this.entityFinder = entityFinder;
-		if (mainPersister.getMapping().getIdMapping().getIdentifierInsertionManager() instanceof AlreadyAssignedIdentifierManager) {
-			this.persistExecutor = new AlreadyAssignedIdentifierPersistExecutor<>(this);
-		} else {
-			this.persistExecutor = new DefaultPersistExecutor<>(this);
-		}
+		this.persistExecutor = PersistExecutor.forPersister(this);
 	}
 	
 	@Override

@@ -9,18 +9,30 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
+import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 
 /**
- * Contract for persisting entities.
+ * Defines the contract for persisting entities by automatically determining whether to insert or update them
+ * based on the entity's presence in the database.
  * 
+ * @param <C> the entity type to persist
  * @author Guillaume Mary
  */
 public interface PersistExecutor<C> {
 	
 	void persist(Iterable<? extends C> entities);
+	
+	static <C, I> PersistExecutor<C> forPersister(ConfiguredPersister<C, I> persister) {
+		if (persister.getMapping().getIdMapping().getIdentifierInsertionManager() instanceof AlreadyAssignedIdentifierManager) {
+			return new AlreadyAssignedIdentifierPersistExecutor<>(persister);
+		} else {
+			return new DefaultPersistExecutor<>(persister);
+		}
+	}
 	
 	/**
 	 * Implementation for already-assigned identifier.
@@ -87,8 +99,13 @@ public interface PersistExecutor<C> {
 	}
 	
 	/**
-	 * A default {@link PersistExecutor} that points to {@link #persist(Iterable, NewEntitiesCollector, SelectExecutor, UpdateExecutor, InsertExecutor, Function)}
-	 * @param <C>
+	 * Default implementation of {@link PersistExecutor} that delegates persistence operations to the underlying
+	 * {@link EntityPersister}. All database operations (select, insert, update) are delegated to the
+	 * {@link EntityPersister} instance. Determines whether to insert or update entities based on
+	 * {@link EntityPersister#isNew(Object)}.
+	 * 
+	 * @param <C> the entity type to persist
+	 * @param <I> the entity identifier type
 	 * @author Guillaume Mary
 	 */
 	class DefaultPersistExecutor<C, I> implements PersistExecutor<C> {
