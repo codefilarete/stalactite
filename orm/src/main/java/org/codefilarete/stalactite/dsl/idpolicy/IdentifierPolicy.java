@@ -16,8 +16,7 @@ import org.codefilarete.tool.function.Sequence;
  * @see IdentifierInsertionManager
  */
 @SuppressWarnings("java:S2326" /* Unused generics is necessary to caller signature (mapKey) to make policy identifier type match entity identifier one */)
-public
-interface IdentifierPolicy<ID> {
+public interface IdentifierPolicy<ID> {
 	/**
 	 * Policy for entities that have their id given by the database after insert, such as increment column, implying that generated values can be
 	 * read through {@link PreparedStatement#getGeneratedKeys()}
@@ -85,8 +84,23 @@ interface IdentifierPolicy<ID> {
 	
 	/**
 	 * Policy for entities that have their id already fixed and doesn't require the persistence engine to generate an identifier for them.
+	 * Meanwhile, this policy has a trade-off on persist(..) operation: without knowing how to determine if
+	 * entities are new or not, a database round-trip must be performed to get the ones already present in the database
+	 * and then choose to update them, not insert them. This round-trip may impact performances. That's why it is
+	 * preferable to use {@link #alreadyAssigned(Consumer, Function)} to provide a way to get the state of the entities.
+	 * 
+	 * @param <C> entity type
+	 * @param <I> identifier type
+	 * @return a new policy that will be used to know the persistent state of entities
+	 */
+	static <C, I> AlreadyAssignedIdentifierPolicy<C, I> alreadyAssigned() {
+		return IdentifierPolicy.alreadyAssigned(null, null);
+	}
+	
+	/**
+	 * Policy for entities that have their id already fixed and doesn't require the persistence engine to generate an identifier for them.
 	 * Meanwhile, this policy requires those instances to be capable of being marked as persisted (after insert to prevent the engine from
-	 * trying to persist again an already persisted instance, for instance). A basic implementation can be a boolean switch on entity.
+	 * trying to persist again an already persisted instance, for example). A basic implementation can be a boolean switch on entity.
 	 *
 	 * @param markAsPersistedFunction the {@link Consumer} that allows marking the entity as "inserted in database"
 	 * @param isPersistedFunction the {@link Function} that allows knowing if entity was already inserted in database

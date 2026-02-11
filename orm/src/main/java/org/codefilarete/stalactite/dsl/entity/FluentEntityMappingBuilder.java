@@ -127,6 +127,32 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 *
 	 * @param getter getter of the property to be used as key
 	 * @param compositeKeyMappingBuilder a configuration that details the properties that composes the identifier
+	 * @return an object for configuration chaining
+	 */
+	default FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapCompositeKey(SerializableFunction<C, I> getter,
+																				CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder) {
+		return mapCompositeKey(getter, compositeKeyMappingBuilder, null, null);
+	}
+	
+	/**
+	 * Maps given property as a composite-identifier. The {@link IdentifierPolicy} is already-assigned.
+	 * By default, the entity no-arg constructor is used to instantiate them.
+	 *
+	 * @param setter setter of the property to be used as key
+	 * @param compositeKeyMappingBuilder a configuration that details the properties that composes the identifier
+	 * @return an object for configuration chaining
+	 */
+	default FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapCompositeKey(SerializableBiConsumer<C, I> setter,
+																				CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder) {
+		return mapCompositeKey(setter, compositeKeyMappingBuilder, null, null);
+	}
+	
+	/**
+	 * Maps given property as a composite-identifier. The {@link IdentifierPolicy} is already-assigned.
+	 * By default, the entity no-arg constructor is used to instantiate them.
+	 *
+	 * @param getter getter of the property to be used as key
+	 * @param compositeKeyMappingBuilder a configuration that details the properties that composes the identifier
 	 * @param markAsPersistedFunction the {@link Consumer} that allows to mark the entity as "inserted in database"
 	 * @param isPersistedFunction the {@link Function} that allows to know if entity was already inserted in database
 	 * @return an object for configuration chaining

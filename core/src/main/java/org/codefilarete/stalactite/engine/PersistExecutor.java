@@ -1,9 +1,8 @@
 package org.codefilarete.stalactite.engine;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -11,7 +10,9 @@ import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
+import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 
@@ -19,15 +20,28 @@ import org.codefilarete.tool.collection.Maps;
  * Defines the contract for persisting entities by automatically determining whether to insert or update them
  * based on the entity's presence in the database.
  * 
- * @param <C> the entity type to persist
- * @author Guillaume Mary
+ * @param <C> The type of entities to be persisted.
  */
 public interface PersistExecutor<C> {
 	
 	void persist(Iterable<? extends C> entities);
 	
+	
+	/**
+	 * Shortcut for {@link #persist(Iterable)} that avoids {@link Iterable} creation.
+	 *
+	 * @param entities an array of entities of type C to be persisted
+	 */
+	default void persist(C... entities) {
+		persist(Arrays.asSet(entities));
+	}
+	
 	static <C, I> PersistExecutor<C> forPersister(ConfiguredPersister<C, I> persister) {
-		if (persister.getMapping().getIdMapping().getIdentifierInsertionManager() instanceof AlreadyAssignedIdentifierManager) {
+		IdentifierInsertionManager<C, I> identifierInsertionManager = persister.getMapping().getIdMapping().getIdentifierInsertionManager();
+		if (identifierInsertionManager instanceof AlreadyAssignedIdentifierManager
+				&& ((AlreadyAssignedIdentifierManager<C, I>) identifierInsertionManager).getIsPersistedFunction() == null) {
+			// if the "IsPersistedFunction" is not null, we'll produce a DefaultPersistExecutor because it bases
+			// its algorithm on persister::isNew which is supplied by the IsPersistedFunction
 			return new AlreadyAssignedIdentifierPersistExecutor<>(persister);
 		} else {
 			return new DefaultPersistExecutor<>(persister);
@@ -35,13 +49,16 @@ public interface PersistExecutor<C> {
 	}
 	
 	/**
-	 * Implementation for already-assigned identifier.
+	 * Implementation for already-assigned identifier policies that doesn't provide persisted-state-management lambdas.
 	 * Algorithm is based on a database query that retrieves existing entities to determine if they should be inserted
 	 * or updated.
+	 * The counter-part of it versus {@link DefaultPersistExecutor} is that it queries the database for all given
+	 * entities, not only modified ones. Hence, it creates some heavier back-and-forth with the database which creates
+	 * a database and a memory overload.
 	 */
 	class AlreadyAssignedIdentifierPersistExecutor<C, I> implements PersistExecutor<C> {
 		
-		private final EntityPersister<C, I> persister;
+		protected final EntityPersister<C, I> persister;
 		
 		public AlreadyAssignedIdentifierPersistExecutor(EntityPersister<C, I> persister) {
 			this.persister = persister;
@@ -91,8 +108,9 @@ public interface PersistExecutor<C> {
 			if (!toUpdate.isEmpty()) {
 				// creating couples of modified and unmodified entities
 				Map<C, C> modifiedVSunmodified = Maps.innerJoin(modifiedEntitiesPerId, existingEntitiesPerId);
-				List<Duo<C, C>> updateArg = new ArrayList<>();
-				modifiedVSunmodified.forEach((k, v) -> updateArg.add(new Duo<>(k, v)));
+				Set<Duo<C, C>> updateArg = Iterables.collect(modifiedVSunmodified.entrySet(),
+						entry -> new Duo<>(entry.getKey(), entry.getValue()),
+						LinkedHashSet::new);
 				updater.update(updateArg, true);
 			}
 		}
@@ -100,8 +118,7 @@ public interface PersistExecutor<C> {
 	
 	/**
 	 * Default implementation of {@link PersistExecutor} that delegates persistence operations to the underlying
-	 * {@link EntityPersister}. All database operations (select, insert, update) are delegated to the
-	 * {@link EntityPersister} instance. Determines whether to insert or update entities based on
+	 * {@link EntityPersister}. Determines whether to insert or update entities based on
 	 * {@link EntityPersister#isNew(Object)}.
 	 * 
 	 * @param <C> the entity type to persist
@@ -165,8 +182,9 @@ public interface PersistExecutor<C> {
 				Map<I, C> existingEntitiesPerId = Iterables.map(selector.select(Iterables.collect(toUpdate, idProvider, HashSet::new)), idProvider);
 				Map<I, C> modifiedEntitiesPerId = Iterables.map(toUpdate, idProvider);
 				Map<C, C> modifiedVSunmodified = Maps.innerJoin(modifiedEntitiesPerId, existingEntitiesPerId);
-				List<Duo<C, C>> updateArg = new ArrayList<>();
-				modifiedVSunmodified.forEach((k, v) -> updateArg.add(new Duo<>(k, v)));
+				Set<Duo<C, C>> updateArg = Iterables.collect(modifiedVSunmodified.entrySet(),
+						entry -> new Duo<>(entry.getKey(), entry.getValue()),
+						LinkedHashSet::new);
 				updater.update(updateArg, true);
 			}
 		}

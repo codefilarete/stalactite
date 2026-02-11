@@ -90,7 +90,7 @@ class JoinTablePolymorphismBuilderTest {
 		ddlDeployer.deployDDL();
 		
 		Question theUltimateQuestion = new Question(1).setLabel("What's the answer to Life, the Universe and Everything ?");
-		configuration.persist(Arrays.asList(theUltimateQuestion));
+		configuration.persist(theUltimateQuestion);
 		
 		assertThat(theUltimateQuestion.getId()).isEqualTo(1);
 	}
@@ -109,7 +109,7 @@ class JoinTablePolymorphismBuilderTest {
 		ddlDeployer.deployDDL();
 		
 		Question theUltimateQuestion = new Question().setLabel("What's the answer to Life, the Universe and Everything ?");
-		configuration.persist(Arrays.asList(theUltimateQuestion));
+		configuration.persist(theUltimateQuestion);
 		
 		assertThat(theUltimateQuestion.getId()).isEqualTo(1);
 	}
@@ -137,7 +137,7 @@ class JoinTablePolymorphismBuilderTest {
 		ddlDeployer.deployDDL();
 		
 		Question theUltimateQuestion = new Question().setLabel("What's the answer to Life, the Universe and Everything ?");
-		configuration.persist(Arrays.asList(theUltimateQuestion));
+		configuration.persist(theUltimateQuestion);
 		
 		assertThat(theUltimateQuestion.getId()).isEqualTo(1);
 	}

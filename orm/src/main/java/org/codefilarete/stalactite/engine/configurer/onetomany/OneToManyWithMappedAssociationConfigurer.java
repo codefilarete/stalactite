@@ -1,14 +1,13 @@
 package org.codefilarete.stalactite.engine.configurer.onetomany;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorDefinition;
@@ -29,8 +28,8 @@ import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.Maps;
 
 import static org.codefilarete.tool.Nullable.nullable;
@@ -101,7 +100,8 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 				foreignKeyBuilder.addColumn(column);
 				foreignKeyColumnMapping.put(accessor, column);
 			});
-			mappedReverseColumns = new HashSet<>(foreignKeyColumnMapping.values());
+			// we use a stable set to keep tests stable, shouldn't impact performances
+			mappedReverseColumns = new KeepOrderSet<>(foreignKeyColumnMapping.values());
 			reverseColumnsValueProvider = srcid -> {
 				Map<Column<RIGHTTABLE, ?>, Object> result = new HashMap<>();
 				foreignKeyColumnMapping.forEach((accessor, column) -> {
@@ -121,7 +121,8 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 				foreignKeyBuilder.addColumn((Column<RIGHTTABLE, ?>) column);
 				foreignKeyColumnMapping.put(accessor, (Column<RIGHTTABLE, ?>) column);
 			});
-			mappedReverseColumns = new HashSet<>(foreignKeyColumnMapping.values());
+			// we use a stable set to keep tests stable, shouldn't impact performances
+			mappedReverseColumns = new KeepOrderSet<>(foreignKeyColumnMapping.values());
 			reverseColumnsValueProvider = srcid -> {
 				Map<Column<RIGHTTABLE, ?>, Object> result = new HashMap<>();
 				foreignKeyColumnMapping.forEach((accessor, column) -> {
@@ -148,7 +149,8 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 				reverseColumn = (Column<RIGHTTABLE, ?>) relation.getReverseColumn();
 			}
 			foreignKeyBuilder.addColumn(reverseColumn);
-			mappedReverseColumns = Arrays.asHashSet(reverseColumn);
+			// we use a stable set to keep tests stable, shouldn't impact performances
+			mappedReverseColumns = new KeepOrderSet<>(reverseColumn);
 			reverseColumnsValueProvider = srcid -> {
 				Map<Column<RIGHTTABLE, ?>, Object> result = new HashMap<>();
 				result.put(reverseColumn, srcid);
@@ -165,7 +167,8 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 				foreignKeyBuilder.addColumn(fkColumn);
 				foreignKeyColumnMapping.put(pkColumn, fkColumn);
 			});
-			mappedReverseColumns = new HashSet<>(foreignKeyColumnMapping.values());
+			// we use a stable set to keep tests stable, shouldn't impact performances
+			mappedReverseColumns = new KeepOrderSet<>(foreignKeyColumnMapping.values());
 			reverseColumnsValueProvider = srcid -> {
 				IdentifierAssembler<SRCID, LEFTTABLE> identifierAssembler = associationConfiguration.getSrcPersister().getMapping().getIdMapping().<LEFTTABLE>getIdentifierAssembler();
 				Map<Column<LEFTTABLE, ?>, ?> columnValues = identifierAssembler.getColumnValues(srcid);

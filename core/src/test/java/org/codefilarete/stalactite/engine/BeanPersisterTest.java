@@ -116,7 +116,7 @@ class BeanPersisterTest {
 		mockedSelectAnswer.set(totoInDatabase);	// filling mock
 		Toto totoModifiedFromDatabase = new Toto(1, 2, 4);
 		
-		testInstance.persist(Arrays.asList(unPersisted, totoModifiedFromDatabase));
+		testInstance.persist(unPersisted, totoModifiedFromDatabase);
 		verify(insertListener).beforeInsert(eq(Arrays.asSet(unPersisted)));
 		verify(insertListener).afterInsert(eq(Arrays.asSet(unPersisted)));
 		verify(updateListener).beforeUpdate(updateArgCaptor.capture(), eq(true));

@@ -10,6 +10,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderMap;
 
 /**
  * Describes the way a composed identifier is read and written to a database.
@@ -45,7 +46,8 @@ public abstract class ComposedIdentifierAssembler<I, T extends Table<T>> impleme
 	
 	@Override
 	public Map<Column<T, ?>, ?> getColumnValues(Iterable<I> ids) {
-		Map<Column<T, ?>, Object> pkValues = new HashMap<>();
+		// we return a stable set to keep tests stable, shouldn't impact performances
+		Map<Column<T, ?>, Object> pkValues = new KeepOrderMap<>();
 		// we must pass a single value when expected, else ExpandableStatement may be confused when applying them
 		List<I> idsAsList = Iterables.asList(ids);
 		if (idsAsList.size() == 1) {

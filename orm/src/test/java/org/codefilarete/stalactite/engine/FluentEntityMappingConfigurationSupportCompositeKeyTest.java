@@ -4,12 +4,18 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.log4j.AppenderSkeleton;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.apache.log4j.spi.LoggingEvent;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
@@ -32,8 +38,10 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
+import org.codefilarete.stalactite.sql.statement.SQLOperation;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +54,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.dsl.MappingEase.compositeKeyBuilder;
 import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
 import static org.codefilarete.stalactite.dsl.MappingEase.subentityBuilder;
+import static org.mockito.Mockito.mock;
 
 public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	
@@ -768,6 +777,87 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		}
 		
 		@Test
+		void oneToMany_noPersistedStateManagingLambdas_persistIsBasedOnDatabaseSelect() {
+			dialect.getDmlGenerator().sortColumnsAlphabetically();	// for steady checks on SQL orders
+			
+			// preparing log system to capture logs
+			Logger logger = LogManager.getLogger(SQLOperation.class);
+			Level currentLevel = logger.getLevel();
+			logger.setLevel(Level.DEBUG);
+			MemoryAppender memoryAppender = new MemoryAppender();
+			logger.addAppender(memoryAppender);
+			
+			EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
+					.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
+							.map(PersonId::getFirstName)
+							.map(PersonId::getLastName)
+							.map(PersonId::getAddress))
+					.map(Person::getAge)
+					.mapOneToMany(Person::getPets, entityBuilder(Pet.class, PetId.class)
+							.mapCompositeKey(Pet::getId, compositeKeyBuilder(PetId.class)
+									.map(PetId::getName)
+									.map(PetId::getRace)
+									.map(PetId::getAge)))
+					.mappedBy(Pet::getOwner)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person dummyPerson = new Person(new PersonId("John", "Do", "nowhere"));
+			dummyPerson.addPet(new Pet(new PetId("Pluto", "Dog", 4)));
+			dummyPerson.addPet(new Pet(new PetId("Rantanplan", "Dog", 5)));
+			dummyPerson.setAge(35);
+			
+			personPersister.persist(dummyPerson);
+			
+			assertThat(memoryAppender.getEvents())
+					.extracting(LoggingEvent::getMessage)
+					.containsExactlyElementsOf(Arrays.asList(
+							"select Person.age as Person_age, Person.firstName as Person_firstName, Person.lastName as Person_lastName, Person.address as Person_address, Pet.name as Pet_name, Pet.race as Pet_race, Pet.age as Pet_age from Person left outer join Pet as Pet on Person.firstName = Pet.ownerFirstName and Person.lastName = Pet.ownerLastName and Person.address = Pet.ownerAddress where (Person.firstName, Person.lastName, Person.address) in ((?, ?, ?))",
+							"Batching statement 1 times",
+							"insert into Person(address, age, firstName, lastName) values (?, ?, ?, ?)",
+							"select Pet.name as Pet_name, Pet.race as Pet_race, Pet.age as Pet_age from Pet where (Pet.name, Pet.race, Pet.age) in ((?, ?, ?), (?, ?, ?))",
+							"Batching statement 2 times",
+							"insert into Pet(age, name, ownerAddress, ownerFirstName, ownerLastName, race) values (?, ?, ?, ?, ?, ?)"
+					));
+			
+			Person loadedPerson = personPersister.select(dummyPerson.getId());
+			assertThat(loadedPerson.getPets())
+					// we don't take "owner" into account because Person doesn't implement equals/hashcode
+					.usingRecursiveFieldByFieldElementComparatorIgnoringFields("owner")
+					.containsExactlyInAnyOrderElementsOf(dummyPerson.getPets());
+			Set<PersonId> personIds = Iterables.collect(loadedPerson.getPets(), pet -> pet.getOwner().getId(), HashSet::new);
+			assertThat(personIds).containsExactly(dummyPerson.getId());
+			
+			// changing value to check for database update
+			loadedPerson.setAge(36);
+			loadedPerson.addPet(new Pet(new PetId("Schrodinger", "Cat", -42)));
+			loadedPerson.removePet(new PetId("Rantanplan", "Dog", 5));
+			
+			memoryAppender.getEvents().clear();
+			personPersister.persist(loadedPerson);
+			
+			assertThat(memoryAppender.getEvents())
+					.extracting(LoggingEvent::getMessage)
+					.containsExactlyElementsOf(Arrays.asList(
+							"select Person.age as Person_age, Person.firstName as Person_firstName, Person.lastName as Person_lastName, Person.address as Person_address, Pet.name as Pet_name, Pet.race as Pet_race, Pet.age as Pet_age from Person left outer join Pet as Pet on Person.firstName = Pet.ownerFirstName and Person.lastName = Pet.ownerLastName and Person.address = Pet.ownerAddress where (Person.firstName, Person.lastName, Person.address) in ((?, ?, ?))",
+							"Batching statement 1 times",
+							"update Person set age = ? where firstName = ? and lastName = ? and address = ?",
+							"Batching statement 1 times",
+							"update Pet set ownerAddress = ?, ownerFirstName = ?, ownerLastName = ? where name = ? and race = ? and age = ?",
+							"Batching statement 1 times",
+							"update Pet set ownerAddress = ?, ownerFirstName = ?, ownerLastName = ? where name = ? and race = ? and age = ?",
+							"select Pet.name as Pet_name, Pet.race as Pet_race, Pet.age as Pet_age from Pet where (Pet.name, Pet.race, Pet.age) in ((?, ?, ?))",
+							"Batching statement 1 times",
+							"insert into Pet(age, name, ownerAddress, ownerFirstName, ownerLastName, race) values (?, ?, ?, ?, ?, ?)"
+					));
+			
+			// rolling back logger level to avoid next tests pollution
+			logger.setLevel(currentLevel);
+		}
+		
+		@Test
 		void manyToMany() {
 			EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
 					.mapCompositeKey(Person::getId, compositeKeyBuilder(PersonId.class)
@@ -1136,6 +1226,30 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 			petPersister.deleteById(cat);
 			catBreed = persistenceContext.newQuery("select catBreed from Cat", String.class).mapKey("name", String.class).execute(Accumulators.getFirst());
 			assertThat(catBreed).isNull();
+		}
+	}
+	
+	private static class MemoryAppender extends AppenderSkeleton {
+		
+		private final List<LoggingEvent> events = new ArrayList<>();
+		
+		public List<LoggingEvent> getEvents() {
+			return events;
+		}
+		
+		@Override
+		protected void append(LoggingEvent event) {
+			events.add(event);
+		}
+		
+		@Override
+		public void close() {
+			
+		}
+		
+		@Override
+		public boolean requiresLayout() {
+			return false;
 		}
 	}
 }

@@ -1,10 +1,17 @@
 package org.codefilarete.stalactite.engine;
 
 import javax.sql.DataSource;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.apache.log4j.AppenderSkeleton;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.apache.log4j.spi.LoggingEvent;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.model.Timestamp;
@@ -14,6 +21,7 @@ import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
+import org.codefilarete.stalactite.sql.statement.SQLOperation;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.Strings;
 import org.codefilarete.tool.collection.Arrays;
@@ -68,6 +76,64 @@ public class FluentEntityMappingConfigurationSupportAlreadyAssignedIdentifierTes
 		Car loadedCar = carPersister.select(42L);
 		assertThat(loadedCar).isEqualTo(dummyCar);
 		assertThat(loadedCar.isPersisted()).as("loaded car is mark as persisted").isTrue();
+	}
+	
+	@Test
+	void persist_alreadyPersistedEntity() {
+		dialect.getDmlGenerator().sortColumnsAlphabetically();	// for steady checks on SQL orders
+		
+		// preparing log system to capture logs
+		Logger logger = LogManager.getLogger(SQLOperation.class);
+		Level currentLevel = logger.getLevel();
+		logger.setLevel(Level.DEBUG);
+		MemoryAppender memoryAppender = new MemoryAppender();
+		logger.addAppender(memoryAppender);
+		
+		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
+				.mapKey(Car::getId, IdentifierPolicy.alreadyAssigned())
+				.map(Car::getModel)
+				.build(persistenceContext);
+		
+		// DML tests
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Car dummyCar1 = new Car(42L);
+		dummyCar1.setModel("Renault");
+		Car dummyCar2 = new Car(666L);
+		dummyCar2.setModel("Peugeot");
+		
+		// insert test
+		carPersister.persist(dummyCar1, dummyCar2);
+		
+		assertThat(memoryAppender.getEvents())
+				.extracting(LoggingEvent::getMessage)
+				.containsExactlyElementsOf(Arrays.asList(
+						"select Car.model as Car_model, Car.id as Car_id from Car where Car.id in (?, ?)",
+						"Batching statement 2 times",
+						"insert into Car(id, model) values (?, ?)"
+				));
+		
+		// select test
+		Car loadedCar = carPersister.select(42L);
+		
+		loadedCar.setModel("Peugeot");
+		carPersister.persist(loadedCar, dummyCar2);
+		
+		assertThat(memoryAppender.getEvents())
+				.extracting(LoggingEvent::getMessage)
+				.containsExactlyElementsOf(Arrays.asList(
+						"select Car.model as Car_model, Car.id as Car_id from Car where Car.id in (?, ?)",
+						"Batching statement 2 times",
+						"insert into Car(id, model) values (?, ?)",
+						"select Car.model as Car_model, Car.id as Car_id from Car where Car.id in (?)",
+						"select Car.model as Car_model, Car.id as Car_id from Car where Car.id in (?, ?)",
+						"Batching statement 1 times",
+						"update Car set model = ? where id = ?"
+				));
+		
+		// rolling back logger level to avoid next tests pollution
+		logger.setLevel(currentLevel);
 	}
 	
 	@Test
@@ -409,6 +475,31 @@ public class FluentEntityMappingConfigurationSupportAlreadyAssignedIdentifierTes
 
 		public void setCar(Car car) {
 			this.car = car;
+		}
+	}
+	
+	
+	private static class MemoryAppender extends AppenderSkeleton {
+		
+		private final List<LoggingEvent> events = new ArrayList<>();
+		
+		public List<LoggingEvent> getEvents() {
+			return events;
+		}
+		
+		@Override
+		protected void append(LoggingEvent event) {
+			events.add(event);
+		}
+		
+		@Override
+		public void close() {
+			
+		}
+		
+		@Override
+		public boolean requiresLayout() {
+			return false;
 		}
 	}
 }

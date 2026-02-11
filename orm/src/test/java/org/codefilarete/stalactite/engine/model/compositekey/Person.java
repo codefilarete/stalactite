@@ -1,8 +1,9 @@
 package org.codefilarete.stalactite.engine.model.compositekey;
 
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+
+import org.codefilarete.tool.collection.KeepOrderSet;
 
 public class Person {
 	
@@ -12,7 +13,7 @@ public class Person {
 	
 	private House house;
 	
-	private Set<Pet> pets = new HashSet<>();
+	private Set<Pet> pets = new KeepOrderSet<>();
 	
 	public Person() {
 	}

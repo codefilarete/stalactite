@@ -80,7 +80,7 @@ abstract class PersisterITTest extends DatabaseIntegrationTest {
 		
 		Toto toBeInserted = new Toto(null, 20, 200);
 		Toto toBeUpdated = new Toto(persistedInstanceID, 11, 111);
-		testInstance.persist(Arrays.asList(toBeInserted, toBeUpdated));
+		testInstance.persist(toBeInserted, toBeUpdated);
 		
 		ResultSetIterator<Map> resultSetIterator = new ResultSetIterator<Map>() {
 			@Override

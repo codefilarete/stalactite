@@ -331,7 +331,7 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	 * @param mappingStrategy the strategy that should be used to persist the member
 	 */
 	public <O> void put(ReversibleAccessor<C, O> property, EmbeddedBeanMapping<O, T> mappingStrategy) {
-		embeddedMappings.put((ReversibleAccessor) property, (EmbeddedBeanMapping) mappingStrategy);
+		embeddedMappings.put(property, mappingStrategy);
 		// update columns lists
 		addInsertableColumns(mappingStrategy);
 		addUpdatableColumns(mappingStrategy);
@@ -461,7 +461,8 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	
 	@Override
 	public Iterable<Column<T, ?>> getVersionedKeys() {
-		Set<Column<T, ?>> columns = new HashSet<>();
+		// we return a stable set to keep tests stable, shouldn't impact performances
+		Set<Column<T, ?>> columns = new KeepOrderSet<>();
 		if (versioningMapping != null) {
 			columns.add(versioningMapping.getRight());
 		}
