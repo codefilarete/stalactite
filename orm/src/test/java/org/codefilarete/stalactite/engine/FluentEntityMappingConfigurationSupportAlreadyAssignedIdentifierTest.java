@@ -117,16 +117,13 @@ public class FluentEntityMappingConfigurationSupportAlreadyAssignedIdentifierTes
 		// select test
 		Car loadedCar = carPersister.select(42L);
 		
+		memoryAppender.getEvents().clear();
 		loadedCar.setModel("Peugeot");
 		carPersister.persist(loadedCar, dummyCar2);
 		
 		assertThat(memoryAppender.getEvents())
 				.extracting(LoggingEvent::getMessage)
 				.containsExactlyElementsOf(Arrays.asList(
-						"select Car.model as Car_model, Car.id as Car_id from Car where Car.id in (?, ?)",
-						"Batching statement 2 times",
-						"insert into Car(id, model) values (?, ?)",
-						"select Car.model as Car_model, Car.id as Car_id from Car where Car.id in (?)",
 						"select Car.model as Car_model, Car.id as Car_id from Car where Car.id in (?, ?)",
 						"Batching statement 1 times",
 						"update Car set model = ? where id = ?"

@@ -844,6 +844,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 							"select Person.age as Person_age, Person.firstName as Person_firstName, Person.lastName as Person_lastName, Person.address as Person_address, Pet.name as Pet_name, Pet.race as Pet_race, Pet.age as Pet_age from Person left outer join Pet as Pet on Person.firstName = Pet.ownerFirstName and Person.lastName = Pet.ownerLastName and Person.address = Pet.ownerAddress where (Person.firstName, Person.lastName, Person.address) in ((?, ?, ?))",
 							"Batching statement 1 times",
 							"update Person set age = ? where firstName = ? and lastName = ? and address = ?",
+							// one of the updates if for Rantanplan removal to set the owner foreign keys values to null
 							"Batching statement 1 times",
 							"update Pet set ownerAddress = ?, ownerFirstName = ?, ownerLastName = ? where name = ? and race = ? and age = ?",
 							"Batching statement 1 times",
