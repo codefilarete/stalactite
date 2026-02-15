@@ -145,7 +145,7 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	}
 	
 	/**
-	 * Indicates if relation is owned by target entities table
+	 * Indicates if the relation is owned by target entity table
 	 * @return true if one of {@link #getReverseSetter()}, {@link #getReverseGetter()}, {@link #getReverseColumn()},
 	 * {@link #getReverseColumnName()} is not null
 	 */
@@ -176,16 +176,16 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	
 	/**
 	 * Clones this object to create a new one with the given accessor as prefix of current one.
-	 * Made to "slide" current instance with an accessor prefix. Used for embeddable objects with relation to make the relation being accessible
+	 * Made to shift the current instance with an accessor prefix. Used for embeddable objects with relation to make the relation being accessible
 	 * from the "root" entity.
 	 *
 	 * @param accessor the prefix of the clone to be created
-	 * @return a clones of this instance prefixed with the given accessor
+	 * @return a clone of this instance prefixed with the given accessor
 	 * @param <C> the root entity type that owns the embeddable which has this relation
 	 */
 	public <C> OneToOneRelation<C, TRGT, TRGTID> embedInto(Accessor<C, SRC> accessor) {
-		AccessorChain<C, TRGT> slidedTargetProvider = new AccessorChain<>(accessor, targetProvider);
-		OneToOneRelation<C, TRGT, TRGTID> result = new OneToOneRelation<>(slidedTargetProvider, this::isSourceTablePerClassPolymorphic, this::getTargetMappingConfiguration);
+		AccessorChain<C, TRGT> shiftedTargetProvider = new AccessorChain<>(accessor, targetProvider);
+		OneToOneRelation<C, TRGT, TRGTID> result = new OneToOneRelation<>(shiftedTargetProvider, this::isSourceTablePerClassPolymorphic, this::getTargetMappingConfiguration);
 		result.setRelationMode(this.getRelationMode());
 		result.setNullable(this.isNullable());
 		result.setFetchSeparately(this.isFetchSeparately());

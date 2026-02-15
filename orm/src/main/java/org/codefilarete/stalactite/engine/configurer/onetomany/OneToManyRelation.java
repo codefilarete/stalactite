@@ -284,8 +284,8 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	 * @param <C> the root entity type that owns the embeddable which has this relation
 	 */
 	public <C> OneToManyRelation<C, TRGT, TRGTID, S> embedInto(Accessor<C, SRC> accessor, Class<SRC> embeddedType) {
-		AccessorChain<C, S> slidedTargetProvider = new AccessorChain<>(accessor, collectionAccessor);
-		slidedTargetProvider.setNullValueHandler(new ValueInitializerOnNullValue() {
+		AccessorChain<C, S> shiftedTargetProvider = new AccessorChain<>(accessor, collectionAccessor);
+		shiftedTargetProvider.setNullValueHandler(new ValueInitializerOnNullValue() {
 			@Override
 			protected <T> T newInstance(Accessor<?, T> segmentAccessor, Class<T> valueType) {
 				if (segmentAccessor == accessor) {
@@ -303,7 +303,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		});
 		MappedByConfiguration<TRGT, C> slidedMappedByConfiguration = this.mappedByConfiguration.embedInto(accessor);
 		
-		OneToManyRelation<C, TRGT, TRGTID, S> result = new OneToManyRelation<>(slidedTargetProvider,
+		OneToManyRelation<C, TRGT, TRGTID, S> result = new OneToManyRelation<>(shiftedTargetProvider,
 				this::isSourceTablePerClassPolymorphic,
 				this.targetMappingConfiguration,
 				slidedMappedByConfiguration);
@@ -348,8 +348,17 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		
 		protected final ValueAccessPointMap<SRC, String> foreignKeyNameMapping = new ValueAccessPointMap<>();
 		
+		/**
+		 * Clones this object to create a new one with the given accessor as prefix of current one.
+		 * Made to shift the current instance with an accessor prefix. Used for embeddable objects with relation to make the relation being accessible
+		 * from the "root" entity.
+		 *
+		 * @param accessor the prefix of the clone to be created
+		 * @return a clone of this instance prefixed with the given accessor
+		 * @param <C> the root entity type that owns the embeddable which has this relation
+		 */
 		<C> MappedByConfiguration<TRGT, C> embedInto(Accessor<C, SRC> accessor) {
-			return new SlidedMappedByConfiguration<>(accessor, this);
+			return new ShiftedMappedByConfiguration<>(accessor, this);
 		}
 		
 		public void setReverseGetter(SerializableFunction<TRGT, SRC> reverseGetter) {
@@ -438,34 +447,33 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		}
 	}
 	
-	private static class SlidedMappedByConfiguration<C, TRGT, SRC> extends MappedByConfiguration<TRGT, C> {
+	private static class ShiftedMappedByConfiguration<C, TRGT, SRC> extends MappedByConfiguration<TRGT, C> {
 		
 		private final Mutator<TRGT, C> effectiveReverseMutator;
 		
-		public SlidedMappedByConfiguration(Accessor<C, SRC> accessor, MappedByConfiguration<TRGT, SRC> mappedByConfiguration) {
+		public ShiftedMappedByConfiguration(Accessor<C, SRC> accessor, MappedByConfiguration<TRGT, SRC> mappedByConfiguration) {
 			this.reverseColumn = mappedByConfiguration.reverseColumn;
 			this.reverseColumnName = mappedByConfiguration.reverseColumnName;
 			this.foreignKeyColumnMapping.putAll((Map<? extends ValueAccessPoint<C>, ? extends Column<Table<?>, Object>>) mappedByConfiguration.foreignKeyColumnMapping);
 			this.foreignKeyNameMapping.putAll((Map<? extends ValueAccessPoint<C>, ? extends String>) mappedByConfiguration.foreignKeyNameMapping);
 			// Note that we don't set this.reverseGetter nor this.reverseSetter because it raises generics problem, and we can afford not to store them.
 			
-			if (mappedByConfiguration.reverseGetter != null) {
+			// Creates shifted mutator when reverse accessor is present
+			if (mappedByConfiguration.reverseGetter != null || mappedByConfiguration.reverseSetter != null) {
+				Mutator<TRGT, SRC> localReverseSetter;
+				AccessorDefinition reverseDefinition;
+				if (mappedByConfiguration.reverseGetter != null) {
+					localReverseSetter = mappedByConfiguration.reverseGetter.toMutator();
+					reverseDefinition = AccessorDefinition.giveDefinition(mappedByConfiguration.reverseGetter);
+				} else {
+					localReverseSetter = mappedByConfiguration.reverseSetter;
+					reverseDefinition = AccessorDefinition.giveDefinition(mappedByConfiguration.reverseSetter);
+				}
 				AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(accessor);
-				AccessorDefinition reverseSetterDefinition = AccessorDefinition.giveDefinition(mappedByConfiguration.reverseGetter);
-				SlidedMutator<C> reverseSetter = new SlidedMutator<>(
+				this.effectiveReverseMutator = new ShiftedMutator<>(
 						accessor,
-						new AccessorDefinition(accessorDefinition.getDeclaringClass(), accessorDefinition.getName() + "." + reverseSetterDefinition.getName(), reverseSetterDefinition.getMemberType()),
-						mappedByConfiguration.reverseGetter.toMutator());
-				this.effectiveReverseMutator = reverseSetter;
-
-			} else if (mappedByConfiguration.reverseSetter != null) {
-				AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(accessor);
-				AccessorDefinition reverseSetterDefinition = AccessorDefinition.giveDefinition(mappedByConfiguration.reverseSetter);
-				SlidedMutator<C> reverseSetter = new SlidedMutator<>(
-						accessor,
-						new AccessorDefinition(accessorDefinition.getDeclaringClass(), accessorDefinition.getName() + "." + reverseSetterDefinition.getName(), reverseSetterDefinition.getMemberType()),
-						mappedByConfiguration.reverseSetter);
-				this.effectiveReverseMutator = reverseSetter;
+						new AccessorDefinition(accessorDefinition.getDeclaringClass(), accessorDefinition.getName() + "." + reverseDefinition.getName(), reverseDefinition.getMemberType()),
+						localReverseSetter);
 			} else {
 				this.effectiveReverseMutator = null;
 			}
@@ -480,12 +488,12 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 			return effectiveReverseMutator != null || super.isNotEmpty();
 		}
 		
-		private class SlidedMutator<C> implements Mutator<TRGT, C>, AccessorDefinitionDefiner<TRGT> {
+		private class ShiftedMutator<C> implements Mutator<TRGT, C>, AccessorDefinitionDefiner<TRGT> {
 			private final Accessor<C, SRC> accessor;
 			private final AccessorDefinition accessorDefinition;
 			private final Mutator<TRGT, SRC> reverseSetter;
 			
-			public SlidedMutator(Accessor<C, SRC> accessor, AccessorDefinition accessorDefinition, Mutator<TRGT, SRC> reverseSetter) {
+			public ShiftedMutator(Accessor<C, SRC> accessor, AccessorDefinition accessorDefinition, Mutator<TRGT, SRC> reverseSetter) {
 				this.accessor = accessor;
 				this.accessorDefinition = accessorDefinition;
 				this.reverseSetter = reverseSetter;

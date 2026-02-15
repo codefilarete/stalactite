@@ -165,16 +165,16 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 	
 	/**
 	 * Clones this object to create a new one with the given accessor as prefix of current one.
-	 * Made to "slide" current instance with an accessor prefix. Used for embeddable objects with relation to make the relation being accessible
+	 * Made to shift the current instance with an accessor prefix. Used for embeddable objects with relation to make the relation being accessible
 	 * from the "root" entity.
 	 *
 	 * @param accessor the prefix of the clone to be created
-	 * @return a clones of this instance prefixed with the given accessor
+	 * @return a clone of this instance prefixed with the given accessor
 	 * @param <E> the root entity type that owns the embeddable which has this relation
 	 */
 	public <E, CC extends Collection<E>> ManyToOneRelation<E, TRGT, TRGTID, CC> embedInto(Accessor<E, SRC> accessor) {
-		AccessorChain<E, TRGT> slidedTargetProvider = new AccessorChain<>(accessor, targetProvider);
-		ManyToOneRelation<E, TRGT, TRGTID, CC> result = new ManyToOneRelation<>(slidedTargetProvider, this::isSourceTablePerClassPolymorphic, this::getTargetMappingConfiguration);
+		AccessorChain<E, TRGT> shiftedTargetProvider = new AccessorChain<>(accessor, targetProvider);
+		ManyToOneRelation<E, TRGT, TRGTID, CC> result = new ManyToOneRelation<>(shiftedTargetProvider, this::isSourceTablePerClassPolymorphic, this::getTargetMappingConfiguration);
 		result.setRelationMode(this.getRelationMode());
 		result.setNullable(this.isNullable());
 		result.setFetchSeparately(this.isFetchSeparately());

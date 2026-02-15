@@ -72,25 +72,25 @@ public class RelationsStep<C, I> {
 				.flatMap(conf -> ((Collection<Inset<C, D>>) conf.getInsets()).stream()
 						// we must check the inherited class of the embeddable because they may also define some relations
 						.flatMap(inset -> Iterables.stream(inset.getConfigurationProvider().getConfiguration().inheritanceIterable())
-								.map(confInHierarchy -> new SlidedRelationalMappingConfiguration<>(rootEntityType, confInHierarchy, inset))))
-				.forEach(slidedRelationalMappingConfiguration -> {
-					relationConfigurer.configureRelations((RelationalMappingConfiguration<C>) slidedRelationalMappingConfiguration);
+								.map(confInHierarchy -> new ShiftedRelationalMappingConfiguration<>(rootEntityType, confInHierarchy, inset))))
+				.forEach(shiftedRelationalMappingConfiguration -> {
+					relationConfigurer.configureRelations((RelationalMappingConfiguration<C>) shiftedRelationalMappingConfiguration);
 				});
 	}
 	
 	/**
-	 * A {@link RelationalMappingConfiguration} which relations are slided by a prefix that is the accessor to the embeddable which is embedded
-	 * in the main entity.
+	 * A {@link RelationalMappingConfiguration} which relations are prepredended by a prefix that is the accessor to
+	 * the embeddable which is embedded in the main entity.
 	 *
 	 * @param <D>
 	 * @author Guillaume Mary
 	 */
-	private class SlidedRelationalMappingConfiguration<D> implements RelationalMappingConfiguration<C> {
+	private class ShiftedRelationalMappingConfiguration<D> implements RelationalMappingConfiguration<C> {
 		private final Class<C> rootEntityType;
 		private final RelationalMappingConfiguration<D> configuration;
 		private final Inset<C, D> inset;
 		
-		public SlidedRelationalMappingConfiguration(Class<C> rootEntityType, RelationalMappingConfiguration<D> configuration, Inset<C, D> inset) {
+		public ShiftedRelationalMappingConfiguration(Class<C> rootEntityType, RelationalMappingConfiguration<D> configuration, Inset<C, D> inset) {
 			this.rootEntityType = rootEntityType;
 			this.configuration = configuration;
 			this.inset = inset;
