@@ -133,9 +133,9 @@ public class RelationConfigurer<C, I> {
 		for (MapRelation<C, ?, ?, ? extends Map> map : entityMappingConfiguration.getMaps()) {
 			if (map.getKeyEntityConfigurationProvider() != null && map.getValueEntityConfigurationProvider() != null) {
 				EntityMappingConfiguration<Object, Object> keyEntityConfiguration = (EntityMappingConfiguration<Object, Object>) map.getKeyEntityConfigurationProvider().getConfiguration();
-				ConfiguredRelationalPersister<Object, Object> keyEntityPersister = persisterBuilder.build(keyEntityConfiguration);
+				ConfiguredRelationalPersister<Object, Object> keyEntityPersister = persisterBuilder.buildOrGiveExisting(keyEntityConfiguration);
 				EntityMappingConfiguration<Object, Object> valueEntityConfiguration = (EntityMappingConfiguration<Object, Object>) map.getValueEntityConfigurationProvider().getConfiguration();
-				ConfiguredRelationalPersister<Object, Object> valueEntityPersister = persisterBuilder.build(valueEntityConfiguration);
+				ConfiguredRelationalPersister<Object, Object> valueEntityPersister = persisterBuilder.buildOrGiveExisting(valueEntityConfiguration);
 				EntityAsKeyAndValueMapRelationConfigurer entityAsKeyMapRelationConfigurer = new EntityAsKeyAndValueMapRelationConfigurer<>(
 						(MapRelation) map,
 						sourcePersister,
@@ -150,7 +150,7 @@ public class RelationConfigurer<C, I> {
 				entityAsKeyMapRelationConfigurer.configure();
 			} else if (map.getKeyEntityConfigurationProvider() != null) {
 				EntityMappingConfiguration<Object, Object> keyEntityConfiguration = (EntityMappingConfiguration<Object, Object>) map.getKeyEntityConfigurationProvider().getConfiguration();
-				ConfiguredRelationalPersister<Object, Object> keyEntityPersister = persisterBuilder.build(keyEntityConfiguration);
+				ConfiguredRelationalPersister<Object, Object> keyEntityPersister = persisterBuilder.buildOrGiveExisting(keyEntityConfiguration);
 				EntityAsKeyMapRelationConfigurer entityAsKeyMapRelationConfigurer = new EntityAsKeyMapRelationConfigurer<>(
 						(MapRelation) map,
 						sourcePersister,
@@ -164,7 +164,7 @@ public class RelationConfigurer<C, I> {
 				entityAsKeyMapRelationConfigurer.configure();
 			} else if (map.getValueEntityConfigurationProvider() != null) {
 				EntityMappingConfiguration<Object, Object> valueEntityConfiguration = (EntityMappingConfiguration<Object, Object>) map.getValueEntityConfigurationProvider().getConfiguration();
-				ConfiguredRelationalPersister<Object, Object> valueEntityPersister = persisterBuilder.build(valueEntityConfiguration);
+				ConfiguredRelationalPersister<Object, Object> valueEntityPersister = persisterBuilder.buildOrGiveExisting(valueEntityConfiguration);
 				EntityAsValueMapRelationConfigurer entityAsValueMapRelationConfigurer = new EntityAsValueMapRelationConfigurer<>(
 						(MapRelation) map,
 						sourcePersister,

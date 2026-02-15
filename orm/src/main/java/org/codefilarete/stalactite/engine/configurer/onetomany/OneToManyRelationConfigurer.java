@@ -3,7 +3,6 @@ package org.codefilarete.stalactite.engine.configurer.onetomany;
 import java.util.Collection;
 import java.util.Set;
 
-import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
@@ -105,7 +104,7 @@ public class OneToManyRelationConfigurer<SRC, SRCID, TRGT, TRGTID> extends Abstr
 			cycleSolver.addCycleSolver(relationName, configurer);
 		} else {
 			Table targetTable = determineTargetTable(oneToManyRelation);
-			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = persisterBuilder.build(new EntityMappingConfigurationWithTable<>(targetMappingConfiguration, targetTable));
+			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = persisterBuilder.buildOrGiveExisting(new EntityMappingConfigurationWithTable<>(targetMappingConfiguration, targetTable));
 			configurer.configure(targetPersister);
 		}
 	}

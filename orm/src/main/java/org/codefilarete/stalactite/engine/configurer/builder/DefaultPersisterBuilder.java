@@ -13,6 +13,7 @@ import org.codefilarete.stalactite.engine.runtime.EntityIsManagedByPersisterAsse
 import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.tool.Reflections;
 
 public class DefaultPersisterBuilder {
 	
@@ -37,11 +38,57 @@ public class DefaultPersisterBuilder {
 		this.persisterRegistry = persisterRegistry;
 	}
 	
+	/**
+	 * Builds a {@link EntityPersister} instance for the entity mapping configuration provided by given argument.
+	 * An exception is thrown if an already existing {@link EntityPersister} for the entity type already exists
+	 * (the check doesn't account for potential differences in mapping configurations of the entity type).
+	 * 
+	 * @param <C> the type of the entity being persisted
+	 * @param <I> the type of the identifier for the entity
+	 * @param entityMappingConfiguration the provider for the entity mapping configuration used to construct the persister
+	 * @return the constructed {@link ConfiguredRelationalPersister} instance
+	 * @throws IllegalStateException if a persister for the entity type already exists
+	 */
 	public <C, I> ConfiguredRelationalPersister<C, I> build(EntityMappingConfigurationProvider<C, I> entityMappingConfiguration) {
 		return build(entityMappingConfiguration.getConfiguration());
 	}
 	
+	/**
+	 * Builds a {@link EntityPersister} instance for the given entity mapping configuration.
+	 * An exception is thrown if an already existing {@link EntityPersister} for the entity type already exists
+	 * (the check doesn't account for potential differences in mapping configurations of the entity type).
+	 * 
+	 * @param <C> the type of the entity being persisted
+	 * @param <I> the type of the identifier for the entity
+	 * @param entityMappingConfiguration the configuration used to map the entity and construct the persister
+	 * @return the constructed {@link ConfiguredRelationalPersister} instance for the given configuration
+	 * @throws IllegalStateException if a persister for the entity type already exists
+	 */
 	public <C, I> ConfiguredRelationalPersister<C, I> build(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
+		// If a persister already exists for the type, then we return it to manage the case of graph that declares twice / several times the same mapped type
+		// WARN : this does not take mapping configuration differences into account, so if configuration is different from previous one, since
+		// no check is done, then the very first persister is returned
+		EntityPersister<C, Object> existingPersister = persisterRegistry.getPersister(entityMappingConfiguration.getEntityType());
+		if (existingPersister != null) {
+			// we can cast because all persisters we registered implement the interface
+			throw new IllegalStateException("Persister already exists for " + Reflections.toString(entityMappingConfiguration.getEntityType()));
+		} else {
+			return doBuild(entityMappingConfiguration);
+		}
+	}
+	
+	/**
+	 * Builds a {@link EntityPersister} instance for the given entity mapping configuration or return the existing one if any.
+	 * (the check doesn't account for potential differences in mapping configurations of the entity type).
+	 * This method is not considered to be part of the public API, because the end user should be warned about duplicate
+	 * entity persisters, thus, other official methods {@link #build(EntityMappingConfiguration)} are preferred.
+	 * 
+	 * @param <C> the type of the entity being persisted
+	 * @param <I> the type of the identifier for the entity
+	 * @param entityMappingConfiguration the configuration used to map the entity and construct the persister
+	 * @return the constructed {@link ConfiguredRelationalPersister} instance for the given configuration
+	 */
+	public <C, I> ConfiguredRelationalPersister<C, I> buildOrGiveExisting(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
 		// If a persister already exists for the type, then we return it : case of graph that declares twice / several times same mapped type
 		// WARN : this does not take mapping configuration differences into account, so if configuration is different from previous one, since
 		// no check is done, then the very first persister is returned
@@ -58,8 +105,7 @@ public class DefaultPersisterBuilder {
 		ConfiguredRelationalPersister<C, I> result;
 		result = decorateWithUpdateOptimization((adaptedConnectionConfiguration) -> {
 			PersisterBuilderPipeline<C, I> persisterBuilderPipeline = new PersisterBuilderPipeline<>(dialect, adaptedConnectionConfiguration, persisterRegistry);
-			ConfiguredRelationalPersister<C, I> persister = persisterBuilderPipeline.build(entityMappingConfiguration);
-			return persister;
+			return persisterBuilderPipeline.build(entityMappingConfiguration);
 		});
 		result = decorateWithEntityManagementAsserter(result);
 		return result;

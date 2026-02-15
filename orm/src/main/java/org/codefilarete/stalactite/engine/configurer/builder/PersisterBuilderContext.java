@@ -13,7 +13,7 @@ import org.codefilarete.tool.collection.KeepOrderSet;
 /**
  * Running context of {@link org.codefilarete.stalactite.engine.configurer.builder.DefaultPersisterBuilder}. Allows to share some information during configuration of the whole entity graph.
  * The currently available instance is accessible through {@link #CURRENT} variable which is created and destroyed by
- * {@link org.codefilarete.stalactite.engine.configurer.builder.DefaultPersisterBuilder#build(EntityMappingConfiguration)}
+ * {@link org.codefilarete.stalactite.engine.configurer.builder.DefaultPersisterBuilder#buildOrGiveExisting(EntityMappingConfiguration)}
  * 
  * @author Guillaume Mary
  */

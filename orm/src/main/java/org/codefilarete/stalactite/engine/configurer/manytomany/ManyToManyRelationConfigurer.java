@@ -126,7 +126,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 		} else {
 			// NB: even if no table is found in configuration, build(..) will create one
 			Table targetTable = determineTargetTable(associationConfiguration.getManyToManyRelation());
-			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = persisterBuilder.build(new EntityMappingConfigurationWithTable<>(targetMappingConfiguration, targetTable));
+			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = persisterBuilder.buildOrGiveExisting(new EntityMappingConfigurationWithTable<>(targetMappingConfiguration, targetTable));
 			configurer.configure(targetPersister, associationConfiguration.getManyToManyRelation().isFetchSeparately());
 		}
 	}

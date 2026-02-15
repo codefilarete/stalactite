@@ -87,7 +87,6 @@ class DefaultPersisterBuilderTest {
 				.hasMessage("Version control is only supported for o.c.s.s.ConnectionProvider that implements o.c.s.s.RollbackObserver");
 	}
 	
-	@Disabled	// TODO: reactivate and fix: build(..), from a semantic point of view, should build things, not return existing Persister
 	@Test
 	void build_twiceForSameClass_throwsException() {
 		FluentEntityMappingBuilder<Car, Identifier<Long>> persisterConfiguration = entityBuilder(Car.class, Identifier.LONG_TYPE)
@@ -104,8 +103,8 @@ class DefaultPersisterBuilderTest {
 				new DefaultPersisterRegistry());
 		testInstance.build(persisterConfiguration);
 		assertThatCode(() -> testInstance.build(persisterConfiguration))
-				.isInstanceOf(UnsupportedOperationException.class)
-				.hasMessage("Persister already exists for class o.c.s.e.m.Car");
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("Persister already exists for o.c.s.e.m.Car");
 	}
 	
 	@Test
@@ -130,7 +129,7 @@ class DefaultPersisterBuilderTest {
 				dialect,
 				new ConnectionConfigurationSupport(connectionProviderMock, 10),
 				new DefaultPersisterRegistry());
-		testInstance.build(persisterConfiguration);
+		
 		EntityPersister<Car, Identifier<Long>> result = testInstance.build(persisterConfiguration);
 		Car entity = new Car(1L);
 		entity.setModel("Renault");

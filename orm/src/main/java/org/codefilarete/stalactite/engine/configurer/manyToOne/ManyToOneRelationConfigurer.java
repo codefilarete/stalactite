@@ -69,7 +69,7 @@ public class ManyToOneRelationConfigurer<C, I, TRGT, TRGTID> extends AbstractRel
 		} else {
 			// please note that even if no table is found in configuration, build(..) will create one
 			Table targetTable = determineTargetTable(manyToOneRelation);
-			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = persisterBuilder.build(new EntityMappingConfigurationWithTable<>(targetMappingConfiguration, targetTable));
+			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = persisterBuilder.buildOrGiveExisting(new EntityMappingConfigurationWithTable<>(targetMappingConfiguration, targetTable));
 			// we replace dot character by underscore one to take embedded relation properties into account: their accessor is an AccessorChain
 			// which is printed with dots by AccessorDefinition
 			String tableAlias = relationName.replace('.', '_');
