@@ -153,9 +153,6 @@ public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfi
 	
 	interface CompositeKeyMapping<C, I> extends KeyMapping<C, I> {
 		
-		@Nullable
-		CompositeKeyLinkageOptions getColumnsOptions();
-		
 		Consumer<C> getMarkAsPersistedFunction();
 		
 		Function<C, Boolean> getIsPersistedFunction();

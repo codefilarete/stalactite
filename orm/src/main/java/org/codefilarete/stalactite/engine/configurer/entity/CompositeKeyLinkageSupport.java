@@ -5,12 +5,12 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.CompositeKeyMapping;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
-import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfiguration;
 import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfigurationProvider;
 import org.danekja.java.util.function.serializable.SerializableFunction;
+
+import static org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfiguration.CompositeKeyLinkage;
 
 /**
  * Storage for composite key mapping definition. See {@link FluentEntityMappingBuilder#mapCompositeKey(SerializableFunction, CompositeKeyMappingConfigurationProvider, Consumer, Function)} methods.
@@ -21,9 +21,6 @@ public class CompositeKeyLinkageSupport<C, I> implements CompositeKeyMapping<C, 
 	private final CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder;
 	private final Consumer<C> markAsPersistedFunction;
 	private final Function<C, Boolean> isPersistedFunction;
-	
-	@javax.annotation.Nullable
-	private EntityMappingConfiguration.CompositeKeyLinkageOptions columnOptions;
 	
 	private boolean setByConstructor;
 	
@@ -46,10 +43,6 @@ public class CompositeKeyLinkageSupport<C, I> implements CompositeKeyMapping<C, 
 		return accessor;
 	}
 	
-	public void setColumnOptions(EntityMappingConfiguration.CompositeKeyLinkageOptions columnOptions) {
-		this.columnOptions = columnOptions;
-	}
-	
 	public void setByConstructor() {
 		this.setByConstructor = true;
 	}
@@ -59,7 +52,7 @@ public class CompositeKeyLinkageSupport<C, I> implements CompositeKeyMapping<C, 
 		return setByConstructor;
 	}
 	
-	public List<CompositeKeyMappingConfiguration.CompositeKeyLinkage> getPropertiesMapping() {
+	public List<CompositeKeyLinkage> getPropertiesMapping() {
 		return compositeKeyMappingBuilder.getConfiguration().getPropertiesMapping();
 	}
 	
@@ -73,9 +66,4 @@ public class CompositeKeyLinkageSupport<C, I> implements CompositeKeyMapping<C, 
 		return isPersistedFunction;
 	}
 	
-	@javax.annotation.Nullable
-	@Override
-	public EntityMappingConfiguration.CompositeKeyLinkageOptions getColumnsOptions() {
-		return columnOptions;
-	}
 }

@@ -19,7 +19,7 @@
 		</dependency>
 
         <!--
-         This dependency is a duplicate from spring-date module, but without it, the build fails while running tests
+         This dependency is a duplicate from spring-data module, but without it, the build fails while running tests
          with "NoClassDefFoundError: org/springframework/data/relational/repository/query/RelationalParameters" (Maven 3.9.9).
          This problem appeared with no reason after some code rework in spring-data module.
         -->

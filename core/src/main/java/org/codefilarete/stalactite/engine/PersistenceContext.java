@@ -168,7 +168,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	 */
 	public PersistenceContext(ConnectionConfiguration connectionConfiguration, Dialect dialect) {
 		this.configuration = connectionConfiguration;
-		this.dialect =dialect;
+		this.dialect = dialect;
 	}
 	
 	public ConnectionProvider getConnectionProvider() {
