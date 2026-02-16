@@ -709,6 +709,8 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		@Override
 		FluentMappingBuilderInheritanceOptions<C, I> withJoinedTable(Table parentTable);
 		
+		@Override
+		FluentMappingBuilderInheritanceOptions<C, I> withJoinedTable(String parentTableName);
 	}
 	
 	interface FluentMappingBuilderElementCollectionOptions<C, I, O, S extends Collection<O>>

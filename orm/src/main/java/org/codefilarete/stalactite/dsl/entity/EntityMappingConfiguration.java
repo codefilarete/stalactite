@@ -130,6 +130,7 @@ public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfi
 		boolean isJoinTable();
 		
 		/** Table to be used in case of joined tables ({@link #isJoinTable()} returns true) */
+		@Nullable
 		Table getTable();
 	}
 	

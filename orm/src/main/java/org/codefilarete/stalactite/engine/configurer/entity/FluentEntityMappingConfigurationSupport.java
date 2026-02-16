@@ -785,6 +785,14 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 						inheritanceConfiguration.setTable(parentTable);
 						return null;
 					}
+					
+					@Override
+					public InheritanceOptions withJoinedTable(String parentTableName) {
+						inheritanceConfiguration.setJoinTable(true);
+						inheritanceConfiguration.setTable(parentTableName);
+						return null;
+					}
+
 				}, true)
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderInheritanceOptions<C, I>>) (Class) FluentMappingBuilderInheritanceOptions.class);
