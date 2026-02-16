@@ -178,7 +178,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 																		Function<C, Boolean> isPersistedFunction);
 	
 	/**
-	 * Declares the attribute behind given accessor reference as persistent.
+	 * Declares the attribute behind the given accessor reference as persistent.
 	 *
 	 * @param getter the accessor that gets the property
 	 * @return an object for configuration chaining
@@ -187,7 +187,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	<O> FluentMappingBuilderPropertyOptions<C, I, O> map(SerializableFunction<C, O> getter);
 	
 	/**
-	 * Declares the attribute behind given mutator reference as persistent.
+	 * Declares the attribute behind the given mutator reference as persistent.
 	 *
 	 * @param setter the mutator that sets the property
 	 * @return an object for configuration chaining
@@ -196,7 +196,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	<O> FluentMappingBuilderPropertyOptions<C, I, O> map(SerializableBiConsumer<C, O> setter);
 	
 	/**
-	 * Declares the attribute behind given field name as persistent.
+	 * Declares the attribute behind the given field name as persistent.
 	 *
 	 * @param fieldName the field name that owns the attribute value
 	 * @return an object for configuration chaining

@@ -6,6 +6,7 @@ import java.util.function.Supplier;
 
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
+import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.ElementCollectionOptions;
@@ -33,8 +34,17 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 public interface FluentEmbeddableMappingConfiguration<C> {
 	
 	/**
-	 * Adds a property to be mapped.
-	 * By default column name will be extracted from setter according to the Java Bean convention naming.
+	 * Declares the attribute behind the given mutator reference as persistent.
+	 *
+	 * @param getter a Method Reference to a getter
+	 * @param <O> getter input type / property type to be mapped
+	 * @return this
+	 * @see #withColumnNaming(ColumnNamingStrategy)
+	 */
+	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C, O> map(SerializableFunction<C, O> getter);
+	
+	/**
+	 * Declares the attribute behind the given accessor reference as persistent.
 	 * 
 	 * @param setter a Method Reference to a setter
 	 * @param <O> setter return type / property type to be mapped
@@ -44,18 +54,46 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C, O> map(SerializableBiConsumer<C, O> setter);
 	
 	/**
-	 * Adds a property to be mapped. Column name will be extracted from getter according to the Java Bean convention naming.
+	 * Declares the attribute behind the given field name as persistent.
 	 *
-	 * @param getter a Method Reference to a getter
-	 * @param <O> getter input type / property type to be mapped
-	 * @return this
-	 * @see #withColumnNaming(ColumnNamingStrategy)
+	 * @param fieldName the field name that owns the attribute value
+	 * @return an object for configuration chaining
+	 * @param <O> the attribute type
 	 */
-	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C, O> map(SerializableFunction<C, O> getter);
+	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C, O> map(String fieldName);
 	
+	/**
+	 * Declares the enum-typed attribute behind the given accessor reference as persistent.
+	 * Can be done with default {@link #map(SerializableFunction)} method, but this signature ensures the type to be an enum and the returned object
+	 * provides some specific configuration dedicated to enum attribute.
+	 *
+	 * @param getter the accessor that gets the property
+	 * @return an object for configuration chaining
+	 * @param <E> the enum type
+	 */
+	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C, E> mapEnum(SerializableFunction<C, E> getter);
+	
+	/**
+	 * Declares the enum-typed attribute behind the given mutator reference as persistent.
+	 * Can be done with default {@link #map(SerializableBiConsumer)} method, but this signature ensures the type to be an enum and the returned object
+	 * provides some specific configuration dedicated to enum attribute.
+	 *
+	 * @param setter the mutator that gets the property
+	 * @return an object for configuration chaining
+	 * @param <E> the enum type
+	 */
 	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C, E> mapEnum(SerializableBiConsumer<C, E> setter);
 	
-	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C, E> mapEnum(SerializableFunction<C, E> getter);
+	/**
+	 * Declares the enum-typed attribute behind the given mutator reference as persistent.
+	 * Can be done with default {@link #map(String)} method, but this signature ensures the type to be an enum and the returned object
+	 * provides some specific configuration dedicated to enum attribute.
+	 *
+	 * @param fieldName the field name that owns the attribute value
+	 * @return an object for configuration chaining
+	 * @param <E> the enum type
+	 */
+	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C, E> mapEnum(String fieldName);
 	
 	<O, S extends Collection<O>> FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> mapCollection(SerializableFunction<C, S> getter,
 																													 Class<O> componentType);

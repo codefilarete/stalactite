@@ -25,16 +25,22 @@ public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappi
 	/* Overwriting methods signature to return a type that aggregates options of this class */
 	
 	@Override
+	<O> FluentEmbeddableMappingBuilderPropertyOptions<C, O> map(SerializableFunction<C, O> getter);
+	
+	@Override
 	<O> FluentEmbeddableMappingBuilderPropertyOptions<C, O> map(SerializableBiConsumer<C, O> setter);
 	
 	@Override
-	<O> FluentEmbeddableMappingBuilderPropertyOptions<C, O> map(SerializableFunction<C, O> getter);
+	<O> FluentEmbeddableMappingBuilderPropertyOptions<C, O> map(String fieldName);
+	
+	@Override
+	<E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C, E> mapEnum(SerializableFunction<C, E> getter);
 	
 	@Override
 	<E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C, E> mapEnum(SerializableBiConsumer<C, E> setter);
 	
 	@Override
-	<E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C, E> mapEnum(SerializableFunction<C, E> getter);
+	<E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C, E> mapEnum(String fieldName);
 	
 	@Override
 	FluentEmbeddableMappingBuilder<C> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> superMappingConfiguration);

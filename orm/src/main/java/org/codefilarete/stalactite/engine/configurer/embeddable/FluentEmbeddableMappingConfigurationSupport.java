@@ -451,14 +451,20 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	}
 	
 	@Override
+	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C, O> map(SerializableFunction<C, O> getter) {
+		LinkageSupport<C, O> linkage = addLinkage(new LinkageSupport<>(getter));
+		return wrapWithPropertyOptions(linkage);
+	}
+	
+	@Override
 	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C, O> map(SerializableBiConsumer<C, O> setter) {
 		LinkageSupport<C, O> linkage = addLinkage(new LinkageSupport<>(setter));
 		return wrapWithPropertyOptions(linkage);
 	}
 	
 	@Override
-	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C, O> map(SerializableFunction<C, O> getter) {
-		LinkageSupport<C, O> linkage = addLinkage(new LinkageSupport<>(getter));
+	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C, O> map(String fieldName) {
+		LinkageSupport<C, O> linkage = addLinkage(new LinkageSupport<>(getEntityType(), fieldName));
 		return wrapWithPropertyOptions(linkage);
 	}
 	
@@ -543,6 +549,13 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	}
 	
 	@Override
+	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C, E> mapEnum(SerializableFunction<C, E> getter) {
+		LinkageSupport<C, E> linkage = new LinkageSupport<>(getter);
+		this.mapping.add(linkage);
+		return wrapWithEnumOptions(linkage);
+	}
+	
+	@Override
 	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C, E> mapEnum(SerializableBiConsumer<C, E> setter) {
 		LinkageSupport<C, E> linkage = new LinkageSupport<>(setter);
 		this.mapping.add(linkage);
@@ -550,8 +563,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C, E> mapEnum(SerializableFunction<C, E> getter) {
-		LinkageSupport<C, E> linkage = new LinkageSupport<>(getter);
+	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C, E> mapEnum(String fieldName) {
+		LinkageSupport<C, E> linkage = new LinkageSupport<>(getEntityType(), fieldName);
 		this.mapping.add(linkage);
 		return wrapWithEnumOptions(linkage);
 	}

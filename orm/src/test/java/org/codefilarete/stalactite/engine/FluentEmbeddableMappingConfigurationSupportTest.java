@@ -142,7 +142,9 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		try {
 			MappingEase.embeddableBuilder(PersonWithGender.class)
 					.map(Person::getName)
+					.map("name")
 					.mapEnum(PersonWithGender::getGender).byOrdinal()
+					.mapEnum("gender").byOrdinal()
 					.embed(Person::setTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 							.map(Timestamp::getCreationDate)
 							.map(Timestamp::getModificationDate))
