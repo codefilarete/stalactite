@@ -356,7 +356,7 @@ public class DDLTableGeneratorTest {
 	 * 
 	 * @author Guillaume Mary
 	 */
-	abstract static class IntegrationTest {
+	public abstract static class IntegrationTest {
 		
 		protected final Table table1;
 		protected final Table table2;
@@ -381,7 +381,7 @@ public class DDLTableGeneratorTest {
 			table2.addForeignKey("dummyTable2_FK", nameColumn2, nameColumn);
 		}
 		
-		void assertGeneratedSQL_runOnAliveDatabase_doesNotThrowException(DDLTableGenerator testInstance, Connection connection) {
+		public void assertGeneratedSQL_runOnAliveDatabase_doesNotThrowException(DDLTableGenerator testInstance, Connection connection) {
 			DDLDeployer ddlDeployer = new DDLDeployer(testInstance, new DDLSequenceGenerator(testInstance.dmlNameProvider), new SimpleConnectionProvider(connection));
 			ddlDeployer.getDdlGenerator().addTables(table1, table2);
 			assertThatCode(ddlDeployer::deployDDL).doesNotThrowAnyException();

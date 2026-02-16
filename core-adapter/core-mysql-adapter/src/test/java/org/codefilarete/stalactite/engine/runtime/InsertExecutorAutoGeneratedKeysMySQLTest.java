@@ -2,10 +2,10 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import javax.sql.DataSource;
 
-import org.codefilarete.stalactite.sql.MySQLDialectBuilder;
+import org.codefilarete.stalactite.sql.mysql.MySQLDialectBuilder;
 import org.codefilarete.stalactite.sql.test.DatabaseHelper;
-import org.codefilarete.stalactite.sql.test.MySQLDatabaseHelper;
-import org.codefilarete.stalactite.sql.test.MySQLTestDataSourceSelector;
+import org.codefilarete.stalactite.sql.mysql.test.MySQLDatabaseHelper;
+import org.codefilarete.stalactite.sql.mysql.test.MySQLTestDataSourceSelector;
 import org.junit.jupiter.api.BeforeEach;
 
 /**

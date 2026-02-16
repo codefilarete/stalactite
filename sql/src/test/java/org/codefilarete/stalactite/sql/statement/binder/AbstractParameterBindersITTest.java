@@ -53,58 +53,58 @@ public abstract class AbstractParameterBindersITTest extends DatabaseIntegration
 	protected JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping;
 	
 	@BeforeEach
-	abstract void createParameterBinderRegistry();
+	protected abstract void createParameterBinderRegistry();
 	
 	@BeforeEach
-	abstract void createJavaTypeToSqlTypeMapping();
+	protected abstract void createJavaTypeToSqlTypeMapping();
 	
 	@Test
-	void longBinder() throws SQLException {
+	protected void longBinder() throws SQLException {
 		testParameterBinder(Long.class, Arrays.asSet(null, 42L));
 	}
 	
 	@Test
-	void longPrimitiveBinder() throws SQLException {
+	protected void longPrimitiveBinder() throws SQLException {
 		testParameterBinder(Long.TYPE, Arrays.asSet(42L));
 	}
 	
 	@Test
-	void longPrimitiveBinder_nullValuePassed_NPEThrown() {
+	protected void longPrimitiveBinder_nullValuePassed_NPEThrown() {
 		assertThatCode(() -> testParameterBinder(Long.TYPE, Arrays.asSet(null))).isInstanceOf(NullPointerException.class);
 	}
 	
 	@Test
-	void integerBinder() throws SQLException {
+	protected void integerBinder() throws SQLException {
 		testParameterBinder(Integer.class, Arrays.asSet(null, 42));
 	}
 	
 	@Test
-	void integerPrimitiveBinder() throws SQLException {
+	protected void integerPrimitiveBinder() throws SQLException {
 		testParameterBinder(Integer.TYPE, Arrays.asSet(42));
 	}
 	
 	@Test
-	void integerPrimitiveBinder_nullValuePassed_NPEThrown() {
+	protected void integerPrimitiveBinder_nullValuePassed_NPEThrown() {
 		assertThatCode(() -> testParameterBinder(Integer.TYPE, Arrays.asSet(null))).isInstanceOf(NullPointerException.class);
 	}
 	
 	@Test
-	void byteBinder() throws SQLException {
+	protected void byteBinder() throws SQLException {
 		testParameterBinder(Byte.class, Arrays.asSet(null, (byte) 42));
 	}
 	
 	@Test
-	void bytePrimitiveBinder() throws SQLException {
+	protected void bytePrimitiveBinder() throws SQLException {
 		testParameterBinder(Byte.TYPE, Arrays.asSet((byte) 42));
 	}
 	
 	@Test
-	void bytePrimitiveBinder_nullValuePassed_NPEThrown() {
+	protected void bytePrimitiveBinder_nullValuePassed_NPEThrown() {
 		assertThatCode(() -> testParameterBinder(Byte.TYPE, Arrays.asSet(null))).isInstanceOf(NullPointerException.class);
 	}
 	
 	@Test
-	void bytesBinder() throws SQLException {
+	protected void bytesBinder() throws SQLException {
 		byte[] inputStream = "Hello world !".getBytes();
 		Set<byte[]> valuesToInsert = Arrays.asSet(inputStream, null);
 		Set<byte[]> databaseContent = insertAndSelect(byte[].class, valuesToInsert);
@@ -116,37 +116,37 @@ public abstract class AbstractParameterBindersITTest extends DatabaseIntegration
 	}
 	
 	@Test
-	void doubleBinder() throws SQLException {
+	protected void doubleBinder() throws SQLException {
 		testParameterBinder(Double.class, Arrays.asSet(null, 42.57D));
 	}
 	
 	@Test
-	void doublePrimitiveBinder() throws SQLException {
+	protected void doublePrimitiveBinder() throws SQLException {
 		testParameterBinder(Double.TYPE, Arrays.asSet(42.57D));
 	}
 	
 	@Test
-	void doublePrimitiveBinder_nullValuePassed_NPEThrown() {
+	protected void doublePrimitiveBinder_nullValuePassed_NPEThrown() {
 		assertThatCode(() -> testParameterBinder(Double.TYPE, Arrays.asSet(null))).isInstanceOf(NullPointerException.class);
 	}
 	
 	@Test
-	void floatBinder() throws SQLException {
+	protected void floatBinder() throws SQLException {
 		testParameterBinder(Float.class, Arrays.asSet(null, 42.57F));
 	}
 	
 	@Test
-	void floatPrimitiveBinder() throws SQLException {
+	protected void floatPrimitiveBinder() throws SQLException {
 		testParameterBinder(Float.TYPE, Arrays.asSet(42.57F));
 	}
 	
 	@Test
-	void floatPrimitiveBinder_nullValuePassed_NPEThrown() {
+	protected void floatPrimitiveBinder_nullValuePassed_NPEThrown() {
 		assertThatCode(() -> testParameterBinder(Float.TYPE, Arrays.asSet(null))).isInstanceOf(NullPointerException.class);
 	}
 	
 	@Test
-	void bigDecimalBinder() throws SQLException {
+	protected void bigDecimalBinder() throws SQLException {
 		BigDecimal nullInsertion = insertAndSelect(BigDecimal.class, (BigDecimal) null);
 		assertThat(nullInsertion).isNull();
 		clearSchema();
@@ -155,27 +155,27 @@ public abstract class AbstractParameterBindersITTest extends DatabaseIntegration
 	}
 	
 	@Test
-	void bigIntegerBinder() throws SQLException {
+	protected void bigIntegerBinder() throws SQLException {
 		testParameterBinder(BigInteger.class, Arrays.asSet(null, new BigInteger("42", 10)));
 	}
 	
 	@Test
-	void booleanBinder() throws SQLException {
+	protected void booleanBinder() throws SQLException {
 		testParameterBinder(Boolean.class, Arrays.asSet(null, true, false));
 	}
 	
 	@Test
-	void booleanPrimitiveBinder() throws SQLException {
+	protected void booleanPrimitiveBinder() throws SQLException {
 		testParameterBinder(Boolean.TYPE, Arrays.asSet(true, false));
 	}
 	
 	@Test
-	void booleanPrimitiveBinder_nullValuePassed_NPEThrown() {
+	protected void booleanPrimitiveBinder_nullValuePassed_NPEThrown() {
 		assertThatCode(() -> testParameterBinder(Boolean.TYPE, Arrays.asSet(null))).isInstanceOf(NullPointerException.class);
 	}
 	
 	@Test
-	void dateSqlBinder() throws SQLException {
+	protected void dateSqlBinder() throws SQLException {
 		// Using Date(long) constructor leads to mistake since the Date spec (Javadoc) says : "the hours, minutes, seconds, and milliseconds to 
 		// zero"  
 		// So if the argument is a real millis time (like System.currentTimeMillis), the millis precision is lost by PreparedStatement.setDate()
@@ -186,7 +186,7 @@ public abstract class AbstractParameterBindersITTest extends DatabaseIntegration
 	}
 	
 	@Test
-	void dateBinder() throws SQLException {
+	protected void dateBinder() throws SQLException {
 		// Using Date(long) constructor leads to mistake since the Date spec (Javadoc) says : "the hours, minutes, seconds, and milliseconds to 
 		// zero"  
 		// So if the argument is a real millis time (like System.currentTimeMillis), the millis precision is lost by PreparedStatement.setDate()
@@ -197,12 +197,12 @@ public abstract class AbstractParameterBindersITTest extends DatabaseIntegration
 	}
 	
 	@Test
-	void localDateBinder() throws SQLException {
+	protected void localDateBinder() throws SQLException {
 		testParameterBinder(LocalDate.class, Arrays.asSet(null, LocalDate.now()));
 	}
 	
 	@Test
-	void localDateTimeBinder() throws SQLException {
+	protected void localDateTimeBinder() throws SQLException {
 		// Since Java 9 LocalDateTime.now() changed its precision : when available by OS it takes nanosecond precision,
 		// (https://bugs.openjdk.java.net/browse/JDK-8068730)
 		// this implies a comparison failure because many databases don't store nanosecond by default (with SQL TIMESTAMP type, which is the default
@@ -216,7 +216,7 @@ public abstract class AbstractParameterBindersITTest extends DatabaseIntegration
 	}
 	
 	@Test
-	void localTimeBinder() throws SQLException {
+	protected void localTimeBinder() throws SQLException {
 		// Since Java 9 LocalDateTime.now() changed its precision : when available by OS it takes nanosecond precision,
 		// (https://bugs.openjdk.java.net/browse/JDK-8068730)
 		// this implies a comparison failure because many databases don't store nanosecond by default (with SQL TIMESTAMP type, which is the default
@@ -230,17 +230,17 @@ public abstract class AbstractParameterBindersITTest extends DatabaseIntegration
 	}
 	
 	@Test
-	void timestampBinder() throws SQLException {
+	protected void timestampBinder() throws SQLException {
 		testParameterBinder(Timestamp.class, Arrays.asSet(null, new Timestamp(System.currentTimeMillis())));
 	}
 	
 	@Test
-	void stringBinder() throws SQLException {
+	protected void stringBinder() throws SQLException {
 		testParameterBinder(parameterBinderRegistry.getBinder(String.class), "varchar(255)", Arrays.asSet(null, "Hello world !"));
 	}
 	
 	@Test
-	void binaryStreamBinder() throws SQLException {
+	protected void binaryStreamBinder() throws SQLException {
 		InputStream inputStream = new ByteArrayInputStream("Hello world !".getBytes());
 		LinkedHashSet<InputStream> valuesToInsert = Arrays.asSet(inputStream, null);
 		Set<InputStream> databaseContent = insertAndSelect(InputStream.class, valuesToInsert);
@@ -248,7 +248,7 @@ public abstract class AbstractParameterBindersITTest extends DatabaseIntegration
 	}
 	
 	@Test
-	void blobBinder() throws SQLException {
+	protected void blobBinder() throws SQLException {
 		Blob blob = new InMemoryBlobSupport("Hello world !".getBytes());
 		Set<Blob> valuesToInsert = Arrays.asSet(blob, null);
 		Set<Blob> databaseContent = insertAndSelect(Blob.class, valuesToInsert);
@@ -256,17 +256,17 @@ public abstract class AbstractParameterBindersITTest extends DatabaseIntegration
 	}
 	
 	@Test
-	void uuidBinder() throws SQLException {
+	protected void uuidBinder() throws SQLException {
 		testParameterBinder(UUID.class, Arrays.asSet(null, UUID.randomUUID()));
 	}
 	
 	@Test
-	void pathBinder() throws SQLException {
+	protected void pathBinder() throws SQLException {
 		testParameterBinder(Path.class, Arrays.asSet(null, Paths.get("/path/to/my/file")));
 	}
 	
 	@Test
-	void fileBinder() throws SQLException {
+	protected void fileBinder() throws SQLException {
 		testParameterBinder(File.class, Arrays.asSet(null, new File("/path/to/my/file")));
 	}
 	
@@ -290,7 +290,7 @@ public abstract class AbstractParameterBindersITTest extends DatabaseIntegration
 		}).get()).collect(Collectors.toSet());
 	}
 	
-	static Set<String> convertBlobToString(Set<Blob> databaseContent) {
+	protected static Set<String> convertBlobToString(Set<Blob> databaseContent) {
 		return databaseContent.stream().map(b -> {
 			try {
 				return Nullable.nullable(b).mapThrower(blob -> new String(blob.getBytes(1, (int) blob.length()))).get();

@@ -1,0 +1,39 @@
+package org.codefilarete.stalactite.sql.mariadb.statement;
+
+import javax.sql.DataSource;
+import java.sql.SQLTransientException;
+import java.util.function.Predicate;
+
+import org.codefilarete.stalactite.sql.statement.SQLOperationITTest;
+import org.codefilarete.stalactite.sql.test.DatabaseHelper;
+import org.codefilarete.stalactite.sql.mariadb.test.MariaDBDatabaseHelper;
+import org.codefilarete.stalactite.sql.mariadb.test.MariaDBTestDataSourceSelector;
+import org.codefilarete.tool.exception.Exceptions;
+
+/**
+ * @author Guillaume Mary
+ */
+class SQLOperationMariaDBTest extends SQLOperationITTest {
+	
+	private static final DataSource DATASOURCE = new MariaDBTestDataSourceSelector().giveDataSource();
+	
+	@Override
+	public DataSource giveDataSource() {
+		return DATASOURCE;
+	}
+	
+	protected DatabaseHelper giveDatabaseHelper() {
+		return new MariaDBDatabaseHelper();
+	}
+	
+	@Override
+	protected String giveLockStatement() {
+		return "lock table Toto WRITE";
+	}
+	
+	@Override
+	protected Predicate<Throwable> giveCancelOperationPredicate() {
+		// MySQL throws an exception on query cancelation (https://mariadb.com/kb/en/library/multi-threading-and-statementcancel/), we check it.
+		return t -> Exceptions.findExceptionInCauses(t, SQLTransientException.class, m -> m.contains("Query execution was interrupted")) != null;
+	}
+}

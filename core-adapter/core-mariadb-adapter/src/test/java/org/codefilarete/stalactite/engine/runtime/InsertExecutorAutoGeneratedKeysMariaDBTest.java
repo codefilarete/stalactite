@@ -2,10 +2,10 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import javax.sql.DataSource;
 
-import org.codefilarete.stalactite.sql.MariaDBDialectBuilder;
+import org.codefilarete.stalactite.sql.mariadb.MariaDBDialectBuilder;
 import org.codefilarete.stalactite.sql.test.DatabaseHelper;
-import org.codefilarete.stalactite.sql.test.MariaDBDatabaseHelper;
-import org.codefilarete.stalactite.sql.test.MariaDBTestDataSourceSelector;
+import org.codefilarete.stalactite.sql.mariadb.test.MariaDBDatabaseHelper;
+import org.codefilarete.stalactite.sql.mariadb.test.MariaDBTestDataSourceSelector;
 import org.junit.jupiter.api.BeforeEach;
 
 /**

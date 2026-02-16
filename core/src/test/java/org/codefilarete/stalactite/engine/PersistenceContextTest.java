@@ -16,7 +16,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
-import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;

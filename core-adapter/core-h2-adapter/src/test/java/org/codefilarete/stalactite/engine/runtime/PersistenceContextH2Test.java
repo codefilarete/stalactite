@@ -4,10 +4,10 @@ import javax.sql.DataSource;
 
 import org.codefilarete.stalactite.engine.PersistenceContextITTest;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.H2DialectBuilder;
+import org.codefilarete.stalactite.sql.h2.H2DialectBuilder;
 import org.codefilarete.stalactite.sql.test.DatabaseHelper;
-import org.codefilarete.stalactite.sql.test.H2DatabaseHelper;
-import org.codefilarete.stalactite.sql.test.H2InMemoryDataSource;
+import org.codefilarete.stalactite.sql.h2.test.H2DatabaseHelper;
+import org.codefilarete.stalactite.sql.h2.test.H2InMemoryDataSource;
 
 /**
  * @author Guillaume Mary

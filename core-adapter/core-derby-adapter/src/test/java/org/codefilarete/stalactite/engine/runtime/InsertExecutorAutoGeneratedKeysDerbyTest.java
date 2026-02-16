@@ -2,10 +2,10 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import javax.sql.DataSource;
 
-import org.codefilarete.stalactite.sql.DerbyDialectBuilder;
+import org.codefilarete.stalactite.sql.derby.DerbyDialectBuilder;
 import org.codefilarete.stalactite.sql.test.DatabaseHelper;
-import org.codefilarete.stalactite.sql.test.DerbyDatabaseHelper;
-import org.codefilarete.stalactite.sql.test.DerbyInMemoryDataSource;
+import org.codefilarete.stalactite.sql.derby.test.DerbyDatabaseHelper;
+import org.codefilarete.stalactite.sql.derby.test.DerbyInMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 
 /**

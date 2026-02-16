@@ -25,17 +25,17 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 
  * @author Guillaume Mary
  */
-abstract class SQLOperationITTest extends DatabaseIntegrationTest {
+public abstract class SQLOperationITTest extends DatabaseIntegrationTest {
 	
 	protected BiFunction<PreparedSQL, ConnectionProvider, ReadOperation<Integer>> readOperationFactory;
 	
-	abstract String giveLockStatement();
+	protected abstract String giveLockStatement();
 	
 	protected String giveCreateTableStatement() {
 		return "create table Toto(id bigint)";
 	}
-
-	abstract Predicate<Throwable> giveCancelOperationPredicate();
+	
+	protected abstract Predicate<Throwable> giveCancelOperationPredicate();
 	
 	/**
 	 * Overridden to use a {@link CurrentThreadConnectionProvider}
@@ -62,7 +62,7 @@ abstract class SQLOperationITTest extends DatabaseIntegrationTest {
 	}
 	
 	@Test
-	void cancel() throws SQLException, InterruptedException {
+	protected void cancel() throws SQLException, InterruptedException {
 		// we're going to take a lock on a table that another thread wants to read
 		try (Connection lockingConnection = connectionProvider.giveConnection()) {
 			// activate manual transaction

@@ -1,1 +1,1 @@
-org.codefilarete.stalactite.sql.MariaDBDialectResolver$MariaDB_10_0_Entry
+org.codefilarete.stalactite.sql.mariadb.MariaDBDialectResolver$MariaDB_10_0_Entry

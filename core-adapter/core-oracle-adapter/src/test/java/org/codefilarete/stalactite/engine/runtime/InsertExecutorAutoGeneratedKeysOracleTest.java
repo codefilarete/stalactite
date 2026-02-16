@@ -2,10 +2,10 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import javax.sql.DataSource;
 
-import org.codefilarete.stalactite.sql.OracleDialectBuilder;
+import org.codefilarete.stalactite.sql.oracle.OracleDialectBuilder;
 import org.codefilarete.stalactite.sql.test.DatabaseHelper;
-import org.codefilarete.stalactite.sql.test.OracleDatabaseHelper;
-import org.codefilarete.stalactite.sql.test.OracleEmbeddableDataSource;
+import org.codefilarete.stalactite.sql.oracle.test.OracleDatabaseHelper;
+import org.codefilarete.stalactite.sql.oracle.test.OracleEmbeddableDataSource;
 import org.junit.jupiter.api.BeforeEach;
 
 /**

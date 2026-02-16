@@ -2,10 +2,10 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import javax.sql.DataSource;
 
-import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
+import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.test.DatabaseHelper;
-import org.codefilarete.stalactite.sql.test.HSQLDBDatabaseHelper;
-import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBDatabaseHelper;
+import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 
 /**

@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
  *
  * @author Guillaume Mary
  */
-abstract class ResultSetIteratorITTest extends DatabaseIntegrationTest {
+public abstract class ResultSetIteratorITTest extends DatabaseIntegrationTest {
 	
 	@Test
 	void hasNext_emptyResultSet() throws SQLException {

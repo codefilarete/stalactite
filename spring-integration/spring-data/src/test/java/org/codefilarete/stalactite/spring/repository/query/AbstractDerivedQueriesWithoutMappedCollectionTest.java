@@ -19,12 +19,12 @@ import org.codefilarete.stalactite.spring.repository.config.EnableStalactiteRepo
 import org.codefilarete.stalactite.spring.repository.query.DerivedQueriesWithoutMappedCollectionRepository.NamesOnly;
 import org.codefilarete.stalactite.spring.transaction.StalactitePlatformTransactionManager;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.HSQLDBDialectBuilder;
+import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
-import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

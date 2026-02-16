@@ -2,8 +2,8 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import javax.sql.DataSource;
 
-import org.codefilarete.stalactite.sql.SQLiteDialectBuilder;
-import org.codefilarete.stalactite.sql.test.SQLiteInMemoryDataSource;
+import org.codefilarete.stalactite.sql.sqlite.SQLiteDialectBuilder;
+import org.codefilarete.stalactite.sql.sqlite.test.SQLiteInMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 
 /**

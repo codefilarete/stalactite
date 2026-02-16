@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import javax.sql.DataSource;
 
-import org.codefilarete.stalactite.sql.test.SQLiteInMemoryDataSource;
+import org.codefilarete.stalactite.sql.sqlite.test.SQLiteInMemoryDataSource;
 
 /**
  * @author Guillaume Mary

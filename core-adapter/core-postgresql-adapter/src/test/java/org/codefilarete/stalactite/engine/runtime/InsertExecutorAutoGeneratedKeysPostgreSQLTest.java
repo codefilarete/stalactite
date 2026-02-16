@@ -2,10 +2,10 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import javax.sql.DataSource;
 
-import org.codefilarete.stalactite.sql.PostgreSQLDialectBuilder;
+import org.codefilarete.stalactite.sql.postgresql.PostgreSQLDialectBuilder;
 import org.codefilarete.stalactite.sql.test.DatabaseHelper;
-import org.codefilarete.stalactite.sql.test.PostgreSQLDatabaseHelper;
-import org.codefilarete.stalactite.sql.test.PostgreSQLTestDataSourceSelector;
+import org.codefilarete.stalactite.sql.postgresql.test.PostgreSQLDatabaseHelper;
+import org.codefilarete.stalactite.sql.postgresql.test.PostgreSQLTestDataSourceSelector;
 import org.junit.jupiter.api.BeforeEach;
 
 /**
