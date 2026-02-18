@@ -58,17 +58,35 @@ public interface EntityCriteria<C, SELF extends EntityCriteria<C, SELF>> {
 	<A, B> SELF and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator);
 	
 	/**
-	 * Particular version of {@link #and(SerializableFunction, ConditionalOperator)} for a collection property to be
-	 * able to target its component type with a {@link ConditionalOperator}. Without it, operators can only apply to
-	 * the collection itself, which is rarely what is needed and not supported by Stalactite.
+	 * Particular version of {@link #and(SerializableFunction, ConditionalOperator)} for a collection-of-element
+	 * property to be able to target its component type with a {@link ConditionalOperator}. Without it, operators can
+	 * only apply to the collection itself, which is rarely what is needed and not supported by Stalactite.
 	 *
 	 * @param collectionAccessor a method reference to the collection setter of the property to be evaluated
 	 * @param operator operator of the criteria (will be the condition on the matching column)
 	 * @param <O> getter return type, also criteria value
 	 * @return this
 	 * @throws IllegalArgumentException if the column matching the setter was not found
+	 * @see #and(SerializableCollectionFunction, SerializableFunction, ConditionalOperator) for one-to-many case
 	 */
 	<S extends Collection<O>, O> SELF and(SerializableCollectionFunction<C, S, O> collectionAccessor, ConditionalOperator<O, ?> operator);
+	
+	/**
+	 * Extension of {@link #and(SerializableFunction, ConditionalOperator)} for a collection property such as
+	 * one-to-many to be able to target its component type with a {@link ConditionalOperator}. Without it, operators can
+	 * only apply to the collection itself, which is rarely what is needed and not supported by Stalactite.
+	 *
+	 * @param collectionAccessor a method reference to the collection setter of the property to be evaluated
+	 * @param elementAccessor    a method reference to the element setter of the property to be evaluated
+	 * @param operator           operator of the criteria (will be the condition on the matching column)
+	 * @param <O>                getter return type, also criteria value
+	 * @return this
+	 * @throws IllegalArgumentException if the column matching the setter was not found
+	 * @see #and(SerializableCollectionFunction, ConditionalOperator) for collection-of-element case
+	 */
+	default <A, S extends Collection<O>, O> SELF and(SerializableCollectionFunction<C, S, O> collectionAccessor, SerializableFunction<O, A> elementAccessor, ConditionalOperator<A, ?> operator) {
+		return and(new CriteriaPath<>(collectionAccessor).add(elementAccessor), operator);
+	}
 	
 	/**
 	 * Generic version of {@link #and(SerializableFunction, ConditionalOperator)} with a (long) path to a property 
@@ -206,7 +224,10 @@ public interface EntityCriteria<C, SELF extends EntityCriteria<C, SELF>> {
 	}
 	
 	/**
-	 * Represents a path of property to be given as a criteria. 
+	 * Represents a path of property to be given as a criteria.
+	 * As a difference to {@link AccessorChain}, no particular behavior or feature is expected from it. It's only made
+	 * to store the path of a property from a criteria point of view. Thus, {@link Collection} can be targetted and
+	 * chained with one of its element property, not a {@link Collection} method.
 	 * 
 	 * @param <IN> the input type, representing the source object type
 	 * @param <OUT> the output type, representing the target property type
@@ -219,9 +240,16 @@ public interface EntityCriteria<C, SELF extends EntityCriteria<C, SELF>> {
 			this.accessors.add(Accessors.accessorByMethodReference(accessor));
 		}
 		
-		public <S extends Collection<O>, O> CriteriaPath(SerializableCollectionFunction<IN, S, O> collectionAccessor, SerializableFunction<O, OUT> elementPropertyAccessor) {
+		public CriteriaPath(SerializableBiConsumer<IN, OUT> accessor) {
+			this.accessors.add(Accessors.mutatorByMethodReference(accessor));
+		}
+		
+		public <S extends Collection<OUT>> CriteriaPath(SerializableCollectionFunction<IN, S, OUT> collectionAccessor) {
 			this.accessors.add(Accessors.accessorByMethodReference(collectionAccessor));
-			this.accessors.add(Accessors.accessorByMethodReference(elementPropertyAccessor));
+		}
+		
+		public <S extends Collection<OUT>> CriteriaPath(SerializableCollectionBiConsumer<IN, S, OUT> collectionMutator) {
+			this.accessors.add(Accessors.mutatorByMethodReference(collectionMutator));
 		}
 		
 		public List<ValueAccessPoint<?>> getAccessors() {
@@ -233,8 +261,18 @@ public interface EntityCriteria<C, SELF extends EntityCriteria<C, SELF>> {
 			return (CriteriaPath<IN, NEXT>) this;
 		}
 		
+		public <NEXT> CriteriaPath<IN, NEXT> add(SerializableBiConsumer<OUT, NEXT> accessor) {
+			this.accessors.add(Accessors.mutatorByMethodReference(accessor));
+			return (CriteriaPath<IN, NEXT>) this;
+		}
+		
 		public <NEXT, S extends Collection<NEXT>> CriteriaPath<IN, NEXT> add(SerializableCollectionFunction<OUT, S, NEXT> accessor) {
 			this.accessors.add(Accessors.accessorByMethodReference(accessor));
+			return (CriteriaPath<IN, NEXT>) this;
+		}
+		
+		public <NEXT, S extends Collection<NEXT>> CriteriaPath<IN, NEXT> add(SerializableCollectionBiConsumer<OUT, S, NEXT> accessor) {
+			this.accessors.add(Accessors.mutatorByMethodReference(accessor));
 			return (CriteriaPath<IN, NEXT>) this;
 		}
 	}
@@ -250,6 +288,11 @@ public interface EntityCriteria<C, SELF extends EntityCriteria<C, SELF>> {
 	 */
 	@FunctionalInterface
 	interface SerializableCollectionFunction<T, S extends Collection<O>, O> extends SerializableFunction<T, S> {
+		
+	}
+	
+	@FunctionalInterface
+	interface SerializableCollectionBiConsumer<T, S extends Collection<O>, O> extends SerializableBiConsumer<T, S> {
 		
 	}
 }

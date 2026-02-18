@@ -253,7 +253,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	}
 	
 	default <O, S extends Collection<O>, NEXT> ExecutableEntityQuery<C, ?> selectWhere(SerializableCollectionFunction<C, S, O> accessor1, SerializableFunction<O, NEXT> accessor2, ConditionalOperator<NEXT, ?> operator) {
-		return selectWhere(new CriteriaPath<>(accessor1, accessor2), operator);
+		return selectWhere(new CriteriaPath<>(accessor1).add(accessor2), operator);
 	}
 	
 	/**
@@ -350,7 +350,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	}
 	
 	default <O, S extends Collection<O>, NEXT> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<SelectAdapter<C>> selectAdapter, SerializableCollectionFunction<C, S, O> accessor1, SerializableFunction<O, NEXT> accessor2, ConditionalOperator<O, ?> operator) {
-		return selectProjectionWhere(selectAdapter, new CriteriaPath<>(accessor1, accessor2), operator);
+		return selectProjectionWhere(selectAdapter, new CriteriaPath<>(accessor1).add(accessor2), operator);
 	}
 	
 	/**

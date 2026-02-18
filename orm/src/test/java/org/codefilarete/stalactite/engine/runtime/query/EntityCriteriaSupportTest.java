@@ -121,7 +121,7 @@ class EntityCriteriaSupportTest {
 		testInstance
 				.and(Country::getCapital, City::getId, Operators.gteq("11"))
 				.and(Country::getPresident, Person::getNicknames, Operators.gteq("11"))
-				.and(new CriteriaPath<>(Country::getCities, City::getId), Operators.isNull())
+				.and(Country::getCities, City::getId, Operators.isNull())
 		;
 		
 		EntityTreeQuery<Country> entityTreeQuery = new EntityTreeQueryBuilder<>(persister.getEntityJoinTree(), dialect.getColumnBinderRegistry()).buildSelectQuery();
