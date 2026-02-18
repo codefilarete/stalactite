@@ -129,9 +129,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param compositeKeyMappingBuilder a configuration that details the properties that composes the identifier
 	 * @return an object for configuration chaining
 	 */
-	default FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapCompositeKey(SerializableFunction<C, I> getter,
-																				CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder) {
-		return mapCompositeKey(getter, compositeKeyMappingBuilder, null, null);
+	default FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter,
+																	   CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder) {
+		return mapKey(getter, compositeKeyMappingBuilder, null, null);
 	}
 	
 	/**
@@ -142,9 +142,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param compositeKeyMappingBuilder a configuration that details the properties that composes the identifier
 	 * @return an object for configuration chaining
 	 */
-	default FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapCompositeKey(SerializableBiConsumer<C, I> setter,
-																				CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder) {
-		return mapCompositeKey(setter, compositeKeyMappingBuilder, null, null);
+	default FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter,
+																	   CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder) {
+		return mapKey(setter, compositeKeyMappingBuilder, null, null);
 	}
 	
 	/**
@@ -157,10 +157,10 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param isPersistedFunction the {@link Function} that allows to know if entity was already inserted in database
 	 * @return an object for configuration chaining
 	 */
-	FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapCompositeKey(SerializableFunction<C, I> getter,
-																		CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder,
-																		Consumer<C> markAsPersistedFunction,
-																		Function<C, Boolean> isPersistedFunction);
+	FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter,
+															   CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder,
+															   Consumer<C> markAsPersistedFunction,
+															   Function<C, Boolean> isPersistedFunction);
 	
 	/**
 	 * Maps given property as a composite-identifier. The {@link IdentifierPolicy} is already-assigned.
@@ -172,10 +172,10 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param isPersistedFunction the {@link Function} that allows to know if entity was already inserted in database
 	 * @return an object for configuration chaining
 	 */
-	FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapCompositeKey(SerializableBiConsumer<C, I> setter,
-																		CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder,
-																		Consumer<C> markAsPersistedFunction,
-																		Function<C, Boolean> isPersistedFunction);
+	FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter,
+															   CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder,
+															   Consumer<C> markAsPersistedFunction,
+															   Function<C, Boolean> isPersistedFunction);
 	
 	/**
 	 * Declares the attribute behind the given accessor reference as persistent.

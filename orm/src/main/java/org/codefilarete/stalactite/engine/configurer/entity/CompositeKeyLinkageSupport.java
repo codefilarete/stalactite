@@ -13,7 +13,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 import static org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfiguration.CompositeKeyLinkage;
 
 /**
- * Storage for composite key mapping definition. See {@link FluentEntityMappingBuilder#mapCompositeKey(SerializableFunction, CompositeKeyMappingConfigurationProvider, Consumer, Function)} methods.
+ * Storage for composite key mapping definition. See {@link FluentEntityMappingBuilder#mapKey(SerializableFunction, CompositeKeyMappingConfigurationProvider, Consumer, Function)} methods.
  */
 public class CompositeKeyLinkageSupport<C, I> implements CompositeKeyMapping<C, I> {
 	

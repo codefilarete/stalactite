@@ -333,10 +333,10 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapCompositeKey(SerializableFunction<C, I> getter,
-																			   CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder,
-																			   Consumer<C> markAsPersistedFunction,
-																			   Function<C, Boolean> isPersistedFunction) {
+	public FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter,
+																	  CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder,
+																	  Consumer<C> markAsPersistedFunction,
+																	  Function<C, Boolean> isPersistedFunction) {
 		return this.propertiesMappingConfigurationDelegate.wrapWithKeyOptions(
 				propertiesMappingConfigurationDelegate.addCompositeKeyMapping(
 						Accessors.accessor(getter),
@@ -346,10 +346,10 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapCompositeKey(SerializableBiConsumer<C, I> setter,
-																			   CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder,
-																			   Consumer<C> markAsPersistedFunction,
-																			   Function<C, Boolean> isPersistedFunction) {
+	public FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter,
+																	  CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder,
+																	  Consumer<C> markAsPersistedFunction,
+																	  Function<C, Boolean> isPersistedFunction) {
 		return this.propertiesMappingConfigurationDelegate.wrapWithKeyOptions(
 				propertiesMappingConfigurationDelegate.addCompositeKeyMapping(
 						Accessors.mutator(setter),
