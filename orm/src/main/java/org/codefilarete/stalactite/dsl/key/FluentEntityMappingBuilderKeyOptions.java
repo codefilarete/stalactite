@@ -9,8 +9,7 @@ import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.tool.function.Converter;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.function.TriFunction;
 
 public interface FluentEntityMappingBuilderKeyOptions<C, I> extends FluentEntityMappingBuilder<C, I>, KeyOptions<C, I> {
@@ -50,7 +49,7 @@ public interface FluentEntityMappingBuilderKeyOptions<C, I> extends FluentEntity
 																	   String columnName3);
 	
 	@Override
-	FluentEntityMappingBuilderKeyOptions<C, I> usingFactory(Function<Function<Column<?, ?>, ?>, C> factory);
+	FluentEntityMappingBuilderKeyOptions<C, I> usingFactory(Function<ColumnedRow, C> factory);
 
 	/**
 	 * Sets column name to be used. By default, column name is deduced from property name (it is deduced from

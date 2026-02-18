@@ -420,7 +420,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.onTable(totoTable)
 					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
 					.usingFactory(row ->
-						new Toto((PersistedIdentifier<UUID>) row.apply(idColumn), (String) row.apply(nameColumn))
+						new Toto((PersistedIdentifier<UUID>) row.get(idColumn), row.get(nameColumn))
 					)
 					.map(Toto::getName).setByConstructor()	// avoiding superfluous property setting
 					.build(persistenceContext);

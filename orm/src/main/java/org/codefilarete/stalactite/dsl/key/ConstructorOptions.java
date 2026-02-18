@@ -8,6 +8,7 @@ import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.dsl.property.PropertyOptions;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.function.TriFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
@@ -118,8 +119,6 @@ public interface ConstructorOptions<C, I, SELF extends ConstructorOptions<C ,I, 
 	 *
 	 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
 	 */
-	// signature note : the generics wildcard ? are actually expected to be of same type, but left it as it is because setting a generics type
-	// for it makes usage of Function::apply quite difficult (lot of cast) because the generics type can hardly be something else than Object
-	SELF usingFactory(Function<Function<Column<?, ?>, ?>, C> factory);
+	SELF usingFactory(Function<ColumnedRow, C> factory);
 	
 }

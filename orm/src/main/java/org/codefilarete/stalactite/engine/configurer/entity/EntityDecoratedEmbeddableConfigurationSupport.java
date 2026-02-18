@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.engine.configurer.entity;
 
-import java.lang.reflect.Field;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -9,7 +8,6 @@ import java.util.function.Supplier;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.ExtraTablePropertyOptions;
-import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfigurationProvider;
@@ -26,8 +24,8 @@ import org.codefilarete.stalactite.engine.configurer.property.ColumnLinkageOptio
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.TriFunction;
@@ -340,9 +338,9 @@ class EntityDecoratedEmbeddableConfigurationSupport<C, I> extends FluentEmbeddab
 					}
 					
 					@Override
-					public KeyOptions<C, I> usingFactory(Function<Function<Column<?, ?>, ?>, C> factory) {
+					public KeyOptions<C, I> usingFactory(Function<ColumnedRow, C> factory) {
 						keyMapping.setByConstructor();
-						entityConfigurationSupport.setEntityFactoryProvider(new EntityFactoryProviderSupport<>(table -> row -> (C) factory.apply(row::get), true));
+						entityConfigurationSupport.setEntityFactoryProvider(new EntityFactoryProviderSupport<>(table -> row -> (C) factory.apply(row), true));
 						return null;
 					}
 				}, true)

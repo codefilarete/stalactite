@@ -8,6 +8,8 @@ import org.codefilarete.tool.Strings;
  */
 public interface ColumnNamingStrategy {
 	
+	String DEFAULT_INDEX_COLUMN_NAME = "idx";
+	
 	/**
 	 * Expected to generate a name for the given method definition that maps a property to a column
 	 * 
@@ -27,6 +29,6 @@ public interface ColumnNamingStrategy {
 	/**
 	 * Default naming for index column in one-to-many {@link java.util.List} association
 	 */
-	ColumnNamingStrategy INDEX_DEFAULT = accessor -> "idx";
+	ColumnNamingStrategy INDEX_DEFAULT = accessor -> DEFAULT_INDEX_COLUMN_NAME;
 	
 }
