@@ -7,6 +7,7 @@ import java.util.Collections;
 
 import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.FunctionSQLBuilder;
 import org.codefilarete.stalactite.query.builder.OperatorSQLBuilderFactory;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
 import org.codefilarete.stalactite.query.builder.SQLAppender;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Operators;
@@ -225,8 +226,8 @@ class DialectBuilderTest {
 					querySQLBuilderFactoryBuilder.withOperatorSQLBuilderFactory(
 							new OperatorSQLBuilderFactory() {
 								@Override
-								public OperatorSQLBuilder operatorSQLBuilder(FunctionSQLBuilder functionSQLBuilder) {
-									return new OperatorSQLBuilder(functionSQLBuilder) {
+								public OperatorSQLBuilder operatorSQLBuilder(FunctionSQLBuilder functionSQLBuilder, QuerySQLBuilderFactory querySQLBuilderFactory) {
+									return new OperatorSQLBuilder(functionSQLBuilder, querySQLBuilderFactory) {
 										
 										/** Overridden to write "like" in upper case, just to check and demonstrate how to branch some behavior on operator print */
 										@Override
@@ -281,8 +282,8 @@ class DialectBuilderTest {
 					querySQLBuilderFactoryBuilder.withOperatorSQLBuilderFactory(
 							new OperatorSQLBuilderFactory() {
 								@Override
-								public OperatorSQLBuilder operatorSQLBuilder(FunctionSQLBuilder functionSQLBuilder) {
-									return new OperatorSQLBuilder(functionSQLBuilder) {
+								public OperatorSQLBuilder operatorSQLBuilder(FunctionSQLBuilder functionSQLBuilder, QuerySQLBuilderFactory querySQLBuilderFactory) {
+									return new OperatorSQLBuilder(functionSQLBuilder, querySQLBuilderFactory) {
 										
 										/** Overridden to write "like" in upper case, just to check and demonstrate how to branch some behavior on operator print */
 										@Override

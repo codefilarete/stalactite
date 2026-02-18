@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.query.model;
 
 import org.codefilarete.stalactite.query.builder.OperatorSQLBuilderFactory.OperatorSQLBuilder;
+import org.codefilarete.stalactite.query.model.operator.Avg;
 import org.codefilarete.stalactite.query.model.operator.Between;
 import org.codefilarete.stalactite.query.model.operator.Between.Interval;
 import org.codefilarete.stalactite.query.model.operator.Cast;
@@ -10,6 +11,7 @@ import org.codefilarete.stalactite.query.model.operator.Equals;
 import org.codefilarete.stalactite.query.model.operator.Greater;
 import org.codefilarete.stalactite.query.model.operator.In;
 import org.codefilarete.stalactite.query.model.operator.InIgnoreCase;
+import org.codefilarete.stalactite.query.model.operator.InSubQuery;
 import org.codefilarete.stalactite.query.model.operator.IsNull;
 import org.codefilarete.stalactite.query.model.operator.Lesser;
 import org.codefilarete.stalactite.query.model.operator.Like;
@@ -112,15 +114,44 @@ public interface Operators {
 	
 	/**
 	 * Shortcut to <code>new InIgnoreCase(value)</code> to ease a fluent writing of queries for "in" comparisons
+	 * 
 	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder})
-	 * @return a new instance of {@link In}
+	 * @return a new instance of {@link InIgnoreCase}
 	 */
 	static InIgnoreCase inIgnoringCase(Iterable<String> value) {
 		return new InIgnoreCase(value);
 	}
 	
+	/**
+	 * Shortcut to <code>new InIgnoreCase(values)</code> to ease a fluent writing of queries for "in" comparisons
+	 * 
+	 * @param values a set of values
+	 * @return a new instance of {@link InIgnoreCase}
+	 */
 	static InIgnoreCase inIgnoringCase(String... values) {
 		return new InIgnoreCase(values);
+	}
+	
+	/**
+	 * Shortcut to <code>new InSubQuery(value)</code> to ease a fluent writing of queries for "in" comparisons
+	 *
+	 * @param value the {@link Query} or {@link Union} representing the subquery
+	 * @return a new instance of {@link InSubQuery}
+	 * @param <O>
+	 */
+	static <O> InSubQuery<O> in(QueryStatement value) {
+		return new InSubQuery<>(value);
+	}
+	
+	/**
+	 * Shortcut to <code>new InSubQuery(value)</code> to ease a fluent writing of queries for "in" comparisons
+	 *
+	 * @param value the {@link Query} or {@link Union} provider representing the subquery
+	 * @return a new instance of {@link InSubQuery}
+	 * @param <O> the type of the object being queried
+	 */
+	static <O> InSubQuery<O> in(QueryProvider<?> value) {
+		return new InSubQuery<>(value);
 	}
 	
 	/**
@@ -361,6 +392,14 @@ public interface Operators {
 	 */
 	static <N extends Number> Max<N> max(Selectable<N> column) {
 		return new Max<>(column);
+	}
+	
+	/**
+	 * Shortcut to <code>new Avg(column)</code> to ease a fluent writing of queries for "max" operation
+	 * @return a new instance of {@link Max}
+	 */
+	static <N extends Number> Avg<N> avg(Selectable<N> column) {
+		return new Avg<>(column);
 	}
 	
 	/**

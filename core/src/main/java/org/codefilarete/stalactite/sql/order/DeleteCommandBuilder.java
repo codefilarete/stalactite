@@ -102,7 +102,7 @@ public class DeleteCommandBuilder<T extends Table<T>> implements SQLBuilder, Pre
 		// append where clause
 		if (delete.getCriteria().iterator().hasNext()) {
 			target.cat(" where ");
-			WhereSQLBuilder whereSqlBuilder = dialect.getQuerySQLBuilderFactory().getWhereBuilderFactory().whereBuilder(this.delete.getCriteria(), dmlNameProvider);
+			WhereSQLBuilder whereSqlBuilder = dialect.getQuerySQLBuilderFactory().getWhereBuilderFactory().whereBuilder(this.delete.getCriteria(), dmlNameProvider, dialect.getQuerySQLBuilderFactory());
 			whereSqlBuilder.appendTo(target);
 		}
 	}

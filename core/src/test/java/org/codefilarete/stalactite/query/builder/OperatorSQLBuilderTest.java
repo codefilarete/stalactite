@@ -20,14 +20,17 @@ import org.codefilarete.stalactite.query.model.operator.Like;
 import org.codefilarete.stalactite.query.model.operator.LowerCase;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.query.model.operator.UpperCase;
+import org.codefilarete.stalactite.sql.QuerySQLBuilderFactoryBuilder;
 import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.codefilarete.stalactite.query.model.Operators.avg;
 import static org.codefilarete.stalactite.query.model.Operators.between;
 import static org.codefilarete.stalactite.query.model.Operators.contains;
 import static org.codefilarete.stalactite.query.model.Operators.endsWith;
@@ -43,6 +46,8 @@ import static org.codefilarete.stalactite.query.model.Operators.not;
 import static org.codefilarete.stalactite.query.model.Operators.startsWith;
 import static org.codefilarete.stalactite.query.model.Operators.trim;
 import static org.codefilarete.stalactite.query.model.Operators.upperCase;
+import static org.codefilarete.stalactite.query.model.OrderByChain.Order.DESC;
+import static org.codefilarete.stalactite.query.model.QueryEase.select;
 
 /**
  * @author Guillaume Mary
@@ -53,7 +58,7 @@ class OperatorSQLBuilderTest {
 	
 	@Test
 	public void cat_nullValue_isTransformedToIsNull() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()), null);
 		StringSQLAppender result = new StringSQLAppender(dmlNameProvider);
 		
 		testInstance.cat(new ConditionalOperator<Object, Object>() {
@@ -72,7 +77,7 @@ class OperatorSQLBuilderTest {
 	
 	@Test
 	public void catNullValue() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()), null);
 		StringSQLAppender result = new StringSQLAppender(dmlNameProvider);
 		
 		testInstance.catNullValue(false, result);
@@ -85,7 +90,7 @@ class OperatorSQLBuilderTest {
 	
 	@Test
 	public void catIsNull() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()), null);
 		StringSQLAppender result = new StringSQLAppender(dmlNameProvider);
 		
 		testInstance.catIsNull(new IsNull<>(), result);
@@ -105,7 +110,7 @@ class OperatorSQLBuilderTest {
 	
 	@Test
 	public void catLike() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()), null);
 		StringSQLAppender result = new StringSQLAppender(dmlNameProvider);
 		
 		testInstance.catLike(new Like("a"), result, null);
@@ -126,7 +131,7 @@ class OperatorSQLBuilderTest {
 	
 	@Test
 	public void catLike_withFunction() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()), null);
 		StringSQLAppender result = new StringSQLAppender(dmlNameProvider);
 		
 		testInstance.catLike(new Like<>(new LowerCase<>("a")), result, null);
@@ -168,7 +173,7 @@ class OperatorSQLBuilderTest {
 	
 	@Test
 	public void catIn() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()), null);
 		StringSQLAppender result = new StringSQLAppender(dmlNameProvider);
 		
 		testInstance.catIn(in("a", "b"), result, null);
@@ -194,7 +199,7 @@ class OperatorSQLBuilderTest {
 	
 	@Test
 	public void catIn_tupled() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()), null);
 		StringSQLAppender result = new StringSQLAppender(dmlNameProvider);
 		
 		Table dummyTable = new Table("dummyTable");
@@ -229,8 +234,26 @@ class OperatorSQLBuilderTest {
 	}
 	
 	@Test
+	public void catInSubQuery() {
+		QuerySQLBuilderFactory sqlBuilderFactory = new QuerySQLBuilderFactoryBuilder(DMLNameProvider::new, new ColumnBinderRegistry(), new DefaultTypeMapping()).build();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()), sqlBuilderFactory);
+		StringSQLAppender result = new StringSQLAppender(dmlNameProvider);
+		
+		Table<?> reviewTable = new Table("Review");
+		Column<?, Long> restaurantIdColumn = reviewTable.addColumn("restaurantId", Long.class);
+		Column<?, Long> ratingColumn = reviewTable.addColumn("rating", Long.class);
+		testInstance.catInSubQuery(Operators.in(
+						select(restaurantIdColumn)
+								.from(reviewTable)
+								.groupBy(restaurantIdColumn)
+								.orderBy(avg(ratingColumn), DESC)
+								.limit(5)), result);
+		assertThat(result.getSQL()).isEqualTo("in (select Review.restaurantId from Review group by Review.restaurantId order by avg(Review.rating) desc limit 5)")	;
+	}
+	
+	@Test
 	public void catBetween() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()), null);
 		StringSQLAppender result = new StringSQLAppender(dmlNameProvider);
 		
 		testInstance.catBetween(between(1, 2), result, null);
@@ -247,7 +270,7 @@ class OperatorSQLBuilderTest {
 	
 	@Test
 	public void catGreater() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()), null);
 		StringSQLAppender result = new StringSQLAppender(dmlNameProvider);
 		
 		testInstance.catGreater(gt(1), result, null);
@@ -268,7 +291,7 @@ class OperatorSQLBuilderTest {
 	
 	@Test
 	public void catLower() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()), null);
 		StringSQLAppender result = new StringSQLAppender(dmlNameProvider);
 		
 		testInstance.catLower(lt(1), result, null);
@@ -289,7 +312,7 @@ class OperatorSQLBuilderTest {
 	
 	@Test
 	public void catEquals() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()), null);
 		StringSQLAppender result = new StringSQLAppender(dmlNameProvider);
 		
 		testInstance.catEquals(eq(1), result, null);
@@ -298,7 +321,7 @@ class OperatorSQLBuilderTest {
 	
 	@Test
 	public void catEquals_withFunction() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()), null);
 		StringSQLAppender result = new StringSQLAppender(dmlNameProvider);
 		
 		testInstance.catEquals(new Equals<>(new LowerCase<>("a")), result, null);
@@ -324,7 +347,7 @@ class OperatorSQLBuilderTest {
 	
 	@Test
 	public void catEquals_column() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()), null);
 		StringSQLAppender result = new StringSQLAppender(dmlNameProvider);
 		
 		Table tableToto = new Table("Toto");

@@ -8,7 +8,10 @@ import java.util.List;
 import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.FunctionSQLBuilder;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.QueryStatement;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
 import org.codefilarete.stalactite.query.model.Variable;
 import org.codefilarete.stalactite.query.model.operator.Between;
@@ -16,6 +19,7 @@ import org.codefilarete.stalactite.query.model.operator.Between.Interval;
 import org.codefilarete.stalactite.query.model.operator.Equals;
 import org.codefilarete.stalactite.query.model.operator.Greater;
 import org.codefilarete.stalactite.query.model.operator.In;
+import org.codefilarete.stalactite.query.model.operator.InSubQuery;
 import org.codefilarete.stalactite.query.model.operator.IsNull;
 import org.codefilarete.stalactite.query.model.operator.Lesser;
 import org.codefilarete.stalactite.query.model.operator.Like;
@@ -35,16 +39,31 @@ public class OperatorSQLBuilderFactory {
 	public OperatorSQLBuilderFactory() {
 	}
 	
-	public OperatorSQLBuilder operatorSQLBuilder(FunctionSQLBuilder functionSQLBuilder) {
-		return new OperatorSQLBuilder(functionSQLBuilder);
+	/**
+	 * Constructs a {@link OperatorSQLBuilder} for printing operators as SQL.
+	 *
+	 * @param functionSQLBuilder the builder for SQL function printer
+	 * @param querySQLBuilderFactory a factory for printing instances of {@link org.codefilarete.stalactite.query.model.QueryStatement}s used in subqueries for "in" operator
+	 * @return an instance of {@link OperatorSQLBuilder}
+	 */
+	public OperatorSQLBuilder operatorSQLBuilder(FunctionSQLBuilder functionSQLBuilder, QuerySQLBuilderFactory querySQLBuilderFactory) {
+		return new OperatorSQLBuilder(functionSQLBuilder, querySQLBuilderFactory);
 	}
 	
 	public static class OperatorSQLBuilder {
 		
 		private final FunctionSQLBuilder functionSQLBuilder;
+		private final QuerySQLBuilderFactory querySQLBuilderFactory;
 		
-		public OperatorSQLBuilder(FunctionSQLBuilder functionSQLBuilder) {
+		/**
+		 * Constructs a {@link OperatorSQLBuilder} for building operators.
+		 *
+		 * @param functionSQLBuilder the builder for function SQL
+		 * @param querySQLBuilderFactory a factory for printing instances of {@link org.codefilarete.stalactite.query.model.QueryStatement}s used in subqueries for "in" operator
+		 */
+		public OperatorSQLBuilder(FunctionSQLBuilder functionSQLBuilder, QuerySQLBuilderFactory querySQLBuilderFactory) {
 			this.functionSQLBuilder = functionSQLBuilder;
+			this.querySQLBuilderFactory = querySQLBuilderFactory;
 		}
 		
 		/**
@@ -77,6 +96,8 @@ public class OperatorSQLBuilderFactory {
 					catLike((Like) operator, sql, column);
 				} else if (operator instanceof IsNull) {
 					catIsNull((IsNull) operator, sql);
+				} else if (operator instanceof InSubQuery) {
+					catInSubQuery((InSubQuery) operator, sql);
 				} else {
 					throw new UnsupportedOperationException("Operator " + Reflections.toString(operator.getClass()) + " is not implemented");
 				}
@@ -108,7 +129,7 @@ public class OperatorSQLBuilderFactory {
 		}
 		
 		<V> void catIn(In<V> in, SQLAppender sql, Selectable<V> column) {
-			// we take collection into account : iterating over it to cat all values
+			// we take the collection into account: iterating over it to cat all values
 			Variable<Iterable<V>> value = in.getValue();
 			sql.catIf(in.isNot(), "not ").cat("in (");
 			catInValue(value, sql, column);
@@ -116,7 +137,7 @@ public class OperatorSQLBuilderFactory {
 		}
 		
 		void catTupledIn(TupleIn in, SQLAppender sql) {
-			// we take collection into account : iterating over it to cat all values
+			// we take the collection into account: iterating over it to cat all values
 			Column[] columns = in.getColumns();
 			sql.catIf(in.isNot(), "not ");
 			sql.cat("(");
@@ -146,6 +167,21 @@ public class OperatorSQLBuilderFactory {
 					}
 				}
 			}
+			sql.cat(")");
+		}
+		
+		<V> void catInSubQuery(InSubQuery<V> in, SQLAppender sql) {
+			sql.catIf(in.isNot(), "not ").cat("in (");
+			QueryStatement query = in.getQuery();
+			QuerySQLBuilderFactory.QueryStatementSQLBuilder queryBuilder;
+			if (query instanceof Query) {
+				queryBuilder = querySQLBuilderFactory.queryBuilder((Query) query);
+			} else if (query instanceof Union) {
+				queryBuilder = querySQLBuilderFactory.unionBuilder((Union) query);
+			} else {
+				throw new IllegalArgumentException("Unsupported query type: " + Reflections.toString(query.getClass()));
+			}
+			queryBuilder.appendTo(sql);
 			sql.cat(")");
 		}
 		

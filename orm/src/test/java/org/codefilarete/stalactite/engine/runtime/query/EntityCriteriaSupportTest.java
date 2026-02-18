@@ -1,6 +1,9 @@
 package org.codefilarete.stalactite.engine.runtime.query;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.Accessors;
@@ -15,6 +18,8 @@ import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
+import org.codefilarete.stalactite.engine.model.restaurant.Restaurant;
+import org.codefilarete.stalactite.engine.model.restaurant.Review;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
@@ -51,6 +56,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
+import static org.codefilarete.stalactite.query.model.Operators.avg;
+import static org.codefilarete.stalactite.query.model.OrderByChain.Order.DESC;
+import static org.codefilarete.stalactite.query.model.QueryEase.select;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -232,5 +240,114 @@ class EntityCriteriaSupportTest {
 		assertThat(loadedCountry).isNotNull();
 		// we ensure that the whole aggregate is loaded, not a subset of the collection
 		assertThat(loadedCountry.getCities().stream().map(City::getName).collect(Collectors.toSet())).containsExactlyInAnyOrder("Grenoble", "Lyon");
+	}
+	
+	@Test
+	void selectWhere_subQuery() {
+		Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
+		
+		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
+		
+		EntityPersister<Restaurant, Long> restaurantPersister = entityBuilder(Restaurant.class, long.class)
+				.mapKey(Restaurant::getId, IdentifierPolicy.databaseAutoIncrement())
+				.map(Restaurant::getName)
+				.map(Restaurant::getDescription)
+				.mapOneToMany(Restaurant::getReviews, entityBuilder(Review.class, long.class)
+						.mapKey(Review::getId, IdentifierPolicy.databaseAutoIncrement())
+						.usingConstructor(Review::new)
+						.map(Review::getRating)
+						.map(Review::getComment))
+				.mappedBy(Review::setRestaurant)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Map<String, Table<?>> tablePerName = DDLDeployer.collectTables(persistenceContext).stream().collect(Collectors.toMap(Table::getName, Function.identity()));
+		Table<?> reviewTable = tablePerName.get("Review");
+		Column<?, Long> restaurantIdColumn = reviewTable.getColumn("restaurantId");
+		Column<?, Long> ratingColumn = reviewTable.getColumn("rating");
+		EntityPersister.ExecutableEntityQuery<Restaurant, ?> topRatedRestaurantsQuery = restaurantPersister.selectWhere(Restaurant::getId, Operators.in(
+				select(restaurantIdColumn)
+						.from(reviewTable)
+						.groupBy(restaurantIdColumn)
+						.orderBy(avg(ratingColumn), DESC)
+						.limit(5)));
+		
+		
+		insertRestaurantData(restaurantPersister);
+		Set<Restaurant> topRatedRestaurants = topRatedRestaurantsQuery.execute(Accumulators.toSet());
+		
+		assertThat(topRatedRestaurants.stream().map(Restaurant::getName)).containsExactlyInAnyOrder(
+				"Vegan Village", "Pasta Prime", "Burger Barn", "Steak House", "The Pizza Palace");
+		
+	}
+	
+	void insertRestaurantData(EntityPersister<Restaurant, Long> restaurantPersister) {
+		Restaurant pizzaPalace = new Restaurant("The Pizza Palace", "Best wood-fired pizza in the city");
+		pizzaPalace.addReviews(
+				new Review("Amazing crust!", 5),
+				new Review("Good variety of toppings", 4),
+				new Review("Wait time was a bit long", 3),
+				new Review("Authentic wood-fired taste", 5));
+		Restaurant burgerBarn = new Restaurant("Burger Barn", "Juicy gourmet burgers and craft beer");
+		burgerBarn.addReviews(
+				new Review("Great burgers", 4),
+				new Review("A bit noisy but food is good", 3),
+				new Review("The best milkshake to go with the burger", 5),
+				new Review("Friendly staff and good vibes", 4)
+		);
+		Restaurant sushiSun = new Restaurant("Sushi Sun", "Fresh hand-rolled sushi and sashimi");
+		sushiSun.addReviews(
+				new Review("The wait was somewhat lengthy.", 4),
+				new Review("The salmon rolls are fine", 3),
+				new Review("Fish didn't taste very fresh today", 2)
+		);
+		Restaurant pastaPrime = new Restaurant("Pasta Prime", "Authentic handmade Italian pasta");
+		pastaPrime.addReviews(
+				new Review("Great carbonara", 4),
+				new Review("Waitstaff was excellent", 5),
+				new Review("The carbonara was exactly how I like it", 5)
+		);
+		Restaurant tacoTime = new Restaurant("Taco Time", "Traditional Mexican street tacos");
+		tacoTime.addReviews(
+				new Review("Tacos were okay", 3),
+				new Review("Love the spicy salsa", 4),
+				new Review("The salsa is actually too spicy!", 2)
+		);
+		Restaurant curryComer = new Restaurant("Curry Corner", "Spiced to perfection Indian cuisine");
+		curryComer.addReviews(
+				new Review("Best butter chicken", 5),
+				new Review("Portions are huge", 4),
+				new Review("Service was extremely slow", 1),
+				new Review("Nice variety of tandoori dishes", 4)
+		);
+		Restaurant steakHouse = new Restaurant("Steak House", "Premium cuts and fine wine");
+		steakHouse.addReviews(
+				new Review("Perfectly cooked ribs", 5),
+				new Review("Excellent service", 5),
+				new Review("The wine list is impressive", 5)
+		);
+		Restaurant veganVillage = new Restaurant("Vegan Village", "Creative plant-based dishes");
+		veganVillage.addReviews(
+				new Review("Healthy and delicious", 4),
+				new Review("The vegan dessert was a surprise", 5),
+				new Review("Portions were small for the price", 3),
+				new Review("Unique vegetable combinations", 4)
+		);
+		Restaurant dimSumDen = new Restaurant("Dim Sum Den", "Traditional Cantonese small bites");
+		dimSumDen.addReviews(
+				new Review("Fine dumplings", 3),
+				new Review("Long wait on weekends", 3),
+				new Review("Loved the steamed buns", 5)
+		);
+		Restaurant bistroBlue = new Restaurant("Bistro Blue", "Elegant French seasonal menu");
+		bistroBlue.addReviews(
+				new Review("Very romantic atmosphere", 5),
+				new Review("Exquisite flavors", 4),
+				new Review("A bit too oily for my taste", 2)
+		);
+		
+		restaurantPersister.persist(pizzaPalace, burgerBarn, sushiSun, pastaPrime, tacoTime, curryComer, steakHouse, veganVillage, dimSumDen, bistroBlue);
 	}
 }

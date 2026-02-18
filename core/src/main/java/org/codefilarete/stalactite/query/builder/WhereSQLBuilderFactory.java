@@ -22,7 +22,7 @@ import org.codefilarete.tool.Reflections;
  * which then let one gives its own implementation of {@link WhereSQLBuilderFactory}.
  *
  * @author Guillaume Mary
- * @see #whereBuilder(CriteriaChain, DMLNameProvider)
+ * @see #whereBuilder(CriteriaChain, DMLNameProvider, QuerySQLBuilderFactory)
  */
 public class WhereSQLBuilderFactory {
 
@@ -47,13 +47,21 @@ public class WhereSQLBuilderFactory {
 		this.functionSQLBuilderFactory = functionSQLBuilderFactory;
 	}
 	
-	public WhereSQLBuilder whereBuilder(CriteriaChain where, DMLNameProvider dmlNameProvider) {
+	/**
+	 * Constructs a {@link WhereSQLBuilder} for building SQL WHERE clauses based on the provided criteria.
+	 *
+	 * @param where the criteria chain representing the conditions to be included in the WHERE clause
+	 * @param dmlNameProvider the instance that supplies names for database objects (e.g., tables, columns) in SQL statements
+	 * @param querySQLBuilderFactory a factory for printing instances of {@link org.codefilarete.stalactite.query.model.QueryStatement}s used in subqueries for "in" operator
+	 * @return an instance of {@link WhereSQLBuilder} configured with the provided criteria and supporting components
+	 */
+	public WhereSQLBuilder whereBuilder(CriteriaChain where, DMLNameProvider dmlNameProvider, QuerySQLBuilderFactory querySQLBuilderFactory) {
 		FunctionSQLBuilder functionSQLBuilder = functionSQLBuilderFactory.functionSQLBuilder(dmlNameProvider);
 		return new WhereSQLBuilder(
 				where,
 				dmlNameProvider,
 				parameterBinderRegistry,
-				operatorSqlBuilderFactory.operatorSQLBuilder(functionSQLBuilder),
+				operatorSqlBuilderFactory.operatorSQLBuilder(functionSQLBuilder, querySQLBuilderFactory),
 				functionSQLBuilder);
 	}
 	

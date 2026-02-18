@@ -8,7 +8,6 @@ import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.Funct
 import org.codefilarete.stalactite.query.builder.SQLAppender.SubSQLAppender;
 import org.codefilarete.stalactite.query.builder.SelectSQLBuilderFactory.SelectSQLBuilder;
 import org.codefilarete.stalactite.query.builder.WhereSQLBuilderFactory.WhereSQLBuilder;
-import org.codefilarete.stalactite.query.model.AbstractCriterion;
 import org.codefilarete.stalactite.query.model.GroupBy;
 import org.codefilarete.stalactite.query.model.Having;
 import org.codefilarete.stalactite.query.model.Limit;
@@ -125,8 +124,8 @@ public class QuerySQLBuilderFactory {
 				dmlNameProvider,
 				selectBuilderFactory.queryBuilder(query.getSelectDelegate(), dmlNameProvider),
 				fromBuilderFactory.fromBuilder(query.getFromDelegate(), dmlNameProvider, this),
-				whereBuilderFactory.whereBuilder(query.getWhereDelegate(), dmlNameProvider),
-				havingBuilderFactory.whereBuilder(query.getHavingDelegate(), dmlNameProvider),
+				whereBuilderFactory.whereBuilder(query.getWhereDelegate(), dmlNameProvider, this),
+				havingBuilderFactory.whereBuilder(query.getHavingDelegate(), dmlNameProvider, this),
 				functionSQLBuilderFactory.functionSQLBuilder(dmlNameProvider),
 				parameterBinderRegistry);
 	}

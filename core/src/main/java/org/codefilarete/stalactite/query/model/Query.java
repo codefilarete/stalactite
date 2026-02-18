@@ -314,19 +314,19 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 	}
 	
 	@Override
-	public FluentOrderByClause orderBy(Column column, Order order) {
+	public FluentOrderByClause orderBy(Selectable<?> column, Order order) {
 		this.orderByDelegate.add(column, order);
 		return orderBy;
 	}
 	
 	@Override
-	public FluentOrderByClause orderBy(Column col1, Order order1, Column col2, Order order2) {
+	public FluentOrderByClause orderBy(Selectable<?> col1, Order order1, Selectable<?> col2, Order order2) {
 		this.orderByDelegate.add(col1, order1, col2, order2);
 		return orderBy;
 	}
 	
 	@Override
-	public FluentOrderByClause orderBy(Column col1, Order order1, Column col2, Order order2, Column col3, Order order3) {
+	public FluentOrderByClause orderBy(Selectable<?> col1, Order order1, Selectable<?> col2, Order order2, Selectable<?> col3, Order order3) {
 		this.orderByDelegate.add(col1, order1, col2, order2, col3, order3);
 		return orderBy;
 	}
@@ -350,7 +350,7 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 	}
 	
 	@Override
-	public FluentOrderByClause orderBy(Column column, Column... columns) {
+	public FluentOrderByClause orderBy(Selectable<?> column, Selectable<?>... columns) {
 		this.orderByDelegate.add(column, columns);
 		return orderBy;
 	}

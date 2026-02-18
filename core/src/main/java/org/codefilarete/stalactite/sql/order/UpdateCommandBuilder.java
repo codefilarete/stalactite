@@ -108,14 +108,14 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 		// append where clause
 		if (!update.getCriteria().getConditions().isEmpty()) {
 			criteriaAppender.cat(" where ");
-			WhereSQLBuilder whereSqlBuilder = dialect.getQuerySQLBuilderFactory().getWhereBuilderFactory().whereBuilder(this.update.getCriteria(), dmlNameProvider);
+			WhereSQLBuilder whereSqlBuilder = dialect.getQuerySQLBuilderFactory().getWhereBuilderFactory().whereBuilder(this.update.getCriteria(), dmlNameProvider, dialect.getQuerySQLBuilderFactory());
 			whereSqlBuilder.appendTo(criteriaAppender);
 		}
 	}
 	
 	/**
 	 * Method that must append the given value coming from the "set" clause to the given SQLAppender.
-	 * Left protected to cover unexpected cases (because {@link InsertColumn} handle Objects as value)
+	 * Left protected to cover unexpected cases (because {@link ColumnVariable} handle Objects as value)
 	 * 
 	 * @param updateColumn the value to append in the {@link SQLAppender}
 	 * @param result the final SQL appender
