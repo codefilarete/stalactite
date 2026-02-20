@@ -163,7 +163,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.onTable(totoTable)
 					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
 					.map(Toto::getName)
-					.build(persistenceContext);	// necessary to set table since we override Identifier binding
+					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -175,7 +175,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was called").isTrue();
 			assertThat(loadedInstance.isConstructorWithIdWasCalled()).as("constructor with Id was called").isFalse();
 		}
-
+		
 		@Test
 		void columnNameAndSize() throws SQLException {
 			MappingEase.entityBuilder(Toto.class, UUID.class)
@@ -183,11 +183,11 @@ class FluentEntityMappingConfigurationSupportTest {
 						.columnName("id")
 						.columnSize(Size.length(36))
 					.map(Toto::getName)
-					.build(persistenceContext);	// necessary to set table since we override Identifier binding
-
+					.build(persistenceContext);
+			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
-
+			
 			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
 			ResultSetIterator<Table> fkPersonIterator = new ResultSetIterator<Table>(currentConnection.getMetaData().getColumns(null, null,
 					"%TOTO%", "%")) {
@@ -206,57 +206,27 @@ class FluentEntityMappingConfigurationSupportTest {
 			assertThat(foundTable.getColumn("ID")).isNotNull();
 			assertThat(foundTable.getColumn("ID").getSize()).usingRecursiveComparison().isEqualTo(Size.length(36));
 		}
-
+		
 		@Test
 		void column() throws SQLException {
 			Table totoTable = new Table("Toto");
 			Column<?, UUID> uuidColumn = totoTable.addColumn("uid", UUID_TYPE, Size.length(36));
-
+			
 			MappingEase.entityBuilder(Toto.class, UUID.class)
 					.mapKey(Toto::getUUID, IdentifierPolicy.<Toto, UUID>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
 						.column(uuidColumn)
 					.map(Toto::getName)
-					.build(persistenceContext);	// necessary to set table since we override Identifier binding
-
+					.build(persistenceContext);
+			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
-
+			
 			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
 			ResultSetIterator<Table> fkPersonIterator = new ResultSetIterator<Table>(currentConnection.getMetaData().getColumns(null, null,
 					"%TOTO%", "%")) {
 				
 				private final Map<String, Table> foundTables = new HashMap<>();
 				
-				@Override
-				public Table convert(ResultSet rs) throws SQLException {
-					String tableName = rs.getString("TABLE_NAME");
-					Table table = foundTables.computeIfAbsent(tableName, Table::new);
-					table.addColumn(rs.getString("COLUMN_NAME"), String.class, Size.length(rs.getInt("COLUMN_SIZE")));
-					return table;
-				}
-			};
-			Table foundTable = Iterables.first(fkPersonIterator.convert());
-			assertThat(foundTable.getColumn("UID")).isNotNull();
-			assertThat(foundTable.getColumn("UID").getSize()).usingRecursiveComparison().isEqualTo(Size.length(36));
-		}
-
-		@Test
-		void fieldName() throws SQLException {
-			MappingEase.entityBuilder(Toto.class, UUID.class)
-					.mapKey(Toto::getUUID, IdentifierPolicy.<Toto, UUID>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
-						.fieldName("uid")
-					.map(Toto::getName)
-					.build(persistenceContext);	// necessary to set table since we override Identifier binding
-
-			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-			ddlDeployer.deployDDL();
-
-			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
-			ResultSetIterator<Table> fkPersonIterator = new ResultSetIterator<Table>(currentConnection.getMetaData().getColumns(null, null,
-					"%TOTO%", "%")) {
-
-				private final Map<String, Table> foundTables = new HashMap<>();
-
 				@Override
 				public Table convert(ResultSet rs) throws SQLException {
 					String tableName = rs.getString("TABLE_NAME");
@@ -271,20 +241,90 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		void usingConstructor_supplier_supplierIsCalled() {
+		void fieldName() throws SQLException {
+			MappingEase.entityBuilder(Toto.class, UUID.class)
+					.mapKey(Toto::getUUID, IdentifierPolicy.<Toto, UUID>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
+						.fieldName("uid")
+					.map(Toto::getName)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
+			ResultSetIterator<Table> fkPersonIterator = new ResultSetIterator<Table>(currentConnection.getMetaData().getColumns(null, null,
+					"%TOTO%", "%")) {
+				
+				private final Map<String, Table> foundTables = new HashMap<>();
+				
+				@Override
+				public Table convert(ResultSet rs) throws SQLException {
+					String tableName = rs.getString("TABLE_NAME");
+					Table table = foundTables.computeIfAbsent(tableName, Table::new);
+					table.addColumn(rs.getString("COLUMN_NAME"), String.class, Size.length(rs.getInt("COLUMN_SIZE")));
+					return table;
+				}
+			};
+			Table foundTable = Iterables.first(fkPersonIterator.convert());
+			assertThat(foundTable.getColumn("UID")).isNotNull();
+			assertThat(foundTable.getColumn("UID").getSize()).usingRecursiveComparison().isEqualTo(Size.length(36));
+		}
+	}
+	
+	@Nested
+	class UsingConstructor {
+		
+		@Test
+		void ifConstructorWithIdExists_constructorWithIdIsUsed() {
+			EntityPersister<Toto, UUID> persister = MappingEase.entityBuilder(Toto.class, UUID.class)
+					.mapKey(Toto::getUUID, IdentifierPolicy.<Toto, UUID>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
+					.map(Toto::getName)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto entity = new Toto(UUID.randomUUID());
+			entity.setName("Tutu");
+			persister.insert(entity);
+			Toto loadedInstance = persister.select(entity.getUUID());
+			assertThat(loadedInstance.isSetUuidWasCalled()).as("setUuid was called").isFalse();
+			assertThat(loadedInstance.isConstructorWithIdWasCalled()).as("constructor with Id was called").isTrue();
+		}
+		
+		@Test
+		void ifConstructorWithIdExists_butConstructorWithoutArgsIsSpecified_constructorWithoutArgsIsUsed() {
+			EntityPersister<Toto, UUID> persister = MappingEase.entityBuilder(Toto.class, UUID.class)
+					.mapKey(Toto::getUUID, IdentifierPolicy.<Toto, UUID>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
+						.usingConstructor((Supplier<Toto>) Toto::new)
+					.map(Toto::getName)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto entity = new Toto(UUID.randomUUID());
+			entity.setName("Tutu");
+			persister.insert(entity);
+			Toto loadedInstance = persister.select(entity.getUUID());
+			assertThat(loadedInstance.isSetUuidWasCalled()).as("setUuid was called").isTrue();
+			assertThat(loadedInstance.isConstructorWithIdWasCalled()).as("constructor with Id was called").isFalse();
+		}
+		
+		@Test
+		void supplierIsAStaticFactory_supplierIsCalled() {
 			Table totoTable = new Table("Toto");
 			Column<Table, Identifier<UUID>> idColumn = totoTable.addColumn("id", UUID_TYPE);
 			
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
-			Supplier<Toto> constructor = Toto::newInstance;
 			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
 					.onTable(totoTable)
 					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
-						.usingConstructor(constructor)
+						.usingConstructor(Toto::newInstance)
 					.map(Toto::getName)
-					.build(persistenceContext);	// necessary to set table since we override Identifier binding
+					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -299,15 +339,12 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		void usingConstructor_constructorIsInvoked_setterIsNotCalled() {
-			Table totoTable = new Table("Toto");
-
+		void constructorIsInvoked_setterIsNotCalled() {
 			dialect.getColumnBinderRegistry().register((Class) UUID_TYPE, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(UUID_TYPE, "VARCHAR(255)");
 			
 			Function<Identifier<UUID>, Toto> constructor = (Function<Identifier<UUID>, Toto>) (Function) (Function<PersistedIdentifier<UUID>, Toto>) Toto::new;
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, (Class<Identifier<UUID>>) (Class) UUID_TYPE)
-					.onTable(totoTable)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
 					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
 						.usingConstructor(constructor)
 					.map(Toto::getName)
@@ -325,7 +362,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		<T extends Table<T>> void usingConstructor_1Arg_constructorIsInvoked_setterIsNotCalled() {
+		<T extends Table<T>> void _1Arg_constructorIsInvoked_setterIsNotCalled() {
 			T totoTable = (T) new Table("Toto");
 			Column<T, Identifier<UUID>> idColumn = totoTable.addColumn("id", UUID_TYPE).primaryKey();
 
@@ -333,7 +370,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			Function<Identifier<UUID>, Toto> constructor = (Function<Identifier<UUID>, Toto>) (Function) (Function<PersistedIdentifier<UUID>, Toto>) Toto::new;
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, (Class<Identifier<UUID>>) (Class) UUID_TYPE)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
 					.onTable(totoTable)
 					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
 						.usingConstructor(constructor, idColumn)
@@ -352,15 +389,12 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		void usingConstructor_1ArgColumnName_constructorIsInvoked_setterIsNotCalled() {
-			Table totoTable = new Table("Toto");
-			
+		void _1ArgColumnName_constructorIsInvoked_setterIsNotCalled() {
 			dialect.getColumnBinderRegistry().register((Class) UUID_TYPE, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(UUID_TYPE, "VARCHAR(255)");
 			
 			Function<Identifier<UUID>, Toto> constructor = (Function<Identifier<UUID>, Toto>) (Function) (Function<PersistedIdentifier<UUID>, Toto>) Toto::new;
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, (Class<Identifier<UUID>>) (Class) UUID_TYPE)
-					.onTable(totoTable)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
 					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
 						.usingConstructor(constructor, "myId")
 					.map(Toto::getName)
@@ -378,7 +412,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		<T extends Table<T>> void usingConstructor_2Args_constructorIsInvoked_setterIsNotCalled() {
+		<T extends Table<T>> void _2Args_constructorIsInvoked_setterIsNotCalled() {
 			T totoTable = (T) new Table("Toto");
 			Column<T, Identifier<UUID>> idColumn = totoTable.addColumn("id", UUID_TYPE).primaryKey();
 			Column<T, String> nameColumn = totoTable.addColumn("name", String.class);
@@ -387,7 +421,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			BiFunction<Identifier<UUID>, String, Toto> constructor = (BiFunction<Identifier<UUID>, String, Toto>) (BiFunction) (BiFunction<PersistedIdentifier<UUID>, String, Toto>) Toto::new;
-			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, (Class<Identifier<UUID>>) (Class) UUID_TYPE)
+			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
 					.onTable(totoTable)
 					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
 						.usingConstructor(constructor, idColumn, nameColumn)
@@ -455,7 +489,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.onTable(totoTable)
 					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(Toto::getName)
-					.build(persistenceContext);	// necessary to set table since we override Identifier binding
+					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -2235,6 +2269,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		private Set<Timestamp> times;
 		
 		private boolean setIdWasCalled;
+		private boolean setUuidWasCalled;
 		private boolean constructorWithIdWasCalled;
 		private boolean constructorWith2ArgsWasCalled;
 		
@@ -2247,6 +2282,11 @@ class FluentEntityMappingConfigurationSupportTest {
 		public Toto(PersistedIdentifier<UUID> id) {
 			super(id);
 			this.constructorWithIdWasCalled = true;
+		}
+		
+		public Toto(UUID id) {
+			this(new PersistedIdentifier(id));
+			this.uid = id;
 		}
 		
 		public Toto(PersistedIdentifier<UUID> id, String name) {
@@ -2284,7 +2324,12 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		public void setUUID(UUID uuid) {
-			this.uid = uuid;
+			// this method is a lure for default ReversibleAccessor mechanism because it matches getter by its name but does nothing special about id
+			setUuidWasCalled = true;
+		}
+		
+		public boolean isSetUuidWasCalled() {
+			return setUuidWasCalled;
 		}
 		
 		public Long getNoMatchingField() {

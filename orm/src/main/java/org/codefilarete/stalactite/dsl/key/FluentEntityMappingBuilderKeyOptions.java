@@ -18,32 +18,32 @@ public interface FluentEntityMappingBuilderKeyOptions<C, I> extends FluentEntity
 	FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(Supplier<C> factory);
 	
 	@Override
-	FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(Function<? super I, C> factory);
+	FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(Function<I, C> factory);
 	
 	@Override
-	<T extends Table<T>> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(Function<? super I, C> factory, Column<T, I> input);
+	<T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(Function<I, C> factory, Column<T, I> input);
 	
 	@Override
-	FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(Function<? super I, C> factory, String columnName);
+	FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(Function<I, C> factory, String columnName);
 	
 	@Override
-	<X, T extends Table<T>> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
+	<X, T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
 																						Column<T, I> input1,
 																						Column<T, X> input2);
 	
 	@Override
-	<X> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
+	<X> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(BiFunction<I, X, C> factory,
 																	String columnName1,
 																	String columnName2);
 	
 	@Override
-	<X, Y, T extends Table<T>> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(TriFunction<? super I, X, Y, C> factory,
+	<X, Y, T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(TriFunction<I, X, Y, C> factory,
 																						   Column<T, I> input1,
 																						   Column<T, X> input2,
 																						   Column<T, Y> input3);
 	
 	@Override
-	<X, Y> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(TriFunction<? super I, X, Y, C> factory,
+	<X, Y> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(TriFunction<I, X, Y, C> factory,
 																	   String columnName1,
 																	   String columnName2,
 																	   String columnName3);

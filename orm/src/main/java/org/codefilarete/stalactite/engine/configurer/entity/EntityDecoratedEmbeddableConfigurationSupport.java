@@ -251,7 +251,7 @@ class EntityDecoratedEmbeddableConfigurationSupport<C, I> extends FluentEmbeddab
 					}
 					
 					@Override
-					public KeyOptions<C, I> usingConstructor(Function<? super I, C> factory) {
+					public KeyOptions<C, I> usingConstructor(Function<I, C> factory) {
 						keyMapping.setByConstructor();
 						entityConfigurationSupport.setEntityFactoryProvider(new EntityFactoryProviderSupport<>(table -> {
 							Column<?, I> primaryKey = (Column<?, I>) Iterables.first(((Table<?>) table).getPrimaryKey().getColumns());
@@ -261,7 +261,7 @@ class EntityDecoratedEmbeddableConfigurationSupport<C, I> extends FluentEmbeddab
 					}
 					
 					@Override
-					public <T extends Table<T>> KeyOptions<C, I> usingConstructor(Function<? super I, C> factory, Column<T, I> input) {
+					public <T extends Table> KeyOptions<C, I> usingConstructor(Function<I, C> factory, Column<T, I> input) {
 						keyMapping.setColumnOptions(new ColumnLinkageOptionsByColumn(input));
 						keyMapping.setByConstructor();
 						entityConfigurationSupport.setEntityFactoryProvider(new EntityFactoryProviderSupport<>(table -> row -> factory.apply((I) row.get(input)), true));
@@ -269,7 +269,7 @@ class EntityDecoratedEmbeddableConfigurationSupport<C, I> extends FluentEmbeddab
 					}
 					
 					@Override
-					public KeyOptions<C, I> usingConstructor(Function<? super I, C> factory, String columnName) {
+					public KeyOptions<C, I> usingConstructor(Function<I, C> factory, String columnName) {
 						keyMapping.setColumnOptions(new ColumnLinkageOptionsSupport(columnName));
 						keyMapping.setByConstructor();
 						entityConfigurationSupport.setEntityFactoryProvider(new EntityFactoryProviderSupport<>(table -> row -> factory.apply((I) row.get(table.getColumn(columnName))), true));
@@ -277,7 +277,7 @@ class EntityDecoratedEmbeddableConfigurationSupport<C, I> extends FluentEmbeddab
 					}
 					
 					@Override
-					public <X, T extends Table<T>> KeyOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
+					public <X, T extends Table> KeyOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
 																					 Column<T, I> input1,
 																					 Column<T, X> input2) {
 						keyMapping.setColumnOptions(new ColumnLinkageOptionsByColumn(input1));
@@ -291,7 +291,7 @@ class EntityDecoratedEmbeddableConfigurationSupport<C, I> extends FluentEmbeddab
 					}
 					
 					@Override
-					public <X> KeyOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
+					public <X> KeyOptions<C, I> usingConstructor(BiFunction<I, X, C> factory,
 																 String columnName1,
 																 String columnName2) {
 						keyMapping.setColumnOptions(new ColumnLinkageOptionsSupport(columnName1));
@@ -306,7 +306,7 @@ class EntityDecoratedEmbeddableConfigurationSupport<C, I> extends FluentEmbeddab
 					
 					
 					@Override
-					public <X, Y, T extends Table<T>> KeyOptions<C, I> usingConstructor(TriFunction<? super I, X, Y, C> factory,
+					public <X, Y, T extends Table> KeyOptions<C, I> usingConstructor(TriFunction<I, X, Y, C> factory,
 																						Column<T, I> input1,
 																						Column<T, X> input2,
 																						Column<T, Y> input3) {
@@ -322,7 +322,7 @@ class EntityDecoratedEmbeddableConfigurationSupport<C, I> extends FluentEmbeddab
 					}
 					
 					@Override
-					public <X, Y> KeyOptions<C, I> usingConstructor(TriFunction<? super I, X, Y, C> factory,
+					public <X, Y> KeyOptions<C, I> usingConstructor(TriFunction<I, X, Y, C> factory,
 																	String columnName1,
 																	String columnName2,
 																	String columnName3) {

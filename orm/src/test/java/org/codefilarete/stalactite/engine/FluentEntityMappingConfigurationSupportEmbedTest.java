@@ -76,7 +76,7 @@ public class FluentEntityMappingConfigurationSupportEmbedTest {
 				.mapKey(FluentEntityMappingConfigurationSupportTest.Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(FluentEntityMappingConfigurationSupportTest.Toto::getName)
 				.embed(FluentEntityMappingConfigurationSupportTest.Toto::getTimestamp, timestampMapping)
-				.build(persistenceContext);    // necessary to set table since we override Identifier binding
+				.build(persistenceContext);
 		
 		// column should be correctly created
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -127,7 +127,7 @@ public class FluentEntityMappingConfigurationSupportEmbedTest {
 					.mapKey(FluentEntityMappingConfigurationSupportTest.Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(FluentEntityMappingConfigurationSupportTest.Toto::getName)
 					.embed(FluentEntityMappingConfigurationSupportTest.Toto::getTimestamp, timestampWithLocaleMapping)
-					.build(persistenceContext);    // necessary to set table since we override Identifier binding
+					.build(persistenceContext);
 			
 			// column should be correctly created
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -336,7 +336,7 @@ public class FluentEntityMappingConfigurationSupportEmbedTest {
 					.map(FluentEntityMappingConfigurationSupportTest.Toto::getName)
 					.embed(FluentEntityMappingConfigurationSupportTest.Toto::getTimestamp, timestampMapping)
 					.overrideName(Timestamp::getCreationDate, "createdAt")
-					.build(persistenceContext);    // necessary to set table since we override Identifier binding
+					.build(persistenceContext);
 			
 			Map<String, Column> columnsByName = totoTable.mapColumnsOnName();
 			
@@ -403,7 +403,7 @@ public class FluentEntityMappingConfigurationSupportEmbedTest {
 					.map(FluentEntityMappingConfigurationSupportTest.Toto::getName)
 					.embed(FluentEntityMappingConfigurationSupportTest.Toto::getTimestamp, timestampMapping)
 					.overrideName(Timestamp::getCreationDate, "createdAt")
-					.build(persistenceContext);    // necessary to set table since we override Identifier binding
+					.build(persistenceContext);
 			
 			// column should be correctly created
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -465,7 +465,7 @@ public class FluentEntityMappingConfigurationSupportEmbedTest {
 				.map(FluentEntityMappingConfigurationSupportTest.Toto::getName)
 				.embed(FluentEntityMappingConfigurationSupportTest.Toto::getTimestamp, timestampMapping)
 				.exclude(Timestamp::getCreationDate)
-				.build(persistenceContext);    // necessary to set table since we override Identifier binding
+				.build(persistenceContext);
 		
 		Map map = totoTable.mapColumnsOnName();
 		assertThat(map.get("creationDate")).isNull();

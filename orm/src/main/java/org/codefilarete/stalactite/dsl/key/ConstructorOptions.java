@@ -19,7 +19,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
  * @param <C> entity type
  * @param <I> identifier type
  */
-public interface ConstructorOptions<C, I, SELF extends ConstructorOptions<C ,I, SELF>> {
+public interface ConstructorOptions<C, I> {
 	
 	/**
 	 * Indicates a no-arg factory to be used to instantiate entity.
@@ -27,7 +27,7 @@ public interface ConstructorOptions<C, I, SELF extends ConstructorOptions<C ,I, 
 	 * @param factory any no-arg method returning an instance of C
 	 * @return this
 	 */
-	SELF usingConstructor(Supplier<C> factory);
+	ConstructorOptions<C, I> usingConstructor(Supplier<C> factory);
 	
 	/**
 	 * Indicates the 1-arg constructor to be used to instantiate entity. It will be given primary key value.
@@ -35,7 +35,7 @@ public interface ConstructorOptions<C, I, SELF extends ConstructorOptions<C ,I, 
 	 * @param factory 1-arg constructor to be used
 	 * @return this
 	 */
-	SELF usingConstructor(Function<? super I, C> factory);
+	ConstructorOptions<C, I> usingConstructor(Function<I, C> factory);
 	
 	/**
 	 * Indicates the 1-arg constructor to be used to instantiate entity. It will be given column value (expected to be table primary key).
@@ -44,7 +44,7 @@ public interface ConstructorOptions<C, I, SELF extends ConstructorOptions<C ,I, 
 	 * @param input column to use for retrieving value to be given as constructor argument
 	 * @return this
 	 */
-	<T extends Table<T>> SELF usingConstructor(Function<? super I, C> factory, Column<T, I> input);
+	<T extends Table> ConstructorOptions<C, I> usingConstructor(Function<I, C> factory, Column<T, I> input);
 	
 	/**
 	 * Variant of {@link #usingConstructor(Function, Column)} with only column name.
@@ -52,7 +52,7 @@ public interface ConstructorOptions<C, I, SELF extends ConstructorOptions<C ,I, 
 	 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
 	 * @param columnName name of column to use for retrieving value to be given as constructor argument
 	 */
-	SELF usingConstructor(Function<? super I, C> factory, String columnName);
+	ConstructorOptions<C, I> usingConstructor(Function<I, C> factory, String columnName);
 	
 	/**
 	 * Variant of {@link #usingConstructor(Function, Column)} with 2 {@link Column}s : first one is expected to be primary key,
@@ -65,7 +65,7 @@ public interface ConstructorOptions<C, I, SELF extends ConstructorOptions<C ,I, 
 	 * @param input1 first column to use for retrieving value to be given as constructor argument
 	 * @param input2 second column to use for retrieving value to be given as constructor argument
 	 */
-	<X, T extends Table<T>> SELF usingConstructor(BiFunction<? super I, X, C> factory,
+	<X, T extends Table> ConstructorOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
 												  Column<T, I> input1,
 												  Column<T, X> input2);
 	
@@ -76,7 +76,7 @@ public interface ConstructorOptions<C, I, SELF extends ConstructorOptions<C ,I, 
 	 * @param columnName1 first column name to read in {@link java.sql.ResultSet} and make its value given as factory first argument
 	 * @param columnName2 second column name to read in {@link java.sql.ResultSet} and make its value given as factory first argument
 	 */
-	<X> SELF usingConstructor(BiFunction<? super I, X, C> factory, String columnName1, String columnName2);
+	<X> ConstructorOptions<C, I> usingConstructor(BiFunction<I, X, C> factory, String columnName1, String columnName2);
 	
 	/**
 	 * Variant of {@link #usingConstructor(BiFunction, Column, Column)} with 3 {@link Column}s : first one is expected to be primary key,
@@ -90,7 +90,7 @@ public interface ConstructorOptions<C, I, SELF extends ConstructorOptions<C ,I, 
 	 * @param input2 second column to use for retrieving value to be given as constructor argument
 	 * @param input3 third column to use for retrieving value to be given as constructor argument
 	 */
-	<X, Y, T extends Table<T>> SELF usingConstructor(TriFunction<? super I, X, Y, C> factory,
+	<X, Y, T extends Table> ConstructorOptions<C, I> usingConstructor(TriFunction<I, X, Y, C> factory,
 													 Column<T, I> input1,
 													 Column<T, X> input2,
 													 Column<T, Y> input3);
@@ -103,7 +103,7 @@ public interface ConstructorOptions<C, I, SELF extends ConstructorOptions<C ,I, 
 	 * @param columnName2 column name to read in {@link java.sql.ResultSet} and make its value given as factory first argument
 	 * @param columnName3 column name to read in {@link java.sql.ResultSet} and make its value given as factory first argument
 	 */
-	<X, Y> SELF usingConstructor(TriFunction<? super I, X, Y, C> factory,
+	<X, Y> ConstructorOptions<C, I> usingConstructor(TriFunction<I, X, Y, C> factory,
 								 String columnName1,
 								 String columnName2,
 								 String columnName3);
@@ -119,6 +119,6 @@ public interface ConstructorOptions<C, I, SELF extends ConstructorOptions<C ,I, 
 	 *
 	 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
 	 */
-	SELF usingFactory(Function<ColumnedRow, C> factory);
+	ConstructorOptions<C, I> usingFactory(Function<ColumnedRow, C> factory);
 	
 }
