@@ -497,8 +497,6 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 			public C transform(ColumnedRow row) {
 				C toReturn = mainMapping.getRowTransformer().transform(row);
 				// fixing identifier
-				// Note : this may be done twice in single column primary key case, because constructor expects that the column must be present in the
-				// mapping, then it is used by the SingleIdentifierAssembler
 				if (!identifierSetByBeanFactory) {
 					setId(toReturn, getIdMapping().getIdentifierAssembler().assemble(row));
 				}

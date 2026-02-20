@@ -15,11 +15,21 @@ public class Person {
 	
 	private Set<Pet> pets = new KeepOrderSet<>();
 	
+	private boolean constructorWithIdWasCalled;
+	
+	private boolean constructorWithIdArgsWasCalled;
+	
 	public Person() {
 	}
 	
 	public Person(PersonId id) {
 		this.id = id;
+		this.constructorWithIdWasCalled	= true;
+	}
+	
+	public Person(String firstName, String lastName, String address) {
+		this(new PersonId(firstName, lastName, address));
+		this.constructorWithIdArgsWasCalled = true;
 	}
 	
 	public PersonId getId() {
@@ -56,6 +66,14 @@ public class Person {
 	
 	public void removePet(Pet.PetId petId) {
 		this.pets.removeIf(pet -> pet.getId().equals(petId));
+	}
+	
+	public boolean isConstructorWithIdWasCalled() {
+		return constructorWithIdWasCalled;
+	}
+	
+	public boolean isConstructorWithIdArgsWasCalled() {
+		return constructorWithIdArgsWasCalled;
 	}
 	
 	@Override

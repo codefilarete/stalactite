@@ -43,6 +43,7 @@ import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.function.TriFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -54,7 +55,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.dsl.MappingEase.compositeKeyBuilder;
 import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
 import static org.codefilarete.stalactite.dsl.MappingEase.subentityBuilder;
-import static org.mockito.Mockito.mock;
 
 public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	
@@ -1228,6 +1228,177 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 			catBreed = persistenceContext.newQuery("select catBreed from Cat", String.class).mapKey("name", String.class).execute(Accumulators.getFirst());
 			assertThat(catBreed).isNull();
 		}
+	}
+	
+	@Nested
+	class UsingConstructor {
+		
+		@Test
+		void ifConstructorWithIdExists_constructorWithIdIsUsed() {
+			EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
+					.mapKey(Person::getId, compositeKeyBuilder(PersonId.class)
+							.map(PersonId::getFirstName)
+							.map(PersonId::getLastName)
+							.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
+					.map(Person::getAge)
+					.mapOneToOne(Person::getHouse, entityBuilder(House.class, HouseId.class)
+							.mapKey(House::getHouseId, compositeKeyBuilder(HouseId.class)
+									.map(HouseId::getNumber)
+									.map(HouseId::getStreet)
+									.map(HouseId::getZipCode)
+									.map(HouseId::getCity), h -> persistedHouses.add(h.getHouseId()), h -> persistedHouses.contains(h.getHouseId()))
+					)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person dummyPerson = new Person(new PersonId("John", "Do", "nowhere"));
+			dummyPerson.setHouse(new House(new HouseId(42, "Stalactite street", "888", "CodeFilarete City")));
+			dummyPerson.setAge(35);
+			
+			personPersister.insert(dummyPerson);
+			
+			Person loadedPerson = personPersister.select(dummyPerson.getId());
+			assertThat(loadedPerson.isConstructorWithIdWasCalled()).as("Constructor with identifier was called").isTrue();
+		}
+		
+		@Test
+		void ifConstructorWithIdExists_butConstructorWithoutArgsIsSpecified_constructorWithoutArgsIsUsed() {
+			EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
+					.mapKey(Person::getId, compositeKeyBuilder(PersonId.class)
+							.map(PersonId::getFirstName)
+							.map(PersonId::getLastName)
+							.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
+					// we force usage of the default no-args constructor
+					.usingConstructor(Person::new)
+					.map(Person::getAge)
+					.mapOneToOne(Person::getHouse, entityBuilder(House.class, HouseId.class)
+							.mapKey(House::getHouseId, compositeKeyBuilder(HouseId.class)
+									.map(HouseId::getNumber)
+									.map(HouseId::getStreet)
+									.map(HouseId::getZipCode)
+									.map(HouseId::getCity), h -> persistedHouses.add(h.getHouseId()), h -> persistedHouses.contains(h.getHouseId()))
+					)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person dummyPerson = new Person(new PersonId("John", "Do", "nowhere"));
+			dummyPerson.setHouse(new House(new HouseId(42, "Stalactite street", "888", "CodeFilarete City")));
+			dummyPerson.setAge(35);
+			
+			personPersister.insert(dummyPerson);
+			
+			Person loadedPerson = personPersister.select(dummyPerson.getId());
+			assertThat(loadedPerson.isConstructorWithIdWasCalled()).as("Constructor with identifier was called").isFalse();
+		}
+		
+		@Test
+		void withColumnArgs() {
+			Table personTable = new Table("Person");
+			Column<Table<?>, String> firstNameColumn = personTable.addColumn("firstName", String.class);
+			Column<Table<?>, String> lastNameColumn = personTable.addColumn("lastName", String.class);
+			Column<Table<?>, String> addressColumn = personTable.addColumn("address", String.class);
+			EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
+					.mapKey(Person::getId, compositeKeyBuilder(PersonId.class)
+							.map(PersonId::getFirstName)
+							.map(PersonId::getLastName)
+							.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
+					.usingConstructor(Person::new, firstNameColumn, lastNameColumn, addressColumn)
+					.map(Person::getAge)
+					.mapOneToOne(Person::getHouse, entityBuilder(House.class, HouseId.class)
+							.mapKey(House::getHouseId, compositeKeyBuilder(HouseId.class)
+									.map(HouseId::getNumber)
+									.map(HouseId::getStreet)
+									.map(HouseId::getZipCode)
+									.map(HouseId::getCity), h -> persistedHouses.add(h.getHouseId()), h -> persistedHouses.contains(h.getHouseId()))
+					)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person dummyPerson = new Person(new PersonId("John", "Do", "nowhere"));
+			dummyPerson.setHouse(new House(new HouseId(42, "Stalactite street", "888", "CodeFilarete City")));
+			dummyPerson.setAge(35);
+			
+			personPersister.insert(dummyPerson);
+			
+			Person loadedPerson = personPersister.select(dummyPerson.getId());
+			assertThat(loadedPerson.isConstructorWithIdArgsWasCalled()).as("Constructor with identifier args was called").isTrue();
+		}
+		
+		@Test
+		void withColumnNameArgs() {
+			EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
+					.mapKey(Person::getId, compositeKeyBuilder(PersonId.class)
+							.map(PersonId::getFirstName)
+							.map(PersonId::getLastName)
+							.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
+					// Note that we have to deal with argument ambiguity: compiler can't determine the constructor we want to reach out  
+					// Hence, depending on the way of coding, we may prefer to cast the Person::new method reference as a (TriFunction<String, String, String, Person>)
+					// or prefix the usingConstructor(..) call with the constructor arguments types.
+					.<String, String, String>usingConstructor(Person::new, "firstName", "lastName", "address")
+					.map(Person::getAge)
+					.mapOneToOne(Person::getHouse, entityBuilder(House.class, HouseId.class)
+							.mapKey(House::getHouseId, compositeKeyBuilder(HouseId.class)
+									.map(HouseId::getNumber)
+									.map(HouseId::getStreet)
+									.map(HouseId::getZipCode)
+									.map(HouseId::getCity), h -> persistedHouses.add(h.getHouseId()), h -> persistedHouses.contains(h.getHouseId()))
+					)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person dummyPerson = new Person(new PersonId("John", "Do", "nowhere"));
+			dummyPerson.setHouse(new House(new HouseId(42, "Stalactite street", "888", "CodeFilarete City")));
+			dummyPerson.setAge(35);
+			
+			personPersister.insert(dummyPerson);
+			
+			Person loadedPerson = personPersister.select(dummyPerson.getId());
+			assertThat(loadedPerson.isConstructorWithIdArgsWasCalled()).as("Constructor with identifier args was called").isTrue();
+		}
+		
+		@Test
+		void usingFactory() {
+			Table personTable = new Table("Person");
+			Column<Table<?>, String> firstNameColumn = personTable.addColumn("firstName", String.class);
+			Column<Table<?>, String> lastNameColumn = personTable.addColumn("lastName", String.class);
+			Column<Table<?>, String> addressColumn = personTable.addColumn("address", String.class);
+			EntityPersister<Person, PersonId> personPersister = entityBuilder(Person.class, PersonId.class)
+					.mapKey(Person::getId, compositeKeyBuilder(PersonId.class)
+							.map(PersonId::getFirstName)
+							.map(PersonId::getLastName)
+							.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
+					.usingFactory(columnedRow -> new Person(columnedRow.get(firstNameColumn), columnedRow.get(lastNameColumn), columnedRow.get(addressColumn)))
+					.map(Person::getAge)
+					.mapOneToOne(Person::getHouse, entityBuilder(House.class, HouseId.class)
+							.mapKey(House::getHouseId, compositeKeyBuilder(HouseId.class)
+									.map(HouseId::getNumber)
+									.map(HouseId::getStreet)
+									.map(HouseId::getZipCode)
+									.map(HouseId::getCity), h -> persistedHouses.add(h.getHouseId()), h -> persistedHouses.contains(h.getHouseId()))
+					)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person dummyPerson = new Person(new PersonId("John", "Do", "nowhere"));
+			dummyPerson.setHouse(new House(new HouseId(42, "Stalactite street", "888", "CodeFilarete City")));
+			dummyPerson.setAge(35);
+			
+			personPersister.insert(dummyPerson);
+			
+			Person loadedPerson = personPersister.select(dummyPerson.getId());
+			assertThat(loadedPerson.isConstructorWithIdArgsWasCalled()).as("Constructor with identifier args was called").isTrue();
+		}
+	
 	}
 	
 	private static class MemoryAppender extends AppenderSkeleton {

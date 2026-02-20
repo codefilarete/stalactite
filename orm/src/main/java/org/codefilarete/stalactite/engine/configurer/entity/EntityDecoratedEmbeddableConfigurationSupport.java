@@ -351,7 +351,86 @@ class EntityDecoratedEmbeddableConfigurationSupport<C, I> extends FluentEmbeddab
 	public FluentEntityMappingBuilderCompositeKeyOptions<C, I> wrapWithKeyOptions(CompositeKeyLinkageSupport<C, I> keyMapping) {
 		return new MethodDispatcher()
 				.redirect(CompositeKeyOptions.class, new CompositeKeyOptions<C, I>() {
-				
+					
+					@Override
+					public CompositeKeyOptions<C, I> usingConstructor(Supplier<C> factory) {
+						entityConfigurationSupport.setEntityFactoryProvider(new EntityFactoryProviderSupport<>(table -> row -> factory.get(), false));
+						return null;
+					}
+					
+					@Override
+					public <X, T extends Table> CompositeKeyOptions<C, I> usingConstructor(Function<X, C> factory, Column<T, X> input) {
+						keyMapping.setByConstructor();
+						entityConfigurationSupport.setEntityFactoryProvider(new EntityFactoryProviderSupport<>(table -> row -> factory.apply(row.get(input)), true));
+						return null;
+					}
+					
+					@Override
+					public <X> CompositeKeyOptions<C, I> usingConstructor(Function<X, C> factory, String columnName) {
+						keyMapping.setByConstructor();
+						entityConfigurationSupport.setEntityFactoryProvider(new EntityFactoryProviderSupport<>(table -> row -> factory.apply((X) row.get(table.getColumn(columnName))), true));
+						return null;
+					}
+					
+					@Override
+					public <X, Y, T extends Table> CompositeKeyOptions<C, I> usingConstructor(BiFunction<X, Y, C> factory,
+																								 Column<T, X> input1,
+																								 Column<T, Y> input2) {
+						keyMapping.setByConstructor();
+						entityConfigurationSupport.setEntityFactoryProvider(new EntityFactoryProviderSupport<>(table -> row -> factory.apply(row.get(input1), row.get(input2)), true));
+						return null;
+					}
+					
+					@Override
+					public <X, Y> CompositeKeyOptions<C, I> usingConstructor(BiFunction<X, Y, C> factory,
+																			 String columnName1,
+																			 String columnName2) {
+						keyMapping.setByConstructor();
+						entityConfigurationSupport.setEntityFactoryProvider(new EntityFactoryProviderSupport<>(
+								table -> row -> factory.apply(
+										(X) row.get(table.getColumn(columnName1)),
+										(Y) row.get(table.getColumn(columnName2))),
+								true));
+						return null;
+					}
+					
+					
+					@Override
+					public <X, Y, Z, T extends Table> CompositeKeyOptions<C, I> usingConstructor(TriFunction<X, Y, Z, C> factory,
+																									Column<T, X> column1,
+																									Column<T, Y> column2,
+																									Column<T, Z> column3) {
+						keyMapping.setByConstructor();
+						entityConfigurationSupport.setEntityFactoryProvider(new EntityFactoryProviderSupport<>(
+								table -> row -> factory.apply(
+										row.get(column1),
+										row.get(column2),
+										row.get(column3)),
+								true));
+						return null;
+					}
+					
+					@Override
+					public <X, Y, Z> CompositeKeyOptions<C, I> usingConstructor(TriFunction<X, Y, Z, C> factory,
+																				String columnName1,
+																				String columnName2,
+																				String columnName3) {
+						keyMapping.setByConstructor();
+						entityConfigurationSupport.setEntityFactoryProvider(new EntityFactoryProviderSupport<>(
+								table -> row -> factory.apply(
+										(X) row.get(table.getColumn(columnName1)),
+										(Y) row.get(table.getColumn(columnName2)),
+										(Z) row.get(table.getColumn(columnName3))),
+								true));
+						return null;
+					}
+					
+					@Override
+					public CompositeKeyOptions<C, I> usingFactory(Function<ColumnedRow, C> factory) {
+						keyMapping.setByConstructor();
+						entityConfigurationSupport.setEntityFactoryProvider(new EntityFactoryProviderSupport<>(table -> row -> (C) factory.apply(row), true));
+						return null;
+					}
 				}, true)
 				.fallbackOn(entityConfigurationSupport)
 				.build((Class<FluentEntityMappingBuilderCompositeKeyOptions<C, I>>) (Class) FluentEntityMappingBuilderCompositeKeyOptions.class);
