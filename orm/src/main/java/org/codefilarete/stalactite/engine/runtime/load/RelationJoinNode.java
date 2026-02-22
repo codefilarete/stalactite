@@ -121,7 +121,7 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 	
 	public interface RelationJoinRowConsumer<C, I> extends JoinRowConsumer {
 		
-		C applyRelatedEntity(Object parentJoinEntity, ColumnedRow row, TreeInflationContext context);
+		EntityReference<C, I> applyRelatedEntity(EntityReference<?, ?> parentJoinEntity, ColumnedRow row, TreeInflationContext context);
 	}
 	
 	static class DefaultRelationJoinRowConsumer<C, I> implements RelationJoinRowConsumer<C, I> {
@@ -167,24 +167,24 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 		}
 		
 		@Override
-		public C applyRelatedEntity(Object parentJoinEntity, ColumnedRow row, TreeInflationContext context) {
+		public EntityReference<C, I> applyRelatedEntity(EntityReference<?, ?> parentJoinEntity, ColumnedRow row, TreeInflationContext context) {
 			I rightIdentifier = identifierProvider.apply(row);
 			// we avoid treating twice same relation, overall to avoid adding twice same instance to a collection (one-to-many list cases)
 			// in case of multiple collections in ResultSet because it creates similar data (through cross join) which are treated as many as
 			// collections cross with each other. This also works for one-to-one relations but produces no bugs. It can also be seen as a performance
 			// enhancement even if it hasn't been measured.
-			RelationIdentifier eventuallyApplied = new RelationIdentifier(parentJoinEntity, this.entityType, relationIdentifierComputer.apply(row), this);
+			RelationIdentifier eventuallyApplied = new RelationIdentifier(parentJoinEntity.getIdentifier(), this.entityType, relationIdentifierComputer.apply(row), this);
 			// primary key null means no entity => nothing to do
 			if (rightIdentifier != null) {
 				C rightEntity = context.giveEntityFromCache(entityType, rightIdentifier, () -> rowTransformer.transform(row));
 				if (context.isTreatedOrAppend(eventuallyApplied)) {
-					beanRelationFixer.apply(parentJoinEntity, rightEntity);
+					beanRelationFixer.apply(parentJoinEntity.getEntity(), rightEntity);
 					if (this.consumptionListener != null) {
 						this.consumptionListener.onNodeConsumption(rightEntity, row);
 					}
 				}
 				// we return the entity found for the row to let caller go deeper in the hierarchy
-				return rightEntity;
+				return new EntityReference<>(rightEntity, rightIdentifier);
 			}
 			// null is a marker for caller to not go deeper in the hierarchy : no entity was found on row, we can't go deeper
 			return null;

@@ -16,6 +16,7 @@ import java.util.function.Supplier;
 import org.apache.commons.collections4.map.LinkedMap;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.NodeVisitor.EntityCreationResult;
+import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.EntityReference;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.ExcludingJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.ForkJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.RootJoinRowConsumer;
@@ -112,20 +113,20 @@ public class EntityTreeInflater<C> {
 			foreachNode(rootEntityCreationResult.consumers, new NodeVisitor(rootEntityCreationResult.entity) {
 				
 				@Override
-				public EntityCreationResult apply(ConsumerNode join, Object entity) {
+				public EntityCreationResult apply(ConsumerNode join, EntityReference<?, ?> entityReference) {
 					// processing current depth
 					JoinRowConsumer consumer = join.getConsumer();
-					LOGGER.debug("Consuming {} on object {}", consumer, entity);
+					LOGGER.debug("Consuming {} on object {}#{}", consumer, Reflections.toString(entityReference.getEntity().getClass()), entityReference.getIdentifier());
 					consumer.beforeRowConsumption(context);
 					ColumnedRow nodeRow = currentContext().getDecoder(consumer.getNode());
 					if (consumer instanceof PassiveJoinNode.PassiveJoinRowConsumer) {
-						((PassiveJoinRowConsumer) consumer).consume(entity, nodeRow);
-						return new EntityCreationResult(entity, join);
+						((PassiveJoinRowConsumer) consumer).consume(entityReference, nodeRow);
+						return new EntityCreationResult(entityReference, join);
 					} else if (consumer instanceof MergeJoinNode.MergeJoinRowConsumer) {
-						((MergeJoinRowConsumer) consumer).mergeProperties(entity, nodeRow);
-						return new EntityCreationResult(entity, join);
+						((MergeJoinRowConsumer) consumer).mergeProperties(entityReference.getEntity(), nodeRow);
+						return new EntityCreationResult(entityReference, join);
 					} else if (consumer instanceof RelationJoinNode.RelationJoinRowConsumer) {
-						Object relatedEntity = ((RelationJoinRowConsumer) consumer).applyRelatedEntity(entity, nodeRow, context);
+						EntityReference<?, ?> relatedEntityReference = ((RelationJoinRowConsumer) consumer).applyRelatedEntity(entityReference, nodeRow, context);
 						EntityCreationResult result;
 						if (consumer instanceof ForkJoinRowConsumer) {
 							// In case of join-table polymorphism we have to provide the tree branch on which id was found
@@ -139,11 +140,11 @@ public class EntityTreeInflater<C> {
 								if (!consumerNode.isPresent()) {
 									throw new IllegalStateException("Can't find consumer node for " + nextRowConsumer + " in " + join.consumers);
 								} else {
-									result = new EntityCreationResult(relatedEntity, Arrays.asList(consumerNode.get()));
+									result = new EntityCreationResult(relatedEntityReference, Arrays.asList(consumerNode.get()));
 								}
 							}
 						} else {
-							result = new EntityCreationResult(relatedEntity, join);
+							result = new EntityCreationResult(relatedEntityReference, join);
 						}
 						consumer.afterRowConsumption(context);
 						return result;
@@ -158,11 +159,11 @@ public class EntityTreeInflater<C> {
 				}
 			});
 		}
-		return nullable(rootEntityCreationResult).map(c -> (C) c.entity);
+		return nullable(rootEntityCreationResult).map(c -> (C) c.entity.getEntity());
 	}
 	
 	private EntityCreationResult getRootEntityCreationResult(ColumnedRow row, EntityTreeInflater.TreeInflationContext context) {
-		C rootInstance = ((RootJoinRowConsumer<C>) this.consumerRoot.consumer).createRootInstance(row, context);
+		EntityReference<C, ?> rootInstance = ((RootJoinRowConsumer<C, ?>) this.consumerRoot.consumer).createRootInstance(row, context);
 		if (rootInstance != null) {
 			if (consumerRoot.consumer instanceof ExcludingJoinRowConsumer) {
 				// In case of polymorphism we have to provide the tree branch on which instance was found
@@ -184,7 +185,7 @@ public class EntityTreeInflater<C> {
 		Queue<ConsumerNode> joinNodeStack = Collections.newLifoQueue();
 		joinNodeStack.addAll(seeds);
 		// Maintaining entities that will be given to each node : they are entities produced by parent node
-		Map<ConsumerNode, Object> entityPerConsumer = new HashMap<>(10);
+		Map<ConsumerNode, EntityReference<?, ?>> entityPerConsumer = new HashMap<>(10);
 		joinNodeStack.forEach(node -> entityPerConsumer.put(node, nodeVisitor.entityRoot));
 
 		while (!joinNodeStack.isEmpty()) {
@@ -222,36 +223,36 @@ public class EntityTreeInflater<C> {
 	
 	static abstract class NodeVisitor {
 		
-		private final Object entityRoot;
+		private final EntityReference<?, ?> entityRoot;
 		
-		NodeVisitor(Object entityRoot) {
+		NodeVisitor(EntityReference<?, ?> entityRoot) {
 			this.entityRoot = entityRoot;
 		}
 		
 		/**
 		 * Asks for parentEntity consumption by {@link ConsumerNode}
-		 * @param consumerNode consumer expected to use given entity to constructs, fills, does whatever, with given entity
-		 * @param parentEntity entity on which consumer mechanism may apply
+		 * @param consumerNode consumer expected to use the given entity to construct, fill, do whatever, with it
+		 * @param parentEntity entity on which the consumer mechanism may apply
 		 * @return the optional entity created by consumer (as in one-to-one or one-to-many relation), else given parentEntity (not null)
 		 */
-		abstract EntityCreationResult apply(ConsumerNode consumerNode, Object parentEntity);
+		abstract EntityCreationResult apply(ConsumerNode consumerNode, EntityReference<?, ?> parentEntity);
 		
 		static class EntityCreationResult {
 			
-			private final Object entity;
+			private final EntityReference<?, ?> entity;
 			
 			private final List<ConsumerNode> consumers;
 			
-			EntityCreationResult(Object entity, ConsumerNode entityCreator) {
+			EntityCreationResult(EntityReference<?, ?> entity, ConsumerNode entityCreator) {
 				this(entity, entityCreator.consumers);
 			}
 			
-			EntityCreationResult(Object entity, List<ConsumerNode> consumers) {
+			EntityCreationResult(EntityReference<?, ?> entity, List<ConsumerNode> consumers) {
 				this.entity = entity;
 				this.consumers = consumers;
 			}
 			
-			public Object getEntity() {
+			public EntityReference<?, ?> getEntity() {
 				return entity;
 			}
 			

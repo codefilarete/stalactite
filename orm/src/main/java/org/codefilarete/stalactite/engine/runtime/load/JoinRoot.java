@@ -112,11 +112,11 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<C, T> {
 	}
 	
 	@Override
-	public RootJoinRowConsumer<C> toConsumer(JoinNode<C, T> joinNode) {
+	public RootJoinRowConsumer<C, I> toConsumer(JoinNode<C, T> joinNode) {
 		return new JoinRootRowConsumer(this, entityInflater);
 	}
 	
-	public class JoinRootRowConsumer implements RootJoinRowConsumer<C> {
+	public class JoinRootRowConsumer implements RootJoinRowConsumer<C, I> {
 
 		private final JoinRoot<C, ?, ?> joinNode;
 		private final Class<C> entityType;
@@ -139,16 +139,17 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<C, T> {
 		}
 
 		@Override
-		public C createRootInstance(ColumnedRow row, TreeInflationContext context) {
-			Object identifier = identifierDecoder.apply(row);
-			C result = null;
+		public EntityReference<C, I> createRootInstance(ColumnedRow row, TreeInflationContext context) {
+			I identifier = identifierDecoder.apply(row);
+			EntityReference<C, I> entityReference = null;
 			if (identifier != null) {
-				result = context.giveEntityFromCache(entityType, identifier, () -> entityBuilder.transform(row));
+				C entity = context.giveEntityFromCache(entityType, identifier, () -> entityBuilder.transform(row));
+				entityReference = new EntityReference<>(entity, identifier);
+				if (getConsumptionListener() != null) {
+					getConsumptionListener().onNodeConsumption(entity, row);
+				}
 			}
-			if (getConsumptionListener() != null) {
-				getConsumptionListener().onNodeConsumption(result, row);
-			}
-			return result;
+			return entityReference;
 		}
 		
 		/**

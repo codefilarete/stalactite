@@ -60,7 +60,7 @@ public class TablePerClassRootJoinNode<C, I> extends JoinRoot<C, I, PseudoTable>
 	}
 	
 	@Override
-	public RootJoinRowConsumer<C> toConsumer(JoinNode<C, PseudoTable> joinNode) {
+	public RootJoinRowConsumer<C, I> toConsumer(JoinNode<C, PseudoTable> joinNode) {
 		Set<SubPersisterConsumer<C, I>> subEntityConsumers = subPersisters.values().stream().map(subPersister -> {
 			EntityMapping<C, I, ?> mapping = subPersister.getMapping();
 			return new SubPersisterConsumer<>(
@@ -103,7 +103,7 @@ public class TablePerClassRootJoinNode<C, I> extends JoinRoot<C, I, PseudoTable>
 		}
 	}
 	
-	static class TablePerClassPolymorphicJoinRootRowConsumer<C, I> implements ExcludingJoinRowConsumer<C> {
+	static class TablePerClassPolymorphicJoinRootRowConsumer<C, I> implements ExcludingJoinRowConsumer<C, I> {
 		
 		private static final ThreadLocal<MergeJoinRowConsumer<?>> CURRENTLY_FOUND_CONSUMER = new ThreadLocal<>();
 		
@@ -132,9 +132,9 @@ public class TablePerClassRootJoinNode<C, I> extends JoinRoot<C, I, PseudoTable>
 		}
 		
 		@Override
-		public C createRootInstance(ColumnedRow row, TreeInflationContext context) {
+		public EntityReference<C, I> createRootInstance(ColumnedRow row, TreeInflationContext context) {
 			SubPersisterConsumer<C, I> subInflater = findSubInflater(row);
-			C result;
+			EntityReference<C, I> result;
 			if (subInflater == null) {
 				CURRENTLY_FOUND_CONSUMER.remove();
 				result = null;
@@ -142,10 +142,11 @@ public class TablePerClassRootJoinNode<C, I> extends JoinRoot<C, I, PseudoTable>
 				CURRENTLY_FOUND_CONSUMER.set(subInflater.subPropertiesApplier);
 				ColumnedRow subInflaterRow = EntityTreeInflater.currentContext().getDecoder(subInflater.subPropertiesApplier.getNode());
 				I identifier = subInflater.identifierAssembler.apply(subInflaterRow);
-				result = context.giveEntityFromCache(subInflater.subEntityType, identifier, () -> subInflater.subEntityFactory.transform(subInflaterRow));
-			}
-			if (consumptionListener != null) {
-				consumptionListener.accept(result, row);
+				C entity = context.giveEntityFromCache(subInflater.subEntityType, identifier, () -> subInflater.subEntityFactory.transform(subInflaterRow));
+				result = new EntityReference<>(entity, identifier);
+				if (consumptionListener != null) {
+					consumptionListener.accept(entity, row);
+				}
 			}
 			return result;
 		}

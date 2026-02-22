@@ -3,7 +3,6 @@ package org.codefilarete.stalactite.engine.runtime.load;
 import javax.annotation.Nullable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
@@ -26,7 +25,6 @@ import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.JoinLink;
-import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryStatement.PseudoColumn;
 import org.codefilarete.stalactite.query.model.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.model.Selectable;
@@ -41,7 +39,6 @@ import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.bean.Randomizer;
 import org.codefilarete.tool.bean.Randomizer.LinearRandomGenerator;
-import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -163,7 +160,7 @@ public class EntityJoinTree<C, I> {
 	 * parameter : an optional function which computes an identifier of a relation between 2 entities, this is required to prevent from fulfilling
 	 * twice the relation when SQL returns several times same identifier (when at least 2 collections are implied). By default this function is
 	 * made of parentEntityId + childEntityId and can be overwritten here (in particular when relation is a List, entity index is added to computation).
-	 * See {@link RelationJoinNode.RelationJoinRowConsumer#applyRelatedEntity(Object, ColumnedRow, TreeInflationContext)} for usage.
+	 * See {@link RelationJoinNode.RelationJoinRowConsumer#applyRelatedEntity(JoinRowConsumer.EntityReference, ColumnedRow, TreeInflationContext)} for usage.
 	 *
 	 * @param <U> type of bean mapped by the given strategy
 	 * @param <T1> joined left table
@@ -180,7 +177,7 @@ public class EntityJoinTree<C, I> {
 	 * @param additionalSelectableColumns columns to be added to SQL select clause out of ones took from given inflater, necessary for indexed relations
 	 * @param relationIdentifierProvider relation identifier provider, not null for List cases : necessary because List may contain duplicate
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
-	 * @see RelationJoinNode.RelationJoinRowConsumer#applyRelatedEntity(Object, ColumnedRow, TreeInflationContext)
+	 * @see RelationJoinNode.RelationJoinRowConsumer#applyRelatedEntity(JoinRowConsumer.EntityReference, ColumnedRow, TreeInflationContext)
 	 */
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID, JOINTYPE> String addRelationJoin(String leftStrategyName,
 																								EntityInflater<U, ID> inflater,

@@ -93,7 +93,7 @@ public class JoinTablePolymorphicRelationJoinNode<C, T1 extends Table, T2 extend
 		}
 
 		@Override
-		public C applyRelatedEntity(Object parentJoinEntity, ColumnedRow row, TreeInflationContext context) {
+		public EntityReference<C, I> applyRelatedEntity(EntityReference<?, ?> parentJoinEntity, ColumnedRow row, TreeInflationContext context) {
 			RowIdentifier<? extends C> rowIdentifier = giveIdentifier();
 			currentlyFoundConsumer.set(rowIdentifier);
 			if (rowIdentifier != null) {
@@ -102,21 +102,21 @@ public class JoinTablePolymorphicRelationJoinNode<C, T1 extends Table, T2 extend
 				// in case of multiple collections in ResultSet because it creates similar data (through cross join) which are treated as many as
 				// collections cross with each other. This also works for one-to-one relations but produces no bugs. It can also be seen as a performance
 				// enhancement even if it hasn't been measured.
-				RelationIdentifier eventuallyApplied = new RelationIdentifier(parentJoinEntity, getEntityType(), rightIdentifier, this);
+				RelationIdentifier eventuallyApplied = new RelationIdentifier(parentJoinEntity.getIdentifier(), getEntityType(), rightIdentifier, this);
 				// primary key null means no entity => nothing to do
 				if (rightIdentifier != null && context.isTreatedOrAppend(eventuallyApplied)) {
-					C rightEntity = (C) context.giveEntityFromCache(getEntityType(), rightIdentifier, () -> {
+					C rightEntity = context.giveEntityFromCache(getEntityType(), rightIdentifier, () -> {
 						ColumnedRow subInflaterRow = EntityTreeInflater.currentContext().getDecoder(rowIdentifier.rowConsumer.getNode());
 						C entity = rowIdentifier.rowConsumer.transform(subInflaterRow);
 						// We have to apply parent properties on created bean by subclass, because sub-transformer doesn't contain them
 						parentRowConsumer.getRowTransformer().applyRowToBean(row, entity);
 						return entity;
 					});
-					getBeanRelationFixer().apply(parentJoinEntity, rightEntity);
+					getBeanRelationFixer().apply(parentJoinEntity.getEntity(), rightEntity);
 					if (this.consumptionListener != null) {
 						this.consumptionListener.onNodeConsumption(rightEntity, row);
 					}
-					return rightEntity;
+					return new EntityReference<>(rightEntity, rightIdentifier);
 				}
 			}
 			return null;

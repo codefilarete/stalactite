@@ -58,7 +58,7 @@ public class SingleTableRootJoinNode<C, I, T extends Table<T>, DTYPE> extends Jo
 	}
 	
 	@Override
-	public RootJoinRowConsumer<C> toConsumer(JoinNode<C, T> joinNode) {
+	public RootJoinRowConsumer<C, I> toConsumer(JoinNode<C, T> joinNode) {
 		// the decoder can't be a usual variable because it can't be computed now since we lack the EntityTreeInflater context
 		// (which is only available when the query is executed, not at build time)
 		Supplier<ColumnedRow> decoderProvider = () -> EntityTreeInflater.currentContext().getDecoder(joinNode);
@@ -90,7 +90,7 @@ public class SingleTableRootJoinNode<C, I, T extends Table<T>, DTYPE> extends Jo
 		}
 	}
 	
-	static class SingleTablePolymorphicJoinRootRowConsumer<C, I, DTYPE> implements RootJoinRowConsumer<C> {
+	static class SingleTablePolymorphicJoinRootRowConsumer<C, I, DTYPE> implements RootJoinRowConsumer<C, I> {
 		
 		private final Set<SubPersisterConsumer<C, I>> subConsumers;
 		
@@ -122,19 +122,20 @@ public class SingleTableRootJoinNode<C, I, T extends Table<T>, DTYPE> extends Jo
 		}
 
 		@Override
-		public C createRootInstance(ColumnedRow row, TreeInflationContext context) {
+		public EntityReference<C, I> createRootInstance(ColumnedRow row, TreeInflationContext context) {
 			Duo<I, SubPersisterConsumer<C, I>> subInflater = findSubInflater(row);
-			C result;
+			EntityReference<C, I> result;
 			if (subInflater == null) {
 				result = null;
 			} else {
 				// we don't need a ColumnedRow of sub-entity like in other polymorphic nodes because main persister properties
 				// were given to sub-persisters at build time (see SingleTablePolymorphismBuilder#buildSubclassPersister())
 				// which is logical since we don't have a join to sub-entity
-				result = context.giveEntityFromCache(subInflater.getRight().subEntityType, subInflater.getLeft(), () -> subInflater.getRight().subEntityFactory.transform(row));
-			}
-			if (consumptionListener != null) {
-				consumptionListener.accept(result, row);
+				C entity = context.giveEntityFromCache(subInflater.getRight().subEntityType, subInflater.getLeft(), () -> subInflater.getRight().subEntityFactory.transform(row));
+				result = new EntityReference<>(entity, subInflater.getLeft());
+				if (consumptionListener != null) {
+					consumptionListener.accept(entity, row);
+				}
 			}
 			return result;
 		}

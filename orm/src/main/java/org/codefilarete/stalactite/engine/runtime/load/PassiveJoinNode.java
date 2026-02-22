@@ -69,9 +69,9 @@ public class PassiveJoinNode<C, T1 extends Fromable, T2 extends Fromable, I> ext
 			return PassiveJoinNode.this;
 		}
 		
-		void consume(C parentJoinEntity, ColumnedRow row) {
+		void consume(EntityReference<C, ?> parentJoinEntity, ColumnedRow row) {
 			if (this.consumptionListener != null) {
-				this.consumptionListener.onNodeConsumption(parentJoinEntity, row);
+				this.consumptionListener.onNodeConsumption(parentJoinEntity.getEntity(), row);
 			}
 		}
 		

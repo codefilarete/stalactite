@@ -56,7 +56,7 @@ public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C,
 	}
 	
 	@Override
-	public RootJoinRowConsumer<C> toConsumer(JoinNode<C, T> joinNode) {
+	public RootJoinRowConsumer<C, I> toConsumer(JoinNode<C, T> joinNode) {
 		RowTransformer<C> rootRowTransformer = getEntityInflater().getRowTransformer();
 		Set<SubPersisterConsumer<C, I>> subEntityConsumer = subPersisters.stream().map(subPersister -> {
 			EntityMapping<C, I, T> mapping = subPersister.getMapping();
@@ -66,7 +66,7 @@ public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C,
 					mapping.getRowTransformer());
 		}).collect(Collectors.toSet());
 		rootConsumer = new JoinTablePolymorphicJoinRootRowConsumer<>(joinNode, rootRowTransformer, subEntityConsumer,
-				getConsumptionListener() == null ? null : (rootEntity, row) -> getConsumptionListener().onNodeConsumption(rootEntity, EntityTreeInflater.currentContext().getDecoder(joinNode)::get));
+				getConsumptionListener() == null ? null : (rootEntity, row) -> getConsumptionListener().onNodeConsumption(rootEntity, EntityTreeInflater.currentContext().getDecoder(joinNode)));
 		return rootConsumer;
 	}
 	
@@ -94,7 +94,7 @@ public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C,
 		}
 	}
 	
-	static class JoinTablePolymorphicJoinRootRowConsumer<C, I> implements ExcludingJoinRowConsumer<C> {
+	static class JoinTablePolymorphicJoinRootRowConsumer<C, I> implements ExcludingJoinRowConsumer<C, I> {
 		
 		private static final ThreadLocal<MergeJoinRowConsumer<?>> CURRENTLY_FOUND_CONSUMER = new ThreadLocal<>();
 		
@@ -124,25 +124,25 @@ public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C,
 		}
 
 		@Override
-		public C createRootInstance(ColumnedRow row, TreeInflationContext context) {
+		public EntityReference<C, I> createRootInstance(ColumnedRow row, TreeInflationContext context) {
 			Duo<I, SubPersisterConsumer<C, I>> subInflater = findSubInflater(row);
-			C result;
+			EntityReference<C, I> result = null;
 			if (subInflater == null) {
 				CURRENTLY_FOUND_CONSUMER.remove();
-				result = null;
 			} else {
 				CURRENTLY_FOUND_CONSUMER.set(subInflater.getRight().subPropertiesApplier);
-				result = (C) context.giveEntityFromCache(subInflater.getRight().subEntityType, subInflater.getLeft(), () -> {
+				C entity = context.giveEntityFromCache(subInflater.getRight().subEntityType, subInflater.getLeft(), () -> {
 					LOGGER.debug("Instantiating entity of type {}", subInflater.getRight().subEntityType);
 					ColumnedRow subInflaterRow = EntityTreeInflater.currentContext().getDecoder(subInflater.getRight().subPropertiesApplier.getNode());
 					// by using transform(..) we instantiate the right type (the sub-entity one) and fill it with sub-entity properties
 					return subInflater.getRight().subEntityFactory.transform(subInflaterRow);
 				});
 				// applying parent properties to the entity
-				rootRowTransformer.applyRowToBean(row, result);
-			}
-			if (consumptionListener != null) {
-				consumptionListener.accept(result, row);
+				rootRowTransformer.applyRowToBean(row, entity);
+				if (consumptionListener != null) {
+					consumptionListener.accept(entity, row);
+				}
+				result = new EntityReference<>(entity, subInflater.getLeft());
 			}
 			return result;
 		}

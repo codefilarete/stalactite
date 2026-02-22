@@ -12,6 +12,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.Consum
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.NodeVisitor;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
+import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.EntityReference;
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.sql.result.MapBasedColumnedRow;
@@ -147,14 +148,15 @@ class EntityTreeInflaterTest {
 		
 		EntityTreeInflater<Root> testInstance = new EntityTreeInflater<>(consumerRoot);
 		List<List<Object>> entityStackHistory = new ArrayList<>();
-		testInstance.foreachNode(Arrays.asList(consumerRoot), new NodeVisitor(root) {
+		testInstance.foreachNode(Arrays.asList(consumerRoot), new NodeVisitor(new EntityReference<>(root, root.hashCode())) {
 			@Override
-			EntityCreationResult apply(ConsumerNode joinRowConsumer, Object parentEntity) {
+			EntityCreationResult apply(ConsumerNode joinRowConsumer, EntityReference<?, ?> parentEntity) {
 				List<Object> newStack = new ArrayList<>(Iterables.last(entityStackHistory, new ArrayList<>()));
-				newStack.add(parentEntity);
+				newStack.add(parentEntity.getEntity());
 				entityStackHistory.add(newStack);
 				if (joinRowConsumer.getConsumer() instanceof DummyConsumerNode.DummyJoinRowConsumer) {
-					return new EntityCreationResult(((DummyConsumerNode.DummyJoinRowConsumer) joinRowConsumer.getConsumer()).get(), joinRowConsumer);
+					Object entity = ((DummyConsumerNode.DummyJoinRowConsumer) joinRowConsumer.getConsumer()).get();
+					return new EntityCreationResult(new EntityReference<>(entity, entity.hashCode()), joinRowConsumer);
 				} else {
 					throw new UnsupportedOperationException("Something has changed in test data");
 				}
@@ -202,14 +204,15 @@ class EntityTreeInflaterTest {
 		
 		EntityTreeInflater<Root> testInstance = new EntityTreeInflater<>(consumerRoot);
 		List<List<Object>> entityStackHistory = new ArrayList<>();
-		testInstance.foreachNode(Arrays.asList(consumerRoot), new NodeVisitor(root) {
+		testInstance.foreachNode(Arrays.asList(consumerRoot), new NodeVisitor(new EntityReference<>(root, root.hashCode())) {
 			@Override
-			EntityCreationResult apply(ConsumerNode joinRowConsumer, Object parentEntity) {
+			EntityCreationResult apply(ConsumerNode joinRowConsumer, EntityReference<?, ?> parentEntity) {
 				List<Object> newStack = new ArrayList<>(Iterables.last(entityStackHistory, new ArrayList<>()));
-				newStack.add(parentEntity);
+				newStack.add(parentEntity.getEntity());
 				entityStackHistory.add(newStack);
 				if (joinRowConsumer.getConsumer() instanceof DummyConsumerNode.DummyJoinRowConsumer) {
-					return new EntityCreationResult(((DummyConsumerNode.DummyJoinRowConsumer) joinRowConsumer.getConsumer()).get(), joinRowConsumer);
+					Object entity = ((DummyConsumerNode.DummyJoinRowConsumer) joinRowConsumer.getConsumer()).get();
+					return new EntityCreationResult(entity == null ? null : new EntityReference<>(entity, entity.hashCode()), joinRowConsumer);
 				} else {
 					throw new UnsupportedOperationException("Something has changed in test data");
 				}

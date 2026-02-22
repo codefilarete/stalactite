@@ -86,7 +86,7 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 
 		}
 
 		@Override
-		public C applyRelatedEntity(Object parentJoinEntity, ColumnedRow row, TreeInflationContext context) {
+		public EntityReference<C, I> applyRelatedEntity(EntityReference<?, ?> parentJoinEntity, ColumnedRow row, TreeInflationContext context) {
 			RowIdentifier<C> rowIdentifier = giveIdentifier();
 			if (rowIdentifier == null) {
 				return null;
@@ -97,18 +97,18 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 
 				// collections cross with each other. This also works for one-to-one relations but produces no bugs. It can also be seen as a performance
 				// enhancement even if it hasn't been measured.
 				RelationIdentifier eventuallyApplied = new RelationIdentifier(
-						parentJoinEntity,
+						parentJoinEntity.getIdentifier(),
 						getEntityType(),
 						rightIdentifier,
 						this);
 				// primary key null means no entity => nothing to do
 				if (context.isTreatedOrAppend(eventuallyApplied)) {
 					C rightEntity = context.giveEntityFromCache(getEntityType(), rightIdentifier, () -> rowIdentifier.rowConsumer.createInstance(row));
-					getBeanRelationFixer().apply(parentJoinEntity, rightEntity);
+					getBeanRelationFixer().apply(parentJoinEntity.getEntity(), rightEntity);
 					if (getConsumptionListener() != null) {
 						getConsumptionListener().onNodeConsumption(rightEntity, row);
 					}
-					return rightEntity;
+					return new EntityReference<>(rightEntity, rightIdentifier);
 				} else {
 					return null;
 				}
