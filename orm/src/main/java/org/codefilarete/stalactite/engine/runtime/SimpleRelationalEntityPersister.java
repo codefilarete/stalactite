@@ -22,6 +22,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
+import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.projection.ProjectionQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
@@ -39,6 +40,7 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
@@ -315,13 +317,17 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 		LOGGER.debug("selecting entities {}", ids);
 		// Note that executor emits select listener events
 		IdMapping<C, I> idMapping = persister.getMapping().getIdMapping();
+		int estimatedResultSize = Iterables.size(ids);
+		// we avoiding relying on Entity equals/Hashcode by using a Map based on System.identityHashCode(..)
+		Set<C> result = Collections.newSetFromMap(new EntityTreeInflater.IdentityLinkedMap<>(estimatedResultSize));
+		Accumulator<C, Set<C>, Set<C>> resultAccumulator = Accumulators.toCollection(() -> result);
 		if (idMapping.getIdentifierAssembler() instanceof ComposedIdentifierAssembler) {
 			// && dialect.supportTupleIn
 			Map<? extends Column<?, ?>, ?> columnValues = ((ComposedIdentifierAssembler<I, ?>) idMapping.getIdentifierAssembler()).getColumnValues(ids);
-			TupleIn tupleIn = TupleIn.transformBeanColumnValuesToTupleInValues(Iterables.size(ids), columnValues);
+			TupleIn tupleIn = TupleIn.transformBeanColumnValuesToTupleInValues(estimatedResultSize, columnValues);
 			EntityQueryCriteriaSupport<C, I> newCriteriaSupport = newCriteriaSupport();
 			newCriteriaSupport.getEntityCriteriaSupport().getCriteria().and(tupleIn);
-			return newCriteriaSupport.wrapIntoExecutable().execute(Accumulators.toSet());
+			return newCriteriaSupport.wrapIntoExecutable().execute(resultAccumulator);
 		} else {
 			ReversibleAccessor<C, I> criteriaAccessor;
 			if (idMapping.getIdAccessor() instanceof AccessorWrapperIdAccessor) {
@@ -333,7 +339,6 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 				throw new UnsupportedOperationException("Unsupported id accessor type: " + idMapping.getIdAccessor().getClass());
 			}
 			In<I> in = new In<>();
-			Set<C> result = new HashSet<>();
 			ExecutableEntityQuery<C, ?> executableEntityQuery = selectWhere().and(criteriaAccessor, in);
 			Iterables.forEachChunk(
 					ids,
@@ -342,7 +347,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 					chunkSize -> null,	// no particular initialization to do
 					(context, chunk) -> {
 						in.setValue(chunk);
-						result.addAll(executableEntityQuery.execute(Accumulators.toSet()));
+						executableEntityQuery.execute(resultAccumulator);
 					},
 					context -> {}
 			);

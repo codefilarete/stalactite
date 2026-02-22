@@ -399,7 +399,7 @@ public class EntityTreeInflater<C> {
 	 * @param <V>
 	 * @author Guillaume Mary
 	 */
-	private static class IdentityLinkedMap<K, V> extends LinkedMap<K, V> {
+	public static class IdentityLinkedMap<K, V> extends LinkedMap<K, V> {
 		
 		public IdentityLinkedMap(int initialCapacity) {
 			super(initialCapacity);
