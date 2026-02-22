@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine.crud;
 
+import org.codefilarete.stalactite.query.Operators;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
@@ -11,8 +12,8 @@ public interface ExecutableDelete<T extends Table<T>> {
 	
 	/**
 	 * Sets a criteria value to this statement.
-	 * Criteria are expected to be named and created by some {@link org.codefilarete.stalactite.query.model.Operators} methods
-	 * like {@link org.codefilarete.stalactite.query.model.Operators#equalsArgNamed(String, Class)}.
+	 * Criteria are expected to be named and created by some {@link Operators} methods
+	 * like {@link Operators#equalsArgNamed(String, Class)}.
 	 *
 	 * @param paramName name of the criteria
 	 * @param value value for given parameter

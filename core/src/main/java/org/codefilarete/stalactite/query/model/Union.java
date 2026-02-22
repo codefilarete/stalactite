@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 
+import org.codefilarete.stalactite.query.api.*;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.KeepOrderSet;

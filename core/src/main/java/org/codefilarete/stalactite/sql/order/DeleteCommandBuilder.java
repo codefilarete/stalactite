@@ -19,7 +19,7 @@ import org.codefilarete.stalactite.query.builder.StringSQLAppender;
 import org.codefilarete.stalactite.query.builder.WhereSQLBuilderFactory.WhereSQLBuilder;
 import org.codefilarete.stalactite.query.model.ColumnCriterion;
 import org.codefilarete.stalactite.query.model.Placeholder;
-import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.model.UnitaryOperator;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
 import org.codefilarete.stalactite.sql.Dialect;

@@ -26,7 +26,7 @@ import org.codefilarete.stalactite.engine.runtime.onetomany.IndexedAssociationTa
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.AfterUpdateTrigger;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer;
-import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.api.Fromable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;

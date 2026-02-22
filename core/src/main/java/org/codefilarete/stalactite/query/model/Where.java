@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.query.model;
 
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.tool.collection.Iterables;
 
 /**

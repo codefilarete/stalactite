@@ -6,7 +6,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.query.Operators;
 import org.codefilarete.stalactite.query.model.QueryEase;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
@@ -26,8 +26,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.in;
-import static org.codefilarete.stalactite.query.model.Operators.in;
+import static org.codefilarete.stalactite.query.Operators.in;
 import static org.codefilarete.tool.function.Functions.chain;
 
 /**

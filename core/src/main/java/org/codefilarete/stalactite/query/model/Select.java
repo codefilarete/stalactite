@@ -3,7 +3,10 @@ package org.codefilarete.stalactite.query.model;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.codefilarete.stalactite.query.model.Selectable.SimpleSelectable;
+import org.codefilarete.stalactite.query.api.FluentSelect;
+import org.codefilarete.stalactite.query.api.SelectChain;
+import org.codefilarete.stalactite.query.api.Selectable;
+import org.codefilarete.stalactite.query.api.Selectable.SimpleSelectable;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.reflect.MethodDispatcher;

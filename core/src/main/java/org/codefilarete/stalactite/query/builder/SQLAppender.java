@@ -2,8 +2,8 @@ package org.codefilarete.stalactite.query.builder;
 
 import javax.annotation.Nullable;
 
-import org.codefilarete.stalactite.query.model.Fromable;
-import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.api.Fromable;
+import org.codefilarete.stalactite.query.api.Selectable;
 
 /**
  * The contract for printing a where clause : need to print a String and a value.

@@ -4,8 +4,8 @@ import java.util.Collections;
 import java.util.HashMap;
 
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
-import org.codefilarete.stalactite.query.model.Fromable;
-import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.api.Fromable;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
 import org.codefilarete.tool.trace.MutableBoolean;
 

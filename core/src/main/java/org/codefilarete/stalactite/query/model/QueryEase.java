@@ -2,9 +2,11 @@ package org.codefilarete.stalactite.query.model;
 
 import java.util.Map;
 
+import org.codefilarete.stalactite.query.api.Fromable;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.builder.WhereSQLBuilderFactory.WhereSQLBuilder;
 import org.codefilarete.stalactite.query.model.Query.FluentSelectClause;
-import org.codefilarete.stalactite.query.model.Selectable.SimpleSelectable;
+import org.codefilarete.stalactite.query.api.Selectable.SimpleSelectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**

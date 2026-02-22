@@ -1,4 +1,6 @@
-package org.codefilarete.stalactite.query.model;
+package org.codefilarete.stalactite.query.api;
+
+import org.codefilarete.stalactite.query.model.Query;
 
 /**
  * Simple contract for classes that can provide a {@link Query}. Made for fluent API elements to give the enclosing {@link Query}, so caller can get

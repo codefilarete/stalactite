@@ -8,13 +8,12 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
-import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.api.Fromable;
 import org.codefilarete.stalactite.query.model.Placeholder;
-import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.statement.ExpandableSQL;
-import org.codefilarete.stalactite.sql.statement.ExpandableSQL.ExpandableParameter;
 import org.codefilarete.stalactite.sql.statement.ExpandableStatement;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.SQLParameterParser.ParsedSQL;

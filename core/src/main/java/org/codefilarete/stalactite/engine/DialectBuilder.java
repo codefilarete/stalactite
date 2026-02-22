@@ -5,8 +5,8 @@ import java.util.function.Function;
 
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
-import org.codefilarete.stalactite.query.model.Fromable;
-import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.api.Fromable;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
 import org.codefilarete.stalactite.sql.DatabaseSequenceSelectorFactory;
 import org.codefilarete.stalactite.sql.Dialect;

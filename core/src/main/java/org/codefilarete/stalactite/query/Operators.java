@@ -1,6 +1,13 @@
-package org.codefilarete.stalactite.query.model;
+package org.codefilarete.stalactite.query;
 
+import org.codefilarete.stalactite.query.api.QueryProvider;
+import org.codefilarete.stalactite.query.api.QueryStatement;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.builder.OperatorSQLBuilderFactory.OperatorSQLBuilder;
+import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.query.model.Placeholder;
+import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.query.model.operator.Avg;
 import org.codefilarete.stalactite.query.model.operator.Between;
 import org.codefilarete.stalactite.query.model.operator.Between.Interval;

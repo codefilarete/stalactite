@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.query.model;
+package org.codefilarete.stalactite.query.api;
 
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 

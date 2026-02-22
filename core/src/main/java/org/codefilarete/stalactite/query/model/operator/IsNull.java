@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.query.model.operator;
 
 import org.codefilarete.stalactite.query.model.UnitaryOperator;
-import org.codefilarete.stalactite.query.model.Variable;
+import org.codefilarete.stalactite.query.api.Variable;
 
 /**
  * Represents a "is null" comparison

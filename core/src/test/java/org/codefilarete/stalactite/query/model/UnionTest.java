@@ -2,7 +2,8 @@ package org.codefilarete.stalactite.query.model;
 
 import java.util.Map;
 
-import org.codefilarete.stalactite.query.model.QueryStatement.PseudoColumn;
+import org.codefilarete.stalactite.query.api.QueryStatement.PseudoColumn;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.Test;
 

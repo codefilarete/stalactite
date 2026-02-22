@@ -1,13 +1,13 @@
 package org.codefilarete.stalactite.sql.result;
 
-import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.statement.SQLStatement;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders;
 import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.codefilarete.stalactite.query.model.Selectable.selectableString;
+import static org.codefilarete.stalactite.query.api.Selectable.selectableString;
 import static org.codefilarete.tool.collection.Arrays.asList;
 
 class ColumnedRowIteratorTest {

@@ -18,7 +18,7 @@ import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQu
 import org.codefilarete.stalactite.engine.ExecutableProjection.ProjectionDataProvider;
 import org.codefilarete.stalactite.engine.runtime.projection.ProjectionQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.projection.ProjectionQueryPageSupport;
-import org.codefilarete.stalactite.query.model.JoinLink;
+import org.codefilarete.stalactite.query.api.JoinLink;
 import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
 import org.codefilarete.stalactite.spring.repository.query.execution.AbstractQueryExecutor;

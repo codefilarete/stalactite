@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
-import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.api.Fromable;
 
 /**
  * A factory of {@link DMLNameProvider} to let one decides which concrete implementation he wants to provide.

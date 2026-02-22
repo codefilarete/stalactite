@@ -6,8 +6,8 @@ import java.util.Map;
 
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.UnionSQLBuilder;
 import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.QueryProvider;
-import org.codefilarete.stalactite.query.model.QueryStatement;
+import org.codefilarete.stalactite.query.api.QueryProvider;
+import org.codefilarete.stalactite.query.api.QueryStatement;
 import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.test.DefaultDialect;
@@ -22,12 +22,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.query.model.Operators.eq;
-import static org.codefilarete.stalactite.query.model.Operators.gt;
-import static org.codefilarete.stalactite.query.model.Operators.lt;
-import static org.codefilarete.stalactite.query.model.Operators.sum;
-import static org.codefilarete.stalactite.query.model.OrderByChain.Order.ASC;
-import static org.codefilarete.stalactite.query.model.OrderByChain.Order.DESC;
+import static org.codefilarete.stalactite.query.Operators.eq;
+import static org.codefilarete.stalactite.query.Operators.gt;
+import static org.codefilarete.stalactite.query.Operators.lt;
+import static org.codefilarete.stalactite.query.Operators.sum;
+import static org.codefilarete.stalactite.query.api.OrderByChain.Order.ASC;
+import static org.codefilarete.stalactite.query.api.OrderByChain.Order.DESC;
 import static org.codefilarete.stalactite.query.model.QueryEase.select;
 
 /**

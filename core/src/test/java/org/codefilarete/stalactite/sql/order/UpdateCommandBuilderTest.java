@@ -4,7 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 import org.codefilarete.stalactite.query.builder.QuotingDMLNameProvider;
-import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.query.Operators;
 import org.codefilarete.stalactite.sql.DMLNameProviderFactory;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -17,8 +17,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.codefilarete.stalactite.query.model.Operators.eq;
-import static org.codefilarete.stalactite.query.model.Operators.in;
+import static org.codefilarete.stalactite.query.Operators.eq;
+import static org.codefilarete.stalactite.query.Operators.in;
 import static org.codefilarete.stalactite.query.model.QueryEase.where;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;

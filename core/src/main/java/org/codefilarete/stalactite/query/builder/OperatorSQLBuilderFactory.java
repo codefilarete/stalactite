@@ -7,13 +7,13 @@ import java.util.List;
 
 import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.FunctionSQLBuilder;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
-import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.api.Fromable;
 import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.QueryStatement;
-import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.api.QueryStatement;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
-import org.codefilarete.stalactite.query.model.Variable;
+import org.codefilarete.stalactite.query.api.Variable;
 import org.codefilarete.stalactite.query.model.operator.Between;
 import org.codefilarete.stalactite.query.model.operator.Between.Interval;
 import org.codefilarete.stalactite.query.model.operator.Equals;
@@ -43,7 +43,7 @@ public class OperatorSQLBuilderFactory {
 	 * Constructs a {@link OperatorSQLBuilder} for printing operators as SQL.
 	 *
 	 * @param functionSQLBuilder the builder for SQL function printer
-	 * @param querySQLBuilderFactory a factory for printing instances of {@link org.codefilarete.stalactite.query.model.QueryStatement}s used in subqueries for "in" operator
+	 * @param querySQLBuilderFactory a factory for printing instances of {@link QueryStatement}s used in subqueries for "in" operator
 	 * @return an instance of {@link OperatorSQLBuilder}
 	 */
 	public OperatorSQLBuilder operatorSQLBuilder(FunctionSQLBuilder functionSQLBuilder, QuerySQLBuilderFactory querySQLBuilderFactory) {
@@ -59,7 +59,7 @@ public class OperatorSQLBuilderFactory {
 		 * Constructs a {@link OperatorSQLBuilder} for building operators.
 		 *
 		 * @param functionSQLBuilder the builder for function SQL
-		 * @param querySQLBuilderFactory a factory for printing instances of {@link org.codefilarete.stalactite.query.model.QueryStatement}s used in subqueries for "in" operator
+		 * @param querySQLBuilderFactory a factory for printing instances of {@link QueryStatement}s used in subqueries for "in" operator
 		 */
 		public OperatorSQLBuilder(FunctionSQLBuilder functionSQLBuilder, QuerySQLBuilderFactory querySQLBuilderFactory) {
 			this.functionSQLBuilder = functionSQLBuilder;

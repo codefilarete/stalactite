@@ -1,5 +1,7 @@
 package org.codefilarete.stalactite.query.model;
 
+import org.codefilarete.stalactite.query.api.Variable;
+
 /**
  * Container of a named placeholder : a variable that doesn't have a value yet
  * 

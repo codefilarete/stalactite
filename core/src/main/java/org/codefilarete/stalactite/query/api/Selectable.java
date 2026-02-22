@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.query.model;
+package org.codefilarete.stalactite.query.api;
 
 /**
  * Contract for elements to be put in a Select clause to be transformed to SQL

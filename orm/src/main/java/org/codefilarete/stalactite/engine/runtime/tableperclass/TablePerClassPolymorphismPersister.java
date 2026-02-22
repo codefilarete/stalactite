@@ -41,13 +41,13 @@ import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
-import org.codefilarete.stalactite.query.model.Fromable;
-import org.codefilarete.stalactite.query.model.JoinLink;
+import org.codefilarete.stalactite.query.api.Fromable;
+import org.codefilarete.stalactite.query.api.JoinLink;
 import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.QueryStatement.PseudoColumn;
-import org.codefilarete.stalactite.query.model.QueryStatement.PseudoTable;
-import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.query.model.Selectable.SimpleSelectable;
+import org.codefilarete.stalactite.query.api.QueryStatement.PseudoColumn;
+import org.codefilarete.stalactite.query.api.QueryStatement.PseudoTable;
+import org.codefilarete.stalactite.query.api.Selectable;
+import org.codefilarete.stalactite.query.api.Selectable.SimpleSelectable;
 import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -68,7 +68,7 @@ import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.trace.MutableInt;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
-import static org.codefilarete.stalactite.query.model.Operators.cast;
+import static org.codefilarete.stalactite.query.Operators.cast;
 
 /**
  * @author Guillaume Mary

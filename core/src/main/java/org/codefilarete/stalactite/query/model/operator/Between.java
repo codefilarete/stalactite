@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.query.model.operator;
 import org.codefilarete.stalactite.query.builder.WhereSQLBuilderFactory.WhereSQLBuilder;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
-import org.codefilarete.stalactite.query.model.Variable;
+import org.codefilarete.stalactite.query.api.Variable;
 import org.codefilarete.stalactite.query.model.operator.Between.Interval;
 
 /**

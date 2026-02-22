@@ -24,7 +24,7 @@ import org.codefilarete.stalactite.engine.runtime.load.AbstractJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.onetomany.IndexedMappedManyRelationDescriptor.InMemoryRelationHolder;
 import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
-import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.api.Fromable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;

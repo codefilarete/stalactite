@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.engine.runtime.load;
 
 import org.codefilarete.reflection.Accessor;
-import org.codefilarete.stalactite.query.model.JoinLink;
+import org.codefilarete.stalactite.query.api.JoinLink;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.junit.jupiter.api.Test;
 

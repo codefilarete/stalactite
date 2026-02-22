@@ -6,8 +6,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import org.codefilarete.stalactite.query.model.Fromable;
-import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.api.Fromable;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Database.Schema;
 
 import static org.codefilarete.tool.Nullable.nullable;

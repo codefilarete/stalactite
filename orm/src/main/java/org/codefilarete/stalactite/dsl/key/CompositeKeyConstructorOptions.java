@@ -4,6 +4,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
@@ -100,7 +101,7 @@ public interface CompositeKeyConstructorOptions<C, I> {
 	 * Very open variant of {@link #usingConstructor(Supplier)} that gives a {@link Function} to be used to create instances.
 	 * <p>
 	 * Given factory gets a <code>Function&lt;ColumnedRow, Object&gt;</code> as unique argument (be aware that as a consequence your
-	 * code will depend on {@link ColumnedRow}) which represent a kind of {@link java.sql.ResultSet} readable with {@link org.codefilarete.stalactite.query.model.Selectable}s),
+	 * code will depend on {@link ColumnedRow}) which represent a kind of {@link java.sql.ResultSet} readable with {@link Selectable}s),
 	 * to let one fulfills any property of its instance the way he wants.
 	 * <br/>
 	 *

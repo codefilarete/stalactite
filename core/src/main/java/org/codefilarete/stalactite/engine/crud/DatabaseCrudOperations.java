@@ -9,9 +9,9 @@ import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPrope
 import org.codefilarete.stalactite.engine.PersistenceContext.SelectMapping;
 import org.codefilarete.stalactite.engine.QueryMapper;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
-import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.query.api.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.QueryProvider;
+import org.codefilarete.stalactite.query.api.QueryProvider;
 import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;

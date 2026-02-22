@@ -7,7 +7,7 @@ import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.EntityPersister.SelectAdapter;
 import org.codefilarete.stalactite.engine.runtime.query.AggregateAccessPointToColumnMapping;
 import org.codefilarete.stalactite.query.model.Select;
-import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.api.Selectable;
 
 /**
  * Implementation of {@link SelectAdapter} that wraps {@link Select} to build its select clause.

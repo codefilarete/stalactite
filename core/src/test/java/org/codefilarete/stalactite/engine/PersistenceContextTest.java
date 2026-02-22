@@ -28,8 +28,8 @@ import org.mockito.Mockito;
 import org.mockito.internal.matchers.CapturingMatcher;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.query.model.Operators.eq;
-import static org.codefilarete.stalactite.query.model.Operators.equalsArgNamed;
+import static org.codefilarete.stalactite.query.Operators.eq;
+import static org.codefilarete.stalactite.query.Operators.equalsArgNamed;
 import static org.codefilarete.stalactite.query.model.QueryEase.where;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doNothing;

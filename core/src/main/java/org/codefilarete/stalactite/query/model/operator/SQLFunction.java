@@ -1,8 +1,8 @@
 package org.codefilarete.stalactite.query.model.operator;
 
-import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
-import org.codefilarete.stalactite.query.model.Variable;
+import org.codefilarete.stalactite.query.api.Variable;
 
 /**
  * Parent class that describes a function in some SQL statement

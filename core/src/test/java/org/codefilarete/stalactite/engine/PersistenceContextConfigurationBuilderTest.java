@@ -4,7 +4,7 @@ import javax.sql.DataSource;
 
 import org.codefilarete.stalactite.engine.PersistenceContextConfigurationBuilder.PersistenceContextConfiguration;
 import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelector;
-import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.query.Operators;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.sql.DatabaseSequenceSelectorFactory;
 import org.codefilarete.stalactite.sql.DialectOptions;

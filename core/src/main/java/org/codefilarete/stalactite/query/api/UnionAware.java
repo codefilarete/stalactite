@@ -1,4 +1,7 @@
-package org.codefilarete.stalactite.query.model;
+package org.codefilarete.stalactite.query.api;
+
+import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.Union;
 
 /**
  * Contract for elements that can be union-ed 

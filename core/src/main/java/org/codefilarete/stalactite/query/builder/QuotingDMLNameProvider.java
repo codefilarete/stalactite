@@ -2,8 +2,8 @@ package org.codefilarete.stalactite.query.builder;
 
 import java.util.function.Function;
 
-import org.codefilarete.stalactite.query.model.Fromable;
-import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.api.Fromable;
+import org.codefilarete.stalactite.query.api.Selectable;
 
 /**
  * A {@link DMLNameProvider} that add back-quotes to all identifiers.

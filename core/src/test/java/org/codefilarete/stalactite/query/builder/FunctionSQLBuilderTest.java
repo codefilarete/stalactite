@@ -15,8 +15,8 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.query.model.Operators.cast;
-import static org.codefilarete.stalactite.query.model.Operators.substring;
+import static org.codefilarete.stalactite.query.Operators.cast;
+import static org.codefilarete.stalactite.query.Operators.substring;
 import static org.codefilarete.stalactite.sql.ddl.Size.length;
 
 class FunctionSQLBuilderTest {

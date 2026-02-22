@@ -1,11 +1,10 @@
 package org.codefilarete.stalactite.query.model.operator;
 
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
-import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.QueryProvider;
-import org.codefilarete.stalactite.query.model.QueryStatement;
+import org.codefilarete.stalactite.query.api.QueryProvider;
+import org.codefilarete.stalactite.query.api.QueryStatement;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
-import org.codefilarete.stalactite.query.model.Variable;
+import org.codefilarete.stalactite.query.api.Variable;
 
 import static org.codefilarete.tool.Nullable.nullable;
 

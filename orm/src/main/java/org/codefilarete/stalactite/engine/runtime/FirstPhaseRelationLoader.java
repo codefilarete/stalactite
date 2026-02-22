@@ -7,7 +7,7 @@ import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.engine.runtime.load.EntityMerger;
 import org.codefilarete.stalactite.mapping.AbstractTransformer;
 import org.codefilarete.stalactite.mapping.IdMapping;
-import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 
 /**

@@ -1,6 +1,6 @@
-package org.codefilarete.stalactite.query.model;
+package org.codefilarete.stalactite.query.api;
 
-import org.codefilarete.stalactite.query.model.OrderByChain.Order;
+import org.codefilarete.stalactite.query.api.OrderByChain.Order;
 import org.codefilarete.stalactite.query.model.Query.FluentOrderByClause;
 
 /**

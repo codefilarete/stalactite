@@ -2,9 +2,10 @@ package org.codefilarete.stalactite.query.model.operator;
 
 import java.util.List;
 
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
-import org.codefilarete.stalactite.query.model.Variable;
+import org.codefilarete.stalactite.query.api.Variable;
 
 /**
  * Contract for SQL operators that require an operation on the column / value that they compare to their value 
@@ -44,10 +45,10 @@ public abstract class BiOperandOperator<T, V> extends ConditionalOperator<T, V> 
 	
 	/**
 	 * Expected to compute a set of Object representing current operator. Returned objects can be a combination of
-	 * {@link org.codefilarete.stalactite.query.model.Selectable} or {@link SQLFunction} for example.
+	 * {@link Selectable} or {@link SQLFunction} for example.
 	 * This method is invoked at rendering time, thus the {@link #getValue()} can be used by implementation (value is up-to-date)
 	 * 
-	 * @param leftOperand the left object used as operand (usually a {@link org.codefilarete.stalactite.query.model.Selectable})
+	 * @param leftOperand the left object used as operand (usually a {@link Selectable})
 	 * @return a new array of SQL-printable objects
 	 */
 	public abstract List<Object> asRawCriterion(Object leftOperand);

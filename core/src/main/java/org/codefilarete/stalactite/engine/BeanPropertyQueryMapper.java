@@ -4,7 +4,7 @@ import java.sql.ResultSet;
 import java.util.function.BiConsumer;
 
 import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.ResultSetRowAssembler;
 import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer;

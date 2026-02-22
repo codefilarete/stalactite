@@ -25,8 +25,8 @@ import org.codefilarete.stalactite.engine.runtime.load.PassiveJoinNode.PassiveJo
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.BasicEntityCache;
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.EntityCache;
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer;
-import org.codefilarete.stalactite.query.model.Fromable;
-import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.api.Fromable;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.Nullable;

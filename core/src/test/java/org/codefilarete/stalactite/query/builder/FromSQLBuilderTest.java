@@ -2,8 +2,8 @@ package org.codefilarete.stalactite.query.builder;
 
 import org.codefilarete.stalactite.query.builder.FromSQLBuilderFactory.FromSQLBuilder;
 import org.codefilarete.stalactite.query.model.From;
-import org.codefilarete.stalactite.query.model.QueryStatement.PseudoColumn;
-import org.codefilarete.stalactite.query.model.QueryStatement.PseudoTable;
+import org.codefilarete.stalactite.query.api.QueryStatement.PseudoColumn;
+import org.codefilarete.stalactite.query.api.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;

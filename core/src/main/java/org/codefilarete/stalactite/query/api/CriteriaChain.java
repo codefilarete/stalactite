@@ -1,5 +1,8 @@
-package org.codefilarete.stalactite.query.model;
+package org.codefilarete.stalactite.query.api;
 
+import org.codefilarete.stalactite.query.model.AbstractCriterion;
+import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.query.model.LogicalOperator;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 import static org.codefilarete.stalactite.query.model.LogicalOperator.*;

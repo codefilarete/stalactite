@@ -5,7 +5,7 @@ import java.util.HashMap;
 
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.builder.QuotingDMLNameProvider;
-import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.api.Fromable;
 import org.codefilarete.stalactite.sql.ddl.structure.Database;
 import org.codefilarete.stalactite.sql.ddl.structure.Sequence;
 import org.junit.jupiter.api.Test;

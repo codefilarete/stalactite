@@ -6,7 +6,7 @@ import java.util.Map;
 import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.FunctionSQLBuilder;
 import org.codefilarete.stalactite.query.builder.SelectSQLBuilderFactory.SelectSQLBuilder;
 import org.codefilarete.stalactite.query.model.Select;
-import org.codefilarete.stalactite.query.model.SelectChain;
+import org.codefilarete.stalactite.query.api.SelectChain;
 import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -16,8 +16,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.query.model.Operators.max;
-import static org.codefilarete.stalactite.query.model.Operators.min;
+import static org.codefilarete.stalactite.query.Operators.max;
+import static org.codefilarete.stalactite.query.Operators.min;
 
 /**
  * @author Guillaume Mary

@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.sql.ddl.structure;
 
-import org.codefilarete.stalactite.query.model.Fromable;
-import org.codefilarete.stalactite.query.model.JoinLink;
+import org.codefilarete.stalactite.query.api.Fromable;
+import org.codefilarete.stalactite.query.api.JoinLink;
 import org.codefilarete.tool.collection.KeepOrderSet;
 
 /**

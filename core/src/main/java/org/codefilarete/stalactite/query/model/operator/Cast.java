@@ -1,6 +1,6 @@
 package org.codefilarete.stalactite.query.model.operator;
 
-import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.ddl.Size;
 
 /**

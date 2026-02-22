@@ -1,14 +1,15 @@
 package org.codefilarete.stalactite.query.builder;
 
+import org.codefilarete.stalactite.query.api.QueryStatement;
 import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.FunctionSQLBuilder;
 import org.codefilarete.stalactite.query.builder.OperatorSQLBuilderFactory.OperatorSQLBuilder;
 import org.codefilarete.stalactite.query.model.AbstractCriterion;
 import org.codefilarete.stalactite.query.model.ColumnCriterion;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
-import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.query.api.CriteriaChain;
 import org.codefilarete.stalactite.query.model.LogicalOperator;
 import org.codefilarete.stalactite.query.model.RawCriterion;
-import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.model.operator.BiOperandOperator;
 import org.codefilarete.stalactite.query.model.operator.SQLFunction;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
@@ -52,7 +53,7 @@ public class WhereSQLBuilderFactory {
 	 *
 	 * @param where the criteria chain representing the conditions to be included in the WHERE clause
 	 * @param dmlNameProvider the instance that supplies names for database objects (e.g., tables, columns) in SQL statements
-	 * @param querySQLBuilderFactory a factory for printing instances of {@link org.codefilarete.stalactite.query.model.QueryStatement}s used in subqueries for "in" operator
+	 * @param querySQLBuilderFactory a factory for printing instances of {@link QueryStatement}s used in subqueries for "in" operator
 	 * @return an instance of {@link WhereSQLBuilder} configured with the provided criteria and supporting components
 	 */
 	public WhereSQLBuilder whereBuilder(CriteriaChain where, DMLNameProvider dmlNameProvider, QuerySQLBuilderFactory querySQLBuilderFactory) {

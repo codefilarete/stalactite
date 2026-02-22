@@ -33,11 +33,11 @@ import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSuppo
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
-import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.query.api.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Limit;
-import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.query.Operators;
 import org.codefilarete.stalactite.query.model.OrderBy;
-import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.VisibleForTesting;
@@ -175,8 +175,8 @@ public class EntityQueryCriteriaSupport<C, I> {
 									? Operators.lowerCase(column)
 									: column,
 							duo.getDirection() == Order.ASC
-									? org.codefilarete.stalactite.query.model.OrderByChain.Order.ASC
-									: org.codefilarete.stalactite.query.model.OrderByChain.Order.DESC);
+									? org.codefilarete.stalactite.query.api.OrderByChain.Order.ASC
+									: org.codefilarete.stalactite.query.api.OrderByChain.Order.DESC);
 				});
 				Set<C> select = entityFinder.select(
 						entityCriteriaSupport,

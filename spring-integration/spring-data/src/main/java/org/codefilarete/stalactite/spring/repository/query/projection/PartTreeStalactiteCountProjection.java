@@ -9,7 +9,7 @@ import org.codefilarete.stalactite.engine.ExecutableProjection.ProjectionDataPro
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.projection.ProjectionQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport.EntityQueryPageSupport;
-import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.query.Operators;
 import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.spring.repository.query.derivation.ToCriteriaPartTreeTransformer;
 import org.codefilarete.stalactite.spring.repository.query.derivation.ToCriteriaPartTreeTransformer.Condition;

@@ -1,5 +1,7 @@
 package org.codefilarete.stalactite.query.model;
 
+import org.codefilarete.stalactite.query.api.Variable;
+
 /**
  * General contract for SQL operator such as in, =, <, >, like, between, etc. 
  * 

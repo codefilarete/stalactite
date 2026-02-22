@@ -1,5 +1,7 @@
 package org.codefilarete.stalactite.query.model;
 
+import org.codefilarete.stalactite.query.api.Variable;
+
 /**
  * Parent class for operators with a single comparison value
  * 

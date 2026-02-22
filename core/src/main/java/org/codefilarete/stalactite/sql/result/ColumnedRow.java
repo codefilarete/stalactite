@@ -1,6 +1,6 @@
 package org.codefilarete.stalactite.sql.result;
 
-import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.api.Selectable;
 
 /**
  * Contract to read data of an underlying {@link java.sql.ResultSet} from a {@link Selectable} (abstract representation

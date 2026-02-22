@@ -3,8 +3,8 @@ package org.codefilarete.stalactite.sql.result;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.query.model.Selectable.SimpleSelectable;
+import org.codefilarete.stalactite.query.api.Selectable;
+import org.codefilarete.stalactite.query.api.Selectable.SimpleSelectable;
 
 /**
  * Default implementation of a {@link ColumnedRow} that stores {@link java.sql.ResultSet} data in memory through a {@link Map}.

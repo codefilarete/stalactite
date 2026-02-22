@@ -1,12 +1,11 @@
 package org.codefilarete.stalactite.query.model;
 
 import java.util.ArrayList;
-import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Function;
 
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.query.api.CriteriaChain;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.tool.collection.Iterables;
 
 /**

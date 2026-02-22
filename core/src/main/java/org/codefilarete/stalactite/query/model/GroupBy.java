@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.codefilarete.stalactite.query.api.GroupByChain;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**

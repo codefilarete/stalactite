@@ -1,4 +1,6 @@
-package org.codefilarete.stalactite.query.model;
+package org.codefilarete.stalactite.query.api;
+
+import org.codefilarete.stalactite.query.model.From;
 
 /**
  * Contract for elements to be put in a join condition, in order to be transformed to SQL.

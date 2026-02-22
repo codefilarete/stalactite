@@ -8,7 +8,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ValueAccessPoint;
@@ -19,9 +18,8 @@ import org.codefilarete.stalactite.engine.listener.PersisterListener;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
-import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Select;
-import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Experimental;
@@ -267,11 +265,11 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	/**
 	 * Creates a projection query which criteria target mapped properties.
 	 * {@link Select} must be modified by given select adapter (by default all column that would allow to load the entity are present).
-	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link org.codefilarete.stalactite.query.model.Selectable}
+	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link Selectable}
 	 * ({@link org.codefilarete.stalactite.sql.ddl.structure.Column} or {@link org.codefilarete.stalactite.query.model.operator.SQLFunction}).
 	 * Consumption and aggregation of query result is left to the user that must implement its {@link Accumulator}
 	 * while executing the result of this method through {@link ExecutableProjection#execute(Accumulator)}.
-	 * <strong>Note that all {@link org.codefilarete.stalactite.query.model.Selectable} added to the Select must have an alias</strong>.
+	 * <strong>Note that all {@link Selectable} added to the Select must have an alias</strong>.
 	 * Raises an exception if targeted property is not mapped as a persisted one (transient).
 	 *
 	 * @param selectAdapter the {@link Select} clause modifier
@@ -287,11 +285,11 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	/**
 	 * Creates a projection query which criteria target mapped properties.
 	 * {@link Select} must be modified by given select adapter (by default all columns that would allow to load the entity are present).
-	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link org.codefilarete.stalactite.query.model.Selectable}
+	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link Selectable}
 	 * ({@link org.codefilarete.stalactite.sql.ddl.structure.Column} or {@link org.codefilarete.stalactite.query.model.operator.SQLFunction}).
 	 * Consumption and aggregation of query result is left to the user that must implement its {@link Accumulator}
 	 * while executing the result of this method through {@link ExecutableProjection#execute(Accumulator)}.
-	 * <strong>Note that all {@link org.codefilarete.stalactite.query.model.Selectable} added to the Select must have an alias</strong>.
+	 * <strong>Note that all {@link Selectable} added to the Select must have an alias</strong>.
 	 * Raises an exception if targeted property is not mapped as a persisted one (transient).
 	 *
 	 * @param selectAdapter the {@link Select} clause modifier
@@ -307,11 +305,11 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	/**
 	 * Creates a projection query which criteria target mapped properties.
 	 * {@link Select} must be modified by given select adapter (by default all columns that would allow to load the entity are present).
-	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link org.codefilarete.stalactite.query.model.Selectable}
+	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link Selectable}
 	 * ({@link org.codefilarete.stalactite.sql.ddl.structure.Column} or {@link org.codefilarete.stalactite.query.model.operator.SQLFunction}).
 	 * Consumption and aggregation of query result is left to the user that must implement its {@link Accumulator}
 	 * while executing the result of this method through {@link ExecutableProjection#execute(Accumulator)}.
-	 * <strong>Note that all {@link org.codefilarete.stalactite.query.model.Selectable} added to the Select must have an alias</strong>.
+	 * <strong>Note that all {@link Selectable} added to the Select must have an alias</strong>.
 	 * Raises an exception if targeted property is not mapped as a persisted one (transient).
 	 *
 	 * @param selectAdapter the {@link Select} clause modifier
@@ -328,11 +326,11 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	/**
 	 * Creates a projection query which criteria target mapped properties.
 	 * {@link Select} must be modified by given select adapter (by default all columns that would allow to load the entity are present).
-	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link org.codefilarete.stalactite.query.model.Selectable}
+	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link Selectable}
 	 * ({@link org.codefilarete.stalactite.sql.ddl.structure.Column} or {@link org.codefilarete.stalactite.query.model.operator.SQLFunction}).
 	 * Consumption and aggregation of query result is left to the user that must implement its {@link Accumulator}
 	 * while executing the result of this method through {@link ExecutableProjection#execute(Accumulator)}.
-	 * <strong>Note that all {@link org.codefilarete.stalactite.query.model.Selectable} added to the Select must have an alias</strong>.
+	 * <strong>Note that all {@link Selectable} added to the Select must have an alias</strong>.
 	 * Raises an exception if targeted property is not mapped as a persisted one (transient).
 	 *
 	 * @param selectAdapter the {@link Select} clause modifier
@@ -356,11 +354,11 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	/**
 	 * Creates a projection query which criteria target mapped properties.
 	 * {@link Select} must be modified by given select adapter (by default all columns that would allow to load the entity are present).
-	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link org.codefilarete.stalactite.query.model.Selectable}
+	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link Selectable}
 	 * ({@link org.codefilarete.stalactite.sql.ddl.structure.Column} or {@link org.codefilarete.stalactite.query.model.operator.SQLFunction}).
 	 * Consumption and aggregation of query result is left to the user that must implement its {@link Accumulator}
 	 * while executing the result of this method through {@link ExecutableProjection#execute(Accumulator)}.
-	 * <strong>Note that all {@link org.codefilarete.stalactite.query.model.Selectable} added to the Select must have an alias</strong>.
+	 * <strong>Note that all {@link Selectable} added to the Select must have an alias</strong>.
 	 *
 	 * @param selectAdapter the {@link Select} clause modifier
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}

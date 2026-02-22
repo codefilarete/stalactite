@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.engine;
 import java.sql.ResultSet;
 
 import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.tool.function.SerializableTriFunction;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;

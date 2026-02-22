@@ -1,5 +1,7 @@
 package org.codefilarete.stalactite.query.model;
 
+import org.codefilarete.stalactite.query.api.HavingChain;
+
 /**
  * @author Guillaume Mary
  */

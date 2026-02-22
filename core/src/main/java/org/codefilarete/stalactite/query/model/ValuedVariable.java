@@ -1,5 +1,7 @@
 package org.codefilarete.stalactite.query.model;
 
+import org.codefilarete.stalactite.query.api.Variable;
+
 /**
  * Wrapper for String, Integer, etc values of operators.
  * 

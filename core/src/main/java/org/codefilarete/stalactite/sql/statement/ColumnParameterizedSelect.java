@@ -2,9 +2,8 @@ package org.codefilarete.stalactite.sql.statement;
 
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
-import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;

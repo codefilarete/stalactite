@@ -1,4 +1,7 @@
-package org.codefilarete.stalactite.query.model;
+package org.codefilarete.stalactite.query.api;
+
+import org.codefilarete.stalactite.query.model.Placeholder;
+import org.codefilarete.stalactite.query.model.ValuedVariable;
 
 /**
  * Value wrapper of an operator.

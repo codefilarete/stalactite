@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.query;
 
 import java.util.Map;
 
-import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.query.api.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.OrderBy;
 
