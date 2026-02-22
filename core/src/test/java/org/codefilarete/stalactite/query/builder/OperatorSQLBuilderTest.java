@@ -47,7 +47,7 @@ import static org.codefilarete.stalactite.query.Operators.startsWith;
 import static org.codefilarete.stalactite.query.Operators.trim;
 import static org.codefilarete.stalactite.query.Operators.upperCase;
 import static org.codefilarete.stalactite.query.api.OrderByChain.Order.DESC;
-import static org.codefilarete.stalactite.query.model.QueryEase.select;
+import static org.codefilarete.stalactite.query.model.FluentQueries.select;
 
 /**
  * @author Guillaume Mary

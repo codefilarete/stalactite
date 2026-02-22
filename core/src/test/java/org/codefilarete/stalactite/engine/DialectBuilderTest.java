@@ -12,7 +12,7 @@ import org.codefilarete.stalactite.query.builder.SQLAppender;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.Operators;
 import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.QueryEase;
+import org.codefilarete.stalactite.query.model.FluentQueries;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.model.UnitaryOperator;
 import org.codefilarete.stalactite.query.model.operator.Like;
@@ -48,7 +48,7 @@ import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.query.Operators.like;
-import static org.codefilarete.stalactite.query.model.QueryEase.where;
+import static org.codefilarete.stalactite.query.model.FluentQueries.where;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -257,7 +257,7 @@ class DialectBuilderTest {
 			Column dummyColumn = dummyTable.addColumn("dummyColumn", String.class);
 			
 			// Checking that operator override is taken into Query rendering
-			persistenceContext.newQuery(QueryEase.select(dummyColumn).from(dummyTable).where(dummyColumn, like("x")), String.class)
+			persistenceContext.newQuery(FluentQueries.select(dummyColumn).from(dummyTable).where(dummyColumn, like("x")), String.class)
 					.execute(Accumulators.getFirst());
 			assertThat(sqlCaptor.getValue()).isEqualTo("select dummyTable.dummyColumn from dummyTable where dummyTable.dummyColumn LIKE 'x'");
 			
@@ -313,7 +313,7 @@ class DialectBuilderTest {
 			Column dummyColumn = dummyTable.addColumn("dummyColumn", String.class);
 			
 			// Checking that operator override is taken into Query rendering
-			persistenceContext.newQuery(QueryEase.select(dummyColumn).from(dummyTable).where(dummyColumn, new MyOperator("42")), String.class)
+			persistenceContext.newQuery(FluentQueries.select(dummyColumn).from(dummyTable).where(dummyColumn, new MyOperator("42")), String.class)
 					.execute(Accumulators.getFirst());
 			assertThat(sqlCaptor.getValue()).isEqualTo("select dummyTable.dummyColumn from dummyTable where dummyTable.dummyColumn myOperator '42'");
 			

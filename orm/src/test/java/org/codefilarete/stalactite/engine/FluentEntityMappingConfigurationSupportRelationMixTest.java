@@ -7,10 +7,10 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Set;
 
+import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.engine.configurer.AbstractRelationConfigurer;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
 import org.codefilarete.stalactite.engine.model.*;
@@ -37,7 +37,7 @@ import org.junit.jupiter.api.Test;
 
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy.databaseAutoIncrement;
 import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.ALL;
 import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
@@ -66,12 +66,12 @@ public class FluentEntityMappingConfigurationSupportRelationMixTest {
 		
 		persistenceContext = new PersistenceContext(dataSource, dialect);
 		
-		FluentEntityMappingBuilder<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personMappingBuilder = FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName);
 		personMappingConfiguration = personMappingBuilder;
 		
-		FluentEntityMappingBuilder<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<City, Identifier<Long>> cityMappingBuilder = FluentMappings.entityBuilder(City.class, Identifier.LONG_TYPE)
 				.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(City::getName);
 		cityMappingConfiguration = cityMappingBuilder;
@@ -81,7 +81,7 @@ public class FluentEntityMappingConfigurationSupportRelationMixTest {
 	void foreignKeyIsCreated() throws SQLException {
 		// mapping building thanks to fluent API
 		ConfiguredPersister<Country, Identifier<Long>> countryPersister =
-				(ConfiguredPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				(ConfiguredPersister<Country, Identifier<Long>>) FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -128,7 +128,7 @@ public class FluentEntityMappingConfigurationSupportRelationMixTest {
 	@Test
 	public void testCascade_oneToOneAndOneToMany_CRUD() {
 		// mapping building thanks to fluent API
-		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+		EntityPersister<Country, Identifier<Long>> countryPersister = FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
 				.mapOneToOne(Country::getPresident, personMappingConfiguration).cascading(ALL)
@@ -178,11 +178,11 @@ public class FluentEntityMappingConfigurationSupportRelationMixTest {
 	
 	@Test
 	public void testCascade_SetSetMix_update() {
-		FluentEntityMappingBuilder<State, Identifier<Long>> stateMappingBuilder = MappingEase.entityBuilder(State.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<State, Identifier<Long>> stateMappingBuilder = FluentMappings.entityBuilder(State.class, Identifier.LONG_TYPE)
 				.mapKey(State::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(State::getName);
 		
-		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+		EntityPersister<Country, Identifier<Long>> countryPersister = FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
 				.map(Country::getDescription)
@@ -250,11 +250,11 @@ public class FluentEntityMappingConfigurationSupportRelationMixTest {
 	
 	@Test
 	public void testCascade_ListSetMix_listContainsDuplicate_CRUD() {
-		FluentEntityMappingBuilder<State, Identifier<Long>> stateMappingBuilder = MappingEase.entityBuilder(State.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<State, Identifier<Long>> stateMappingBuilder = FluentMappings.entityBuilder(State.class, Identifier.LONG_TYPE)
 				.mapKey(State::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(State::getName);
 		
-		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+		EntityPersister<Country, Identifier<Long>> countryPersister = FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
 				.map(Country::getDescription)

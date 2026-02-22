@@ -3,11 +3,11 @@ package org.codefilarete.stalactite.spring.repository.query.bean;
 import java.util.Collection;
 import java.util.Set;
 
+import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
-import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.Country;
@@ -43,13 +43,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.reflection.AccessorChain.fromMethodReferences;
-import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.query.Operators.containsArgNamed;
 import static org.codefilarete.stalactite.query.Operators.endsWithArgNamed;
 import static org.codefilarete.stalactite.query.Operators.eq;
 import static org.codefilarete.stalactite.query.Operators.equalsArgNamed;
-import static org.codefilarete.stalactite.query.model.QueryEase.*;
+import static org.codefilarete.stalactite.query.model.FluentQueries.*;
 import static org.codefilarete.tool.function.Functions.chain;
 
 /**
@@ -381,7 +381,7 @@ public class BeanQueriesTest {
 					.map(Republic::getName)
 					.map(Republic::getDescription)
 					.map(Republic::isEuMember)
-					.embed(Republic::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+					.embed(Republic::getTimestamp, FluentMappings.embeddableBuilder(Timestamp.class)
 							.map(Timestamp::getCreationDate)
 							.map(Timestamp::getModificationDate))
 					.mapOneToOne(Republic::getPresident, entityBuilder(Person.class, LONG_TYPE)

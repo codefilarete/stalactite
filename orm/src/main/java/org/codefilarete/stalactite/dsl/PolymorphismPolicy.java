@@ -133,7 +133,7 @@ public interface PolymorphismPolicy<C> {
 		 * 
 		 * @param entityMappingConfigurationProvider the sub-entity type mapping to register
 		 * @return this
-		 * @see MappingEase#subentityBuilder(Class)
+		 * @see FluentMappings#subentityBuilder(Class)
 		 */
 		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfigurationProvider) {
 			addSubClass(entityMappingConfigurationProvider, (Table) null);
@@ -145,7 +145,7 @@ public interface PolymorphismPolicy<C> {
 		 *
 		 * @param entityMappingConfiguration the sub-entity type mapping to register
 		 * @return this
-		 * @see MappingEase#subentityBuilder(Class)
+		 * @see FluentMappings#subentityBuilder(Class)
 		 */
 		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfiguration) {
 			addSubClass(entityMappingConfiguration, (Table) null);
@@ -158,7 +158,7 @@ public interface PolymorphismPolicy<C> {
 		 * @param entityMappingConfigurationProvider the sub-entity type mapping to register
 		 * @param tableName the table name to store the sub-entity type
 		 * @return this
-		 * @see MappingEase#subentityBuilder(Class)
+		 * @see FluentMappings#subentityBuilder(Class)
 		 */
 		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfigurationProvider, @Nullable String tableName) {
 			addSubClass(entityMappingConfigurationProvider.getConfiguration(), tableName);
@@ -171,7 +171,7 @@ public interface PolymorphismPolicy<C> {
 		 * @param entityMappingConfiguration the sub-entity type mapping to register
 		 * @param tableName the table name to store the sub-entity type
 		 * @return this
-		 * @see MappingEase#subentityBuilder(Class)
+		 * @see FluentMappings#subentityBuilder(Class)
 		 */
 		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfiguration, @Nullable String tableName) {
 			addSubClass(entityMappingConfiguration, nullable(tableName).map(Table::new).get());
@@ -184,7 +184,7 @@ public interface PolymorphismPolicy<C> {
 		 * @param entityMappingConfigurationProvider the sub-entity type mapping to register
 		 * @param table the table to store the sub-entity type
 		 * @return this
-		 * @see MappingEase#subentityBuilder(Class)
+		 * @see FluentMappings#subentityBuilder(Class)
 		 */
 		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfigurationProvider, @Nullable Table table) {
 			addSubClass(entityMappingConfigurationProvider.getConfiguration(), table);
@@ -197,7 +197,7 @@ public interface PolymorphismPolicy<C> {
 		 * @param entityMappingConfiguration the sub-entity type mapping to register
 		 * @param table the table to store the sub-entity type
 		 * @return this
-		 * @see MappingEase#subentityBuilder(Class)
+		 * @see FluentMappings#subentityBuilder(Class)
 		 */
 		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfiguration, @Nullable Table table) {
 			subClasses.add(new Duo<>(entityMappingConfiguration, table));
@@ -226,7 +226,7 @@ public interface PolymorphismPolicy<C> {
 		 *
 		 * @param entityMappingConfigurationProvider the sub-entity type mapping to register
 		 * @return this
-		 * @see MappingEase#subentityBuilder(Class)
+		 * @see FluentMappings#subentityBuilder(Class)
 		 */
 		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfigurationProvider) {
 			addSubClass(entityMappingConfigurationProvider, (Table) null);
@@ -238,7 +238,7 @@ public interface PolymorphismPolicy<C> {
 		 *
 		 * @param entityMappingConfiguration the sub-entity type mapping to register
 		 * @return this
-		 * @see MappingEase#subentityBuilder(Class)
+		 * @see FluentMappings#subentityBuilder(Class)
 		 */
 		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfiguration) {
 			addSubClass(entityMappingConfiguration, (Table) null);
@@ -251,7 +251,7 @@ public interface PolymorphismPolicy<C> {
 		 * @param entityMappingConfigurationProvider the sub-entity type mapping to register
 		 * @param tableName the table to store the sub-entity type
 		 * @return this
-		 * @see MappingEase#subentityBuilder(Class)
+		 * @see FluentMappings#subentityBuilder(Class)
 		 */
 		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfigurationProvider, @Nullable String tableName) {
 			return addSubClass(entityMappingConfigurationProvider.getConfiguration(), tableName);
@@ -263,7 +263,7 @@ public interface PolymorphismPolicy<C> {
 		 * @param entityMappingConfiguration the sub-entity type mapping to register
 		 * @param tableName the table to store the sub-entity type
 		 * @return this
-		 * @see MappingEase#subentityBuilder(Class)
+		 * @see FluentMappings#subentityBuilder(Class)
 		 */
 		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfiguration, @Nullable String tableName) {
 			addSubClass(entityMappingConfiguration, nullable(tableName).map(Table::new).get());
@@ -276,7 +276,7 @@ public interface PolymorphismPolicy<C> {
 		 * @param entityMappingConfigurationProvider the sub-entity type mapping to register
 		 * @param table the table to store the sub-entity type
 		 * @return this
-		 * @see MappingEase#subentityBuilder(Class)
+		 * @see FluentMappings#subentityBuilder(Class)
 		 */
 		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfigurationProvider, @Nullable Table table) {
 			return addSubClass(entityMappingConfigurationProvider.getConfiguration(), table);
@@ -288,7 +288,7 @@ public interface PolymorphismPolicy<C> {
 		 * @param entityMappingConfiguration the sub-entity type mapping to register
 		 * @param table the table to store the sub-entity type
 		 * @return this
-		 * @see MappingEase#subentityBuilder(Class)
+		 * @see FluentMappings#subentityBuilder(Class)
 		 */
 		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfiguration, @Nullable Table table) {
 			subClasses.add(new Duo<>(entityMappingConfiguration, table));
@@ -335,7 +335,7 @@ public interface PolymorphismPolicy<C> {
 		 * @param entityMappingConfiguration the sub-entity type mapping to register
 		 * @param discriminatorValue sub-entity discriminator value (will be used to distinguish entity type in while loading them from database)
 		 * @return this
-		 * @see MappingEase#subentityBuilder(Class)
+		 * @see FluentMappings#subentityBuilder(Class)
 		 */
 		public SingleTablePolymorphism<C, D> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfiguration, D discriminatorValue) {
 			return addSubClass(entityMappingConfiguration.getConfiguration(), discriminatorValue);
@@ -347,7 +347,7 @@ public interface PolymorphismPolicy<C> {
 		 * @param entityMappingConfiguration the sub-entity type mapping to register
 		 * @param discriminatorValue sub-entity discriminator value (will be used to distinguish entity type in while loading them from database)
 		 * @return this
-		 * @see MappingEase#subentityBuilder(Class)
+		 * @see FluentMappings#subentityBuilder(Class)
 		 */
 		public SingleTablePolymorphism<C, D> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfiguration, D discriminatorValue) {
 			subClasses.put(discriminatorValue, entityMappingConfiguration);

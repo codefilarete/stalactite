@@ -14,10 +14,10 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider.EntityMappingConfigurationProviderHolder;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
-import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
 import org.codefilarete.stalactite.engine.model.book.Author;
 import org.codefilarete.stalactite.engine.model.book.Book;
@@ -51,7 +51,7 @@ import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMo
 import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
 import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
 import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.READ_ONLY;
-import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 
@@ -493,7 +493,7 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 	@Test
 	void select_collectionFactory() throws SQLException {
 		// mapping building thanks to fluent API
-		EntityPersister<Answer, Identifier<Long>> answerPersister = MappingEase.entityBuilder(Answer.class, Identifier.LONG_TYPE)
+		EntityPersister<Answer, Identifier<Long>> answerPersister = FluentMappings.entityBuilder(Answer.class, Identifier.LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
 				.mapManyToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION)
 					// applying a Set that will sort cities by their name
@@ -520,7 +520,7 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 		@Test
 		void insert_onlySourceEntitiesArePersisted() {
 			// mapping building thanks to fluent API
-			EntityPersister<Answer, Identifier<Long>> answerPersister = MappingEase.entityBuilder(Answer.class, Identifier.LONG_TYPE)
+			EntityPersister<Answer, Identifier<Long>> answerPersister = FluentMappings.entityBuilder(Answer.class, Identifier.LONG_TYPE)
 					.mapKey(Answer::getId, ALREADY_ASSIGNED)
 					// no reverse side
 					.mapManyToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(READ_ONLY)
@@ -560,7 +560,7 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 		@Test
 		void update_associationTableIsMaintained() {
 			// mapping building thanks to fluent API
-			EntityPersister<Answer, Identifier<Long>> answerPersister = MappingEase.entityBuilder(Answer.class, Identifier.LONG_TYPE)
+			EntityPersister<Answer, Identifier<Long>> answerPersister = FluentMappings.entityBuilder(Answer.class, Identifier.LONG_TYPE)
 					.mapKey(Answer::getId, ALREADY_ASSIGNED)
 					.mapOneToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ALL)
 					.build(persistenceContext);
@@ -598,7 +598,7 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 		
 		@Test
 		void delete_associationRecordsMustBeDeleted() throws SQLException {
-			EntityPersister<Answer, Identifier<Long>> answerPersister = MappingEase.entityBuilder(Answer.class, Identifier.LONG_TYPE)
+			EntityPersister<Answer, Identifier<Long>> answerPersister = FluentMappings.entityBuilder(Answer.class, Identifier.LONG_TYPE)
 					.mapKey(Answer::getId, ALREADY_ASSIGNED)
 					.mapOneToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ALL)
 					.build(persistenceContext);
@@ -672,7 +672,7 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 
 		@Test
 		void update_removedElementsAreDeleted() {
-			EntityPersister<Answer, Identifier<Long>> answerPersister = MappingEase.entityBuilder(Answer.class, Identifier.LONG_TYPE)
+			EntityPersister<Answer, Identifier<Long>> answerPersister = FluentMappings.entityBuilder(Answer.class, Identifier.LONG_TYPE)
 					.mapKey(Answer::getId, ALREADY_ASSIGNED)
 					.mapOneToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ALL_ORPHAN_REMOVAL)
 					.build(persistenceContext);
@@ -711,7 +711,7 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 		
 		@Test
 		void delete_associationRecordsMustBeDeleted() throws SQLException {
-			EntityPersister<Answer, Identifier<Long>> answerPersister = MappingEase.entityBuilder(Answer.class, Identifier.LONG_TYPE)
+			EntityPersister<Answer, Identifier<Long>> answerPersister = FluentMappings.entityBuilder(Answer.class, Identifier.LONG_TYPE)
 					.mapKey(Answer::getId, ALREADY_ASSIGNED)
 					.mapOneToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ALL_ORPHAN_REMOVAL)
 					.build(persistenceContext);
@@ -785,7 +785,7 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 
 		@Test
 		void insert_associationRecordsMustBeInserted_butNotTargetEntities() throws SQLException {
-			EntityPersister<Answer, Identifier<Long>> answerPersister = MappingEase.entityBuilder(Answer.class, Identifier.LONG_TYPE)
+			EntityPersister<Answer, Identifier<Long>> answerPersister = FluentMappings.entityBuilder(Answer.class, Identifier.LONG_TYPE)
 					.mapKey(Answer::getId, ALREADY_ASSIGNED)
 					.mapOneToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ASSOCIATION_ONLY)
 					.build(persistenceContext);
@@ -822,7 +822,7 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 		
 		@Test
 		void update_associationRecordsMustBeUpdated_butNotTargetEntities() throws SQLException {
-			EntityPersister<Answer, Identifier<Long>> answerPersister = MappingEase.entityBuilder(Answer.class, Identifier.LONG_TYPE)
+			EntityPersister<Answer, Identifier<Long>> answerPersister = FluentMappings.entityBuilder(Answer.class, Identifier.LONG_TYPE)
 					.mapKey(Answer::getId, ALREADY_ASSIGNED)
 					.map(Answer::getComment)
 					.mapOneToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ASSOCIATION_ONLY)
@@ -871,7 +871,7 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 
 		@Test
 		void delete_associationRecordsMustBeDeleted_butNotTargetEntities() throws SQLException {
-			EntityPersister<Answer, Identifier<Long>> answerPersister = MappingEase.entityBuilder(Answer.class, Identifier.LONG_TYPE)
+			EntityPersister<Answer, Identifier<Long>> answerPersister = FluentMappings.entityBuilder(Answer.class, Identifier.LONG_TYPE)
 					.mapKey(Answer::getId, ALREADY_ASSIGNED)
 					.mapManyToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ASSOCIATION_ONLY)
 					.build(persistenceContext);
@@ -943,7 +943,7 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 
 	@Test
 	void select_noRecordInAssociationTable_mustReturnEmptyCollection() throws SQLException {
-		EntityPersister<Answer, Identifier<Long>> answerPersister = MappingEase.entityBuilder(Answer.class, Identifier.LONG_TYPE)
+		EntityPersister<Answer, Identifier<Long>> answerPersister = FluentMappings.entityBuilder(Answer.class, Identifier.LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
 				.mapManyToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(READ_ONLY)
 				.build(persistenceContext);
@@ -968,10 +968,10 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 	void bidirectionality_reverselySetBy() {
 		EntityMappingConfigurationProviderHolder<Author, Long> authorMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
 		EntityMappingConfigurationProviderHolder<Book, Long> bookMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
-		authorMappingConfiguration.setProvider(MappingEase.entityBuilder(Author.class, Long.class)
+		authorMappingConfiguration.setProvider(FluentMappings.entityBuilder(Author.class, Long.class)
 				.mapKey(Author::getId, IdentifierPolicy.databaseAutoIncrement())
 				.map(Author::getName));
-		bookMappingConfiguration.setProvider(MappingEase.entityBuilder(Book.class, Long.class)
+		bookMappingConfiguration.setProvider(FluentMappings.entityBuilder(Book.class, Long.class)
 				.mapKey(Book::getId, IdentifierPolicy.databaseAutoIncrement())
 				.mapManyToMany(Book::getAuthors, authorMappingConfiguration)
 					.reverselySetBy(Author::addBook)
@@ -1023,10 +1023,10 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 	void bidirectionality_reverseInitializedWith() {
 		EntityMappingConfigurationProviderHolder<Author, Long> authorMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
 		EntityMappingConfigurationProviderHolder<Book, Long> bookMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
-		authorMappingConfiguration.setProvider(MappingEase.entityBuilder(Author.class, Long.class)
+		authorMappingConfiguration.setProvider(FluentMappings.entityBuilder(Author.class, Long.class)
 				.mapKey(Author::getId, IdentifierPolicy.databaseAutoIncrement())
 				.map(Author::getName));
-		bookMappingConfiguration.setProvider(MappingEase.entityBuilder(Book.class, Long.class)
+		bookMappingConfiguration.setProvider(FluentMappings.entityBuilder(Book.class, Long.class)
 				.mapKey(Book::getId, IdentifierPolicy.databaseAutoIncrement())
 				.mapManyToMany(Book::getAuthors, authorMappingConfiguration)
 						.reverselyInitializeWith(LinkedHashSet::new)
@@ -1064,10 +1064,10 @@ class FluentEntityMappingConfigurationSupportManyToManyTest {
 	void bidirectionality_reverseCollection() {
 		EntityMappingConfigurationProviderHolder<Author, Long> authorMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
 		EntityMappingConfigurationProviderHolder<Book, Long> bookMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
-		authorMappingConfiguration.setProvider(MappingEase.entityBuilder(Author.class, Long.class)
+		authorMappingConfiguration.setProvider(FluentMappings.entityBuilder(Author.class, Long.class)
 				.mapKey(Author::getId, IdentifierPolicy.databaseAutoIncrement())
 				.map(Author::getName));
-		bookMappingConfiguration.setProvider(MappingEase.entityBuilder(Book.class, Long.class)
+		bookMappingConfiguration.setProvider(FluentMappings.entityBuilder(Book.class, Long.class)
 				.mapKey(Book::getId, IdentifierPolicy.databaseAutoIncrement())
 				.mapManyToMany(Book::getAuthors, authorMappingConfiguration)
 						.reverseCollection(Author::getBooks)

@@ -88,8 +88,8 @@ import org.mockito.stubbing.Answer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
-import static org.codefilarete.stalactite.dsl.MappingEase.subentityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.subentityBuilder;
 import static org.codefilarete.stalactite.engine.runtime.singletable.SingleTablePolymorphismEntityFinder.DISCRIMINATOR_ALIAS;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;

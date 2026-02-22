@@ -1,9 +1,9 @@
 package org.codefilarete.stalactite.spring.repository.query;
 
 
+import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.id.Identifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 
 /**
@@ -35,7 +35,7 @@ class DerivedQueriesWithoutMappedCollectionWithTablePerClassPolymorphismTest ext
 					.map(Republic::getDescription)
 					.map(Republic::isEuMember)
 					.map(Republic::getDeputeCount)
-					.embed(Republic::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+					.embed(Republic::getTimestamp, FluentMappings.embeddableBuilder(Timestamp.class)
 							.map(Timestamp::getCreationDate)
 							.map(Timestamp::getModificationDate))
 					.mapOneToOne(Republic::getPresident, entityBuilder(Person.class, LONG_TYPE)

@@ -32,8 +32,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.reflection.Accessors.accessorByMethodReference;
 import static org.codefilarete.reflection.Accessors.mutatorByField;
 import static org.codefilarete.reflection.Accessors.mutatorByMethodReference;
-import static org.codefilarete.stalactite.dsl.MappingEase.embeddableBuilder;
-import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.embeddableBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 
 class InheritanceMappingStepTest {
 	

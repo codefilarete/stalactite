@@ -43,7 +43,6 @@ import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.function.TriFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -52,9 +51,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.dsl.MappingEase.compositeKeyBuilder;
-import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
-import static org.codefilarete.stalactite.dsl.MappingEase.subentityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.compositeKeyBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.subentityBuilder;
 
 public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	

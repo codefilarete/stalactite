@@ -5,9 +5,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
-import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
@@ -20,7 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.tool.Nullable.nullable;
 
 /**
@@ -39,7 +39,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 	
 	@Test
 	void insert_basic() {
-		EntityPersister<Car, Long> carPersister = MappingEase.entityBuilder(Car.class, long.class)
+		EntityPersister<Car, Long> carPersister = FluentMappings.entityBuilder(Car.class, long.class)
 				.mapKey(Car::getId, IdentifierPolicy.databaseAutoIncrement())
 				.map(Car::getModel)
 				.build(persistenceContext);
@@ -101,17 +101,17 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 	
 	@Test
 	void multipleInheritance() {
-		EntityMappingConfiguration<AbstractVehicle, Long> inheritanceConfiguration = MappingEase
+		EntityMappingConfiguration<AbstractVehicle, Long> inheritanceConfiguration = FluentMappings
 				.entityBuilder(AbstractVehicle.class, long.class)
 				.mapKey(AbstractVehicle::getId, IdentifierPolicy.databaseAutoIncrement())
 				.getConfiguration();
 		
-		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = MappingEase
+		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = FluentMappings
 				.entityBuilder(Vehicle.class, long.class)
 				.mapSuperClass(inheritanceConfiguration)
 				.getConfiguration();
 		
-		EntityPersister<Car, Long> carPersister = MappingEase
+		EntityPersister<Car, Long> carPersister = FluentMappings
 				.entityBuilder(Car.class, long.class)
 				.map(Car::getModel)
 				.mapSuperClass(inheritanceConfiguration2)
@@ -143,17 +143,17 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 	
 	@Test
 	void multipleInheritance_joinedTables() {
-		EntityMappingConfiguration<AbstractVehicle, Long> inheritanceConfiguration = MappingEase
+		EntityMappingConfiguration<AbstractVehicle, Long> inheritanceConfiguration = FluentMappings
 				.entityBuilder(AbstractVehicle.class, long.class)
 				.mapKey(AbstractVehicle::getId, IdentifierPolicy.databaseAutoIncrement())
 				.getConfiguration();
 		
-		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = MappingEase
+		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = FluentMappings
 				.entityBuilder(Vehicle.class, long.class)
 				.mapSuperClass(inheritanceConfiguration).withJoinedTable()
 				.getConfiguration();
 		
-		EntityPersister<Car, Long> carPersister = MappingEase
+		EntityPersister<Car, Long> carPersister = FluentMappings
 				.entityBuilder(Car.class, long.class)
 				.map(Car::getModel)
 				.mapSuperClass(inheritanceConfiguration2).withJoinedTable()

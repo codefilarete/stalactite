@@ -10,12 +10,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyOptions;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToOneOptions;
-import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
@@ -72,9 +72,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy.alreadyAssigned;
-import static org.codefilarete.stalactite.dsl.MappingEase.embeddableBuilder;
-import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
-import static org.codefilarete.stalactite.dsl.MappingEase.subentityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.embeddableBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.subentityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
@@ -202,11 +202,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		PersistenceContext persistenceContext2 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
 		PersistenceContext persistenceContext3 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
 		
-		FluentEntityMappingBuilder<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personMappingBuilder = FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, ALREADY_ASSIGNED)
 				.map(Person::getName);
 		
-		FluentEntityMappingBuilder<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<City, Identifier<Long>> cityMappingBuilder = FluentMappings.entityBuilder(City.class, Identifier.LONG_TYPE)
 				.mapKey(City::getId, ALREADY_ASSIGNED)
 				.map(City::getName);
 		

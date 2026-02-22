@@ -38,7 +38,7 @@ import org.codefilarete.tool.reflect.MethodDispatcher;
  * 
  * @author Guillaume Mary
  * @see QuerySQLBuilder
- * @see QueryEase
+ * @see FluentQueries
  */
 public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, LimitAware<FluentLimitClause>, QueryProvider<Query>,
 		QueryStatement, UnionAware {

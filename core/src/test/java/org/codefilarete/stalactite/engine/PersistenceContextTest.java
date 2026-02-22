@@ -30,7 +30,7 @@ import org.mockito.internal.matchers.CapturingMatcher;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.query.Operators.eq;
 import static org.codefilarete.stalactite.query.Operators.equalsArgNamed;
-import static org.codefilarete.stalactite.query.model.QueryEase.where;
+import static org.codefilarete.stalactite.query.model.FluentQueries.where;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;

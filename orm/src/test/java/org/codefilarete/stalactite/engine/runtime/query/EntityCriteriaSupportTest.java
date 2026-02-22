@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.dsl.MappingEase;
+import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.EntityCriteria;
@@ -52,12 +52,12 @@ import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 import static org.codefilarete.stalactite.query.Operators.avg;
 import static org.codefilarete.stalactite.query.api.OrderByChain.Order.DESC;
-import static org.codefilarete.stalactite.query.model.QueryEase.select;
+import static org.codefilarete.stalactite.query.model.FluentQueries.select;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -73,10 +73,10 @@ class EntityCriteriaSupportTest {
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "bigint");
 		
-		RelationalEntityPersister<Country, Identifier<Long>> persister = (RelationalEntityPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+		RelationalEntityPersister<Country, Identifier<Long>> persister = (RelationalEntityPersister<Country, Identifier<Long>>) FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.mapKey(Country::getId, IdentifierPolicy.databaseAutoIncrement())
 				.map(Country::getName)
-				.mapOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+				.mapOneToOne(Country::getCapital, FluentMappings.entityBuilder(City.class, Identifier.LONG_TYPE)
 						.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.map(City::getName))
 				.build(new PersistenceContext(mock(ConnectionProvider.class), dialect));
@@ -114,7 +114,7 @@ class EntityCriteriaSupportTest {
 		FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions<City, Identifier<Long>, String> map = entityBuilder(City.class, LONG_TYPE)
 				.mapKey(City::getId, ALREADY_ASSIGNED)
 				.map(City::getName);
-		RelationalEntityPersister<Country, Identifier<Long>> persister = (RelationalEntityPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+		RelationalEntityPersister<Country, Identifier<Long>> persister = (RelationalEntityPersister<Country, Identifier<Long>>) FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.mapKey(Country::getId, IdentifierPolicy.databaseAutoIncrement())
 				.mapOneToOne(Country::getCapital, map)
 				.mapOneToOne(Country::getPresident, entityBuilder(Person.class, Identifier.LONG_TYPE)

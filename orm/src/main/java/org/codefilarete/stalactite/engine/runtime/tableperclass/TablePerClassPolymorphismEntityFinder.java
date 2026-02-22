@@ -34,7 +34,7 @@ import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.Operators;
 import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.QueryEase;
+import org.codefilarete.stalactite.query.model.FluentQueries;
 import org.codefilarete.stalactite.query.api.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.api.Selectable;
@@ -150,7 +150,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 				}
 			});
 			subQueryColumns.put(new SimpleSelectable<>("'" + discriminatorValue + "'", String.class), DISCRIMINATOR_ALIAS);
-			Query subQuery = QueryEase.
+			Query subQuery = FluentQueries.
 					select(subQueryColumns)
 					.from(subEntityPersister.getMainTable())
 					.getQuery();

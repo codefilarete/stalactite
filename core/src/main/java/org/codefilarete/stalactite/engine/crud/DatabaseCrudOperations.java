@@ -10,6 +10,7 @@ import org.codefilarete.stalactite.engine.PersistenceContext.SelectMapping;
 import org.codefilarete.stalactite.engine.QueryMapper;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
 import org.codefilarete.stalactite.query.api.CriteriaChain;
+import org.codefilarete.stalactite.query.model.FluentQueries;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.api.QueryProvider;
 import org.codefilarete.stalactite.query.model.Where;
@@ -36,7 +37,7 @@ public interface DatabaseCrudOperations {
 	 * @param beanType type of created beans, used for returned type marker
 	 * @param <C> type of created beans
 	 * @return a new {@link ExecutableBeanPropertyKeyQueryMapper} that must be configured and executed
-	 * @see org.codefilarete.stalactite.query.model.QueryEase
+	 * @see FluentQueries
 	 */
 	<C> ExecutableBeanPropertyKeyQueryMapper<C> newQuery(QueryProvider<Query> queryProvider, Class<C> beanType);
 	

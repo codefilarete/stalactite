@@ -15,7 +15,7 @@ import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.query.model.QueryEase.where;
+import static org.codefilarete.stalactite.query.model.FluentQueries.where;
 import static org.mockito.Mockito.*;
 
 /**

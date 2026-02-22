@@ -4,7 +4,7 @@ import javax.sql.DataSource;
 
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.dsl.MappingEase;
+import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Country;
@@ -29,7 +29,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
@@ -118,7 +118,7 @@ class StalactiteAutoConfigurationTest {
 					.map(Republic::getName)
 					.map(Republic::getDescription)
 					.map(Republic::isEuMember)
-					.embed(Republic::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+					.embed(Republic::getTimestamp, FluentMappings.embeddableBuilder(Timestamp.class)
 							.map(Timestamp::getCreationDate)
 							.map(Timestamp::getModificationDate))
 					.mapOneToOne(Republic::getPresident, entityBuilder(Person.class, LONG_TYPE)

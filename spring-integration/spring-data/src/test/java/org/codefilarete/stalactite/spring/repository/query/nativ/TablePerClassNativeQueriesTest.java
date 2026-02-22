@@ -28,8 +28,8 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
-import static org.codefilarete.stalactite.dsl.MappingEase.subentityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.subentityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 
 /**

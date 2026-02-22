@@ -5,9 +5,9 @@ import java.util.IdentityHashMap;
 import java.util.List;
 
 import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Country;
@@ -37,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.reflection.AccessorChain.fromMethodReference;
 import static org.codefilarete.reflection.AccessorChain.fromMethodReferences;
 import static org.codefilarete.reflection.AccessorDefinition.giveDefinition;
-import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.spring.repository.StalactiteRepositoryFactoryBean.asInternalPersister;
@@ -64,7 +64,7 @@ class ProjectionMappingFinderTest {
 				.map(Republic::getName)
 				.map(Republic::getDescription)
 				.map(Republic::isEuMember)
-				.embed(Republic::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+				.embed(Republic::getTimestamp, FluentMappings.embeddableBuilder(Timestamp.class)
 						.map(Timestamp::getCreationDate)
 						.map(Timestamp::getModificationDate))
 				.mapOneToOne(Republic::getPresident, entityBuilder(Person.class, LONG_TYPE)

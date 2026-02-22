@@ -12,7 +12,7 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.stalactite.dsl.MappingEase;
+import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.id.Identifier;
@@ -63,7 +63,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	@Test
 	void build_versionedPropertyIsOfUnsupportedType_throwsException() {
 		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
-		assertThatCode(() -> MappingEase.entityBuilder(Country.class, LONG_TYPE)
+		assertThatCode(() -> FluentMappings.entityBuilder(Country.class, LONG_TYPE)
 				.versionedBy(Country::getName)
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
@@ -77,7 +77,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(new CurrentThreadConnectionProvider(dataSource));
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		// mapping building thanks to fluent API
-		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, LONG_TYPE)
+		EntityPersister<Country, Identifier<Long>> countryPersister = FluentMappings.entityBuilder(Country.class, LONG_TYPE)
 				.versionedBy(Country::getVersion, new IntegerSerie())
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
@@ -93,7 +93,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(new CurrentThreadConnectionProvider(dataSource));
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		// mapping building thanks to fluent API
-		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, LONG_TYPE)
+		EntityPersister<Country, Identifier<Long>> countryPersister = FluentMappings.entityBuilder(Country.class, LONG_TYPE)
 				.versionedBy(Country::getVersion, new IntegerSerie())
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
@@ -136,7 +136,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		
 		List<LocalDateTime> nowHistory = new ArrayList<>();
-		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, LONG_TYPE)
+		EntityPersister<Country, Identifier<Long>> countryPersister = FluentMappings.entityBuilder(Country.class, LONG_TYPE)
 				.versionedBy(Country::getModificationDate, new NowSerie() {
 					@Override
 					public LocalDateTime next(LocalDateTime input) {
@@ -192,7 +192,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		persistenceContext = new PersistenceContext(dataSource, DIALECT);
 		ConnectionProvider connectionProvider = persistenceContext.getConnectionProvider();
 		
-		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, LONG_TYPE)
+		EntityPersister<Country, Identifier<Long>> countryPersister = FluentMappings.entityBuilder(Country.class, LONG_TYPE)
 				.versionedBy(Country::getVersion, new IntegerSerie())
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
@@ -240,7 +240,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(new CurrentThreadConnectionProvider(dataSource));
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		// mapping building thanks to fluent API
-		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, LONG_TYPE)
+		EntityPersister<Country, Identifier<Long>> countryPersister = FluentMappings.entityBuilder(Country.class, LONG_TYPE)
 				.versionedBy("versionWithoutAccessor")
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)

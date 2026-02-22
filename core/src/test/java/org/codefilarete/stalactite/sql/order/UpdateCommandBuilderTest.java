@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.codefilarete.stalactite.query.Operators.eq;
 import static org.codefilarete.stalactite.query.Operators.in;
-import static org.codefilarete.stalactite.query.model.QueryEase.where;
+import static org.codefilarete.stalactite.query.model.FluentQueries.where;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;

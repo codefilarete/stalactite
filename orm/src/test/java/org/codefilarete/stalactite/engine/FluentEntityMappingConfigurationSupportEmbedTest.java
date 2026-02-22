@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.engine;
 
+import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
-import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.engine.FluentEntityMappingConfigurationSupportTest.TimestampWithLocale;
 import org.codefilarete.stalactite.engine.model.Timestamp;
@@ -67,11 +67,11 @@ public class FluentEntityMappingConfigurationSupportEmbedTest {
 		dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 		
 		// embeddable mapping to be reused
-		EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+		EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = FluentMappings.embeddableBuilder(Timestamp.class)
 				.map(Timestamp::getCreationDate)
 				.map(Timestamp::getModificationDate);
 		
-		EntityPersister<FluentEntityMappingConfigurationSupportTest.Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
+		EntityPersister<FluentEntityMappingConfigurationSupportTest.Toto, Identifier<UUID>> persister = FluentMappings.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
 				.onTable(totoTable)
 				.mapKey(FluentEntityMappingConfigurationSupportTest.Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(FluentEntityMappingConfigurationSupportTest.Toto::getName)
@@ -114,15 +114,15 @@ public class FluentEntityMappingConfigurationSupportEmbedTest {
 			dialect.getSqlTypeRegistry().put(Locale.class, "VARCHAR(20)");
 			
 			// embeddable mapping to be reused
-			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = FluentMappings.embeddableBuilder(Timestamp.class)
 					.map(Timestamp::getCreationDate)
 					.map(Timestamp::getModificationDate);
 			
-			EmbeddableMappingConfigurationProvider<TimestampWithLocale> timestampWithLocaleMapping = MappingEase.embeddableBuilder(TimestampWithLocale.class)
+			EmbeddableMappingConfigurationProvider<TimestampWithLocale> timestampWithLocaleMapping = FluentMappings.embeddableBuilder(TimestampWithLocale.class)
 					.map(TimestampWithLocale::getLocale)
 					.mapSuperClass(timestampMapping);
 			
-			EntityPersister<FluentEntityMappingConfigurationSupportTest.Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
+			EntityPersister<FluentEntityMappingConfigurationSupportTest.Toto, Identifier<UUID>> persister = FluentMappings.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
 					.onTable(totoTable)
 					.mapKey(FluentEntityMappingConfigurationSupportTest.Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(FluentEntityMappingConfigurationSupportTest.Toto::getName)
@@ -160,15 +160,15 @@ public class FluentEntityMappingConfigurationSupportEmbedTest {
 			dialect.getSqlTypeRegistry().put(Locale.class, "VARCHAR(20)");
 			
 			// embeddable mapping to be reused
-			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = FluentMappings.embeddableBuilder(Timestamp.class)
 					.map(Timestamp::getCreationDate)
 					.map(Timestamp::getModificationDate);
 			
-			EmbeddableMappingConfigurationProvider<TimestampWithLocale> timestampWithLocaleMapping = MappingEase.embeddableBuilder(TimestampWithLocale.class)
+			EmbeddableMappingConfigurationProvider<TimestampWithLocale> timestampWithLocaleMapping = FluentMappings.embeddableBuilder(TimestampWithLocale.class)
 					.map(TimestampWithLocale::getLocale)
 					.mapSuperClass(timestampMapping);
 			
-			EntityPersister<FluentEntityMappingConfigurationSupportTest.Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
+			EntityPersister<FluentEntityMappingConfigurationSupportTest.Toto, Identifier<UUID>> persister = FluentMappings.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
 					.onTable(totoTable)
 					.mapKey(FluentEntityMappingConfigurationSupportTest.Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(FluentEntityMappingConfigurationSupportTest.Toto::getName)
@@ -197,15 +197,15 @@ public class FluentEntityMappingConfigurationSupportEmbedTest {
 			dialect.getSqlTypeRegistry().put(Locale.class, "VARCHAR(20)");
 			
 			// embeddable mapping to be reused
-			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = FluentMappings.embeddableBuilder(Timestamp.class)
 					.map(Timestamp::getCreationDate)
 					.map(Timestamp::getModificationDate);
 			
-			EmbeddableMappingConfigurationProvider<TimestampWithLocale> timestampWithLocaleMapping = MappingEase.embeddableBuilder(TimestampWithLocale.class)
+			EmbeddableMappingConfigurationProvider<TimestampWithLocale> timestampWithLocaleMapping = FluentMappings.embeddableBuilder(TimestampWithLocale.class)
 					.map(TimestampWithLocale::getLocale)
 					.mapSuperClass(timestampMapping);
 			
-			EntityPersister<FluentEntityMappingConfigurationSupportTest.Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
+			EntityPersister<FluentEntityMappingConfigurationSupportTest.Toto, Identifier<UUID>> persister = FluentMappings.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
 					.onTable(totoTable)
 					.mapKey(FluentEntityMappingConfigurationSupportTest.Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(FluentEntityMappingConfigurationSupportTest.Toto::getName)
@@ -235,16 +235,16 @@ public class FluentEntityMappingConfigurationSupportEmbedTest {
 			dialect.getSqlTypeRegistry().put(Locale.class, "VARCHAR(20)");
 			
 			// embeddable mapping to be reused
-			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = FluentMappings.embeddableBuilder(Timestamp.class)
 					.map(Timestamp::getCreationDate)
 					.map(Timestamp::getModificationDate)
 					.map(Timestamp::getReadonlyProperty);
 			
-			EmbeddableMappingConfigurationProvider<TimestampWithLocale> timestampWithLocaleMapping = MappingEase.embeddableBuilder(TimestampWithLocale.class)
+			EmbeddableMappingConfigurationProvider<TimestampWithLocale> timestampWithLocaleMapping = FluentMappings.embeddableBuilder(TimestampWithLocale.class)
 					.map(TimestampWithLocale::getLocale)
 					.mapSuperClass(timestampMapping);
 			
-			EntityPersister<FluentEntityMappingConfigurationSupportTest.Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
+			EntityPersister<FluentEntityMappingConfigurationSupportTest.Toto, Identifier<UUID>> persister = FluentMappings.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
 					.onTable(totoTable)
 					.mapKey(FluentEntityMappingConfigurationSupportTest.Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(FluentEntityMappingConfigurationSupportTest.Toto::getName)
@@ -279,15 +279,15 @@ public class FluentEntityMappingConfigurationSupportEmbedTest {
 			dialect.getSqlTypeRegistry().put(Locale.class, "VARCHAR(20)");
 			
 			// embeddable mapping to be reused
-			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = FluentMappings.embeddableBuilder(Timestamp.class)
 					.map(Timestamp::getCreationDate)
 					.map(Timestamp::getModificationDate);
 			
-			EmbeddableMappingConfigurationProvider<TimestampWithLocale> timestampWithLocaleMapping = MappingEase.embeddableBuilder(TimestampWithLocale.class)
+			EmbeddableMappingConfigurationProvider<TimestampWithLocale> timestampWithLocaleMapping = FluentMappings.embeddableBuilder(TimestampWithLocale.class)
 					.map(TimestampWithLocale::getLocale)
 					.mapSuperClass(timestampMapping);
 			
-			EntityPersister<FluentEntityMappingConfigurationSupportTest.Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
+			EntityPersister<FluentEntityMappingConfigurationSupportTest.Toto, Identifier<UUID>> persister = FluentMappings.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
 					.onTable(totoTable)
 					.mapKey(FluentEntityMappingConfigurationSupportTest.Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(FluentEntityMappingConfigurationSupportTest.Toto::getName)
@@ -326,11 +326,11 @@ public class FluentEntityMappingConfigurationSupportEmbedTest {
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
-			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = FluentMappings.embeddableBuilder(Timestamp.class)
 					.map(Timestamp::getCreationDate)
 					.map(Timestamp::getModificationDate);
 			
-			EntityPersister<FluentEntityMappingConfigurationSupportTest.Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
+			EntityPersister<FluentEntityMappingConfigurationSupportTest.Toto, Identifier<UUID>> persister = FluentMappings.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
 					.onTable(totoTable)
 					.mapKey(FluentEntityMappingConfigurationSupportTest.Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(FluentEntityMappingConfigurationSupportTest.Toto::getName)
@@ -369,11 +369,11 @@ public class FluentEntityMappingConfigurationSupportEmbedTest {
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			// embeddable mapping to be reused
-			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = FluentMappings.embeddableBuilder(Timestamp.class)
 					.map(Timestamp::getCreationDate)
 					.map(Timestamp::getModificationDate);
 			
-			assertThatThrownBy(() -> MappingEase.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
+			assertThatThrownBy(() -> FluentMappings.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
 					.mapKey(FluentEntityMappingConfigurationSupportTest.Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(FluentEntityMappingConfigurationSupportTest.Toto::getName)
 					.embed(FluentEntityMappingConfigurationSupportTest.Toto::getTimestamp, timestampMapping)
@@ -393,11 +393,11 @@ public class FluentEntityMappingConfigurationSupportEmbedTest {
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			// embeddable mapping to be reused
-			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = FluentMappings.embeddableBuilder(Timestamp.class)
 					.map(Timestamp::getCreationDate).columnName("creation")
 					.map(Timestamp::getModificationDate);
 			
-			EntityPersister<FluentEntityMappingConfigurationSupportTest.Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
+			EntityPersister<FluentEntityMappingConfigurationSupportTest.Toto, Identifier<UUID>> persister = FluentMappings.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
 					.onTable(totoTable)
 					.mapKey(FluentEntityMappingConfigurationSupportTest.Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(FluentEntityMappingConfigurationSupportTest.Toto::getName)
@@ -433,12 +433,12 @@ public class FluentEntityMappingConfigurationSupportEmbedTest {
 		dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 		
 		// embeddable mapping to be reused
-		EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+		EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = FluentMappings.embeddableBuilder(Timestamp.class)
 				.map(Timestamp::getCreationDate)
 				.map(Timestamp::getModificationDate)
 				.map(Timestamp::setModificationDate);
 		
-		assertThatThrownBy(() -> MappingEase.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
+		assertThatThrownBy(() -> FluentMappings.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
 				.mapKey(FluentEntityMappingConfigurationSupportTest.Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(FluentEntityMappingConfigurationSupportTest.Toto::getName)
 				.embed(FluentEntityMappingConfigurationSupportTest.Toto::getTimestamp, timestampMapping)
@@ -455,11 +455,11 @@ public class FluentEntityMappingConfigurationSupportEmbedTest {
 		dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 		
 		// embeddable mapping to be reused
-		EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+		EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = FluentMappings.embeddableBuilder(Timestamp.class)
 				.map(Timestamp::getCreationDate).columnName("creation")
 				.map(Timestamp::getModificationDate);
 		
-		EntityPersister<FluentEntityMappingConfigurationSupportTest.Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
+		EntityPersister<FluentEntityMappingConfigurationSupportTest.Toto, Identifier<UUID>> persister = FluentMappings.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
 				.onTable(totoTable)
 				.mapKey(FluentEntityMappingConfigurationSupportTest.Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(FluentEntityMappingConfigurationSupportTest.Toto::getName)
@@ -495,11 +495,11 @@ public class FluentEntityMappingConfigurationSupportEmbedTest {
 		dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 		
 		// embeddable mapping to be reused
-		EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+		EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = FluentMappings.embeddableBuilder(Timestamp.class)
 				.map(Timestamp::getCreationDate).columnName("creation")
 				.map(Timestamp::getModificationDate);
 		
-		EntityPersister<FluentEntityMappingConfigurationSupportTest.Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
+		EntityPersister<FluentEntityMappingConfigurationSupportTest.Toto, Identifier<UUID>> persister = FluentMappings.entityBuilder(FluentEntityMappingConfigurationSupportTest.Toto.class, UUID_TYPE)
 				.onTable(totoTable)
 				.mapKey(FluentEntityMappingConfigurationSupportTest.Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(FluentEntityMappingConfigurationSupportTest.Toto::getName)

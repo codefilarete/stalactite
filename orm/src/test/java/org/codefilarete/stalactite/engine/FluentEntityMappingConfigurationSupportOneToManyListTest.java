@@ -18,7 +18,7 @@ import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifier;
-import org.codefilarete.stalactite.query.model.QueryEase;
+import org.codefilarete.stalactite.query.model.FluentQueries;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -44,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.ALL;
 import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
 import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
-import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 import static org.codefilarete.tool.function.Functions.chain;
@@ -94,7 +94,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 				new Choice(30L)));
 		questionPersister.insert(newQuestion);
 		
-		ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
+		ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(FluentQueries.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 				.mapKey(Result::new, id)
 				.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
 		Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
@@ -131,7 +131,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 				new Choice(30L)));
 		questionPersister.insert(newQuestion);
 		
-		ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
+		ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(FluentQueries.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 				.mapKey(Result::new, id)
 				.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
 		Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
@@ -227,7 +227,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			modifiedQuestion.setChoices(Arrays.asList(choice2Clone, choice1Clone, choice3Clone));
 			
 			questionPersister.update(modifiedQuestion, newQuestion, true);
-			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
+			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(FluentQueries.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
 			Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
@@ -252,7 +252,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			modifiedQuestion.setChoices(newQuestion.getChoices());
 			
 			questionPersister.update(modifiedQuestion, newQuestion, true);
-			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
+			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(FluentQueries.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
 			Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
@@ -280,7 +280,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			modifiedQuestion.setChoices(Arrays.asList(choice3Clone, choice4, choice2Clone, choice1Clone));
 			
 			questionPersister.update(modifiedQuestion, newQuestion, true);
-			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
+			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(FluentQueries.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
 			Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
@@ -309,7 +309,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			modifiedQuestion.setChoices(Arrays.asList(choice3Copy, choice1Copy));
 			
 			questionPersister.update(modifiedQuestion, newQuestion, true);
-			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
+			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(FluentQueries.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
 			Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
@@ -340,7 +340,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			modifiedQuestion.setChoices(Arrays.asList(choice3Clone, choice1Clone));
 			
 			questionPersister.update(modifiedQuestion, newQuestion, true);
-			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
+			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(FluentQueries.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
 			Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
@@ -502,7 +502,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			answerPersister.insert(answer);
 			
 			ExecutableBeanPropertyKeyQueryMapper<RawAnswer> query = persistenceContext.newQuery(
-					QueryEase.select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
+					FluentQueries.select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 							.from(answerChoicesTable).orderBy(answerChoicesTableIdx), RawAnswer.class);
 			ExecutableQuery<RawAnswer> rawAnswerExecutableQuery = query
 					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId);
@@ -609,7 +609,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			answerPersister.delete(answer);
 			
 			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
-			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery(QueryEase.select("count(*) as c", long.class).from(answerChoicesTable), Long.class)
+			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery(FluentQueries.select("count(*) as c", long.class).from(answerChoicesTable), Long.class)
 					.mapKey("c", long.class);
 			Set<Long> persistedChoices = longExecutableQuery1.execute(Accumulators.toSet());
 			assertThat(Iterables.first(persistedChoices)).isEqualTo((Long) 0L);
@@ -646,7 +646,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			answerPersister.deleteById(answer);
 			
 			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
-			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery(QueryEase.select("count(*) as c", long.class).from(answerChoicesTable).getQuery(), Long.class)
+			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery(FluentQueries.select("count(*) as c", long.class).from(answerChoicesTable).getQuery(), Long.class)
 					.mapKey("c", long.class);
 			Set<Long> persistedChoices = longExecutableQuery1.execute(Accumulators.toSet());
 			assertThat(Iterables.first(persistedChoices)).isEqualTo((Long) 0L);
@@ -699,7 +699,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			answerPersister.update(selectedAnswer, answer, true);
 			
 			ExecutableBeanPropertyKeyQueryMapper<RawAnswer> query = persistenceContext.newQuery(
-					QueryEase.select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
+					FluentQueries.select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 							.from(answerChoicesTable).orderBy(answerChoicesTableIdx), RawAnswer.class);
 			ExecutableQuery<RawAnswer> rawAnswerExecutableQuery1 = query
 					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId);
@@ -714,7 +714,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			answerPersister.update(selectedAnswer1, selectedAnswer, true);
 			
 			query = persistenceContext.newQuery(
-					QueryEase.select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
+					FluentQueries.select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 							.from(answerChoicesTable).orderBy(answerChoicesTableIdx), RawAnswer.class);
 			ExecutableQuery<RawAnswer> rawAnswerExecutableQuery = query
 					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId);
@@ -1059,7 +1059,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			// creating initial state
 			questionPersister.insert(newQuestion);
 			
-			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
+			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(FluentQueries.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
 			Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());

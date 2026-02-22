@@ -14,7 +14,7 @@ import java.util.function.Function;
 
 import org.assertj.core.presentation.StandardRepresentation;
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.stalactite.dsl.MappingEase;
+import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
@@ -53,8 +53,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.dsl.MappingEase.compositeKeyBuilder;
-import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.compositeKeyBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.tool.collection.Iterables.map;
 import static org.codefilarete.tool.function.Functions.chain;
 import static org.codefilarete.tool.function.Functions.link;
@@ -79,7 +79,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 	
 	@Test
 	void insert() {
-		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getPhoneNumbers, String.class, String.class)
@@ -106,7 +106,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 	
 	@Test
 	void update_objectAddition() {
-		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getPhoneNumbers, String.class, String.class)
@@ -144,7 +144,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 
 	@Test
 	void update_objectRemoval() {
-		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getPhoneNumbers, String.class, String.class)
@@ -180,7 +180,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 
 	@Test
 	void delete() {
-		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getPhoneNumbers, String.class, String.class)
@@ -213,7 +213,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 
 	@Test
 	void withCollectionFactory() {
-		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getPhoneNumbers, String.class, String.class)
@@ -242,7 +242,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 
 	@Test
 	void foreignKeyIsPresent() {
-		MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getPhoneNumbers, String.class, String.class)
@@ -268,7 +268,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 
 	@Test
 	void withReverseJoinColumn() {
-		MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getPhoneNumbers, String.class, String.class)
@@ -296,7 +296,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 
 	@Test
 	void withMapEntryTableNaming() {
-		MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.withMapEntryTableNaming(new MapEntryTableNamingStrategy() {
@@ -337,7 +337,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 	void withTable() {
 		Table<?> phoneNumbersTable = new Table<>("Toto");
 
-		MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getPhoneNumbers, String.class, String.class)
@@ -363,7 +363,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 
 	@Test
 	void withTableName() {
-		MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getPhoneNumbers, String.class, String.class)
@@ -391,7 +391,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 
 	@Test
 	void overrideKeyColumnName() {
-		MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getPhoneNumbers, String.class, String.class)
@@ -410,7 +410,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 
 	@Test
 	void overrideValueColumnName() {
-		MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getPhoneNumbers, String.class, String.class)
@@ -428,7 +428,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 
 	@Test
 	void crudEnum() {
-		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getAddressBook, AddressBookType.class, String.class)
@@ -471,11 +471,11 @@ class FluentEntityMappingConfigurationSupportMapTest {
 
 	@Test
 	void crud_keyIsComplexType() {
-		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getAddresses, Timestamp.class, String.class)
-				.withKeyMapping(MappingEase.embeddableBuilder(Timestamp.class)
+				.withKeyMapping(FluentMappings.embeddableBuilder(Timestamp.class)
 						.map(Timestamp::getCreationDate)
 						.map(Timestamp::getModificationDate)
 				)
@@ -521,11 +521,11 @@ class FluentEntityMappingConfigurationSupportMapTest {
 
 	@Test
 	void crud_valueIsComplexType() {
-		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getContracts, String.class, Timestamp.class)
-				.withValueMapping(MappingEase.embeddableBuilder(Timestamp.class)
+				.withValueMapping(FluentMappings.embeddableBuilder(Timestamp.class)
 						.map(Timestamp::getCreationDate)
 						.map(Timestamp::getModificationDate)
 				)
@@ -571,15 +571,15 @@ class FluentEntityMappingConfigurationSupportMapTest {
 	
 	@Test
 	void crud_keyAndValueIsComplexType() {
-		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getMapPropertyMadeOfComplexTypes, Timestamp.class, Radio.class)
-					.withKeyMapping(MappingEase.embeddableBuilder(Timestamp.class)
+					.withKeyMapping(FluentMappings.embeddableBuilder(Timestamp.class)
 							.map(Timestamp::getCreationDate)
 							.map(Timestamp::getModificationDate)
 					)
-					.withValueMapping(MappingEase.embeddableBuilder(Radio.class)
+					.withValueMapping(FluentMappings.embeddableBuilder(Radio.class)
 							.map(Radio::getSerialNumber)
 							.map(Radio::getModel)
 					)
@@ -633,16 +633,16 @@ class FluentEntityMappingConfigurationSupportMapTest {
 
 	@Test
 	void keyAndValueIsComplexType_schemaGeneration() {
-		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getMapPropertyMadeOfComplexTypesWithColumnDuplicates, Timestamp.class, Timestamp.class)
-					.withKeyMapping(MappingEase.embeddableBuilder(Timestamp.class)
+					.withKeyMapping(FluentMappings.embeddableBuilder(Timestamp.class)
 							.map(Timestamp::getCreationDate)
 							.map(Timestamp::getModificationDate))
 						.overrideName(Timestamp::getCreationDate, "key_creation_date")
 						.overrideName(Timestamp::getModificationDate, "key_modification_date")
-					.withValueMapping(MappingEase.embeddableBuilder(Timestamp.class)
+					.withValueMapping(FluentMappings.embeddableBuilder(Timestamp.class)
 							.map(Timestamp::getCreationDate).columnName("createdAt")
 							.map(Timestamp::getModificationDate).columnName("modifiedAt"))
 						.overrideName(Timestamp::getCreationDate, "value_creationDate")
@@ -656,15 +656,15 @@ class FluentEntityMappingConfigurationSupportMapTest {
 
 	@Test
 	void crud_keyAndValueIsComplexType_overrideColumnName() {
-		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getMapPropertyMadeOfComplexTypesWithColumnDuplicates, Timestamp.class, Timestamp.class)
-				.withKeyMapping(MappingEase.embeddableBuilder(Timestamp.class)
+				.withKeyMapping(FluentMappings.embeddableBuilder(Timestamp.class)
 						.map(Timestamp::getCreationDate)
 						.map(Timestamp::getModificationDate)
 				)
-				.withValueMapping(MappingEase.embeddableBuilder(Timestamp.class)
+				.withValueMapping(FluentMappings.embeddableBuilder(Timestamp.class)
 						.map(Timestamp::getCreationDate)
 						.map(Timestamp::getModificationDate)
 				)
@@ -714,11 +714,11 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void schemaCreation() {
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKey, Country.class, String.class)
-					.withKeyMapping(MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.withKeyMapping(FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(Country::getName)
 							.map(Country::getDescription)
@@ -738,11 +738,11 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void crud() {
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKey, Country.class, String.class)
-					.withKeyMapping(MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.withKeyMapping(FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(Country::getName)
 							.map(Country::getDescription)
@@ -795,12 +795,12 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void crud_associationOnly() {
-			FluentEntityMappingBuilder<Country, Identifier<Long>> countryPersisterConfiguration = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+			FluentEntityMappingBuilder<Country, Identifier<Long>> countryPersisterConfiguration = FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Country::getName)
 					.map(Country::getDescription);
 			EntityPersister<Country, Identifier<Long>> countryPersister = countryPersisterConfiguration.build(persistenceContext);
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKey, Country.class, String.class)
@@ -854,11 +854,11 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void crud_deleteOrphan() {
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKey, Country.class, String.class)
-					.withKeyMapping(MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.withKeyMapping(FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(Country::getName)
 							.map(Country::getDescription)
@@ -908,12 +908,12 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void crud_readOnly() throws SQLException {
-			FluentEntityMappingBuilder<Country, Identifier<Long>> countryPersisterConfiguration = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+			FluentEntityMappingBuilder<Country, Identifier<Long>> countryPersisterConfiguration = FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Country::getName)
 					.map(Country::getDescription);
 			EntityPersister<Country, Identifier<Long>> countryPersister = countryPersisterConfiguration.build(persistenceContext);
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKey, Country.class, String.class)
@@ -1000,11 +1000,11 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void foreignKey_creation() {
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKey, Country.class, String.class)
-					.withKeyMapping(MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.withKeyMapping(FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(Country::getName)
 							.map(Country::getDescription)
@@ -1038,7 +1038,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		@Test
 		void compositeId_foreignKey_creation() {
 			Set<HouseId> persistedHouses = new HashSet<>();
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfCompositeIdEntityAsKey, House.class, String.class)
@@ -1094,11 +1094,11 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void schemaCreation() {
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsValue, String.class, Country.class)
-					.withValueMapping(MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.withValueMapping(FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(Country::getName)
 							.map(Country::getDescription)
@@ -1118,11 +1118,11 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void crud() {
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsValue, String.class, Country.class)
-					.withValueMapping(MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.withValueMapping(FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(Country::getName)
 							.map(Country::getDescription)
@@ -1179,12 +1179,12 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void crud_associationOnly() {
-			FluentEntityMappingBuilder<Country, Identifier<Long>> countryPersisterConfiguration = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+			FluentEntityMappingBuilder<Country, Identifier<Long>> countryPersisterConfiguration = FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Country::getName)
 					.map(Country::getDescription);
 			EntityPersister<Country, Identifier<Long>> countryPersister = countryPersisterConfiguration.build(persistenceContext);
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsValue, String.class, Country.class)
@@ -1233,11 +1233,11 @@ class FluentEntityMappingConfigurationSupportMapTest {
 
 		@Test
 		void crud_deleteOrphan() {
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsValue, String.class, Country.class)
-					.withValueMapping(MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.withValueMapping(FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(Country::getName)
 							.map(Country::getDescription)
@@ -1287,12 +1287,12 @@ class FluentEntityMappingConfigurationSupportMapTest {
 
 		@Test
 		void crud_readOnly() throws SQLException {
-			FluentEntityMappingBuilder<Country, Identifier<Long>> countryPersisterConfiguration = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+			FluentEntityMappingBuilder<Country, Identifier<Long>> countryPersisterConfiguration = FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Country::getName)
 					.map(Country::getDescription);
 			EntityPersister<Country, Identifier<Long>> countryPersister = countryPersisterConfiguration.build(persistenceContext);
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsValue, String.class, Country.class)
@@ -1379,11 +1379,11 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void foreignKey_creation() {
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsValue, String.class, Country.class)
-					.withValueMapping(MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.withValueMapping(FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(Country::getName)
 							.map(Country::getDescription)
@@ -1417,7 +1417,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		@Test
 		void compositeId_foreignKey_creation() {
 			Set<HouseId> persistedHouses = new HashSet<>();
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfCompositeIdEntityAsValue, String.class, House.class)
@@ -1473,15 +1473,15 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void crud() {
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKeyAndValue, City.class, Country.class)
-					.withKeyMapping(MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+					.withKeyMapping(FluentMappings.entityBuilder(City.class, Identifier.LONG_TYPE)
 							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(City::getName)
 					)
-					.withValueMapping(MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.withValueMapping(FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(Country::getName)
 					)
@@ -1538,16 +1538,16 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void crud_associationOnly() {
-			FluentEntityMappingBuilder<City, Identifier<Long>> cityPersisterConfiguration = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+			FluentEntityMappingBuilder<City, Identifier<Long>> cityPersisterConfiguration = FluentMappings.entityBuilder(City.class, Identifier.LONG_TYPE)
 					.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(City::getName);
 			EntityPersister<City, Identifier<Long>> cityPersister = cityPersisterConfiguration.build(persistenceContext);
-			FluentEntityMappingBuilder<Country, Identifier<Long>> countryPersisterConfiguration = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+			FluentEntityMappingBuilder<Country, Identifier<Long>> countryPersisterConfiguration = FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Country::getName)
 					.map(Country::getDescription);
 			EntityPersister<Country, Identifier<Long>> countryPersister = countryPersisterConfiguration.build(persistenceContext);
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKeyAndValue, City.class, Country.class)
@@ -1608,14 +1608,14 @@ class FluentEntityMappingConfigurationSupportMapTest {
 
 		@Test
 		void crud_deleteOrphan() {
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKeyAndValue, City.class, Country.class)
-					.withKeyMapping(MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+					.withKeyMapping(FluentMappings.entityBuilder(City.class, Identifier.LONG_TYPE)
 							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
-					.withValueMapping(MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.withValueMapping(FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.build(persistenceContext);
@@ -1667,14 +1667,14 @@ class FluentEntityMappingConfigurationSupportMapTest {
 
 		@Test
 		void crud_readOnly() throws SQLException {
-			FluentEntityMappingBuilder<City, Identifier<Long>> cityPersisterConfiguration = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+			FluentEntityMappingBuilder<City, Identifier<Long>> cityPersisterConfiguration = FluentMappings.entityBuilder(City.class, Identifier.LONG_TYPE)
 					.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED);
 			EntityPersister<City, Identifier<Long>> cityPersister = cityPersisterConfiguration.build(persistenceContext);
-			FluentEntityMappingBuilder<Country, Identifier<Long>> countryPersisterConfiguration = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+			FluentEntityMappingBuilder<Country, Identifier<Long>> countryPersisterConfiguration = FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Country::getName);
 			EntityPersister<Country, Identifier<Long>> countryPersister = countryPersisterConfiguration.build(persistenceContext);
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKeyAndValue, City.class, Country.class)
@@ -1770,15 +1770,15 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void foreignKey_creation() {
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKeyAndValue, City.class, Country.class)
-					.withKeyMapping(MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+					.withKeyMapping(FluentMappings.entityBuilder(City.class, Identifier.LONG_TYPE)
 							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(City::getName)
 					)
-					.withValueMapping(MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.withValueMapping(FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(Country::getName)
 					)

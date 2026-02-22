@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.codefilarete.stalactite.query.Operators;
-import org.codefilarete.stalactite.query.model.QueryEase;
+import org.codefilarete.stalactite.query.model.FluentQueries;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -161,7 +161,7 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 			connection.prepareStatement("insert into Toto(id, name) values (1, 'Hello')").execute();
 			connection.prepareStatement("insert into Toto(id, name) values (2, 'World')").execute();
 			
-			Set<Toto> records = testInstance.newQuery(QueryEase.select(id, name).from(totoTable), Toto.class)
+			Set<Toto> records = testInstance.newQuery(FluentQueries.select(id, name).from(totoTable), Toto.class)
 					.mapKey(Toto::new, id, name)
 					.execute(Accumulators.toSet());
 			assertThat(records)
@@ -184,7 +184,7 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 			connection.prepareStatement("insert into Toto(id, name) values (1, 'Hello')").execute();
 			connection.prepareStatement("insert into Toto(id, name) values (2, 'World')").execute();
 			
-			Set<Toto> records1 = testInstance.newQuery(QueryEase.select(id, name).from(totoTable).where(id, Operators.inArgNamed("xx", int.class)), Toto.class)
+			Set<Toto> records1 = testInstance.newQuery(FluentQueries.select(id, name).from(totoTable).where(id, Operators.inArgNamed("xx", int.class)), Toto.class)
 					.mapKey(Toto::new, id, name)
 					.set("xx", Arrays.asList(1, 2))
 					.execute(Accumulators.toSet());
@@ -192,7 +192,7 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 					.usingRecursiveFieldByFieldElementComparator()
 					.containsExactlyInAnyOrder(new Toto(1, "Hello"), new Toto(2, "World"));
 			
-			Set<Toto> records2 = testInstance.newQuery(QueryEase.select(id, name).from(totoTable).where(name, Operators.equalsArgNamed("xx", String.class)), Toto.class)
+			Set<Toto> records2 = testInstance.newQuery(FluentQueries.select(id, name).from(totoTable).where(name, Operators.equalsArgNamed("xx", String.class)), Toto.class)
 					.mapKey(Toto::new, id, name)
 					.set("xx", "Hello")
 					.execute(Accumulators.toSet());
@@ -221,7 +221,7 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 			connection.prepareStatement("insert into Toto(id, name) values (2, 'Bonjour')").execute();
 			connection.prepareStatement("insert into Tata(totoId, name) values (2, 'Tout le monde')").execute();
 			
-			Set<Toto> records = testInstance.newQuery(QueryEase.select(id, name).add(tataName, "tataName").from(totoTable).innerJoin(id, totoId),
+			Set<Toto> records = testInstance.newQuery(FluentQueries.select(id, name).add(tataName, "tataName").from(totoTable).innerJoin(id, totoId),
 							Toto.class)
 					.mapKey(Toto::new, id, name)
 					.map(Toto::setTata, new ResultSetRowTransformer<>(Tata.class, "tataName", DefaultResultSetReaders.STRING_READER, Tata::new))
@@ -258,7 +258,7 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 		
 		BeanRelationFixer<Toto, Tata> tataCombiner = BeanRelationFixer.of(Toto::setTatas, Toto::getTatas, LinkedHashSet::new);
 		
-		Set<Toto> records = testInstance.newQuery(QueryEase.select(id, name).add(tataName, "tataName").from(totoTable).leftOuterJoin(id, totoId),
+		Set<Toto> records = testInstance.newQuery(FluentQueries.select(id, name).add(tataName, "tataName").from(totoTable).leftOuterJoin(id, totoId),
 												   Toto.class)
 				.mapKey(Toto::new, id, name)
 				.map(tataCombiner, new ResultSetRowTransformer<>(Tata.class, "tataName", DefaultResultSetReaders.STRING_READER, Tata::new))

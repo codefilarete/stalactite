@@ -5,8 +5,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
-import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.FluentEntityMappingConfigurationSupportPolymorphismTest.ElectricCar;
 import org.codefilarete.stalactite.engine.FluentEntityMappingConfigurationSupportPolymorphismTest.ElectricPlug;
@@ -37,8 +37,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
-import static org.codefilarete.stalactite.dsl.MappingEase.subentityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.subentityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
@@ -134,7 +134,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				// mapped super class defines id
 				.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
-						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
+						.addSubClass(FluentMappings.<Car, Identifier<Long>>subentityBuilder(Car.class)
 								.map(Car::getModel)
 								.map(Car::getColor)
 								// A second level of polymorphism
@@ -193,7 +193,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				// mapped super class defines id
 				.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
-						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
+						.addSubClass(FluentMappings.<Car, Identifier<Long>>subentityBuilder(Car.class)
 								.map(Car::getId)
 								.map(Car::getModel)
 								.map(Car::getColor)
@@ -213,7 +213,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				// mapped super class defines id
 				.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
-						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
+						.addSubClass(FluentMappings.<Car, Identifier<Long>>subentityBuilder(Car.class)
 								.map(Car::getModel)
 								.map(Car::getColor)
 								// A second level of polymorphism
@@ -272,7 +272,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				// mapped super class defines id
 				.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
-						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
+						.addSubClass(FluentMappings.<Car, Identifier<Long>>subentityBuilder(Car.class)
 								.map(Car::getId)
 								.map(Car::getModel)
 								.map(Car::getColor)
@@ -292,7 +292,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				// mapped super class defines id
 				.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
-						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
+						.addSubClass(FluentMappings.<Car, Identifier<Long>>subentityBuilder(Car.class)
 								.map(Car::getId)
 								.map(Car::getModel)
 								.map(Car::getColor)
@@ -312,7 +312,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				// mapped super class defines id
 				.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>tablePerClass()
-						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
+						.addSubClass(FluentMappings.<Car, Identifier<Long>>subentityBuilder(Car.class)
 								.map(Car::getModel)
 								.map(Car::getColor)
 								// A second level of polymorphism
@@ -370,7 +370,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				// mapped super class defines id
 				.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>tablePerClass()
-						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
+						.addSubClass(FluentMappings.<Car, Identifier<Long>>subentityBuilder(Car.class)
 								.map(Car::getId)
 								.map(Car::getModel)
 								.map(Car::getColor)
@@ -390,7 +390,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				// mapped super class defines id
 				.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>tablePerClass()
-						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
+						.addSubClass(FluentMappings.<Car, Identifier<Long>>subentityBuilder(Car.class)
 								.map(Car::getModel)
 								.map(Car::getColor)
 								// A second level of polymorphism

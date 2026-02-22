@@ -14,11 +14,11 @@ import org.apache.commons.lang3.builder.MultilineRecursiveToStringStyle;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.presentation.StandardRepresentation;
+import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
-import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.dsl.RuntimeMappingException;
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
@@ -69,12 +69,12 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		persistenceContext = new PersistenceContext(dataSource, dialect);
 		
-		FluentEntityMappingBuilder<Company, Identifier<Long>> companyMappingBuilder = MappingEase.entityBuilder(Company.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<Company, Identifier<Long>> companyMappingBuilder = FluentMappings.entityBuilder(Company.class, Identifier.LONG_TYPE)
 				.mapKey(Company::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Company::getName);
 		companyConfiguration = companyMappingBuilder;
 		
-		FluentEntityMappingBuilder<Address, Identifier<Long>> addressMappingBuilder = MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<Address, Identifier<Long>> addressMappingBuilder = FluentMappings.entityBuilder(Address.class, Identifier.LONG_TYPE)
 				.mapKey(Address::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Address::getStreet);
 		addressConfiguration = addressMappingBuilder;
@@ -85,7 +85,7 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 		
 		@Test
 		void associationOnly_throwsException() {
-			FluentEntityMappingBuilder<Device, Identifier<Long>> mappingBuilder = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+			FluentEntityMappingBuilder<Device, Identifier<Long>> mappingBuilder = FluentMappings.entityBuilder(Device.class, Identifier.LONG_TYPE)
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Device::getName)
 					.mapManyToOne(Device::getLocation, addressConfiguration).cascading(ASSOCIATION_ONLY);
@@ -97,7 +97,7 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 		
 		@Test
 		void notDefined_defaultIsAll_getter() {
-			EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+			EntityPersister<Device, Identifier<Long>> devicePersister = FluentMappings.entityBuilder(Device.class, Identifier.LONG_TYPE)
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Device::getName)
 					// no cascade definition
@@ -125,7 +125,7 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 		
 		@Test
 		void readOnly_getter() throws SQLException {
-			EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+			EntityPersister<Device, Identifier<Long>> devicePersister = FluentMappings.entityBuilder(Device.class, Identifier.LONG_TYPE)
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Device::getName)
 					// cascade read-only
@@ -137,7 +137,7 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 		
 		@Test
 		void readOnly_setter() throws SQLException {
-			EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+			EntityPersister<Device, Identifier<Long>> devicePersister = FluentMappings.entityBuilder(Device.class, Identifier.LONG_TYPE)
 					// setting a foreign key naming strategy to be tested
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -196,7 +196,7 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 		
 		@Test
 		void cascade_deleteWithOrphanRemoval() throws SQLException {
-			EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+			EntityPersister<Device, Identifier<Long>> devicePersister = FluentMappings.entityBuilder(Device.class, Identifier.LONG_TYPE)
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Device::getName)
 					.mapManyToOne(Device::setManufacturer, companyConfiguration).cascading(ALL_ORPHAN_REMOVAL)
@@ -225,7 +225,7 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 		
 		@Test
 		void all() {
-			EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+			EntityPersister<Device, Identifier<Long>> devicePersister = FluentMappings.entityBuilder(Device.class, Identifier.LONG_TYPE)
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Device::getName)
 					.mapManyToOne(Device::setManufacturer, companyConfiguration).cascading(ALL)
@@ -306,7 +306,7 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 		
 		@Test
 		void defaultBehavior() throws SQLException {
-			MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+			FluentMappings.entityBuilder(Device.class, Identifier.LONG_TYPE)
 					// setting a foreign key naming strategy to be tested
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -370,7 +370,7 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 		
 		@Test
 		void columnName() throws SQLException {
-			MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+			FluentMappings.entityBuilder(Device.class, Identifier.LONG_TYPE)
 					// setting a foreign key naming strategy to be tested
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -436,15 +436,15 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 		
 		@Test
 		void defaultBehavior_2Relations() throws SQLException {
-			MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+			FluentMappings.entityBuilder(Device.class, Identifier.LONG_TYPE)
 					// setting a foreign key naming strategy to be tested
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Device::getName)
-					.mapManyToOne(Device::getLocation, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
+					.mapManyToOne(Device::getLocation, FluentMappings.entityBuilder(Address.class, Identifier.LONG_TYPE)
 							.mapKey(Address::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(Address::getStreet))
-					.mapManyToOne(Device::getManufacturer, MappingEase.entityBuilder(Company.class, Identifier.LONG_TYPE)
+					.mapManyToOne(Device::getManufacturer, FluentMappings.entityBuilder(Company.class, Identifier.LONG_TYPE)
 							.mapKey(Company::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(Company::getName))
 					.build(persistenceContext);
@@ -484,12 +484,12 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 		
 		@Test
 		void withTargetTable_targetTableIsUsed() throws SQLException {
-			MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+			FluentMappings.entityBuilder(Device.class, Identifier.LONG_TYPE)
 					// setting a foreign key naming strategy to be tested
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Device::getName)
-					.mapManyToOne(Device::getLocation, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
+					.mapManyToOne(Device::getLocation, FluentMappings.entityBuilder(Address.class, Identifier.LONG_TYPE)
 							.mapKey(Address::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(Address::getStreet)
 							.onTable(new Table<>("Township")))
@@ -530,12 +530,12 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 		
 		@Test
 		void withTargetTableSetByTargetEntity_tableSetByTargetEntityIsUSed() throws SQLException {
-			MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+			FluentMappings.entityBuilder(Device.class, Identifier.LONG_TYPE)
 					// setting a foreign key naming strategy to be tested
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Device::getName)
-					.mapManyToOne(Device::getLocation, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
+					.mapManyToOne(Device::getLocation, FluentMappings.entityBuilder(Address.class, Identifier.LONG_TYPE)
 							.onTable(new Table<>("Town"))
 							.mapKey(Address::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(Address::getStreet))
@@ -577,7 +577,7 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 	
 	@Test
 	void multiple_manyToOne() throws SQLException {
-		EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+		EntityPersister<Device, Identifier<Long>> devicePersister = FluentMappings.entityBuilder(Device.class, Identifier.LONG_TYPE)
 				.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Device::getName)
 				.mapManyToOne(Device::setManufacturer, companyConfiguration).cascading(ALL)
@@ -657,7 +657,7 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 	
 	@Test
 	void multiple_manyToOne_partialOrphanRemoval() throws SQLException {
-		EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+		EntityPersister<Device, Identifier<Long>> devicePersister = FluentMappings.entityBuilder(Device.class, Identifier.LONG_TYPE)
 				.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Device::getName)
 				.mapManyToOne(Device::setManufacturer, companyConfiguration).cascading(ALL_ORPHAN_REMOVAL)
@@ -738,7 +738,7 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 		
 		@Test
 		void reverseCollection() {
-			EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+			EntityPersister<Device, Identifier<Long>> devicePersister = FluentMappings.entityBuilder(Device.class, Identifier.LONG_TYPE)
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Device::getName)
 					.mapManyToOne(Device::setManufacturer, companyConfiguration).cascading(ALL).reverseCollection(Company::getDevices)
@@ -771,7 +771,7 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 		
 		@Test
 		void reverselySetBy() {
-			EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+			EntityPersister<Device, Identifier<Long>> devicePersister = FluentMappings.entityBuilder(Device.class, Identifier.LONG_TYPE)
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Device::getName)
 					.mapManyToOne(Device::setManufacturer, companyConfiguration).cascading(ALL).reverselySetBy(Company::addDevice)
@@ -804,7 +804,7 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 		
 		@Test
 		void reverselyInitializeWith() {
-			EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+			EntityPersister<Device, Identifier<Long>> devicePersister = FluentMappings.entityBuilder(Device.class, Identifier.LONG_TYPE)
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Device::getName)
 					.mapManyToOne(Device::setManufacturer, companyConfiguration).cascading(ALL)
@@ -841,7 +841,7 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 	
 	@Test
 	void mandatory_withNullTarget_throwsException() {
-		EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+		EntityPersister<Device, Identifier<Long>> devicePersister = FluentMappings.entityBuilder(Device.class, Identifier.LONG_TYPE)
 				.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Device::getName)
 				.mapManyToOne(Device::getManufacturer, companyConfiguration).cascading(ALL).mandatory()
@@ -869,7 +869,7 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 	
 	@Test
 	void fetchSeparately() {
-		EntityPersister<Device, Identifier<Long>> devicePersister = MappingEase.entityBuilder(Device.class, Identifier.LONG_TYPE)
+		EntityPersister<Device, Identifier<Long>> devicePersister = FluentMappings.entityBuilder(Device.class, Identifier.LONG_TYPE)
 				.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Device::getName)
 				.mapManyToOne(Device::getManufacturer, companyConfiguration).cascading(ALL).fetchSeparately()

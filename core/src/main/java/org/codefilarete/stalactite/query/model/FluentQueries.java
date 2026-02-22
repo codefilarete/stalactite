@@ -10,11 +10,12 @@ import org.codefilarete.stalactite.query.api.Selectable.SimpleSelectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**
- * A simple class to avoid "new Query()" syntax chained with {@link Query#select(Selectable, String)}
+ * A utility class that offers static factory methods for query or criteria construction, eliminating the need for
+ * "new Query()" code followed by method chaining.
  * 
  * @author Guillaume Mary
  */
-public class QueryEase {
+public class FluentQueries {
 	
 	public static FluentSelectClause select(Iterable<? extends Selectable<?>> selectables) {
 		return new Query().select(selectables);

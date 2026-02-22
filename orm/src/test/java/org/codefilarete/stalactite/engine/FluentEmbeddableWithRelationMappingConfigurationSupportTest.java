@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.codefilarete.stalactite.dsl.MappingEase;
+import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
@@ -44,8 +44,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.dsl.MappingEase.embeddableBuilder;
-import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.embeddableBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy.databaseAutoIncrement;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
@@ -544,7 +544,7 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 					.mapKey(Location::getId, ALREADY_ASSIGNED)
 					.map(Address::getStreet).mandatory();
 			
-			FluentEntityMappingBuilder<ImprintPublisher, Long> mappingBuilder = MappingEase.entityBuilder(ImprintPublisher.class, Long.class)
+			FluentEntityMappingBuilder<ImprintPublisher, Long> mappingBuilder = FluentMappings.entityBuilder(ImprintPublisher.class, Long.class)
 					.mapKey(ImprintPublisher::getId, databaseAutoIncrement())
 					.mapOneToOne(ImprintPublisher::getPrintingWorkLocation, addressMappingBuilder)
 					.mapSuperClass(publisherEntityBuilder);
@@ -575,7 +575,7 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 					.mapKey(Location::getId, ALREADY_ASSIGNED)
 					.map(Address::getStreet).mandatory();
 			
-			FluentEntityMappingBuilder<ImprintPublisher, Long> mappingBuilder = MappingEase.entityBuilder(ImprintPublisher.class, Long.class)
+			FluentEntityMappingBuilder<ImprintPublisher, Long> mappingBuilder = FluentMappings.entityBuilder(ImprintPublisher.class, Long.class)
 					.mapKey(ImprintPublisher::getId, databaseAutoIncrement())
 					.mapOneToOne(ImprintPublisher::getPrintingWorkLocation, addressMappingBuilder)
 					.mapSuperClass(publisherEntityBuilder);
@@ -605,7 +605,7 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 					.mapKey(Location::getId, ALREADY_ASSIGNED)
 					.map(Address::getStreet).mandatory();
 			
-			FluentEntityMappingBuilder<ImprintPublisher, Long> mappingBuilder = MappingEase.entityBuilder(ImprintPublisher.class, Long.class)
+			FluentEntityMappingBuilder<ImprintPublisher, Long> mappingBuilder = FluentMappings.entityBuilder(ImprintPublisher.class, Long.class)
 					.mapKey(ImprintPublisher::getId, databaseAutoIncrement())
 					.mapOneToOne(ImprintPublisher::getPrintingWorkLocation, addressMappingBuilder)
 					.mapSuperClass(publisherEntityBuilder);
@@ -658,7 +658,7 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 							.mapKey(BusinessCategory::getId, databaseAutoIncrement())
 							.map(BusinessCategory::getName));
 			
-			FluentEntityMappingBuilder<Book, Long> mappingBuilder = MappingEase.entityBuilder(Book.class, Long.class)
+			FluentEntityMappingBuilder<Book, Long> mappingBuilder = FluentMappings.entityBuilder(Book.class, Long.class)
 					.mapKey(Book::getId, databaseAutoIncrement())
 					.map(Book::getIsbn)
 					.map(Book::getPrice)
@@ -686,7 +686,7 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 							.map(BusinessCategory::getName))
 						.columnName("catId");
 			
-			FluentEntityMappingBuilder<Book, Long> mappingBuilder = MappingEase.entityBuilder(Book.class, Long.class)
+			FluentEntityMappingBuilder<Book, Long> mappingBuilder = FluentMappings.entityBuilder(Book.class, Long.class)
 					.mapKey(Book::getId, databaseAutoIncrement())
 					.map(Book::getIsbn)
 					.map(Book::getPrice)
@@ -715,7 +715,7 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 					.map(Publisher::getName)
 					.mapManyToOne(Publisher::getCategory, categoryBuilder).cascading(RelationMode.ALL_ORPHAN_REMOVAL);
 			
-			FluentEntityMappingBuilder<Book, Long> mappingBuilder = MappingEase.entityBuilder(Book.class, Long.class)
+			FluentEntityMappingBuilder<Book, Long> mappingBuilder = FluentMappings.entityBuilder(Book.class, Long.class)
 					.mapKey(Book::getId, databaseAutoIncrement())
 					.map(Book::getIsbn)
 					.map(Book::getPrice)

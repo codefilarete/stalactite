@@ -6,7 +6,7 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.dsl.MappingEase;
+import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.model.Country;
@@ -30,8 +30,8 @@ import org.springframework.context.annotation.FilterType;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
-import static org.codefilarete.stalactite.dsl.MappingEase.subentityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.subentityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 
 /**
@@ -91,7 +91,7 @@ class DerivedQueriesWithTablePerClassPolymorphismTest extends AbstractDerivedQue
 					.map(Country::getName)
 					.map(Country::getDescription)
 					.map(Country::isEuMember)
-					.embed(Country::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+					.embed(Country::getTimestamp, FluentMappings.embeddableBuilder(Timestamp.class)
 							.map(Timestamp::getCreationDate)
 							.map(Timestamp::getModificationDate))
 					.mapOneToOne(Country::getPresident, entityBuilder(Person.class, LONG_TYPE)

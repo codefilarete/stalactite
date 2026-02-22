@@ -36,7 +36,7 @@ import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
 import org.codefilarete.stalactite.query.api.JoinLink;
-import org.codefilarete.stalactite.query.model.QueryEase;
+import org.codefilarete.stalactite.query.model.FluentQueries;
 import org.codefilarete.stalactite.query.api.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.api.Selectable.SimpleSelectable;
@@ -162,7 +162,7 @@ class AggregateAccessPointToColumnMappingTest {
 		when(idMapping.<T>getIdentifierAssembler()).thenReturn(new SingleIdentifierAssembler<>(idColumn));
 		when(idMapping.getIdAccessor()).thenReturn(new AccessorWrapperIdAccessor<>(accessor(Person::getId)));
 		
-		PseudoTable pseudoTable = new PseudoTable(QueryEase.select(idColumn, nameColumn, versionColumn).from(personTable).getQuery(), "dummyUnion");
+		PseudoTable pseudoTable = new PseudoTable(FluentQueries.select(idColumn, nameColumn, versionColumn).from(personTable).getQuery(), "dummyUnion");
 		ConfiguredRelationalPersister<Person, Identifier<Long>> rootPersisterMock = mock(ConfiguredRelationalPersister.class);
 		when(rootPersisterMock.<T>getMapping()).thenReturn(entityMappingMock);
 		

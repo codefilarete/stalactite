@@ -28,7 +28,7 @@ import static org.codefilarete.stalactite.query.Operators.lt;
 import static org.codefilarete.stalactite.query.Operators.sum;
 import static org.codefilarete.stalactite.query.api.OrderByChain.Order.ASC;
 import static org.codefilarete.stalactite.query.api.OrderByChain.Order.DESC;
-import static org.codefilarete.stalactite.query.model.QueryEase.select;
+import static org.codefilarete.stalactite.query.model.FluentQueries.select;
 
 /**
  * @author Guillaume Mary

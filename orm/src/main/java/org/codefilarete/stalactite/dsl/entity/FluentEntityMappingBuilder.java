@@ -9,11 +9,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.codefilarete.stalactite.dsl.ExtraTablePropertyOptions;
-import org.codefilarete.stalactite.dsl.InheritanceOptions;
-import org.codefilarete.stalactite.dsl.MappingEase;
-import org.codefilarete.stalactite.dsl.PersisterBuilder;
-import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
+import org.codefilarete.stalactite.dsl.*;
+import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder;
@@ -53,7 +50,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
  * have compatible return type.
  * 
  * @author Guillaume Mary
- * @see MappingEase#entityBuilder(Class, Class)
+ * @see FluentMappings#entityBuilder(Class, Class)
  * @see #build(PersistenceContext)
  */
 public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>, EntityMappingConfigurationProvider<C, I> {

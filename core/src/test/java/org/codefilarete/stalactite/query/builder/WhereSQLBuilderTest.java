@@ -30,8 +30,8 @@ import static org.codefilarete.stalactite.query.Operators.lt;
 import static org.codefilarete.stalactite.query.Operators.lteq;
 import static org.codefilarete.stalactite.query.Operators.not;
 import static org.codefilarete.stalactite.query.Operators.startsWith;
-import static org.codefilarete.stalactite.query.model.QueryEase.filter;
-import static org.codefilarete.stalactite.query.model.QueryEase.where;
+import static org.codefilarete.stalactite.query.model.FluentQueries.filter;
+import static org.codefilarete.stalactite.query.model.FluentQueries.where;
 
 /**
  * @author Guillaume Mary

@@ -34,7 +34,7 @@ import org.codefilarete.stalactite.query.builder.SQLBuilder;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.api.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.QueryEase;
+import org.codefilarete.stalactite.query.model.FluentQueries;
 import org.codefilarete.stalactite.query.api.QueryProvider;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.model.Where;
@@ -283,7 +283,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	@Override
 	public <C, I, T extends Table> List<C> select(SerializableFunction<I, C> factory, Column<T, I> column) {
 		Executable constructor = new MethodReferenceCapturer().findExecutable(factory);
-		return newQuery(QueryEase
+		return newQuery(FluentQueries
 				.select(column).from(column.getTable()), ((Class<C>) constructor.getDeclaringClass()))
 				.mapKey(factory, column)
 				.execute(Accumulators.toList());
@@ -292,7 +292,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	@Override
 	public <C, I, J, T extends Table> List<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2) {
 		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
-		return newQuery(QueryEase.select(column1, column2).from(column1.getTable()), constructor.getDeclaringClass())
+		return newQuery(FluentQueries.select(column1, column2).from(column1.getTable()), constructor.getDeclaringClass())
 				.mapKey(factory, column1, column2)
 				.execute(Accumulators.toList());
 	}
@@ -300,7 +300,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	@Override
 	public <C, I, J, K, T extends Table> List<C> select(SerializableTriFunction<I, J, K, C> factory, Column<T, I> column1, Column<T, J> column2, Column<T, K> column3) {
 		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
-		return newQuery(QueryEase.select(column1, column2, column3).from(column1.getTable()), constructor.getDeclaringClass())
+		return newQuery(FluentQueries.select(column1, column2, column3).from(column1.getTable()), constructor.getDeclaringClass())
 				.mapKey(factory, column1, column2, column3)
 				.execute(Accumulators.toList());
 	}
@@ -366,7 +366,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		if (table == null) {
 			throw new IllegalArgumentException("Table is not defined, please add some columns to query so it can be deduced from them");
 		}
-		Query query = QueryEase.select(selectableKeys).from(table).getQuery();
+		Query query = FluentQueries.select(selectableKeys).from(table).getQuery();
 		where.accept(query.getWhere());
 		QueryMapper<C> queryMapper = newTransformableQuery(dialect.getQuerySQLBuilderFactory().queryBuilder(query), beanType);
 		keyMapper.accept(queryMapper);

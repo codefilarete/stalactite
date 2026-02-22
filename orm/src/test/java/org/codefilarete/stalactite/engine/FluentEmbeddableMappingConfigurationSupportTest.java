@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.engine;
 
 import java.util.Map;
 
-import org.codefilarete.stalactite.dsl.MappingEase;
+import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
@@ -26,8 +26,8 @@ import org.codefilarete.tool.collection.Iterables;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.dsl.MappingEase.embeddableBuilder;
-import static org.codefilarete.stalactite.dsl.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.embeddableBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 
 /**
@@ -47,17 +47,17 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	@Test
 	void apiUsage() {
 		try {
-			MappingEase.embeddableBuilder(Country.class)
+			FluentMappings.embeddableBuilder(Country.class)
 					.map(Country::getName)
-					.embed(Country::getPresident, MappingEase.embeddableBuilder(Person.class)
+					.embed(Country::getPresident, FluentMappings.embeddableBuilder(Person.class)
 							.map(Person::getName)
-							.embed(Person::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+							.embed(Person::getTimestamp, FluentMappings.embeddableBuilder(Timestamp.class)
 									.map(Timestamp::getCreationDate)
 									.map(Timestamp::getModificationDate).unique()))
 					.overrideName(Person::getId, "personId")
 					.overrideName(Person::getName, "personName")
 					
-					.embed(Country::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+					.embed(Country::getTimestamp, FluentMappings.embeddableBuilder(Timestamp.class)
 							.map(Timestamp::getCreationDate)
 							.map(Timestamp::getModificationDate))
 					.map(Country::getId)
@@ -68,36 +68,36 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		}
 		
 		try {
-			MappingEase.embeddableBuilder(Country.class)
+			FluentMappings.embeddableBuilder(Country.class)
 					.map(Country::getName)
-					.embed(Country::getPresident, MappingEase.embeddableBuilder(Person.class)
+					.embed(Country::getPresident, FluentMappings.embeddableBuilder(Person.class)
 							.map(Person::getName)
-							.embed(Person::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+							.embed(Person::getTimestamp, FluentMappings.embeddableBuilder(Timestamp.class)
 									.map(Timestamp::getCreationDate).mandatory()
 									.map(Timestamp::getModificationDate)))
-					.embed(Country::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+					.embed(Country::getTimestamp, FluentMappings.embeddableBuilder(Timestamp.class)
 							.map(Timestamp::getCreationDate)
 							.map(Timestamp::getModificationDate))
 					.map(Country::getId).columnName("zz")
-					.mapSuperClass(MappingEase.embeddableBuilder(Object.class))
+					.mapSuperClass(FluentMappings.embeddableBuilder(Object.class))
 					.map(Country::getDescription).columnName("xx");
 		} catch (RuntimeException e) {
 			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
 		}
 		
 		try {
-			MappingEase.embeddableBuilder(Country.class)
+			FluentMappings.embeddableBuilder(Country.class)
 					.map(Country::getName)
 					.map(Country::getId).columnName("zz")
 					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
 					// embed with setter
-					.embed(Country::setPresident, MappingEase.embeddableBuilder(Person.class)
+					.embed(Country::setPresident, FluentMappings.embeddableBuilder(Person.class)
 							.map(Person::getName)// inner embed with setter
-							.embed(Person::setTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+							.embed(Person::setTimestamp, FluentMappings.embeddableBuilder(Timestamp.class)
 									.map(Timestamp::getCreationDate)
 									.map(Timestamp::getModificationDate)))
 					// embed with setter
-					.embed(Country::setTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+					.embed(Country::setTimestamp, FluentMappings.embeddableBuilder(Timestamp.class)
 							.map(Timestamp::getCreationDate)
 							.map(Timestamp::getModificationDate))
 					.map(Country::getDescription).columnName("xx")
@@ -107,10 +107,10 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		}
 		
 		try {
-			EmbeddableMappingConfigurationProvider<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
+			EmbeddableMappingConfigurationProvider<Person> personMappingBuilder = FluentMappings.embeddableBuilder(Person.class)
 					.map(Person::getName).unique();
 			
-			MappingEase.embeddableBuilder(Country.class)
+			FluentMappings.embeddableBuilder(Country.class)
 					.map(Country::getName)
 					.map(Country::getId).columnName("zz")
 					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
@@ -121,10 +121,10 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		}
 		
 		try {
-			EmbeddableMappingConfigurationProvider<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
+			EmbeddableMappingConfigurationProvider<Person> personMappingBuilder = FluentMappings.embeddableBuilder(Person.class)
 					.map(Person::getName);
 			
-			MappingEase.embeddableBuilder(Country.class)
+			FluentMappings.embeddableBuilder(Country.class)
 					.map(Country::getName)
 					.map(Country::getId).columnName("zz")
 					.embed(Country::getPresident, personMappingBuilder)
@@ -140,12 +140,12 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 		}
 		
 		try {
-			MappingEase.embeddableBuilder(PersonWithGender.class)
+			FluentMappings.embeddableBuilder(PersonWithGender.class)
 					.map(Person::getName)
 					.map("name")
 					.mapEnum(PersonWithGender::getGender).byOrdinal()
 					.mapEnum("gender").byOrdinal()
-					.embed(Person::setTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+					.embed(Person::setTimestamp, FluentMappings.embeddableBuilder(Timestamp.class)
 							.map(Timestamp::getCreationDate)
 							.map(Timestamp::getModificationDate))
 					.overrideName(Timestamp::getCreationDate, "myDate")
@@ -153,7 +153,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 					.mapEnum(PersonWithGender::getGender).columnName("MM").mandatory()
 					.map(PersonWithGender::getId).columnName("zz")
 					.mapEnum(PersonWithGender::setGender).byName()
-					.embed(Person::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+					.embed(Person::getTimestamp, FluentMappings.embeddableBuilder(Timestamp.class)
 							.map(Timestamp::getCreationDate)
 							.map(Timestamp::getModificationDate))
 					.mapEnum(PersonWithGender::setGender).columnName("MM").byName();
@@ -161,19 +161,19 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
 		}
 		try {
-			MappingEase.embeddableBuilder(PersonWithGender.class)
+			FluentMappings.embeddableBuilder(PersonWithGender.class)
 					.map(Person::getName)
 					.mapEnum(PersonWithGender::getGender).byOrdinal()
-					.embed(Person::setTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+					.embed(Person::setTimestamp, FluentMappings.embeddableBuilder(Timestamp.class)
 							.map(Timestamp::getCreationDate)
 							.map(Timestamp::getModificationDate))
 					.overrideName(Timestamp::getCreationDate, "myDate")
-					.mapOneToOne(Person::getCountry, MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.mapOneToOne(Person::getCountry, FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
 							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(Country::getName)
 							.columnName("zz"))
 					.mapEnum(PersonWithGender::setGender).byName()
-					.embed(Person::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+					.embed(Person::getTimestamp, FluentMappings.embeddableBuilder(Timestamp.class)
 							.map(Timestamp::getCreationDate)
 							.map(Timestamp::getModificationDate))
 					.mapEnum(PersonWithGender::setGender).columnName("MM").byName();

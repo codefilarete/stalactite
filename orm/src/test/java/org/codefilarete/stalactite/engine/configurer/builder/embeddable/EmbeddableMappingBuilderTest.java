@@ -5,8 +5,8 @@ import java.util.Set;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.reflection.Accessors;
+import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
-import org.codefilarete.stalactite.dsl.MappingEase;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.embeddable.FluentEmbeddableMappingConfigurationSupport;
@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.codefilarete.stalactite.dsl.MappingEase.embeddableBuilder;
+import static org.codefilarete.stalactite.dsl.FluentMappings.embeddableBuilder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -72,7 +72,7 @@ class EmbeddableMappingBuilderTest {
 		Column nameColumn = expectedResult.addColumn("myOverridingColumn", String.class);
 		FluentEntityMappingConfigurationSupport<Vehicle, Object> vehicleObjectFluentEntityMappingConfigurationSupport =
 				new FluentEntityMappingConfigurationSupport<>(Vehicle.class);
-		vehicleObjectFluentEntityMappingConfigurationSupport.embed(Vehicle::getOwner, MappingEase.embeddableBuilder(Person.class)
+		vehicleObjectFluentEntityMappingConfigurationSupport.embed(Vehicle::getOwner, FluentMappings.embeddableBuilder(Person.class)
 				.map(Person::getName))
 				.override(Person::getName, nameColumn);
 		Table result = EmbeddableMappingBuilder.giveTargetTable(vehicleObjectFluentEntityMappingConfigurationSupport.getPropertiesMapping());

@@ -15,11 +15,11 @@ import org.codefilarete.stalactite.mapping.EmbeddedClassMapping;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
- * Declares a simple entry point to start configuring a persistence mapping.
+ * A utility class that offers static factory methods as entry points to start configuring an class persistence mapping.
  *
  * @author Guillaume Mary
  */
-public final class MappingEase {
+public final class FluentMappings {
 
 	/**
 	 * Starts a {@link FluentEntityMappingBuilder} for a given class.
@@ -91,7 +91,7 @@ public final class MappingEase {
 		return new FluentCompositeKeyMappingConfigurationSupport<>(persistedClass);
 	}
 
-	private MappingEase() {
+	private FluentMappings() {
 		// tool class
 	}
 }

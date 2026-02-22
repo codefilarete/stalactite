@@ -13,10 +13,10 @@ public interface EntityMappingConfigurationProvider<C, I> {
 	 * <pre>{@code
 	 * EntityMappingConfigurationProviderHolder<Person, Long> personMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
 	 * personMappingConfiguration.setProvider(
-	 *     MappingEase.entityBuilder(Person.class, Long.class)
+	 *     FluentMappings.entityBuilder(Person.class, Long.class)
 	 *     ...
 	 *     .mapOneToOne(Person::getHouse,
-	 *         MappingEase.entityBuilder(House.class, Long.class)
+	 *         FluentMappings.entityBuilder(House.class, Long.class)
 	 *         ...	
 	 *         .mapOneToOne(House::getGardener, personMappingConfiguration)
 	 *    )
