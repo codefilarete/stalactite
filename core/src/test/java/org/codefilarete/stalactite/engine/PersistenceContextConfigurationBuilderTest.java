@@ -5,6 +5,7 @@ import javax.sql.DataSource;
 import org.codefilarete.stalactite.engine.PersistenceContextConfigurationBuilder.PersistenceContextConfiguration;
 import org.codefilarete.stalactite.mapping.id.sequence.DatabaseSequenceSelector;
 import org.codefilarete.stalactite.query.Operators;
+import org.codefilarete.stalactite.query.model.FluentQueries;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.sql.DatabaseSequenceSelectorFactory;
 import org.codefilarete.stalactite.sql.DialectOptions;
@@ -150,11 +151,12 @@ class PersistenceContextConfigurationBuilderTest {
 		assertThat(builtConfiguration.getDialect().getDmlGenerator().buildDelete(totoTable, Arrays.asSet(idColumn)).getSQL()).isEqualTo("delete from `aKeyWord` where id = ?");
 		assertThat(builtConfiguration.getDialect().getDmlGenerator().buildSelect(totoTable, Arrays.asSet(idColumn), Arrays.asSet(idColumn)).getSQL()).isEqualTo("select id from `aKeyWord` where id = ?");
 		
-		Query query = new Query(totoTable);
-		query.select(idColumn);
-		query.where(idColumn, Operators.eq(idColumn));
-		query.groupBy(idColumn);
-		query.having(idColumn, Operators.eq(idColumn));
+		Query query = FluentQueries.from(totoTable)
+				.select(idColumn)
+				.where(idColumn, Operators.eq(idColumn))
+				.groupBy(idColumn)
+				.having(idColumn, Operators.eq(idColumn))
+				.getQuery();
 		assertThat(builtConfiguration.getDialect().getQuerySQLBuilderFactory().queryBuilder(query).toSQL())
 				.isEqualTo("select `aKeyWord`.id from `aKeyWord` where `aKeyWord`.id = `aKeyWord`.id group by `aKeyWord`.id having `aKeyWord`.id= `aKeyWord`.id");
 	}

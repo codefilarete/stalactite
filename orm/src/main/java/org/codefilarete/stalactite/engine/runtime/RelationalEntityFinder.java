@@ -187,7 +187,7 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 			Query queryClone = new Query(
 					new Select(),
 					entityTreeQuery.getQuery().getFromDelegate(),
-					new Where<>(where.getCriteria()),
+					new Where(where.getCriteria()),
 					new GroupBy(),
 					new Having(),
 					orderBy,
@@ -217,7 +217,7 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 			Query queryClone = new Query(
 					new Select(entityTreeQuery.getQuery().getSelectDelegate()),
 					entityTreeQuery.getQuery().getFromDelegate(),
-					new Where<>(where.getCriteria()),
+					new Where(where.getCriteria()),
 					new GroupBy(),
 					new Having(),
 					orderBy,
@@ -247,7 +247,7 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 									 boolean distinct,
 									 OrderBy orderBy,
 									 Limit limit) {
-		Query queryClone = new Query(new Select(), query.getFromDelegate(), new Where<>(where.getCriteria()), new GroupBy(), new Having(), orderBy, limit);
+		Query queryClone = new Query(new Select(), query.getFromDelegate(), new Where(where.getCriteria()), new GroupBy(), new Having(), orderBy, limit);
 		queryClone.getSelectDelegate().setDistinct(distinct);
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone);
 		

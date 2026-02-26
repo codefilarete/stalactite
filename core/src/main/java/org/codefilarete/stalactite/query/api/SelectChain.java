@@ -13,11 +13,11 @@ public interface SelectChain<SELF extends SelectChain<SELF>> {
 	
 	SELF add(Selectable<?> expression, Selectable<?>... expressions);
 	
-	AliasableExpression<SELF> add(String expression, Class<?> javaType);
+	SELF add(String expression, Class<?> javaType);
 	
-	default SELF add(Selectable<?> column) {
-		return add(column, (String) null);
-	}
+	SELF add(String expression, Class<?> javaType, String alias);
+	
+	SELF add(Selectable<?> column);
 	
 	SELF add(Selectable<?> column, String alias);
 	
@@ -33,21 +33,8 @@ public interface SelectChain<SELF extends SelectChain<SELF>> {
 	
 	SELF distinct();
 	
-	default SELF getSelect() {
-		return (SELF) this;
-	}
-	
-	interface Aliasable {
+	interface Aliasable<SELF> {
 		
-		SelectChain<?> as(String alias);
-	}
-	
-	/**
-	 * A mixin to chain {@link Aliasable} and {@link SelectChain}.
-	 * 
-	 * @param <SELF> type of {@link SelectChain}
-	 */
-	interface AliasableExpression<SELF extends SelectChain<SELF>> extends Aliasable, SelectChain<SELF> {
-		
+		SELF as(String alias);
 	}
 }

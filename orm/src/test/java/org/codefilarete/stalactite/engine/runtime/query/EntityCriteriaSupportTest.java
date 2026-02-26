@@ -136,7 +136,7 @@ class EntityCriteriaSupportTest {
 		Query queryClone = new Query(
 				entityTreeQuery.getQuery().getSelectDelegate(),
 				entityTreeQuery.getQuery().getFromDelegate(),
-				new Where<>(testInstance.getCriteria()),
+				new Where(testInstance.getCriteria()),
 				new GroupBy(),
 				new Having(),
 				new OrderBy(),

@@ -391,7 +391,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		
 		subPersisters.forEach(subPersister -> {
 			Query subEntityQuery = new Query(subPersister.getMapping().getTargetTable());
-			subEntityQuery.select(String.valueOf(discriminatorComputer.increment()), Integer.class).as(entityTypeDiscriminatorName);
+			subEntityQuery.select(String.valueOf(discriminatorComputer.increment()), Integer.class, entityTypeDiscriminatorName);
 			subPersistersUnion.unionAll(subEntityQuery);
 			
 			commonColumns.forEach(column -> {
@@ -500,7 +500,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			Query subEntityQuery = new Query(subPersister.getMapping().getTargetTable());
 			int discriminatorValue = discriminatorComputer.increment();
 			subtypeSelectorPerDiscriminatorValue.put(discriminatorValue, subPersister);
-			subEntityQuery.select(String.valueOf(discriminatorValue), Integer.class).as(entityTypeDiscriminatorName);
+			subEntityQuery.select(String.valueOf(discriminatorValue), Integer.class, entityTypeDiscriminatorName);
 			subPersistersUnion.unionAll(subEntityQuery);
 			
 			rightJoinColumn.getColumns().forEach(column -> {

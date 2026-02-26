@@ -134,7 +134,7 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 			LOGGER.debug("Single query was asked but due to sub-polymorphism the query is made in 2 phases");
 			return selectIn2Phases(where, values, orderBy, limit);
 		} else {
-			Where add = new Where<>();
+			Where add = new Where();
 			add.add(query.getWhereDelegate().getConditions());
 			add.add(where.getCriteria());
 			Query queryClone = new Query(query.getSelectDelegate(), query.getFromDelegate(), add, new GroupBy(), new Having(), orderBy, limit);
@@ -148,7 +148,7 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 		
 		// we clone the query to avoid polluting the instance one, else, from select(..) to select(..), we append the criteria at the end of it,
 		// which makes the query usually returning no data (because of the condition mix)
-		Query queryClone = new Query(new Select(), query.getFromDelegate(), new Where<>(where.getCriteria()), new GroupBy(), new Having(), orderBy, limit);
+		Query queryClone = new Query(new Select(), query.getFromDelegate(), new Where(where.getCriteria()), new GroupBy(), new Having(), orderBy, limit);
 		
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone);
 		

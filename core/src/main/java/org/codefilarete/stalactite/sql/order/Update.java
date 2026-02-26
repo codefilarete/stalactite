@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.sql.order;
 
 import java.util.Set;
 
+import org.codefilarete.stalactite.query.api.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -25,23 +26,23 @@ public class Update<T extends Table<T>> {
 	
 	private final Set<StatementVariable<?, T>> row = new KeepOrderSet<>();
 	
-	private final Where<?> criteria;
+	private final CriteriaChain<?> criteria;
 	
 	public Update(T targetTable) {
 		this(targetTable, targetTable.getColumns());
 	}
 	
-	public Update(T targetTable, Where<?> where) {
+	public Update(T targetTable, CriteriaChain<?> where) {
 		this(targetTable, targetTable.getColumns(), where);
 	}
 	
 	public Update(T targetTable, Set<? extends Column<T, ?>> columnsToUpdate) {
-		this(targetTable, columnsToUpdate, new Where<>());
+		this(targetTable, columnsToUpdate, new Where());
 	}
 	
-	public Update(T targetTable, Set<? extends Column<T, ?>> columnsToUpdate, Where<?> where) {
+	public Update(T targetTable, Set<? extends Column<T, ?>> columnsToUpdate, CriteriaChain<?> where) {
 		this.targetTable = targetTable;
-		this.columnsToUpdate = (Set<Column<T, ?>>) new KeepOrderSet<>(columnsToUpdate);
+		this.columnsToUpdate = new KeepOrderSet<>(columnsToUpdate);
 		this.criteria = where;
 	}
 	
@@ -53,7 +54,7 @@ public class Update<T extends Table<T>> {
 		return columnsToUpdate;
 	}
 	
-	public Where<?> getCriteria() {
+	public CriteriaChain<?> getCriteria() {
 		return criteria;
 	}
 	

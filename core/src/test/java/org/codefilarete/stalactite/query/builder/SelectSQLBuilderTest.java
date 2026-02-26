@@ -36,7 +36,7 @@ public class SelectSQLBuilderTest {
 		Map<Table, String> emptyMap = Collections.emptyMap();
 		return new Object[][]{
 				{ new Select().add("a", String.class), tableAliases, "a" },
-				{ new Select().add("a", String.class).as("aa"), tableAliases, "a as aa" },
+				{ new Select().add("a", String.class, "aa"), tableAliases, "a as aa" },
 				{ new Select().distinct().add("a", String.class), tableAliases, "distinct a" },
 				{ new Select().add("a", String.class).distinct(), tableAliases, "distinct a" },
 				{ new Select().add("a", String.class).add("b", String.class), tableAliases, "a, b" },
@@ -57,8 +57,8 @@ public class SelectSQLBuilderTest {
 	
 	@ParameterizedTest
 	@MethodSource("toSQL_data")
-	public void toSQL(SelectChain<Select> select, Map<Table, String> tableAliases, String expected) {
-		SelectSQLBuilder testInstance = new SelectSQLBuilder(select.getSelect(), new DMLNameProvider(tableAliases::get), new FunctionSQLBuilder(new DMLNameProvider(tableAliases), new DefaultTypeMapping()));
+	public void toSQL(Select select, Map<Table, String> tableAliases, String expected) {
+		SelectSQLBuilder testInstance = new SelectSQLBuilder(select, new DMLNameProvider(tableAliases::get), new FunctionSQLBuilder(new DMLNameProvider(tableAliases), new DefaultTypeMapping()));
 		assertThat(testInstance.toSQL()).isEqualTo(expected);
 	}
 }

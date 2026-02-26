@@ -4,12 +4,10 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.codefilarete.stalactite.query.api.FluentSelect;
-import org.codefilarete.stalactite.query.api.SelectChain;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.api.Selectable.SimpleSelectable;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
-import org.codefilarete.tool.reflect.MethodDispatcher;
 
 /**
  * A support for the select part of a SQL query
@@ -46,7 +44,7 @@ public class Select implements FluentSelect<Select> {
 	
 	@Override
 	public Select add(Selectable<?> expression, Selectable<?>... expressions) {
-		add(expression);
+		this.columns.put(expression, null);
 		for (Selectable<?> expr : expressions) {
 			add(expr);
 		}
@@ -54,16 +52,22 @@ public class Select implements FluentSelect<Select> {
 	}
 	
 	@Override
-	public AliasableExpression<Select> add(String expression, Class<?> javaType) {
+	public Select add(String expression, Class<?> javaType) {
 		SimpleSelectable<?> selectable = new SimpleSelectable<>(expression, javaType);
 		add(selectable);
-		return new MethodDispatcher()
-				.redirect(Aliasable.class, alias -> {
-					columns.put(selectable, alias);
-					return null;	// we don't care about the returned object since a proxy is returned
-				}, this)
-				.redirect(SelectChain.class, this)
-				.build((Class<AliasableExpression<Select>>) (Class<?>) AliasableExpression.class);
+		return this;
+	}
+	
+	@Override
+	public Select add(String expression, Class<?> javaType, String alias) {
+		SimpleSelectable<?> selectable = new SimpleSelectable<>(expression, javaType);
+		return add(selectable, alias);
+	}
+	
+	@Override
+	public Select add(Selectable<?> column) {
+		this.columns.put(column, null);
+		return this;
 	}
 	
 	@Override
@@ -91,6 +95,10 @@ public class Select implements FluentSelect<Select> {
 	@Override
 	public Map<Selectable<?>, String> getAliases() {
 		return new KeepOrderMap<>(columns);
+	}
+	
+	public void setAlias(Selectable selectable, String alias) {
+		this.columns.put(selectable, alias);
 	}
 	
 	public boolean isDistinct() {

@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.engine.crud;
 
 import java.util.HashMap;
 
-import org.codefilarete.stalactite.query.model.Where;
+import org.codefilarete.stalactite.query.api.CriteriaChain;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -27,7 +27,7 @@ public class DefaultExecutableDelete<T extends Table<T>> extends Delete<T> imple
 		this.connectionProvider = connectionProvider;
 	}
 	
-	public DefaultExecutableDelete(T targetTable, Where<?> where, Dialect dialect, ConnectionProvider connectionProvider) {
+	public DefaultExecutableDelete(T targetTable, CriteriaChain<?> where, Dialect dialect, ConnectionProvider connectionProvider) {
 		super(targetTable, where);
 		this.dialect = dialect;
 		this.connectionProvider = connectionProvider;

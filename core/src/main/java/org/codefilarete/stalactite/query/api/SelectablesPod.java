@@ -24,12 +24,12 @@ public interface SelectablesPod {
 	
 	default <C extends Selectable<?>> C findColumn(String columnName) {
 		for (Entry<? extends Selectable<?>, String> alias : getAliases().entrySet()) {
-			if (alias.getValue().equals(columnName)) {
+			if (columnName.equals(alias.getValue())) {
 				return (C) alias.getKey();
 			}
 		}
 		for (Selectable<?> column : getColumns()) {
-			if (column instanceof JoinLink && column.getExpression().equals(columnName)) {
+			if (column.getExpression().equals(columnName)) {
 				return (C) column;
 			}
 		}

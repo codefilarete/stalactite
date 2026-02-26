@@ -111,7 +111,7 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 			// the newCriteriaSupport() will create a copy of the main entity criteria, so we can modify it without affecting the main one
 			Query query = getAggregateQueryTemplate().getQuery();
 			EntityCriteriaSupport<C> and = newCriteriaSupport().getEntityCriteriaSupport().and(entityIdAccessor, Operators.in(ids));
-			Query queryClone = new Query(query.getSelectDelegate(), query.getFromDelegate(), new Where<>().add(and.getCriteria()), new GroupBy(), new Having(),
+			Query queryClone = new Query(query.getSelectDelegate(), query.getFromDelegate(), new Where().add(and.getCriteria()), new GroupBy(), new Having(),
 					new OrderBy(), // No order-by since we are in a Collection criteria, sort we'll be made downstream in memory see EntityCriteriaSupport#wrapGraphload()
 					new Limit() // No limit since we already limited our result through the selection of the ids
 			);
@@ -159,7 +159,7 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 									 boolean distinct,
 									 OrderBy orderBy,
 									 Limit limit) {
-		Query queryClone = new Query(new Select(), getAggregateQueryTemplate().getQuery().getFromDelegate(), new Where<>(where.getCriteria()), new GroupBy(), new Having(), orderBy, limit);
+		Query queryClone = new Query(new Select(), getAggregateQueryTemplate().getQuery().getFromDelegate(), new Where(where.getCriteria()), new GroupBy(), new Having(), orderBy, limit);
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone);
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)

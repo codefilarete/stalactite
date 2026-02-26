@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.engine.crud;
 
 import java.util.Set;
 
-import org.codefilarete.stalactite.query.model.Where;
+import org.codefilarete.stalactite.query.api.CriteriaChain;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -27,7 +27,7 @@ public class DefaultExecutableUpdate<T extends Table<T>> extends Update<T> imple
 		this.dialect = dialect;
 		this.connectionProvider = connectionProvider;
 	}
-	public DefaultExecutableUpdate(T targetTable, Where<?> where, Dialect dialect, ConnectionProvider connectionProvider) {
+	public DefaultExecutableUpdate(T targetTable, CriteriaChain<?> where, Dialect dialect, ConnectionProvider connectionProvider) {
 		super(targetTable, where);
 		this.dialect = dialect;
 		this.connectionProvider = connectionProvider;
@@ -39,7 +39,7 @@ public class DefaultExecutableUpdate<T extends Table<T>> extends Update<T> imple
 		this.connectionProvider = connectionProvider;
 	}
 	
-	public DefaultExecutableUpdate(T targetTable, Set<? extends Column<T, ?>> columnsToUpdate, Where<?> where, Dialect dialect, ConnectionProvider connectionProvider) {
+	public DefaultExecutableUpdate(T targetTable, Set<? extends Column<T, ?>> columnsToUpdate, CriteriaChain<?> where, Dialect dialect, ConnectionProvider connectionProvider) {
 		super(targetTable, columnsToUpdate, where);
 		this.dialect = dialect;
 		this.connectionProvider = connectionProvider;

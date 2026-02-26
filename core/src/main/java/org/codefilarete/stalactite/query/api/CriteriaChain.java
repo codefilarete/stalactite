@@ -5,7 +5,8 @@ import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.LogicalOperator;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
-import static org.codefilarete.stalactite.query.model.LogicalOperator.*;
+import static org.codefilarete.stalactite.query.model.LogicalOperator.AND;
+import static org.codefilarete.stalactite.query.model.LogicalOperator.OR;
 
 /**
  * @author Guillaume Mary
@@ -60,4 +61,8 @@ public interface CriteriaChain<SELF extends CriteriaChain<SELF>> extends Iterabl
 	 * @return this
 	 */
 	SELF add(Iterable<AbstractCriterion> criteria);
+	
+	default boolean isEmpty() {
+		return !iterator().hasNext();
+	}
 }

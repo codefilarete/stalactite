@@ -4,17 +4,17 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.UnionSQLBuilder;
-import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.api.QueryProvider;
 import org.codefilarete.stalactite.query.api.QueryStatement;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.UnionSQLBuilder;
+import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
-import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
+import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestInstance;
@@ -41,6 +41,7 @@ class QuerySQLBuilderTest {
 		Table tableToto = new Table(null, "Toto");
 		Column colTotoA = tableToto.addColumn("a", String.class);
 		Column colTotoB = tableToto.addColumn("b", String.class);
+		Column colTataC = tableToto.addColumn("c", String.class);
 		Table tableTata = new Table(null, "Tata");
 		Column colTataA = tableTata.addColumn("a", String.class);
 		Column colTataB = tableTata.addColumn("b", String.class);
@@ -52,6 +53,30 @@ class QuerySQLBuilderTest {
 		return new Object[][] {
 				{ select(colTotoA, colTotoB).from(tableToto),
 					"select Toto.a, Toto.b from Toto" },
+				{ select(colTotoA).select(colTotoB, "b").from(tableToto),
+						"select Toto.a, Toto.b as b from Toto" },
+				{ select(colTotoA).select(colTotoB).as("b").from(tableToto),
+						"select Toto.a, Toto.b as b from Toto" },
+				{ select(colTotoA).add(colTotoB, "b").from(tableToto),
+						"select Toto.a, Toto.b as b from Toto" },
+				{ select(colTotoA).add(colTotoB).as("b").from(tableToto),
+						"select Toto.a, Toto.b as b from Toto" },
+				{ select(colTotoA, "a").select(colTotoB, "b").from(tableToto),
+					"select Toto.a as a, Toto.b as b from Toto" },
+				{ select(colTotoA, "a").select(colTotoB).as("b").from(tableToto),
+					"select Toto.a as a, Toto.b as b from Toto" },
+				{ select(colTotoA, "a").add(colTotoB, "b").from(tableToto),
+					"select Toto.a as a, Toto.b as b from Toto" },
+				{ select(colTotoA, "a")
+						.add(colTotoB).as("b")
+						.add(colTataC).as("c")
+						.from(tableToto),
+					"select Toto.a as a, Toto.b as b, Toto.c as c from Toto" },
+				{ select(colTotoA, "a")
+						.add("my_column_b", String.class).as("b")
+						.add("my_column_c", String.class).as("c")
+						.from(tableToto),
+					"select Toto.a as a, my_column_b as b, my_column_c as c from Toto" },
 				{ select(colTotoA, colTotoB).distinct().from(tableToto),
 					"select distinct Toto.a, Toto.b from Toto" },
 				{ select(colTotoA, colTotoB).from(tableToto, "t"),
@@ -150,7 +175,12 @@ class QuerySQLBuilderTest {
 						.from(tableToto, "T")
 						.rightOuterJoin(select(tableTata.getColumns())
 									.from(tableTata, "TATA"), "subTATA", "Toto.a = subTATA.a"),
-						"select T.a, T.b from Toto as T right outer join (select TATA.a, TATA.b from Tata as TATA) as subTATA on Toto.a = subTATA.a" }
+						"select T.a, T.b from Toto as T right outer join (select TATA.a, TATA.b from Tata as TATA) as subTATA on Toto.a = subTATA.a" },
+				{ select(colTotoA, colTotoB)
+						.from(select(tableTata.getColumns())
+							.from(tableTata, "TATA"), "subTATA")
+						.innerJoin(tableToto, "T", "T.a = subTATA.a"),
+						"select T.a, T.b from (select TATA.a, TATA.b from Tata as TATA) as subTATA inner join Toto as T on T.a = subTATA.a" },
 		};
 	}
 	

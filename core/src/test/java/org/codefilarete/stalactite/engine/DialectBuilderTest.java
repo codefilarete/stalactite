@@ -187,11 +187,12 @@ class DialectBuilderTest {
 			assertThat(select.getSQL()).isEqualTo("select `id` from `Toto` where `id` = ?");
 			
 			
-			Query query = new Query(totoTable);
-			query.select(idColumn);
-			query.where(idColumn, Operators.eq(idColumn));
-			query.groupBy(idColumn);
-			query.having(idColumn, Operators.eq(idColumn));
+			Query query = FluentQueries.from(totoTable)
+					.select(idColumn)
+					.where(idColumn, Operators.eq(idColumn))
+					.groupBy(idColumn)
+					.having(idColumn, Operators.eq(idColumn))
+					.getQuery();
 			assertThat(dialect.getQuerySQLBuilderFactory().queryBuilder(query).toSQL())
 					.isEqualTo("select `Toto`.`id` from `Toto` where `Toto`.`id` = `Toto`.`id` group by `Toto`.`id` having `Toto`.`id`= `Toto`.`id`");
 		}

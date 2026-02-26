@@ -6,7 +6,7 @@ import org.codefilarete.tool.collection.Iterables;
 /**
  * @author Guillaume Mary
  */
-public class Where<SELF extends Where<SELF>> extends Criteria<SELF> {
+public class Where extends Criteria<Where> {
 
 	public Where() {
 	}

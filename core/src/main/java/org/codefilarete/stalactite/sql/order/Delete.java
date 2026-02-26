@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.sql.order;
 
 import java.util.Set;
 
+import org.codefilarete.stalactite.query.api.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -22,13 +23,13 @@ public class Delete<T extends Table<T>> {
 	
 	private final Set<PlaceholderVariable<?, T>> row = new KeepOrderSet<>();
 	
-	private final Where<?> criteria;
+	private final CriteriaChain<?> criteria;
 	
 	public Delete(T targetTable) {
-		this(targetTable, new Where<>());
+		this(targetTable, new Where());
 	}
 	
-	public Delete(T targetTable, Where<?> where) {
+	public Delete(T targetTable, CriteriaChain<?> where) {
 		this.targetTable = targetTable;
 		this.criteria = where;
 	}
@@ -41,7 +42,7 @@ public class Delete<T extends Table<T>> {
 		return row;
 	}
 	
-	public Where<?> getCriteria() {
+	public CriteriaChain<?> getCriteria() {
 		return criteria;
 	}
 	

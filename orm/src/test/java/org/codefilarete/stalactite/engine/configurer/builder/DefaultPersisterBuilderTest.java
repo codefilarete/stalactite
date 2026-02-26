@@ -1,11 +1,11 @@
 package org.codefilarete.stalactite.engine.configurer.builder;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collections;
+import javax.sql.DataSource;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;

@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.engine;
 
-import javax.sql.DataSource;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.sql.Connection;
@@ -12,6 +11,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import javax.sql.DataSource;
 
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
@@ -30,14 +30,13 @@ import org.codefilarete.stalactite.engine.crud.ExecutableDelete;
 import org.codefilarete.stalactite.engine.crud.ExecutableInsert;
 import org.codefilarete.stalactite.engine.crud.ExecutableUpdate;
 import org.codefilarete.stalactite.engine.runtime.BeanPersister;
-import org.codefilarete.stalactite.query.builder.SQLBuilder;
-import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.api.CriteriaChain;
-import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.FluentQueries;
 import org.codefilarete.stalactite.query.api.QueryProvider;
 import org.codefilarete.stalactite.query.api.Selectable;
-import org.codefilarete.stalactite.query.model.Where;
+import org.codefilarete.stalactite.query.builder.SQLBuilder;
+import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.query.model.FluentQueries;
+import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
@@ -367,7 +366,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 			throw new IllegalArgumentException("Table is not defined, please add some columns to query so it can be deduced from them");
 		}
 		Query query = FluentQueries.select(selectableKeys).from(table).getQuery();
-		where.accept(query.getWhere());
+		where.accept(query.getWhereDelegate());
 		QueryMapper<C> queryMapper = newTransformableQuery(dialect.getQuerySQLBuilderFactory().queryBuilder(query), beanType);
 		keyMapper.accept(queryMapper);
 		selectMappingSupport.appendTo(query, queryMapper);
@@ -392,22 +391,22 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		return new DefaultBatchInsert<>(table, dialect, getConnectionProvider());
 	}
 	
-	public <T extends Table<T>> ExecutableUpdate<T> update(T table, Where<?> where) {
+	public <T extends Table<T>> ExecutableUpdate<T> update(T table, CriteriaChain<?> where) {
 		return new DefaultExecutableUpdate<>(table, where, dialect, getConnectionProvider());
 	}
 	
 	@Override
-	public <T extends Table<T>> BatchUpdate<T> batchUpdate(T table, Set<? extends Column<T, ?>> columns, Where<?> where) {
+	public <T extends Table<T>> BatchUpdate<T> batchUpdate(T table, Set<? extends Column<T, ?>> columns, CriteriaChain<?> where) {
 		return new DefaultBatchUpdate<>(new Update<>(table, columns, where), dialect, getConnectionProvider());
 	}
 	
 	@Override
-	public <T extends Table<T>> ExecutableDelete<T> delete(T table, Where<?> where) {
+	public <T extends Table<T>> ExecutableDelete<T> delete(T table, CriteriaChain<?> where) {
 		return new DefaultExecutableDelete<>(table, where, dialect, getConnectionProvider());
 	}
 	
 	@Override
-	public <T extends Table<T>> BatchDelete<T> batchDelete(T table, Where<?> where) {
+	public <T extends Table<T>> BatchDelete<T> batchDelete(T table, CriteriaChain<?> where) {
 		return new DefaultBatchDelete<>(new Delete<>(table, where), dialect, getConnectionProvider());
 	}
 	
