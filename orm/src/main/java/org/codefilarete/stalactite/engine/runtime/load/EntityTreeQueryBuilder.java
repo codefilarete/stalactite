@@ -61,7 +61,7 @@ public class EntityTreeQueryBuilder<C> {
 		
 		// initialization of the From clause with the very first table
 		JoinRoot<C, Object, ?> joinRoot = this.tree.getRoot();
-		query.getFromDelegate().setRoot(joinRoot.getTable());
+		query.getFrom().setRoot(joinRoot.getTable());
 		resultHelper.addColumnsToSelectClause(joinRoot, aliasBuilder.buildTableAlias(joinRoot));
 		
 		// completing from clause
@@ -114,7 +114,7 @@ public class EntityTreeQueryBuilder<C> {
 		 * @param <JOINTYPE> internal type of join to avoid weird cast or type loss
 		 */
 		private <JOINTYPE> void applyJoinTree(EntityJoinTree<?, ?> tree) {
-			From targetFrom = query.getFromDelegate();
+			From targetFrom = query.getFrom();
 			tree.foreachJoin(join -> {
 				String tableAlias = aliasBuilder.buildTableAlias(join);
 				addColumnsToSelectClause(join, tableAlias);

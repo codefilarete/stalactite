@@ -134,8 +134,8 @@ class EntityCriteriaSupportTest {
 		EntityTreeQuery<Country> entityTreeQuery = new EntityTreeQueryBuilder<>(persister.getEntityJoinTree(), dialect.getColumnBinderRegistry()).buildSelectQuery();
 		
 		Query queryClone = new Query(
-				entityTreeQuery.getQuery().getSelectDelegate(),
-				entityTreeQuery.getQuery().getFromDelegate(),
+				entityTreeQuery.getQuery().getSelect(),
+				entityTreeQuery.getQuery().getFrom(),
 				new Where(testInstance.getCriteria()),
 				new GroupBy(),
 				new Having(),

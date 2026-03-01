@@ -31,13 +31,13 @@ import org.codefilarete.tool.collection.KeepOrderSet;
  */
 public class Query implements QueryStatement {
 	
-	private final Select selectDelegate;
-	private final From fromDelegate;
-	private final Where whereDelegate;
-	private final GroupBy groupByDelegate;
-	private final Having havingDelegate;
-	private final OrderBy orderByDelegate;
-	private final Limit limitDelegate;
+	private final Select select;
+	private final From from;
+	private final Where where;
+	private final GroupBy groupBy;
+	private final Having having;
+	private final OrderBy orderBy;
+	private final Limit limit;
 	
 	public Query() {
 		this(null);
@@ -47,93 +47,93 @@ public class Query implements QueryStatement {
 		this(new Select(), new From(rootTable), new Where(), new GroupBy(), new Having(), new OrderBy(), new Limit()); 
 	}
 	
-	public Query(Select selectDelegate,
-				 From fromDelegate,
-				 Where whereDelegate,
-				 GroupBy groupByDelegate,
-				 Having havingDelegate,
-				 OrderBy orderByDelegate,
-				 Limit limitDelegate) {
-		this.selectDelegate = selectDelegate;
-		this.fromDelegate = fromDelegate;
-		this.whereDelegate = whereDelegate;
-		this.groupByDelegate = groupByDelegate;
-		this.havingDelegate = havingDelegate;
-		this.orderByDelegate = orderByDelegate;
-		this.limitDelegate = limitDelegate;
+	public Query(Select select,
+				 From from,
+				 Where where,
+				 GroupBy groupBy,
+				 Having having,
+				 OrderBy orderBy,
+				 Limit limit) {
+		this.select = select;
+		this.from = from;
+		this.where = where;
+		this.groupBy = groupBy;
+		this.having = having;
+		this.orderBy = orderBy;
+		this.limit = limit;
 	}
 	
 	/**
 	 * @return a concrete implementation of a select
 	 */
-	public Select getSelectDelegate() {
-		return selectDelegate;
+	public Select getSelect() {
+		return select;
 	}
 	
-	public From getFromDelegate() {
-		return fromDelegate;
+	public From getFrom() {
+		return from;
 	}
 	
-	public Where getWhereDelegate() {
-		return whereDelegate;
+	public Where getWhere() {
+		return where;
 	}
 	
-	public GroupBy getGroupByDelegate() {
-		return groupByDelegate;
+	public GroupBy getGroupBy() {
+		return groupBy;
 	}
 	
-	public Having getHavingDelegate() {
-		return havingDelegate;
+	public Having getHaving() {
+		return having;
 	}
 	
-	public OrderBy getOrderByDelegate() {
-		return orderByDelegate;
+	public OrderBy getOrderBy() {
+		return orderBy;
 	}
 	
-	public Limit getLimitDelegate() {
-		return limitDelegate;
+	public Limit getLimit() {
+		return limit;
 	}
 	
 	@Override
 	public KeepOrderSet<Selectable<?>> getColumns() {
-		return this.selectDelegate.getColumns();
+		return this.select.getColumns();
 	}
 	
 	@Override
 	public Map<Selectable<?>, String> getAliases() {
-		return this.selectDelegate.getAliases();
+		return this.select.getAliases();
 	}
 	
 	public void select(Iterable<? extends Selectable<?>> selectables) {
-		selectables.forEach(this.selectDelegate::add);
+		selectables.forEach(this.select::add);
 	}
 	
 	public void select(Selectable<?> expression, Selectable<?>... expressions) {
-		this.selectDelegate.add(expression, expressions);
+		this.select.add(expression, expressions);
 	}
 	
 	public void select(String expression, Class<?> javaType) {
-		this.selectDelegate.add(expression, javaType);
+		this.select.add(expression, javaType);
 	}
 	
 	public void select(String expression, Class<?> javaType, String alias) {
-		this.selectDelegate.add(expression, javaType, alias);
+		this.select.add(expression, javaType, alias);
 	}
 	
 	public void select(Selectable<?> column, String alias) {
-		this.selectDelegate.add(column, alias);
+		this.select.add(column, alias);
 	}
 	
 	public void select(Selectable<?> col1, String alias1, Selectable<?> col2, String alias2) {
-		this.selectDelegate.add(col1, alias1, col2, alias2);
+		this.select.add(col1, alias1, col2, alias2);
 	}
 	
 	public void select(Selectable<?> col1, String alias1, Selectable<?> col2, String alias2, Selectable<?> col3, String alias3) {
-		this.selectDelegate.add(col1, alias1, col2, alias2, col3, alias3);
+		this.select.add(col1, alias1, col2, alias2, col3, alias3);
 	}
 	
 	public void select(Map<? extends Selectable<?>, String> aliasedColumns) {
-		this.selectDelegate.add(aliasedColumns);
+		this.select.add(aliasedColumns);
 	}
 	
 	public interface FluentFromClause extends JoinChain<FluentFromClause>, WhereAware, GroupByAware, OrderByAware, LimitAware<FluentLimitClause>, QueryProvider<Query> {

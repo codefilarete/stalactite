@@ -186,7 +186,7 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 		if (where.hasCollectionCriteria()) {
 			Query queryClone = new Query(
 					new Select(),
-					entityTreeQuery.getQuery().getFromDelegate(),
+					entityTreeQuery.getQuery().getFrom(),
 					new Where(where.getCriteria()),
 					new GroupBy(),
 					new Having(),
@@ -215,8 +215,8 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 			// We clone the query to avoid polluting the instance one, else, from select(..) to select(..), we append the criteria at the end of it,
 			// which makes the query usually returning no data (because of the condition mix)
 			Query queryClone = new Query(
-					new Select(entityTreeQuery.getQuery().getSelectDelegate()),
-					entityTreeQuery.getQuery().getFromDelegate(),
+					new Select(entityTreeQuery.getQuery().getSelect()),
+					entityTreeQuery.getQuery().getFrom(),
 					new Where(where.getCriteria()),
 					new GroupBy(),
 					new Having(),
@@ -247,12 +247,12 @@ public class RelationalEntityFinder<C, I, T extends Table<T>> implements EntityF
 									 boolean distinct,
 									 OrderBy orderBy,
 									 Limit limit) {
-		Query queryClone = new Query(new Select(), query.getFromDelegate(), new Where(where.getCriteria()), new GroupBy(), new Having(), orderBy, limit);
-		queryClone.getSelectDelegate().setDistinct(distinct);
+		Query queryClone = new Query(new Select(), query.getFrom(), new Where(where.getCriteria()), new GroupBy(), new Having(), orderBy, limit);
+		queryClone.getSelect().setDistinct(distinct);
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone);
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
-		selectAdapter.accept(queryClone.getSelectDelegate());
+		selectAdapter.accept(queryClone.getSelect());
 		Map<Selectable<?>, ResultSetReader<?>> columnReaders = Iterables.map(queryClone.getColumns(), Function.identity(), selectable -> dialect.getColumnBinderRegistry().getBinder(selectable.getJavaType()));
 		
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(values);

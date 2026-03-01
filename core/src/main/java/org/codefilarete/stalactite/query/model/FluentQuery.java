@@ -72,7 +72,7 @@ public class FluentQuery implements
 	}
 	
 	private FluentSelectClause wrapAsSelectClause() {
-		Select delegate = this.query.getSelectDelegate();
+		Select delegate = this.query.getSelect();
 		return new MethodReferenceDispatcher()
 				.redirect(SelectChain.class, delegate, true)
 				.redirect(SelectAware.class, this)
@@ -115,7 +115,7 @@ public class FluentQuery implements
 	
 	private FluentFromClause wrapAsFromCause() {
 		return new MethodDispatcher()
-				.redirect(JoinChain.class, this.query.getFromDelegate(), true)
+				.redirect(JoinChain.class, this.query.getFrom(), true)
 				.redirect(WhereAware.class, this)
 				.redirect(GroupByAware.class, this)
 				.redirect(OrderByAware.class, this)
@@ -125,7 +125,7 @@ public class FluentQuery implements
 	}
 	
 	private FluentWhereClause wrapAsWhereClause() {
-		Where delegate = this.query.getWhereDelegate();
+		Where delegate = this.query.getWhere();
 		return new MethodDispatcher()
 				.redirect(CriteriaChain.class, delegate, true)
 				.redirect(Iterable.class, delegate)
@@ -139,7 +139,7 @@ public class FluentQuery implements
 	
 	private FluentGroupByClause wrapAsGroupByClause() {
 		return new MethodDispatcher()
-				.redirect(GroupByChain.class, this.query.getGroupByDelegate(), true)
+				.redirect(GroupByChain.class, this.query.getGroupBy(), true)
 				.redirect(HavingAware.class, this)
 				.redirect(OrderByAware.class, this)
 				.redirect(LimitAware.class, this)
@@ -150,7 +150,7 @@ public class FluentQuery implements
 	
 	private FluentHavingClause wrapAsHavingClause() {
 		return new MethodDispatcher()
-				.redirect(CriteriaChain.class, this.query.getHavingDelegate(), true)
+				.redirect(CriteriaChain.class, this.query.getHaving(), true)
 				.redirect(OrderByAware.class, this)
 				.redirect(LimitAware.class, this)
 				.redirect(QueryProvider.class, this)
@@ -160,7 +160,7 @@ public class FluentQuery implements
 	
 	private FluentOrderByClause wrapAsOrderByClause() {
 		return new MethodDispatcher()
-				.redirect(OrderByChain.class, this.query.getOrderByDelegate(), true)
+				.redirect(OrderByChain.class, this.query.getOrderBy(), true)
 				.redirect(LimitAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.redirect(UnionAware.class, this)
@@ -169,7 +169,7 @@ public class FluentQuery implements
 	
 	private FluentLimitClause wrapAsLimitClause() {
 		return new MethodDispatcher()
-				.redirect(LimitChain.class, this.query.getLimitDelegate(), true)
+				.redirect(LimitChain.class, this.query.getLimit(), true)
 				.redirect(QueryProvider.class, this)
 				.redirect(UnionAware.class, this)
 				.build(Query.FluentLimitClause.class);
@@ -203,7 +203,7 @@ public class FluentQuery implements
 	
 	@Override
 	public SelectAwareAliasExpression select(String expression, Class<?> javaType) {
-		Select select = this.query.getSelectDelegate().add(expression, javaType);
+		Select select = this.query.getSelect().add(expression, javaType);
 		return new MethodDispatcher()
 				.redirect(SelectChain.Aliasable.class, alias -> {
 					Selectable<?> column = select.findColumn(expression);
@@ -241,19 +241,19 @@ public class FluentQuery implements
 	
 	@Override
 	public FluentFromClause from(Fromable leftTable) {
-		this.query.getFromDelegate().setRoot(leftTable);
+		this.query.getFrom().setRoot(leftTable);
 		return wrapAsFromCause();
 	}
 	
 	@Override
 	public FluentFromClause from(QueryProvider<?> query, String alias) {
-		this.query.getFromDelegate().setRoot(query.getQuery().asPseudoTable(), alias);
+		this.query.getFrom().setRoot(query.getQuery().asPseudoTable(), alias);
 		return wrapAsFromCause();
 	}
 	
 	@Override
 	public FluentFromClause from(Fromable leftTable, String tableAlias) {
-		this.query.getFromDelegate().setRoot(leftTable, tableAlias);
+		this.query.getFrom().setRoot(leftTable, tableAlias);
 		return wrapAsFromCause();
 	}
 	

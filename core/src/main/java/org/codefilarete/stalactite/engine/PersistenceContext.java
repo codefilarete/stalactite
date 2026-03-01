@@ -366,7 +366,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 			throw new IllegalArgumentException("Table is not defined, please add some columns to query so it can be deduced from them");
 		}
 		Query query = FluentQueries.select(selectableKeys).from(table).getQuery();
-		where.accept(query.getWhereDelegate());
+		where.accept(query.getWhere());
 		QueryMapper<C> queryMapper = newTransformableQuery(dialect.getQuerySQLBuilderFactory().queryBuilder(query), beanType);
 		keyMapper.accept(queryMapper);
 		selectMappingSupport.appendTo(query, queryMapper);
