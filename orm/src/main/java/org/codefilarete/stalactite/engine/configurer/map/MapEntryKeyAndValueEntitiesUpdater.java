@@ -3,9 +3,9 @@ package org.codefilarete.stalactite.engine.configurer.map;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
@@ -36,9 +36,9 @@ class MapEntryKeyAndValueEntitiesUpdater<SRC, SRCID, K, V, KK, VV> extends Colle
 	private final RelationMode valueEntityMaintenanceMode;
 	private final boolean associationRecordWritable;
 	
-	public MapEntryKeyAndValueEntitiesUpdater(Function<SRC, Set<KeyValueRecord<K, V, SRCID>>> targetEntityGetter,
-											  Function<K, KK> keyMapper,
-											  Function<V, VV> valueMapper,
+	public MapEntryKeyAndValueEntitiesUpdater(Accessor<SRC, Set<KeyValueRecord<K, V, SRCID>>> targetEntityGetter,
+											  Accessor<K, KK> keyMapper,
+											  Accessor<V, VV> valueMapper,
 											  ConfiguredRelationalPersister<K, ?> keyEntityPersister,
 											  ConfiguredRelationalPersister<V, ?> valueEntityPersister,
 											  EntityPersister<KeyValueRecord<KK, VV, SRCID>, RecordId<KK, SRCID>> keyValueRecordPersister,
@@ -141,12 +141,12 @@ class MapEntryKeyAndValueEntitiesUpdater<SRC, SRCID, K, V, KK, VV> extends Colle
 	private static class RelationalPersisterAsEntityWriter<K, V, KK, VV, SRCID> implements EntityWriter<KeyValueRecord<K, V, SRCID>> {
 		
 		private final EntityPersister<KeyValueRecord<KK, VV, SRCID>, RecordId<KK, SRCID>> relationEntityPersister;
-		private final Function<K, KK> keyMapper;
-		private final Function<V, VV> valueMapper;
+		private final Accessor<K, KK> keyMapper;
+		private final Accessor<V, VV> valueMapper;
 		
 		public RelationalPersisterAsEntityWriter(EntityPersister<KeyValueRecord<KK, VV, SRCID>, RecordId<KK, SRCID>> relationEntityPersister,
-												 Function<K, KK> keyMapper,
-												 Function<V, VV> valueMapper) {
+												 Accessor<K, KK> keyMapper,
+												 Accessor<V, VV> valueMapper) {
 			this.relationEntityPersister = relationEntityPersister;
 			this.keyMapper = keyMapper;
 			this.valueMapper = valueMapper;
@@ -160,9 +160,9 @@ class MapEntryKeyAndValueEntitiesUpdater<SRC, SRCID, K, V, KK, VV> extends Colle
 						KeyValueRecord<K, V, SRCID> right = keyValueRecordKeyValueRecordDuo.getRight();
 						return new Duo<>(
 								new KeyValueRecord<>(left.getId().getId(),
-										keyMapper.apply(left.getKey()), valueMapper.apply(left.getValue())),
+										keyMapper.get(left.getKey()), valueMapper.get(left.getValue())),
 								new KeyValueRecord<>(right.getId().getId(),
-										keyMapper.apply(right.getKey()), valueMapper.apply(right.getValue())));
+										keyMapper.get(right.getKey()), valueMapper.get(right.getValue())));
 					})
 					.collect(Collectors.toSet()), allColumnsStatement);
 		}
@@ -171,7 +171,7 @@ class MapEntryKeyAndValueEntitiesUpdater<SRC, SRCID, K, V, KK, VV> extends Colle
 		public void delete(Iterable<? extends KeyValueRecord<K, V, SRCID>> entities) {
 			relationEntityPersister.delete(Iterables.stream(entities)
 					.map(entity -> new KeyValueRecord<>(entity.getId().getId(),
-							keyMapper.apply(entity.getKey()), valueMapper.apply(entity.getValue())))
+							keyMapper.get(entity.getKey()), valueMapper.get(entity.getValue())))
 					.collect(Collectors.toSet()));
 		}
 		
@@ -179,7 +179,7 @@ class MapEntryKeyAndValueEntitiesUpdater<SRC, SRCID, K, V, KK, VV> extends Colle
 		public void insert(Iterable<? extends KeyValueRecord<K, V, SRCID>> entities) {
 			relationEntityPersister.insert(Iterables.stream(entities)
 					.map(entity -> new KeyValueRecord<>(entity.getId().getId(),
-							keyMapper.apply(entity.getKey()), valueMapper.apply(entity.getValue())))
+							keyMapper.get(entity.getKey()), valueMapper.get(entity.getValue())))
 					.collect(Collectors.toSet()));
 		}
 		
@@ -187,7 +187,7 @@ class MapEntryKeyAndValueEntitiesUpdater<SRC, SRCID, K, V, KK, VV> extends Colle
 		public void persist(Iterable<? extends KeyValueRecord<K, V, SRCID>> entities) {
 			relationEntityPersister.persist(Iterables.stream(entities)
 					.map(entity -> new KeyValueRecord<>(entity.getId().getId(),
-							keyMapper.apply(entity.getKey()), valueMapper.apply(entity.getValue())))
+							keyMapper.get(entity.getKey()), valueMapper.get(entity.getValue())))
 					.collect(Collectors.toSet()));
 		}
 		
@@ -195,7 +195,7 @@ class MapEntryKeyAndValueEntitiesUpdater<SRC, SRCID, K, V, KK, VV> extends Colle
 		public void updateById(Iterable<? extends KeyValueRecord<K, V, SRCID>> entities) {
 			relationEntityPersister.updateById(Iterables.stream(entities)
 					.map(entity -> new KeyValueRecord<>(entity.getId().getId(),
-							keyMapper.apply(entity.getKey()), valueMapper.apply(entity.getValue())))
+							keyMapper.get(entity.getKey()), valueMapper.get(entity.getValue())))
 					.collect(Collectors.toSet()));
 		}
 		

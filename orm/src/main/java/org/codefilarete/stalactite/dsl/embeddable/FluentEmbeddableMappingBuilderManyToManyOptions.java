@@ -3,9 +3,9 @@ package org.codefilarete.stalactite.dsl.embeddable;
 import java.util.Collection;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.relation.ManyToManyOptions;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * Mashup of {@link ManyToManyOptions} and {@link FluentEmbeddableMappingBuilder} to make the many-to-many options available in a fluent way while
@@ -36,7 +36,7 @@ public interface FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1 extend
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
+	FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2> reverselySetBy(SerializableMutator<O, C> reverseLink);
 	
 	/**
 	 * {@inheritDoc}
@@ -45,7 +45,7 @@ public interface FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1 extend
 	 * @param collectionAccessor opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2> reverseCollection(SerializableFunction<O, S2> collectionAccessor);
+	FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2> reverseCollection(SerializableAccessor<O, S2> collectionAccessor);
 	
 	/**
 	 * {@inheritDoc}
@@ -54,7 +54,7 @@ public interface FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1 extend
 	 * @param collectionMutator opposite setter of the relation
 	 * @return the global mapping configurer
 	 */
-	FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2> reverseCollection(SerializableBiConsumer<O, S2> collectionMutator);
+	FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2> reverseCollection(SerializableMutator<O, S2> collectionMutator);
 	
 	/**
 	 * {@inheritDoc}

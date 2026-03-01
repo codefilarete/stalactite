@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
@@ -264,7 +265,7 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 			});
 		}
 		if (this.associationRecordWritable) {
-			Function<SRC, Collection<KeyValueRecord<KID, VID, SRCID>>> mapProviderForInsert = toRecordCollectionProvider(sourcePersister.getMapping(), false);
+			Accessor<SRC, Collection<KeyValueRecord<KID, VID, SRCID>>> mapProviderForInsert = toRecordCollectionProvider(sourcePersister.getMapping(), false);
 			sourcePersister.addInsertListener(new TargetInstancesInsertCascader<>(relationRecordPersister, mapProviderForInsert));
 		}
 	}
@@ -273,13 +274,13 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 	protected void addUpdateCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 									EntityPersister<KeyValueRecord<KID, VID, SRCID>, RecordId<KID, SRCID>> relationRecordPersister) {
 		// No direct cascade handling here because it will be done by MapUpdater
-		Function<SRC, Set<KeyValueRecord<K, V, SRCID>>> targetEntitiesGetter = src -> {
+		Accessor<SRC, Set<KeyValueRecord<K, V, SRCID>>> targetEntitiesGetter = src -> {
 			SRCID srcId = sourcePersister.getId(src);
 			M map = mapGetter.apply(src);
 			return map == null ? Collections.emptySet() : map.entrySet().stream().map(entry -> new KeyValueRecord<>(srcId, entry.getKey(), entry.getValue()))
 					.collect(Collectors.toSet());
 		};
-		BiConsumer<Duo<SRC, SRC>, Boolean> mapUpdater = new MapEntryKeyAndValueEntitiesUpdater<>(targetEntitiesGetter,
+		Mutator<Duo<SRC, SRC>, Boolean> mapUpdater = new MapEntryKeyAndValueEntitiesUpdater<>(targetEntitiesGetter,
 				keyEntityPersister::getId, valueEntityPersister::getId,
 				keyEntityPersister, valueEntityPersister,
 				relationRecordPersister, keyEntityMaintenanceMode, valueEntityMaintenanceMode

@@ -21,6 +21,7 @@ import javax.sql.DataSource;
 
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.SerializableAccessor;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.engine.EntityCriteria.CriteriaPath;
 import org.codefilarete.stalactite.engine.EntityPersister;
@@ -48,18 +49,18 @@ import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
-import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.Operators;
 import org.codefilarete.stalactite.query.api.Selectable.SimpleSelectable;
+import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.query.model.operator.Equals;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
-import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
@@ -76,7 +77,6 @@ import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.function.Sequence;
 import org.codefilarete.tool.trace.MutableInt;
 import org.codefilarete.tool.trace.MutableLong;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.hsqldb.jdbc.JDBCArrayBasic;
 import org.hsqldb.types.Type;
 import org.junit.jupiter.api.AfterEach;
@@ -664,8 +664,8 @@ class SimpleRelationalEntityPersisterTest {
 					.mapOneToOne(Toto::getTata, mappingConfiguration)
 					.build(persistenceContext);
 			
-			SerializableFunction<Toto, Tata> getTata = Toto::getTata;
-			SerializableFunction<Tata, String> getProp1 = Tata::getProp1;
+			SerializableAccessor<Toto, Tata> getTata = Toto::getTata;
+			SerializableAccessor<Tata, String> getProp1 = Tata::getProp1;
 			Equals<String> dummy = Operators.eq("dummy");
 			EntityPersister.ExecutableEntityQuery<Toto, ?> totoRelationalExecutableEntityQuery = totoPersister
 					.selectWhere(Toto::getA, Operators.eq(42))

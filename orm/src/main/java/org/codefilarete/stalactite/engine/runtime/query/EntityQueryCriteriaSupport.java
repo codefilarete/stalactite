@@ -20,24 +20,26 @@ import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.ReversibleMutator;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.EntityCriteria;
-import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
 import org.codefilarete.stalactite.engine.EntityCriteria.LimitAware;
 import org.codefilarete.stalactite.engine.EntityCriteria.OrderByChain;
 import org.codefilarete.stalactite.engine.EntityCriteria.OrderByChain.Order;
+import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.ExecutableEntityQueryCriteria;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport.EntityQueryPageSupport.OrderByItem;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.EntityFinder;
+import org.codefilarete.stalactite.query.Operators;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.api.CriteriaChain;
-import org.codefilarete.stalactite.query.model.Limit;
-import org.codefilarete.stalactite.query.Operators;
-import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.query.api.Selectable;
+import org.codefilarete.stalactite.query.model.Limit;
+import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.VisibleForTesting;
@@ -45,9 +47,7 @@ import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.SerializableTriFunction;
 import org.codefilarete.tool.function.ThrowingExecutable;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,8 +125,8 @@ public class EntityQueryCriteriaSupport<C, I> {
 				.redirect(LimitAware.class, queryPageSupport, true)
 				.redirect(RelationalEntityCriteria.class, entityCriteriaSupport, true)
 				// making an exception for 2 of the methods that can't return the proxy
-				.redirect((SerializableFunction<ConfiguredEntityCriteria, CriteriaChain>) ConfiguredEntityCriteria::getCriteria, entityCriteriaSupport::getCriteria)
-				.redirect((SerializableFunction<ConfiguredEntityCriteria, Boolean>) ConfiguredEntityCriteria::hasCollectionCriteria, entityCriteriaSupport::hasCollectionCriteria)
+				.redirect((SerializableAccessor<ConfiguredEntityCriteria, CriteriaChain>) ConfiguredEntityCriteria::getCriteria, entityCriteriaSupport::getCriteria)
+				.redirect((SerializableAccessor<ConfiguredEntityCriteria, Boolean>) ConfiguredEntityCriteria::hasCollectionCriteria, entityCriteriaSupport::hasCollectionCriteria)
 				.build((Class<ConfiguredExecutableEntityQueryCriteria<C>>) (Class) ConfiguredExecutableEntityQueryCriteria.class);
 	}
 	
@@ -265,7 +265,7 @@ public class EntityQueryCriteriaSupport<C, I> {
 		}
 		
 		@Override
-		public EntityQueryPageSupport<C> orderBy(SerializableFunction<C, ?> getter, Order order) {
+		public EntityQueryPageSupport<C> orderBy(SerializableAccessor<C, ?> getter, Order order) {
 			AccessorByMethodReference<C, ?> methodReference = new AccessorByMethodReference<>(getter);
 			orderBy.add(new OrderByItem(Arrays.asList(methodReference), order, false));
 			assertAccessorIsNotIterable(methodReference, methodReference.getPropertyType());
@@ -273,7 +273,7 @@ public class EntityQueryCriteriaSupport<C, I> {
 		}
 		
 		@Override
-		public EntityQueryPageSupport<C> orderBy(SerializableBiConsumer<C, ?> setter, Order order) {
+		public EntityQueryPageSupport<C> orderBy(SerializableMutator<C, ?> setter, Order order) {
 			MutatorByMethodReference<C, ?> methodReference = new MutatorByMethodReference<>(setter);
 			orderBy.add(new OrderByItem(Arrays.asList(methodReference), order, false));
 			assertAccessorIsNotIterable(methodReference, methodReference.getPropertyType());

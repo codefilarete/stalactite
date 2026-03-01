@@ -8,13 +8,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.sql.DataSource;
 
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
+import org.codefilarete.reflection.Mutator;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.engine.PersisterRegistry.DefaultPersisterRegistry;
 import org.codefilarete.stalactite.engine.crud.BatchDelete;
 import org.codefilarete.stalactite.engine.crud.BatchInsert;
@@ -34,7 +35,6 @@ import org.codefilarete.stalactite.query.api.CriteriaChain;
 import org.codefilarete.stalactite.query.api.QueryProvider;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
-import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.FluentQueries;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
@@ -60,7 +60,6 @@ import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.SerializableTriFunction;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
@@ -418,7 +417,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	 */
 	public static class SelectMapping<C, T extends Table> {
 		
-		private final Map<Column<Table, ?>, SerializableBiConsumer<C, ?>> mapping = new HashMap<>();
+		private final Map<Column<Table, ?>, SerializableMutator<C, ?>> mapping = new HashMap<>();
 		
 		/**
 		 * Will add given {@link Column} to select clause and gives its data as input of given setter.
@@ -429,7 +428,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		 * @param <O>
 		 * @return
 		 */
-		public <O> SelectMapping<C, T> add(Column<T, O> column, SerializableBiConsumer<C, O> setter) {
+		public <O> SelectMapping<C, T> add(Column<T, O> column, SerializableMutator<C, O> setter) {
 			mapping.put((Column) column, setter);
 			return this;
 		}
@@ -529,22 +528,22 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	public interface ExecutableBeanPropertyQueryMapper<C> extends ExecutableQuery<C>, BeanPropertyQueryMapper<C> {
 		
 		@Override
-		<I> ExecutableBeanPropertyQueryMapper<C> map(String columnName, BiConsumer<C, I> setter, Class<I> columnType);
+		<I> ExecutableBeanPropertyQueryMapper<C> map(String columnName, Mutator<C, I> setter, Class<I> columnType);
 		
 		@Override
-		<I, J> ExecutableBeanPropertyQueryMapper<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, Converter<I, J> converter);
+		<I, J> ExecutableBeanPropertyQueryMapper<C> map(String columnName, SerializableMutator<C, J> setter, Class<I> columnType, Converter<I, J> converter);
 		
 		@Override
-		<I> ExecutableBeanPropertyQueryMapper<C> map(String columnName, SerializableBiConsumer<C, I> setter);
+		<I> ExecutableBeanPropertyQueryMapper<C> map(String columnName, SerializableMutator<C, I> setter);
 		
 		@Override
-		<I, J> ExecutableBeanPropertyQueryMapper<C> map(String columnName, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
+		<I, J> ExecutableBeanPropertyQueryMapper<C> map(String columnName, SerializableMutator<C, J> setter, Converter<I, J> converter);
 		
 		@Override
-		<I> ExecutableBeanPropertyQueryMapper<C> map(Selectable<I> column, BiConsumer<C, I> setter);
+		<I> ExecutableBeanPropertyQueryMapper<C> map(Selectable<I> column, Mutator<C, I> setter);
 		
 		@Override
-		<I, J> ExecutableBeanPropertyQueryMapper<C> map(Selectable<I> column, BiConsumer<C, J> setter, Converter<I, J> converter);
+		<I, J> ExecutableBeanPropertyQueryMapper<C> map(Selectable<I> column, Mutator<C, J> setter, Converter<I, J> converter);
 		
 		@Override
 		<K, V> ExecutableBeanPropertyQueryMapper<C> map(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<V, K> relatedBeanCreator);

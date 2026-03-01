@@ -5,14 +5,13 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
@@ -235,9 +234,9 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 			this.elementRecordMapping = elementRecordMapping;
 		}
 		
-		protected Function<SRC, Collection<ElementRecord<TRGT, I>>> collectionProvider(Accessor<SRC, C> collectionAccessor,
-																					 IdAccessor<SRC, I> idAccessor,
-																					 boolean markAsPersisted) {
+		protected Accessor<SRC, Collection<ElementRecord<TRGT, I>>> collectionProvider(Accessor<SRC, C> collectionAccessor,
+																					   IdAccessor<SRC, I> idAccessor,
+																					   boolean markAsPersisted) {
 			return src -> Iterables.collect(Nullable.nullable(collectionAccessor.get(src)).getOr(() -> (C) new ArrayList<>()),
 					trgt -> new ElementRecord<>(idAccessor.getId(src), trgt).setPersisted(markAsPersisted),
 					HashSet::new);
@@ -251,7 +250,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 		}
 		
 		@Override
-		protected Function<SRC, Collection<ElementRecord<TRGT, I>>> collectionProvider(Accessor<SRC, C> collectionAccessor,
+		protected Accessor<SRC, Collection<ElementRecord<TRGT, I>>> collectionProvider(Accessor<SRC, C> collectionAccessor,
 																					   IdAccessor<SRC, I> idAccessor,
 																					   boolean markAsPersisted) {
 			return src -> {
@@ -273,14 +272,14 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 	
 	private void addInsertCascade(ConfiguredRelationalPersister<SRC, I> sourcePersister,
 								  EntityPersister<ElementRecord<TRGT, I>, ElementRecord<TRGT, I>> wrapperPersister,
-								  Function<SRC, Collection<ElementRecord<TRGT, I>>> collectionProviderForInsert) {
+								  Accessor<SRC, Collection<ElementRecord<TRGT, I>>> collectionProviderForInsert) {
 		sourcePersister.addInsertListener(new TargetInstancesInsertCascader<>(wrapperPersister, collectionProviderForInsert));
 	}
 	
 	private void addUpdateCascade(ConfiguredRelationalPersister<SRC, I> sourcePersister,
 								  EntityPersister<ElementRecord<TRGT, I>, ElementRecord<TRGT, I>> elementRecordPersister,
-								  Function<SRC, Collection<ElementRecord<TRGT, I>>> collectionProviderAsPersistedInstances) {
-		BiConsumer<Duo<SRC, SRC>, Boolean> collectionUpdater = new CollectionUpdater<SRC, ElementRecord<TRGT, I>, Collection<ElementRecord<TRGT, I>>>(
+								  Accessor<SRC, Collection<ElementRecord<TRGT, I>>> collectionProviderAsPersistedInstances) {
+		Mutator<Duo<SRC, SRC>, Boolean> collectionUpdater = new CollectionUpdater<SRC, ElementRecord<TRGT, I>, Collection<ElementRecord<TRGT, I>>>(
 				collectionProviderAsPersistedInstances,
 				elementRecordPersister,
 				(o, i) -> { /* no reverse setter because we store only raw values */ },
@@ -306,7 +305,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 	
 	private void addDeleteCascade(ConfiguredRelationalPersister<SRC, I> sourcePersister,
 								  EntityPersister<ElementRecord<TRGT, I>, ElementRecord<TRGT, I>> wrapperPersister,
-								  Function<SRC, Collection<ElementRecord<TRGT, I>>> collectionProviderAsPersistedInstances) {
+								  Accessor<SRC, Collection<ElementRecord<TRGT, I>>> collectionProviderAsPersistedInstances) {
 		sourcePersister.addDeleteListener(new DeleteTargetEntitiesBeforeDeleteCascader<>(wrapperPersister, collectionProviderAsPersistedInstances));
 	}
 	
@@ -314,7 +313,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 									RelationalEntityPersister<ElementRecord<TRGT, I>, ElementRecord<TRGT, I>> elementRecordPersister,
 									PrimaryKey<?, I> sourcePK,
 									ForeignKey<?, ?, I> elementRecordToSourceForeignKey,
-									BiConsumer<SRC, C> collectionSetter,
+									Mutator<SRC, C> collectionSetter,
 									Accessor<SRC, C> collectionGetter,
 									Supplier<C> collectionFactory) {
 		// a particular collection fixer that gets raw values (elements) from ElementRecord
@@ -334,9 +333,9 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 	
 	private static class TargetInstancesInsertCascader<SRC, TRGT, ID> extends AfterInsertCollectionCascader<SRC, ElementRecord<TRGT, ID>> {
 		
-		private final Function<SRC, ? extends Collection<ElementRecord<TRGT, ID>>> collectionGetter;
+		private final Accessor<SRC, ? extends Collection<ElementRecord<TRGT, ID>>> collectionGetter;
 		
-		public TargetInstancesInsertCascader(EntityPersister<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>> targetPersister, Function<SRC, ? extends Collection<ElementRecord<TRGT, ID>>> collectionGetter) {
+		public TargetInstancesInsertCascader(EntityPersister<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>> targetPersister, Accessor<SRC, ? extends Collection<ElementRecord<TRGT, ID>>> collectionGetter) {
 			super(targetPersister);
 			this.collectionGetter = collectionGetter;
 		}
@@ -348,7 +347,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 		
 		@Override
 		protected Collection<ElementRecord<TRGT, ID>> getTargets(SRC source) {
-			return collectionGetter.apply(source);
+			return collectionGetter.get(source);
 		}
 	}
 	

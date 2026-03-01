@@ -9,13 +9,13 @@ import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorChain.ValueInitializerOnNullValue;
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.tool.Reflections;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * 
@@ -230,19 +230,19 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 		 * Combiner of target entity with source entity
 		 */
 		@Nullable
-		private SerializableBiConsumer<TRGT, SRC> reverseCombiner;
+		private SerializableMutator<TRGT, SRC> reverseCombiner;
 		
 		/**
 		 * Source getter on target for bidirectionality (no consequence on database mapping).
 		 */
 		@Nullable
-		private SerializableFunction<TRGT, C2> reverseCollectionAccessor;
+		private SerializableAccessor<TRGT, C2> reverseCollectionAccessor;
 		
 		/**
 		 * Source setter on target for bidirectionality (no consequence on database mapping).
 		 */
 		@Nullable
-		private SerializableBiConsumer<TRGT, C2> reverseCollectionMutator;
+		private SerializableMutator<TRGT, C2> reverseCollectionMutator;
 		
 		/** Optional provider of collection instance to be used if collection value is null */
 		@Nullable
@@ -258,29 +258,29 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 		protected String targetJoinColumnName;
 		
 		@Nullable
-		public SerializableBiConsumer<TRGT, SRC> getReverseCombiner() {
+		public SerializableMutator<TRGT, SRC> getReverseCombiner() {
 			return reverseCombiner;
 		}
 		
-		public void setReverseCombiner(@Nullable SerializableBiConsumer<TRGT, SRC> reverseCombiner) {
+		public void setReverseCombiner(@Nullable SerializableMutator<TRGT, SRC> reverseCombiner) {
 			this.reverseCombiner = reverseCombiner;
 		}
 		
 		@Nullable
-		public SerializableFunction<TRGT, C2> getReverseCollectionAccessor() {
+		public SerializableAccessor<TRGT, C2> getReverseCollectionAccessor() {
 			return reverseCollectionAccessor;
 		}
 		
-		public void setReverseCollectionAccessor(@Nullable SerializableFunction<TRGT, C2> reverseCollectionAccessor) {
+		public void setReverseCollectionAccessor(@Nullable SerializableAccessor<TRGT, C2> reverseCollectionAccessor) {
 			this.reverseCollectionAccessor = reverseCollectionAccessor;
 		}
 		
 		@Nullable
-		public SerializableBiConsumer<TRGT, C2> getReverseCollectionMutator() {
+		public SerializableMutator<TRGT, C2> getReverseCollectionMutator() {
 			return reverseCollectionMutator;
 		}
 		
-		public void setReverseCollectionMutator(@Nullable SerializableBiConsumer<TRGT, C2> reverseCollectionMutator) {
+		public void setReverseCollectionMutator(@Nullable SerializableMutator<TRGT, C2> reverseCollectionMutator) {
 			this.reverseCollectionMutator = reverseCollectionMutator;
 		}
 		

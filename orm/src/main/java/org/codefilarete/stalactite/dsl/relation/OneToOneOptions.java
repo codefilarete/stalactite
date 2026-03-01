@@ -1,9 +1,9 @@
 package org.codefilarete.stalactite.dsl.relation;
 
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * @param <C> entity type
@@ -17,34 +17,34 @@ public interface OneToOneOptions<C, O> extends CascadeOptions {
 	
 	/**
 	 * Defines the bidirectional relation.
-	 * No need to additionally call {@link #mappedBy(SerializableFunction)}.
+	 * No need to additionally call {@link #mappedBy(SerializableAccessor)}.
 	 *
-	 * If the relation is already defined through {@link #mappedBy(SerializableFunction)} then there's no
+	 * If the relation is already defined through {@link #mappedBy(SerializableAccessor)} then there's no
 	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToOneRelationConfigurer}.
 	 *
 	 * @param reverseLink opposite owner of the relation (setter)
 	 * @return the global mapping configurer
 	 */
-	OneToOneOptions<C, O> mappedBy(SerializableBiConsumer<? super O, C> reverseLink);
+	OneToOneOptions<C, O> mappedBy(SerializableMutator<? super O, C> reverseLink);
 	
 	/**
 	 * Defines the bidirectional relation.
-	 * No need to additionally call {@link #mappedBy(SerializableBiConsumer)}.
+	 * No need to additionally call {@link #mappedBy(SerializableMutator)}.
 	 *
-	 * If the relation is already defined through {@link #mappedBy(SerializableBiConsumer)} then there's no
+	 * If the relation is already defined through {@link #mappedBy(SerializableMutator)} then there's no
 	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToOneRelationConfigurer}.
 	 *
 	 * @param reverseLink opposite owner of the relation (getter)
 	 * @return the global mapping configurer
 	 */
-	OneToOneOptions<C, O> mappedBy(SerializableFunction<? super O, C> reverseLink);
+	OneToOneOptions<C, O> mappedBy(SerializableAccessor<? super O, C> reverseLink);
 	
 	/**
 	 * Defines reverse column name that stores the relation.
-	 * Note that defining it this way will not allow relation to be fixed in memory (after select in database), prefer {@link #mappedBy(SerializableBiConsumer)}.
+	 * Note that defining it this way will not allow relation to be fixed in memory (after select in database), prefer {@link #mappedBy(SerializableMutator)}.
 	 * Use this method to define unidirectional relation.
 	 *
-	 * If the relation is already defined through {@link #mappedBy(SerializableFunction)} or {@link #mappedBy(SerializableBiConsumer)} then there's no
+	 * If the relation is already defined through {@link #mappedBy(SerializableAccessor)} or {@link #mappedBy(SerializableMutator)} then there's no
 	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToOneRelationConfigurer}.
 	 *
 	 * @param reverseColumnName opposite owner of the relation

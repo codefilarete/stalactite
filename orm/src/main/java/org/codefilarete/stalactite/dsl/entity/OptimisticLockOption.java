@@ -3,10 +3,10 @@ package org.codefilarete.stalactite.dsl.entity;
 import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.engine.configurer.ValueAccessPointVariantSupport;
 import org.codefilarete.tool.function.Serie;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 public class OptimisticLockOption<C, V> {
 	
@@ -15,12 +15,12 @@ public class OptimisticLockOption<C, V> {
 	@Nullable
 	private final Serie<V> serie;
 	
-	public OptimisticLockOption(SerializableFunction<C, V> getter, @Nullable Serie<V> serie) {
+	public OptimisticLockOption(SerializableAccessor<C, V> getter, @Nullable Serie<V> serie) {
 		this.versionAccessor = new ValueAccessPointVariantSupport<>(getter);
 		this.serie = serie;
 	}
 	
-	public OptimisticLockOption(SerializableBiConsumer<C, V> setter, @Nullable Serie<V> serie) {
+	public OptimisticLockOption(SerializableMutator<C, V> setter, @Nullable Serie<V> serie) {
 		this.versionAccessor = new ValueAccessPointVariantSupport<>(setter);
 		this.serie = serie;
 	}

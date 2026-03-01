@@ -7,6 +7,8 @@ import java.util.function.Supplier;
 
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.ExtraTablePropertyOptions;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
@@ -30,8 +32,6 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.TriFunction;
 import org.codefilarete.tool.reflect.MethodDispatcher;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * Class very close to {@link FluentEmbeddableMappingConfigurationSupport}, but with dedicated methods to entity mapping such as
@@ -51,13 +51,13 @@ class EntityDecoratedEmbeddableConfigurationSupport<C, I> extends FluentEmbeddab
 		this.entityConfigurationSupport = entityConfigurationSupport;
 	}
 	
-	<E> LinkageSupport<C, E> addMapping(SerializableBiConsumer<C, E> setter) {
+	<E> LinkageSupport<C, E> addMapping(SerializableMutator<C, E> setter) {
 		LinkageSupport<C, E> newLinkage = new LinkageSupport<>(setter);
 		mapping.add(newLinkage);
 		return newLinkage;
 	}
 	
-	<E> LinkageSupport<C, E> addMapping(SerializableFunction<C, E> getter) {
+	<E> LinkageSupport<C, E> addMapping(SerializableAccessor<C, E> getter) {
 		LinkageSupport<C, E> newLinkage = new LinkageSupport<>(getter);
 		mapping.add(newLinkage);
 		return newLinkage;
@@ -152,33 +152,33 @@ class EntityDecoratedEmbeddableConfigurationSupport<C, I> extends FluentEmbeddab
 				.build((Class<FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions<C, I, O>>) (Class) FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions.class);
 	}
 	
-	SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy) {
+	SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableAccessor<C, I> getter, IdentifierPolicy<I> identifierPolicy) {
 		return addKeyMapping(new SingleKeyLinkageSupport<>(getter, identifierPolicy));
 	}
 	
-	SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy, Column<?, I> column) {
+	SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableAccessor<C, I> getter, IdentifierPolicy<I> identifierPolicy, Column<?, I> column) {
 		SingleKeyLinkageSupport<C, I> linkage = addKeyMapping(new SingleKeyLinkageSupport<>(getter, identifierPolicy));
 		linkage.setColumnOptions(new ColumnLinkageOptionsByColumn(column));
 		return linkage;
 	}
 	
-	SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy, String columnName) {
+	SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableAccessor<C, I> getter, IdentifierPolicy<I> identifierPolicy, String columnName) {
 		SingleKeyLinkageSupport<C, I> linkage = addKeyMapping(new SingleKeyLinkageSupport<>(getter, identifierPolicy));
 		linkage.setColumnOptions(new ColumnLinkageOptionsSupport(columnName));
 		return linkage;
 	}
 	
-	SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy) {
+	SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableMutator<C, I> setter, IdentifierPolicy<I> identifierPolicy) {
 		return addKeyMapping(new SingleKeyLinkageSupport<>(setter, identifierPolicy));
 	}
 	
-	SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy, Column<?, I> column) {
+	SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableMutator<C, I> setter, IdentifierPolicy<I> identifierPolicy, Column<?, I> column) {
 		SingleKeyLinkageSupport<C, I> linkage = addKeyMapping(new SingleKeyLinkageSupport<>(setter, identifierPolicy));
 		linkage.setColumnOptions(new ColumnLinkageOptionsByColumn(column));
 		return linkage;
 	}
 	
-	SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy, String columnName) {
+	SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableMutator<C, I> setter, IdentifierPolicy<I> identifierPolicy, String columnName) {
 		SingleKeyLinkageSupport<C, I> linkage = addKeyMapping(new SingleKeyLinkageSupport<>(setter, identifierPolicy));
 		linkage.setColumnOptions(new ColumnLinkageOptionsSupport(columnName));
 		return linkage;

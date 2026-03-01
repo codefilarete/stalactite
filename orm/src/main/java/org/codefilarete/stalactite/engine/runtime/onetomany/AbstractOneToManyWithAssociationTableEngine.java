@@ -8,10 +8,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.configurer.onetomany.FirstPhaseCycleLoadListener;
@@ -113,7 +113,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 			
 			@Override
 			public void afterSelect(Set<? extends SRC> result) {
-				Set<TRGT> collect = Iterables.stream(result).flatMap(src -> Nullable.nullable(manyRelationDescriptor.getCollectionGetter().apply(src))
+				Set<TRGT> collect = Iterables.stream(result).flatMap(src -> Nullable.nullable(manyRelationDescriptor.getCollectionGetter().get(src))
 						.map(Collection::stream)
 						.getOr(Stream.empty()))
 						.collect(Collectors.toSet());
@@ -226,7 +226,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				// It should be more efficient because, here, we have to create as many AssociationRecord as necessary which loads the garbage collector
 				List<R> associationRecords = new ArrayList<>();
 				entities.forEach(src -> {
-					Collection<TRGT> targets = nullable(manyRelationDescriptor.getCollectionGetter().apply(src)).getOr(manyRelationDescriptor.getCollectionFactory());
+					Collection<TRGT> targets = nullable(manyRelationDescriptor.getCollectionGetter().get(src)).getOr(manyRelationDescriptor.getCollectionFactory());
 					int i = INDEXED_COLLECTION_FIRST_INDEX_VALUE;
 					for (TRGT target : targets) {
 						associationRecords.add(newRecord(src, target, i++));
@@ -285,7 +285,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 		}
 	}
 	
-	protected abstract AfterInsertCollectionCascader<SRC, R> newRecordInsertionCascader(Function<SRC, C> collectionGetter,
+	protected abstract AfterInsertCollectionCascader<SRC, R> newRecordInsertionCascader(Accessor<SRC, C> collectionGetter,
 																						AssociationRecordPersister<R, T> associationPersister,
 																						EntityMapping<SRC, SRCID, ?> mappingStrategy,
 																						EntityMapping<TRGT, TRGTID, ?> strategy);
@@ -322,9 +322,9 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 	
 	public static class TargetInstancesInsertCascader<I, O, J> extends AfterInsertCollectionCascader<I, O> {
 		
-		private final Function<I, ? extends Collection<O>> collectionGetter;
+		private final Accessor<I, ? extends Collection<O>> collectionGetter;
 		
-		public TargetInstancesInsertCascader(EntityPersister<O, J> targetPersister, Function<I, ? extends Collection<O>> collectionGetter) {
+		public TargetInstancesInsertCascader(EntityPersister<O, J> targetPersister, Accessor<I, ? extends Collection<O>> collectionGetter) {
 			super(targetPersister);
 			this.collectionGetter = collectionGetter;
 		}
@@ -336,7 +336,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 		
 		@Override
 		protected Collection<O> getTargets(I source) {
-			return collectionGetter.apply(source);
+			return collectionGetter.get(source);
 		}
 	}
 }

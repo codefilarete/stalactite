@@ -9,8 +9,13 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.codefilarete.stalactite.dsl.*;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.stalactite.dsl.ExtraTablePropertyOptions;
 import org.codefilarete.stalactite.dsl.FluentMappings;
+import org.codefilarete.stalactite.dsl.InheritanceOptions;
+import org.codefilarete.stalactite.dsl.PersisterBuilder;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder;
@@ -41,8 +46,6 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.Serie;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * An interface describing a fluent way to declare the persistence mapping of a class. 
@@ -64,7 +67,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param identifierPolicy {@link IdentifierPolicy} to be used for entity insertion
 	 * @return an object for configuration chaining
 	 */
-	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy);
+	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableAccessor<C, I> getter, IdentifierPolicy<I> identifierPolicy);
 	
 	/**
 	 * Maps given property as identifier, using given {@link IdentifierPolicy}, and given {@link Column}.
@@ -75,7 +78,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param identifierPolicy {@link IdentifierPolicy} to be used for entity insertion
 	 * @return an object for configuration chaining
 	 */
-	<T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy, Column<T, I> column);
+	<T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableAccessor<C, I> getter, IdentifierPolicy<I> identifierPolicy, Column<T, I> column);
 	
 	/**
 	 * Maps given property as identifier, using given {@link IdentifierPolicy}, and given column name.
@@ -86,7 +89,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param identifierPolicy {@link IdentifierPolicy} to be used for entity insertion
 	 * @return an object for configuration chaining
 	 */
-	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy, String columnName);
+	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableAccessor<C, I> getter, IdentifierPolicy<I> identifierPolicy, String columnName);
 	
 	/**
 	 * Maps given property as identifier, using given {@link IdentifierPolicy}.
@@ -96,7 +99,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param identifierPolicy {@link IdentifierPolicy} to be used for entity insertion
 	 * @return an object for configuration chaining
 	 */
-	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy);
+	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableMutator<C, I> setter, IdentifierPolicy<I> identifierPolicy);
 	
 	/**
 	 * Maps given property as identifier, using given {@link IdentifierPolicy}, and given {@link Column}.
@@ -106,7 +109,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param identifierPolicy {@link IdentifierPolicy} to be used for entity insertion
 	 * @return an object for configuration chaining
 	 */
-	<T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy, Column<T, I> column);
+	<T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableMutator<C, I> setter, IdentifierPolicy<I> identifierPolicy, Column<T, I> column);
 	
 	/**
 	 * Maps given property as identifier, using given {@link IdentifierPolicy}, and given column name.
@@ -116,7 +119,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param identifierPolicy {@link IdentifierPolicy} to be used for entity insertion
 	 * @return an object for configuration chaining
 	 */
-	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy, String columnName);
+	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableMutator<C, I> setter, IdentifierPolicy<I> identifierPolicy, String columnName);
 	
 	/**
 	 * Maps given property as a composite-identifier. The {@link IdentifierPolicy} is already-assigned.
@@ -126,7 +129,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param compositeKeyMappingBuilder a configuration that details the properties that composes the identifier
 	 * @return an object for configuration chaining
 	 */
-	default FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter,
+	default FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapKey(SerializableAccessor<C, I> getter,
 																	   CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder) {
 		return mapKey(getter, compositeKeyMappingBuilder, null, null);
 	}
@@ -139,7 +142,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param compositeKeyMappingBuilder a configuration that details the properties that composes the identifier
 	 * @return an object for configuration chaining
 	 */
-	default FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter,
+	default FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapKey(SerializableMutator<C, I> setter,
 																	   CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder) {
 		return mapKey(setter, compositeKeyMappingBuilder, null, null);
 	}
@@ -154,7 +157,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param isPersistedFunction the {@link Function} that allows to know if entity was already inserted in database
 	 * @return an object for configuration chaining
 	 */
-	FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter,
+	FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapKey(SerializableAccessor<C, I> getter,
 															   CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder,
 															   Consumer<C> markAsPersistedFunction,
 															   Function<C, Boolean> isPersistedFunction);
@@ -169,7 +172,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param isPersistedFunction the {@link Function} that allows to know if entity was already inserted in database
 	 * @return an object for configuration chaining
 	 */
-	FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter,
+	FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapKey(SerializableMutator<C, I> setter,
 															   CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder,
 															   Consumer<C> markAsPersistedFunction,
 															   Function<C, Boolean> isPersistedFunction);
@@ -181,7 +184,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @return an object for configuration chaining
 	 * @param <O> the attribute type
 	 */
-	<O> FluentMappingBuilderPropertyOptions<C, I, O> map(SerializableFunction<C, O> getter);
+	<O> FluentMappingBuilderPropertyOptions<C, I, O> map(SerializableAccessor<C, O> getter);
 	
 	/**
 	 * Declares the attribute behind the given mutator reference as persistent.
@@ -190,7 +193,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @return an object for configuration chaining
 	 * @param <O> the attribute type
 	 */
-	<O> FluentMappingBuilderPropertyOptions<C, I, O> map(SerializableBiConsumer<C, O> setter);
+	<O> FluentMappingBuilderPropertyOptions<C, I, O> map(SerializableMutator<C, O> setter);
 	
 	/**
 	 * Declares the attribute behind the given field name as persistent.
@@ -203,25 +206,25 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	
 	/**
 	 * Declares the enum-typed attribute behind given accessor reference as persistent.
-	 * Can be done with default {@link #map(SerializableFunction)} method, but this signature ensures the type to be an enum and the returned object
+	 * Can be done with default {@link #map(SerializableAccessor)} method, but this signature ensures the type to be an enum and the returned object
 	 * provides some specific configuration dedicated to enum attribute.
 	 *
 	 * @param getter the accessor that gets the property
 	 * @return an object for configuration chaining
 	 * @param <E> the enum type
 	 */
-	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I, E> mapEnum(SerializableFunction<C, E> getter);
+	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I, E> mapEnum(SerializableAccessor<C, E> getter);
 	
 	/**
 	 * Declares the enum-typed attribute behind given mutator reference as persistent.
-	 * Can be done with default {@link #map(SerializableBiConsumer)} method, but this signature ensures the type to be an enum and the returned object
+	 * Can be done with default {@link #map(SerializableMutator)} method, but this signature ensures the type to be an enum and the returned object
 	 * provides some specific configuration dedicated to enum attribute.
 	 *
 	 * @param setter the mutator that gets the property
 	 * @return an object for configuration chaining
 	 * @param <E> the enum type
 	 */
-	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I, E> mapEnum(SerializableBiConsumer<C, E> setter);
+	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I, E> mapEnum(SerializableMutator<C, E> setter);
 	
 	/**
 	 * Declares the enum-typed attribute behind given mutator reference as persistent.
@@ -234,18 +237,18 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 */
 	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I, E> mapEnum(String fieldName);
 	
-	<K, V, M extends Map<K, V>> FluentMappingBuilderMapOptions<C, I, K, V, M> mapMap(SerializableFunction<C, M> getter, Class<K> keyType, Class<V> valueType);
+	<K, V, M extends Map<K, V>> FluentMappingBuilderMapOptions<C, I, K, V, M> mapMap(SerializableAccessor<C, M> getter, Class<K> keyType, Class<V> valueType);
 	
-	<K, V, M extends Map<K, V>> FluentMappingBuilderMapOptions<C, I, K, V, M> mapMap(SerializableBiConsumer<C, M> setter, Class<K> keyType, Class<V> valueType);
+	<K, V, M extends Map<K, V>> FluentMappingBuilderMapOptions<C, I, K, V, M> mapMap(SerializableMutator<C, M> setter, Class<K> keyType, Class<V> valueType);
 	
-	<O, S extends Collection<O>> FluentMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableFunction<C, S> getter, Class<O> componentType);
+	<O, S extends Collection<O>> FluentMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableAccessor<C, S> getter, Class<O> componentType);
 	
-	<O, S extends Collection<O>> FluentMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableBiConsumer<C, S> setter, Class<O> componentType);
+	<O, S extends Collection<O>> FluentMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableMutator<C, S> setter, Class<O> componentType);
 	
-	<O, S extends Collection<O>> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mapCollection(SerializableFunction<C, S> getter, Class<O> componentType,
+	<O, S extends Collection<O>> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mapCollection(SerializableAccessor<C, S> getter, Class<O> componentType,
 																												   EmbeddableMappingConfigurationProvider<O> embeddableConfiguration);
 	
-	<O, S extends Collection<O>> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mapCollection(SerializableBiConsumer<C, S> setter, Class<O> componentType,
+	<O, S extends Collection<O>> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mapCollection(SerializableMutator<C, S> setter, Class<O> componentType,
 																												   EmbeddableMappingConfigurationProvider<O> embeddableConfiguration);
 	
 	FluentEntityMappingBuilder<C, I> withTableNaming(TableNamingStrategy tableNamingStrategy);
@@ -334,7 +337,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <J> type of identifier of {@code O}
 	 * @return an enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
-	<O, J> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(SerializableFunction<C, O> getter,
+	<O, J> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(SerializableAccessor<C, O> getter,
 																	EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
 	/**
@@ -346,7 +349,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <J> type of identifier of {@code O}
 	 * @return an enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
-	<O, J> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(SerializableBiConsumer<C, O> setter,
+	<O, J> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(SerializableMutator<C, O> setter,
 																	EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
 	/**
@@ -362,11 +365,11 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <J> type of identifier of {@code O}
 	 * @param <S> refined {@link Collection} type
 	 * @return an enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
-	 * @see #mapOneToMany(SerializableFunction, EntityMappingConfigurationProvider)
+	 * @see #mapOneToMany(SerializableMutator, EntityMappingConfigurationProvider)
 	 */
 	<O, J, S extends Collection<O>>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	mapOneToMany(SerializableAccessor<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a relation between current entity and some of type {@code O} through a {@link Collection}.
@@ -381,18 +384,18 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <J> type of identifier of {@code O}
 	 * @param <S> refined {@link Collection} type
 	 * @return an enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
-	 * @see #mapOneToMany(SerializableFunction, EntityMappingConfigurationProvider)
+	 * @see #mapOneToMany(SerializableAccessor, EntityMappingConfigurationProvider)
 	 */
 	<O, J, S extends Collection<O>>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	mapOneToMany(SerializableMutator<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a many-to-many relation between current entity and some of type {@code O}.
 	 * Depending on collection type, order persistence can be asked by one of the {@link ManyToManyOptions#indexed()}
 	 * methods.
-	 * For bidirectional relation, you may be interested in using {@link ManyToManyOptions#reverseCollection(SerializableFunction)}
-	 * or {@link ManyToManyOptions#reverselySetBy(SerializableBiConsumer)} on returned instance.
+	 * For bidirectional relation, you may be interested in using {@link ManyToManyOptions#reverseCollection(SerializableAccessor)}
+	 * or {@link ManyToManyOptions#reverselySetBy(SerializableMutator)} on returned instance.
 	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
 	 * to handle any super type of current entity type.
 	 *
@@ -406,14 +409,14 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 */
 	<O, J, S1 extends Collection<O>, S2 extends Collection<C>>
 	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
-	mapManyToMany(SerializableFunction<C, S1> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	mapManyToMany(SerializableAccessor<C, S1> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a many-to-many relation between current entity and some of type {@code O}.
 	 * Depending on collection type, order persistence can be asked by one of the {@link ManyToManyOptions#indexed()}
 	 * methods.
-	 * For bidirectional relation, you may be interested in using {@link ManyToManyOptions#reverseCollection(SerializableFunction)}
-	 * or {@link ManyToManyOptions#reverselySetBy(SerializableBiConsumer)} on returned instance.
+	 * For bidirectional relation, you may be interested in using {@link ManyToManyOptions#reverseCollection(SerializableAccessor)}
+	 * or {@link ManyToManyOptions#reverselySetBy(SerializableMutator)} on returned instance.
 	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
 	 * to handle any super type of current entity type.
 	 *
@@ -427,7 +430,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 */
 	<O, J, S1 extends Collection<O>, S2 extends Collection<C>>
 	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
-	mapManyToMany(SerializableBiConsumer<C, S1> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	mapManyToMany(SerializableMutator<C, S1> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a direct relation between current entity and some of type {@code O}.
@@ -440,7 +443,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 */
 	<O, J, S extends Collection<C>>
 	FluentMappingBuilderManyToOneOptions<C, I, O, S>
-	mapManyToOne(SerializableFunction<C, O> getter,
+	mapManyToOne(SerializableAccessor<C, O> getter,
 				 EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
 	/**
@@ -454,12 +457,12 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 */
 	<O, J, S extends Collection<C>>
 	FluentMappingBuilderManyToOneOptions<C, I, O, S>
-	mapManyToOne(SerializableBiConsumer<C, O> setter,
+	mapManyToOne(SerializableMutator<C, O> setter,
 				 EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
-	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter, EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
+	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableAccessor<C, O> getter, EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
-	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter, EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
+	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableMutator<C, O> setter, EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
 	/**
 	 * Defines the versioning property of beans. This implies that Optimistic Locking will be applied on those beans.
@@ -473,9 +476,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param getter the function that gives access to the versioning property
 	 * @param <V> type of the versioning property, determines versioning policy
 	 * @return this
-	 * @see #versionedBy(SerializableFunction, Serie)
+	 * @see #versionedBy(SerializableAccessor, Serie)
 	 */
-	<V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter);
+	<V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableAccessor<C, V> getter);
 	
 	/**
 	 * Defines the versioning property of beans. This implies that Optimistic Locking will be applied on those beans.
@@ -491,7 +494,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <V> type of the versioning property, determines versioning policy
 	 * @return this
 	 */
-	<V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, Serie<V> sequence);
+	<V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableAccessor<C, V> getter, Serie<V> sequence);
 	
 	/**
 	 * Defines the versioning property of beans. This implies that Optimistic Locking will be applied on those beans.
@@ -505,9 +508,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param setter the function that gives access to the versioning property
 	 * @param <V> type of the versioning property, determines versioning policy
 	 * @return this
-	 * @see #versionedBy(SerializableFunction, Serie)
+	 * @see #versionedBy(SerializableAccessor, Serie)
 	 */
-	<V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableBiConsumer<C, V> setter);
+	<V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableMutator<C, V> setter);
 	
 	/**
 	 * Defines the versioning property of beans. This implies that Optimistic Locking will be applied on those beans.
@@ -523,7 +526,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <V> type of the versioning property, determines versioning policy
 	 * @return this
 	 */
-	<V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableBiConsumer<C, V> setter, Serie<V> sequence);
+	<V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableMutator<C, V> setter, Serie<V> sequence);
 	
 	/**
 	 * Defines the versioning property of beans. This implies that Optimistic Locking will be applied on those beans.
@@ -537,7 +540,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param fieldName the field name that gives access to the versioning property
 	 * @param <V> type of the versioning property, determines versioning policy
 	 * @return this
-	 * @see #versionedBy(SerializableFunction, Serie)
+	 * @see #versionedBy(SerializableAccessor, Serie)
 	 */
 	<V> FluentEntityMappingBuilder<C, I> versionedBy(String fieldName);
 	
@@ -619,16 +622,16 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 			extends FluentEntityMappingBuilder<C, I>, ImportedEmbedWithColumnOptions<O> {
 
 		@Override
-		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideName(SerializableFunction<O, IN> function, String columnName);
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideName(SerializableAccessor<O, IN> function, String columnName);
 
 		@Override
-		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideName(SerializableBiConsumer<O, IN> function, String columnName);
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideName(SerializableMutator<O, IN> function, String columnName);
 		
 		@Override
-		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideSize(SerializableFunction<O, IN> function, Size columnSize);
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideSize(SerializableAccessor<O, IN> function, Size columnSize);
 		
 		@Override
-		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideSize(SerializableBiConsumer<O, IN> function, Size columnSize);
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideSize(SerializableMutator<O, IN> function, Size columnSize);
 		
 		/**
 		 * Overrides embedding with an existing target column
@@ -638,7 +641,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		 * @param <IN> input of the function (type of the embedded element)
 		 * @return a mapping configurer, specialized for embedded elements
 		 */
-		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> override(SerializableFunction<O, IN> getter, Column<? extends Table, IN> targetColumn);
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> override(SerializableAccessor<O, IN> getter, Column<? extends Table, IN> targetColumn);
 		
 		/**
 		 * Overrides embedding with an existing target column
@@ -648,13 +651,13 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		 * @param <IN> input of the function (type of the embedded element)
 		 * @return a mapping configurer, specialized for embedded elements
 		 */
-		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> override(SerializableBiConsumer<O, IN> setter, Column<? extends Table, IN> targetColumn);
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> override(SerializableMutator<O, IN> setter, Column<? extends Table, IN> targetColumn);
 		
 		@Override
-		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> exclude(SerializableBiConsumer<O, IN> setter);
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> exclude(SerializableMutator<O, IN> setter);
 
 		@Override
-		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> exclude(SerializableFunction<O, IN> getter);
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> exclude(SerializableAccessor<O, IN> getter);
 	}
 	
 	interface FluentMappingBuilderEnumOptions<C, I, E extends Enum<E>>
@@ -793,32 +796,32 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 			extends FluentMappingBuilderMapOptions<C, I, K, V, M>, MapOptions.EmbeddableInMapOptions<E> {
 		
 		@Override
-		FluentMappingBuilderEmbeddableInMapOptions<C, I, K, V, M, E> overrideName(SerializableFunction<E, ?> getter, String columnName);
+		FluentMappingBuilderEmbeddableInMapOptions<C, I, K, V, M, E> overrideName(SerializableAccessor<E, ?> getter, String columnName);
 		
 		@Override
-		FluentMappingBuilderEmbeddableInMapOptions<C, I, K, V, M, E> overrideName(SerializableBiConsumer<E, ?> setter, String columnName);
+		FluentMappingBuilderEmbeddableInMapOptions<C, I, K, V, M, E> overrideName(SerializableMutator<E, ?> setter, String columnName);
 		
 		@Override
-		FluentMappingBuilderEmbeddableInMapOptions<C, I, K, V, M, E> overrideSize(SerializableFunction<E, ?> getter, Size columnSize);
+		FluentMappingBuilderEmbeddableInMapOptions<C, I, K, V, M, E> overrideSize(SerializableAccessor<E, ?> getter, Size columnSize);
 
 		@Override
-		FluentMappingBuilderEmbeddableInMapOptions<C, I, K, V, M, E> overrideSize(SerializableBiConsumer<E, ?> setter, Size columnSize);
+		FluentMappingBuilderEmbeddableInMapOptions<C, I, K, V, M, E> overrideSize(SerializableMutator<E, ?> setter, Size columnSize);
 	}
 	
 	interface FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S extends Collection<O>>
 			extends FluentEntityMappingBuilder<C, I>, EmbeddableCollectionOptions<C, O, S> {
 		
 		@Override
-		<IN> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideName(SerializableFunction<O, IN> getter, String columnName);
+		<IN> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideName(SerializableAccessor<O, IN> getter, String columnName);
 		
 		@Override
-		<IN> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideName(SerializableBiConsumer<O, IN> setter, String columnName);
+		<IN> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideName(SerializableMutator<O, IN> setter, String columnName);
 		
 		@Override
-		<IN> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideSize(SerializableFunction<O, IN> getter, Size columnSize);
+		<IN> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideSize(SerializableAccessor<O, IN> getter, Size columnSize);
 		
 		@Override
-		<IN> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideSize(SerializableBiConsumer<O, IN> setter, Size columnSize);
+		<IN> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideSize(SerializableMutator<O, IN> setter, Size columnSize);
 		
 		@Override
 		FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> initializeWith(Supplier<? extends S> collectionFactory);

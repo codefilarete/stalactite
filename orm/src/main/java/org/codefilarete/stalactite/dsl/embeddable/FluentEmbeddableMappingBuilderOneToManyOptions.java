@@ -3,10 +3,9 @@ package org.codefilarete.stalactite.dsl.embeddable;
 import java.util.Collection;
 import java.util.function.Supplier;
 
-import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyJoinTableOptions;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.relation.OneToManyOptions;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  *
@@ -25,7 +24,7 @@ public interface FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S extends 
 	 * @param reverseLink opposite owner of the relation (setter)
 	 * @return the global mapping configurer
 	 */
-	FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink);
+	FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> mappedBy(SerializableMutator<O, ? super C> reverseLink);
 	
 	/**
 	 * {@inheritDoc}
@@ -34,7 +33,7 @@ public interface FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S extends 
 	 * @param reverseLink opposite owner of the relation (getter)
 	 * @return the global mapping configurer
 	 */
-	FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink);
+	FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> mappedBy(SerializableAccessor<O, ? super C> reverseLink);
 	
 	/**
 	 * {@inheritDoc}
@@ -52,7 +51,7 @@ public interface FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S extends 
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
+	FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> reverselySetBy(SerializableMutator<O, C> reverseLink);
 	
 	/**
 	 * {@inheritDoc}

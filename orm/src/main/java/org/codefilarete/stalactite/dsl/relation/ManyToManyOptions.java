@@ -3,9 +3,9 @@ package org.codefilarete.stalactite.dsl.relation;
 import java.util.Collection;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * @author Guillaume Mary
@@ -23,14 +23,14 @@ public interface ManyToManyOptions<C, O, S1 extends Collection<O>, S2 extends Co
 	
 	/**
 	 * Defines combiner of current entity with target entity. This is a more fine-grained way to define how to combine current entity with target
-	 * entity than {@link #reverseCollection(SerializableFunction)} : sometimes a method already exists in entities to fill the relation instead of
+	 * entity than {@link #reverseCollection(SerializableAccessor)} : sometimes a method already exists in entities to fill the relation instead of
 	 * calling getter + Collection.add. This method is here to benefit from it.
 	 * This method has no consequence on database mapping since it only interacts in memory.
 	 *
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	ManyToManyOptions<C, O, S1, S2> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
+	ManyToManyOptions<C, O, S1, S2> reverselySetBy(SerializableMutator<O, C> reverseLink);
 	
 	/**
 	 * Defines reverse collection accessor.
@@ -40,7 +40,7 @@ public interface ManyToManyOptions<C, O, S1 extends Collection<O>, S2 extends Co
 	 * @param collectionAccessor opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	ManyToManyOptions<C, O, S1, S2> reverseCollection(SerializableFunction<O, S2> collectionAccessor);
+	ManyToManyOptions<C, O, S1, S2> reverseCollection(SerializableAccessor<O, S2> collectionAccessor);
 	
 	/**
 	 * Defines reverse collection mutator.
@@ -50,7 +50,7 @@ public interface ManyToManyOptions<C, O, S1 extends Collection<O>, S2 extends Co
 	 * @param collectionMutator opposite setter of the relation
 	 * @return the global mapping configurer
 	 */
-	ManyToManyOptions<C, O, S1, S2> reverseCollection(SerializableBiConsumer<O, S2> collectionMutator);
+	ManyToManyOptions<C, O, S1, S2> reverseCollection(SerializableMutator<O, S2> collectionMutator);
 	
 	/**
 	 * Defines the factory of reverse collection. If not defined and collection is found null, the collection is set with a default value.

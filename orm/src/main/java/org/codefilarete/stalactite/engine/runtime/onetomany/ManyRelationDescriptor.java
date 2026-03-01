@@ -1,12 +1,11 @@
 package org.codefilarete.stalactite.engine.runtime.onetomany;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.bean.Objects;
 
@@ -18,15 +17,15 @@ import org.codefilarete.tool.bean.Objects;
 public class ManyRelationDescriptor<I, O, C extends Collection<O>> {
 	
 	/** Empty setter for applying source entity to target entity (reverse side) */
-	protected static final BiConsumer NOOP_REVERSE_SETTER = (o, i) -> {};
+	protected static final Mutator NOOP_REVERSE_SETTER = (o, i) -> {};
 	
 	private final Accessor<I, C> collectionProvider;
 	
-	private final BiConsumer<I, C> collectionSetter;
+	private final Mutator<I, C> collectionSetter;
 	
 	private final Supplier<C> collectionFactory;
 	
-	private final BiConsumer<O, I> reverseSetter;
+	private final Mutator<O, I> reverseSetter;
 	
 	protected BeanRelationFixer<I, O> relationFixer;
 	
@@ -37,21 +36,21 @@ public class ManyRelationDescriptor<I, O, C extends Collection<O>> {
 	 * @param reverseSetter
 	 */
 	public ManyRelationDescriptor(Accessor<I, C> collectionProvider,
-								  BiConsumer<I, C> collectionSetter,
+								  Mutator<I, C> collectionSetter,
 								  Supplier<C> collectionFactory,
-								  @Nullable BiConsumer<O, I> reverseSetter) {
+								  @Nullable Mutator<O, I> reverseSetter) {
 		this(collectionProvider,
 				collectionSetter,
 				collectionFactory,
 				reverseSetter,
-				BeanRelationFixer.of(collectionSetter, collectionProvider::get, collectionFactory, Objects.preventNull(reverseSetter, (BiConsumer<O, I>) NOOP_REVERSE_SETTER))
+				BeanRelationFixer.of(collectionSetter, collectionProvider, collectionFactory, Objects.preventNull(reverseSetter, (Mutator<O, I>) NOOP_REVERSE_SETTER))
 		);
 	}
 	
 	public ManyRelationDescriptor(Accessor<I, C> collectionProvider,
-								  BiConsumer<I, C> collectionSetter,
+								  Mutator<I, C> collectionSetter,
 								  Supplier<C> collectionFactory,
-								  BiConsumer<O, I> reverseSetter,
+								  Mutator<O, I> reverseSetter,
 								  BeanRelationFixer<I, O> relationFixer) {
 		this.collectionProvider = collectionProvider;
 		this.collectionSetter = collectionSetter;
@@ -64,11 +63,11 @@ public class ManyRelationDescriptor<I, O, C extends Collection<O>> {
 		return collectionProvider;
 	}
 	
-	public Function<I, C> getCollectionGetter() {
-		return collectionProvider::get;
+	public Accessor<I, C> getCollectionGetter() {
+		return collectionProvider;
 	}
 	
-	public BiConsumer<I, C> getCollectionSetter() {
+	public Mutator<I, C> getCollectionSetter() {
 		return collectionSetter;
 	}
 	
@@ -82,7 +81,7 @@ public class ManyRelationDescriptor<I, O, C extends Collection<O>> {
 	 * @return null if no setter given at construction time
 	 */
 	@Nullable
-	public BiConsumer<O, I> getReverseSetter() {
+	public Mutator<O, I> getReverseSetter() {
 		return reverseSetter;
 	}
 	

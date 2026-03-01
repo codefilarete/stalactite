@@ -9,28 +9,29 @@ import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
+import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.LambdaMethodUnsheller;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.tool.Reflections;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * Information storage of embedded mapping defined externally by an {@link EmbeddableMappingConfigurationProvider},
- * see {@link FluentEmbeddableMappingConfigurationSupport#embed(SerializableFunction, EmbeddableMappingConfigurationProvider)}
+ * see {@link FluentEmbeddableMappingConfigurationSupport#embed(SerializableAccessor, EmbeddableMappingConfigurationProvider)}
  *
  * @param <SRC>
  * @param <TRGT>
- * @see FluentEmbeddableMappingConfigurationSupport#embed(SerializableFunction, EmbeddableMappingConfigurationProvider)}
- * @see FluentEmbeddableMappingConfigurationSupport#embed(SerializableBiConsumer, EmbeddableMappingConfigurationProvider)}
+ * @see FluentEmbeddableMappingConfigurationSupport#embed(SerializableAccessor, EmbeddableMappingConfigurationProvider)}
+ * @see FluentEmbeddableMappingConfiguration#embed(org.codefilarete.reflection.SerializableMutator, EmbeddableMappingConfigurationProvider) }
  */
 public class Inset<SRC, TRGT> {
 	
-	static <SRC, TRGT> Inset<SRC, TRGT> fromSetter(SerializableBiConsumer<SRC, TRGT> targetSetter,
+	static <SRC, TRGT> Inset<SRC, TRGT> fromSetter(SerializableMutator<SRC, TRGT> targetSetter,
 												   EmbeddableMappingConfigurationProvider<? extends TRGT> beanMappingBuilder,
 												   LambdaMethodUnsheller lambdaMethodUnsheller) {
 		Method insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetSetter);
@@ -41,7 +42,7 @@ public class Inset<SRC, TRGT> {
 				beanMappingBuilder);
 	}
 	
-	static <SRC, TRGT> Inset<SRC, TRGT> fromGetter(SerializableFunction<SRC, TRGT> targetGetter,
+	static <SRC, TRGT> Inset<SRC, TRGT> fromGetter(SerializableAccessor<SRC, TRGT> targetGetter,
 												   EmbeddableMappingConfigurationProvider<? extends TRGT> beanMappingBuilder,
 												   LambdaMethodUnsheller lambdaMethodUnsheller) {
 		Method insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetGetter);
@@ -64,7 +65,7 @@ public class Inset<SRC, TRGT> {
 	private final EmbeddableMappingConfigurationProvider<? extends TRGT> configurationProvider;
 	private final ValueAccessPointMap<SRC, Column> overriddenColumns = new ValueAccessPointMap<>();
 	
-	Inset(SerializableBiConsumer<SRC, TRGT> targetSetter,
+	Inset(SerializableMutator<SRC, TRGT> targetSetter,
 		  EmbeddableMappingConfigurationProvider<? extends TRGT> configurationProvider,
 		  LambdaMethodUnsheller lambdaMethodUnsheller) {
 		this.insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetSetter);
@@ -124,11 +125,11 @@ public class Inset<SRC, TRGT> {
 		return (EmbeddableMappingConfigurationProvider<TRGT>) configurationProvider;
 	}
 	
-	public void overrideName(SerializableFunction methodRef, String columnName) {
+	public void overrideName(SerializableAccessor methodRef, String columnName) {
 		this.overriddenColumnNames.put(new AccessorByMethodReference(methodRef), columnName);
 	}
 	
-	public void overrideName(SerializableBiConsumer methodRef, String columnName) {
+	public void overrideName(SerializableMutator methodRef, String columnName) {
 		this.overriddenColumnNames.put(new MutatorByMethodReference(methodRef), columnName);
 	}
 	
@@ -136,11 +137,11 @@ public class Inset<SRC, TRGT> {
 		this.overriddenColumnNames.put(accessorChain, columnName);
 	}
 	
-	public void overrideSize(SerializableFunction methodRef, Size columnSize) {
+	public void overrideSize(SerializableAccessor methodRef, Size columnSize) {
 		this.overriddenColumnSizes.put(new AccessorByMethodReference(methodRef), columnSize);
 	}
 	
-	public void overrideSize(SerializableBiConsumer methodRef, Size columnSize) {
+	public void overrideSize(SerializableMutator methodRef, Size columnSize) {
 		this.overriddenColumnSizes.put(new MutatorByMethodReference<>(methodRef), columnSize);
 	}
 	
@@ -148,19 +149,19 @@ public class Inset<SRC, TRGT> {
 		this.overriddenColumnSizes.put(accessorChain, columnSize);
 	}
 	
-	public void override(SerializableFunction methodRef, Column column) {
+	public void override(SerializableAccessor methodRef, Column column) {
 		this.overriddenColumns.put(new AccessorByMethodReference(methodRef), column);
 	}
 	
-	public void override(SerializableBiConsumer methodRef, Column column) {
+	public void override(SerializableMutator methodRef, Column column) {
 		this.overriddenColumns.put(new MutatorByMethodReference(methodRef), column);
 	}
 	
-	public void exclude(SerializableBiConsumer methodRef) {
+	public void exclude(SerializableMutator methodRef) {
 		this.excludedProperties.add(new MutatorByMethodReference(methodRef));
 	}
 	
-	public void exclude(SerializableFunction methodRef) {
+	public void exclude(SerializableAccessor methodRef) {
 		this.excludedProperties.add(new AccessorByMethodReference(methodRef));
 	}
 }

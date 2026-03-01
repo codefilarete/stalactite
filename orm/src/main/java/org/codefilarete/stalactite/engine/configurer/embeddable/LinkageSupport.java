@@ -4,6 +4,8 @@ import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.ValueAccessPointVariantSupport;
@@ -14,8 +16,6 @@ import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry;
 import org.codefilarete.tool.function.Converter;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 import static org.codefilarete.tool.Nullable.nullable;
 
@@ -58,11 +58,11 @@ public class LinkageSupport<T, O> implements EmbeddableMappingConfiguration.Link
 	private Converter<O, ? /* value going to database */> writeConverter;
 	
 	
-	public LinkageSupport(SerializableFunction<T, O> getter) {
+	public LinkageSupport(SerializableAccessor<T, O> getter) {
 		this.accessor = new ValueAccessPointVariantSupport<>(getter);
 	}
 	
-	public LinkageSupport(SerializableBiConsumer<T, O> setter) {
+	public LinkageSupport(SerializableMutator<T, O> setter) {
 		this.accessor = new ValueAccessPointVariantSupport<>(setter);
 	}
 	

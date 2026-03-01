@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.engine;
 
-import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -9,8 +8,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import javax.sql.DataSource;
 
 import org.assertj.core.groups.Tuple;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyKeyQueryMapper;
 import org.codefilarete.stalactite.id.Identified;
@@ -22,29 +23,28 @@ import org.codefilarete.stalactite.query.model.FluentQueries;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
+import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.stalactite.sql.result.RowIterator;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
-import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.ALL;
 import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
 import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
-import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 import static org.codefilarete.tool.function.Functions.chain;
@@ -96,7 +96,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(FluentQueries.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 				.mapKey(Result::new, id)
-				.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
+				.map(idx, (SerializableMutator<Result, Integer>) Result::setIdx);
 		Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
 		assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 20L, 30L);
 		// stating that indexes are in same order than instances
@@ -133,7 +133,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(FluentQueries.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 				.mapKey(Result::new, id)
-				.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
+				.map(idx, (SerializableMutator<Result, Integer>) Result::setIdx);
 		Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
 		assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 20L, 30L);
 		// stating that indexes are in same order than instances
@@ -229,7 +229,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			questionPersister.update(modifiedQuestion, newQuestion, true);
 			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(FluentQueries.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
-					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
+					.map(idx, (SerializableMutator<Result, Integer>) Result::setIdx);
 			Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
 			// id should be left unmodified
 			assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 20L, 30L);
@@ -254,7 +254,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			questionPersister.update(modifiedQuestion, newQuestion, true);
 			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(FluentQueries.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
-					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
+					.map(idx, (SerializableMutator<Result, Integer>) Result::setIdx);
 			Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
 			// nothing should have changed
 			assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 20L, 30L);
@@ -282,7 +282,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			questionPersister.update(modifiedQuestion, newQuestion, true);
 			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(FluentQueries.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
-					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
+					.map(idx, (SerializableMutator<Result, Integer>) Result::setIdx);
 			Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
 			// id should be left unmodified
 			assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 20L, 30L, 40L);
@@ -311,7 +311,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			questionPersister.update(modifiedQuestion, newQuestion, true);
 			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(FluentQueries.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
-					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
+					.map(idx, (SerializableMutator<Result, Integer>) Result::setIdx);
 			Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
 			// the removed id must be missing (entity asked for deletion)
 			assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 30L);
@@ -342,7 +342,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			questionPersister.update(modifiedQuestion, newQuestion, true);
 			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(FluentQueries.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
-					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
+					.map(idx, (SerializableMutator<Result, Integer>) Result::setIdx);
 			Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
 			// the removed id must be missing (entity asked for deletion)
 			assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 30L);
@@ -1061,7 +1061,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			
 			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(FluentQueries.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
-					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
+					.map(idx, (SerializableMutator<Result, Integer>) Result::setIdx);
 			Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
 			assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 20L, 30L);
 			// stating that indexes are in same order than instances

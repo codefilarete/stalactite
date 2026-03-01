@@ -1,14 +1,14 @@
 package org.codefilarete.stalactite.engine.runtime;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
+import javax.annotation.Nullable;
 
+import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.diff.CollectionDiffer;
@@ -29,27 +29,27 @@ import org.codefilarete.tool.collection.Iterables;
  * @param <C> collection type
  * @author Guillaume Mary
  */
-public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsumer<Duo<I, I>, Boolean> {
+public class CollectionUpdater<I, O, C extends Collection<O>> implements Mutator<Duo<I, I>, Boolean> {
 	
 	private final CollectionDiffer<O> differ;
 	
-	private final Function<I, C> collectionGetter;
-	private final BiConsumer<O, I> reverseSetter;
+	private final Accessor<I, C> collectionGetter;
+	private final Mutator<O, I> reverseSetter;
 	protected final EntityWriter<O> elementPersister;
 	private final boolean shouldDeleteRemoved;
 	
 	/**
 	 * Default and simple use case constructor.
-	 * See {@link #CollectionUpdater(Function, EntityPersister, BiConsumer, boolean, Function)} for particular case about id policy
+	 * See {@link #CollectionUpdater(Accessor, EntityPersister, Mutator, boolean, Accessor)} for particular case about id policy
 	 * 
 	 * @param collectionGetter getter for collection from source entity
 	 * @param elementPersister target entities persister
 	 * @param reverseSetter setter for applying source entity to target objects, give null if no reverse mapping exists
 	 * @param shouldDeleteRemoved true to delete orphans
 	 */
-	public CollectionUpdater(Function<I, C> collectionGetter,
+	public CollectionUpdater(Accessor<I, C> collectionGetter,
 							 ConfiguredPersister<O, ?> elementPersister,
-							 @Nullable BiConsumer<O, I> reverseSetter,
+							 @Nullable Mutator<O, I> reverseSetter,
 							 boolean shouldDeleteRemoved) {
 		this(collectionGetter, elementPersister, reverseSetter, shouldDeleteRemoved, elementPersister.getMapping()::getId);
 	}
@@ -65,11 +65,11 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 	 * @param shouldDeleteRemoved true to delete orphans
 	 * @param idProvider expected to provide identifier of entities, used to store them per their id (in HashMap) to avoid usage of entity equals/hashcode
 	 */
-	public CollectionUpdater(Function<I, C> collectionGetter,
+	public CollectionUpdater(Accessor<I, C> collectionGetter,
 							 EntityPersister<O, ?> elementPersister,
-							 @Nullable BiConsumer<O, I> reverseSetter,
+							 @Nullable Mutator<O, I> reverseSetter,
 							 boolean shouldDeleteRemoved,
-							 Function<O, ?> idProvider) {
+							 Accessor<O, ?> idProvider) {
 		this.collectionGetter = collectionGetter;
 		this.reverseSetter = reverseSetter;
 		this.elementPersister = new EntityPersisterEntityWriterAdaptor<>(elementPersister);
@@ -77,11 +77,11 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 		this.differ = new CollectionDiffer<>(idProvider);
 	}
 	
-	public CollectionUpdater(Function<I, C> collectionGetter,
+	public CollectionUpdater(Accessor<I, C> collectionGetter,
 							 EntityWriter<O> elementPersister,
-							 @Nullable BiConsumer<O, I> reverseSetter,
+							 @Nullable Mutator<O, I> reverseSetter,
 							 boolean shouldDeleteRemoved,
-							 Function<O, ?> idProvider) {
+							 Accessor<O, ?> idProvider) {
 		this.collectionGetter = collectionGetter;
 		this.reverseSetter = reverseSetter;
 		this.elementPersister = elementPersister;
@@ -94,9 +94,9 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 	}
 	
 	@Override
-	public void accept(Duo<I, I> entry, Boolean allColumnsStatement) {
-		C modified = collectionGetter.apply(entry.getLeft());
-		C unmodified = collectionGetter.apply(entry.getRight());
+	public void set(Duo<I, I> entry, Boolean allColumnsStatement) {
+		C modified = collectionGetter.get(entry.getLeft());
+		C unmodified = collectionGetter.get(entry.getRight());
 		UpdateContext updateContext = newUpdateContext(entry);
 		if (modified == null && unmodified == null) {
 			// nothing to do since reference hasn't changed : still null
@@ -169,7 +169,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 	 * {@link #onAddedElements(UpdateContext, AbstractDiff)}, {@link #onHeldElements(UpdateContext, AbstractDiff)} and {@link #onRemovedElements(UpdateContext, AbstractDiff)}.
 	 * Can be overridden to return a subtype and richer {@link UpdateContext}.
 	 * 
-	 * @param updatePayload instance given to {@link #accept(Duo, Boolean)}
+	 * @param updatePayload instance given to {@link #set(Duo, Boolean)}
 	 * @return a new {@link UpdateContext} with given payload
 	 */
 	protected UpdateContext newUpdateContext(Duo<I, I> updatePayload) {
@@ -194,7 +194,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 			if (reverseSetter != null) {
 				// we cut the link between target and source
 				// NB : we don't take versioning into account overall because we can't : how to do it since we miss the unmodified version ?
-				reverseSetter.accept(diff.getSourceInstance(), null);
+				reverseSetter.set(diff.getSourceInstance(), null);
 				elementPersister.updateById(Collections.singleton(diff.getSourceInstance()));
 			}
 	}

@@ -3,10 +3,10 @@ package org.codefilarete.stalactite.dsl.entity;
 import java.util.Collection;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.relation.OneToManyEntityOptions;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * Mashup of {@link FluentEntityMappingBuilder} and {@link OneToManyEntityOptions} to let one configure both through a fluent API.
@@ -28,7 +28,7 @@ public interface FluentMappingBuilderOneToManyOptions<C, I, O, S extends Collect
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentMappingBuilderOneToManyMappedByOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink);
+	FluentMappingBuilderOneToManyMappedByOptions<C, I, O, S> mappedBy(SerializableMutator<O, ? super C> reverseLink);
 	
 	/**
 	 * {@inheritDoc}
@@ -38,7 +38,7 @@ public interface FluentMappingBuilderOneToManyOptions<C, I, O, S extends Collect
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentMappingBuilderOneToManyMappedByOptions<C, I, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink);
+	FluentMappingBuilderOneToManyMappedByOptions<C, I, O, S> mappedBy(SerializableAccessor<O, ? super C> reverseLink);
 	
 	/**
 	 * {@inheritDoc}
@@ -78,7 +78,7 @@ public interface FluentMappingBuilderOneToManyOptions<C, I, O, S extends Collect
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentMappingBuilderOneToManyOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
+	FluentMappingBuilderOneToManyOptions<C, I, O, S> reverselySetBy(SerializableMutator<O, C> reverseLink);
 	
 	/**
 	 * {@inheritDoc}

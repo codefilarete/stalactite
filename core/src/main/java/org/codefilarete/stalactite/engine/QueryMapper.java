@@ -8,12 +8,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 
 import org.codefilarete.reflection.MethodReferenceCapturer;
+import org.codefilarete.reflection.Mutator;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.engine.runtime.BeanPersister;
-import org.codefilarete.stalactite.query.builder.SQLBuilder;
 import org.codefilarete.stalactite.query.api.Selectable;
+import org.codefilarete.stalactite.query.builder.SQLBuilder;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.Accumulators;
@@ -35,7 +36,6 @@ import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.SerializableTriFunction;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
@@ -56,7 +56,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	/** Default method capturer. Shared to cache result of each lookup. */
 	private static final MethodReferenceCapturer METHOD_REFERENCE_CAPTURER = new MethodReferenceCapturer();
 	
-	/** The method capturer (when column types are not given by {@link #map(String, SerializableBiConsumer)}) */
+	/** The method capturer (when column types are not given by {@link BeanPropertyQueryMapper#map(String, SerializableMutator)}) */
 	private final MethodReferenceCapturer methodReferenceCapturer;
 	
 	/** Type of bean that will be built by {@link #execute(ConnectionProvider)} */
@@ -117,7 +117,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * @param rootBeanType type of built bean
 	 * @param sqlBuilder the sql to execute
 	 * @param columnBinderRegistry a provider for SQL parameters and selected column
-	 * @param methodReferenceCapturer a method capturer (when column types are not given by {@link #map(String, SerializableBiConsumer)}),
+	 * @param methodReferenceCapturer a method capturer (when column types are not given by {@link BeanPropertyQueryMapper#map(String, SerializableMutator)}),
 	 * default is {@link #METHOD_REFERENCE_CAPTURER}
 	 */
 	public QueryMapper(Class<C> rootBeanType,
@@ -134,7 +134,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * @param rootBeanType type of built bean
 	 * @param sqlBuilder the sql provider
 	 * @param columnBinderRegistry a provider for SQL parameters and selected column
-	 * @param methodReferenceCapturer a method capturer (when column types are not given by {@link #map(String, SerializableBiConsumer)}),
+	 * @param methodReferenceCapturer a method capturer (when column types are not given by {@link BeanPropertyQueryMapper#map(String, SerializableMutator)}),
 	 * default is {@link #METHOD_REFERENCE_CAPTURER}
 	 */
 	public QueryMapper(Class<C> rootBeanType,
@@ -339,13 +339,13 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * @return this
 	 */
 	@Override
-	public <I> QueryMapper<C> map(String columnName, BiConsumer<C, I> setter, Class<I> columnType) {
+	public <I> QueryMapper<C> map(String columnName, Mutator<C, I> setter, Class<I> columnType) {
 		map(new ColumnMapping<>(columnName, setter, columnType));
 		return this;
 	}
 	
 	/**
-	 * Same as {@link #map(String, BiConsumer, Class)}.
+	 * Same as {@link BeanPropertyQueryMapper#map(String, Mutator, Class)}.
 	 * Differs by providing the possiblity to convert the value before setting it onto the bean.
 	 *
 	 * @param columnName a column name
@@ -357,14 +357,14 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * @return this
 	 */
 	@Override
-	public <I, J> QueryMapper<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, Converter<I, J> converter) {
-		return map(columnName, (c, i) -> setter.accept(c, converter.convert(i)), columnType);
+	public <I, J> QueryMapper<C> map(String columnName, SerializableMutator<C, J> setter, Class<I> columnType, Converter<I, J> converter) {
+		return map(columnName, (c, i) -> setter.set(c, converter.convert(i)), columnType);
 	}
 	
 	/**
 	 * Defines a mapping between a column of the query and a bean property through its setter.
 	 * WARNING : Column type will be deduced from the setter type. To do it, some bytecode enhancement is required, therefore it's not the cleanest
-	 * way to define the binding. Prefer {@link #map(String, BiConsumer, Class)}
+	 * way to define the binding. Prefer {@link BeanPropertyQueryMapper#map(String, Mutator, Class)}
 	 *
 	 * @param columnName a column name
 	 * @param setter the setter function
@@ -372,13 +372,13 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * @return this
 	 */
 	@Override
-	public <I> QueryMapper<C> map(String columnName, SerializableBiConsumer<C, I> setter) {
+	public <I> QueryMapper<C> map(String columnName, SerializableMutator<C, I> setter) {
 		map(columnName, setter, giveColumnType(setter));
 		return this;
 	}
 	
 	/**
-	 * Same as {@link #map(String, SerializableBiConsumer)}.
+	 * Same as {@link BeanPropertyQueryMapper#map(String, SerializableMutator)}.
 	 * Differs by providing the possibility to convert the value before setting it onto the bean.
 	 *
 	 * @param columnName a column name
@@ -388,14 +388,14 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * @return this
 	 */
 	@Override
-	public <I, J> QueryMapper<C> map(String columnName, SerializableBiConsumer<C, J> setter, Converter<I, J> converter) {
+	public <I, J> QueryMapper<C> map(String columnName, SerializableMutator<C, J> setter, Converter<I, J> converter) {
 		Method method = methodReferenceCapturer.findMethod(setter);
 		Class<I> aClass = (Class<I>) method.getParameterTypes()[0];
-		return map(columnName, (c, i) -> setter.accept(c, converter.convert(i)), aClass);
+		return map(columnName, (c, i) -> setter.set(c, converter.convert(i)), aClass);
 	}
 	
 	/**
-	 * Same as {@link #map(String, BiConsumer, Class)} but with {@link Selectable} signature
+	 * Same as {@link BeanPropertyQueryMapper#map(String, Mutator, Class)} but with {@link Selectable} signature
 	 *
 	 * @param column the mapped column
 	 * @param setter the setter function
@@ -403,13 +403,13 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * @return this
 	 */
 	@Override
-	public <I> QueryMapper<C> map(Selectable<I> column, BiConsumer<C, I> setter) {
+	public <I> QueryMapper<C> map(Selectable<I> column, Mutator<C, I> setter) {
 		map(new ColumnMapping<>(column, setter));
 		return this;
 	}
 	
 	/**
-	 * Same as {@link #map(Selectable, BiConsumer)}.
+	 * Same as {@link BeanPropertyQueryMapper#map(Selectable, Mutator)}.
 	 * Differs by providing the possibility to convert the value before setting it onto the bean.
 	 *
 	 * @param column the mapped column
@@ -421,9 +421,9 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 */
 	@Override
 	public <I, J> QueryMapper<C> map(Selectable<I> column,
-									 BiConsumer<C, J> setter,
+									 Mutator<C, J> setter,
 									 Converter<I, J> converter) {
-		return map(column, (c, i) -> setter.accept(c, converter.convert(i)));
+		return map(column, (c, i) -> setter.set(c, converter.convert(i)));
 	}
 	
 	private <I> void map(ColumnMapping<C, I> columnMapping) {
@@ -450,8 +450,8 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	
 	/**
 	 * Executes the query onto the connection given by the {@link ConnectionProvider}. Transforms the result to a list of beans thanks to the
-	 * definition given through {@link #mapKey(SerializableFunction, String, Class)}, {@link #map(String, BiConsumer, Class)}
-	 * and {@link #map(String, SerializableBiConsumer)} methods.
+	 * definition given through {@link #mapKey(SerializableFunction, String, Class)}, {@link BeanPropertyQueryMapper#map(String, Mutator, Class)}
+	 * and {@link BeanPropertyQueryMapper#map(String, SerializableMutator)} methods.
 	 *
 	 * @param connectionProvider the object that will give the {@link java.sql.Connection}
 	 * @return a {@link Set} filled by the instances built
@@ -510,7 +510,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 		return new WholeResultSetTransformer<>(resultSetRowConverter);
 	}
 	
-	private <I> Class<I> giveColumnType(SerializableBiConsumer<C, I> setter) {
+	private <I> Class<I> giveColumnType(SerializableMutator<C, I> setter) {
 		Method method = methodReferenceCapturer.findMethod(setter);
 		// we could take the first parameter type, but with a particular syntax of setter it's insufficient, last element is better 
 		return (Class<I>) Arrays.last(method.getParameterTypes());
@@ -643,14 +643,14 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 		
 		private final QueryMapper.Column<I> column;
 		
-		private final BiConsumer<T, I> setter;
+		private final Mutator<T, I> setter;
 		
-		public ColumnMapping(String columnName, BiConsumer<T, I> setter, Class<I> columnType) {
+		public ColumnMapping(String columnName, Mutator<T, I> setter, Class<I> columnType) {
 			this.column = new ColumnDefinition<>(columnName, columnType);
 			this.setter = setter;
 		}
 		
-		public ColumnMapping(Selectable<I> column, BiConsumer<T, I> setter) {
+		public ColumnMapping(Selectable<I> column, Mutator<T, I> setter) {
 			this.column = new ColumnWrapper<>(column);
 			this.setter = setter;
 		}
@@ -659,7 +659,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 			return column;
 		}
 		
-		public BiConsumer<T, I> getSetter() {
+		public Mutator<T, I> getSetter() {
 			return setter;
 		}
 	}

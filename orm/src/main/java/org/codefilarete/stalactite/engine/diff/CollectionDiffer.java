@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
@@ -28,9 +29,9 @@ import static org.codefilarete.stalactite.engine.runtime.onetomany.AbstractOneTo
  */
 public class CollectionDiffer<C> {
 	
-	private final Function<C, ?> idProvider;
+	private final Accessor<C, ?> idProvider;
 	
-	public CollectionDiffer(Function<C, ?> idProvider) {
+	public CollectionDiffer(Accessor<C, ?> idProvider) {
 		this.idProvider = idProvider;
 	}
 	
@@ -45,8 +46,8 @@ public class CollectionDiffer<C> {
 	 * modification, all instances will be {@link State#HELD}.
 	 */
 	public <I> KeepOrderSet<Diff<C>> diff(Collection<C> before, Collection<C> after) {
-		Map<I, C> beforeMappedOnIdentifier = Iterables.map(before, (Function<C, I>) idProvider, Function.identity(), KeepOrderMap::new);
-		Map<I, C> afterMappedOnIdentifier = Iterables.map(after, (Function<C, I>) idProvider, Function.identity(), KeepOrderMap::new);
+		Map<I, C> beforeMappedOnIdentifier = (Map<I, C>) Iterables.map(before, idProvider::get, Function.identity(), KeepOrderMap::new);
+		Map<I, C> afterMappedOnIdentifier = (Map<I, C>) Iterables.map(after, idProvider::get, Function.identity(), KeepOrderMap::new);
 		
 		KeepOrderSet<Diff<C>> result = new KeepOrderSet<>();
 		
@@ -106,12 +107,12 @@ public class CollectionDiffer<C> {
 			Iterable<Duo<Integer, Integer>> indexPairs = () -> new UntilBothIterator<>(beforeIndexes.get(e), afterIndexes.get(e));
 			// NB: These instances may not be added to result, it depends on iteration
 			IndexedDiff<C> removed = new IndexedDiff<>(REMOVED, e, null);
-			Object id = idProvider.apply(e);
+			Object id = idProvider.get(e);
 			IndexedDiff<C> held = new IndexedDiff<>(HELD,
 													// Is this can be more efficient ? shouldn't we compute a Map of i vs before/after instead of iterating on before/after for each held ?
 													// ... benchmark should be done
-													Iterables.find(before, c -> Predicates.equalOrNull(idProvider.apply(c), id)),
-													Iterables.find(after, c -> Predicates.equalOrNull(idProvider.apply(c), id)));
+													Iterables.find(before, c -> Predicates.equalOrNull(idProvider.get(c), id)),
+													Iterables.find(after, c -> Predicates.equalOrNull(idProvider.get(c), id)));
 			IndexedDiff<C> added = new IndexedDiff<>(ADDED, null, e);
 			for (Duo<? extends Integer, ? extends Integer> indexPair : indexPairs) {
 				if (indexPair.getLeft() != null && indexPair.getRight() != null) {

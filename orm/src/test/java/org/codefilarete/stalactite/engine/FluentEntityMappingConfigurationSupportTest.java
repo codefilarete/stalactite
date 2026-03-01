@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 import javax.sql.DataSource;
 
 import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.SerializableAccessor;
 import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
@@ -55,7 +56,6 @@ import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifie
 import org.codefilarete.stalactite.query.Operators;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.Length;
@@ -64,6 +64,8 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.ddl.structure.UniqueConstraint;
+import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
+import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
@@ -74,7 +76,6 @@ import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader.LambdaResultSetReader;
-import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.tool.Dates;
 import org.codefilarete.tool.Duo;
@@ -134,7 +135,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		assertThatThrownBy(() -> mappingStrategy.build(persistenceContext))
 				.isInstanceOf(UnsupportedOperationException.class)
 				.hasMessage("Identifier is not defined for o.c.s.e.FluentEntityMappingConfigurationSupportTest$Toto,"
-						+ " please add one through o.c.s.d.e.FluentEntityMappingBuilder.mapKey(o.d.j.u.f.s.SerializableBiConsumer, o.c.s.d.i.IdentifierPolicy)");
+						+ " please add one through o.c.s.d.e.FluentEntityMappingBuilder.mapKey(o.c.r.SerializableMutator, o.c.s.d.i.IdentifierPolicy)");
 	}
 	
 	@Nested
@@ -2139,7 +2140,7 @@ class FluentEntityMappingConfigurationSupportTest {
 							.map(Timestamp::getModificationDate))
 					.mapOneToMany(Country::getCities, FluentMappings.entityBuilder(City.class, long.class))
 						// testing mappedBy with inheritance
-						.mappedBy((SerializableFunction<City, AbstractCountry>) City::getAbstractCountry)
+						.mappedBy((SerializableAccessor<City, AbstractCountry>) City::getAbstractCountry)
 					.map(Country::getDescription).columnName("xx")
 					.map(Country::getDummyProperty).columnName("dd")
 					.build(persistenceContext);

@@ -9,6 +9,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
@@ -40,7 +41,7 @@ class MapUpdater<SRC, SRCID, K, V, ENTITY, ENTITY_ID, KK, VV> extends Collection
 	private final RelationMode maintenanceMode;
 	private final BiFunction<Entry<K, V>, SRCID, KeyValueRecord<KK, VV, SRCID>> recordBuilder;
 	
-	public MapUpdater(Function<SRC, Set<Entry<K, V>>> targetEntitiesGetter,
+	public MapUpdater(Accessor<SRC, Set<Entry<K, V>>> targetEntitiesGetter,
 					  ConfiguredRelationalPersister<ENTITY, ENTITY_ID> entityPersister,
 					  EntityPersister<KeyValueRecord<KK, VV, SRCID>, RecordId<KK, SRCID>> keyValueRecordPersister,
 					  ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,

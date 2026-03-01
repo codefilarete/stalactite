@@ -3,14 +3,15 @@ package org.codefilarete.stalactite.engine;
 import java.sql.ResultSet;
 import java.util.function.BiConsumer;
 
-import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.reflection.Mutator;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.query.api.Selectable;
+import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.ResultSetRowAssembler;
 import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer;
 import org.codefilarete.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
 import org.codefilarete.tool.function.Converter;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 
 /**
  * Methods that define bean property mapping when creating an SQL query through {@link PersistenceContext#newQuery(Query, Class)}.
@@ -27,12 +28,12 @@ public interface BeanPropertyQueryMapper<C> {
 	 * @param columnType column and value type
 	 * @param <I> column and value type
 	 * @return an instance that allows method chaining
-	 * @see #map(String, SerializableBiConsumer, Converter)
+	 * @see #map(String, SerializableMutator, Converter)
 	 */
-	<I> BeanPropertyQueryMapper<C> map(String columnName, BiConsumer<C, I> setter, Class<I> columnType);
+	<I> BeanPropertyQueryMapper<C> map(String columnName, Mutator<C, I> setter, Class<I> columnType);
 	
 	/**
-	 * Equivalent of {@link #map(String, BiConsumer, Class)} with an additional converter.
+	 * Equivalent of {@link #map(String, Mutator, Class)} with an additional converter.
 	 * Maps a column to a bean property by converting its value before setting it.
 	 *
 	 * @param columnName column name that will fill the property
@@ -41,24 +42,24 @@ public interface BeanPropertyQueryMapper<C> {
 	 * @param converter value converter
 	 * @param <I> column and value type
 	 * @return an instance that allows method chaining
-	 * @see #map(String, SerializableBiConsumer, Converter)
+	 * @see #map(String, SerializableMutator, Converter)
 	 */
-	<I, J> BeanPropertyQueryMapper<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, Converter<I, J> converter);
+	<I, J> BeanPropertyQueryMapper<C> map(String columnName, SerializableMutator<C, J> setter, Class<I> columnType, Converter<I, J> converter);
 	
 	/**
-	 * Equivalent of {@link #map(String, BiConsumer, Class)} without ensuring column type argument : it will be deduced from setter.
-	 * Prefer {@link #map(String, BiConsumer, Class)} to ensure value reading from {@link ResultSet}
+	 * Equivalent of {@link #map(String, Mutator, Class)} without ensuring column type argument : it will be deduced from setter.
+	 * Prefer {@link #map(String, Mutator, Class)} to ensure value reading from {@link ResultSet}
 	 *
 	 * @param columnName column name that will fill the property
 	 * @param setter property setter
 	 * @param <I> column and value type
 	 * @return an instance that allows method chaining
 	 */
-	<I> BeanPropertyQueryMapper<C> map(String columnName, SerializableBiConsumer<C, I> setter);
+	<I> BeanPropertyQueryMapper<C> map(String columnName, SerializableMutator<C, I> setter);
 	
 	/**
-	 * Equivalent of {@link #map(String, SerializableBiConsumer, Class, Converter)} without ensuring column type argument : it will be deduced from setter.
-	 * Prefer {@link #map(String, SerializableBiConsumer, Class, Converter)} to ensure value reading from {@link ResultSet}
+	 * Equivalent of {@link #map(String, SerializableMutator, Class, Converter)} without ensuring column type argument : it will be deduced from setter.
+	 * Prefer {@link #map(String, SerializableMutator, Class, Converter)} to ensure value reading from {@link ResultSet}
 	 *
 	 * @param columnName column name that will fill the property
 	 * @param setter property setter
@@ -66,27 +67,27 @@ public interface BeanPropertyQueryMapper<C> {
 	 * @param <I> column and value type
 	 * @return an instance that allows method chaining
 	 */
-	<I, J> BeanPropertyQueryMapper<C> map(String columnName, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
+	<I, J> BeanPropertyQueryMapper<C> map(String columnName, SerializableMutator<C, J> setter, Converter<I, J> converter);
 	
 	/**
-	 * Equivalent of {@link #map(String, SerializableBiConsumer)} with column argument.
+	 * Equivalent of {@link #map(String, SerializableMutator)} with column argument.
 	 *
 	 * @param column column name that will fill the property
 	 * @param setter property setter
 	 * @param <I> column and value type
 	 * @return an instance that allows method chaining
 	 */
-	<I> BeanPropertyQueryMapper<C> map(Selectable<I> column, BiConsumer<C, I> setter);
+	<I> BeanPropertyQueryMapper<C> map(Selectable<I> column, Mutator<C, I> setter);
 	
 	/**
-	 * Equivalent of {@link #map(String, SerializableBiConsumer, Converter)} with column argument.
+	 * Equivalent of {@link #map(String, SerializableMutator, Converter)} with column argument.
 	 *
 	 * @param column column name that will fill the property
 	 * @param setter property setter
 	 * @param <I> column and value type
 	 * @return an instance that allows method chaining
 	 */
-	<I, J> BeanPropertyQueryMapper<C> map(Selectable<I> column, BiConsumer<C, J> setter, Converter<I, J> converter);
+	<I, J> BeanPropertyQueryMapper<C> map(Selectable<I> column, Mutator<C, J> setter, Converter<I, J> converter);
 	
 	/**
 	 * Associates beans created by this instance and the ones created by another converter with setter (represented as a {@link BiConsumer}).

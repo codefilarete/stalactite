@@ -3,12 +3,12 @@ package org.codefilarete.stalactite.dsl.property;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * API to define a Map relation
@@ -79,7 +79,7 @@ public interface MapOptions<K, V, M extends Map<K, V>> {
 		 * @param getter property accessor for which column name must be overridden
 		 * @param columnName column name to be used by override
 		 */
-		EmbeddableInMapOptions<E> overrideName(SerializableFunction<E, ?> getter, String columnName);
+		EmbeddableInMapOptions<E> overrideName(SerializableAccessor<E, ?> getter, String columnName);
 		
 		/**
 		 * Allows to set column name while embedded configuration is given by {@link #withKeyMapping(EmbeddableMappingConfigurationProvider)}
@@ -87,7 +87,7 @@ public interface MapOptions<K, V, M extends Map<K, V>> {
 		 * @param setter property accessor for which column name must be overridden
 		 * @param columnName column name to be used by override
 		 */
-		EmbeddableInMapOptions<E> overrideName(SerializableBiConsumer<E, ?> setter, String columnName);
+		EmbeddableInMapOptions<E> overrideName(SerializableMutator<E, ?> setter, String columnName);
 		
 		/**
 		 * Allows to set column name while embedded configuration is given by {@link #withKeyMapping(EmbeddableMappingConfigurationProvider)}
@@ -95,7 +95,7 @@ public interface MapOptions<K, V, M extends Map<K, V>> {
 		 * @param getter property accessor for which column name must be overridden
 		 * @param columnSize column name to be used by override
 		 */
-		EmbeddableInMapOptions<E> overrideSize(SerializableFunction<E, ?> getter, Size columnSize);
+		EmbeddableInMapOptions<E> overrideSize(SerializableAccessor<E, ?> getter, Size columnSize);
 		
 		/**
 		 * Allows to set column name while embedded configuration is given by {@link #withKeyMapping(EmbeddableMappingConfigurationProvider)}
@@ -103,7 +103,7 @@ public interface MapOptions<K, V, M extends Map<K, V>> {
 		 * @param setter property accessor for which column name must be overridden
 		 * @param columnSize column name to be used by override
 		 */
-		EmbeddableInMapOptions<E> overrideSize(SerializableBiConsumer<E, ?> setter, Size columnSize);
+		EmbeddableInMapOptions<E> overrideSize(SerializableMutator<E, ?> setter, Size columnSize);
 		
 	}
 }

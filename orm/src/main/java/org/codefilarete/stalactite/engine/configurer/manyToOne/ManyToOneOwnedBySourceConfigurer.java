@@ -18,12 +18,13 @@ import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
-import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
-import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.RuntimeMappingException;
+import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.configurer.manyToOne.ManyToOneRelation.MappedByConfiguration;
 import org.codefilarete.stalactite.engine.configurer.onetoone.FirstPhaseCycleLoadListener;
@@ -50,7 +51,6 @@ import org.codefilarete.tool.bean.FieldIterator;
 import org.codefilarete.tool.bean.InstanceFieldIterator;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 
 import static org.codefilarete.tool.Nullable.nullable;
 
@@ -134,7 +134,7 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 	 * @param targetClass target entity type, provided to look up for reverse property if no sufficient info was given
 	 * @return null if no information was provided about the reverse side (no bidirectionality)
 	 */
-	private SerializableBiConsumer<TRGT, SRC> buildReverseCombiner(Class<TRGT> targetClass) {
+	private SerializableMutator<TRGT, SRC> buildReverseCombiner(Class<TRGT> targetClass) {
 		MappedByConfiguration<SRC, TRGT, Collection<SRC>> mappedByConfiguration = manyToOneRelation.getMappedByConfiguration();
 		if (mappedByConfiguration.isEmpty()) {
 			// relation is not bidirectional, and not even set by the reverse link, there's nothing to do
@@ -160,7 +160,7 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 				} // else : relation is not bidirectional, or not a usual one, may be set by reverse link
 			}
 			
-			Nullable<SerializableBiConsumer<TRGT, SRC>> configuredCombiner = nullable(mappedByConfiguration.getCombiner());
+			Nullable<SerializableMutator<TRGT, SRC>> configuredCombiner = nullable(mappedByConfiguration.getCombiner());
 			if (collectionAccessor == null) {
 				return configuredCombiner.get();
 			} else {
@@ -171,7 +171,7 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 					collectionFactory = Reflections.giveCollectionFactory(collectionType);
 				}
 				PropertyAccessor<TRGT, Collection<SRC>> finalCollectionAccessor = collectionAccessor;
-				SerializableBiConsumer<TRGT, SRC> combiner = configuredCombiner.getOr((TRGT trgt, SRC src) -> {
+				SerializableMutator<TRGT, SRC> combiner = configuredCombiner.getOr((TRGT trgt, SRC src) -> {
 					// collectionAccessor can't be null due to nullable check
 					finalCollectionAccessor.get(trgt).add(src);
 				});
@@ -183,7 +183,7 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 						finalCollectionAccessor.set(trgt, effectiveCollectionFactory.get());
 					}
 					// Note that combiner can't be null here thanks to nullable(..) check
-					combiner.accept(trgt, src);
+					combiner.set(trgt, src);
 				};
 			}
 		}
@@ -220,14 +220,14 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 	
 	protected BeanRelationFixer<SRC, TRGT> determineRelationFixer(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		Mutator<SRC, TRGT> targetSetter = manyToOneRelation.getTargetProvider().toMutator();
-		SerializableBiConsumer<TRGT, SRC> reverseCombiner = buildReverseCombiner(targetPersister.getClassToPersist());
+		SerializableMutator<TRGT, SRC> reverseCombiner = buildReverseCombiner(targetPersister.getClassToPersist());
 		
 		if (reverseCombiner == null) {
 			return BeanRelationFixer.of(targetSetter::set);
 		} else {
 			return (target, input) -> {
 				targetSetter.set(target, input);
-				reverseCombiner.accept(input, target);
+				reverseCombiner.set(input, target);
 			};
 		}
 	}

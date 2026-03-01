@@ -7,6 +7,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
@@ -34,7 +35,7 @@ public interface ResultSetTransformer<C, I> {
 	 * @param combiner the applyer of the value over a bean property
 	 * @param <V> the type of the read value, must be compatible with the bean property input
 	 */
-	default <V> void add(String columnName, ResultSetReader<V> reader, BiConsumer<C, V> combiner) {
+	default <V> void add(String columnName, ResultSetReader<V> reader, Mutator<C, V> combiner) {
 		add(new ColumnConsumer<>(columnName, reader, combiner));
 	}
 	

@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 
 /**
@@ -18,7 +19,7 @@ import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 public class ColumnConsumer<C, I> implements ResultSetRowAssembler<C> {
 	
 	private final ColumnReader<I> reader;
-	private final BiConsumer<C, I> propertySetter;
+	private final Mutator<C, I> propertySetter;
 	
 	/**
 	 * General constructor which accept {@link SingleColumnReader} or {@link MultipleColumnsReader} 
@@ -26,7 +27,7 @@ public class ColumnConsumer<C, I> implements ResultSetRowAssembler<C> {
 	 * @param reader any {@link SingleColumnReader} or {@link MultipleColumnsReader}
 	 * @param propertySetter a consumer that is expected to set a property of a bean with value given by reader
 	 */
-	public ColumnConsumer(ColumnReader<I> reader, BiConsumer<C, I> propertySetter) {
+	public ColumnConsumer(ColumnReader<I> reader, Mutator<C, I> propertySetter) {
 		this.reader = reader;
 		this.propertySetter = propertySetter;
 	}
@@ -38,7 +39,7 @@ public class ColumnConsumer<C, I> implements ResultSetRowAssembler<C> {
 	 * @param reader column type reader
 	 * @param propertySetter a consumer that is expected to set a property of a bean with value given by reader
 	 */
-	public ColumnConsumer(String columnName, ResultSetReader<I> reader, BiConsumer<C, I> propertySetter) {
+	public ColumnConsumer(String columnName, ResultSetReader<I> reader, Mutator<C, I> propertySetter) {
 		this(new SingleColumnReader<>(columnName, reader), propertySetter);
 	}
 	
@@ -52,7 +53,7 @@ public class ColumnConsumer<C, I> implements ResultSetRowAssembler<C> {
 	/**
 	 * @return the given consumer at construction time
 	 */
-	public BiConsumer<C, I> getPropertySetter() {
+	public Mutator<C, I> getPropertySetter() {
 		return propertySetter;
 	}
 	
@@ -64,7 +65,7 @@ public class ColumnConsumer<C, I> implements ResultSetRowAssembler<C> {
 	 */
 	@Override
 	public void assemble(C instance, ResultSet resultSet) {
-		propertySetter.accept(instance, reader.read(resultSet));
+		propertySetter.set(instance, reader.read(resultSet));
 	}
 	
 	@Override

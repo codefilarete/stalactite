@@ -6,6 +6,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.function.TriConsumer;
 
@@ -18,9 +20,9 @@ import org.codefilarete.tool.function.TriConsumer;
  * @param <I> relation input type 
  *     
  * @author Guillaume Mary
- * @see #of(BiConsumer, Function, Class)
- * @see #of(BiConsumer, Function, Supplier)
- * @see #of(BiConsumer)
+ * @see #of(Mutator, Accessor, Class)
+ * @see #of(Mutator, Accessor, Supplier)
+ * @see #of(Mutator)
  */
 @FunctionalInterface
 public interface BeanRelationFixer<E, I> {
@@ -39,7 +41,7 @@ public interface BeanRelationFixer<E, I> {
 	 * @param setter the method that fixes the relation
 	 * @return a {@link BeanRelationFixer} mapped to {@link BiConsumer#accept(Object, Object)}
 	 */
-	static <E, I> BeanRelationFixer<E, I> of(BiConsumer<E, I> setter) {
+	static <E, I> BeanRelationFixer<E, I> of(Mutator<E, I> setter) {
 		return of(setter, (a, b) -> { /* no bi-directional relation, nothing to do */ });
 	}
 	
@@ -50,23 +52,24 @@ public interface BeanRelationFixer<E, I> {
 	 * @param reverseSetter the setter for the other side of the relation   
 	 * @return a {@link BeanRelationFixer} mapped to {@link BiConsumer#accept(Object, Object)}
 	 */
-	static <E, I> BeanRelationFixer<E, I> of(BiConsumer<E, I> setter, BiConsumer<I, E> reverseSetter) {
+	static <E, I> BeanRelationFixer<E, I> of(Mutator<E, I> setter, Mutator<I, E> reverseSetter) {
 		return (s, i) -> {
-			setter.accept(s, i);
+			setter.set(s, i);
 			// bidirectional assignment
-			reverseSetter.accept(i, s);
+			reverseSetter.set(i, s);
 		};
 	}
 	
 	/**
-	 * Shortcut to {@link #of(BiConsumer, Function, Supplier)} with a supplier that will instantiate the given concrete Collection class
+	 * Shortcut to {@link #of(Mutator, Accessor, Supplier)} with a supplier that will instantiate the given concrete Collection class
 	 * 
 	 * @param setter the method that sets the {@link Collection} onto the target bean
 	 * @param getter the method that gets the {@link Collection} from the target bean
 	 * @param concreteCollectionType the Class that will be instanced to fill the relation if it is null
 	 * @return a {@link BeanRelationFixer} that will add the input to the Collection and create if the getter returns null
 	 */
-	static <E, I, C extends Collection<I>> BeanRelationFixer<E, I> of(BiConsumer<E, C> setter, Function<E, C> getter,
+	static <E, I, C extends Collection<I>> BeanRelationFixer<E, I> of(Mutator<E, C> setter,
+																	  Accessor<E, C> getter,
 																	  Class<? extends C> concreteCollectionType) {
 		return of(setter, getter, () -> Reflections.newInstance(concreteCollectionType));
 	}
@@ -79,21 +82,22 @@ public interface BeanRelationFixer<E, I> {
 	 * @param collectionFactory a supplier of an instance to fill the relation if it is null
 	 * @return a {@link BeanRelationFixer} that will add the input to the Collection and create if the getter returns null
 	 */
-	static <E, I, C extends Collection<I>> BeanRelationFixer<E, I> of(BiConsumer<E, C> setter, Function<E, C> getter, Supplier<C> collectionFactory) {
+	static <E, I, C extends Collection<I>> BeanRelationFixer<E, I> of(Mutator<E, C> setter, Accessor<E, C> getter, Supplier<C> collectionFactory) {
 		return of(setter, getter, collectionFactory, (a, b) -> { /* no bi-directional relation, nothing to do */ });
 	}
 	
 	/**
-	 * Shortcut to {@link #of(BiConsumer, Function, Supplier, BiConsumer)} with a supplier that will instantiate the given concrete Collection class
+	 * Shortcut to {@link #of(Mutator, Accessor, Supplier, Mutator)} with a supplier that will instantiate the given concrete Collection class
 	 *
 	 * @param setter the method that sets the {@link Collection} onto the target bean
 	 * @param getter the method that gets the {@link Collection} from the target bean
 	 * @param concreteCollectionType the Class that will be instanced to fill the relation if it is null
 	 * @return a {@link BeanRelationFixer} that will add the input to the Collection and create if the getter returns null
 	 */
-	static <E, I, C extends Collection<I>> BeanRelationFixer<E, I> of(BiConsumer<E, C> setter, Function<E, C> getter,
+	static <E, I, C extends Collection<I>> BeanRelationFixer<E, I> of(Mutator<E, C> setter,
+																	  Accessor<E, C> getter,
 																	  Class<? extends C> concreteCollectionType,
-																	  BiConsumer<I, E> reverseSetter) {
+																	  Mutator<I, E> reverseSetter) {
 		return of(setter, getter, () -> Reflections.newInstance(concreteCollectionType), reverseSetter);
 	}
 	
@@ -106,12 +110,12 @@ public interface BeanRelationFixer<E, I> {
 	 * @param reverseSetter the setter for the other side of the relation
 	 * @return a {@link BeanRelationFixer} that will add the input to the Collection and create if the getter returns null
 	 */
-	static <E, I, C extends Collection<I>> BeanRelationFixer<E, I> of(BiConsumer<E, C> setter, Function<E, C> getter, Supplier<C> collectionFactory,
-																	  BiConsumer<I, E> reverseSetter) {
+	static <E, I, C extends Collection<I>> BeanRelationFixer<E, I> of(Mutator<E, C> setter, Accessor<E, C> getter, Supplier<C> collectionFactory,
+																	  Mutator<I, E> reverseSetter) {
 		return ofAdapter(setter, getter, collectionFactory, (target, input, collection) -> {
 			collection.add(input);
 			// bidirectional assignment
-			reverseSetter.accept(input, target);
+			reverseSetter.set(input, target);
 		});
 	}
 	
@@ -124,16 +128,16 @@ public interface BeanRelationFixer<E, I> {
 	 * @param adapter the final method that will be applied to bean, input and collection, expected to have at least a collection add, with eventual input adaptation
 	 * @return a {@link BeanRelationFixer} that will add the input to the Collection and create if the getter returns null
 	 */
-	static <E, I, C extends Collection<?>> BeanRelationFixer<E, I> ofAdapter(BiConsumer<E, C> setter,
-																			 Function<E, C> getter,
+	static <E, I, C extends Collection<?>> BeanRelationFixer<E, I> ofAdapter(Mutator<E, C> setter,
+																			 Accessor<E, C> getter,
 																			 Supplier<C> collectionFactory,
 																			 TriConsumer<E, I, C> adapter) {
 		return (target, input) -> {
-			C collection = getter.apply(target);
+			C collection = getter.get(target);
 			if (collection == null) {
 				// we fill the relation
 				collection = collectionFactory.get();
-				setter.accept(target, collection);
+				setter.set(target, collection);
 			}
 			adapter.accept(target, input, collection);
 		};

@@ -1,16 +1,16 @@
 package org.codefilarete.stalactite.engine.runtime.onetomany;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 
 import static org.codefilarete.tool.bean.Objects.preventNull;
@@ -29,9 +29,9 @@ public class IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C extends 
 	 * @param reverseSetter
 	 */
 	public IndexedAssociationTableManyRelationDescriptor(Accessor<SRC, C> collectionGetter,
-														 BiConsumer<SRC, C> collectionSetter,
+														 Mutator<SRC, C> collectionSetter,
 														 Supplier<C> collectionFactory,
-														 @Nullable BiConsumer<TRGT, SRC> reverseSetter,
+														 @Nullable Mutator<TRGT, SRC> reverseSetter,
 														 Function<SRC, SRCID> idProvider) {
 		super(collectionGetter, collectionSetter, collectionFactory, reverseSetter);
 		super.relationFixer = new InMemoryRelationHolder(idProvider);
@@ -88,7 +88,7 @@ public class IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C extends 
 			// we store the relation in memory without setting it onto source entity because we need to sort it later
 			currentSelectedIndexes.get().computeIfAbsent(idProvider.apply(source), srcid -> new CollectionOrderStorage());
 			// bidirectional assignment
-			preventNull(getReverseSetter(), NOOP_REVERSE_SETTER).accept(input, source);
+			preventNull(getReverseSetter(), NOOP_REVERSE_SETTER).set(input, source);
 		}
 		
 		public void init() {
@@ -110,10 +110,10 @@ public class IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C extends 
 				CollectionOrderStorage inMemoryCollection = currentSelectedIndexes.get().get(idProvider.apply(src));
 				if (inMemoryCollection != null) {  // inMemoryCollection can be null if there's no associated entity in the database
 					Map<Integer, TRGT> targetIdPerId = inMemoryCollection.targetPerIndex;
-					C relationCollection = getCollectionGetter().apply(src);
+					C relationCollection = getCollectionGetter().get(src);
 					if (relationCollection == null) {
 						relationCollection = getCollectionFactory().get();
-						getCollectionSetter().accept(src, relationCollection);
+						getCollectionSetter().set(src, relationCollection);
 					}
 					relationCollection.addAll(new LinkedList<>(targetIdPerId.values()));
 				}

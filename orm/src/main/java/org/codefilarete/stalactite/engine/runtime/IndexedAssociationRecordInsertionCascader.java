@@ -3,8 +3,8 @@ package org.codefilarete.stalactite.engine.runtime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Function;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.tool.trace.MutableInt;
@@ -17,12 +17,12 @@ import static org.codefilarete.stalactite.engine.runtime.onetomany.AbstractOneTo
 public class IndexedAssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>>
 		extends AfterInsertCollectionCascader<SRC, IndexedAssociationRecord> {
 	
-	private final Function<SRC, C> collectionGetter;
+	private final Accessor<SRC, C> collectionGetter;
 	private final EntityMapping<SRC, SRCID, ?> mappingStrategy;
 	private final EntityMapping<TRGT, TRGTID, ?> targetStrategy;
 	
 	public IndexedAssociationRecordInsertionCascader(AssociationRecordPersister<IndexedAssociationRecord, ?> persister,
-													 Function<SRC, C> collectionGetter,
+													 Accessor<SRC, C> collectionGetter,
 													 EntityMapping<SRC, SRCID, ?> mappingStrategy,
 													 EntityMapping<TRGT, TRGTID, ?> targetStrategy) {
 		super(persister);
@@ -38,7 +38,7 @@ public class IndexedAssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID,
 	
 	@Override
 	protected Collection<IndexedAssociationRecord> getTargets(SRC src) {
-		Collection<TRGT> targets = collectionGetter.apply(src);
+		Collection<TRGT> targets = collectionGetter.get(src);
 		// We only insert non-persisted instances (for logic and to prevent duplicate primary key error)
 		List<IndexedAssociationRecord> result = new ArrayList<>(targets.size());
 		MutableInt index = new MutableInt(INDEXED_COLLECTION_FIRST_INDEX_VALUE - 1);    // -1 because increment() increments before giving the value, though index will start at 1

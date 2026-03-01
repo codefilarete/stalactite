@@ -4,10 +4,10 @@ import java.lang.reflect.Field;
 
 import org.codefilarete.reflection.AccessorByField;
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.function.ThreadSafeLazyInitializer;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * Storage for different ways of declaring an attribute accessor: for each case, a constructor is available. Either by accessor, or mutator, or field.
@@ -22,19 +22,19 @@ public class ValueAccessPointVariantSupport<T, O> {
 	
 	private final ThreadSafeLazyInitializer<ReversibleAccessor<T, O>> accessor;
 	
-	private SerializableFunction<T, O> getter;
+	private SerializableAccessor<T, O> getter;
 	
-	private SerializableBiConsumer<T, O> setter;
+	private SerializableMutator<T, O> setter;
 	
 	// to be used in addition to getter or setter when attribute differs from method name (case when Java Naming Convention is not respected)
 	private Field field;
 	
-	public ValueAccessPointVariantSupport(SerializableFunction<T, O> getter) {
+	public ValueAccessPointVariantSupport(SerializableAccessor<T, O> getter) {
 		this.getter = getter;
 		this.accessor = new AccessorFieldLazyInitializer();
 	}
 	
-	public ValueAccessPointVariantSupport(SerializableBiConsumer<T, O> setter) {
+	public ValueAccessPointVariantSupport(SerializableMutator<T, O> setter) {
 		this.setter = setter;
 		this.accessor = new AccessorFieldLazyInitializer();
 	}
@@ -66,12 +66,12 @@ public class ValueAccessPointVariantSupport<T, O> {
 			return new PropertyAccessorResolver<>(new PropertyAccessorResolver.PropertyMapping<T, O>() {
 				
 				@Override
-				public SerializableFunction<T, O> getGetter() {
+				public SerializableAccessor<T, O> getGetter() {
 					return ValueAccessPointVariantSupport.this.getter;
 				}
 				
 				@Override
-				public SerializableBiConsumer<T, O> getSetter() {
+				public SerializableMutator<T, O> getSetter() {
 					return ValueAccessPointVariantSupport.this.setter;
 				}
 				

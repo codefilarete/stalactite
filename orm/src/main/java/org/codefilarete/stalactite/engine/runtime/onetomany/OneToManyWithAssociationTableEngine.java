@@ -1,8 +1,8 @@
 package org.codefilarete.stalactite.engine.runtime.onetomany;
 
 import java.util.Collection;
-import java.util.function.Function;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecordInsertionCascader;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecordPersister;
@@ -27,7 +27,7 @@ public class OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C ext
 	
 	@Override
 	protected AssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C> newRecordInsertionCascader(
-			Function<SRC, C> collectionGetter,
+			Accessor<SRC, C> collectionGetter,
 			AssociationRecordPersister<AssociationRecord, T> associationPersister,
 			EntityMapping<SRC, SRCID, ?> mappingStrategy,
 			EntityMapping<TRGT, TRGTID, ?> targetStrategy) {

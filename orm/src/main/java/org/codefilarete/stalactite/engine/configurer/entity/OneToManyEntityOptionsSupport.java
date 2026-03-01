@@ -3,13 +3,13 @@ package org.codefilarete.stalactite.engine.configurer.entity;
 import java.util.Collection;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyJoinTableOptions;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyEntityOptions;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * A small class for one-to-many options storage into a {@link OneToManyEntityOptions}. Acts as a wrapper over it.
@@ -24,13 +24,13 @@ public class OneToManyEntityOptionsSupport<C, I, O, S extends Collection<O>, O_I
 	}
 	
 	@Override
-	public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink) {
+	public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableMutator<O, ? super C> reverseLink) {
 		oneToManyRelation.setReverseSetter(reverseLink);
 		return null;    // we can return null because dispatcher will return proxy
 	}
 	
 	@Override
-	public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink) {
+	public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableAccessor<O, ? super C> reverseLink) {
 		oneToManyRelation.setReverseGetter(reverseLink);
 		return null;    // we can return null because dispatcher will return proxy
 	}
@@ -54,7 +54,7 @@ public class OneToManyEntityOptionsSupport<C, I, O, S extends Collection<O>, O_I
 	}
 	
 	@Override
-	public FluentMappingBuilderOneToManyOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink) {
+	public FluentMappingBuilderOneToManyOptions<C, I, O, S> reverselySetBy(SerializableMutator<O, C> reverseLink) {
 		oneToManyRelation.setReverseLink(reverseLink);
 		return null;    // we can return null because dispatcher will return proxy
 	}

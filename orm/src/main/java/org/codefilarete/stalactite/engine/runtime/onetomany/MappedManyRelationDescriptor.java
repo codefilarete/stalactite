@@ -1,12 +1,12 @@
 package org.codefilarete.stalactite.engine.runtime.onetomany;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
@@ -29,9 +29,9 @@ public class MappedManyRelationDescriptor<SRC, TRGT, C extends Collection<TRGT>,
 	 * @param reverseColumn column owning relation
 	 */
 	public MappedManyRelationDescriptor(Accessor<SRC, C> collectionGetter,
-										BiConsumer<SRC, C> collectionSetter,
+										Mutator<SRC, C> collectionSetter,
 										Supplier<C> collectionFactory,
-										@Nullable BiConsumer<TRGT, SRC> reverseSetter,
+										@Nullable Mutator<TRGT, SRC> reverseSetter,
 										Key<?, SRCID> reverseColumn) {
 		super(collectionGetter, collectionSetter, collectionFactory, reverseSetter);
 		this.reverseColumn = (Key<Table<?>, SRCID>) reverseColumn;

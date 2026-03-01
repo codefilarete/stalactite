@@ -1,20 +1,19 @@
 package org.codefilarete.stalactite.engine.configurer.onetoone;
 
-import javax.annotation.Nullable;
 import java.util.function.BooleanSupplier;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
-import org.codefilarete.stalactite.dsl.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * @author Guillaume Mary
@@ -33,11 +32,11 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	
 	/** the method that gets the "one" entity from the "many" entities */
 	@Nullable
-	private SerializableFunction<TRGT, SRC> reverseGetter;
+	private SerializableAccessor<TRGT, SRC> reverseGetter;
 	
 	/** the method that sets the "one" entity onto the "many" entities */
 	@Nullable
-	private SerializableBiConsumer<TRGT, SRC> reverseSetter;
+	private SerializableMutator<TRGT, SRC> reverseSetter;
 	
 	@Nullable
 	private Column<Table, SRC> reverseColumn;
@@ -101,21 +100,21 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	}
 	
 	@Nullable
-	public SerializableFunction<TRGT, SRC> getReverseGetter() {
+	public SerializableAccessor<TRGT, SRC> getReverseGetter() {
 		return reverseGetter;
 	}
 	
-	public void setReverseGetter(@Nullable SerializableFunction<? super TRGT, SRC> reverseGetter) {
-		this.reverseGetter = (SerializableFunction<TRGT, SRC>) reverseGetter;
+	public void setReverseGetter(@Nullable SerializableAccessor<? super TRGT, SRC> reverseGetter) {
+		this.reverseGetter = (SerializableAccessor<TRGT, SRC>) reverseGetter;
 	}
 	
 	@Nullable
-	public SerializableBiConsumer<TRGT, SRC> getReverseSetter() {
+	public SerializableMutator<TRGT, SRC> getReverseSetter() {
 		return reverseSetter;
 	}
 	
-	public void setReverseSetter(@Nullable SerializableBiConsumer<? super TRGT, SRC> reverseSetter) {
-		this.reverseSetter = (SerializableBiConsumer<TRGT, SRC>) reverseSetter;
+	public void setReverseSetter(@Nullable SerializableMutator<? super TRGT, SRC> reverseSetter) {
+		this.reverseSetter = (SerializableMutator<TRGT, SRC>) reverseSetter;
 	}
 	
 	@Nullable

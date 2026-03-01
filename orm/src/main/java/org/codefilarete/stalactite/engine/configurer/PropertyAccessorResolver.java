@@ -18,12 +18,12 @@ import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.Reflections.MemberNotFoundException;
 import org.codefilarete.tool.Strings;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * Resolver for {@link PropertyAccessor} in context of mapping definition.
@@ -81,9 +81,10 @@ public class PropertyAccessorResolver<C, O> {
 	}
 	
 	private MutatorByMember<C, O, ?> resolveMutator(AccessorByMethodReference<C, O> getterAsMethodReferenceAccessor) {
-		AccessorDefinition accessorDefinition;
+		AccessorDefinition accessorDefinition = getterAsMethodReferenceAccessor.asAccessorDefinition();
+		String propertyName;
 		try {
-			accessorDefinition = AccessorDefinition.giveDefinition(getterAsMethodReferenceAccessor);
+			propertyName = Reflections.propertyName(getterAsMethodReferenceAccessor.getMethodName());
 		} catch (MemberNotFoundException memberNotFoundException) {
 			// the getter doesn't follow Java Bean Naming Convention and user didn't give us a field name to set the property
 			// we can't go further, so we throw the exception
@@ -91,24 +92,20 @@ public class PropertyAccessorResolver<C, O> {
 					+ getterAsMethodReferenceAccessor.getMethodName() + ", setter can't be deduced," +
 					" provide a field name to fix it", memberNotFoundException);
 		}
-		
-		String capitalizedProperty = Strings.capitalize(accessorDefinition.getName());
-		String methodPrefix = boolean.class.equals(accessorDefinition.getMemberType()) || Boolean.class.equals(accessorDefinition.getMemberType())
-				? "is"
-				: "set";
-		Method method = Reflections.findMethod(accessorDefinition.getDeclaringClass(), methodPrefix + capitalizedProperty, accessorDefinition.getMemberType());
+		Method method = Reflections.findMethod(accessorDefinition.getDeclaringClass(), "set" + Strings.capitalize(propertyName), accessorDefinition.getMemberType());
 		if (method != null) {
 			return new MutatorByMethod<>(method);
 		} else {
 			// Note that getField will throw an exception if field doesn't exist which shouldn't be the case since AccessorDefinition ensures it
-			return new MutatorByField<>(Reflections.getField(accessorDefinition.getDeclaringClass(), accessorDefinition.getName()));
+			return new MutatorByField<>(Reflections.getField(accessorDefinition.getDeclaringClass(), propertyName));
 		}
 	}
 	
 	private AccessorByMember<C, O, ?> resolveAccessor(MutatorByMethodReference<C, O> setterAsMethodReferenceMutator) {
-		AccessorDefinition accessorDefinition;
+		AccessorDefinition accessorDefinition = setterAsMethodReferenceMutator.asAccessorDefinition();
+		String propertyName;
 		try {
-			accessorDefinition = AccessorDefinition.giveDefinition(setterAsMethodReferenceMutator);
+			propertyName = Reflections.propertyName(setterAsMethodReferenceMutator.getMethodName());
 		} catch (MemberNotFoundException memberNotFoundException) {
 			// the getter doesn't follow Java Bean Naming Convention and user didn't give us a field name to set the property
 			// we can't go further, so we throw the exception
@@ -116,11 +113,10 @@ public class PropertyAccessorResolver<C, O> {
 					+ setterAsMethodReferenceMutator.getMethodName() + ", getter can't be deduced," +
 					" provide a field name to fix it", memberNotFoundException);
 		}
-		String capitalizedProperty = Strings.capitalize(accessorDefinition.getName());
 		String methodPrefix = boolean.class.equals(accessorDefinition.getMemberType()) || Boolean.class.equals(accessorDefinition.getMemberType())
 				? "is"
 				: "get";
-		Method method = Reflections.findMethod(accessorDefinition.getDeclaringClass(), methodPrefix + capitalizedProperty);
+		Method method = Reflections.findMethod(accessorDefinition.getDeclaringClass(), methodPrefix + Strings.capitalize(propertyName));
 		if (method != null) {
 			return new AccessorByMethod<>(method);
 		} else {
@@ -131,9 +127,9 @@ public class PropertyAccessorResolver<C, O> {
 	
 	public interface PropertyMapping<C, O> {
 		
-		SerializableFunction<C, O> getGetter();
+		SerializableAccessor<C, O> getGetter();
 		
-		SerializableBiConsumer<C, O> getSetter();
+		SerializableMutator<C, O> getSetter();
 		
 		Field getField();
 	}

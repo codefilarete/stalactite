@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.engine.runtime.onetomany;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -8,11 +7,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -31,9 +31,9 @@ public class IndexedMappedManyRelationDescriptor<SRC, TRGT, C extends Collection
 	private final Column<Table, Integer> indexingColumn;
 	
 	public IndexedMappedManyRelationDescriptor(Accessor<SRC, C> collectionGetter,
-											   BiConsumer<SRC, C> collectionSetter,
+											   Mutator<SRC, C> collectionSetter,
 											   Supplier<C> collectionFactory,
-											   @Nullable BiConsumer<TRGT, SRC> reverseSetter,
+											   @Nullable Mutator<TRGT, SRC> reverseSetter,
 											   Key<?, SRCID> reverseColumn,
 											   Column<? extends Table, Integer> indexingColumn,
 											   Function<SRC, SRCID> idProvider,
@@ -91,7 +91,7 @@ public class IndexedMappedManyRelationDescriptor<SRC, TRGT, C extends Collection
 			List<TRGT> collection = srcidcMap.computeIfAbsent(idProvider.apply(source), id -> new LinkedList<>());
 			collection.add(input);
 			// bidirectional assignment
-			preventNull(getReverseSetter(), NOOP_REVERSE_SETTER).accept(input, source);
+			preventNull(getReverseSetter(), NOOP_REVERSE_SETTER).set(input, source);
 		}
 		
 		private List<TRGT> get(SRC src) {
@@ -121,10 +121,10 @@ public class IndexedMappedManyRelationDescriptor<SRC, TRGT, C extends Collection
 				if (inMemoryCollection != null) {	// inMemoryCollection can be null if there's no associated entity in the database
 					Map<TRGTID, Integer> indexPerTargetId = currentSelectedIndexes.get();
 					inMemoryCollection.sort(Comparator.comparingInt(target -> indexPerTargetId.get(targetIdProvider.apply(target))));
-					C relationCollection = getCollectionGetter().apply(src);
+					C relationCollection = getCollectionGetter().get(src);
 					if (relationCollection == null) {
 						relationCollection = getCollectionFactory().get();
-						getCollectionSetter().accept(src, relationCollection);
+						getCollectionSetter().set(src, relationCollection);
 					}
 					relationCollection.addAll(inMemoryCollection);
 				}

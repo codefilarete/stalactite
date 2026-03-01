@@ -1,8 +1,8 @@
 package org.codefilarete.stalactite.dsl.embeddable;
 
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.sql.ddl.Size;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
@@ -16,22 +16,22 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 public interface ImportedEmbedWithColumnOptions<C> extends ImportedEmbedOptions<C> {
 	
 	@Override
-	<IN> ImportedEmbedWithColumnOptions<C> overrideName(SerializableFunction<C, IN> getter, String columnName);
+	<IN> ImportedEmbedWithColumnOptions<C> overrideName(SerializableAccessor<C, IN> getter, String columnName);
 	
 	@Override
-	<IN> ImportedEmbedWithColumnOptions<C> overrideName(SerializableBiConsumer<C, IN> setter, String columnName);
+	<IN> ImportedEmbedWithColumnOptions<C> overrideName(SerializableMutator<C, IN> setter, String columnName);
 	
 	@Override
-	<IN> ImportedEmbedWithColumnOptions<C> overrideSize(SerializableFunction<C, IN> getter, Size columnSize);
+	<IN> ImportedEmbedWithColumnOptions<C> overrideSize(SerializableAccessor<C, IN> getter, Size columnSize);
 	
 	@Override
-	<IN> ImportedEmbedWithColumnOptions<C> overrideSize(SerializableBiConsumer<C, IN> setter, Size columnSize);
+	<IN> ImportedEmbedWithColumnOptions<C> overrideSize(SerializableMutator<C, IN> setter, Size columnSize);
 	
 	@Override
-	<IN> ImportedEmbedWithColumnOptions<C> exclude(SerializableFunction<C, IN> getter);
+	<IN> ImportedEmbedWithColumnOptions<C> exclude(SerializableAccessor<C, IN> getter);
 	
 	@Override
-	<IN> ImportedEmbedWithColumnOptions<C> exclude(SerializableBiConsumer<C, IN> setter);
+	<IN> ImportedEmbedWithColumnOptions<C> exclude(SerializableMutator<C, IN> setter);
 	
 	/**
 	 * Overrides embedding with an existing target column
@@ -41,7 +41,7 @@ public interface ImportedEmbedWithColumnOptions<C> extends ImportedEmbedOptions<
 	 * @param <IN> input of the function (type of the embedded element)
 	 * @return a mapping configurer, specialized for embedded elements
 	 */
-	<IN> ImportedEmbedWithColumnOptions<C> override(SerializableFunction<C, IN> getter, Column<? extends Table, IN> targetColumn);
+	<IN> ImportedEmbedWithColumnOptions<C> override(SerializableAccessor<C, IN> getter, Column<? extends Table, IN> targetColumn);
 	
 	/**
 	 * Overrides embedding with an existing target column
@@ -51,6 +51,6 @@ public interface ImportedEmbedWithColumnOptions<C> extends ImportedEmbedOptions<
 	 * @param <IN> input of the function (type of the embedded element)
 	 * @return a mapping configurer, specialized for embedded elements
 	 */
-	<IN> ImportedEmbedWithColumnOptions<C> override(SerializableBiConsumer<C, IN> setter, Column<? extends Table, IN> targetColumn);
+	<IN> ImportedEmbedWithColumnOptions<C> override(SerializableMutator<C, IN> setter, Column<? extends Table, IN> targetColumn);
 	
 }

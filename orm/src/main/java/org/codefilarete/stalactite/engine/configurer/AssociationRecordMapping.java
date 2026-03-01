@@ -7,10 +7,12 @@ import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
-import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
@@ -22,8 +24,6 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Maps;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * @author Guillaume Mary
@@ -53,8 +53,8 @@ public class AssociationRecordMapping<
 	Map<ReversibleAccessor<AssociationRecord, Object>, Column<ASSOCIATIONTABLE, Object>> mapping(
 			Map<Column<TARGETTABLE, ?>, Column<ASSOCIATIONTABLE, ?>> identifierColumnMapping,
 			IdentifierAssembler<ID, TARGETTABLE> identifierAssembler,
-			SerializableFunction<AssociationRecord, Object> valueAccessor,
-			SerializableBiConsumer<AssociationRecord, Object> valueMutator) {
+			SerializableAccessor<AssociationRecord, Object> valueAccessor,
+			SerializableMutator<AssociationRecord, Object> valueMutator) {
 		Map<ReversibleAccessor<AssociationRecord, Object>, Column<ASSOCIATIONTABLE, Object>> result = new HashMap<>();
 		if (identifierAssembler instanceof SingleIdentifierAssembler) {
 			ReversibleAccessor<AssociationRecord, Object> reversibleAccessor = PropertyAccessor.fromMethodReference(valueAccessor, valueMutator);

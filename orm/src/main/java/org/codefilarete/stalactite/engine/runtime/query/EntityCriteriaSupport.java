@@ -11,6 +11,8 @@ import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MutatorByMethodReference;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.EntityCriteria;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
@@ -18,21 +20,19 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
+import org.codefilarete.stalactite.query.api.CriteriaChain;
+import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.model.AbstractCriterion;
 import org.codefilarete.stalactite.query.model.ColumnCriterion;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Criteria;
-import org.codefilarete.stalactite.query.api.CriteriaChain;
-import org.codefilarete.stalactite.query.api.JoinLink;
 import org.codefilarete.stalactite.query.model.LogicalOperator;
-import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.PairIterator;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 import static org.codefilarete.stalactite.query.model.LogicalOperator.AND;
 import static org.codefilarete.stalactite.query.model.LogicalOperator.OR;
@@ -125,12 +125,12 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	}
 	
 	@Override
-	public <O> EntityCriteriaSupport<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
+	public <O> EntityCriteriaSupport<C> and(SerializableAccessor<C, O> getter, ConditionalOperator<O, ?> operator) {
 		return add(AND, Arrays.asList(new AccessorByMethodReference<>(getter)), operator);
 	}
 	
 	@Override
-	public <O> EntityCriteriaSupport<C> and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
+	public <O> EntityCriteriaSupport<C> and(SerializableMutator<C, O> setter, ConditionalOperator<O, ?> operator) {
 		return add(AND, Arrays.asList(new MutatorByMethodReference<>(setter)), operator);
 	}
 	
@@ -145,12 +145,12 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	}
 	
 	@Override
-	public <O> EntityCriteriaSupport<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
+	public <O> EntityCriteriaSupport<C> or(SerializableAccessor<C, O> getter, ConditionalOperator<O, ?> operator) {
 		return add(OR, Arrays.asList(new AccessorByMethodReference<>(getter)), operator);
 	}
 	
 	@Override
-	public <O> EntityCriteriaSupport<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
+	public <O> EntityCriteriaSupport<C> or(SerializableMutator<C, O> setter, ConditionalOperator<O, ?> operator) {
 		return add(OR, Arrays.asList(new MutatorByMethodReference<>(setter)), operator);
 	}
 	
@@ -179,7 +179,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	}
 	
 	@Override
-	public <A, B> EntityCriteriaSupport<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator) {
+	public <A, B> EntityCriteriaSupport<C> and(SerializableAccessor<C, A> getter1, SerializableAccessor<A, B> getter2, ConditionalOperator<B, ?> operator) {
 		return and(AccessorChain.fromMethodReferences(getter1, getter2).getAccessors(), operator);
 	}
 	

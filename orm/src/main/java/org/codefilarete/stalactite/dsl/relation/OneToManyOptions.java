@@ -3,9 +3,9 @@ package org.codefilarete.stalactite.dsl.relation;
 import java.util.Collection;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer;
 
 /**
@@ -21,9 +21,9 @@ public interface OneToManyOptions<C, O, S extends Collection<O>> extends Cascade
 	
 	/**
 	 * Defines the bidirectional relation.
-	 * No need to additionally call {@link #mappedBy(SerializableFunction)}.
+	 * No need to additionally call {@link #mappedBy(SerializableAccessor)}.
 	 *
-	 * If the relation is already defined through {@link #mappedBy(SerializableFunction)} then there's no
+	 * If the relation is already defined through {@link #mappedBy(SerializableAccessor)} then there's no
 	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToManyRelationConfigurer}.
 	 *
 	 * Signature note : given consumer accepts "? super C" to allow given method to return an abstraction of current mapping definition, especially
@@ -32,13 +32,13 @@ public interface OneToManyOptions<C, O, S extends Collection<O>> extends Cascade
 	 * @param reverseLink opposite owner of the relation (setter)
 	 * @return the global mapping configurer
 	 */
-	OneToManyOptions<C, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink);
+	OneToManyOptions<C, O, S> mappedBy(SerializableMutator<O, ? super C> reverseLink);
 	
 	/**
 	 * Defines the bidirectional relation stored in target entity table.
-	 * No need to additionally call {@link #mappedBy(SerializableBiConsumer)}.
+	 * No need to additionally call {@link #mappedBy(SerializableMutator)}.
 	 *
-	 * If the relation is already defined through {@link #mappedBy(SerializableBiConsumer)} then there's no
+	 * If the relation is already defined through {@link #mappedBy(SerializableMutator)} then there's no
 	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToManyRelationConfigurer}.
 	 *
 	 *
@@ -48,14 +48,14 @@ public interface OneToManyOptions<C, O, S extends Collection<O>> extends Cascade
 	 * @param reverseLink opposite owner of the relation (getter)
 	 * @return the global mapping configurer
 	 */
-	OneToManyOptions<C, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink);
+	OneToManyOptions<C, O, S> mappedBy(SerializableAccessor<O, ? super C> reverseLink);
 	
 	/**
 	 * Defines reverse side owning column name.
-	 * Note that defining it this way will not allow relation to be fixed in memory (after select in database), prefer {@link #mappedBy(SerializableBiConsumer)}.
+	 * Note that defining it this way will not allow relation to be fixed in memory (after select in database), prefer {@link #mappedBy(SerializableMutator)}.
 	 * Use this method to define unidirectional relation.
 	 *
-	 * If the relation is already defined through {@link #mappedBy(SerializableFunction)} or {@link #mappedBy(SerializableBiConsumer)} then there's no
+	 * If the relation is already defined through {@link #mappedBy(SerializableAccessor)} or {@link #mappedBy(SerializableMutator)} then there's no
 	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToManyRelationConfigurer}.
 	 *
 	 * @param reverseColumnName opposite owner of the relation
@@ -65,16 +65,16 @@ public interface OneToManyOptions<C, O, S extends Collection<O>> extends Cascade
 	
 	/**
 	 * Defines setter of current entity on target entity, which is only interesting while dealing with relation mapped
-	 * through an association table (no use of {@link #mappedBy(SerializableFunction)}) because reverse setter can't be
+	 * through an association table (no use of {@link #mappedBy(SerializableAccessor)}) because reverse setter can't be
 	 * deduced.
 	 * This method has no consequence on database mapping since it only interacts in memory.
-	 * If used with owned association ({@link #mappedBy(SerializableFunction)} already used) it would have no consequence
+	 * If used with owned association ({@link #mappedBy(SerializableAccessor)} already used) it would have no consequence
 	 * and won't be taken into account.
 	 *
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	OneToManyOptions<C, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
+	OneToManyOptions<C, O, S> reverselySetBy(SerializableMutator<O, C> reverseLink);
 	
 	/**
 	 * Defines the collection factory to be used at load time to initialize property if it is null.

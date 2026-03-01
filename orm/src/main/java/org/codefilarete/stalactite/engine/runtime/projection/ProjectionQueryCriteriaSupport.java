@@ -9,6 +9,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.codefilarete.reflection.MethodReferenceDispatcher;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.engine.EntityCriteria;
 import org.codefilarete.stalactite.engine.EntityCriteria.CriteriaPath;
 import org.codefilarete.stalactite.engine.EntityCriteria.LimitAware;
@@ -22,17 +24,15 @@ import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.EntityFinder;
-import org.codefilarete.stalactite.query.api.CriteriaChain;
-import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.Operators;
+import org.codefilarete.stalactite.query.api.CriteriaChain;
+import org.codefilarete.stalactite.query.api.Selectable;
+import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.query.model.Select;
-import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.function.SerializableTriFunction;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * <ul>
@@ -113,8 +113,8 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 				)
 				.redirect(OrderByChain.class, queryPageSupport, true)
 				.redirect(LimitAware.class, queryPageSupport, true)
-				.redirect((SerializableFunction<ExecutableProjection, ExecutableProjection>) ExecutableProjection::distinct, queryPageSupport::distinct)
-				.redirect((SerializableBiConsumer<ExecutableProjection, Consumer<Set<Selectable<?>>>>) ExecutableProjection::selectInspector,
+				.redirect((SerializableAccessor<ExecutableProjection, ExecutableProjection>) ExecutableProjection::distinct, queryPageSupport::distinct)
+				.redirect((SerializableMutator<ExecutableProjection, Consumer<Set<Selectable<?>>>>) ExecutableProjection::selectInspector,
 						selectInspector -> {
 					this.selectAdapter = this.selectAdapter.andThen(selectAdapter -> selectInspector.accept(selectAdapter.getColumns()));
 				})

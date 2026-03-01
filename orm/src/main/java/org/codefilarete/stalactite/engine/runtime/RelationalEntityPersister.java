@@ -1,14 +1,16 @@
 package org.codefilarete.stalactite.engine.runtime;
 
-import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.EntityCriteria;
 import org.codefilarete.stalactite.engine.EntityPersister;
@@ -22,8 +24,6 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.collection.Arrays;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * Contract to allow joining a persister with another for entities with relation.
@@ -135,7 +135,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * Overridden for a more accurate return type.
 	 * {@inheritDoc}
 	 */
-	default <O> ExecutableEntityQueryCriteria<C, ?> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
+	default <O> ExecutableEntityQueryCriteria<C, ?> selectWhere(SerializableAccessor<C, O> getter, ConditionalOperator<O, ?> operator) {
 		return selectWhere(AccessorChain.fromMethodReference(getter), operator);
 	}
 	
@@ -143,7 +143,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * Overridden for a more accurate return type.
 	 * {@inheritDoc}
 	 */
-	default <O> ExecutableEntityQueryCriteria<C, ?> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
+	default <O> ExecutableEntityQueryCriteria<C, ?> selectWhere(SerializableMutator<C, O> setter, ConditionalOperator<O, ?> operator) {
 		return selectWhere(Arrays.asList(Accessors.mutatorByMethodReference(setter)), operator);
 	}
 	
@@ -151,7 +151,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * Overridden for a more accurate return type.
 	 * {@inheritDoc}
 	 */
-	default <O, A> ExecutableEntityQueryCriteria<C, ?> selectWhere(SerializableFunction<C, A> getter1, SerializableFunction<A, O> getter2, ConditionalOperator<O, ?> operator) {
+	default <O, A> ExecutableEntityQueryCriteria<C, ?> selectWhere(SerializableAccessor<C, A> getter1, SerializableAccessor<A, O> getter2, ConditionalOperator<O, ?> operator) {
 		return selectWhere(AccessorChain.fromMethodReferences(getter1, getter2), operator);
 	}
 	

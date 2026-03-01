@@ -1,13 +1,15 @@
 package org.codefilarete.stalactite.engine.configurer.map;
 
-import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
@@ -15,8 +17,6 @@ import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * Storage of configuration of a {@link Map} relation (kind of "element collection" but with a {@link Map}).
@@ -89,13 +89,13 @@ public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 	
 	private boolean fetchSeparately;
 	
-	public MapRelation(SerializableBiConsumer<SRC, M> setter,
+	public MapRelation(SerializableMutator<SRC, M> setter,
 					   Class<K> keyType,
 					   Class<V> valueType) {
 		this(Accessors.mutator(setter), keyType, valueType);
 	}
 	
-	public MapRelation(SerializableFunction<SRC, M> getter,
+	public MapRelation(SerializableAccessor<SRC, M> getter,
 					   Class<K> keyType,
 					   Class<V> valueType) {
 		this(Accessors.accessor(getter), keyType, valueType);
@@ -237,11 +237,11 @@ public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 		return this.overriddenKeyColumnNames;
 	}
 	
-	public void overrideKeyName(SerializableFunction methodRef, String columnName) {
+	public void overrideKeyName(SerializableAccessor methodRef, String columnName) {
 		this.overriddenKeyColumnNames.put(new AccessorByMethodReference(methodRef), columnName);
 	}
 	
-	public void overrideKeyName(SerializableBiConsumer methodRef, String columnName) {
+	public void overrideKeyName(SerializableMutator methodRef, String columnName) {
 		this.overriddenKeyColumnNames.put(new MutatorByMethodReference(methodRef), columnName);
 	}
 	
@@ -250,11 +250,11 @@ public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 	}
 	
 	
-	public void overrideKeySize(SerializableFunction methodRef, Size columnSize) {
+	public void overrideKeySize(SerializableAccessor methodRef, Size columnSize) {
 		this.overriddenKeyColumnSizes.put(new AccessorByMethodReference(methodRef), columnSize);
 	}
 	
-	public void overrideKeySize(SerializableBiConsumer methodRef, Size columnSize) {
+	public void overrideKeySize(SerializableMutator methodRef, Size columnSize) {
 		this.overriddenKeyColumnSizes.put(new MutatorByMethodReference(methodRef), columnSize);
 	}
 	
@@ -262,19 +262,19 @@ public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 		return this.overriddenKeyColumnSizes;
 	}
 	
-	public void overrideValueName(SerializableFunction methodRef, String columnName) {
+	public void overrideValueName(SerializableAccessor methodRef, String columnName) {
 		this.overriddenValueColumnNames.put(new AccessorByMethodReference(methodRef), columnName);
 	}
 	
-	public void overrideValueName(SerializableBiConsumer methodRef, String columnName) {
+	public void overrideValueName(SerializableMutator methodRef, String columnName) {
 		this.overriddenValueColumnNames.put(new MutatorByMethodReference(methodRef), columnName);
 	}
 	
-	public void overrideValueSize(SerializableFunction methodRef, Size columnSize) {
+	public void overrideValueSize(SerializableAccessor methodRef, Size columnSize) {
 		this.overriddenValueColumnSizes.put(new AccessorByMethodReference(methodRef), columnSize);
 	}
 	
-	public void overrideValueSize(SerializableBiConsumer methodRef, Size columnSize) {
+	public void overrideValueSize(SerializableMutator methodRef, Size columnSize) {
 		this.overriddenValueColumnSizes.put(new MutatorByMethodReference(methodRef), columnSize);
 	}
 	

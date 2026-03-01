@@ -3,11 +3,11 @@ package org.codefilarete.stalactite.engine.configurer.embeddable;
 import java.util.Collection;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilderOneToManyOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyOptions;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * A small class for one-to-many options storage into a {@link OneToManyOptions}. Acts as a wrapper over it.
@@ -22,13 +22,13 @@ class OneToManyOptionsSupport<C, O, S extends Collection<O>>
 	}
 	
 	@Override
-	public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink) {
+	public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> mappedBy(SerializableMutator<O, ? super C> reverseLink) {
 		oneToManyRelation.setReverseSetter(reverseLink);
 		return null;    // we can return null because dispatcher will return proxy
 	}
 	
 	@Override
-	public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink) {
+	public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> mappedBy(SerializableAccessor<O, ? super C> reverseLink) {
 		oneToManyRelation.setReverseGetter(reverseLink);
 		return null;    // we can return null because dispatcher will return proxy
 	}
@@ -40,7 +40,7 @@ class OneToManyOptionsSupport<C, O, S extends Collection<O>>
 	}
 	
 	@Override
-	public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink) {
+	public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> reverselySetBy(SerializableMutator<O, C> reverseLink) {
 		oneToManyRelation.setReverseLink(reverseLink);
 		return null;    // we can return null because dispatcher will return proxy
 	}

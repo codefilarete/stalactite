@@ -3,9 +3,9 @@ package org.codefilarete.stalactite.engine.configurer;
 import java.lang.reflect.Method;
 
 import org.codefilarete.reflection.MethodReferenceCapturer;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.engine.configurer.embeddable.Inset;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * Small internal (package private) contract to help mutualizing usage of a {@link MethodReferenceCapturer}.
@@ -16,7 +16,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
  */
 public interface LambdaMethodUnsheller {
 	
-	Method captureLambdaMethod(SerializableFunction getter);
+	Method captureLambdaMethod(SerializableAccessor getter);
 	
-	Method captureLambdaMethod(SerializableBiConsumer setter);
+	Method captureLambdaMethod(SerializableMutator setter);
 }

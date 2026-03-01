@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.engine.runtime.onetomany;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -10,11 +9,13 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
+import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.diff.IndexedDiff;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
@@ -93,7 +94,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			
 			@Override
 			public void afterSelect(Set<? extends SRC> result) {
-				Set<TRGT> collect = Iterables.stream(result).flatMap(src -> nullable(manyRelationDescriptor.getCollectionGetter().apply(src))
+				Set<TRGT> collect = Iterables.stream(result).flatMap(src -> nullable(manyRelationDescriptor.getCollectionGetter().get(src))
 						.map(Collection::stream)
 						.getOr(Stream.empty()))
 						.collect(Collectors.toSet());
@@ -169,7 +170,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	 */
 	private <TARGETTABLE extends Table<TARGETTABLE>> void addIndexInsertion() {
 		// we declare the indexing column as a silent one, then AfterInsertCollectionCascader will insert it
-		Function<SRC, C> collectionGetter = this.manyRelationDescriptor.getCollectionGetter();
+		Accessor<SRC, C> collectionGetter = this.manyRelationDescriptor.getCollectionGetter();
 		ShadowColumnValueProvider<TRGT, TARGETTABLE> indexValueProvider = new ShadowColumnValueProvider<TRGT, TARGETTABLE>() {
 			@Override
 			public boolean accept(TRGT entity) {
@@ -223,7 +224,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			 */
 			private int computeTargetIndex(SRC source, TRGT target) {
 				int result;
-				C apply = collectionGetter.apply(source);
+				C apply = collectionGetter.get(source);
 				if (apply instanceof List) {
 					result = ((List<?>) apply).indexOf(target) + INDEXED_COLLECTION_FIRST_INDEX_VALUE;
 				} else if (apply instanceof LinkedHashSet) {
@@ -248,7 +249,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	
 	@Override
 	protected void addTargetInstancesUpdateCascader(boolean shouldDeleteRemoved) {
-		BiConsumer<Duo<SRC, SRC>, Boolean> collectionUpdater = new ListCollectionUpdater<>(
+		Mutator<Duo<SRC, SRC>, Boolean> collectionUpdater = new ListCollectionUpdater<>(
 				this.manyRelationDescriptor.getCollectionGetter(),
 				this.targetPersister,
 				this.manyRelationDescriptor.getReverseSetter(),
@@ -279,11 +280,11 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		private final ThreadLocal<Map<TRGT, Integer>> currentInsertableListIndex = new ThreadLocal<>();
 		private final Column<TARGETTABLE, Integer> indexingColumn;
 		
-		private ListCollectionUpdater(Function<SRC, C> collectionGetter,
+		private ListCollectionUpdater(Accessor<SRC, C> collectionGetter,
 									  ConfiguredRelationalPersister<TRGT, ID> targetPersister,
-									  @Nullable BiConsumer<TRGT, SRC> reverseSetter,
+									  @Nullable Mutator<TRGT, SRC> reverseSetter,
 									  boolean shouldDeleteRemoved,
-									  Function<TRGT, ?> idProvider,
+									  Accessor<TRGT, ?> idProvider,
 									  Column<TARGETTABLE, Integer> indexingColumn) {
 			super(collectionGetter, targetPersister, reverseSetter, shouldDeleteRemoved, idProvider);
 			this.indexingColumn = indexingColumn;

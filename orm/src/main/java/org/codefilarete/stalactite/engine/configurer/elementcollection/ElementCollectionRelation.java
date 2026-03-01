@@ -1,9 +1,9 @@
 package org.codefilarete.stalactite.engine.configurer.elementcollection;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMethod;
@@ -14,6 +14,8 @@ import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
@@ -22,8 +24,6 @@ import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Reflections;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 import static org.codefilarete.tool.Reflections.propertyName;
 
@@ -69,7 +69,7 @@ public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 	 * @param componentType element type in collection
 	 * @param embeddableConfigurationProvider complex type mapping, null when element is a simple type (String, Integer, ...)
 	 */
-	public ElementCollectionRelation(SerializableBiConsumer<SRC, S> setter,
+	public ElementCollectionRelation(SerializableMutator<SRC, S> setter,
 									 Class<TRGT> componentType,
 									 @Nullable EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider) {
 		MutatorByMethodReference<SRC, S> setterReference = Accessors.mutatorByMethodReference(setter);
@@ -87,7 +87,7 @@ public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 	 * @param lambdaMethodUnsheller engine to capture getter method reference
 	 * @param embeddableConfigurationProvider complex type mapping, null when element is a simple type (String, Integer, ...)
 	 */
-	public ElementCollectionRelation(SerializableFunction<SRC, S> getter,
+	public ElementCollectionRelation(SerializableAccessor<SRC, S> getter,
 									 Class<TRGT> componentType,
 									 LambdaMethodUnsheller lambdaMethodUnsheller,
 									 @Nullable EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider) {
@@ -147,19 +147,19 @@ public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 		return this.overriddenColumnNames;
 	}
 	
-	public void overrideName(SerializableFunction methodRef, String columnName) {
+	public void overrideName(SerializableAccessor methodRef, String columnName) {
 		this.overriddenColumnNames.put(new AccessorByMethodReference(methodRef), columnName);
 	}
 	
-	public void overrideName(SerializableBiConsumer methodRef, String columnName) {
+	public void overrideName(SerializableMutator methodRef, String columnName) {
 		this.overriddenColumnNames.put(new MutatorByMethodReference(methodRef), columnName);
 	}
 	
-	public void overrideSize(SerializableFunction methodRef, Size columnSize) {
+	public void overrideSize(SerializableAccessor methodRef, Size columnSize) {
 		this.overriddenColumnSizes.put(new AccessorByMethodReference(methodRef), columnSize);
 	}
 	
-	public void overrideSize(SerializableBiConsumer methodRef, Size columnSize) {
+	public void overrideSize(SerializableMutator methodRef, Size columnSize) {
 		this.overriddenColumnSizes.put(new MutatorByMethodReference(methodRef), columnSize);
 	}
 	

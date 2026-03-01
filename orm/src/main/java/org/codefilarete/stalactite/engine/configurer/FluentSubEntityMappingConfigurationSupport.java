@@ -1,15 +1,13 @@
 package org.codefilarete.stalactite.engine.configurer;
 
-import javax.annotation.Nullable;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMethod;
@@ -22,17 +20,16 @@ import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.dsl.MappingConfigurationException;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder.FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder.FluentEmbeddableMappingBuilderEnumOptions;
-import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingConfiguration.FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions;
 import org.codefilarete.stalactite.dsl.embeddable.ImportedEmbedWithColumnOptions;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
-import org.codefilarete.stalactite.dsl.property.CollectionOptions;
 import org.codefilarete.stalactite.dsl.property.ColumnOptions;
 import org.codefilarete.stalactite.dsl.property.ElementCollectionOptions;
 import org.codefilarete.stalactite.dsl.property.EmbeddableCollectionOptions;
@@ -57,13 +54,8 @@ import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.function.Converter;
-import org.codefilarete.tool.function.SerializableTriFunction;
 import org.codefilarete.tool.reflect.MethodDispatcher;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableBiFunction;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 import static org.codefilarete.tool.Reflections.propertyName;
 
@@ -155,34 +147,34 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 		};
 	}
 	
-	private Method captureMethod(SerializableFunction getter) {
+	private Method captureMethod(SerializableAccessor getter) {
 		return this.methodSpy.findMethod(getter);
 	}
 	
-	private Method captureMethod(SerializableBiConsumer setter) {
+	private Method captureMethod(SerializableMutator setter) {
 		return this.methodSpy.findMethod(setter);
 	}
 	
 	@Override
-	public <O> FluentSubEntityMappingBuilderPropertyOptions<C, I, O> map(SerializableBiConsumer<C, O> setter) {
+	public <O> FluentSubEntityMappingBuilderPropertyOptions<C, I, O> map(SerializableMutator<C, O> setter) {
 		LinkageSupport<C, O> mapping = propertiesMappingConfigurationDelegate.addMapping(setter);
 		return this.propertiesMappingConfigurationDelegate.wrapForAdditionalOptions(mapping);
 	}
 	
 	@Override
-	public <O> FluentSubEntityMappingBuilderPropertyOptions<C, I, O> map(SerializableFunction<C, O> getter) {
+	public <O> FluentSubEntityMappingBuilderPropertyOptions<C, I, O> map(SerializableAccessor<C, O> getter) {
 		LinkageSupport<C, O> mapping = propertiesMappingConfigurationDelegate.addMapping(getter);
 		return this.propertiesMappingConfigurationDelegate.wrapForAdditionalOptions(mapping);
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I, E> mapEnum(SerializableBiConsumer<C, E> setter) {
+	public <E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I, E> mapEnum(SerializableMutator<C, E> setter) {
 		LinkageSupport<C, E> linkage = propertiesMappingConfigurationDelegate.addMapping(setter);
 		return handleEnumOptions(propertiesMappingConfigurationDelegate.wrapWithEnumOptions(linkage));
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I, E> mapEnum(SerializableFunction<C, E> getter) {
+	public <E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I, E> mapEnum(SerializableAccessor<C, E> getter) {
 		LinkageSupport<C, E> linkage = propertiesMappingConfigurationDelegate.addMapping(getter);
 		return handleEnumOptions(propertiesMappingConfigurationDelegate.wrapWithEnumOptions(linkage));
 	}
@@ -197,7 +189,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	}
 	
 	@Override
-	public <O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableFunction<C, S> getter,
+	public <O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableAccessor<C, S> getter,
 																														Class<O> componentType) {
 		ElementCollectionRelation<C, O, S> elementCollectionRelation = new ElementCollectionRelation<>(getter, componentType,
 				propertiesMappingConfigurationDelegate, null);
@@ -209,7 +201,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	}
 	
 	@Override
-	public <O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableBiConsumer<C, S> setter,
+	public <O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableMutator<C, S> setter,
 																														Class<O> componentType) {
 		ElementCollectionRelation<C, O, S> elementCollectionRelation = new ElementCollectionRelation<>(setter, componentType, null);
 		elementCollections.add(elementCollectionRelation);
@@ -220,7 +212,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	}
 	
 	@Override
-	public <O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mapCollection(SerializableFunction<C, S> getter,
+	public <O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mapCollection(SerializableAccessor<C, S> getter,
 																																   Class<O> componentType,
 																																   EmbeddableMappingConfigurationProvider<O> embeddableConfiguration) {
 		ElementCollectionRelation<C, O, S> elementCollectionRelation = new ElementCollectionRelation<>(getter, componentType,
@@ -231,7 +223,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	}
 	
 	@Override
-	public <O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mapCollection(SerializableBiConsumer<C, S> setter,
+	public <O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mapCollection(SerializableMutator<C, S> setter,
 																																   Class<O> componentType,
 																																   EmbeddableMappingConfigurationProvider<O> embeddableConfiguration) {
 		ElementCollectionRelation<C, O, S> elementCollectionRelation = new ElementCollectionRelation<>(setter, componentType, embeddableConfiguration);
@@ -245,25 +237,25 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 				.redirect(EmbeddableCollectionOptions.class, new EmbeddableCollectionOptions<C, O, S>() {
 					
 					@Override
-					public <IN> EmbeddableCollectionOptions<C, O, S> overrideName(SerializableFunction<O, IN> getter, String columnName) {
+					public <IN> EmbeddableCollectionOptions<C, O, S> overrideName(SerializableAccessor<O, IN> getter, String columnName) {
 						elementCollectionRelation.overrideName(getter, columnName);
 						return null;
 					}
 					
 					@Override
-					public <IN> EmbeddableCollectionOptions<C, O, S> overrideName(SerializableBiConsumer<O, IN> setter, String columnName) {
+					public <IN> EmbeddableCollectionOptions<C, O, S> overrideName(SerializableMutator<O, IN> setter, String columnName) {
 						elementCollectionRelation.overrideName(setter, columnName);
 						return null;
 					}
 					
 					@Override
-					public <IN> EmbeddableCollectionOptions<C, O, S> overrideSize(SerializableFunction<O, IN> getter, Size columnSize) {
+					public <IN> EmbeddableCollectionOptions<C, O, S> overrideSize(SerializableAccessor<O, IN> getter, Size columnSize) {
 						elementCollectionRelation.overrideSize(getter, columnSize);
 						return null;
 					}
 					
 					@Override
-					public <IN> EmbeddableCollectionOptions<C, O, S> overrideSize(SerializableBiConsumer<O, IN> setter, Size columnSize) {
+					public <IN> EmbeddableCollectionOptions<C, O, S> overrideSize(SerializableMutator<O, IN> setter, Size columnSize) {
 						elementCollectionRelation.overrideSize(setter, columnSize);
 						return null;
 					}
@@ -363,7 +355,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	
 	@Override
 	public <O, J> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(
-			SerializableBiConsumer<C, O> setter,
+			SerializableMutator<C, O> setter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
 		// we keep close to user demand: we keep its method reference ...
 		Mutator<C, O> mutatorByMethodReference = Accessors.mutatorByMethodReference(setter);
@@ -374,7 +366,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	
 	@Override
 	public <O, J> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(
-			SerializableFunction<C, O> getter,
+			SerializableAccessor<C, O> getter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
 		// we keep close to user demand: we keep its method reference ...
 		AccessorByMethodReference<C, O> accessorByMethodReference = Accessors.accessorByMethodReference(getter);
@@ -411,13 +403,13 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 					}
 					
 					@Override
-					public OneToOneEntityOptions<C, J, O> mappedBy(SerializableFunction<? super O, C> reverseLink) {
+					public OneToOneEntityOptions<C, J, O> mappedBy(SerializableAccessor<? super O, C> reverseLink) {
 						oneToOneRelation.setReverseGetter(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneEntityOptions<C, J, O> mappedBy(SerializableBiConsumer<? super O, C> reverseLink) {
+					public OneToOneEntityOptions<C, J, O> mappedBy(SerializableMutator<? super O, C> reverseLink) {
 						oneToOneRelation.setReverseSetter(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
@@ -458,7 +450,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	
 	@Override
 	public <O, J, S extends Collection<O>> FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
-			SerializableFunction<C, S> getter,
+			SerializableAccessor<C, S> getter,
 			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
 		
 		AccessorByMethodReference<C, S> getterReference = Accessors.accessorByMethodReference(getter);
@@ -472,7 +464,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	
 	@Override
 	public <O, J, S extends Collection<O>> FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
-			SerializableBiConsumer<C, S> setter,
+			SerializableMutator<C, S> setter,
 			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
 		
 		MutatorByMethodReference<C, S> setterReference = Accessors.mutatorByMethodReference(setter);
@@ -498,13 +490,13 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	}
 	
 	@Override
-	public <O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter,
+	public <O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableAccessor<C, O> getter,
 																									 EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder) {
 		return embed(propertiesMappingConfigurationDelegate.embed(getter, embeddableMappingBuilder));
 	}
 	
 	@Override
-	public <O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter,
+	public <O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableMutator<C, O> setter,
 																									 EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder) {
 		return embed(propertiesMappingConfigurationDelegate.embed(setter, embeddableMappingBuilder));
 	}
@@ -517,52 +509,52 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	
 	private <O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embedSupport) {
 		return new MethodDispatcher()
-				.redirect(ImportedEmbedWithColumnOptions.class, new ImportedEmbedWithColumnOptions<C>() {
+				.redirect(ImportedEmbedWithColumnOptions.class, new ImportedEmbedWithColumnOptions<O>() {
 					
 					@Override
-					public ImportedEmbedWithColumnOptions<C> overrideName(SerializableFunction getter, String columnName) {
+					public <IN> ImportedEmbedWithColumnOptions<O> overrideName(SerializableAccessor<O, IN> getter, String columnName) {
 						embedSupport.overrideName(getter, columnName);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 
 					@Override
-					public ImportedEmbedWithColumnOptions<C> overrideName(SerializableBiConsumer setter, String columnName) {
+					public <IN> ImportedEmbedWithColumnOptions<O> overrideName(SerializableMutator<O, IN> setter, String columnName) {
 						embedSupport.overrideName(setter, columnName);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public ImportedEmbedWithColumnOptions<C> overrideSize(SerializableBiConsumer setter, Size columnSize) {
+					public <IN> ImportedEmbedWithColumnOptions<O> overrideSize(SerializableMutator<O, IN> setter, Size columnSize) {
 						embedSupport.overrideSize(setter, columnSize);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public ImportedEmbedWithColumnOptions<C> overrideSize(SerializableFunction getter, Size columnSize) {
+					public <IN> ImportedEmbedWithColumnOptions<O> overrideSize(SerializableAccessor<O, IN> getter, Size columnSize) {
 						embedSupport.overrideSize(getter, columnSize);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public ImportedEmbedWithColumnOptions override(SerializableBiConsumer setter, Column targetColumn) {
+					public <IN> ImportedEmbedWithColumnOptions<O> override(SerializableMutator<O, IN> setter, Column<? extends Table, IN> targetColumn) {
 						propertiesMappingConfigurationDelegate.currentInset().override(setter, targetColumn);
 						return null;
 					}
 					
 					@Override
-					public ImportedEmbedWithColumnOptions override(SerializableFunction getter, Column targetColumn) {
+					public <IN> ImportedEmbedWithColumnOptions<O> override(SerializableAccessor<O, IN> getter, Column<? extends Table, IN> targetColumn) {
 						propertiesMappingConfigurationDelegate.currentInset().override(getter, targetColumn);
 						return null;
 					}
 
 					@Override
-					public ImportedEmbedWithColumnOptions<C> exclude(SerializableBiConsumer setter) {
+					public <IN> ImportedEmbedWithColumnOptions<O> exclude(SerializableMutator<O, IN> setter) {
 						embedSupport.exclude(setter);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 
 					@Override
-					public ImportedEmbedWithColumnOptions<C> exclude(SerializableFunction getter) {
+					public <IN> ImportedEmbedWithColumnOptions<O> exclude(SerializableAccessor<O, IN> getter) {
 						embedSupport.exclude(getter);
 						return null;	// we can return null because dispatcher will return proxy
 					}
@@ -594,13 +586,13 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 			this.entityConfigurationSupport = entityConfigurationSupport;
 		}
 		
-		<E> LinkageSupport<C, E> addMapping(SerializableBiConsumer<C, E> setter) {
+		<E> LinkageSupport<C, E> addMapping(SerializableMutator<C, E> setter) {
 			LinkageSupport<C, E> newLinkage = new LinkageSupport<>(setter);
 			mapping.add(newLinkage);
 			return newLinkage;
 		}
 		
-		<E> LinkageSupport<C, E> addMapping(SerializableFunction<C, E> getter) {
+		<E> LinkageSupport<C, E> addMapping(SerializableAccessor<C, E> getter) {
 			LinkageSupport<C, E> newLinkage = new LinkageSupport<>(getter);
 			mapping.add(newLinkage);
 			return newLinkage;

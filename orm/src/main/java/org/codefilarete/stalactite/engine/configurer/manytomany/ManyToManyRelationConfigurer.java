@@ -3,15 +3,16 @@ package org.codefilarete.stalactite.engine.configurer.manytomany;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
-import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMethod;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy.ReferencedColumnNames;
@@ -49,7 +50,6 @@ import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.bean.FieldIterator;
 import org.codefilarete.tool.bean.InstanceFieldIterator;
 import org.codefilarete.tool.collection.Iterables;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 
 import static org.codefilarete.tool.Nullable.nullable;
 
@@ -186,7 +186,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 		 * @param targetClass target entity type, provided to look up for reverse property if no sufficient info was given
 		 * @return null if no information was provided about the reverse side (no bidirectionality) 
 		 */
-		private BiConsumer<TRGT, SRC> buildReverseCombiner(Class<TRGT> targetClass) {
+		private Mutator<TRGT, SRC> buildReverseCombiner(Class<TRGT> targetClass) {
 			MappedByConfiguration<SRC, TRGT, C2> mappedByConfiguration = associationConfiguration.getManyToManyRelation().getMappedByConfiguration();
 			if (mappedByConfiguration.isEmpty()) {
 				// relation is not bidirectional, and not even set by the reverse link, there's nothing to do
@@ -212,8 +212,8 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 					} // else : relation is not bidirectional, or not a usual one, may be set by reverse link
 				}
 				
-				Nullable<SerializableBiConsumer<TRGT, SRC>> configuredCombiner = nullable(mappedByConfiguration.getReverseCombiner());
-				BiConsumer<TRGT, SRC> result;
+				Nullable<SerializableMutator<TRGT, SRC>> configuredCombiner = nullable(mappedByConfiguration.getReverseCombiner());
+				Mutator<TRGT, SRC> result;
 				if (collectionAccessor == null) {
 					result = configuredCombiner.get();
 				} else {
@@ -224,7 +224,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 						reverseCollectionFactory = Reflections.giveCollectionFactory(collectionType);
 					}
 					PropertyAccessor<TRGT, C2> finalCollectionAccessor = collectionAccessor;
-					SerializableBiConsumer<TRGT, SRC> combiner = configuredCombiner.getOr((TRGT trgt, SRC src) -> {
+					SerializableMutator<TRGT, SRC> combiner = configuredCombiner.getOr((TRGT trgt, SRC src) -> {
 						// collectionAccessor can't be null due to nullable check
 						finalCollectionAccessor.get(trgt).add(src);
 					});
@@ -236,7 +236,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 							finalCollectionAccessor.set(trgt, effectiveCollectionFactory.get());
 						}
 						// Note that combiner can't be null here thanks to nullable(..) check
-						combiner.accept(trgt, src);
+						combiner.set(trgt, src);
 					};
 				}
 				
@@ -244,7 +244,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 					Accessor shifter = ((ShiftedMappedByConfiguration) mappedByConfiguration).getShifter();
 					return (trgt, src) -> {
 						SRC src1 = (SRC) shifter.get(src);
-						result.accept(trgt, src1);
+						result.set(trgt, src1);
 					};
 				} else {
 					return result;

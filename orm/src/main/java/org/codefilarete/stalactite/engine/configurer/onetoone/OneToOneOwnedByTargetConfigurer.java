@@ -199,7 +199,7 @@ public class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 			// we take advantage of foreign key computing and presence of AccessorDefinition to build relation fixer which is needed lately in determineRelationFixer(..) 
 			result = (target, input) -> {
 				// fixing target on source side
-				oneToOneRelation.getReverseSetter().accept(input, target);
+				oneToOneRelation.getReverseSetter().set(input, target);
 				// fixing source on target side
 				sourceIntoTargetFixer.set(target, input);
 			};

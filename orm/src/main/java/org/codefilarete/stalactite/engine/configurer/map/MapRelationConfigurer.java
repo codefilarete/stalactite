@@ -7,13 +7,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
@@ -224,7 +224,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 	protected void addInsertCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,
 									EntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>> relationRecordPersister,
 									Accessor<SRC, M> collectionAccessor) {
-		Function<SRC, Collection<KeyValueRecord<K, V, ID>>> collectionProviderForInsert = toRecordCollectionProvider(
+		Accessor<SRC, Collection<KeyValueRecord<K, V, ID>>> collectionProviderForInsert = toRecordCollectionProvider(
 				sourcePersister.getMapping(),
 				false);
 		
@@ -233,11 +233,11 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 	
 	protected void addUpdateCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,
 									EntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>> relationRecordPersister) {
-		Function<SRC, Collection<KeyValueRecord<K, V, ID>>> collectionProviderAsPersistedInstances = toRecordCollectionProvider(
+		Accessor<SRC, Collection<KeyValueRecord<K, V, ID>>> collectionProviderAsPersistedInstances = toRecordCollectionProvider(
 				sourcePersister.getMapping(),
 				true);
 		
-		BiConsumer<Duo<SRC, SRC>, Boolean> collectionUpdater = new CollectionUpdater<SRC, KeyValueRecord<K, V, ID>, Collection<KeyValueRecord<K, V, ID>>>(
+		Mutator<Duo<SRC, SRC>, Boolean> collectionUpdater = new CollectionUpdater<SRC, KeyValueRecord<K, V, ID>, Collection<KeyValueRecord<K, V, ID>>>(
 				collectionProviderAsPersistedInstances,
 				relationRecordPersister,
 				(o, i) -> { /* no reverse setter because we store only raw values */ },
@@ -263,7 +263,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 	
 	protected void addDeleteCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,
 								  EntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>> relationRecordPersister) {
-		Function<SRC, Collection<KeyValueRecord<K, V, ID>>> recordsProviderAsPersistedInstances = toRecordCollectionProvider(
+		Accessor<SRC, Collection<KeyValueRecord<K, V, ID>>> recordsProviderAsPersistedInstances = toRecordCollectionProvider(
 				sourcePersister.getMapping(),
 				true);
 		
@@ -306,7 +306,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 	 * @param markAsPersisted should we set generated {@link KeyValueRecord} as persisted ?
 	 * @return a provider of {@link Map} entries converted to {@link KeyValueRecord}s
 	 */
-	protected Function<SRC, Collection<KeyValueRecord<K, V, ID>>> toRecordCollectionProvider(IdAccessor<SRC, ID> idAccessor,
+	protected Accessor<SRC, Collection<KeyValueRecord<K, V, ID>>> toRecordCollectionProvider(IdAccessor<SRC, ID> idAccessor,
 																							 boolean markAsPersisted) {
 		return src -> Iterables.collect(nullable(mapRelation.getMapProvider().get(src)).getOr(() -> (M) Collections.emptyMap()).entrySet(),
 				entry -> new KeyValueRecord<>(idAccessor.getId(src), entry.getKey(), entry.getValue()).setPersisted(markAsPersisted),
@@ -315,10 +315,10 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 	
 	protected static class TargetInstancesInsertCascader<SRC, K, V, ID> extends AfterInsertCollectionCascader<SRC, KeyValueRecord<K, V, ID>> {
 		
-		private final Function<SRC, ? extends Collection<KeyValueRecord<K, V, ID>>> mapGetter;
+		private final Accessor<SRC, ? extends Collection<KeyValueRecord<K, V, ID>>> mapGetter;
 		
 		public TargetInstancesInsertCascader(EntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>> targetPersister,
-											 Function<SRC, ? extends Collection<KeyValueRecord<K, V, ID>>> mapGetter) {
+											 Accessor<SRC, ? extends Collection<KeyValueRecord<K, V, ID>>> mapGetter) {
 			super(targetPersister);
 			this.mapGetter = mapGetter;
 		}
@@ -330,7 +330,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 		
 		@Override
 		protected Collection<KeyValueRecord<K, V, ID>> getTargets(SRC source) {
-			return mapGetter.apply(source);
+			return mapGetter.get(source);
 		}
 	}
 }

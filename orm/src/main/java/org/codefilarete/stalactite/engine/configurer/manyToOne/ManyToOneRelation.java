@@ -15,13 +15,13 @@ import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.tool.Nullable;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 import static org.codefilarete.tool.Nullable.nullable;
 
@@ -155,11 +155,11 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 	
 	private final MethodReferenceCapturer methodSpy = new MethodReferenceCapturer();
 	
-	private Method captureMethod(SerializableFunction getter) {
+	private Method captureMethod(SerializableAccessor getter) {
 		return this.methodSpy.findMethod(getter);
 	}
 	
-	private Method captureMethod(SerializableBiConsumer setter) {
+	private Method captureMethod(SerializableMutator setter) {
 		return this.methodSpy.findMethod(setter);
 	}
 	
@@ -188,48 +188,48 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 		 * Combiner of target entity with source entity
 		 */
 		@javax.annotation.Nullable
-		private SerializableBiConsumer<TRGT, SRC> combiner;
+		private SerializableMutator<TRGT, SRC> combiner;
 		
 		/**
 		 * Source getter on target for bidirectionality (no consequence on database mapping).
 		 */
 		@javax.annotation.Nullable
-		private SerializableFunction<TRGT, C2> accessor;
+		private SerializableAccessor<TRGT, C2> accessor;
 		
 		/**
 		 * Source setter on target for bidirectionality (no consequence on database mapping).
 		 */
 		@javax.annotation.Nullable
-		private SerializableBiConsumer<TRGT, C2> mutator;
+		private SerializableMutator<TRGT, C2> mutator;
 		
 		/** Optional provider of collection instance to be used if collection value is null */
 		@javax.annotation.Nullable
 		private Supplier<C2> factory;
 		
 		@javax.annotation.Nullable
-		public SerializableBiConsumer<TRGT, SRC> getCombiner() {
+		public SerializableMutator<TRGT, SRC> getCombiner() {
 			return combiner;
 		}
 		
-		public void setCombiner(@javax.annotation.Nullable SerializableBiConsumer<TRGT, SRC> combiner) {
+		public void setCombiner(@javax.annotation.Nullable SerializableMutator<TRGT, SRC> combiner) {
 			this.combiner = combiner;
 		}
 		
 		@javax.annotation.Nullable
-		public SerializableFunction<TRGT, C2> getAccessor() {
+		public SerializableAccessor<TRGT, C2> getAccessor() {
 			return accessor;
 		}
 		
-		public void setAccessor(@javax.annotation.Nullable SerializableFunction<TRGT, C2> accessor) {
+		public void setAccessor(@javax.annotation.Nullable SerializableAccessor<TRGT, C2> accessor) {
 			this.accessor = accessor;
 		}
 		
 		@javax.annotation.Nullable
-		public SerializableBiConsumer<TRGT, C2> getMutator() {
+		public SerializableMutator<TRGT, C2> getMutator() {
 			return mutator;
 		}
 		
-		public void setMutator(@javax.annotation.Nullable SerializableBiConsumer<TRGT, C2> mutator) {
+		public void setMutator(@javax.annotation.Nullable SerializableMutator<TRGT, C2> mutator) {
 			this.mutator = mutator;
 		}
 		

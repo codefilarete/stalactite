@@ -1,10 +1,10 @@
 package org.codefilarete.stalactite.engine.configurer.onetomany;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
@@ -14,6 +14,8 @@ import org.codefilarete.reflection.AccessorDefinitionDefiner;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
@@ -23,8 +25,6 @@ import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Reflections;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * 
@@ -51,7 +51,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	 * Useful only for cases of association table because this case doesn't set any reverse information hence such setter can't be deduced.
 	 */
 	@Nullable
-	private SerializableBiConsumer<TRGT, SRC> reverseLink;
+	private SerializableMutator<TRGT, SRC> reverseLink;
 	
 	/** Default relation mode is {@link RelationMode#ALL} */
 	private RelationMode relationMode = RelationMode.ALL;
@@ -121,12 +121,12 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		return getTargetMappingConfiguration().getPolymorphismPolicy() instanceof PolymorphismPolicy.TablePerClassPolymorphism;
 	}
 	
-	public void setReverseGetter(SerializableFunction<TRGT, ? super SRC> reverseGetter) {
-		this.mappedByConfiguration.setReverseGetter((SerializableFunction<TRGT, SRC>) reverseGetter);
+	public void setReverseGetter(SerializableAccessor<TRGT, ? super SRC> reverseGetter) {
+		this.mappedByConfiguration.setReverseGetter((SerializableAccessor<TRGT, SRC>) reverseGetter);
 	}
 	
-	public void setReverseSetter(SerializableBiConsumer<TRGT, ? super SRC> reverseSetter) {
-		this.mappedByConfiguration.setReverseSetter((SerializableBiConsumer<TRGT, SRC>) reverseSetter);
+	public void setReverseSetter(SerializableMutator<TRGT, ? super SRC> reverseSetter) {
+		this.mappedByConfiguration.setReverseSetter((SerializableMutator<TRGT, SRC>) reverseSetter);
 	}
 	
 	@Nullable
@@ -196,11 +196,11 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	}
 	
 	@Nullable
-	public SerializableBiConsumer<TRGT, SRC> getReverseLink() {
+	public SerializableMutator<TRGT, SRC> getReverseLink() {
 		return reverseLink;
 	}
 	
-	public void setReverseLink(SerializableBiConsumer<TRGT, SRC> reverseLink) {
+	public void setReverseLink(SerializableMutator<TRGT, SRC> reverseLink) {
 		this.reverseLink = reverseLink;
 	}
 	
@@ -361,11 +361,11 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 			return new ShiftedMappedByConfiguration<>(accessor, this);
 		}
 		
-		public void setReverseGetter(SerializableFunction<TRGT, SRC> reverseGetter) {
+		public void setReverseGetter(SerializableAccessor<TRGT, SRC> reverseGetter) {
 			this.reverseGetter = Accessors.accessor(reverseGetter);
 		}
 		
-		public void setReverseSetter(SerializableBiConsumer<TRGT, SRC> reverseSetter) {
+		public void setReverseSetter(SerializableMutator<TRGT, SRC> reverseSetter) {
 			this.reverseSetter = Accessors.mutator(reverseSetter);
 		}
 		

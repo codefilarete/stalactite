@@ -1,14 +1,19 @@
 package org.codefilarete.stalactite.engine.runtime.projection;
 
-import org.codefilarete.reflection.*;
+import java.util.List;
+
+import org.codefilarete.reflection.AbstractReflector;
+import org.codefilarete.reflection.AccessorByMethodReference;
+import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.MutatorByMethodReference;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.EntityCriteria;
 import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.KeepOrderSet;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
-
-import java.util.List;
 
 /**
  * Simple class that stores options of the query
@@ -52,13 +57,13 @@ public class ProjectionQueryPageSupport<C>
 	}
 	
 	@Override
-	public ProjectionQueryPageSupport<C> orderBy(SerializableFunction<C, ?> getter, Order order) {
+	public ProjectionQueryPageSupport<C> orderBy(SerializableAccessor<C, ?> getter, Order order) {
 		orderBy.add(new OrderByItem(Arrays.asList(new AccessorByMethodReference<>(getter)), order, false));
 		return this;
 	}
 	
 	@Override
-	public ProjectionQueryPageSupport<C> orderBy(SerializableBiConsumer<C, ?> setter, Order order) {
+	public ProjectionQueryPageSupport<C> orderBy(SerializableMutator<C, ?> setter, Order order) {
 		orderBy.add(new OrderByItem(Arrays.asList(new MutatorByMethodReference<>(setter)), order, false));
 		return this;
 	}

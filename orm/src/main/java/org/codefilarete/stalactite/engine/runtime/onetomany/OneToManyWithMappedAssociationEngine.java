@@ -6,12 +6,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.idpolicy.GeneratedKeysPolicy;
 import org.codefilarete.stalactite.engine.EntityPersister;
@@ -157,7 +158,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 
 			@Override
 			public void afterSelect(Set<? extends SRC> result) {
-				Set<TRGT> collect = Iterables.stream(result).flatMap(src -> Nullable.nullable(manyRelationDescriptor.getCollectionGetter().apply(src))
+				Set<TRGT> collect = Iterables.stream(result).flatMap(src -> Nullable.nullable(manyRelationDescriptor.getCollectionGetter().get(src))
 						.map(Collection::stream)
 						.getOr(Stream.empty()))
 						.collect(Collectors.toSet());
@@ -219,7 +220,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	}
 	
 	protected void addTargetInstancesUpdateCascader(boolean shouldDeleteRemoved) {
-		BiConsumer<Duo<SRC, SRC>, Boolean> collectionUpdater = new CollectionUpdater<>(
+		Mutator<Duo<SRC, SRC>, Boolean> collectionUpdater = new CollectionUpdater<>(
 				manyRelationDescriptor.getCollectionGetter(),
 				targetPersister,
 				manyRelationDescriptor.getReverseSetter(),
@@ -259,13 +260,13 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 					@Override
 					public void beforeDelete(Iterable<? extends SRC> entities) {
 						List<TRGT> targets = stream(entities).flatMap(c -> getTargets(c).stream()).collect(Collectors.toList());
-						targets.forEach(e -> manyRelationDescriptor.getReverseSetter().accept(e, null));
+						targets.forEach(e -> manyRelationDescriptor.getReverseSetter().set(e, null));
 						targetPersister.updateById(targets);
 					}
 					
 					@Override
 					protected Collection<TRGT> getTargets(SRC src) {
-						return nullable(manyRelationDescriptor.getCollectionGetter().apply(src)).getOr(manyRelationDescriptor.getCollectionFactory());
+						return nullable(manyRelationDescriptor.getCollectionGetter().get(src)).getOr(manyRelationDescriptor.getCollectionFactory());
 					}
 				});
 			}
@@ -326,9 +327,9 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	
 	public class TargetInstancesInsertCascader extends AfterInsertCollectionCascader<SRC, TRGT> {
 		
-		private final Function<SRC, ? extends Collection<TRGT>> collectionGetter;
+		private final Accessor<SRC, ? extends Collection<TRGT>> collectionGetter;
 		
-		public TargetInstancesInsertCascader(EntityPersister<TRGT, TRGTID> targetPersister, Function<SRC, ? extends Collection<TRGT>> collectionGetter) {
+		public TargetInstancesInsertCascader(EntityPersister<TRGT, TRGTID> targetPersister, Accessor<SRC, ? extends Collection<TRGT>> collectionGetter) {
 			super(targetPersister);
 			this.collectionGetter = collectionGetter;
 		}
@@ -347,7 +348,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		
 		@Override
 		protected Collection<TRGT> getTargets(SRC source) {
-			return collectionGetter.apply(source);
+			return collectionGetter.get(source);
 		}
 	}
 	
@@ -358,39 +359,39 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	 */
 	public static class AfterUpdateTrigger<I> implements UpdateListener<I> {
 		
-		private final BiConsumer<Duo<? extends I, ? extends I>, Boolean> afterUpdateListener;
+		private final Mutator<Duo<? extends I, ? extends I>, Boolean> afterUpdateListener;
 		
-		public AfterUpdateTrigger(BiConsumer<? extends Duo<? extends I, ? extends I>, Boolean> afterUpdateListener) {
-			this.afterUpdateListener = (BiConsumer<Duo<? extends I, ? extends I>, Boolean>) afterUpdateListener;
+		public AfterUpdateTrigger(Mutator<? extends Duo<? extends I, ? extends I>, Boolean> afterUpdateListener) {
+			this.afterUpdateListener = (Mutator<Duo<? extends I, ? extends I>, Boolean>) afterUpdateListener;
 		}
 		
 		@Override
 		public void afterUpdate(Iterable<? extends Duo<I, I>> entities, boolean allColumnsStatement) {
-			entities.forEach(entry -> afterUpdateListener.accept(entry, allColumnsStatement));
+			entities.forEach(entry -> afterUpdateListener.set(entry, allColumnsStatement));
 		}
 	}
 	
 	public static class DeleteTargetEntitiesBeforeDeleteCascader<I, O> extends BeforeDeleteCollectionCascader<I, O> {
 		
-		private final Function<I, ? extends Collection<O>> collectionGetter;
+		private final Accessor<I, ? extends Collection<O>> collectionGetter;
 		
-		public DeleteTargetEntitiesBeforeDeleteCascader(EntityPersister<O, ?> targetPersister, Function<I, ? extends Collection<O>> collectionGetter) {
+		public DeleteTargetEntitiesBeforeDeleteCascader(EntityPersister<O, ?> targetPersister, Accessor<I, ? extends Collection<O>> collectionGetter) {
 			super(targetPersister);
 			this.collectionGetter = collectionGetter;
 		}
 		
 		@Override
 		protected Collection<O> getTargets(I i) {
-			return collectionGetter.apply(i);
+			return collectionGetter.get(i);
 		}
 	}
 	
 	public static class DeleteByIdTargetEntitiesBeforeDeleteByIdCascader<I, O> extends BeforeDeleteByIdCollectionCascader<I, O> {
 		
-		private final Function<I, ? extends Collection<O>> collectionGetter;
+		private final Accessor<I, ? extends Collection<O>> collectionGetter;
 		
 		public DeleteByIdTargetEntitiesBeforeDeleteByIdCascader(EntityPersister<O, ?> targetPersister,
-																Function<I, ? extends Collection<O>> collectionGetter) {
+																Accessor<I, ? extends Collection<O>> collectionGetter) {
 			super(targetPersister);
 			this.collectionGetter = collectionGetter;
 		}
@@ -402,7 +403,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		
 		@Override
 		protected Collection<O> getTargets(I i) {
-			return collectionGetter.apply(i);
+			return collectionGetter.get(i);
 		}
 	}
 	
@@ -414,7 +415,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 			currentTargetToSourceRelationStorage.set(new TargetToSourceRelationStorage());
 		}
 		for (SRC sourceEntity : sourceEntities) {
-			C collection = manyRelationDescriptor.getCollectionGetter().apply(sourceEntity);
+			C collection = manyRelationDescriptor.getCollectionGetter().get(sourceEntity);
 			nullable(collection).getOr(manyRelationDescriptor.getCollectionFactory()).forEach(trgt -> {
 				giveRelationStorageContext().add(trgt, relationIsNullified ? null : sourceEntity);
 			});

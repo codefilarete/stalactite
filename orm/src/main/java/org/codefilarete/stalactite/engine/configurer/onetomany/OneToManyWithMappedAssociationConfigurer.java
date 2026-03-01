@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -188,7 +187,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 		if (associationConfiguration.getOneToManyRelation().giveReverseSetter() != null) {
 			reversePropertyAccessor = associationConfiguration.getOneToManyRelation().giveReverseSetter();
 		}
-		BiConsumer<TRGT, SRC> reverseSetterAsConsumer = reversePropertyAccessor == null ? null : reversePropertyAccessor::set;
+		Mutator<TRGT, SRC> reverseSetterAsConsumer = reversePropertyAccessor;
 		if (associationConfiguration.getOneToManyRelation().isOrdered()) {
 			assignEngineForIndexedAssociation(reverseSetterAsConsumer, foreignKey,
 					associationConfiguration.getOneToManyRelation().getIndexingColumn(), targetPersister);
@@ -222,10 +221,10 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 	
 	private void assignEngineForNonIndexedAssociation(Key<?, SRCID> reverseColumn,
 													  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
-													  @Nullable BiConsumer<TRGT, SRC> reverseSetter) {
+													  @Nullable Mutator<TRGT, SRC> reverseSetter) {
 		MappedManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDefinition = new MappedManyRelationDescriptor<>(
 				associationConfiguration.getCollectionGetter(),
-				associationConfiguration.getSetter()::set,
+				associationConfiguration.getSetter(),
 				associationConfiguration.getCollectionFactory(), reverseSetter, reverseColumn);
 		mappedAssociationEngine = new OneToManyWithMappedAssociationEngine<>(
 				targetPersister,
@@ -236,7 +235,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 		);
 	}
 	
-	private void assignEngineForIndexedAssociation(@Nullable BiConsumer<TRGT, SRC> reverseSetter,
+	private void assignEngineForIndexedAssociation(@Nullable Mutator<TRGT, SRC> reverseSetter,
 												   Key<?, SRCID> reverseColumn,
 												   @Nullable Column<RIGHTTABLE, Integer> indexingColumn,
 												   ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {

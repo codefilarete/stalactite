@@ -12,13 +12,13 @@ import org.codefilarete.reflection.MutatorByField;
 import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.configurer.PropertyAccessorResolver.PropertyMapping;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.Reflections.MemberNotFoundException;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -108,23 +108,23 @@ class PropertyAccessorResolverTest {
 	
 	private static class PropertyMappingSupport<C, O> implements PropertyMapping<C, O> {
 		
-		private final SerializableFunction<C, O> getter;
-		private final SerializableBiConsumer<C, O> setter;
+		private final SerializableAccessor<C, O> getter;
+		private final SerializableMutator<C, O> setter;
 		private final Field field;
 		
-		PropertyMappingSupport(SerializableFunction<C, O> getter, SerializableBiConsumer<C, O> setter, Field field) {
+		PropertyMappingSupport(SerializableAccessor<C, O> getter, SerializableMutator<C, O> setter, Field field) {
 			this.getter = getter;
 			this.setter = setter;
 			this.field = field;
 		}
 		
 		@Override
-		public SerializableFunction<C, O> getGetter() {
+		public SerializableAccessor<C, O> getGetter() {
 			return getter;
 		}
 		
 		@Override
-		public SerializableBiConsumer<C, O> getSetter() {
+		public SerializableMutator<C, O> getSetter() {
 			return setter;
 		}
 		

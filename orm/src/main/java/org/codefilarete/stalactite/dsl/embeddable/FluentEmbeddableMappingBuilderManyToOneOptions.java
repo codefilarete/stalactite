@@ -3,9 +3,8 @@ package org.codefilarete.stalactite.dsl.embeddable;
 import java.util.Collection;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.relation.ManyToOneOptions;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * Mashup of {@link ManyToOneOptions} and {@link FluentEmbeddableMappingBuilder} to make the many-to-one options available in a fluent way while
@@ -26,7 +25,7 @@ public interface FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S extends 
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
+	FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S> reverselySetBy(SerializableMutator<O, C> reverseLink);
 	
 	/**
 	 * {@inheritDoc}

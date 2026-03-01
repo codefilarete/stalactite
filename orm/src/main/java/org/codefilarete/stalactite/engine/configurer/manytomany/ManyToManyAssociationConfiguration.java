@@ -14,6 +14,8 @@ import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation.MappedByConfiguration;
@@ -22,8 +24,6 @@ import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.Reflections;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 import static org.codefilarete.tool.Nullable.nullable;
 
@@ -157,11 +157,11 @@ class ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1 extends Co
 	
 	private final MethodReferenceCapturer methodSpy = new MethodReferenceCapturer();
 	
-	private Method captureMethod(SerializableFunction getter) {
+	private Method captureMethod(SerializableAccessor getter) {
 		return this.methodSpy.findMethod(getter);
 	}
 	
-	private Method captureMethod(SerializableBiConsumer setter) {
+	private Method captureMethod(SerializableMutator setter) {
 		return this.methodSpy.findMethod(setter);
 	}
 }

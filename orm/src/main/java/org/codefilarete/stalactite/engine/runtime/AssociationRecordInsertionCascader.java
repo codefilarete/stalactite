@@ -1,9 +1,9 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import java.util.Collection;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 
@@ -15,12 +15,12 @@ import static org.codefilarete.tool.collection.Iterables.stream;
 public class AssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>>
 		extends AfterInsertCollectionCascader<SRC, AssociationRecord> {
 	
-	private final Function<SRC, C> collectionGetter;
+	private final Accessor<SRC, C> collectionGetter;
 	private final EntityMapping<SRC, SRCID, ?> mappingStrategy;
 	private final EntityMapping<TRGT, TRGTID, ?> targetStrategy;
 	
 	public AssociationRecordInsertionCascader(AssociationRecordPersister<AssociationRecord, ?> persister,
-											  Function<SRC, C> collectionGetter,
+											  Accessor<SRC, C> collectionGetter,
 											  EntityMapping<SRC, SRCID, ?> mappingStrategy,
 											  EntityMapping<TRGT, TRGTID, ?> targetStrategy) {
 		super(persister);
@@ -36,7 +36,7 @@ public class AssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C exte
 	
 	@Override
 	protected Collection<AssociationRecord> getTargets(SRC src) {
-		Collection<TRGT> targets = collectionGetter.apply(src);
+		Collection<TRGT> targets = collectionGetter.get(src);
 		// We only insert non-persisted instances (for logic and to prevent duplicate primary key error)
 		return stream(targets)
 				.map(target -> new AssociationRecord(mappingStrategy.getId(src), targetStrategy.getId(target)))
