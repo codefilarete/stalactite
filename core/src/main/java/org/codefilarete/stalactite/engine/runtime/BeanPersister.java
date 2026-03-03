@@ -51,12 +51,7 @@ public class BeanPersister<C, I, T extends Table<T>>
 	 * SQL generator for CRUD operations
 	 */
 	private final DMLGenerator dmlGenerator;
-
-	/**
-	 * Factory of {@link WriteOperation}
-	 */
-	private final WriteOperationFactory writeOperationFactory;
-
+	
 	private final PersistExecutor<C> persistExecutor;
 	private final InsertExecutor<C, I, T> insertExecutor;
 	private final UpdateExecutor<C, I, T> updateExecutor;
@@ -71,14 +66,13 @@ public class BeanPersister<C, I, T extends Table<T>>
 		this.mappingStrategy = mappingStrategy;
 		this.connectionConfiguration = connectionConfiguration;
 		this.dmlGenerator = dialect.getDmlGenerator();
-		this.writeOperationFactory = dialect.getWriteOperationFactory();
 		this.persistExecutor = newPersistExecutor();
 		this.insertExecutor = newInsertExecutor(this.mappingStrategy, this.connectionConfiguration, dmlGenerator,
-				writeOperationFactory, dialect.getInOperatorMaxSize());
+				dialect.getWriteOperationFactory(), dialect.getInOperatorMaxSize());
 		this.updateExecutor = newUpdateExecutor(this.mappingStrategy, this.connectionConfiguration, dmlGenerator,
-				writeOperationFactory, dialect.getInOperatorMaxSize());
+				dialect.getWriteOperationFactory(), dialect.getInOperatorMaxSize());
 		this.deleteExecutor = newDeleteExecutor(this.mappingStrategy, this.connectionConfiguration, dmlGenerator,
-				writeOperationFactory, dialect.getInOperatorMaxSize());
+				dialect.getWriteOperationFactory(), dialect.getInOperatorMaxSize());
 		this.selectExecutor = newSelectExecutor(this.mappingStrategy, this.connectionConfiguration, dialect);
 	}
 	

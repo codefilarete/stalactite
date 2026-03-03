@@ -1,14 +1,12 @@
 package org.codefilarete.stalactite.spring.repository.query;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import org.codefilarete.stalactite.engine.model.Republic;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.spring.repository.StalactiteRepository;
-import org.codefilarete.stalactite.spring.repository.query.nativ.NativeQueriesRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

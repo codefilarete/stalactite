@@ -459,32 +459,6 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		long execute();
 	}
 	
-	public interface ExecutableCriteria extends CriteriaChain<ExecutableCriteria>, ExecutableSQL {
-		
-	}
-	
-	public interface CriteriaAware<T extends Table<T>, O> {
-		
-		/**
-		 * Adds a criteria to this update.
-		 *
-		 * @param column a column target of the condition
-		 * @param condition the condition
-		 * @return this
-		 */
-		O where(Column<T, ?> column, String condition);
-		
-		/**
-		 * Adds a criteria to this update.
-		 *
-		 * @param column a column target of the condition
-		 * @param condition the condition
-		 * @return this
-		 */
-		O where(Column<T, ?> column, ConditionalOperator condition);
-
-	}
-	
 	public interface ExecutableBeanPropertyKeyQueryMapper<C> extends BeanKeyQueryMapper<C>, ExecutableQuery<C> {
 		
 		<I> ExecutableBeanPropertyQueryMapper<C> mapKey(SerializableFunction<I, C> javaBeanCtor, String columnName);
