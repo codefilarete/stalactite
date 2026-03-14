@@ -1,6 +1,6 @@
 package org.codefilarete.stalactite.dsl.naming;
 
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration.Linkage;
 import org.codefilarete.stalactite.engine.model.AbstractVehicle;
@@ -24,20 +24,20 @@ class UniqueConstraintNamingStrategyTest {
 	static Iterable<Arguments> defaultImplementation_data() {
 		Table abstractVehicleTable = new Table(null, "AbstractVehicle");
 		Column timestampColumn = abstractVehicleTable.addColumn("timestamp", String.class);
-		PropertyAccessor<AbstractVehicle, Timestamp> timestampPropertyAccessor = PropertyAccessor.fromMethodReference(
+		ReadWriteAccessPoint<AbstractVehicle, Timestamp> timestampPropertyAccessor = ReadWriteAccessPoint.fromMethodReference(
 				AbstractVehicle::getTimestamp, AbstractVehicle::setTimestamp
 		);
 		
 		Table personTable = new Table(null, "Person");
 		Column mainBicycleColumn = personTable.addColumn("mainBicycle", String.class);
-		PropertyAccessor<PersonWithGender, Bicycle> mainBicyclePropertyAccessor = PropertyAccessor.fromMethodReference(
+		ReadWriteAccessPoint<PersonWithGender, Bicycle> mainBicyclePropertyAccessor = ReadWriteAccessPoint.fromMethodReference(
 				PersonWithGender::getMainBicycle, PersonWithGender::setMainBicycle
 		);
 		Column principalBikeColumn = personTable.addColumn("principalBike", String.class);
 		Table personWithGenderTable = new Table(null, "PersonWithGender");
 		Column genderColumn = personWithGenderTable.addColumn("gender", String.class);
 		Linkage personWithGenderGender_withOverriddenName = Mockito.mock(Linkage.class);
-		PropertyAccessor<PersonWithGender, Gender> genderPropertyAccessor = PropertyAccessor.fromMethodReference(
+		ReadWriteAccessPoint<PersonWithGender, Gender> genderPropertyAccessor = ReadWriteAccessPoint.fromMethodReference(
 				PersonWithGender::getGender, PersonWithGender::setGender
 		);
 		return Arrays.asList(

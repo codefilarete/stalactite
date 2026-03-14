@@ -5,7 +5,7 @@ import java.util.Map;
 
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.SerializableAccessor;
 import org.codefilarete.reflection.SerializableMutator;
@@ -57,7 +57,7 @@ public class AssociationRecordMapping<
 			SerializableMutator<AssociationRecord, Object> valueMutator) {
 		Map<ReversibleAccessor<AssociationRecord, Object>, Column<ASSOCIATIONTABLE, Object>> result = new HashMap<>();
 		if (identifierAssembler instanceof SingleIdentifierAssembler) {
-			ReversibleAccessor<AssociationRecord, Object> reversibleAccessor = PropertyAccessor.fromMethodReference(valueAccessor, valueMutator);
+			ReversibleAccessor<AssociationRecord, Object> reversibleAccessor = ReadWriteAccessPoint.fromMethodReference(valueAccessor, valueMutator);
 			Column<TARGETTABLE, ID> column = ((SingleIdentifierAssembler<ID, TARGETTABLE>) identifierAssembler).getColumn();
 			Column<ASSOCIATIONTABLE, ID> associationtableColumn = (Column<ASSOCIATIONTABLE, ID>) identifierColumnMapping.get(column);
 			result.put(reversibleAccessor, (Column<ASSOCIATIONTABLE, Object>) associationtableColumn);

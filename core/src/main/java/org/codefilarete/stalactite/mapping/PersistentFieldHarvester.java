@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 import org.codefilarete.tool.bean.FieldIterator;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
@@ -21,7 +21,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
  */
 public class PersistentFieldHarvester {
 	
-	private Map<PropertyAccessor, Column> fieldToColumn;
+	private Map<ReadWriteAccessPoint, Column> fieldToColumn;
 	
 	private Map<String, Field> nameTofield;
 	
@@ -30,11 +30,11 @@ public class PersistentFieldHarvester {
 		return Iterables.stream(new FieldIterator(clazz)).filter(fieldVisitor).collect(Collectors.toList());
 	}
 	
-	public Map<PropertyAccessor, Column> getFieldToColumn() {
+	public Map<ReadWriteAccessPoint, Column> getFieldToColumn() {
 		return fieldToColumn;
 	}
 	
-	public <C, T extends Table<T>> Map<PropertyAccessor<C, ?>, Column<T, ?>> mapFields(Class<C> clazz, T targetTable) {
+	public <C, T extends Table<T>> Map<ReadWriteAccessPoint<C, ?>, Column<T, ?>> mapFields(Class<C> clazz, T targetTable) {
 		List<Field> fields = getFields(clazz);
 		Map<String, Column<T, ?>> mapColumnsOnName = targetTable.mapColumnsOnName();
 		fieldToColumn = new LinkedHashMap<>(5);
@@ -66,7 +66,7 @@ public class PersistentFieldHarvester {
 		return nameTofield.get(name);
 	}
 	
-	public Column getColumn(PropertyAccessor field) {
+	public Column getColumn(ReadWriteAccessPoint field) {
 		return fieldToColumn.get(field);
 	}
 	

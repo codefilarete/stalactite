@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.InMemoryCounterIdentifierGenerator;
@@ -136,10 +136,10 @@ class JoinTablePolymorphismPersisterTest {
 	}
 	
 	protected ConfiguredRelationalPersister<TotoA, Identifier<Integer>> initMappingTotoA(Table table) {
-		Map<PropertyAccessor<TotoA, Object>, Column<Table, Object>> mappedFields = new KeepOrderMap<>();
+		Map<ReadWriteAccessPoint<TotoA, Object>, Column<Table, Object>> mappedFields = new KeepOrderMap<>();
 		mappedFields.put(Accessors.propertyAccessor(TotoA.class, "a"), table.addColumn("a", Integer.class));
-		PropertyAccessor<TotoA, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(TotoA.class, "id");
-		mappedFields.put((PropertyAccessor) primaryKeyAccessor, table.addColumn("id", Identifier.class).primaryKey());
+		ReadWriteAccessPoint<TotoA, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(TotoA.class, "id");
+		mappedFields.put((ReadWriteAccessPoint) primaryKeyAccessor, table.addColumn("id", Identifier.class).primaryKey());
 		
 		IdentifierInsertionManager<TotoA, Identifier<Integer>> identifierManager = new AlreadyAssignedIdentifierManager<>((Class<Identifier<Integer>>) (Class) Identifier.class,
 				totoA -> totoA.getId().setPersisted(), totoA -> totoA.getId().isPersisted());
@@ -152,10 +152,10 @@ class JoinTablePolymorphismPersisterTest {
 	}
 	
 	protected ConfiguredRelationalPersister<TotoB, Identifier<Integer>> initMappingTotoB(Table table) {
-		Map<PropertyAccessor<TotoB, Object>, Column<Table, Object>> mappedFields = new KeepOrderMap<>();
+		Map<ReadWriteAccessPoint<TotoB, Object>, Column<Table, Object>> mappedFields = new KeepOrderMap<>();
 		mappedFields.put(Accessors.propertyAccessor(TotoB.class, "b"), table.addColumn("b", Integer.class));
-		PropertyAccessor<TotoB, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(TotoB.class, "id");
-		mappedFields.put((PropertyAccessor) primaryKeyAccessor, table.addColumn("id", Identifier.class).primaryKey());
+		ReadWriteAccessPoint<TotoB, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(TotoB.class, "id");
+		mappedFields.put((ReadWriteAccessPoint) primaryKeyAccessor, table.addColumn("id", Identifier.class).primaryKey());
 		
 		IdentifierInsertionManager<TotoB, Identifier<Integer>> identifierManager = new AlreadyAssignedIdentifierManager<>((Class<Identifier<Integer>>) (Class) Identifier.class,
 				totoB -> totoB.getId().setPersisted(), totoB -> totoB.getId().isPersisted());
@@ -177,10 +177,10 @@ class JoinTablePolymorphismPersisterTest {
 		Column<Table, Object> xColumn = totoTable.addColumn("x", fieldA.getType());
 		Column<Table, Object> qColumn = totoTable.addColumn("q", fieldQ.getType());
 		
-		PropertyAccessor<AbstractToto, Identifier<Integer>> identifierAccessor = Accessors.propertyAccessor(fieldId);
-		Map<PropertyAccessor<AbstractToto, Object>, Column<Table, Object>> totoPropertyMapping = Maps.forHashMap(
-						(Class<PropertyAccessor<AbstractToto, Object>>) (Class) PropertyAccessor.class, (Class<Column<Table, Object>>) (Class) Column.class)
-				.add((PropertyAccessor) identifierAccessor, idColumn)
+		ReadWriteAccessPoint<AbstractToto, Identifier<Integer>> identifierAccessor = Accessors.propertyAccessor(fieldId);
+		Map<ReadWriteAccessPoint<AbstractToto, Object>, Column<Table, Object>> totoPropertyMapping = Maps.forHashMap(
+						(Class<ReadWriteAccessPoint<AbstractToto, Object>>) (Class) ReadWriteAccessPoint.class, (Class<Column<Table, Object>>) (Class) Column.class)
+				.add((ReadWriteAccessPoint) identifierAccessor, idColumn)
 				.add(Accessors.propertyAccessor(fieldA), xColumn)
 				.add(Accessors.propertyAccessor(fieldQ), qColumn);
 		

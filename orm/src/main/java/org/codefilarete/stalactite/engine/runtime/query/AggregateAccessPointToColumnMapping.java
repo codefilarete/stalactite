@@ -17,7 +17,7 @@ import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
@@ -62,7 +62,7 @@ public class AggregateAccessPointToColumnMapping<C> {
 	 * Owned properties mapping
 	 * The implementation is based on {@link AccessorDefinition} comparison as keys. This can be a quite heavy comparison but we have no other
 	 * choice : propertyToColumn is built from entity mapping which can contains
-	 * - {@link PropertyAccessor} (for exemple) whereas getColumn() will get
+	 * - {@link ReadWriteAccessPoint} (for exemple) whereas getColumn() will get
 	 * - {@link AccessorByMethodReference} which are quite different but should be compared.
 	 */
 	private final Map<List<? extends ValueAccessPoint<?>>, JoinLink<?, ?>> propertyToColumn = new AccessorToColumnMap();

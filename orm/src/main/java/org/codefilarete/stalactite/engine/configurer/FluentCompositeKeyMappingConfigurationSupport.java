@@ -14,7 +14,7 @@ import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.SerializableAccessor;
 import org.codefilarete.reflection.SerializableMutator;
@@ -417,8 +417,8 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 	public static class Inset<SRC, TRGT> {
 		private final Class<TRGT> embeddedClass;
 		private final Method insetAccessor;
-		/** Equivalent of {@link #insetAccessor} as a {@link PropertyAccessor}  */
-		private final PropertyAccessor<SRC, TRGT> accessor;
+		/** Equivalent of {@link #insetAccessor} as a {@link ReadWriteAccessPoint}  */
+		private final ReadWriteAccessPoint<SRC, TRGT> accessor;
 		private final ValueAccessPointMap<SRC, String, ValueAccessPoint<SRC>> overriddenColumnNames = new ValueAccessPointMap<>();
 		private final ValueAccessPointMap<SRC, Size, ValueAccessPoint<SRC>> overriddenColumnSizes = new ValueAccessPointMap<>();
 		private final ValueAccessPointSet<SRC> excludedProperties = new ValueAccessPointSet<>();
@@ -430,7 +430,7 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 			  CompositeKeyMappingConfigurationProvider<? extends TRGT> configurationProvider,
 			  LambdaMethodUnsheller lambdaMethodUnsheller) {
 			this.insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetSetter);
-			this.accessor = new PropertyAccessor<>(
+			this.accessor = new ReadWriteAccessPoint<>(
 					new MutatorByMethod<SRC, TRGT>(insetAccessor).toAccessor(),
 					new MutatorByMethodReference<>(targetSetter));
 			// looking for the target type because it's necessary to find its persister (and other objects)
@@ -442,7 +442,7 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 			  CompositeKeyMappingConfigurationProvider<? extends TRGT> configurationProvider,
 			  LambdaMethodUnsheller lambdaMethodUnsheller) {
 			this.insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetGetter);
-			this.accessor = new PropertyAccessor<>(
+			this.accessor = new ReadWriteAccessPoint<>(
 					new AccessorByMethodReference<>(targetGetter),
 					new AccessorByMethod<SRC, TRGT>(insetAccessor).toMutator());
 			// looking for the target type because it's necessary to find its persister (and other objects)
@@ -451,9 +451,9 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 		}
 		
 		/**
-		 * Equivalent of {@link #insetAccessor} as a {@link PropertyAccessor}
+		 * Equivalent of {@link #insetAccessor} as a {@link ReadWriteAccessPoint}
 		 */
-		public PropertyAccessor<SRC, TRGT> getAccessor() {
+		public ReadWriteAccessPoint<SRC, TRGT> getAccessor() {
 			return accessor;
 		}
 		

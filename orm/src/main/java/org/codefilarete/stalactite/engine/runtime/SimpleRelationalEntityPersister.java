@@ -1,7 +1,6 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -11,7 +10,7 @@ import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.EntityCriteria;
 import org.codefilarete.stalactite.engine.PersistExecutor;
@@ -31,7 +30,6 @@ import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
-import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.query.model.operator.In;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
@@ -333,7 +331,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 			if (idMapping.getIdAccessor() instanceof AccessorWrapperIdAccessor) {
 				criteriaAccessor = ((AccessorWrapperIdAccessor<C, I>) idMapping.getIdAccessor()).getIdAccessor();
 			} else if (idMapping.getIdAccessor() instanceof KeyValueRecordIdMapping.KeyValueRecordIdAccessor) {
-				PropertyAccessor<RecordId, ?> accessor = Accessors.accessor(RecordId::getId);
+				ReadWriteAccessPoint<RecordId, ?> accessor = Accessors.accessor(RecordId::getId);
 				criteriaAccessor = (ReversibleAccessor<C, I>) accessor;
 			} else {
 				throw new UnsupportedOperationException("Unsupported id accessor type: " + idMapping.getIdAccessor().getClass());

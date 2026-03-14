@@ -15,7 +15,7 @@ import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.Mutator;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
@@ -77,7 +77,7 @@ public class EntityAsValueMapRelationConfigurer<SRC, SRCID, K, V, VID, M extends
 			MapRelation<SRC, K, V, M> mapRelation,
 			ConfiguredRelationalPersister<V, VID> valueEntityPersister) {
 		ConvertingMapAccessor<SRC, K, V, K, VID, M, MM> mapAccessor = new ConvertingMapAccessor<>(mapRelation, (k, v, result) -> result.put(k, valueEntityPersister.getId(v)));
-		PropertyAccessor<SRC, MM> propertyAccessor = new PropertyAccessor<>(
+		ReadWriteAccessPoint<SRC, MM> propertyAccessor = new ReadWriteAccessPoint<>(
 				mapAccessor,
 				(src, mm) -> {
 					// No setter need because afterSelect(..) method is in charge of setting the values (too complex to be done here)

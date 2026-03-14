@@ -8,7 +8,7 @@ import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.reflection.SerializableAccessor;
 import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
@@ -37,7 +37,7 @@ public class Inset<SRC, TRGT> {
 												   LambdaMethodUnsheller lambdaMethodUnsheller) {
 		Method insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetSetter);
 		return new Inset<>(insetAccessor,
-				new PropertyAccessor<>(
+				new ReadWriteAccessPoint<>(
 						new MutatorByMethod<SRC, TRGT>(insetAccessor).toAccessor(),
 						new MutatorByMethodReference<>(targetSetter)),
 				beanMappingBuilder);
@@ -48,7 +48,7 @@ public class Inset<SRC, TRGT> {
 												   LambdaMethodUnsheller lambdaMethodUnsheller) {
 		Method insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetGetter);
 		return new Inset<>(insetAccessor,
-				new PropertyAccessor<>(
+				new ReadWriteAccessPoint<>(
 						new AccessorByMethodReference<>(targetGetter),
 						new AccessorByMethod<SRC, TRGT>(insetAccessor).toMutator()),
 				beanMappingBuilder);
@@ -57,7 +57,7 @@ public class Inset<SRC, TRGT> {
 	private final Class<TRGT> embeddedClass;
 	private final Method insetAccessor;
 	/**
-	 * Equivalent of {@link #insetAccessor} as a {@link PropertyAccessor}
+	 * Equivalent of {@link #insetAccessor} as a {@link ReadWriteAccessPoint}
 	 */
 	private final Accessor<SRC, TRGT> accessor;
 	private final ValueAccessPointMap<SRC, String, ValueAccessPoint<SRC>> overriddenColumnNames = new ValueAccessPointMap<>();
@@ -70,7 +70,7 @@ public class Inset<SRC, TRGT> {
 		  EmbeddableMappingConfigurationProvider<? extends TRGT> configurationProvider,
 		  LambdaMethodUnsheller lambdaMethodUnsheller) {
 		this.insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetSetter);
-		this.accessor = new PropertyAccessor<>(
+		this.accessor = new ReadWriteAccessPoint<>(
 				new MutatorByMethod<SRC, TRGT>(insetAccessor).toAccessor(),
 				new MutatorByMethodReference<>(targetSetter));
 		// looking for the target type because it's necessary to find its persister (and other objects)
@@ -89,7 +89,7 @@ public class Inset<SRC, TRGT> {
 	}
 	
 	/**
-	 * Equivalent of {@link #insetAccessor} as a {@link PropertyAccessor}
+	 * Equivalent of {@link #insetAccessor} as a {@link ReadWriteAccessPoint}
 	 */
 	public Accessor<SRC, TRGT> getAccessor() {
 		return accessor;

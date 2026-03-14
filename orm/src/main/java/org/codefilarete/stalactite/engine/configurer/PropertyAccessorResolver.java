@@ -16,7 +16,7 @@ import org.codefilarete.reflection.MutatorByField;
 import org.codefilarete.reflection.MutatorByMember;
 import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.SerializableAccessor;
 import org.codefilarete.reflection.SerializableMutator;
@@ -26,7 +26,7 @@ import org.codefilarete.tool.Reflections.MemberNotFoundException;
 import org.codefilarete.tool.Strings;
 
 /**
- * Resolver for {@link PropertyAccessor} in context of mapping definition.
+ * Resolver for {@link ReadWriteAccessPoint} in context of mapping definition.
  * - The API lets one defines property by getter or setter, but persistence engine requires both to fill entity while
  * loading them, also to get their values to persist them. Meanwhile, those methods may not exist, then a direct access
  * to underlying property ({@link Field}) is required.
@@ -74,9 +74,9 @@ public class PropertyAccessorResolver<C, O> {
 			accessor  = propertyGetter;
 		}
 		if (accessorDefinition != null) {
-			return new DefinedPropertyAccessor<>(accessor, mutator, accessorDefinition);
+			return new DefinedReadWriteAccessPoint<>(accessor, mutator, accessorDefinition);
 		} else {
-			return new PropertyAccessor<>(accessor, mutator);
+			return new ReadWriteAccessPoint<>(accessor, mutator);
 		}
 	}
 	
@@ -134,11 +134,11 @@ public class PropertyAccessorResolver<C, O> {
 		Field getField();
 	}
 	
-	private static class DefinedPropertyAccessor<C, T> extends PropertyAccessor<C, T> implements AccessorDefinitionDefiner<C> {
+	private static class DefinedReadWriteAccessPoint<C, T> extends ReadWriteAccessPoint<C, T> implements AccessorDefinitionDefiner<C> {
 		
 		private final AccessorDefinition accessorDefinition;
 		
-		public DefinedPropertyAccessor(Accessor<C, T> accessor, Mutator<C, T> mutator, AccessorDefinition accessorDefinition) {
+		public DefinedReadWriteAccessPoint(Accessor<C, T> accessor, Mutator<C, T> mutator, AccessorDefinition accessorDefinition) {
 			super(accessor, mutator);
 			this.accessorDefinition = accessorDefinition;
 		}

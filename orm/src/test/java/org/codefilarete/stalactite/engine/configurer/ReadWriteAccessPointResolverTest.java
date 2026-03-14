@@ -11,7 +11,7 @@ import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.MutatorByField;
 import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.reflection.SerializableAccessor;
 import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-class PropertyAccessorResolverTest {
+class ReadWriteAccessPointResolverTest {
 	
 	public static Stream<Arguments> resolve() {
 		return Stream.of(
@@ -82,7 +82,7 @@ class PropertyAccessorResolverTest {
 	<C, O> void resolve(PropertyMapping<C, O> source, Accessor<C, O> expectedAccessor, Mutator<C, O> expectedMutator) {
 		PropertyAccessorResolver<C, O> testInstance = new PropertyAccessorResolver<>(source);
 		
-		PropertyAccessor<C, O> actual = (PropertyAccessor<C, O>) testInstance.resolve();
+		ReadWriteAccessPoint<C, O> actual = (ReadWriteAccessPoint<C, O>) testInstance.resolve();
 		assertThat(actual.getAccessor()).isEqualTo(expectedAccessor);
 		assertThat(actual.getMutator()).isEqualTo(expectedMutator);
 	}

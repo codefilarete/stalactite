@@ -17,7 +17,7 @@ import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ReversibleMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
@@ -47,7 +47,7 @@ import org.codefilarete.tool.function.Converter;
  * </p>
  * <p>
  * Note that mapping is defined through getter ({@link ReversibleAccessor}) and not setter ({@link ReversibleMutator}) only
- * because a choice must be done between them, else the concrete class {@link PropertyAccessor} is the choice, which is less open.
+ * because a choice must be done between them, else the concrete class {@link ReadWriteAccessPoint} is the choice, which is less open.
  * </p>
  *
  * <p>

@@ -12,7 +12,7 @@ import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.SerializableAccessor;
 import org.codefilarete.reflection.SerializableMutator;
@@ -135,7 +135,7 @@ class ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1 extends Co
 	 * @return null if no getter nor setter were defined
 	 */
 	@javax.annotation.Nullable
-	PropertyAccessor<TRGT, C2> buildReversePropertyAccessor() {
+	ReadWriteAccessPoint<TRGT, C2> buildReversePropertyAccessor() {
 		MappedByConfiguration<SRC, TRGT, C2> mappedByConfiguration = manyToManyRelation.getMappedByConfiguration();
 		Nullable<AccessorByMethodReference<TRGT, C2>> getterReference = nullable(mappedByConfiguration.getReverseCollectionAccessor()).map(Accessors::accessorByMethodReference);
 		Nullable<MutatorByMethodReference<TRGT, C2>> setterReference = nullable(mappedByConfiguration.getReverseCollectionMutator()).map(Accessors::mutatorByMethodReference);
@@ -143,15 +143,15 @@ class ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1 extends Co
 			return null;
 		} else if (getterReference.isPresent() && setterReference.isPresent()) {
 			// we keep close to user demand : we keep its method references
-			return new PropertyAccessor<>(getterReference.get(), setterReference.get());
+			return new ReadWriteAccessPoint<>(getterReference.get(), setterReference.get());
 		} else if (getterReference.isPresent() && setterReference.isAbsent()) {
 			// we keep close to user demand : we keep its method reference ...
 			// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
-			return new PropertyAccessor<>(getterReference.get(), new AccessorByMethod<TRGT, C2>(captureMethod(mappedByConfiguration.getReverseCollectionAccessor())).toMutator());
+			return new ReadWriteAccessPoint<>(getterReference.get(), new AccessorByMethod<TRGT, C2>(captureMethod(mappedByConfiguration.getReverseCollectionAccessor())).toMutator());
 		} else {
 			// we keep close to user demand : we keep its method reference ...
 			// ... but we can't do it for getter, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
-			return new PropertyAccessor<>(new MutatorByMethod<TRGT, C2>(captureMethod(mappedByConfiguration.getReverseCollectionMutator())).toAccessor(), setterReference.get());
+			return new ReadWriteAccessPoint<>(new MutatorByMethod<TRGT, C2>(captureMethod(mappedByConfiguration.getReverseCollectionMutator())).toAccessor(), setterReference.get());
 		}
 	}
 	

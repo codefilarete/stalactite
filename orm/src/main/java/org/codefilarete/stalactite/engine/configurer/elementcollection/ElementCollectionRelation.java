@@ -1,7 +1,6 @@
 package org.codefilarete.stalactite.engine.configurer.elementcollection;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
@@ -12,7 +11,7 @@ import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorChain.ValueInitializerOnNullValue;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MutatorByMethodReference;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.SerializableAccessor;
 import org.codefilarete.reflection.SerializableMutator;
@@ -73,7 +72,7 @@ public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 									 Class<TRGT> componentType,
 									 @Nullable EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider) {
 		MutatorByMethodReference<SRC, S> setterReference = Accessors.mutatorByMethodReference(setter);
-		this.collectionAccessor = new PropertyAccessor<>(
+		this.collectionAccessor = new ReadWriteAccessPoint<>(
 				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
 				setterReference
 		);
@@ -92,7 +91,7 @@ public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 									 LambdaMethodUnsheller lambdaMethodUnsheller,
 									 @Nullable EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider) {
 		AccessorByMethodReference<SRC, S> getterReference = Accessors.accessorByMethodReference(getter);
-		this.collectionAccessor = new PropertyAccessor<>(
+		this.collectionAccessor = new ReadWriteAccessPoint<>(
 				// we keep close to user demand : we keep its method reference ...
 				getterReference,
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)

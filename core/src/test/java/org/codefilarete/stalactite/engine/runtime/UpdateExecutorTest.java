@@ -9,7 +9,7 @@ import java.util.Map;
 
 import org.codefilarete.reflection.AccessorByField;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.StaleStateObjectException;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
@@ -319,12 +319,12 @@ class UpdateExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 		Column<T, Integer> pk = totoTable.addColumn("id", Integer.class).primaryKey();
 		Column<T, Integer> modifiedColumn = totoTable.addColumn("c", Integer.class);
 		Column<T, Long> versionColumn = totoTable.addColumn("version", Long.class);
-		PropertyAccessor<VersionnedToto, Integer> identifierAccessor = PropertyAccessor.fromMethodReference(VersionnedToto::getA, VersionnedToto::setA);
+		ReadWriteAccessPoint<VersionnedToto, Integer> identifierAccessor = ReadWriteAccessPoint.fromMethodReference(VersionnedToto::getA, VersionnedToto::setA);
 		Map<ReversibleAccessor, Column> mapping = Maps.forHashMap((Class<ReversibleAccessor>) null, (Class<Column>) null)
-				.add(PropertyAccessor.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion), versionColumn)
+				.add(ReadWriteAccessPoint.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion), versionColumn)
 				.add(Accessors.accessorByField(VersionnedToto.class, "c"), modifiedColumn)
 				.add(identifierAccessor, pk);
-		PropertyAccessor<VersionnedToto, Long> versioningAttributeAccessor = PropertyAccessor.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion);
+		ReadWriteAccessPoint<VersionnedToto, Long> versioningAttributeAccessor = ReadWriteAccessPoint.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion);
 		SimpleIdMapping<VersionnedToto, Integer> idMapping = new SimpleIdMapping<>(identifierAccessor, new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {}, c -> false), new SingleIdentifierAssembler<>(pk));
 		testInstance = new UpdateExecutor<>(new DefaultEntityMapping<VersionnedToto, Integer, T>(
 				VersionnedToto.class,

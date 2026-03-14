@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import org.codefilarete.reflection.AccessorChain;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
@@ -64,13 +64,13 @@ class InheritanceMappingStepTest {
 		// (probably due to ValueAccessPoint Comparator not used by containsOnly() method)
 		ArrayList<Entry<ReversibleAccessor, Column>> expected = new ArrayList<>(Maps
 				.forHashMap(ReversibleAccessor.class, Column.class)
-				.add(new PropertyAccessor<>(accessorByMethodReference(Car::getModel), mutatorByField(Car.class, "model")),
+				.add(new ReadWriteAccessPoint<>(accessorByMethodReference(Car::getModel), mutatorByField(Car.class, "model")),
 						dummyTable.getColumn("model"))
-				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(Car::getTimestamp), mutatorByMethodReference(Car::setTimestamp)),
-								new PropertyAccessor<>(accessorByMethodReference(Timestamp::getCreationDate), mutatorByMethodReference(Timestamp::setCreationDate))),
+				.add(new AccessorChain<>(new ReadWriteAccessPoint<>(accessorByMethodReference(Car::getTimestamp), mutatorByMethodReference(Car::setTimestamp)),
+								new ReadWriteAccessPoint<>(accessorByMethodReference(Timestamp::getCreationDate), mutatorByMethodReference(Timestamp::setCreationDate))),
 						dummyTable.getColumn("creationDate"))
-				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(Car::getTimestamp), mutatorByMethodReference(Car::setTimestamp)),
-								new PropertyAccessor<>(accessorByMethodReference(Timestamp::getModificationDate), mutatorByMethodReference(Timestamp::setCreationDate))),
+				.add(new AccessorChain<>(new ReadWriteAccessPoint<>(accessorByMethodReference(Car::getTimestamp), mutatorByMethodReference(Car::setTimestamp)),
+								new ReadWriteAccessPoint<>(accessorByMethodReference(Timestamp::getModificationDate), mutatorByMethodReference(Timestamp::setCreationDate))),
 						dummyTable.getColumn("modificationDate"))
 				.entrySet());
 		expected.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
@@ -108,13 +108,13 @@ class InheritanceMappingStepTest {
 		// (probably due to ValueAccessPoint Comparator not used by containsOnly() method)
 		ArrayList<Entry<ReversibleAccessor, Column>> expected = new ArrayList<>(Maps
 				.forHashMap(ReversibleAccessor.class, Column.class)
-				.add(new PropertyAccessor<>(accessorByMethodReference(Car::getModel), mutatorByField(Car.class, "model")),
+				.add(new ReadWriteAccessPoint<>(accessorByMethodReference(Car::getModel), mutatorByField(Car.class, "model")),
 						dummyTable.getColumn("model"))
-				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(Car::getTimestamp), mutatorByMethodReference(Car::setTimestamp)),
-								new PropertyAccessor<>(accessorByMethodReference(Timestamp::getCreationDate), mutatorByMethodReference(Timestamp::setCreationDate))),
+				.add(new AccessorChain<>(new ReadWriteAccessPoint<>(accessorByMethodReference(Car::getTimestamp), mutatorByMethodReference(Car::setTimestamp)),
+								new ReadWriteAccessPoint<>(accessorByMethodReference(Timestamp::getCreationDate), mutatorByMethodReference(Timestamp::setCreationDate))),
 						dummyTable.getColumn("creationDate"))
-				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(Car::getTimestamp), mutatorByMethodReference(Car::setTimestamp)),
-								new PropertyAccessor<>(accessorByMethodReference(Timestamp::getModificationDate), mutatorByMethodReference(Timestamp::setCreationDate))),
+				.add(new AccessorChain<>(new ReadWriteAccessPoint<>(accessorByMethodReference(Car::getTimestamp), mutatorByMethodReference(Car::setTimestamp)),
+								new ReadWriteAccessPoint<>(accessorByMethodReference(Timestamp::getModificationDate), mutatorByMethodReference(Timestamp::setCreationDate))),
 						dummyTable.getColumn("modificationDate"))
 				.entrySet());
 		expected.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
@@ -168,7 +168,7 @@ class InheritanceMappingStepTest {
 		// Checking Car mapping
 		List<Entry<ReversibleAccessor, Column>> expectedCarMapping = new ArrayList<>(Maps
 				.forHashMap(ReversibleAccessor.class, Column.class)
-				.add(new PropertyAccessor<>(accessorByMethodReference(Car::getModel), mutatorByField(Car.class, "model")),
+				.add(new ReadWriteAccessPoint<>(accessorByMethodReference(Car::getModel), mutatorByField(Car.class, "model")),
 						carTable.getColumn("model"))
 				.entrySet());
 		expectedCarMapping.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
@@ -182,8 +182,8 @@ class InheritanceMappingStepTest {
 		// Checking Vehicle mapping
 		List<Entry<ReversibleAccessor, Column>> expectedVehicleMapping = new ArrayList<>(Maps
 				.forHashMap(ReversibleAccessor.class, Column.class)
-				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(Vehicle::getColor), mutatorByMethodReference(Vehicle::setColor)),
-								new PropertyAccessor<>(accessorByMethodReference(Color::getRgb), mutatorByField(Color.class, "rgb"))),
+				.add(new AccessorChain<>(new ReadWriteAccessPoint<>(accessorByMethodReference(Vehicle::getColor), mutatorByMethodReference(Vehicle::setColor)),
+								new ReadWriteAccessPoint<>(accessorByMethodReference(Color::getRgb), mutatorByField(Color.class, "rgb"))),
 						vehicleTable.getColumn("rgb"))
 				.entrySet());
 		expectedVehicleMapping.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
@@ -200,11 +200,11 @@ class InheritanceMappingStepTest {
 		abstractVehicleTable = Iterables.find(mappingPerTable.giveTables(), table -> table.getName().equalsIgnoreCase("AbstractVehicle"));
 		List<Entry<ReversibleAccessor, Column>> expectedAbstractVehicleMapping = new ArrayList<>(Maps
 				.forHashMap(ReversibleAccessor.class, Column.class)
-				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(AbstractVehicle::getTimestamp), mutatorByMethodReference(AbstractVehicle::setTimestamp)),
-						new PropertyAccessor<>(accessorByMethodReference(Timestamp::getCreationDate), mutatorByMethodReference(Timestamp::setCreationDate))),
+				.add(new AccessorChain<>(new ReadWriteAccessPoint<>(accessorByMethodReference(AbstractVehicle::getTimestamp), mutatorByMethodReference(AbstractVehicle::setTimestamp)),
+						new ReadWriteAccessPoint<>(accessorByMethodReference(Timestamp::getCreationDate), mutatorByMethodReference(Timestamp::setCreationDate))),
 						abstractVehicleTable.getColumn("creationDate"))
-				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(AbstractVehicle::getTimestamp), mutatorByMethodReference(AbstractVehicle::setTimestamp)),
-						new PropertyAccessor<>(accessorByMethodReference(Timestamp::getModificationDate), mutatorByMethodReference(Timestamp::setModificationDate))),
+				.add(new AccessorChain<>(new ReadWriteAccessPoint<>(accessorByMethodReference(AbstractVehicle::getTimestamp), mutatorByMethodReference(AbstractVehicle::setTimestamp)),
+						new ReadWriteAccessPoint<>(accessorByMethodReference(Timestamp::getModificationDate), mutatorByMethodReference(Timestamp::setModificationDate))),
 						abstractVehicleTable.getColumn("modificationDate"))
 				.entrySet());
 		expectedAbstractVehicleMapping.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
@@ -240,13 +240,13 @@ class InheritanceMappingStepTest {
 		// (probably due to ValueAccessPoint Comparator not used by containsOnly() method)
 		ArrayList<Entry<ReversibleAccessor, Column>> expected = new ArrayList<>(Maps
 				.forHashMap(ReversibleAccessor.class, Column.class)
-				.add(new PropertyAccessor<>(accessorByMethodReference(Car::getModel), mutatorByField(Car.class, "model")),
+				.add(new ReadWriteAccessPoint<>(accessorByMethodReference(Car::getModel), mutatorByField(Car.class, "model")),
 						dummyTable.getColumn("model"))
-				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(Car::getTimestamp), mutatorByMethodReference(Car::setTimestamp)),
-								new PropertyAccessor<>(accessorByMethodReference(Timestamp::getCreationDate), mutatorByMethodReference(Timestamp::setCreationDate))),
+				.add(new AccessorChain<>(new ReadWriteAccessPoint<>(accessorByMethodReference(Car::getTimestamp), mutatorByMethodReference(Car::setTimestamp)),
+								new ReadWriteAccessPoint<>(accessorByMethodReference(Timestamp::getCreationDate), mutatorByMethodReference(Timestamp::setCreationDate))),
 						dummyTable.getColumn("creationDate"))
-				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(Car::getTimestamp), mutatorByMethodReference(Car::setTimestamp)),
-								new PropertyAccessor<>(accessorByMethodReference(Timestamp::getModificationDate), mutatorByMethodReference(Timestamp::setCreationDate))),
+				.add(new AccessorChain<>(new ReadWriteAccessPoint<>(accessorByMethodReference(Car::getTimestamp), mutatorByMethodReference(Car::setTimestamp)),
+								new ReadWriteAccessPoint<>(accessorByMethodReference(Timestamp::getModificationDate), mutatorByMethodReference(Timestamp::setCreationDate))),
 						dummyTable.getColumn("modificationDate"))
 				.entrySet());
 		expected.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));

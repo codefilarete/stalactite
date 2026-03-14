@@ -7,7 +7,7 @@ import java.util.NoSuchElementException;
 import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
@@ -131,7 +131,7 @@ public interface EmbeddableMappingConfiguration<C> {
 			public Collection<Inset<C, Object>> getInsets() {
 				return Iterables.collectToList(compositeKeyMappingConfiguration.getInsets(), compositeInset -> new Inset<C, Object>() {
 					@Override
-					public PropertyAccessor<C, Object> getAccessor() {
+					public ReadWriteAccessPoint<C, Object> getAccessor() {
 						return compositeInset.getAccessor();
 					}
 					

@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.reflection.Accessor;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.configurer.DefaultComposedIdentifierAssembler;
@@ -289,7 +289,7 @@ class AggregateAccessPointToColumnMappingTest {
 		Column<T2, String> keyColumn = mapTable.addColumn("key", String.class);
 		Column<T2, String> valueColumn = mapTable.addColumn("value", String.class);
 		Key<T2, Identifier<Long>> rightJoinKey = Key.ofSingleColumn(mapIdColumn);
-		PropertyAccessor<KeyValueRecord<Object, Object, Object>, Object> phoneNumbersAccessor = KeyValueRecord.VALUE_ACCESSOR;
+		ReadWriteAccessPoint<KeyValueRecord<Object, Object, Object>, Object> phoneNumbersAccessor = KeyValueRecord.VALUE_ACCESSOR;
 		Map<ReversibleAccessor<?, ?>, Column> propertiesMapping = new HashMap<>();
 		propertiesMapping.put(phoneNumbersAccessor, valueColumn);
 		EntityMapping<KeyValueRecord<String, String, Identifier<Long>>, RecordId<String, Identifier<Long>>, T2> mapMapping = new KeyValueRecordMapping<>(

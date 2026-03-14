@@ -20,7 +20,7 @@ import java.util.function.Supplier;
 import javax.sql.DataSource;
 
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.reflection.SerializableAccessor;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.engine.EntityCriteria.CriteriaPath;
@@ -145,9 +145,9 @@ class SimpleRelationalEntityPersisterTest {
 		Map<String, Column> columnMap = totoClassTable.mapColumnsOnName();
 		columnMap.get("id").setPrimaryKey(true);
 		
-		PropertyAccessor<Toto, Identifier<Integer>> identifierAccessor = Accessors.propertyAccessor(fieldId);
-		Map<PropertyAccessor<Toto, Object>, Column<Table, Object>> totoClassMapping = Maps.asMap(
-						(PropertyAccessor) identifierAccessor, (Column<Table, Object>) columnMap.get("id"))
+		ReadWriteAccessPoint<Toto, Identifier<Integer>> identifierAccessor = Accessors.propertyAccessor(fieldId);
+		Map<ReadWriteAccessPoint<Toto, Object>, Column<Table, Object>> totoClassMapping = Maps.asMap(
+						(ReadWriteAccessPoint) identifierAccessor, (Column<Table, Object>) columnMap.get("id"))
 				.add(Accessors.propertyAccessor(fieldA), columnMap.get("a"))
 				.add(Accessors.propertyAccessor(fieldB), columnMap.get("b"))
 				.add(Accessors.propertyAccessor(fieldQ), columnMap.get("q"));
@@ -814,9 +814,9 @@ class SimpleRelationalEntityPersisterTest {
 			Map<String, Column> columnMap2 = totoClassTable.mapColumnsOnName();
 			columnMap2.get("id").setPrimaryKey(true);
 			
-			PropertyAccessor<Toto, Identifier<Integer>> identifierAccessor = Accessors.propertyAccessor(fieldId);
-			Map<PropertyAccessor<Toto, Object>, Column<Table, Object>> totoClassMapping2 = Maps.asMap(
-							(PropertyAccessor) identifierAccessor, (Column<Table, Object>) columnMap2.get("id"))
+			ReadWriteAccessPoint<Toto, Identifier<Integer>> identifierAccessor = Accessors.propertyAccessor(fieldId);
+			Map<ReadWriteAccessPoint<Toto, Object>, Column<Table, Object>> totoClassMapping2 = Maps.asMap(
+							(ReadWriteAccessPoint) identifierAccessor, (Column<Table, Object>) columnMap2.get("id"))
 					.add(Accessors.propertyAccessor(fieldX), columnMap2.get("x"))
 					.add(Accessors.propertyAccessor(fieldY), columnMap2.get("y"))
 					.add(Accessors.propertyAccessor(fieldZ), columnMap2.get("z"));

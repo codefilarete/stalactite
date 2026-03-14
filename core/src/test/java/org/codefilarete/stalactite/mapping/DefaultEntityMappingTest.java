@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
@@ -42,8 +42,8 @@ class DefaultEntityMappingTest {
 		private T targetTable;
 		private PersistentFieldHarvester persistentFieldHarvester;
 		private Map<String, Column<T, ?>> columnMapOnName;
-		private PropertyAccessor<Toto, List<String>> myListField;
-		private PropertyAccessor<Toto, Map<String, String>> myMapField;
+		private ReadWriteAccessPoint<Toto, List<String>> myListField;
+		private ReadWriteAccessPoint<Toto, Map<String, String>> myMapField;
 		private DefaultEntityMapping<Toto, Integer, ?> entityMapping;
 		
 		private TestData() {
@@ -277,7 +277,7 @@ class DefaultEntityMappingTest {
 	@Test
 	<T extends Table<T>> void beanKeyIsPresent() {
 		TestData<T> testData = new TestData<>();
-		PropertyAccessor<Toto, Integer> identifierAccessor = Accessors.propertyAccessor(testData.persistentFieldHarvester.getField("a"));
+		ReadWriteAccessPoint<Toto, Integer> identifierAccessor = Accessors.propertyAccessor(testData.persistentFieldHarvester.getField("a"));
 		assertThatCode(() -> new DefaultEntityMapping<>(Toto.class,
 				testData.targetTable,
 				(Map<? extends ReversibleAccessor<Toto, ?>, ? extends Column<T, ?>>) (Map) Maps.asMap(Accessors.propertyAccessor(Toto.class, "b"), colB),

@@ -17,7 +17,7 @@ import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.MutatorByMethod;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
@@ -140,7 +140,7 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 			// relation is not bidirectional, and not even set by the reverse link, there's nothing to do
 			return null;
 		} else {
-			PropertyAccessor<TRGT, Collection<SRC>> collectionAccessor = manyToOneRelation.buildReversePropertyAccessor();
+			ReadWriteAccessPoint<TRGT, Collection<SRC>> collectionAccessor = manyToOneRelation.buildReversePropertyAccessor();
 			if (collectionAccessor == null) {
 				// since some reverse info has been done but not the collection accessor, we try to find the matching property by type
 				FieldIterator targetFields = new InstanceFieldIterator(targetClass);
@@ -150,11 +150,11 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 				if (reverseField != null) {
 					Nullable<AccessorByMethod<TRGT, Collection<SRC>>> reverseGetterMethod = nullable(Accessors.accessorByMethod(reverseField));
 					if (reverseGetterMethod.isPresent()) {
-						collectionAccessor = new PropertyAccessor<>(reverseGetterMethod.get());
+						collectionAccessor = new ReadWriteAccessPoint<>(reverseGetterMethod.get());
 					} else {
 						Nullable<MutatorByMethod<TRGT, Collection<SRC>>> reverseSetterMethod = nullable(Accessors.mutatorByMethod(reverseField));
 						if (reverseSetterMethod.isPresent()) {
-							collectionAccessor = new PropertyAccessor<>(reverseSetterMethod.get());
+							collectionAccessor = new ReadWriteAccessPoint<>(reverseSetterMethod.get());
 						}
 					}
 				} // else : relation is not bidirectional, or not a usual one, may be set by reverse link
@@ -170,7 +170,7 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 					Class<Collection<SRC>> collectionType = AccessorDefinition.giveDefinition(collectionAccessor).getMemberType();
 					collectionFactory = Reflections.giveCollectionFactory(collectionType);
 				}
-				PropertyAccessor<TRGT, Collection<SRC>> finalCollectionAccessor = collectionAccessor;
+				ReadWriteAccessPoint<TRGT, Collection<SRC>> finalCollectionAccessor = collectionAccessor;
 				SerializableMutator<TRGT, SRC> combiner = configuredCombiner.getOr((TRGT trgt, SRC src) -> {
 					// collectionAccessor can't be null due to nullable check
 					finalCollectionAccessor.get(trgt).add(src);

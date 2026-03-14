@@ -5,7 +5,7 @@ import java.util.Objects;
 
 import org.codefilarete.reflection.AccessorByField;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.stalactite.engine.InMemoryCounterIdentifierGenerator;
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
@@ -31,8 +31,8 @@ abstract class DMLExecutorTest {
 
 		T targetTable = (T) new Table("Toto");
 		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
-		Map<PropertyAccessor<Toto, ?>, Column<T, ?>> mappedFileds = persistentFieldHarvester.mapFields(Toto.class, targetTable);
-		PropertyAccessor<Toto, Integer> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("a"));
+		Map<ReadWriteAccessPoint<Toto, ?>, Column<T, ?>> mappedFileds = persistentFieldHarvester.mapFields(Toto.class, targetTable);
+		ReadWriteAccessPoint<Toto, Integer> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("a"));
 		persistentFieldHarvester.getColumn(primaryKeyAccessor).primaryKey();
 		IdentifierInsertionManager<Toto, Integer> identifierGenerator = new BeforeInsertIdentifierManager<>(
 			new AccessorWrapperIdAccessor<>(primaryKeyAccessor), new InMemoryCounterIdentifierGenerator(), Integer.class);
@@ -87,7 +87,7 @@ abstract class DMLExecutorTest {
 		PersistenceConfiguration<Toto, Toto, T> toReturn = new PersistenceConfiguration<>();
 
 		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
-		Map<PropertyAccessor<Toto, ?>, Column<T, ?>> mappedFields = persistentFieldHarvester.mapFields(Toto.class, targetTable);
+		Map<ReadWriteAccessPoint<Toto, ?>, Column<T, ?>> mappedFields = persistentFieldHarvester.mapFields(Toto.class, targetTable);
 		ComposedIdMapping<Toto, Toto> idMappingStrategy = new ComposedIdMapping<>(idAccessor,
 																				  new AlreadyAssignedIdentifierManager<>(Toto.class, c -> {}, c -> false),
 																				  composedIdentifierAssembler);

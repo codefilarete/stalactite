@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
@@ -100,15 +100,15 @@ class AssociationRecordMappingTest {
 					true,
 					true);
 
-			Map<PropertyAccessor, Column> leftMapping = Maps.forHashMap(PropertyAccessor.class, Column.class)
-					.add(new PropertyAccessor<>(accessorByMethodReference(MavenProject::getGroupId), mutatorByMethodReference(MavenProject::setGroupId)), leftTableGroupIdColumn)
-					.add(new PropertyAccessor<>(accessorByMethodReference(MavenProject::getArtifactId), mutatorByMethodReference(MavenProject::setArtifactId)), leftTableArtefactIdColumn)
-					.add(new PropertyAccessor<>(accessorByMethodReference(MavenProject::getVersion), mutatorByMethodReference(MavenProject::setVersion)), leftTableVersionColumn);
+			Map<ReadWriteAccessPoint, Column> leftMapping = Maps.forHashMap(ReadWriteAccessPoint.class, Column.class)
+					.add(new ReadWriteAccessPoint<>(accessorByMethodReference(MavenProject::getGroupId), mutatorByMethodReference(MavenProject::setGroupId)), leftTableGroupIdColumn)
+					.add(new ReadWriteAccessPoint<>(accessorByMethodReference(MavenProject::getArtifactId), mutatorByMethodReference(MavenProject::setArtifactId)), leftTableArtefactIdColumn)
+					.add(new ReadWriteAccessPoint<>(accessorByMethodReference(MavenProject::getVersion), mutatorByMethodReference(MavenProject::setVersion)), leftTableVersionColumn);
 
-			Map<PropertyAccessor, Column> rightMapping = Maps.forHashMap(PropertyAccessor.class, Column.class)
-					.add(new PropertyAccessor<>(accessorByMethodReference(MavenProject::getGroupId), mutatorByMethodReference(MavenProject::setGroupId)), rightTableGroupIdColumn)
-					.add(new PropertyAccessor<>(accessorByMethodReference(MavenProject::getArtifactId), mutatorByMethodReference(MavenProject::setArtifactId)), rightTableArtefactIdColumn)
-					.add(new PropertyAccessor<>(accessorByMethodReference(MavenProject::getVersion), mutatorByMethodReference(MavenProject::setVersion)), rightTableVersionColumn);
+			Map<ReadWriteAccessPoint, Column> rightMapping = Maps.forHashMap(ReadWriteAccessPoint.class, Column.class)
+					.add(new ReadWriteAccessPoint<>(accessorByMethodReference(MavenProject::getGroupId), mutatorByMethodReference(MavenProject::setGroupId)), rightTableGroupIdColumn)
+					.add(new ReadWriteAccessPoint<>(accessorByMethodReference(MavenProject::getArtifactId), mutatorByMethodReference(MavenProject::setArtifactId)), rightTableArtefactIdColumn)
+					.add(new ReadWriteAccessPoint<>(accessorByMethodReference(MavenProject::getVersion), mutatorByMethodReference(MavenProject::setVersion)), rightTableVersionColumn);
 
 			AssociationRecordMapping<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, MavenProject, MavenProject> testInstance = new AssociationRecordMapping<>(
 					associationTable,

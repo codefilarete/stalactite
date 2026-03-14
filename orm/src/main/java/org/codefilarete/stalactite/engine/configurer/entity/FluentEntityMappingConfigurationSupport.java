@@ -19,7 +19,7 @@ import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
-import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.SerializableAccessor;
 import org.codefilarete.reflection.SerializableMutator;
@@ -831,7 +831,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 			Mutator<C, O> mutator,
 			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
 		OneToOneRelation<C, O, J> oneToOneRelation = new OneToOneRelation<>(
-				new PropertyAccessor<>(accessor, mutator),
+				new ReadWriteAccessPoint<>(accessor, mutator),
 				() -> this.polymorphismPolicy instanceof PolymorphismPolicy.TablePerClassPolymorphism,
 				mappingConfiguration);
 		this.oneToOneRelations.add((OneToOneRelation<C, Object, Object>) oneToOneRelation);
@@ -906,7 +906,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
 		
 		AccessorByMethodReference<C, S> getterReference = Accessors.accessorByMethodReference(getter);
-		ReversibleAccessor<C, S> propertyAccessor = new PropertyAccessor<>(
+		ReversibleAccessor<C, S> propertyAccessor = new ReadWriteAccessPoint<>(
 				// we keep close to user demand : we keep its method reference ...
 				getterReference,
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
@@ -920,7 +920,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
 		
 		MutatorByMethodReference<C, S> setterReference = Accessors.mutatorByMethodReference(setter);
-		PropertyAccessor<C, S> propertyAccessor = new PropertyAccessor<>(
+		ReadWriteAccessPoint<C, S> propertyAccessor = new ReadWriteAccessPoint<>(
 				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
 				setterReference
 		);
@@ -998,7 +998,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
 	mapManyToMany(SerializableAccessor<C, S1> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
 		AccessorByMethodReference<C, S1> getterReference = Accessors.accessorByMethodReference(getter);
-		ReversibleAccessor<C, S1> propertyAccessor = new PropertyAccessor<>(
+		ReversibleAccessor<C, S1> propertyAccessor = new ReadWriteAccessPoint<>(
 				// we keep close to user demand : we keep its method reference ...
 				getterReference,
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
@@ -1012,7 +1012,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	mapManyToMany(SerializableMutator<C, S1> setter,
 				  EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
 		MutatorByMethodReference<C, S1> setterReference = Accessors.mutatorByMethodReference(setter);
-		PropertyAccessor<C, S1> propertyAccessor = new PropertyAccessor<>(
+		ReadWriteAccessPoint<C, S1> propertyAccessor = new ReadWriteAccessPoint<>(
 				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
 				setterReference
 		);
@@ -1082,7 +1082,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 			Mutator<C, O> mutator,
 			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
 		ManyToOneRelation<C, O, J, S> manyToOneRelation = new ManyToOneRelation<>(
-				new PropertyAccessor<>(accessor, mutator),
+				new ReadWriteAccessPoint<>(accessor, mutator),
 				() -> this.polymorphismPolicy instanceof PolymorphismPolicy.TablePerClassPolymorphism,
 				mappingConfiguration);
 		this.manyToOneRelations.add((ManyToOneRelation<C, Object, Object, Collection<C>>) manyToOneRelation);
