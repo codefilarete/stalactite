@@ -41,8 +41,8 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 	
 	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping;
 	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mainReadonlyMapping;
-	private final ValueAccessPointMap<C, Converter<Object, Object>> mainReadConverters;
-	private final ValueAccessPointMap<C, Converter<Object, Object>> mainWriteConverters;
+	private final ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> mainReadConverters;
+	private final ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> mainWriteConverters;
 	private final NamingConfiguration namingConfiguration;
 	private final PersisterBuilderContext persisterBuilderContext;
 	
@@ -52,8 +52,8 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 										ColumnBinderRegistry columnBinderRegistry,
 										Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping,
 										Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> mainReadonlyMapping,
-										ValueAccessPointMap<C, ? extends Converter<Object, Object>> mainReadConverters,
-										ValueAccessPointMap<C, ? extends Converter<Object, Object>> mainWriteConverters,
+										ValueAccessPointMap<C, ? extends Converter<Object, Object>, ReversibleAccessor<C, ?>> mainReadConverters,
+										ValueAccessPointMap<C, ? extends Converter<Object, Object>, ReversibleAccessor<C, ?>> mainWriteConverters,
 										NamingConfiguration namingConfiguration,
 										PersisterBuilderContext persisterBuilderContext) {
 		this.polymorphismPolicy = polymorphismPolicy;
@@ -62,8 +62,8 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 		this.columnBinderRegistry = columnBinderRegistry;
 		this.mainMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainMapping;
 		this.mainReadonlyMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainReadonlyMapping;
-		this.mainReadConverters = (ValueAccessPointMap<C, Converter<Object, Object>>) mainReadConverters;
-		this.mainWriteConverters = (ValueAccessPointMap<C, Converter<Object, Object>>) mainWriteConverters;
+		this.mainReadConverters = (ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>>) mainReadConverters;
+		this.mainWriteConverters = (ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>>) mainWriteConverters;
 		this.namingConfiguration = namingConfiguration;
 		this.persisterBuilderContext = persisterBuilderContext;
 	}

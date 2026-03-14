@@ -9,6 +9,7 @@ import javax.annotation.Nullable;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration.Linkage;
@@ -150,17 +151,17 @@ public interface EmbeddableMappingConfiguration<C> {
 					}
 					
 					@Override
-					public ValueAccessPointMap<C, String> getOverriddenColumnNames() {
+					public ValueAccessPointMap<C, String, ValueAccessPoint<C>> getOverriddenColumnNames() {
 						return compositeInset.getOverriddenColumnNames();
 					}
 					
 					@Override
-					public ValueAccessPointMap<C, Size> getOverriddenColumnSizes() {
+					public ValueAccessPointMap<C, Size, ValueAccessPoint<C>> getOverriddenColumnSizes() {
 						return compositeInset.getOverriddenColumnSizes();
 					}
 					
 					@Override
-					public ValueAccessPointMap<C, Column> getOverriddenColumns() {
+					public ValueAccessPointMap<C, Column, ValueAccessPoint<C>> getOverriddenColumns() {
 						return compositeInset.getOverriddenColumns();
 					}
 					
@@ -226,17 +227,17 @@ public interface EmbeddableMappingConfiguration<C> {
 					}
 					
 					@Override
-					public ValueAccessPointMap<C, String> getOverriddenColumnNames() {
+					public ValueAccessPointMap<C, String, ValueAccessPoint<C>> getOverriddenColumnNames() {
 						return embeddableInset.getOverriddenColumnNames();
 					}
 					
 					@Override
-					public ValueAccessPointMap<C, Size> getOverriddenColumnSizes() {
+					public ValueAccessPointMap<C, Size, ValueAccessPoint<C>> getOverriddenColumnSizes() {
 						return embeddableInset.getOverriddenColumnSizes();
 					}
 					
 					@Override
-					public ValueAccessPointMap<C, Column> getOverriddenColumns() {
+					public ValueAccessPointMap<C, Column, ValueAccessPoint<C>> getOverriddenColumns() {
 						return embeddableInset.getOverriddenColumns();
 					}
 					

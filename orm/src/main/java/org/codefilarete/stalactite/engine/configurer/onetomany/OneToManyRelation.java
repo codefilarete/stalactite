@@ -1,7 +1,6 @@
 package org.codefilarete.stalactite.engine.configurer.onetomany;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -187,11 +186,11 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		this.mappedByConfiguration.setMandatory(mandatory);
 	}
 	
-	public ValueAccessPointMap<SRC, Column<Table<?>, Object>> getForeignKeyColumnMapping() {
+	public ValueAccessPointMap<SRC, Column<Table<?>, Object>, ValueAccessPoint<SRC>> getForeignKeyColumnMapping() {
 		return this.mappedByConfiguration.getForeignKeyColumnMapping();
 	}
 	
-	public ValueAccessPointMap<SRC, String> getForeignKeyNameMapping() {
+	public ValueAccessPointMap<SRC, String, ValueAccessPoint<SRC>> getForeignKeyNameMapping() {
 		return this.mappedByConfiguration.getForeignKeyNameMapping();
 	}
 	
@@ -344,9 +343,9 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		
 		private Boolean mandatory;
 		
-		protected final ValueAccessPointMap<SRC, Column<Table<?>, Object>> foreignKeyColumnMapping = new ValueAccessPointMap<>();
+		protected final ValueAccessPointMap<SRC, Column<Table<?>, Object>, ValueAccessPoint<SRC>> foreignKeyColumnMapping = new ValueAccessPointMap<>();
 		
-		protected final ValueAccessPointMap<SRC, String> foreignKeyNameMapping = new ValueAccessPointMap<>();
+		protected final ValueAccessPointMap<SRC, String, ValueAccessPoint<SRC>> foreignKeyNameMapping = new ValueAccessPointMap<>();
 		
 		/**
 		 * Clones this object to create a new one with the given accessor as prefix of current one.
@@ -425,11 +424,11 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 			this.reverseColumn = (Column<Table<?>, Object>) reverseColumn;
 		}
 		
-		public ValueAccessPointMap<SRC, Column<Table<?>, Object>> getForeignKeyColumnMapping() {
+		public ValueAccessPointMap<SRC, Column<Table<?>, Object>, ValueAccessPoint<SRC>> getForeignKeyColumnMapping() {
 			return foreignKeyColumnMapping;
 		}
 		
-		public ValueAccessPointMap<SRC, String> getForeignKeyNameMapping() {
+		public ValueAccessPointMap<SRC, String, ValueAccessPoint<SRC>> getForeignKeyNameMapping() {
 			return foreignKeyNameMapping;
 		}
 		
@@ -454,8 +453,8 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		public ShiftedMappedByConfiguration(Accessor<C, SRC> accessor, MappedByConfiguration<TRGT, SRC> mappedByConfiguration) {
 			this.reverseColumn = mappedByConfiguration.reverseColumn;
 			this.reverseColumnName = mappedByConfiguration.reverseColumnName;
-			this.foreignKeyColumnMapping.putAll((Map<? extends ValueAccessPoint<C>, ? extends Column<Table<?>, Object>>) mappedByConfiguration.foreignKeyColumnMapping);
-			this.foreignKeyNameMapping.putAll((Map<? extends ValueAccessPoint<C>, ? extends String>) mappedByConfiguration.foreignKeyNameMapping);
+			this.foreignKeyColumnMapping.putAll((ValueAccessPointMap) mappedByConfiguration.foreignKeyColumnMapping);
+			this.foreignKeyNameMapping.putAll((ValueAccessPointMap) mappedByConfiguration.foreignKeyNameMapping);
 			// Note that we don't set this.reverseGetter nor this.reverseSetter because it raises generics problem, and we can afford not to store them.
 			
 			// Creates shifted mutator when reverse accessor is present

@@ -139,8 +139,13 @@ public class EntityMappingWrapper<C, I, T extends Table<T>> implements EntityMap
 	}
 	
 	@Override
-	public ValueAccessPointMap<C, Converter<Object, Object>> getReadConverters() {
+	public ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> getReadConverters() {
 		return delegate.getReadConverters();
+	}
+	
+	@Override
+	public ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> getWriteConverters() {
+		return delegate.getWriteConverters();
 	}
 	
 	@Override

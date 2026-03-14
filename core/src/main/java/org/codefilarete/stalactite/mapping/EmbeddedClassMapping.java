@@ -73,9 +73,9 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	
 	private final ValueAccessPointSet<C> propertiesSetByConstructor = new ValueAccessPointSet<>();
 	
-	private ValueAccessPointMap<C, Converter<Object, Object>> readConverters = new ValueAccessPointMap<>();
+	private ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> readConverters = new ValueAccessPointMap<>();
 	
-	private ValueAccessPointMap<C, Converter<Object, Object>> writeConverters = new ValueAccessPointMap<>();
+	private ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> writeConverters = new ValueAccessPointMap<>();
 	
 	/**
 	 * Builds an embedded class mapping between its properties (as {@link ReversibleAccessor}) and some {@link Column}s.
@@ -150,21 +150,21 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	}
 	
 	@Override
-	public ValueAccessPointMap<C, Converter<Object, Object>> getReadConverters() {
+	public ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> getReadConverters() {
 		return readConverters;
 	}
 	
-	public void setReadConverters(ValueAccessPointMap<C, ? extends Converter<Object, Object>> converters) {
-		this.readConverters = (ValueAccessPointMap<C, Converter<Object, Object>>) converters;
+	public void setReadConverters(ValueAccessPointMap<C, ? extends Converter<Object, Object>, ReversibleAccessor<C, ?>> converters) {
+		this.readConverters = (ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>>) converters;
 	}
 	
 	@Override
-	public ValueAccessPointMap<C, Converter<Object, Object>> getWriteConverters() {
+	public ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> getWriteConverters() {
 		return writeConverters;
 	}
 	
-	public void setWriteConverters(ValueAccessPointMap<C, ? extends Converter<Object, Object>> writeConverters) {
-		this.writeConverters = (ValueAccessPointMap<C, Converter<Object, Object>>) writeConverters;
+	public void setWriteConverters(ValueAccessPointMap<C, ? extends Converter<Object, Object>, ReversibleAccessor<C, ?>> writeConverters) {
+		this.writeConverters = (ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>>) writeConverters;
 	}
 	
 	/**

@@ -258,9 +258,9 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 		
 		protected void includeDirectMapping(EmbeddableMappingConfiguration<?> mappingConfiguration,
 											@Nullable ValueAccessPoint<C> accessorPrefix,
-											ValueAccessPointMap<C, String> overriddenColumnNames,
-											ValueAccessPointMap<C, Size> overriddenColumnSizes,
-											ValueAccessPointMap<C, Column<T, ?>> overriddenColumns,
+											ValueAccessPointMap<C, String, ValueAccessPoint<C>> overriddenColumnNames,
+											ValueAccessPointMap<C, Size, ValueAccessPoint<C>> overriddenColumnSizes,
+											ValueAccessPointMap<C, Column<T, ?>, ValueAccessPoint<C>> overriddenColumns,
 											ValueAccessPointSet<C> excludedProperties) {
 			Stream<EmbeddableLinkage> linkageStream = mappingConfiguration.getPropertiesMapping().stream()
 					.filter(linkage -> !excludedProperties.contains(linkage.getAccessor()));

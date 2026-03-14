@@ -67,24 +67,24 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 	
 	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping;
 	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mainReadonlyMapping;
-	private final ValueAccessPointMap<C, Converter<Object, Object>> mainReadConverters;
-	private final ValueAccessPointMap<C, Converter<Object, Object>> mainWriteConverters;
+	private final ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> mainReadConverters;
+	private final ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> mainWriteConverters;
 	
 	TablePerClassPolymorphismBuilder(TablePerClassPolymorphism<C> polymorphismPolicy,
 									 AbstractIdentification<C, I> identification,
 									 ConfiguredRelationalPersister<C, I> mainPersister,
 									 Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping,
 									 Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> mainReadonlyMapping,
-									 ValueAccessPointMap<C, ? extends Converter<Object, Object>> mainReadConverters,
-									 ValueAccessPointMap<C, ? extends Converter<Object, Object>> mainWriteConverters,
+									 ValueAccessPointMap<C, ? extends Converter<Object, Object>, ReversibleAccessor<C, ?>> mainReadConverters,
+									 ValueAccessPointMap<C, ? extends Converter<Object, Object>, ReversibleAccessor<C, ?>> mainWriteConverters,
 									 ColumnBinderRegistry columnBinderRegistry,
 									 NamingConfiguration namingConfiguration,
 									 PersisterBuilderContext persisterBuilderContext) {
 		super(polymorphismPolicy, identification, mainPersister, columnBinderRegistry, namingConfiguration, persisterBuilderContext);
 		this.mainMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainMapping;
 		this.mainReadonlyMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainReadonlyMapping;
-		this.mainReadConverters = (ValueAccessPointMap<C, Converter<Object, Object>>) mainReadConverters;
-		this.mainWriteConverters = (ValueAccessPointMap<C, Converter<Object, Object>>) mainWriteConverters;
+		this.mainReadConverters = (ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>>) mainReadConverters;
+		this.mainWriteConverters = (ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>>) mainWriteConverters;
 	}
 	
 	@Override
@@ -143,8 +143,8 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 		EmbeddableMapping<D, SUBTABLE> embeddableMapping = embeddableMappingBuilder.build();
 		Map<ReversibleAccessor<D, Object>, Column<SUBTABLE, Object>> subEntityPropertiesMapping = embeddableMapping.getMapping();
 		Map<ReversibleAccessor<D, Object>, Column<SUBTABLE, Object>> subEntityReadonlyPropertiesMapping = embeddableMapping.getReadonlyMapping();
-		ValueAccessPointMap<D, Converter<Object, Object>> subEntityPropertiesReadConverters = embeddableMapping.getReadConverters();
-		ValueAccessPointMap<D, Converter<Object, Object>> subEntityPropertiesWriteConverters = embeddableMapping.getWriteConverters();
+		ValueAccessPointMap<D, Converter<Object, Object>, ReversibleAccessor<D, ?>> subEntityPropertiesReadConverters = embeddableMapping.getReadConverters();
+		ValueAccessPointMap<D, Converter<Object, Object>, ReversibleAccessor<D, ?>> subEntityPropertiesWriteConverters = embeddableMapping.getWriteConverters();
 		// in table-per-class polymorphism, main properties must be transferred to sub-entities ones, because CRUD operations are dispatched to them
 		// by a proxy and main persister is not so much used
 		addPrimaryKey(subTable);

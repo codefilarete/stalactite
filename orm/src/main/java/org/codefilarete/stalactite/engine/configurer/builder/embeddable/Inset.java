@@ -4,6 +4,8 @@ import java.lang.reflect.Method;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.sql.ddl.Size;
@@ -25,11 +27,11 @@ public interface Inset<SRC, TRGT> {
 	
 	ValueAccessPointSet<SRC> getExcludedProperties();
 	
-	ValueAccessPointMap<SRC, String> getOverriddenColumnNames();
+	ValueAccessPointMap<SRC, String, ValueAccessPoint<SRC>> getOverriddenColumnNames();
 	
-	ValueAccessPointMap<SRC, Size> getOverriddenColumnSizes();
+	ValueAccessPointMap<SRC, Size, ValueAccessPoint<SRC>> getOverriddenColumnSizes();
 	
-	ValueAccessPointMap<SRC, Column> getOverriddenColumns();
+	ValueAccessPointMap<SRC, Column, ValueAccessPoint<SRC>> getOverriddenColumns();
 	
 	EmbeddableMappingConfiguration<TRGT> getConfiguration();
 }

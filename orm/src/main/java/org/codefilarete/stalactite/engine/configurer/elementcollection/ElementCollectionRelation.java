@@ -57,10 +57,10 @@ public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 	private final EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider;
 	
 	/** Complex type mapping override, to be used when {@link EmbeddableMappingConfigurationProvider} is not null */
-	private final ValueAccessPointMap<SRC, String> overriddenColumnNames = new ValueAccessPointMap<>();
+	private final ValueAccessPointMap<TRGT, String, ValueAccessPoint<TRGT>> overriddenColumnNames = new ValueAccessPointMap<>();
 	
 	/** Complex type mapping override, to be used when {@link EmbeddableMappingConfigurationProvider} is not null */
-	private final ValueAccessPointMap<SRC, Size> overriddenColumnSizes = new ValueAccessPointMap<>();
+	private final ValueAccessPointMap<TRGT, Size, ValueAccessPoint<TRGT>> overriddenColumnSizes = new ValueAccessPointMap<>();
 	
 	private Size elementColumnSize;
 	
@@ -143,27 +143,27 @@ public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 		return this;
 	}
 
-	public ValueAccessPointMap<SRC, String> getOverriddenColumnNames() {
+	public ValueAccessPointMap<TRGT, String, ValueAccessPoint<TRGT>> getOverriddenColumnNames() {
 		return this.overriddenColumnNames;
 	}
 	
-	public void overrideName(SerializableAccessor methodRef, String columnName) {
-		this.overriddenColumnNames.put(new AccessorByMethodReference(methodRef), columnName);
+	public void overrideName(SerializableAccessor<TRGT, ?> methodRef, String columnName) {
+		this.overriddenColumnNames.put(new AccessorByMethodReference<>(methodRef), columnName);
 	}
 	
-	public void overrideName(SerializableMutator methodRef, String columnName) {
-		this.overriddenColumnNames.put(new MutatorByMethodReference(methodRef), columnName);
+	public void overrideName(SerializableMutator<TRGT, ?> methodRef, String columnName) {
+		this.overriddenColumnNames.put(new MutatorByMethodReference<>(methodRef), columnName);
 	}
 	
-	public void overrideSize(SerializableAccessor methodRef, Size columnSize) {
-		this.overriddenColumnSizes.put(new AccessorByMethodReference(methodRef), columnSize);
+	public void overrideSize(SerializableAccessor<TRGT, ?> methodRef, Size columnSize) {
+		this.overriddenColumnSizes.put(new AccessorByMethodReference<>(methodRef), columnSize);
 	}
 	
-	public void overrideSize(SerializableMutator methodRef, Size columnSize) {
-		this.overriddenColumnSizes.put(new MutatorByMethodReference(methodRef), columnSize);
+	public void overrideSize(SerializableMutator<TRGT, ?> methodRef, Size columnSize) {
+		this.overriddenColumnSizes.put(new MutatorByMethodReference<>(methodRef), columnSize);
 	}
 	
-	public ValueAccessPointMap<SRC, Size> getOverriddenColumnSizes() {
+	public ValueAccessPointMap<TRGT, Size, ValueAccessPoint<TRGT>> getOverriddenColumnSizes() {
 		return this.overriddenColumnSizes;
 	}
 	
@@ -179,9 +179,8 @@ public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 		return targetTableName;
 	}
 	
-	public ElementCollectionRelation<SRC, TRGT, S> setTargetTableName(String targetTableName) {
+	public void setTargetTableName(String targetTableName) {
 		this.targetTableName = targetTableName;
-		return this;
 	}
 	
 	public <I> Column<Table, I> getReverseColumn() {
@@ -261,8 +260,8 @@ public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 		result.setTargetTableName(this.getTargetTableName());
 		result.setReverseColumn(this.getReverseColumn());
 		result.setReverseColumnName(this.getReverseColumnName());
-		result.getOverriddenColumnNames().putAll((Map<? extends ValueAccessPoint<C>, ? extends String>) this.getOverriddenColumnNames());
-		result.getOverriddenColumnSizes().putAll((Map<? extends ValueAccessPoint<C>, ? extends Size>) this.getOverriddenColumnSizes());
+		result.getOverriddenColumnNames().putAll(this.getOverriddenColumnNames());
+		result.getOverriddenColumnSizes().putAll(this.getOverriddenColumnSizes());
 		result.setOrdered(this.isOrdered());
 		result.setIndexingColumnName(this.getIndexingColumnName());
 		result.setCollectionFactory(this.getCollectionFactory());

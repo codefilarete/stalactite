@@ -117,24 +117,24 @@ public class InheritanceMappingStep<C, I> {
 		private final Duo<ReversibleAccessor<C, Object>, Column<T, Object>> versioningMapping;
 		private final ValueAccessPointSet<C> propertiesSetByConstructor = new ValueAccessPointSet<>();
 		private final boolean mappedSuperClass;
-		private final ValueAccessPointMap<C, Converter<Object, Object>> readConverters;
-		private final ValueAccessPointMap<C, Converter<Object, Object>> writeConverters;
+		private final ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> readConverters;
+		private final ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> writeConverters;
 		
 		public Mapping(Object mappingConfiguration,
 					   T targetTable,
 					   Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> mapping,
 					   Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> readonlyMapping,
 					   Duo<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> versioningMapping,
-					   ValueAccessPointMap<C, ? extends Converter<Object, Object>> readConverters,
-					   ValueAccessPointMap<C, ? extends Converter<Object, Object>> writeConverters,
+					   ValueAccessPointMap<C, ? extends Converter<Object, Object>, ReversibleAccessor<C, ?>> readConverters,
+					   ValueAccessPointMap<C, ? extends Converter<Object, Object>, ReversibleAccessor<C, ?>> writeConverters,
 					   boolean mappedSuperClass) {
 			this.mappingConfiguration = mappingConfiguration;
 			this.targetTable = targetTable;
 			this.mapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mapping;
 			this.readonlyMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) readonlyMapping;
 			this.versioningMapping = (Duo<ReversibleAccessor<C, Object>, Column<T, Object>>) versioningMapping;
-			this.readConverters = (ValueAccessPointMap<C, Converter<Object, Object>>) readConverters;
-			this.writeConverters = (ValueAccessPointMap<C, Converter<Object, Object>>) writeConverters;
+			this.readConverters = (ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>>) readConverters;
+			this.writeConverters = (ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>>) writeConverters;
 			this.mappedSuperClass = mappedSuperClass;
 		}
 		
@@ -170,11 +170,11 @@ public class InheritanceMappingStep<C, I> {
 			return versioningMapping;
 		}
 		
-		public ValueAccessPointMap<C, Converter<Object, Object>> getReadConverters() {
+		public ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> getReadConverters() {
 			return readConverters;
 		}
 		
-		public ValueAccessPointMap<C, Converter<Object, Object>> getWriteConverters() {
+		public ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> getWriteConverters() {
 			return writeConverters;
 		}
 		
@@ -193,8 +193,8 @@ public class InheritanceMappingStep<C, I> {
 				Map<ReversibleAccessor<C, Object>, Column<T, Object>> mapping,
 				Map<ReversibleAccessor<C, Object>, Column<T, Object>> readonlyMapping,
 				Duo<ReversibleAccessor<C, ?>, Column<T, ?>> versioningMapping,
-				ValueAccessPointMap<C, ? extends Converter<Object, Object>> readConverters,
-				ValueAccessPointMap<C, ? extends Converter<Object, Object>> writeConverters,
+				ValueAccessPointMap<C, ? extends Converter<Object, Object>, ReversibleAccessor<C, ?>> readConverters,
+				ValueAccessPointMap<C, ? extends Converter<Object, Object>, ReversibleAccessor<C, ?>> writeConverters,
 				boolean mappedSuperClass) {
 			Mapping<C, T> newMapping = new Mapping<>(mappingConfiguration, table,
 					mapping, readonlyMapping, versioningMapping,
@@ -239,9 +239,9 @@ public class InheritanceMappingStep<C, I> {
 		
 		private Duo<ReversibleAccessor<C, ?>, Column<T, ?>> currentVersioningMapping;
 		
-		private final ValueAccessPointMap<C, Converter<Object, Object>> readConverters;
+		private final ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> readConverters;
 		
-		private final ValueAccessPointMap<C, Converter<Object, Object>> writeConverters;
+		private final ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> writeConverters;
 		
 		private Mapping<C, T> currentMapping;
 		

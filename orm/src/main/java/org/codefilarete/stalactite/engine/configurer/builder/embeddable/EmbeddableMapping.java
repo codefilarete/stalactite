@@ -25,9 +25,9 @@ public class EmbeddableMapping<C, T extends Table<T>> {
 	
 	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> readonlyMapping = new KeepOrderMap<>();
 	
-	private final ValueAccessPointMap<C, Converter<Object, Object>> readConverters = new ValueAccessPointMap<>();
+	private final ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> readConverters = new ValueAccessPointMap<>();
 	
-	private final ValueAccessPointMap<C, Converter<Object, Object>> writeConverters = new ValueAccessPointMap<>();
+	private final ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> writeConverters = new ValueAccessPointMap<>();
 	
 	/**
 	 * @return mapped properties
@@ -43,11 +43,11 @@ public class EmbeddableMapping<C, T extends Table<T>> {
 		return readonlyMapping;
 	}
 	
-	public ValueAccessPointMap<C, Converter<Object, Object>> getReadConverters() {
+	public ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> getReadConverters() {
 		return readConverters;
 	}
 	
-	public ValueAccessPointMap<C, Converter<Object, Object>> getWriteConverters() {
+	public ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> getWriteConverters() {
 		return writeConverters;
 	}
 }

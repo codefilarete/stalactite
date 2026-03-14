@@ -109,11 +109,11 @@ public interface Mapping<C, T extends Table<T>> {
 	
 	Map<ReversibleAccessor<C, ?>, Column<T, ?>> getReadonlyPropertyToColumn();
 	
-	default ValueAccessPointMap<C, Converter<Object, Object>> getReadConverters() {
+	default ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> getReadConverters() {
 		return new ValueAccessPointMap<>();
 	}
 	
-	default ValueAccessPointMap<C, Converter<Object, Object>> getWriteConverters() {
+	default ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> getWriteConverters() {
 		return new ValueAccessPointMap<>();
 	}
 	

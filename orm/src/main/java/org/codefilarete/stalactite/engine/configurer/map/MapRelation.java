@@ -10,6 +10,7 @@ import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.SerializableAccessor;
 import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
@@ -58,16 +59,16 @@ public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 	private Size valueColumnSize;
 	
 	/** Key complex type mapping override, to be used when {@link #keyEmbeddableConfigurationProvider} is not null */
-	private final ValueAccessPointMap<SRC, String> overriddenKeyColumnNames = new ValueAccessPointMap<>();
+	private final ValueAccessPointMap<K, String, ValueAccessPoint<K>> overriddenKeyColumnNames = new ValueAccessPointMap<>();
 	
 	/** Key complex type mapping override, to be used when {@link #valueEmbeddableConfigurationProvider} is not null */
-	private final ValueAccessPointMap<SRC, Size> overriddenKeyColumnSizes = new ValueAccessPointMap<>();
+	private final ValueAccessPointMap<K, Size, ValueAccessPoint<K>> overriddenKeyColumnSizes = new ValueAccessPointMap<>();
 	
 	/** Value complex type mapping override, to be used when {@link #valueEmbeddableConfigurationProvider} is not null */
-	private final ValueAccessPointMap<SRC, String> overriddenValueColumnNames = new ValueAccessPointMap<>();
+	private final ValueAccessPointMap<V, String, ValueAccessPoint<V>> overriddenValueColumnNames = new ValueAccessPointMap<>();
 	
 	/** Value complex type mapping override, to be used when {@link #valueEmbeddableConfigurationProvider} is not null */
-	private final ValueAccessPointMap<SRC, Size> overriddenValueColumnSizes = new ValueAccessPointMap<>();
+	private final ValueAccessPointMap<V, Size, ValueAccessPoint<V>> overriddenValueColumnSizes = new ValueAccessPointMap<>();
 	
 	
 	/** Complex type mapping, optional */
@@ -233,52 +234,52 @@ public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 		return valueColumnSize;
 	}
 	
-	public ValueAccessPointMap<SRC, String> getOverriddenKeyColumnNames() {
+	public ValueAccessPointMap<K, String, ValueAccessPoint<K>> getOverriddenKeyColumnNames() {
 		return this.overriddenKeyColumnNames;
 	}
 	
-	public void overrideKeyName(SerializableAccessor methodRef, String columnName) {
-		this.overriddenKeyColumnNames.put(new AccessorByMethodReference(methodRef), columnName);
+	public void overrideKeyName(SerializableAccessor<K, ?> methodRef, String columnName) {
+		this.overriddenKeyColumnNames.put(new AccessorByMethodReference<>(methodRef), columnName);
 	}
 	
-	public void overrideKeyName(SerializableMutator methodRef, String columnName) {
-		this.overriddenKeyColumnNames.put(new MutatorByMethodReference(methodRef), columnName);
+	public void overrideKeyName(SerializableMutator<K, ?> methodRef, String columnName) {
+		this.overriddenKeyColumnNames.put(new MutatorByMethodReference<>(methodRef), columnName);
 	}
 	
-	public ValueAccessPointMap<SRC, String> getOverriddenValueColumnNames() {
+	public ValueAccessPointMap<V, String, ValueAccessPoint<V>> getOverriddenValueColumnNames() {
 		return this.overriddenValueColumnNames;
 	}
 	
 	
-	public void overrideKeySize(SerializableAccessor methodRef, Size columnSize) {
-		this.overriddenKeyColumnSizes.put(new AccessorByMethodReference(methodRef), columnSize);
+	public void overrideKeySize(SerializableAccessor<K, ?> methodRef, Size columnSize) {
+		this.overriddenKeyColumnSizes.put(new AccessorByMethodReference<>(methodRef), columnSize);
 	}
 	
-	public void overrideKeySize(SerializableMutator methodRef, Size columnSize) {
-		this.overriddenKeyColumnSizes.put(new MutatorByMethodReference(methodRef), columnSize);
+	public void overrideKeySize(SerializableMutator<K, ?> methodRef, Size columnSize) {
+		this.overriddenKeyColumnSizes.put(new MutatorByMethodReference<>(methodRef), columnSize);
 	}
 	
-	public ValueAccessPointMap<SRC, Size> getOverriddenKeyColumnSizes() {
+	public ValueAccessPointMap<K, Size, ValueAccessPoint<K>> getOverriddenKeyColumnSizes() {
 		return this.overriddenKeyColumnSizes;
 	}
 	
-	public void overrideValueName(SerializableAccessor methodRef, String columnName) {
-		this.overriddenValueColumnNames.put(new AccessorByMethodReference(methodRef), columnName);
+	public void overrideValueName(SerializableAccessor<V, ?> methodRef, String columnName) {
+		this.overriddenValueColumnNames.put(new AccessorByMethodReference<>(methodRef), columnName);
 	}
 	
-	public void overrideValueName(SerializableMutator methodRef, String columnName) {
-		this.overriddenValueColumnNames.put(new MutatorByMethodReference(methodRef), columnName);
+	public void overrideValueName(SerializableMutator<V, ?> methodRef, String columnName) {
+		this.overriddenValueColumnNames.put(new MutatorByMethodReference<>(methodRef), columnName);
 	}
 	
-	public void overrideValueSize(SerializableAccessor methodRef, Size columnSize) {
-		this.overriddenValueColumnSizes.put(new AccessorByMethodReference(methodRef), columnSize);
+	public void overrideValueSize(SerializableAccessor<V, ?> methodRef, Size columnSize) {
+		this.overriddenValueColumnSizes.put(new AccessorByMethodReference<>(methodRef), columnSize);
 	}
 	
-	public void overrideValueSize(SerializableMutator methodRef, Size columnSize) {
-		this.overriddenValueColumnSizes.put(new MutatorByMethodReference(methodRef), columnSize);
+	public void overrideValueSize(SerializableMutator<V, ?> methodRef, Size columnSize) {
+		this.overriddenValueColumnSizes.put(new MutatorByMethodReference<>(methodRef), columnSize);
 	}
 	
-	public ValueAccessPointMap<SRC, Size> getOverriddenValueColumnSizes() {
+	public ValueAccessPointMap<V, Size, ValueAccessPoint<V>> getOverriddenValueColumnSizes() {
 		return this.overriddenValueColumnSizes;
 	}
 	

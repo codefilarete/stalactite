@@ -99,8 +99,8 @@ public class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends Abst
 		EmbeddableMapping<D, SUBT> embeddableMapping = embeddableMappingBuilder.build();
 		Map<ReversibleAccessor<D, Object>, Column<SUBT, Object>> subEntityPropertiesMapping = embeddableMapping.getMapping();
 		Map<ReversibleAccessor<D, Object>, Column<SUBT, Object>> subEntityReadonlyPropertiesMapping = embeddableMapping.getReadonlyMapping();
-		ValueAccessPointMap<D, Converter<Object, Object>> subEntityPropertiesConverters = embeddableMapping.getReadConverters();
-		ValueAccessPointMap<D, Converter<Object, Object>> subEntityPropertiesWriteConverters = embeddableMapping.getWriteConverters();
+		ValueAccessPointMap<D, Converter<Object, Object>, ReversibleAccessor<D, ?>> subEntityPropertiesConverters = embeddableMapping.getReadConverters();
+		ValueAccessPointMap<D, Converter<Object, Object>, ReversibleAccessor<D, ?>> subEntityPropertiesWriteConverters = embeddableMapping.getWriteConverters();
 		addPrimarykey(subTable);
 		addForeignKey(subTable);
 		DefaultEntityMapping<D, I, SUBT> entityMapping = MainPersisterStep.createEntityMapping(
