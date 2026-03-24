@@ -2,9 +2,9 @@ package org.codefilarete.stalactite.dsl.entity;
 
 import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.engine.configurer.ValueAccessPointVariantSupport;
 import org.codefilarete.tool.function.Serie;
 
@@ -15,12 +15,12 @@ public class OptimisticLockOption<C, V> {
 	@Nullable
 	private final Serie<V> serie;
 	
-	public OptimisticLockOption(SerializableAccessor<C, V> getter, @Nullable Serie<V> serie) {
+	public OptimisticLockOption(SerializablePropertyAccessor<C, V> getter, @Nullable Serie<V> serie) {
 		this.versionAccessor = new ValueAccessPointVariantSupport<>(getter);
 		this.serie = serie;
 	}
 	
-	public OptimisticLockOption(SerializableMutator<C, V> setter, @Nullable Serie<V> serie) {
+	public OptimisticLockOption(SerializablePropertyMutator<C, V> setter, @Nullable Serie<V> serie) {
 		this.versionAccessor = new ValueAccessPointVariantSupport<>(setter);
 		this.serie = serie;
 	}
@@ -30,7 +30,7 @@ public class OptimisticLockOption<C, V> {
 		this.serie = serie;
 	}
 	
-	public ReversibleAccessor<C, V> getVersionAccessor() {
+	public ReadWritePropertyAccessPoint<C, V> getVersionAccessor() {
 		return versionAccessor.getAccessor();
 	}
 	

@@ -4,19 +4,20 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.PropertyAccessPoint;
+import org.codefilarete.reflection.PropertyMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.dsl.subentity.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
-import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
-import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
-import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.builder.MainPersisterStep;
+import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
@@ -28,7 +29,6 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.tool.function.Converter;
 
@@ -37,26 +37,26 @@ import org.codefilarete.tool.function.Converter;
  */
 class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends AbstractPolymorphicPersisterBuilder<C, I, T> {
 	
-	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping;
-	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mainReadonlyMapping;
-	private final ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> mainReadConverters;
-	private final ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> mainWriteConverters;
+	private final Map<PropertyAccessPoint<C, Object>, Column<T, Object>> mainMapping;
+	private final Map<PropertyAccessPoint<C, Object>, Column<T, Object>> mainReadonlyMapping;
+	private final ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> mainReadConverters;
+	private final ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> mainWriteConverters;
 	
 	SingleTablePolymorphismBuilder(SingleTablePolymorphism<C, DTYPE> polymorphismPolicy,
 								   AbstractIdentification<C, I> identification,
 								   ConfiguredRelationalPersister<C, I> mainPersister,
-								   Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> mainMapping,
-								   Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> mainReadonlyMapping,
-								   ValueAccessPointMap<C, ? extends Converter<Object, Object>, ReversibleAccessor<C, ?>> mainReadConverters,
-								   ValueAccessPointMap<C, ? extends Converter<Object, Object>, ReversibleAccessor<C, ?>> mainWriteConverters,
+								   Map<? extends PropertyAccessPoint<C, Object>, ? extends Column<T, Object>> mainMapping,
+								   Map<? extends PropertyAccessPoint<C, Object>, ? extends Column<T, Object>> mainReadonlyMapping,
+								   ValueAccessPointMap<C, ? extends Converter<Object, Object>, PropertyAccessPoint<C, ?>> mainReadConverters,
+								   ValueAccessPointMap<C, ? extends Converter<Object, Object>, PropertyAccessPoint<C, ?>> mainWriteConverters,
 								   ColumnBinderRegistry columnBinderRegistry,
 								   NamingConfiguration namingConfiguration,
 								   PersisterBuilderContext persisterBuilderContext) {
 		super(polymorphismPolicy, identification, mainPersister, columnBinderRegistry, namingConfiguration, persisterBuilderContext);
-		this.mainMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainMapping;
-		this.mainReadonlyMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainReadonlyMapping;
-		this.mainReadConverters = (ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>>) mainReadConverters;
-		this.mainWriteConverters = (ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>>) mainWriteConverters;
+		this.mainMapping = (Map<PropertyAccessPoint<C, Object>, Column<T, Object>>) mainMapping;
+		this.mainReadonlyMapping = (Map<PropertyAccessPoint<C, Object>, Column<T, Object>>) mainReadonlyMapping;
+		this.mainReadConverters = (ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>>) mainReadConverters;
+		this.mainWriteConverters = (ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>>) mainWriteConverters;
 	}
 	
 	@Override
@@ -107,10 +107,10 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 		// so we need to set them to nullable, and we do it globally for simplicity (no primitive type check)
 		embeddableMapping.getMapping().values().forEach(column -> column.nullable(true));
 		
-		Map<ReversibleAccessor<D, Object>, Column<T, Object>> subEntityPropertiesMapping = embeddableMapping.getMapping();
-		Map<ReversibleAccessor<D, Object>, Column<T, Object>> subEntityReadonlyPropertiesMapping = embeddableMapping.getReadonlyMapping();
-		ValueAccessPointMap<D, Converter<Object, Object>, ReversibleAccessor<D, ?>> subEntityPropertiesReadConverters = embeddableMapping.getReadConverters();
-		ValueAccessPointMap<D, Converter<Object, Object>, ReversibleAccessor<D, ?>> subEntityPropertiesWriteConverters = embeddableMapping.getWriteConverters();
+		Map<ReadWritePropertyAccessPoint<D, Object>, Column<T, Object>> subEntityPropertiesMapping = embeddableMapping.getMapping();
+		Map<PropertyMutator<D, Object>, Column<T, Object>> subEntityReadonlyPropertiesMapping = embeddableMapping.getReadonlyMapping();
+		ValueAccessPointMap<D, Converter<Object, Object>, PropertyAccessPoint<D, ?>> subEntityPropertiesReadConverters = embeddableMapping.getReadConverters();
+		ValueAccessPointMap<D, Converter<Object, Object>, PropertyAccessPoint<D, ?>> subEntityPropertiesWriteConverters = embeddableMapping.getWriteConverters();
 		// in single-table polymorphism, main properties must be given to sub-entities ones, because CRUD operations are dispatched to them
 		// by a proxy and main persister is not so much used
 		subEntityPropertiesMapping.putAll((Map) mainMapping);

@@ -5,8 +5,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.reflection.PropertyAccessPoint;
+import org.codefilarete.reflection.PropertyMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
@@ -15,13 +16,12 @@ import org.codefilarete.stalactite.dsl.idpolicy.GeneratedKeysPolicy;
 import org.codefilarete.stalactite.dsl.subentity.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.SingleColumnIdentification;
-import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
-import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
-import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
-import org.codefilarete.stalactite.engine.configurer.builder.InheritanceMappingStep.Mapping;
 import org.codefilarete.stalactite.engine.configurer.builder.MainPersisterStep;
+import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.builder.PrimaryKeyPropagationStep;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
@@ -52,7 +52,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 	 * @param targetTable the table on which columns must be added
 	 * @return a mapping between properties of given {@link Map} keys and their column in given {@link Table}
 	 */
-	public static <C, T extends Table<T>, A extends ValueAccessPoint<C>> Map<A, Column<T, Object>>
+	public static <C, T extends Table<T>, A extends PropertyAccessPoint<C, ?>> Map<A, Column<T, Object>>
 	projectColumns(Map<? extends A, ? extends Column<?, Object>> propertyToColumn,
 				   T targetTable,
 				   BiFunction<? super A, Column<?, Object>, String> columnNameSupplier) {
@@ -65,26 +65,26 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 		return localResult;
 	}
 	
-	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping;
-	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mainReadonlyMapping;
-	private final ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> mainReadConverters;
-	private final ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> mainWriteConverters;
+	private final Map<PropertyAccessPoint<C, Object>, Column<T, Object>> mainMapping;
+	private final Map<PropertyAccessPoint<C, Object>, Column<T, Object>> mainReadonlyMapping;
+	private final ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> mainReadConverters;
+	private final ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> mainWriteConverters;
 	
 	TablePerClassPolymorphismBuilder(TablePerClassPolymorphism<C> polymorphismPolicy,
 									 AbstractIdentification<C, I> identification,
 									 ConfiguredRelationalPersister<C, I> mainPersister,
-									 Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping,
-									 Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> mainReadonlyMapping,
-									 ValueAccessPointMap<C, ? extends Converter<Object, Object>, ReversibleAccessor<C, ?>> mainReadConverters,
-									 ValueAccessPointMap<C, ? extends Converter<Object, Object>, ReversibleAccessor<C, ?>> mainWriteConverters,
+									 Map<? extends PropertyAccessPoint<C, Object>, Column<T, Object>> mainMapping,
+									 Map<? extends PropertyAccessPoint<C, Object>, ? extends Column<T, Object>> mainReadonlyMapping,
+									 ValueAccessPointMap<C, ? extends Converter<Object, Object>, PropertyAccessPoint<C, ?>> mainReadConverters,
+									 ValueAccessPointMap<C, ? extends Converter<Object, Object>, PropertyAccessPoint<C, ?>> mainWriteConverters,
 									 ColumnBinderRegistry columnBinderRegistry,
 									 NamingConfiguration namingConfiguration,
 									 PersisterBuilderContext persisterBuilderContext) {
 		super(polymorphismPolicy, identification, mainPersister, columnBinderRegistry, namingConfiguration, persisterBuilderContext);
-		this.mainMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainMapping;
-		this.mainReadonlyMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainReadonlyMapping;
-		this.mainReadConverters = (ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>>) mainReadConverters;
-		this.mainWriteConverters = (ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>>) mainWriteConverters;
+		this.mainMapping = (Map<PropertyAccessPoint<C, Object>, Column<T, Object>>) mainMapping;
+		this.mainReadonlyMapping = (Map<PropertyAccessPoint<C, Object>, Column<T, Object>>) mainReadonlyMapping;
+		this.mainReadConverters = (ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>>) mainReadConverters;
+		this.mainWriteConverters = (ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>>) mainWriteConverters;
 	}
 	
 	@Override
@@ -141,16 +141,16 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 		EmbeddableMappingBuilder<D, SUBTABLE> embeddableMappingBuilder = new EmbeddableMappingBuilder<>(subConfiguration.getPropertiesMapping(), subTable,
 				this.columnBinderRegistry, this.namingConfiguration.getColumnNamingStrategy(), this.namingConfiguration.getIndexNamingStrategy());
 		EmbeddableMapping<D, SUBTABLE> embeddableMapping = embeddableMappingBuilder.build();
-		Map<ReversibleAccessor<D, Object>, Column<SUBTABLE, Object>> subEntityPropertiesMapping = embeddableMapping.getMapping();
-		Map<ReversibleAccessor<D, Object>, Column<SUBTABLE, Object>> subEntityReadonlyPropertiesMapping = embeddableMapping.getReadonlyMapping();
-		ValueAccessPointMap<D, Converter<Object, Object>, ReversibleAccessor<D, ?>> subEntityPropertiesReadConverters = embeddableMapping.getReadConverters();
-		ValueAccessPointMap<D, Converter<Object, Object>, ReversibleAccessor<D, ?>> subEntityPropertiesWriteConverters = embeddableMapping.getWriteConverters();
+		Map<ReadWritePropertyAccessPoint<D, Object>, Column<SUBTABLE, Object>> subEntityPropertiesMapping = embeddableMapping.getMapping();
+		Map<PropertyMutator<D, Object>, Column<SUBTABLE, Object>> subEntityReadonlyPropertiesMapping = embeddableMapping.getReadonlyMapping();
+		ValueAccessPointMap<D, Converter<Object, Object>, PropertyAccessPoint<D, ?>> subEntityPropertiesReadConverters = embeddableMapping.getReadConverters();
+		ValueAccessPointMap<D, Converter<Object, Object>, PropertyAccessPoint<D, ?>> subEntityPropertiesWriteConverters = embeddableMapping.getWriteConverters();
 		// in table-per-class polymorphism, main properties must be transferred to sub-entities ones, because CRUD operations are dispatched to them
 		// by a proxy and main persister is not so much used
 		addPrimaryKey(subTable);
-		Map<ReversibleAccessor<C, Object>, Column<SUBTABLE, Object>> projectedMainMapping = projectColumns(mainMapping, subTable, (accessor, c) -> c.getName());
+		Map<PropertyAccessPoint<C, Object>, Column<SUBTABLE, Object>> projectedMainMapping = projectColumns(mainMapping, subTable, (accessor, c) -> c.getName());
 		subEntityPropertiesMapping.putAll((Map) projectedMainMapping);
-		Map<ReversibleAccessor<C, Object>, Column<SUBTABLE, Object>> projectedMainReadonlyMapping = projectColumns(mainReadonlyMapping, subTable, (accessor, c) -> c.getName());
+		Map<PropertyAccessPoint<C, Object>, Column<SUBTABLE, Object>> projectedMainReadonlyMapping = projectColumns(mainReadonlyMapping, subTable, (accessor, c) -> c.getName());
 		subEntityReadonlyPropertiesMapping.putAll((Map) projectedMainReadonlyMapping);
 		subEntityPropertiesReadConverters.putAll((Map) mainReadConverters);
 		subEntityPropertiesWriteConverters.putAll((Map) mainWriteConverters);

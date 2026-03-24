@@ -1,14 +1,14 @@
 package org.codefilarete.stalactite.engine.runtime.load;
 
-import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.PropertyAccessPoint;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
@@ -33,7 +33,13 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 	/** The right part of the join */
 	private final EntityInflater<C, I> entityInflater;
 	
-	private final Accessor<?, ?> propertyAccessor;
+	/**
+	 * The property readWriteAccessPoint of the relation to be filled.
+	 * - First generic type is unknown because it's the relation owning type.
+	 * - Second generic type should be C, or a type containing C (like a Collection<C> or even Map<K, C>) which makes it
+	 * impossible to implement; thus, we have to use the ? wilcard.
+	 */
+	private final PropertyAccessPoint<?, ?> propertyAccessor;
 	
 	/** Relation fixer for instances of this strategy on owning strategy entities */
 	private final BeanRelationFixer<Object, C> beanRelationFixer;
@@ -42,7 +48,7 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 	private final Function<ColumnedRow, ?> relationIdentifierProvider;
 	
 	RelationJoinNode(JoinNode<?, T1> parent,
-					 Accessor<?, C> propertyAccessor,
+					 PropertyAccessPoint<?, ?> propertyAccessor,
 					 JoinLink<T1, JOINTYPE> leftJoinColumn,
 					 JoinLink<T2, JOINTYPE> rightJoinColumn,
 					 JoinType joinType,
@@ -60,7 +66,10 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 	
 	@VisibleForTesting
 	public RelationJoinNode(JoinNode<?, T1> parent,
-							Accessor<?, ?> propertyAccessor,
+							// First generic type is unknown because it's the relation owning type.
+							// Second generic type should be C, or a type containing C (like a Collection<C>or even Map<K, C>) which makes it
+							// impossible to implement; thus, we have to use the ? wilcard.
+							PropertyAccessPoint<?, ?> propertyAccessor,
 							Key<T1, JOINTYPE> leftJoinColumn,
 							Key<T2, JOINTYPE> rightJoinColumn,
 							JoinType joinType,
@@ -77,7 +86,10 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 	}
 	
 	RelationJoinNode(JoinNode<?, T1> parent,
-					 Accessor<?, ?> propertyAccessor,
+					 // First generic type is unknown because it's the relation owning type.
+					 // Second generic type should be C, or a type containing C (like a Collection<C>or even Map<K, C>) which makes it
+					 // impossible to implement; thus, we have to use the ? wilcard.
+					 PropertyAccessPoint<?, ?> propertyAccessor,
 					 Key<T1, JOINTYPE> leftJoinColumn,
 					 Key<T2, JOINTYPE> rightJoinColumn,
 					 JoinType joinType,
@@ -98,7 +110,7 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 		return entityInflater;
 	}
 	
-	public Accessor<?, ?> getPropertyAccessor() {
+	public PropertyAccessPoint<?, ?> getPropertyAccessor() {
 		return propertyAccessor;
 	}
 	

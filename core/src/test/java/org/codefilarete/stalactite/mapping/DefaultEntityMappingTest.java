@@ -9,8 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.ReadWriteAccessPoint;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -38,12 +37,12 @@ class DefaultEntityMappingTest {
 		private Column<T, ?> colD2;
 		private Column<T, ?> colE1;
 		private Column<T, ?> colE2;
-		private Map<? extends ReversibleAccessor<Toto, ?>, Column<T, ?>> propertyMapping;
+		private Map<? extends ReadWritePropertyAccessPoint<Toto, ?>, Column<T, ?>> propertyMapping;
 		private T targetTable;
 		private PersistentFieldHarvester persistentFieldHarvester;
 		private Map<String, Column<T, ?>> columnMapOnName;
-		private ReadWriteAccessPoint<Toto, List<String>> myListField;
-		private ReadWriteAccessPoint<Toto, Map<String, String>> myMapField;
+		private ReadWritePropertyAccessPoint<Toto, List<String>> myListField;
+		private ReadWritePropertyAccessPoint<Toto, Map<String, String>> myMapField;
 		private DefaultEntityMapping<Toto, Integer, ?> entityMapping;
 		
 		private TestData() {
@@ -277,10 +276,10 @@ class DefaultEntityMappingTest {
 	@Test
 	<T extends Table<T>> void beanKeyIsPresent() {
 		TestData<T> testData = new TestData<>();
-		ReadWriteAccessPoint<Toto, Integer> identifierAccessor = Accessors.propertyAccessor(testData.persistentFieldHarvester.getField("a"));
+		ReadWritePropertyAccessPoint<Toto, Integer> identifierAccessor = Accessors.propertyAccessor(testData.persistentFieldHarvester.getField("a"));
 		assertThatCode(() -> new DefaultEntityMapping<>(Toto.class,
 				testData.targetTable,
-				(Map<? extends ReversibleAccessor<Toto, ?>, ? extends Column<T, ?>>) (Map) Maps.asMap(Accessors.propertyAccessor(Toto.class, "b"), colB),
+				(Map<? extends ReadWritePropertyAccessPoint<Toto, ?>, ? extends Column<T, ?>>) (Map) Maps.asMap(Accessors.propertyAccessor(Toto.class, "b"), colB),
 				// identifier is not present in previous statement so it leads to the expected exception
 				identifierAccessor,
 				new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {}, c -> false)

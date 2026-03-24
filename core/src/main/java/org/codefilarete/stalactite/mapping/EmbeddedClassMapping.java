@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.mapping;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -8,13 +7,15 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
-import org.codefilarete.reflection.AccessorChainMutator;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.Mutator;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.reflection.PropertyAccessPoint;
+import org.codefilarete.reflection.PropertyMutator;
+import org.codefilarete.reflection.ReadWriteAccessorChain;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -42,10 +43,10 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	
 	private final T targetTable;
 	
-	private final Map<ReversibleAccessor<C, ?>, Column<T, ?>> propertyToColumn;
+	private final Map<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> propertyToColumn;
 	
 	// Could be a Map<Mutator....> if we could have a AccessorChain that can be a Mutator which is not currently the case
-	private final Map<ReversibleAccessor<C, ?>, Column<T, ?>> readonlyPropertyToColumn;
+	private final Map<PropertyMutator<C, ?>, Column<T, ?>> readonlyPropertyToColumn;
 	
 	private final Set<Column<T, Object>> columns;
 	
@@ -71,28 +72,28 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	 */
 	private final KeepOrderSet<ShadowColumnValueProvider<C, T>> shadowColumnsForUpdate = new KeepOrderSet<>();
 	
-	private final ValueAccessPointSet<C> propertiesSetByConstructor = new ValueAccessPointSet<>();
+	private final ValueAccessPointSet<C, PropertyAccessPoint<C, ?>> propertiesSetByConstructor = new ValueAccessPointSet<>();
 	
-	private ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> readConverters = new ValueAccessPointMap<>();
+	private ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> readConverters = new ValueAccessPointMap<>();
 	
-	private ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> writeConverters = new ValueAccessPointMap<>();
+	private ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> writeConverters = new ValueAccessPointMap<>();
 	
 	/**
-	 * Builds an embedded class mapping between its properties (as {@link ReversibleAccessor}) and some {@link Column}s.
+	 * Builds an embedded class mapping between its properties (as {@link PropertyAccessPoint}) and some {@link Column}s.
 	 * {@link Column}s are expected to be from same table, no strong control is made about that except generic type, caller must be aware of it.
 	 * 
 	 * @param classToPersist the class to be persisted
 	 * @param targetTable the persisting table
 	 * @param propertyToColumn a mapping between Field and Column, expected to be coherent (fields of same class, column of same table)
 	 */
-	public EmbeddedClassMapping(Class<C> classToPersist, T targetTable, Map<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> propertyToColumn) {
+	public EmbeddedClassMapping(Class<C> classToPersist, T targetTable, Map<? extends ReadWritePropertyAccessPoint<C, ?>, ? extends Column<T, ?>> propertyToColumn) {
 		this(classToPersist, targetTable, propertyToColumn, new HashMap<>(), null);
 	}
 	
 	public EmbeddedClassMapping(Class<C> classToPersist,
 								T targetTable,
-								Map<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> propertiesMapping,
-								Map<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> readonlyPropertiesMapping,
+								Map<? extends ReadWritePropertyAccessPoint<C, ?>, ? extends Column<T, ?>> propertiesMapping,
+								Map<? extends PropertyMutator<C, ?>, ? extends Column<T, ?>> readonlyPropertiesMapping,
 								@Nullable Function<ColumnedRow, C> beanFactory) {
 		this.classToPersist = classToPersist;
 		this.targetTable = targetTable;
@@ -100,8 +101,8 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 		
 		// computing read columns
 		this.readonlyPropertyToColumn = new KeepOrderMap<>(readonlyPropertiesMapping);
-		Map<Column<T, ?>, Mutator> columnToField = Iterables.map(propertiesMapping.entrySet(), Entry::getValue, e -> e.getKey().toMutator(), KeepOrderMap::new);
-		readonlyPropertiesMapping.forEach((accessor, column) -> columnToField.put(column, accessor.toMutator()));
+		Map<Column<T, ?>, Mutator> columnToField = Iterables.map(propertiesMapping.entrySet(), Entry::getValue, Entry::getKey, KeepOrderMap::new);
+		readonlyPropertiesMapping.forEach((accessor, column) -> columnToField.put(column, accessor));
 		this.rowTransformer = new EmbeddedBeanRowTransformer(nullable(beanFactory).getOr(() -> row -> Reflections.newInstance(classToPersist)), (Map) columnToField);
 		this.columns = (Set<Column<T, Object>>) (Set) new KeepOrderSet<>(rowTransformer.getColumnToMember().keySet());
 		
@@ -137,7 +138,7 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	 * @return an immutable {@link Map} of the configured mapping
 	 */
 	@Override
-	public Map<ReversibleAccessor<C, ?>, Column<T, ?>> getPropertyToColumn() {
+	public Map<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> getPropertyToColumn() {
 		return Collections.unmodifiableMap(propertyToColumn);
 	}
 	
@@ -145,26 +146,26 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	 * @return an immutable {@link Map} of the configured readonly mapping
 	 */
 	@Override
-	public Map<ReversibleAccessor<C, ?>, Column<T, ?>> getReadonlyPropertyToColumn() {
+	public Map<PropertyMutator<C, ?>, Column<T, ?>> getReadonlyPropertyToColumn() {
 		return Collections.unmodifiableMap(readonlyPropertyToColumn);
 	}
 	
 	@Override
-	public ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> getReadConverters() {
+	public ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> getReadConverters() {
 		return readConverters;
 	}
 	
-	public void setReadConverters(ValueAccessPointMap<C, ? extends Converter<Object, Object>, ReversibleAccessor<C, ?>> converters) {
-		this.readConverters = (ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>>) converters;
+	public void setReadConverters(ValueAccessPointMap<C, ? extends Converter<Object, Object>, PropertyAccessPoint<C, ?>> converters) {
+		this.readConverters = (ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>>) converters;
 	}
 	
 	@Override
-	public ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> getWriteConverters() {
+	public ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> getWriteConverters() {
 		return writeConverters;
 	}
 	
-	public void setWriteConverters(ValueAccessPointMap<C, ? extends Converter<Object, Object>, ReversibleAccessor<C, ?>> writeConverters) {
-		this.writeConverters = (ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>>) writeConverters;
+	public void setWriteConverters(ValueAccessPointMap<C, ? extends Converter<Object, Object>, PropertyAccessPoint<C, ?>> writeConverters) {
+		this.writeConverters = (ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>>) writeConverters;
 	}
 	
 	/**
@@ -222,7 +223,7 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	}
 	
 	@Override
-	public void addPropertySetByConstructor(ValueAccessPoint<C> accessor) {
+	public void addPropertySetByConstructor(PropertyAccessPoint<C, ?> accessor) {
 		this.propertiesSetByConstructor.add(accessor);
 	}
 	
@@ -341,9 +342,8 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 					propertyValue = converter.convert(propertyValue);
 				}
 				beanValues.put(columnFieldEntry, propertyValue);
-				if (columnFieldEntry.getValue() instanceof AccessorChainMutator) {
-					Accessor valuesAreDefaultOnesKey = (Accessor) ((AccessorChainMutator) columnFieldEntry.getValue()).getAccessors().get(0);
-					MutableBoolean mutableBoolean = valuesAreDefaultOnes.computeIfAbsent(valuesAreDefaultOnesKey, k -> new MutableBoolean(true));
+				if (columnFieldEntry.getValue() instanceof ReadWriteAccessorChain) {
+					MutableBoolean mutableBoolean = valuesAreDefaultOnes.computeIfAbsent(((ReadWriteAccessorChain) columnFieldEntry.getValue()).toChainWithoutLastAccessPoint(), k -> new MutableBoolean(true));
 					boolean valueIsDefault = EmbeddedClassMapping.this.defaultValueDeterminer.isDefaultValue(
 							new Duo<>(columnFieldEntry.getKey(), columnFieldEntry.getValue()), propertyValue);
 					mutableBoolean.and(valueIsDefault);
@@ -351,9 +351,8 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 			}
 			// we apply values only if one of them is not a default one, because if all values are default one there's no reason that we create the bean
 			beanValues.forEach((mapping, value) -> {
-				if (mapping.getValue() instanceof AccessorChainMutator) {
-					Accessor valuesAreDefaultOnesKey = (Accessor) ((AccessorChainMutator) mapping.getValue()).getAccessors().get(0);
-					boolean valueIsDefault = valuesAreDefaultOnes.get(valuesAreDefaultOnesKey).value();
+				if (mapping.getValue() instanceof ReadWriteAccessorChain) {
+					boolean valueIsDefault = valuesAreDefaultOnes.get(((ReadWriteAccessorChain) mapping.getValue()).toChainWithoutLastAccessPoint()).value();
 					if (!valueIsDefault) {
 						applyValueToBean(targetRowBean, mapping, value);
 					}

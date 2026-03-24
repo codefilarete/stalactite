@@ -9,10 +9,13 @@ import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMethod;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.Mutator;
+import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.MutatorByMethod;
+import org.codefilarete.reflection.PropertyMutator;
 import org.codefilarete.reflection.ReadWriteAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy.ReferencedColumnNames;
@@ -186,15 +189,15 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 		 * @param targetClass target entity type, provided to look up for reverse property if no sufficient info was given
 		 * @return null if no information was provided about the reverse side (no bidirectionality) 
 		 */
-		private Mutator<TRGT, SRC> buildReverseCombiner(Class<TRGT> targetClass) {
+		private PropertyMutator<TRGT, SRC> buildReverseCombiner(Class<TRGT> targetClass) {
 			MappedByConfiguration<SRC, TRGT, C2> mappedByConfiguration = associationConfiguration.getManyToManyRelation().getMappedByConfiguration();
 			if (mappedByConfiguration.isEmpty()) {
 				// relation is not bidirectional, and not even set by the reverse link, there's nothing to do
 				return null;
 			} else {
-				ReadWriteAccessPoint<TRGT, C2> collectionAccessor = associationConfiguration.buildReversePropertyAccessor();
+				ReadWritePropertyAccessPoint<TRGT, C2> collectionAccessor = associationConfiguration.buildReversePropertyAccessor();
 				if (collectionAccessor == null) {
-					// since some reverse info has been done but not the collection accessor, we try to find the matching property by type
+					// since some reverse info has been done but not the collection readWriteAccessPoint, we try to find the matching property by type
 					FieldIterator targetFields = new InstanceFieldIterator(targetClass);
 					Class<SRC> sourceEntityType = associationConfiguration.getSrcPersister().getClassToPersist();
 					Field reverseField = Iterables.find(targetFields, field -> Collection.class.isAssignableFrom(field.getType())
@@ -202,20 +205,20 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 					if (reverseField != null) {
 						Nullable<AccessorByMethod<TRGT, C2>> reverseGetterMethod = nullable(Accessors.accessorByMethod(reverseField));
 						if (reverseGetterMethod.isPresent()) {
-							collectionAccessor = new ReadWriteAccessPoint<>(reverseGetterMethod.get());
+							collectionAccessor = new DefaultReadWritePropertyAccessPoint<>(reverseGetterMethod.get());
 						} else {
 							Nullable<MutatorByMethod<TRGT, C2>> reverseSetterMethod = nullable(Accessors.mutatorByMethod(reverseField));
 							if (reverseSetterMethod.isPresent()) {
-								collectionAccessor = new ReadWriteAccessPoint<>(reverseSetterMethod.get());
+								collectionAccessor = new DefaultReadWritePropertyAccessPoint<>(reverseSetterMethod.get());
 							}
 						}
 					} // else : relation is not bidirectional, or not a usual one, may be set by reverse link
 				}
 				
-				Nullable<SerializableMutator<TRGT, SRC>> configuredCombiner = nullable(mappedByConfiguration.getReverseCombiner());
-				Mutator<TRGT, SRC> result;
+				Nullable<SerializablePropertyMutator<TRGT, SRC>> configuredCombiner = nullable(mappedByConfiguration.getReverseCombiner());
+				PropertyMutator<TRGT, SRC> result;
 				if (collectionAccessor == null) {
-					result = configuredCombiner.get();
+					result = Accessors.readWriteAccessPoint(configuredCombiner.get());
 				} else {
 					// collection factory is in priority the one configured
 					Supplier<C2> reverseCollectionFactory = mappedByConfiguration.getReverseCollectionFactory();
@@ -317,7 +320,6 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 
 			ManyRelationDescriptor<SRC, TRGT, C1> manyRelationDescriptor = new ManyRelationDescriptor<>(
 					associationConfiguration.getCollectionGetter(),
-					associationConfiguration.getSetter()::set,
 					associationConfiguration.getCollectionFactory(),
 					buildReverseCombiner(targetPersister.getClassToPersist()));
 			
@@ -375,7 +377,6 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 
 			IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C1, SRCID> manyRelationDescriptor = new IndexedAssociationTableManyRelationDescriptor<>(
 					associationConfiguration.getCollectionGetter(),
-					associationConfiguration.getSetter()::set,
 					associationConfiguration.getCollectionFactory(),
 					buildReverseCombiner(targetPersister.getClassToPersist()),
 					associationConfiguration.getSrcPersister()::getId

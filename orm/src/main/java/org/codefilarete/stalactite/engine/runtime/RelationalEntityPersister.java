@@ -6,11 +6,11 @@ import java.util.Set;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.PropertyAccessPoint;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.EntityCriteria;
 import org.codefilarete.stalactite.engine.EntityPersister;
@@ -50,7 +50,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * @return the created join name, then it could be found in sourcePersister#getEntityJoinTree
 	 */
 	<SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																					  Accessor<SRC, C> propertyAccessor,
+																					  PropertyAccessPoint<SRC, C> propertyAccessor,
 																					  Key<T1, JOINID> leftColumn,
 																					  Key<T2, JOINID> rightColumn,
 																					  @Nullable String rightTableAlias,
@@ -76,15 +76,15 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
 	 * @param loadSeparately indicator to make the target entities loaded in a separate query
 	 */
-	default <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsMany(String joinName,
-																							   RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																							   Accessor<SRC, ?> propertyAccessor,
-																							   Key<T1, JOINID> leftColumn,
-																							   Key<T2, JOINID> rightColumn,
-																							   BeanRelationFixer<SRC, C> beanRelationFixer,
-																							   @Nullable Function<ColumnedRow, Object> duplicateIdentifierProvider,
-																							   boolean optional,
-																							   boolean loadSeparately) {
+	default <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID, S> String joinAsMany(String joinName,
+																														RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																														PropertyAccessPoint<SRC, S> propertyAccessor,
+																														Key<T1, JOINID> leftColumn,
+																														Key<T2, JOINID> rightColumn,
+																														BeanRelationFixer<SRC, C> beanRelationFixer,
+																														@Nullable Function<ColumnedRow, Object> duplicateIdentifierProvider,
+																														boolean optional,
+																														boolean loadSeparately) {
 		return joinAsMany(joinName, sourcePersister, propertyAccessor, leftColumn, rightColumn, beanRelationFixer,
 				duplicateIdentifierProvider, Collections.emptySet(), optional, loadSeparately);
 	}
@@ -108,9 +108,9 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
 	 * @param loadSeparately indicator to make the target entities loaded in a separate query
 	 */
-	<SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsMany(String joinName,
+	<SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID, S> String joinAsMany(String joinName,
 																					   RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																					   Accessor<SRC, ?> propertyAccessor,
+																					   PropertyAccessPoint<SRC, S> propertyAccessor,
 																					   Key<T1, JOINID> leftColumn,
 																					   Key<T2, JOINID> rightColumn,
 																					   BeanRelationFixer<SRC, C> beanRelationFixer,
@@ -135,7 +135,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * Overridden for a more accurate return type.
 	 * {@inheritDoc}
 	 */
-	default <O> ExecutableEntityQueryCriteria<C, ?> selectWhere(SerializableAccessor<C, O> getter, ConditionalOperator<O, ?> operator) {
+	default <O> ExecutableEntityQueryCriteria<C, ?> selectWhere(SerializablePropertyAccessor<C, O> getter, ConditionalOperator<O, ?> operator) {
 		return selectWhere(AccessorChain.fromMethodReference(getter), operator);
 	}
 	
@@ -143,7 +143,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * Overridden for a more accurate return type.
 	 * {@inheritDoc}
 	 */
-	default <O> ExecutableEntityQueryCriteria<C, ?> selectWhere(SerializableMutator<C, O> setter, ConditionalOperator<O, ?> operator) {
+	default <O> ExecutableEntityQueryCriteria<C, ?> selectWhere(SerializablePropertyMutator<C, O> setter, ConditionalOperator<O, ?> operator) {
 		return selectWhere(Arrays.asList(Accessors.mutatorByMethodReference(setter)), operator);
 	}
 	
@@ -151,7 +151,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * Overridden for a more accurate return type.
 	 * {@inheritDoc}
 	 */
-	default <O, A> ExecutableEntityQueryCriteria<C, ?> selectWhere(SerializableAccessor<C, A> getter1, SerializableAccessor<A, O> getter2, ConditionalOperator<O, ?> operator) {
+	default <O, A> ExecutableEntityQueryCriteria<C, ?> selectWhere(SerializablePropertyAccessor<C, A> getter1, SerializablePropertyAccessor<A, O> getter2, ConditionalOperator<O, ?> operator) {
 		return selectWhere(AccessorChain.fromMethodReferences(getter1, getter2), operator);
 	}
 	

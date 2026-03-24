@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.RelationalMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
@@ -74,7 +74,7 @@ public interface EmbeddableMappingConfiguration<C> extends RelationalMappingConf
 	 */
 	interface Linkage<C, O> {
 		
-		ReversibleAccessor<C, O> getAccessor();
+		ReadWritePropertyAccessPoint<C, O> getAccessor();
 		
 		@Nullable
 		String getFieldName();

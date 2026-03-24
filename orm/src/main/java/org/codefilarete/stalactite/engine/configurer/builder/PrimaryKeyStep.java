@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.engine.configurer.builder;
 import java.util.Map;
 
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.KeyMapping;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.SingleKeyMapping;
@@ -48,7 +48,7 @@ public class PrimaryKeyStep<C, I> {
 			// some readonly columns would be nonsense
 			EmbeddableMappingBuilder<I, T> compositeKeyBuilder = new EmbeddableMappingBuilder<>(configuration, pkTable, columnBinderRegistry, columnNamingStrategy, uniqueConstraintNamingStrategy);
 			EmbeddableMapping<I, T> build = compositeKeyBuilder.build();
-			Map<ReversibleAccessor<I, Object>, Column<T, Object>> compositeKeyMapping = build.getMapping();
+			Map<ReadWritePropertyAccessPoint<I, Object>, Column<T, Object>> compositeKeyMapping = build.getMapping();
 			compositeKeyMapping.values().forEach(Column::primaryKey);
 			((CompositeKeyIdentification<C, I>) identification).setCompositeKeyMapping(compositeKeyMapping);
 		} else {

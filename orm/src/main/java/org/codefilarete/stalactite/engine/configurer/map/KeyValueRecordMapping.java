@@ -4,9 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.EmbeddedBeanMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.stalactite.mapping.IdMapping;
@@ -34,7 +34,7 @@ public class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends DefaultE
 	
 	@VisibleForTesting
 	public KeyValueRecordMapping(T targetTable,
-						  Map<? extends ReversibleAccessor<KeyValueRecord<K, V, I>, ?>, Column<T, ?>> propertyToColumn,
+						  Map<? extends ReadWritePropertyAccessPoint<KeyValueRecord<K, V, I>, ?>, Column<T, ?>> propertyToColumn,
 						  KeyValueRecordIdMapping<K, I, T> idMapping) {
 		super((Class) KeyValueRecord.class,
 				targetTable,

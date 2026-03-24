@@ -1,9 +1,8 @@
 package org.codefilarete.stalactite.engine.configurer.builder.embeddable;
 
 import javax.annotation.Nullable;
-import java.lang.reflect.Field;
 
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry.EnumBindType;
@@ -17,7 +16,7 @@ import org.codefilarete.tool.function.Converter;
  */
 public interface EmbeddableLinkage<C, O> {
 	
-	ReversibleAccessor<C, O> getAccessor();
+	ReadWritePropertyAccessPoint<C, O> getAccessor();
 	
 	@Nullable
 	String getFieldName();

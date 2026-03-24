@@ -18,7 +18,7 @@ import java.util.function.Supplier;
 import javax.sql.DataSource;
 
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.ReadWriteAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
@@ -54,18 +54,18 @@ import org.codefilarete.stalactite.query.Operators;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
+import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.test.PairSetList;
 import org.codefilarete.tool.Duo;
@@ -133,8 +133,8 @@ class SingleTablePolymorphismPersisterTest {
 	
 	protected ConfiguredRelationalPersister<TotoA, Identifier<Integer>> initMappingTotoA(Table totoTable) {
 		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
-		Map<ReadWriteAccessPoint<TotoA, ?>, Column<Table, ?>> mappedFields = persistentFieldHarvester.mapFields(TotoA.class, totoTable);
-		ReadWriteAccessPoint<TotoA, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("id"));
+		Map<ReadWritePropertyAccessPoint<TotoA, ?>, Column<Table, ?>> mappedFields = persistentFieldHarvester.mapFields(TotoA.class, totoTable);
+		ReadWritePropertyAccessPoint<TotoA, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("id"));
 		persistentFieldHarvester.getColumn(primaryKeyAccessor).primaryKey();
 		
 		IdentifierInsertionManager<TotoA, Identifier<Integer>> identifierManager = (IdentifierInsertionManager) totoEntityMapping.getIdMapping().getIdentifierInsertionManager();
@@ -148,8 +148,8 @@ class SingleTablePolymorphismPersisterTest {
 	
 	protected ConfiguredRelationalPersister<TotoB, Identifier<Integer>> initMappingTotoB(Table totoTable) {
 		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
-		Map<ReadWriteAccessPoint<TotoB, ?>, Column<Table, ?>> mappedFields = persistentFieldHarvester.mapFields(TotoB.class, totoTable);
-		ReadWriteAccessPoint<TotoB, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("id"));
+		Map<ReadWritePropertyAccessPoint<TotoB, ?>, Column<Table, ?>> mappedFields = persistentFieldHarvester.mapFields(TotoB.class, totoTable);
+		ReadWritePropertyAccessPoint<TotoB, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("id"));
 		persistentFieldHarvester.getColumn(primaryKeyAccessor).primaryKey();
 		
 		IdentifierInsertionManager<TotoB, Identifier<Integer>> identifierManager = (IdentifierInsertionManager) totoEntityMapping.getIdMapping().getIdentifierInsertionManager();
@@ -171,10 +171,10 @@ class SingleTablePolymorphismPersisterTest {
 		Column<Table, Object> xColumn = totoTable.addColumn("x", fieldA.getType());
 		Column<Table, Object> qColumn = totoTable.addColumn("q", fieldQ.getType());
 		
-		ReadWriteAccessPoint<AbstractToto, Identifier<Integer>> identifierAccessor = Accessors.propertyAccessor(fieldId);
-		Map<ReadWriteAccessPoint<AbstractToto, Object>, Column<Table, Object>> totoPropertyMapping = Maps.forHashMap(
-				(Class<ReadWriteAccessPoint<AbstractToto, Object>>) (Class) ReadWriteAccessPoint.class, (Class<Column<Table, Object>>) (Class) Column.class)
-				.add((ReadWriteAccessPoint) identifierAccessor, idColumn)
+		ReadWritePropertyAccessPoint<AbstractToto, Identifier<Integer>> identifierAccessor = Accessors.propertyAccessor(fieldId);
+		Map<ReadWritePropertyAccessPoint<AbstractToto, Object>, Column<Table, Object>> totoPropertyMapping = Maps.forHashMap(
+				(Class<ReadWritePropertyAccessPoint<AbstractToto, Object>>) (Class) ReadWritePropertyAccessPoint.class, (Class<Column<Table, Object>>) (Class) Column.class)
+				.add((ReadWritePropertyAccessPoint) identifierAccessor, idColumn)
 				.add(Accessors.propertyAccessor(fieldA), xColumn)
 				.add(Accessors.propertyAccessor(fieldQ), qColumn);
 		
@@ -313,14 +313,14 @@ class SingleTablePolymorphismPersisterTest {
 			// it's much more difficult
 			verify(preparedStatement, times(16)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"insert into Toto(a, id, x, q, DTYPE) values (?, ?, ?, ?, ?)",
-					"insert into Toto(b, id, x, q, DTYPE) values (?, ?, ?, ?, ?)"
+					"insert into Toto(a, x, q, id, DTYPE) values (?, ?, ?, ?, ?)",
+					"insert into Toto(b, x, q, id, DTYPE) values (?, ?, ?, ?, ?)"
 			));
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-					.newRow(1, 23).add(2, 1).add(3, 17).add(5, 100)
-					.newRow(1, 31).add(2, 2).add(3, 29).add(5, 100)
-					.newRow(1, 41).add(2, 3).add(3, 37).add(5, 200)
-					.newRow(1, 53).add(2, 4).add(3, 43).add(5, 200);
+					.newRow(1, 23).add(2, 17).add(4, 1).add(5, 100)
+					.newRow(1, 31).add(2, 29).add(4, 2).add(5, 100)
+					.newRow(1, 41).add(2, 37).add(4, 3).add(5, 200)
+					.newRow(1, 53).add(2, 43).add(4, 4).add(5, 200);
 			assertCapturedPairsEqual(expectedPairs);
 		}
 		

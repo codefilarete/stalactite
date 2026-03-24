@@ -7,6 +7,8 @@ import java.util.function.Supplier;
 
 import org.codefilarete.reflection.SerializableAccessor;
 import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
@@ -37,22 +39,22 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 	
 	/* Overwriting methods signature to return a type that aggregates options of this class */
 	
-	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I, O> map(SerializableMutator<C, O> setter);
+	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I, O> map(SerializablePropertyMutator<C, O> setter);
 	
-	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I, O> map(SerializableAccessor<C, O> getter);
+	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I, O> map(SerializablePropertyAccessor<C, O> getter);
 	
-	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I, E> mapEnum(SerializableMutator<C, E> setter);
+	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I, E> mapEnum(SerializablePropertyMutator<C, E> setter);
 	
-	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I, E> mapEnum(SerializableAccessor<C, E> getter);
+	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I, E> mapEnum(SerializablePropertyAccessor<C, E> getter);
 	
-	<O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableAccessor<C, S> getter, Class<O> componentType);
+	<O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializablePropertyAccessor<C, S> getter, Class<O> componentType);
 	
-	<O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableMutator<C, S> setter, Class<O> componentType);
+	<O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializablePropertyMutator<C, S> setter, Class<O> componentType);
 	
-	<O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mapCollection(SerializableAccessor<C, S> getter, Class<O> componentType,
+	<O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mapCollection(SerializablePropertyAccessor<C, S> getter, Class<O> componentType,
 																															EmbeddableMappingConfigurationProvider<O> embeddableConfiguration);
 	
-	<O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mapCollection(SerializableMutator<C, S> setter, Class<O> componentType,
+	<O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mapCollection(SerializablePropertyMutator<C, S> setter, Class<O> componentType,
 																															EmbeddableMappingConfigurationProvider<O> embeddableConfiguration);
 	
 	FluentSubEntityMappingBuilder<C, I> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
@@ -66,7 +68,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 	 * @param <J> type of identifier of {@code O}
 	 * @return a enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
-	<O, J> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(SerializableAccessor<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
+	<O, J> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(SerializablePropertyAccessor<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a direct relation between current entity and some of type {@code O}.
@@ -77,7 +79,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 	 * @param <J> type of identifier of {@code O}
 	 * @return a enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
-	<O, J> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(SerializableMutator<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
+	<O, J> FluentMappingBuilderOneToOneOptions<C, I, O> mapOneToOne(SerializablePropertyMutator<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a relation between current entity and some of type {@code O} through a {@link Collection}.
@@ -90,20 +92,20 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 	 * @param <J> type of identifier of {@code O}
 	 * @param <S> refined {@link Collection} type
 	 * @return a enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
-	 * @see #mapOneToMany(SerializableMutator, EntityMappingConfigurationProvider)
+	 * @see #mapOneToMany(SerializablePropertyMutator, EntityMappingConfigurationProvider)
 	 */
 	<O, J, S extends Collection<O>>
 	FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializableAccessor<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	mapOneToMany(SerializablePropertyAccessor<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
 	
 	<O, J, S extends Collection<O>>
 	FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializableMutator<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	mapOneToMany(SerializablePropertyMutator<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
 	
-	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableAccessor<C, O> getter,
+	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializablePropertyAccessor<C, O> getter,
 																							  EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
-	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableMutator<C, O> setter,
+	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializablePropertyMutator<C, O> setter,
 																							  EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
 	FluentSubEntityMappingBuilder<C, I> mapPolymorphism(PolymorphismPolicy<C> polymorphismPolicy);
@@ -289,16 +291,16 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 			extends FluentSubEntityMappingBuilder<C, I>, ImportedEmbedWithColumnOptions<O> {
 		
 		@Override
-		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideName(SerializableAccessor<O, IN> function, String columnName);
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideName(SerializablePropertyAccessor<O, IN> function, String columnName);
 		
 		@Override
-		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideName(SerializableMutator<O, IN> function, String columnName);
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideName(SerializablePropertyMutator<O, IN> function, String columnName);
 		
 		@Override
-		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideSize(SerializableAccessor<O, IN> function, Size columnSize);
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideSize(SerializablePropertyAccessor<O, IN> function, Size columnSize);
 		
 		@Override
-		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideSize(SerializableMutator<O, IN> function, Size columnSize);
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideSize(SerializablePropertyMutator<O, IN> function, Size columnSize);
 		
 		/**
 		 * Overrides embedding with an existing target column
@@ -308,7 +310,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		 * @param <IN> input of the function (type of the embedded element)
 		 * @return a mapping configurer, specialized for embedded elements
 		 */
-		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> override(SerializableAccessor<O, IN> getter, Column<? extends Table, IN> targetColumn);
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> override(SerializablePropertyAccessor<O, IN> getter, Column<? extends Table, IN> targetColumn);
 		
 		/**
 		 * Overrides embedding with an existing target column
@@ -318,13 +320,13 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		 * @param <IN> input of the function (type of the embedded element)
 		 * @return a mapping configurer, specialized for embedded elements
 		 */
-		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> override(SerializableMutator<O, IN> setter, Column<? extends Table, IN> targetColumn);
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> override(SerializablePropertyMutator<O, IN> setter, Column<? extends Table, IN> targetColumn);
 		
 		@Override
-		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> exclude(SerializableMutator<O, IN> setter);
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> exclude(SerializablePropertyMutator<O, IN> setter);
 		
 		@Override
-		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> exclude(SerializableAccessor<O, IN> getter);
+		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> exclude(SerializablePropertyAccessor<O, IN> getter);
 	}
 	
 	interface FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S extends Collection<O>>
@@ -359,16 +361,16 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 			extends FluentSubEntityMappingBuilder<C, I>, EmbeddableCollectionOptions<C, O, S> {
 		
 		@Override
-		<IN> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideName(SerializableAccessor<O, IN> getter, String columnName);
+		<IN> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideName(SerializablePropertyAccessor<O, IN> getter, String columnName);
 		
 		@Override
-		<IN> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideName(SerializableMutator<O, IN> setter, String columnName);
+		<IN> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideName(SerializablePropertyMutator<O, IN> setter, String columnName);
 		
 		@Override
-		<IN> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideSize(SerializableAccessor<O, IN> getter, Size columnSize);
+		<IN> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideSize(SerializablePropertyAccessor<O, IN> getter, Size columnSize);
 		
 		@Override
-		<IN> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideSize(SerializableMutator<O, IN> setter, Size columnSize);
+		<IN> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideSize(SerializablePropertyMutator<O, IN> setter, Size columnSize);
 		
 		@Override
 		FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> initializeWith(Supplier<? extends S> collectionFactory);

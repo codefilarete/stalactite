@@ -1,22 +1,18 @@
 package org.codefilarete.stalactite.engine.configurer.manyToOne;
 
-import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import org.codefilarete.reflection.Accessor;
-import org.codefilarete.reflection.AccessorByMethod;
-import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.MethodReferenceCapturer;
-import org.codefilarete.reflection.MutatorByMethod;
-import org.codefilarete.reflection.MutatorByMethodReference;
-import org.codefilarete.reflection.ReadWriteAccessPoint;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.ReadWriteAccessorChain;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
@@ -31,7 +27,7 @@ import static org.codefilarete.tool.Nullable.nullable;
 public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 	
 	/** The method that gives the target entity from the source one */
-	private final ReversibleAccessor<SRC, TRGT> targetProvider;
+	private final ReadWritePropertyAccessPoint<SRC, TRGT> targetProvider;
 	
 	/** Configuration used for target beans persistence */
 	private final EntityMappingConfigurationProvider<TRGT, TRGTID> targetMappingConfiguration;
@@ -59,7 +55,7 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 	 * @param sourceTablePerClassPolymorphic indicates that source is table-per-class polymorphic
 	 * @param targetMappingConfiguration persistence configuration provider of entities stored in the target collection
 	 */
-	public ManyToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider,
+	public ManyToOneRelation(ReadWritePropertyAccessPoint<SRC, TRGT> targetProvider,
 							 BooleanSupplier sourceTablePerClassPolymorphic,
 							 EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration) {
 		this.sourceTablePerClassPolymorphic = sourceTablePerClassPolymorphic;
@@ -68,7 +64,7 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 	}
 	
 	/** Original method reference given for mapping */
-	public ReversibleAccessor<SRC, TRGT> getTargetProvider() {
+	public ReadWritePropertyAccessPoint<SRC, TRGT> getTargetProvider() {
 		return targetProvider;
 	}
 	
@@ -134,33 +130,23 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 	 * @return null if no getter nor setter were defined
 	 */
 	@javax.annotation.Nullable
-	ReadWriteAccessPoint<TRGT, C> buildReversePropertyAccessor() {
-		Nullable<AccessorByMethodReference<TRGT, C>> getterReference = nullable(mappedByConfiguration.getAccessor()).map(Accessors::accessorByMethodReference);
-		Nullable<MutatorByMethodReference<TRGT, C>> setterReference = nullable(mappedByConfiguration.getMutator()).map(Accessors::mutatorByMethodReference);
+	ReadWritePropertyAccessPoint<TRGT, C> buildReversePropertyAccessor() {
+		Nullable<SerializablePropertyAccessor<TRGT, C>> getterReference = nullable(mappedByConfiguration.getAccessor());
+		Nullable<SerializablePropertyMutator<TRGT, C>> setterReference = nullable(mappedByConfiguration.getMutator());
 		if (getterReference.isAbsent() && setterReference.isAbsent()) {
 			return null;
 		} else if (getterReference.isPresent() && setterReference.isPresent()) {
 			// we keep close to user demand : we keep its method references
-			return new ReadWriteAccessPoint<>(getterReference.get(), setterReference.get());
+			return new DefaultReadWritePropertyAccessPoint<>(getterReference.get(), setterReference.get());
 		} else if (getterReference.isPresent() && setterReference.isAbsent()) {
 			// we keep close to user demand : we keep its method reference ...
 			// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
-			return new ReadWriteAccessPoint<>(getterReference.get(), new AccessorByMethod<TRGT, C>(captureMethod(mappedByConfiguration.getAccessor())).toMutator());
+			return Accessors.readWriteAccessPoint(getterReference.get());
 		} else {
 			// we keep close to user demand : we keep its method reference ...
 			// ... but we can't do it for getter, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
-			return new ReadWriteAccessPoint<>(new MutatorByMethod<TRGT, C>(captureMethod(mappedByConfiguration.getMutator())).toAccessor(), setterReference.get());
+			return Accessors.readWriteAccessPoint(setterReference.get());
 		}
-	}
-	
-	private final MethodReferenceCapturer methodSpy = new MethodReferenceCapturer();
-	
-	private Method captureMethod(SerializableAccessor getter) {
-		return this.methodSpy.findMethod(getter);
-	}
-	
-	private Method captureMethod(SerializableMutator setter) {
-		return this.methodSpy.findMethod(setter);
 	}
 	
 	/**
@@ -174,7 +160,7 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 	 */
 	public <E, CC extends Collection<E>> ManyToOneRelation<E, TRGT, TRGTID, CC> embedInto(Accessor<E, SRC> accessor) {
 		AccessorChain<E, TRGT> shiftedTargetProvider = new AccessorChain<>(accessor, targetProvider);
-		ManyToOneRelation<E, TRGT, TRGTID, CC> result = new ManyToOneRelation<>(shiftedTargetProvider, this::isSourceTablePerClassPolymorphic, this::getTargetMappingConfiguration);
+		ManyToOneRelation<E, TRGT, TRGTID, CC> result = new ManyToOneRelation<>(new ReadWriteAccessorChain<>(shiftedTargetProvider), this::isSourceTablePerClassPolymorphic, this::getTargetMappingConfiguration);
 		result.setRelationMode(this.getRelationMode());
 		result.setNullable(this.isNullable());
 		result.setFetchSeparately(this.isFetchSeparately());
@@ -194,13 +180,13 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 		 * Source getter on target for bidirectionality (no consequence on database mapping).
 		 */
 		@javax.annotation.Nullable
-		private SerializableAccessor<TRGT, C2> accessor;
+		private SerializablePropertyAccessor<TRGT, C2> accessor;
 		
 		/**
 		 * Source setter on target for bidirectionality (no consequence on database mapping).
 		 */
 		@javax.annotation.Nullable
-		private SerializableMutator<TRGT, C2> mutator;
+		private SerializablePropertyMutator<TRGT, C2> mutator;
 		
 		/** Optional provider of collection instance to be used if collection value is null */
 		@javax.annotation.Nullable
@@ -211,25 +197,25 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 			return combiner;
 		}
 		
-		public void setCombiner(@javax.annotation.Nullable SerializableMutator<TRGT, SRC> combiner) {
+		public void setCombiner(@javax.annotation.Nullable SerializablePropertyMutator<TRGT, SRC> combiner) {
 			this.combiner = combiner;
 		}
 		
 		@javax.annotation.Nullable
-		public SerializableAccessor<TRGT, C2> getAccessor() {
+		public SerializablePropertyAccessor<TRGT, C2> getAccessor() {
 			return accessor;
 		}
 		
-		public void setAccessor(@javax.annotation.Nullable SerializableAccessor<TRGT, C2> accessor) {
+		public void setAccessor(@javax.annotation.Nullable SerializablePropertyAccessor<TRGT, C2> accessor) {
 			this.accessor = accessor;
 		}
 		
 		@javax.annotation.Nullable
-		public SerializableMutator<TRGT, C2> getMutator() {
+		public SerializablePropertyMutator<TRGT, C2> getMutator() {
 			return mutator;
 		}
 		
-		public void setMutator(@javax.annotation.Nullable SerializableMutator<TRGT, C2> mutator) {
+		public void setMutator(@javax.annotation.Nullable SerializablePropertyMutator<TRGT, C2> mutator) {
 			this.mutator = mutator;
 		}
 		

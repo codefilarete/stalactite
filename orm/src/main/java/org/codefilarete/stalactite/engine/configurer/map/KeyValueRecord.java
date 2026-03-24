@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.configurer.map;
 
-import org.codefilarete.reflection.ReadWriteAccessPoint;
+import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.diff.CollectionDiffer;
 
 /**
@@ -14,11 +15,11 @@ import org.codefilarete.stalactite.engine.diff.CollectionDiffer;
 // Made public due to protected methods in MapRelationConfigurer expecting arguments to be accessible from any overriding class
 public class KeyValueRecord<K, V, ID> {
 	
-	static final ReadWriteAccessPoint<KeyValueRecord<Object, Object, Object>, Object> KEY_ACCESSOR = ReadWriteAccessPoint.fromMethodReference(
+	static final ReadWritePropertyAccessPoint<KeyValueRecord<Object, Object, Object>, Object> KEY_ACCESSOR = DefaultReadWritePropertyAccessPoint.fromMethodReference(
 			KeyValueRecord::getKey,
 			KeyValueRecord::setKey);
 	
-	public static final ReadWriteAccessPoint<KeyValueRecord<Object, Object, Object>, Object> VALUE_ACCESSOR = ReadWriteAccessPoint.fromMethodReference(
+	public static final ReadWritePropertyAccessPoint<KeyValueRecord<Object, Object, Object>, Object> VALUE_ACCESSOR = DefaultReadWritePropertyAccessPoint.fromMethodReference(
 			KeyValueRecord::getValue,
 			KeyValueRecord::setValue);
 	

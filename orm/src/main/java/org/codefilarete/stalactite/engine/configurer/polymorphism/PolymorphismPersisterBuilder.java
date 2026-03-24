@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.PropertyAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy.JoinTablePolymorphism;
@@ -39,10 +39,10 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 	private final AbstractIdentification<C, I> identification;
 	private final ColumnBinderRegistry columnBinderRegistry;
 	
-	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping;
-	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mainReadonlyMapping;
-	private final ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> mainReadConverters;
-	private final ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> mainWriteConverters;
+	private final Map<PropertyAccessPoint<C, Object>, Column<T, Object>> mainMapping;
+	private final Map<PropertyAccessPoint<C, Object>, Column<T, Object>> mainReadonlyMapping;
+	private final ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> mainReadConverters;
+	private final ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> mainWriteConverters;
 	private final NamingConfiguration namingConfiguration;
 	private final PersisterBuilderContext persisterBuilderContext;
 	
@@ -50,20 +50,20 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 										AbstractIdentification<C, I> identification,
 										ConfiguredRelationalPersister<C, I> mainPersister,
 										ColumnBinderRegistry columnBinderRegistry,
-										Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping,
-										Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> mainReadonlyMapping,
-										ValueAccessPointMap<C, ? extends Converter<Object, Object>, ReversibleAccessor<C, ?>> mainReadConverters,
-										ValueAccessPointMap<C, ? extends Converter<Object, Object>, ReversibleAccessor<C, ?>> mainWriteConverters,
+										Map<? extends PropertyAccessPoint<C, Object>, Column<T, Object>> mainMapping,
+										Map<? extends PropertyAccessPoint<C, Object>, Column<T, Object>> mainReadonlyMapping,
+										ValueAccessPointMap<C, ? extends Converter<Object, Object>, PropertyAccessPoint<C, ?>> mainReadConverters,
+										ValueAccessPointMap<C, ? extends Converter<Object, Object>, PropertyAccessPoint<C, ?>> mainWriteConverters,
 										NamingConfiguration namingConfiguration,
 										PersisterBuilderContext persisterBuilderContext) {
 		this.polymorphismPolicy = polymorphismPolicy;
 		this.identification = identification;
 		this.mainPersister = mainPersister;
 		this.columnBinderRegistry = columnBinderRegistry;
-		this.mainMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainMapping;
-		this.mainReadonlyMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainReadonlyMapping;
-		this.mainReadConverters = (ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>>) mainReadConverters;
-		this.mainWriteConverters = (ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>>) mainWriteConverters;
+		this.mainMapping = (Map<PropertyAccessPoint<C, Object>, Column<T, Object>>) mainMapping;
+		this.mainReadonlyMapping = (Map<PropertyAccessPoint<C, Object>, Column<T, Object>>) mainReadonlyMapping;
+		this.mainReadConverters = (ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>>) mainReadConverters;
+		this.mainWriteConverters = (ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>>) mainWriteConverters;
 		this.namingConfiguration = namingConfiguration;
 		this.persisterBuilderContext = persisterBuilderContext;
 	}

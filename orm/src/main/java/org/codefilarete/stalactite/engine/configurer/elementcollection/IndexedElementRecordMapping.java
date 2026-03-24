@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.engine.configurer.elementcollection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.EmbeddedClassMapping;
@@ -31,7 +31,7 @@ public class IndexedElementRecordMapping<C, I, T extends Table<T>> extends Defau
 																			Map<Column<LEFTTABLE, ?>, Column<T, ?>> foreignKeyColumnMapping) {
 		super((Class) IndexedElementRecord.class,
 				targetTable,
-				(Map) Maps.forHashMap(ReversibleAccessor.class, Column.class)
+				(Map) Maps.forHashMap(ReadWriteAccessPoint.class, Column.class)
 						.add(ElementRecord.ELEMENT_ACCESSOR, elementColumn)
 						.add(IndexedElementRecord.INDEX_ACCESSOR, indexColumn),
 				new IndexedElementRecordIdMapping<>(targetTable, elementColumn, indexColumn, sourceIdentifierAssembler, foreignKeyColumnMapping));
@@ -44,7 +44,7 @@ public class IndexedElementRecordMapping<C, I, T extends Table<T>> extends Defau
 																	 Map<Column<LEFTTABLE, ?>, Column<T, ?>> foreignKeyColumnMapping) {
 		super((Class) IndexedElementRecord.class,
 				targetTable,
-				(Map) Maps.putAll(Maps.forHashMap(ReversibleAccessor.class, Column.class)
+				(Map) Maps.putAll(Maps.forHashMap(ReadWriteAccessPoint.class, Column.class)
 						.add(IndexedElementRecord.INDEX_ACCESSOR, indexColumn), embeddableMapping.getPropertyToColumn()),
 				new IndexedElementRecordIdMapping<>(targetTable, embeddableMapping, indexColumn, sourceIdentifierAssembler, foreignKeyColumnMapping));
 	}

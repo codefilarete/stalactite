@@ -88,7 +88,7 @@ public class OneToManyWithIndexedAssociationTableEngine<
 			
 			@Override
 			public void afterSelect(Set<? extends SRC> result) {
-				Set<TRGT> collect = Iterables.stream(result).flatMap(src -> nullable(manyRelationDescriptor.getCollectionGetter().get(src))
+				Set<TRGT> collect = Iterables.stream(result).flatMap(src -> nullable(manyRelationDescriptor.getCollectionAccessPoint().get(src))
 						.map(Collection::stream)
 						.getOr(Stream.empty()))
 						.collect(Collectors.toSet());
@@ -114,7 +114,7 @@ public class OneToManyWithIndexedAssociationTableEngine<
 				associationPersister.getMainTable().getColumns());
 		
 		// we add target subgraph joins to main persister
-		String rightEntityJoinName = targetPersister.joinAsMany(associationTableJoinNodeName, sourcePersister, manyRelationDescriptor.getCollectionProvider(),
+		String rightEntityJoinName = targetPersister.joinAsMany(associationTableJoinNodeName, sourcePersister, manyRelationDescriptor.getCollectionAccessPoint(),
 				associationPersister.getMainTable().getManySideForeignKey(), associationPersister.getMainTable().getManySideKey(),
 				manyRelationDescriptor.getRelationFixer(), columnedRow -> {
 					TRGTID identifier = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(columnedRow);
@@ -165,7 +165,7 @@ public class OneToManyWithIndexedAssociationTableEngine<
 		
 		// NB: we don't have any reverseSetter (for applying source entity to reverse side (target entity)), because this is only relevant
 		// when association is mapped without intermediary table (owned by "many-side" entity)
-		CollectionUpdater<SRC, TRGT, C> collectionUpdater = new CollectionUpdater<SRC, TRGT, C>(manyRelationDescriptor.getCollectionGetter(), targetPersister, null, shouldDeleteRemoved) {
+		CollectionUpdater<SRC, TRGT, C> collectionUpdater = new CollectionUpdater<SRC, TRGT, C>(manyRelationDescriptor.getCollectionAccessPoint(), targetPersister, null, shouldDeleteRemoved) {
 			
 			@Override
 			protected AssociationTableUpdateContext newUpdateContext(Duo<SRC, SRC> updatePayload) {

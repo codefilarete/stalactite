@@ -60,8 +60,8 @@ public class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 	
 	@Override
 	protected BeanRelationFixer<SRC, TRGT> determineRelationFixer() {
-		Mutator<SRC, TRGT> targetSetter = oneToOneRelation.getTargetProvider().toMutator();
-		return BeanRelationFixer.of(targetSetter::set);
+		Mutator<SRC, TRGT> targetSetter = oneToOneRelation.getTargetProvider();
+		return BeanRelationFixer.of(targetSetter);
 	}
 	
 	@Override

@@ -1,8 +1,8 @@
 package org.codefilarete.stalactite.dsl.key;
 
 import org.codefilarete.reflection.AccessorChain;
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.sql.ddl.Size;
 
@@ -16,24 +16,32 @@ public interface FluentCompositeKeyMappingBuilder<C> extends FluentCompositeKeyM
 	
 	/* Overwriting methods signature to return a type that aggregates options of this class */
 	
-	<O> FluentCompositeKeyMappingBuilderPropertyOptions<C> map(SerializableMutator<C, O> setter);
+	@Override
+	<O> FluentCompositeKeyMappingBuilderPropertyOptions<C> map(SerializablePropertyMutator<C, O> setter);
 	
-	<O> FluentCompositeKeyMappingBuilderPropertyOptions<C> map(SerializableAccessor<C, O> getter);
+	@Override
+	<O> FluentCompositeKeyMappingBuilderPropertyOptions<C> map(SerializablePropertyAccessor<C, O> getter);
 	
-	<E extends Enum<E>> FluentCompositeKeyMappingBuilderEnumOptions<C> mapEnum(SerializableMutator<C, E> setter);
+	@Override
+	<E extends Enum<E>> FluentCompositeKeyMappingBuilderEnumOptions<C> mapEnum(SerializablePropertyMutator<C, E> setter);
 	
-	<E extends Enum<E>> FluentCompositeKeyMappingBuilderEnumOptions<C> mapEnum(SerializableAccessor<C, E> getter);
+	@Override
+	<E extends Enum<E>> FluentCompositeKeyMappingBuilderEnumOptions<C> mapEnum(SerializablePropertyAccessor<C, E> getter);
 	
+	@Override
 	FluentCompositeKeyMappingBuilder<C> mapSuperClass(CompositeKeyMappingConfigurationProvider<? super C> superMappingConfiguration);
 	
+	@Override
 	<O> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> embed(
-			SerializableAccessor<C, O> getter,
+			SerializablePropertyAccessor<C, O> getter,
 			CompositeKeyMappingConfigurationProvider<? extends O> compositeKeyMappingBuilder);
 	
+	@Override
 	<O> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> embed(
-			SerializableMutator<C, O> setter,
+			SerializablePropertyMutator<C, O> setter,
 			CompositeKeyMappingConfigurationProvider<? extends O> compositeKeyMappingBuilder);
 	
+	@Override
 	FluentCompositeKeyMappingBuilder<C> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	
 	interface FluentCompositeKeyMappingBuilderPropertyOptions<C> extends FluentCompositeKeyMappingBuilder<C>,
@@ -54,28 +62,28 @@ public interface FluentCompositeKeyMappingBuilder<C> extends FluentCompositeKeyM
 			FluentCompositeKeyMappingBuilder<C> {	// This is necessary to benefit from refined return types, else API is broken (see dedicated unit tests).
 		
 		@Override
-		<IN> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> overrideName(SerializableAccessor<O, IN> function, String columnName);
+		<IN> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> overrideName(SerializablePropertyAccessor<O, IN> function, String columnName);
 		
 		@Override
-		<IN> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> overrideName(SerializableMutator<O, IN> function, String columnName);
+		<IN> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> overrideName(SerializablePropertyMutator<O, IN> function, String columnName);
 		
 		@Override
 		<IN> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> overrideName(AccessorChain<O, IN> chain, String columnName);
 		
 		@Override
-		<IN> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> overrideSize(SerializableAccessor<O, IN> function, Size columnSize);
+		<IN> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> overrideSize(SerializablePropertyAccessor<O, IN> function, Size columnSize);
 		
 		@Override
-		<IN> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> overrideSize(SerializableMutator<O, IN> function, Size columnSize);
+		<IN> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> overrideSize(SerializablePropertyMutator<O, IN> function, Size columnSize);
 		
 		@Override
 		<IN> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> overrideSize(AccessorChain<O, IN> chain, Size columnSize);
 		
 		@Override
-		<IN> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> exclude(SerializableMutator<O, IN> setter);
+		<IN> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> exclude(SerializablePropertyMutator<O, IN> setter);
 		
 		@Override
-		<IN> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> exclude(SerializableAccessor<O, IN> getter);
+		<IN> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> exclude(SerializablePropertyAccessor<O, IN> getter);
 		
 	}
 	

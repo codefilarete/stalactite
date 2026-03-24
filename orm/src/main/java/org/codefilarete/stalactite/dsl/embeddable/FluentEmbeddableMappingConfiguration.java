@@ -5,8 +5,8 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import org.codefilarete.reflection.AccessorChain;
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
@@ -40,7 +40,7 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 * @return this
 	 * @see #withColumnNaming(ColumnNamingStrategy)
 	 */
-	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C, O> map(SerializableAccessor<C, O> getter);
+	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C, O> map(SerializablePropertyAccessor<C, O> getter);
 	
 	/**
 	 * Declares the attribute behind the given accessor reference as persistent.
@@ -50,7 +50,7 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 * @return this
 	 * @see #withColumnNaming(ColumnNamingStrategy)
 	 */
-	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C, O> map(SerializableMutator<C, O> setter);
+	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C, O> map(SerializablePropertyMutator<C, O> setter);
 	
 	/**
 	 * Declares the attribute behind the given field name as persistent.
@@ -63,25 +63,25 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	
 	/**
 	 * Declares the enum-typed attribute behind the given accessor reference as persistent.
-	 * Can be done with default {@link #map(SerializableAccessor)} method, but this signature ensures the type to be an enum and the returned object
+	 * Can be done with default {@link #map(SerializablePropertyAccessor)} method, but this signature ensures the type to be an enum and the returned object
 	 * provides some specific configuration dedicated to enum attribute.
 	 *
 	 * @param getter the accessor that gets the property
 	 * @return an object for configuration chaining
 	 * @param <E> the enum type
 	 */
-	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C, E> mapEnum(SerializableAccessor<C, E> getter);
+	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C, E> mapEnum(SerializablePropertyAccessor<C, E> getter);
 	
 	/**
 	 * Declares the enum-typed attribute behind the given mutator reference as persistent.
-	 * Can be done with default {@link #map(SerializableMutator)} method, but this signature ensures the type to be an enum and the returned object
+	 * Can be done with default {@link #map(SerializablePropertyMutator)} method, but this signature ensures the type to be an enum and the returned object
 	 * provides some specific configuration dedicated to enum attribute.
 	 *
 	 * @param setter the mutator that gets the property
 	 * @return an object for configuration chaining
 	 * @param <E> the enum type
 	 */
-	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C, E> mapEnum(SerializableMutator<C, E> setter);
+	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C, E> mapEnum(SerializablePropertyMutator<C, E> setter);
 	
 	/**
 	 * Declares the enum-typed attribute behind the given mutator reference as persistent.
@@ -94,17 +94,17 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 */
 	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C, E> mapEnum(String fieldName);
 	
-	<O, S extends Collection<O>> FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> mapCollection(SerializableAccessor<C, S> getter,
+	<O, S extends Collection<O>> FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> mapCollection(SerializablePropertyAccessor<C, S> getter,
 																													 Class<O> componentType);
 	
-	<O, S extends Collection<O>> FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> mapCollection(SerializableMutator<C, S> setter,
+	<O, S extends Collection<O>> FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> mapCollection(SerializablePropertyMutator<C, S> setter,
 																													 Class<O> componentType);
 	
-	<O, S extends Collection<O>> FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> mapCollection(SerializableAccessor<C, S> getter,
+	<O, S extends Collection<O>> FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> mapCollection(SerializablePropertyAccessor<C, S> getter,
 																																Class<O> componentType,
 																																EmbeddableMappingConfigurationProvider<O> embeddableConfiguration);
 	
-	<O, S extends Collection<O>> FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> mapCollection(SerializableMutator<C, S> setter,
+	<O, S extends Collection<O>> FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> mapCollection(SerializablePropertyMutator<C, S> setter,
 																																Class<O> componentType,
 																																EmbeddableMappingConfigurationProvider<O> embeddableConfiguration);
 	
@@ -123,7 +123,7 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 * @return an enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 * @param <O> embedded bean type
 	 */
-	<O> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableAccessor<C, O> getter,
+	<O> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializablePropertyAccessor<C, O> getter,
 																			 EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
 	/**
@@ -134,7 +134,7 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 * @return an enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 * @param <O> embedded bean type
 	 */
-	<O> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableMutator<C, O> setter,
+	<O> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializablePropertyMutator<C, O> setter,
 																			 EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
 	/**
@@ -146,7 +146,7 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 * @param <J> type of identifier of {@code O}
 	 * @return an enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
-	<O, J> FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mapOneToOne(SerializableAccessor<C, O> getter,
+	<O, J> FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mapOneToOne(SerializablePropertyAccessor<C, O> getter,
 																		   EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
 	/**
@@ -158,7 +158,7 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 * @param <J> type of identifier of {@code O}
 	 * @return an enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
-	<O, J> FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mapOneToOne(SerializableMutator<C, O> setter,
+	<O, J> FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mapOneToOne(SerializablePropertyMutator<C, O> setter,
 																		   EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
 	/**
@@ -174,11 +174,11 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 * @param <J> type of identifier of {@code O}
 	 * @param <S> refined {@link Collection} type
 	 * @return an enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
-	 * @see #mapOneToMany(SerializableAccessor, EntityMappingConfigurationProvider)
+	 * @see #mapOneToMany(SerializablePropertyAccessor, EntityMappingConfigurationProvider)
 	 */
 	<O, J, S extends Collection<O>>
 	FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S>
-	mapOneToMany(SerializableAccessor<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	mapOneToMany(SerializablePropertyAccessor<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a relation between current embeddable object and some entity of type {@code O} through a {@link Collection}.
@@ -193,11 +193,11 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 * @param <J> type of identifier of {@code O}
 	 * @param <S> refined {@link Collection} type
 	 * @return an enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
-	 * @see #mapOneToMany(SerializableAccessor, EntityMappingConfigurationProvider)
+	 * @see #mapOneToMany(SerializablePropertyAccessor, EntityMappingConfigurationProvider)
 	 */
 	<O, J, S extends Collection<O>>
 	FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S>
-	mapOneToMany(SerializableMutator<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	mapOneToMany(SerializablePropertyMutator<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a direct relation between current embeddable object and some entity of type {@code O}.
@@ -210,7 +210,7 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 */
 	<O, J, S extends Collection<C>>
 	FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S>
-	mapManyToOne(SerializableAccessor<C, O> getter,
+	mapManyToOne(SerializablePropertyAccessor<C, O> getter,
 				 EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
 	/**
@@ -224,15 +224,15 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 */
 	<O, J, S extends Collection<C>>
 	FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S>
-	mapManyToOne(SerializableMutator<C, O> setter,
+	mapManyToOne(SerializablePropertyMutator<C, O> setter,
 				 EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a many-to-many relation between current embeddable object and some entity of type {@code O}.
 	 * Depending on collection type, order persistence can be asked by one of the {@link ManyToManyOptions#indexed()}
 	 * methods.
-	 * For bidirectional relation, you may be interested in using {@link ManyToManyOptions#reverseCollection(SerializableAccessor)}
-	 * or {@link ManyToManyOptions#reverselySetBy(SerializableMutator)} on returned instance.
+	 * For bidirectional relation, you may be interested in using {@link ManyToManyOptions#reverseCollection(SerializablePropertyAccessor)}
+	 * or {@link ManyToManyOptions#reverselySetBy(SerializablePropertyMutator)} on returned instance.
 	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
 	 * to handle any super type of current entity type.
 	 *
@@ -246,14 +246,14 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 */
 	<O, J, S1 extends Collection<O>, S2 extends Collection<C>>
 	FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2>
-	mapManyToMany(SerializableAccessor<C, S1> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	mapManyToMany(SerializablePropertyAccessor<C, S1> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a many-to-many relation between current embeddable object and some entity of type {@code O}.
 	 * Depending on collection type, order persistence can be asked by one of the {@link ManyToManyOptions#indexed()}
 	 * methods.
-	 * For bidirectional relation, you may be interested in using {@link ManyToManyOptions#reverseCollection(SerializableAccessor)}
-	 * or {@link ManyToManyOptions#reverselySetBy(SerializableMutator)} on returned instance.
+	 * For bidirectional relation, you may be interested in using {@link ManyToManyOptions#reverseCollection(SerializablePropertyAccessor)}
+	 * or {@link ManyToManyOptions#reverselySetBy(SerializablePropertyMutator)} on returned instance.
 	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
 	 * to handle any super type of current entity type.
 	 *
@@ -267,7 +267,7 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 */
 	<O, J, S1 extends Collection<O>, S2 extends Collection<C>>
 	FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2>
-	mapManyToMany(SerializableMutator<C, S1> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	mapManyToMany(SerializablePropertyMutator<C, S1> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
 	
 	/**
 	 * Change default column naming strategy, which is {@link ColumnNamingStrategy#DEFAULT}, by the given one.
@@ -285,33 +285,33 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 * 
 	 * @param <C> main bean type
 	 * @param <O> embedded bean type
-	 * @see #embed(SerializableAccessor, EmbeddableMappingConfigurationProvider)  
-	 * @see FluentEmbeddableMappingConfiguration#embed(SerializableMutator, EmbeddableMappingConfigurationProvider)   
+	 * @see FluentEmbeddableMappingConfiguration#embed(SerializablePropertyAccessor, EmbeddableMappingConfigurationProvider)  
+	 * @see FluentEmbeddableMappingConfiguration#embed(SerializablePropertyMutator, EmbeddableMappingConfigurationProvider)   
 	 */
 	interface FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O>
 			extends FluentEmbeddableMappingConfiguration<C>, ImportedEmbedOptions<O> {
 		
 		@Override
-		<IN> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideName(SerializableAccessor<O, IN> getter, String columnName);
+		<IN> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideName(SerializablePropertyAccessor<O, IN> getter, String columnName);
 		
 		@Override
-		<IN> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideName(SerializableMutator<O, IN> setter, String columnName);
+		<IN> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideName(SerializablePropertyMutator<O, IN> setter, String columnName);
 		
 		<IN> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideName(AccessorChain<O, IN> chain, String columnName);
 		
 		@Override
-		<IN> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideSize(SerializableAccessor<O, IN> getter, Size columnSize);
+		<IN> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideSize(SerializablePropertyAccessor<O, IN> getter, Size columnSize);
 		
 		@Override
-		<IN> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideSize(SerializableMutator<O, IN> setter, Size columnSize);
+		<IN> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideSize(SerializablePropertyMutator<O, IN> setter, Size columnSize);
 		
 		<IN> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideSize(AccessorChain<O, IN> chain, Size columnSize);
 		
 		@Override
-		<IN> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> exclude(SerializableAccessor<O, IN> getter);
+		<IN> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> exclude(SerializablePropertyAccessor<O, IN> getter);
 		
 		@Override
-		<IN> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> exclude(SerializableMutator<O, IN> setter);
+		<IN> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> exclude(SerializablePropertyMutator<O, IN> setter);
 	}
 	
 	interface FluentEmbeddableMappingConfigurationEnumOptions<C, E extends Enum<E>> extends FluentEmbeddableMappingConfiguration<C>, EnumOptions<E> {
@@ -430,16 +430,16 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 			extends FluentEmbeddableMappingBuilder<C>, EmbeddableCollectionOptions<C, O, S> {
 		
 		@Override
-		<IN> FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> overrideName(SerializableAccessor<O, IN> getter, String columnName);
+		<IN> FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> overrideName(SerializablePropertyAccessor<O, IN> getter, String columnName);
 		
 		@Override
-		<IN> FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> overrideName(SerializableMutator<O, IN> setter, String columnName);
+		<IN> FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> overrideName(SerializablePropertyMutator<O, IN> setter, String columnName);
 		
 		@Override
-		<IN> FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> overrideSize(SerializableAccessor<O, IN> getter, Size columnSize);
+		<IN> FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> overrideSize(SerializablePropertyAccessor<O, IN> getter, Size columnSize);
 		
 		@Override
-		<IN> FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> overrideSize(SerializableMutator<O, IN> setter, Size columnSize);
+		<IN> FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> overrideSize(SerializablePropertyMutator<O, IN> setter, Size columnSize);
 		
 		@Override
 		FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> initializeWith(Supplier<? extends S> collectionFactory);

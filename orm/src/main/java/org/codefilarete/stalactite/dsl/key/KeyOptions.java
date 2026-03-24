@@ -4,6 +4,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.SerializablePropertyAccessor;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.sql.ddl.Size;
@@ -11,10 +12,9 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.function.TriFunction;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
- * Interface for {@link org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder#mapKey(SerializableFunction, IdentifierPolicy)} family methods return.
+ * Interface for {@link org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder#mapKey(SerializablePropertyAccessor, IdentifierPolicy)} family methods return.
  * Aimed at chaining to configure entity key mapping.
  *
  * @param <C> entity type

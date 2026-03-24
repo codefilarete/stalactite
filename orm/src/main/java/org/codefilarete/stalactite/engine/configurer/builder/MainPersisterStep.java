@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.engine.configurer.builder;
 
-import javax.annotation.Nullable;
 import java.lang.reflect.Constructor;
 import java.util.Date;
 import java.util.HashMap;
@@ -10,9 +9,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.PropertyAccessPoint;
+import org.codefilarete.reflection.PropertyMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
@@ -75,11 +77,11 @@ public class MainPersisterStep<C, I> {
 	public static <E, I, T extends Table<T>> DefaultEntityMapping<E, I, T> createEntityMapping(
 			boolean isIdentifyingConfiguration,
 			T targetTable,
-			Map<? extends ReversibleAccessor<E, Object>, ? extends Column<T, Object>> mapping,
-			Map<? extends ReversibleAccessor<E, Object>, ? extends Column<T, Object>> readOnlyMapping,
-			ValueAccessPointMap<E, ? extends Converter<Object, Object>, ReversibleAccessor<E, ?>> readConverters,
-			ValueAccessPointMap<E, ? extends Converter<Object, Object>, ReversibleAccessor<E, ?>> writeConverters,
-			ValueAccessPointSet<E> propertiesSetByConstructor,
+			Map<? extends ReadWritePropertyAccessPoint<E, Object>, ? extends Column<T, Object>> mapping,
+			Map<? extends PropertyMutator<E, Object>, ? extends Column<T, Object>> readOnlyMapping,
+			ValueAccessPointMap<E, ? extends Converter<Object, Object>, PropertyAccessPoint<E, ?>> readConverters,
+			ValueAccessPointMap<E, ? extends Converter<Object, Object>, PropertyAccessPoint<E, ?>> writeConverters,
+			ValueAccessPointSet<E, PropertyAccessPoint<E, ?>> propertiesSetByConstructor,
 			AbstractIdentification<E, I> identification,
 			Class<E> beanType,
 			@Nullable EntityFactoryProvider<E, T> entityFactoryProvider) {
@@ -114,18 +116,18 @@ public class MainPersisterStep<C, I> {
 	public static <E, I, T extends Table<T>> DefaultEntityMapping<E, I, T> createEntityMapping(
 			boolean isIdentifyingConfiguration,
 			T targetTable,
-			Map<? extends ReversibleAccessor<E, Object>, ? extends Column<T, Object>> mapping,
-			Map<? extends ReversibleAccessor<E, Object>, ? extends Column<T, Object>> readOnlyMapping,
-			@Nullable Duo<? extends ReversibleAccessor<E, Object>, ? extends Column<T, Object>> versioningMapping,
-			ValueAccessPointMap<E, ? extends Converter<Object, Object>, ReversibleAccessor<E, ?>> readConverters,
-			ValueAccessPointMap<E, ? extends Converter<Object, Object>, ReversibleAccessor<E, ?>> writeConverters,
-			ValueAccessPointSet<E> propertiesSetByConstructor,
+			Map<? extends ReadWritePropertyAccessPoint<E, Object>, ? extends Column<T, Object>> mapping,
+			Map<? extends PropertyMutator<E, Object>, ? extends Column<T, Object>> readOnlyMapping,
+			@Nullable Duo<? extends ReadWritePropertyAccessPoint<E, Object>, ? extends Column<T, Object>> versioningMapping,
+			ValueAccessPointMap<E, ? extends Converter<Object, Object>, PropertyAccessPoint<E, ?>> readConverters,
+			ValueAccessPointMap<E, ? extends Converter<Object, Object>, PropertyAccessPoint<E, ?>> writeConverters,
+			ValueAccessPointSet<E, PropertyAccessPoint<E, ?>> propertiesSetByConstructor,
 			AbstractIdentification<E, I> identification,
 			Class<E> beanType,
 			@Nullable EntityFactoryProvider<E, T> entityFactoryProvider) {
 		
 		PrimaryKey<T, I> primaryKey = targetTable.getPrimaryKey();
-		ReversibleAccessor<E, I> idAccessor = identification.getIdAccessor();
+		ReadWritePropertyAccessPoint<E, I> idAccessor = identification.getIdAccessor();
 		AccessorDefinition idDefinition = AccessorDefinition.giveDefinition(idAccessor);
 		// Child class insertion manager is always an "Already assigned" one because parent manages it for her
 		IdentifierInsertionManager<E, I> identifierInsertionManager = isIdentifyingConfiguration
@@ -133,8 +135,8 @@ public class MainPersisterStep<C, I> {
 				: identification.getFallbackInsertionManager();
 		IdMapping<E, I> idMappingStrategy;
 		if (identification instanceof AbstractIdentification.CompositeKeyIdentification) {
-			Map<ReversibleAccessor<I, Object>, Column<Table, Object>> compositeKeyMapping = ((CompositeKeyIdentification<E, I>) identification).getCompositeKeyMapping();
-			Map<ReversibleAccessor<I, Object>, Column<T, Object>> composedKeyMapping = Iterables.map(compositeKeyMapping.entrySet(), Entry::getKey, entry -> targetTable.getColumn(entry.getValue().getName()), KeepOrderMap::new);
+			Map<ReadWritePropertyAccessPoint<I, Object>, Column<Table, Object>> compositeKeyMapping = ((CompositeKeyIdentification<E, I>) identification).getCompositeKeyMapping();
+			Map<ReadWritePropertyAccessPoint<I, Object>, Column<T, Object>> composedKeyMapping = Iterables.map(compositeKeyMapping.entrySet(), Entry::getKey, entry -> targetTable.getColumn(entry.getValue().getName()), KeepOrderMap::new);
 			ComposedIdentifierAssembler<I, T> composedIdentifierAssembler = new DefaultComposedIdentifierAssembler<>(
 					targetTable,
 					(Class<I>) idDefinition.getMemberType(),

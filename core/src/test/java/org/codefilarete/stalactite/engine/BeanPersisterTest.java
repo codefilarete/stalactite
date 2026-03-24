@@ -5,14 +5,13 @@ import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.PersisterITTest.Toto;
 import org.codefilarete.stalactite.engine.PersisterITTest.TotoTable;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.PersistListener;
-import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.BeanPersister;
@@ -20,8 +19,8 @@ import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
-import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
@@ -29,15 +28,11 @@ import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatchers;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyIterable;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.anySet;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -51,8 +46,8 @@ class BeanPersisterTest {
 	void persist() {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Integer> primaryKey = totoTable.addColumn("a", Integer.class).primaryKey();
-		ReversibleAccessor<Toto, Integer> identifier = Accessors.accessorByField(Toto.class, "a");
-		Map<? extends ReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps.asMap(identifier, primaryKey);
+		ReadWritePropertyAccessPoint<Toto, Integer> identifier = Accessors.propertyAccessor(Toto.class, "a");
+		Map<? extends ReadWritePropertyAccessPoint<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps.asMap(identifier, primaryKey);
 		IdentifierInsertionManager<Toto, Integer> identifierInsertionManagerMock = mock(IdentifierInsertionManager.class);
 		when(identifierInsertionManagerMock.getIdentifierType()).thenReturn(Integer.class);
 		DefaultEntityMapping<Toto, Integer, TotoTable> entityMapping = new DefaultEntityMapping<>(Toto.class, totoTable,
@@ -129,8 +124,8 @@ class BeanPersisterTest {
 	void insert() {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
-		ReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
-		Map<? extends ReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps.asMap(identifier, primaryKey);
+		ReadWritePropertyAccessPoint<Toto, Long> identifier = Accessors.propertyAccessor(Toto.class, "a");
+		Map<? extends ReadWritePropertyAccessPoint<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps.asMap(identifier, primaryKey);
 		
 		IdentifierInsertionManager<Toto, Long> identifierInsertionManagerMock = mock(IdentifierInsertionManager.class);
 		when(identifierInsertionManagerMock.getIdentifierType()).thenReturn(Long.class);
@@ -166,10 +161,10 @@ class BeanPersisterTest {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
 		Column<TotoTable, Long> columnB = totoTable.addColumn("b", Long.class);
-		ReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
-		ReversibleAccessor<Toto, Long> propB = Accessors.accessorByField(Toto.class, "b");
+		ReadWritePropertyAccessPoint<Toto, Long> identifier = Accessors.propertyAccessor(Toto.class, "a");
+		ReadWritePropertyAccessPoint<Toto, Long> propB = Accessors.propertyAccessor(Toto.class, "b");
 		// we must add a property to let us set some differences between 2 instances and have them detected by the system
-		Map<? extends ReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps
+		Map<? extends ReadWritePropertyAccessPoint<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps
 				.asMap(identifier, primaryKey)
 				.add(propB, columnB);
 		DefaultEntityMapping<Toto, Long, TotoTable> entityMapping = new DefaultEntityMapping<>(Toto.class, totoTable,
@@ -210,10 +205,10 @@ class BeanPersisterTest {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
 		Column<TotoTable, Long> columnB = totoTable.addColumn("b", Long.class);
-		ReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
-		ReversibleAccessor<Toto, Long> propB = Accessors.accessorByField(Toto.class, "b");
+		ReadWritePropertyAccessPoint<Toto, Long> identifier = Accessors.propertyAccessor(Toto.class, "a");
+		ReadWritePropertyAccessPoint<Toto, Long> propB = Accessors.propertyAccessor(Toto.class, "b");
 		// we must add a property to let us set some differences between 2 instances and have them detected by the system
-		Map<? extends ReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps
+		Map<? extends ReadWritePropertyAccessPoint<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps
 				.asMap(identifier, primaryKey)
 				.add(propB, columnB);
 		DefaultEntityMapping<Toto, Long, TotoTable> entityMapping = new DefaultEntityMapping<>(Toto.class, totoTable,
@@ -249,10 +244,10 @@ class BeanPersisterTest {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
 		Column<TotoTable, Long> columnB = totoTable.addColumn("b", Long.class);
-		ReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
-		ReversibleAccessor<Toto, Long> propB = Accessors.accessorByField(Toto.class, "b");
+		ReadWritePropertyAccessPoint<Toto, Long> identifier = Accessors.propertyAccessor(Toto.class, "a");
+		ReadWritePropertyAccessPoint<Toto, Long> propB = Accessors.propertyAccessor(Toto.class, "b");
 		// we must add a property to let us set some differences between 2 instances and have them detected by the system
-		Map<? extends ReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps
+		Map<? extends ReadWritePropertyAccessPoint<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps
 				.asMap(identifier, primaryKey)
 				.add(propB, columnB);
 		DefaultEntityMapping<Toto, Long, TotoTable> entityMapping = new DefaultEntityMapping<>(Toto.class, totoTable,
@@ -285,10 +280,10 @@ class BeanPersisterTest {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
 		Column<TotoTable, Long> columnB = totoTable.addColumn("b", Long.class);
-		ReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
-		ReversibleAccessor<Toto, Long> propB = Accessors.accessorByField(Toto.class, "b");
+		ReadWritePropertyAccessPoint<Toto, Long> identifier = Accessors.propertyAccessor(Toto.class, "a");
+		ReadWritePropertyAccessPoint<Toto, Long> propB = Accessors.propertyAccessor(Toto.class, "b");
 		// we must add a property to let us set some differences between 2 instances and have them detected by the system
-		Map<? extends ReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps
+		Map<? extends ReadWritePropertyAccessPoint<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps
 				.asMap(identifier, primaryKey)
 				.add(propB, columnB);
 		DefaultEntityMapping<Toto, Long, TotoTable> entityMapping = new DefaultEntityMapping<>(Toto.class, totoTable,

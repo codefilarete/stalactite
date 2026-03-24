@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.mapping;
 
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
@@ -42,7 +43,7 @@ public class ComposedIdMapping<C, I> implements IdMapping<C, I> {
 	 * @param identifierInsertionManager used for {@link #isNew(Object)} computation by linking it to {@link AlreadyAssignedIdentifierManager#getIsPersistedFunction()}
 	 * @param identifierMarshaller defines the way the id is read from the database
 	 */
-	public ComposedIdMapping(ReversibleAccessor<C, I> identifierAccessor,
+	public ComposedIdMapping(ReadWritePropertyAccessPoint<C, I> identifierAccessor,
 							 AlreadyAssignedIdentifierManager<C, I> identifierInsertionManager,
 							 ComposedIdentifierAssembler<I, ?> identifierMarshaller) {
 		this(new AccessorWrapperIdAccessor<>(identifierAccessor), identifierInsertionManager, identifierMarshaller);

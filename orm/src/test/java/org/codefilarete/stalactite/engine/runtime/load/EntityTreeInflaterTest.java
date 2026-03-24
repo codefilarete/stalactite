@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
-import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.PropertyAccessPoint;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.ConsumerNode;
@@ -15,12 +15,12 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.En
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.EntityReference;
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.RowTransformer;
-import org.codefilarete.stalactite.sql.result.MapBasedColumnedRow;
-import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.stalactite.sql.result.MapBasedColumnedRow;
+import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,7 +83,7 @@ class EntityTreeInflaterTest {
 		String joinName = entityJoinTree.addRelationJoin(
 				EntityJoinTree.ROOT_JOIN_NAME,
 				rightEntityInflater,
-				mock(Accessor.class),
+				mock(PropertyAccessPoint.class),
                 leftTablePk,
                 rightTableFkToLeftTable,
                 null,
@@ -93,7 +93,7 @@ class EntityTreeInflaterTest {
 		entityJoinTree.addRelationJoin(
 				joinName,
 				rightMostEntityInflater,
-				mock(Accessor.class),
+				mock(PropertyAccessPoint.class),
                 rightTablePk,
                 rightMostTableFkToRightTable,
                 null,

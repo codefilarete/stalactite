@@ -1,11 +1,11 @@
 package org.codefilarete.stalactite.engine.runtime.load;
 
-import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Set;
+import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.PropertyAccessPoint;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
@@ -58,7 +58,10 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 	
 	public TablePerClassPolymorphicRelationJoinNode(JoinNode<?, T1> parent,
 													Union subPersistersUnion,
-													Accessor<?, ?> propertyAccessor,
+													// First generic type is unknown because it's the relation owning type.
+													// Second generic type should be C, or a type containing C (like a Collection<C>or even Map<K, C>) which makes it
+													// impossible to implement; thus, we have to use the ? wilcard.
+													PropertyAccessPoint<?, ?> propertyAccessor,
 													Key<T1, JOINCOLTYPE> leftJoinColumn,
 													Key<?, JOINCOLTYPE> rightJoinColumn,
 													JoinType joinType,

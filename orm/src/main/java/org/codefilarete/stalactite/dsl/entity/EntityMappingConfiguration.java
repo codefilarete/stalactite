@@ -7,7 +7,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.RelationalMappingConfiguration;
@@ -136,7 +136,7 @@ public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfi
 	
 	interface KeyMapping<C, I> {
 		
-		ReversibleAccessor<C, I> getAccessor();
+		ReadWritePropertyAccessPoint<C, I> getAccessor();
 		
 		boolean isSetByConstructor();
 	}

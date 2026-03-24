@@ -1,13 +1,14 @@
 package org.codefilarete.stalactite.engine.configurer;
 
-import javax.annotation.Nullable;
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.Mutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
@@ -30,16 +31,16 @@ import static org.codefilarete.tool.Reflections.PRIMITIVE_DEFAULT_VALUES;
 public class DefaultComposedIdentifierAssembler<I, T extends Table<T>> extends ComposedIdentifierAssembler<I, T> {
 
 	private final Function<ColumnedRow, I> keyFactory;
-	private final Map<ReversibleAccessor<I, ?>, Column<T, ?>> mapping;
+	private final Map<ReadWritePropertyAccessPoint<I, ?>, Column<T, ?>> mapping;
 	private final Map<Accessor<I, ?>, Column<T, ?>> compositeKeyReaders;
 	private final Map<Mutator<I, ?>, Column<T, ?>> compositeKeyWriters;
 	private final Constructor<I> defaultConstructor;
 	
 	public DefaultComposedIdentifierAssembler(T targetTable,
 											  Class<I> keyType,
-											  Map<? extends ReversibleAccessor<I, ?>, ? extends Column<T, ?>> mapping) {
+											  Map<? extends ReadWritePropertyAccessPoint<I, ?>, ? extends Column<T, ?>> mapping) {
 		super(targetTable);
-		this.mapping = (Map<ReversibleAccessor<I, ?>, Column<T, ?>>) mapping;
+		this.mapping = (Map<ReadWritePropertyAccessPoint<I, ?>, Column<T, ?>>) mapping;
 		this.defaultConstructor = Reflections.findConstructor(keyType);
 		// for now we only support no-arg constructor
 		if (defaultConstructor == null) {
@@ -57,10 +58,10 @@ public class DefaultComposedIdentifierAssembler<I, T extends Table<T>> extends C
 		}
 		
 		this.compositeKeyReaders = Iterables.map(mapping.entrySet(), Map.Entry::getKey, Map.Entry::getValue);
-		this.compositeKeyWriters = Iterables.map(mapping.entrySet(), entry -> entry.getKey().toMutator(), Map.Entry::getValue);
+		this.compositeKeyWriters = Iterables.map(mapping.entrySet(), Map.Entry::getKey, Map.Entry::getValue);
 	}
 
-	public Map<ReversibleAccessor<I, ?>, Column<T, ?>> getMapping() {
+	public Map<ReadWritePropertyAccessPoint<I, ?>, Column<T, ?>> getMapping() {
 		return mapping;
 	}
 

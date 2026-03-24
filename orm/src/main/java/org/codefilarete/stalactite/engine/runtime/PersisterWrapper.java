@@ -1,12 +1,12 @@
 package org.codefilarete.stalactite.engine.runtime;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.PropertyAccessPoint;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
@@ -181,7 +181,7 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	
 	@Override
 	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																							 Accessor<SRC, C> propertyAccessor,
+																							 PropertyAccessPoint<SRC, C> propertyAccessor,
 																							 Key<T1, JOINID> leftColumn,
 																							 Key<T2, JOINID> rightColumn,
 																							 String rightTableAlias,
@@ -192,9 +192,9 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	}
 	
 	@Override
-	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsMany(String joinName,
+	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID, S> String joinAsMany(String joinName,
 																							  RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																							  Accessor<SRC, ?> propertyAccessor,
+																							  PropertyAccessPoint<SRC, S> propertyAccessor,
 																							  Key<T1, JOINID> leftColumn,
 																							  Key<T2, JOINID> rightColumn,
 																							  BeanRelationFixer<SRC, C> beanRelationFixer,

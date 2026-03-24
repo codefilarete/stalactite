@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 import javax.sql.DataSource;
 
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.SerializableAccessor;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
 import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
@@ -135,7 +135,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		assertThatThrownBy(() -> mappingStrategy.build(persistenceContext))
 				.isInstanceOf(UnsupportedOperationException.class)
 				.hasMessage("Identifier is not defined for o.c.s.e.FluentEntityMappingConfigurationSupportTest$Toto,"
-						+ " please add one through o.c.s.d.e.FluentEntityMappingBuilder.mapKey(o.c.r.SerializableMutator, o.c.s.d.i.IdentifierPolicy)");
+						+ " please add one through o.c.s.d.e.FluentEntityMappingBuilder.mapKey(o.c.r.SerializablePropertyMutator, o.c.s.d.i.IdentifierPolicy)");
 	}
 	
 	@Nested
@@ -2140,7 +2140,7 @@ class FluentEntityMappingConfigurationSupportTest {
 							.map(Timestamp::getModificationDate))
 					.mapOneToMany(Country::getCities, FluentMappings.entityBuilder(City.class, long.class))
 						// testing mappedBy with inheritance
-						.mappedBy((SerializableAccessor<City, AbstractCountry>) City::getAbstractCountry)
+						.mappedBy((SerializablePropertyAccessor<City, AbstractCountry>) City::getAbstractCountry)
 					.map(Country::getDescription).columnName("xx")
 					.map(Country::getDummyProperty).columnName("dd")
 					.build(persistenceContext);

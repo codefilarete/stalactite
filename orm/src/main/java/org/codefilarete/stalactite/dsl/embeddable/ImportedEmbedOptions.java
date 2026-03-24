@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.dsl.embeddable;
 
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
@@ -9,7 +9,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  * Contract to define options when reusing a configuration of an embeddable, very close to {@link EmbedWithColumnOptions}
  * 
  * @author Guillaume Mary
- * @see FluentEmbeddableMappingConfiguration#embed(SerializableMutator, EmbeddableMappingConfigurationProvider)
+ * @see FluentEmbeddableMappingConfiguration#embed(SerializablePropertyMutator, EmbeddableMappingConfigurationProvider)
  */
 public interface ImportedEmbedOptions<C> {
 	
@@ -21,7 +21,7 @@ public interface ImportedEmbedOptions<C> {
 	 * @param <IN> input of the function (type of the embedded element)
 	 * @return a mapping configurer, specialized for embedded elements
 	 */
-	<IN> ImportedEmbedOptions<C> overrideName(SerializableAccessor<C, IN> getter, String columnName);
+	<IN> ImportedEmbedOptions<C> overrideName(SerializablePropertyAccessor<C, IN> getter, String columnName);
 	
 	/**
 	 * Overrides embedding with a column name
@@ -31,7 +31,7 @@ public interface ImportedEmbedOptions<C> {
 	 * @param <IN> input of the function (type of the embedded element)
 	 * @return a mapping configurer, specialized for embedded elements
 	 */
-	<IN> ImportedEmbedOptions<C> overrideName(SerializableMutator<C, IN> setter, String columnName);
+	<IN> ImportedEmbedOptions<C> overrideName(SerializablePropertyMutator<C, IN> setter, String columnName);
 	
 	/**
 	 * Overrides embedding with a column size
@@ -41,7 +41,7 @@ public interface ImportedEmbedOptions<C> {
 	 * @param <IN> input of the function (type of the embedded element)
 	 * @return a mapping configurer, specialized for embedded elements
 	 */
-	<IN> ImportedEmbedOptions<C> overrideSize(SerializableAccessor<C, IN> getter, Size columnSize);
+	<IN> ImportedEmbedOptions<C> overrideSize(SerializablePropertyAccessor<C, IN> getter, Size columnSize);
 	
 	/**
 	 * Overrides embedding with a column size
@@ -51,10 +51,10 @@ public interface ImportedEmbedOptions<C> {
 	 * @param <IN> input of the function (type of the embedded element)
 	 * @return a mapping configurer, specialized for embedded elements
 	 */
-	<IN> ImportedEmbedOptions<C> overrideSize(SerializableMutator<C, IN> setter, Size columnSize);
+	<IN> ImportedEmbedOptions<C> overrideSize(SerializablePropertyMutator<C, IN> setter, Size columnSize);
 	
-	<IN> ImportedEmbedOptions<C> exclude(SerializableAccessor<C, IN> getter);
+	<IN> ImportedEmbedOptions<C> exclude(SerializablePropertyAccessor<C, IN> getter);
 	
-	<IN> ImportedEmbedOptions<C> exclude(SerializableMutator<C, IN> setter);
+	<IN> ImportedEmbedOptions<C> exclude(SerializablePropertyMutator<C, IN> setter);
 	
 }

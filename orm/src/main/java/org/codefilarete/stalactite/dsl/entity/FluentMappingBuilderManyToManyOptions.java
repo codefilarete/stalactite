@@ -3,8 +3,8 @@ package org.codefilarete.stalactite.dsl.entity;
 import java.util.Collection;
 import java.util.function.Supplier;
 
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.relation.ManyToManyEntityOptions;
 
 public interface FluentMappingBuilderManyToManyOptions<C, I, O, S1 extends Collection<O>, S2 extends Collection<C>> extends FluentEntityMappingBuilder<C, I>, ManyToManyEntityOptions<C, O, S1, S2> {
@@ -13,13 +13,13 @@ public interface FluentMappingBuilderManyToManyOptions<C, I, O, S1 extends Colle
 	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> initializeWith(Supplier<S1> collectionFactory);
 	
 	@Override
-	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverselySetBy(SerializableMutator<O, C> reverseLink);
+	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverselySetBy(SerializablePropertyMutator<O, C> reverseLink);
 	
 	@Override
-	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverseCollection(SerializableAccessor<O, S2> collectionAccessor);
+	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverseCollection(SerializablePropertyAccessor<O, S2> collectionAccessor);
 	
 	@Override
-	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverseCollection(SerializableMutator<O, S2> collectionMutator);
+	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverseCollection(SerializablePropertyMutator<O, S2> collectionMutator);
 	
 	@Override
 	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverselyInitializeWith(Supplier<S2> collectionFactory);

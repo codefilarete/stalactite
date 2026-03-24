@@ -3,8 +3,8 @@ package org.codefilarete.stalactite.engine.configurer.embeddable;
 import java.util.Collection;
 import java.util.function.Supplier;
 
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilderOneToManyOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyOptions;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
@@ -22,13 +22,13 @@ class OneToManyOptionsSupport<C, O, S extends Collection<O>>
 	}
 	
 	@Override
-	public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> mappedBy(SerializableMutator<O, ? super C> reverseLink) {
+	public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> mappedBy(SerializablePropertyMutator<O, ? super C> reverseLink) {
 		oneToManyRelation.setReverseSetter(reverseLink);
 		return null;    // we can return null because dispatcher will return proxy
 	}
 	
 	@Override
-	public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> mappedBy(SerializableAccessor<O, ? super C> reverseLink) {
+	public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> mappedBy(SerializablePropertyAccessor<O, ? super C> reverseLink) {
 		oneToManyRelation.setReverseGetter(reverseLink);
 		return null;    // we can return null because dispatcher will return proxy
 	}
@@ -40,7 +40,7 @@ class OneToManyOptionsSupport<C, O, S extends Collection<O>>
 	}
 	
 	@Override
-	public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> reverselySetBy(SerializableMutator<O, C> reverseLink) {
+	public FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> reverselySetBy(SerializablePropertyMutator<O, C> reverseLink) {
 		oneToManyRelation.setReverseLink(reverseLink);
 		return null;    // we can return null because dispatcher will return proxy
 	}

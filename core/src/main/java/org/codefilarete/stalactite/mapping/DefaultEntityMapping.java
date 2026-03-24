@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.mapping;
 
-import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collection;
@@ -12,15 +11,17 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.reflection.AccessorChainMutator;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.ReadWriteAccessPoint;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.ReversibleMutator;
-import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.PropertyAccessPoint;
+import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.PropertyMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
@@ -42,12 +43,8 @@ import org.codefilarete.tool.function.Converter;
  * <li>a main strategy : an embedded one ({@link EmbeddedClassMapping}, accessible by {@link #getMainMapping()}</li>
  * <li>an id strategy : {@link SimpleIdMapping} accessible with {@link #getIdMapping()}</li>
  * <li>optional version mapping : accessible with {@link #getVersionedKeys()} for instance</li>
- * <li>additional mappings (for embeddable for instance) : see {@link #put(ReversibleAccessor, EmbeddedBeanMapping)}</li>
+ * <li>additional mappings (for embeddable for instance) : see {@link #put(ReadWritePropertyAccessPoint, EmbeddedBeanMapping)}</li>
  * </ul>
- * </p>
- * <p>
- * Note that mapping is defined through getter ({@link ReversibleAccessor}) and not setter ({@link ReversibleMutator}) only
- * because a choice must be done between them, else the concrete class {@link ReadWriteAccessPoint} is the choice, which is less open.
  * </p>
  *
  * <p>
@@ -71,31 +68,31 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	
 	private final Set<Column<T, ?>> selectableColumns = new KeepOrderSet<>();
 	
-	private final Map<ReversibleAccessor<C, ?>, EmbeddedBeanMapping<?, T>> embeddedMappings = new KeepOrderMap<>();
+	private final Map<ReadWritePropertyAccessPoint<C, ?>, EmbeddedBeanMapping<?, T>> embeddedMappings = new KeepOrderMap<>();
 	
 	private final IdMapping<C, I> idMapping;
 	
 	@Nullable
-	private final Duo<ReversibleAccessor<C, ?>, Column<T, ?>> versioningMapping;
+	private final Duo<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> versioningMapping;
 	
 	private final boolean identifierSetByBeanFactory;
 	
 	/**
 	 * Main constructor
 	 * Oriented for single column identifier / primary key. Prefer {@link #DefaultEntityMapping(Class, Table, Map, IdMapping)} for composed id.
-	 * It only defines main class and table, secondary ones, such as embedded class, must be defined through {@link #put(ReversibleAccessor, EmbeddedBeanMapping)}
+	 * It only defines main class and table, secondary ones, such as embedded class, must be defined through {@link #put(ReadWritePropertyAccessPoint, EmbeddedBeanMapping)}
 	 * 
 	 * @param classToPersist the class to be persisted
 	 * @param targetTable the persisting table
 	 * @param propertyToColumn mapping between bean "properties" and table columns
 	 * @param identifierProperty identifier of the persisted class
 	 * @param identifierInsertionManager manager of identifiers
-	 * @see #put(ReversibleAccessor, EmbeddedBeanMapping) 
+	 * @see #put(ReadWritePropertyAccessPoint, EmbeddedBeanMapping) 
 	 */
 	public DefaultEntityMapping(Class<C> classToPersist,
 								T targetTable,
-								Map<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> propertyToColumn,
-								ReversibleAccessor<C, I> identifierProperty,
+								Map<? extends ReadWritePropertyAccessPoint<C, ?>, ? extends Column<T, ?>> propertyToColumn,
+								ReadWritePropertyAccessPoint<C, I> identifierProperty,
 								IdentifierInsertionManager<C, I> identifierInsertionManager) {
 		if (identifierProperty == null) {
 			throw new UnsupportedOperationException("No identifier property for " + Reflections.toString(classToPersist));
@@ -124,17 +121,17 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	/**
 	 * Secondary constructor, for composed id because one can precisely define the {@link IdMapping} by giving a {@link ComposedIdMapping}
 	 * for instance.
-	 * It only defines main class and table, secondary ones, such as embedded class, must be defined through {@link #put(ReversibleAccessor, EmbeddedBeanMapping)}
+	 * It only defines main class and table, secondary ones, such as embedded class, must be defined through {@link #put(ReadWritePropertyAccessPoint, EmbeddedBeanMapping)}
 	 *
 	 * @param classToPersist the class to be persisted
 	 * @param targetTable the persisting table
 	 * @param propertyToColumn mapping between bean "properties" and table columns
 	 * @param idMapping mapping strategy of class identifier
-	 * @see #put(ReversibleAccessor, EmbeddedBeanMapping)
+	 * @see #put(ReadWritePropertyAccessPoint, EmbeddedBeanMapping)
 	 */
 	public DefaultEntityMapping(Class<C> classToPersist,
 								T targetTable,
-								Map<? extends ReversibleAccessor<C, ?>, Column<T, ?>> propertyToColumn,
+								Map<? extends ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> propertyToColumn,
 								IdMapping<C, I> idMapping) {
 		this(classToPersist, targetTable, propertyToColumn, Collections.emptyMap(), null, idMapping, null, false);
 	}
@@ -148,13 +145,13 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	 * @param propertyToColumn mapping between bean "properties" and table columns
 	 * @param idMapping mapping strategy of class identifier
 	 * @param entityFactory entity factory
-	 * @see #put(ReversibleAccessor, EmbeddedBeanMapping)
+	 * @see #put(ReadWritePropertyAccessPoint, EmbeddedBeanMapping)
 	 */
 	public DefaultEntityMapping(Class<C> classToPersist,
 								T targetTable,
-								Map<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> propertyToColumn,
-								Map<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> readonlyColumns,
-								@Nullable Duo<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> versioningMapping,
+								Map<? extends ReadWritePropertyAccessPoint<C, ?>, ? extends Column<T, ?>> propertyToColumn,
+								Map<? extends PropertyMutator<C, ?>, ? extends Column<T, ?>> readonlyColumns,
+								@Nullable Duo<? extends ReadWritePropertyAccessPoint<C, ?>, ? extends Column<T, ?>> versioningMapping,
 								IdMapping<C, I> idMapping,
 								@Nullable Function<ColumnedRow, C> entityFactory,
 								boolean identifierSetByBeanFactory) {
@@ -166,14 +163,14 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 		}
 		
 		// adding versioning columns to properties for reading
-		Map<ReversibleAccessor<C, ?>, Column<T, ?>> readonlyPropertiesMapping = new KeepOrderMap<>(readonlyColumns);
+		Map<PropertyMutator<C, ?>, Column<T, ?>> readonlyPropertiesMapping = new KeepOrderMap<>(readonlyColumns);
 		if (versioningMapping != null) {
 			readonlyPropertiesMapping.put(versioningMapping.getLeft(), versioningMapping.getRight());
 		}
 		this.mainMapping = new EmbeddedClassMapping<>(classToPersist, targetTable, propertyToColumn, readonlyPropertiesMapping, entityFactory);
 		this.idMapping = idMapping;
 		this.identifierSetByBeanFactory = identifierSetByBeanFactory;
-		this.versioningMapping = (Duo<ReversibleAccessor<C, ?>, Column<T, ?>>) versioningMapping;
+		this.versioningMapping = (Duo<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>>) versioningMapping;
 		fillInsertableColumns();
 		fillUpdatableColumns();
 		fillSelectableColumns();
@@ -193,61 +190,77 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	}
 	
 	@Override
-	public Map<ReversibleAccessor<C, ?>, EmbeddedBeanMapping<?, T>> getEmbeddedBeanStrategies() {
+	public Map<ReadWritePropertyAccessPoint<C, ?>, EmbeddedBeanMapping<?, T>> getEmbeddedBeanStrategies() {
 		return embeddedMappings;
 	}
 	
 	/**
 	 * Implementation which returns all properties mapping, even embedded ones.
 	 * The Result is built dynamically.
-	 * 
+	 *
 	 * @return all properties mapping, even embedded ones
 	 */
 	@Override
-	public Map<ReversibleAccessor<C, ?>, Column<T, ?>> getPropertyToColumn() {
-		Map<ReversibleAccessor<C, ?>, Column<T, ?>> result = new KeepOrderMap<>();
+	public Map<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> getPropertyToColumn() {
+		Map<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> result = new KeepOrderMap<>();
 		result.putAll(getMainMapping().getPropertyToColumn());
-		for (Entry<ReversibleAccessor<C, ?>, EmbeddedBeanMapping<?, T>> value : embeddedMappings.entrySet()) {
-			value.getValue().getPropertyToColumn().forEach((k, v) -> result.put(new AccessorChain<>(value.getKey(), k), v));
-		}
+		result.putAll(collectEmbeddedProperties());
 		return result;
 	}
 	
-	@Override
-	public Map<ReversibleAccessor<C, ?>, Column<T, ?>> getReadonlyPropertyToColumn() {
-		Map<ReversibleAccessor<C, ?>, Column<T, ?>> result = new KeepOrderMap<>();
-		result.putAll(getMainMapping().getReadonlyPropertyToColumn());
-		for (Entry<ReversibleAccessor<C, ?>, EmbeddedBeanMapping<?, T>> value : embeddedMappings.entrySet()) {
-			value.getValue().getReadonlyPropertyToColumn().forEach((k, v) -> {
-				// code below is only to ensure that cast as Accessor will be fine in all circumstances
-				Accessor<?, ?> kAsAccessor;
-				if (k instanceof ReversibleMutator) {
-					kAsAccessor = ((ReversibleMutator<Object, Object>) k).toAccessor();
-				} else {
-					// This is not an absolute end : it would be sufficient if we could build an AccessorChain with last element
-					// being a Mutator, making created AccessorChain a Mutator (non reversible in our case) this should be implemented to avoid this exception
-					throw new UnsupportedOperationException("Given accessor " + AccessorDefinition.toString(k) + " can't be converted to an Accessor"
-							+ " to make it last element of Accessor chain");
-				}
-				result.put(new AccessorChain<C, Object>(value.getKey(), kAsAccessor).toMutator(), v);
+	private <X> Map<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> collectEmbeddedProperties() {
+		Map<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> result = new KeepOrderMap<>();
+		this.<X>foreachMappedField( embeddedMapping -> {
+			embeddedMapping.getValue().getPropertyToColumn().forEach((embeddedReadonlyPropertyAccessor, column) -> {
+				ReadWritePropertyAccessPoint<C, ?> mutator = buildEmbeddedPropertyAccessor(embeddedMapping.getKey(), embeddedReadonlyPropertyAccessor);
+				result.put(mutator, column);
 			});
-		}
+		});
 		return result;
+	}
+	
+	/** Made for generic compliance */
+	private <X, Y> ReadWritePropertyAccessPoint<C, Y> buildEmbeddedPropertyAccessor(ReadWritePropertyAccessPoint<C, X> embeddedMappingAccessor, PropertyAccessor<X, Y> propertyAccessor) {
+		return new DefaultReadWritePropertyAccessPoint<>(new AccessorChain<>(embeddedMappingAccessor, propertyAccessor));
+	}
+	
+	@Override
+	public Map<PropertyMutator<C, ?>, Column<T, ?>> getReadonlyPropertyToColumn() {
+		Map<PropertyMutator<C, ?>, Column<T, ?>> result = new KeepOrderMap<>();
+		result.putAll(getMainMapping().getReadonlyPropertyToColumn());
+		result.putAll(collectEmbeddedReadonlyProperties());
+		return result;
+	}
+	
+	private <X> Map<PropertyMutator<C, ?>, Column<T, ?>> collectEmbeddedReadonlyProperties() {
+		Map<PropertyMutator<C, ?>, Column<T, ?>> result = new KeepOrderMap<>();
+		this.<X>foreachMappedField( embeddedMapping -> {
+			embeddedMapping.getValue().getReadonlyPropertyToColumn().forEach((embeddedReadonlyPropertyAccessor, column) -> {
+				PropertyMutator<C, ?> mutator = buildEmbeddedReadonlyPropertyAccessor(embeddedMapping.getKey(), embeddedReadonlyPropertyAccessor);
+				result.put(mutator, column);
+			});
+		});
+		return result;
+	}
+	
+	/** Made for generic compliance */
+	private <X, Y> PropertyMutator<C, Y> buildEmbeddedReadonlyPropertyAccessor(PropertyAccessor<C, X> embeddedMappingAccessor, PropertyMutator<X, Y> readonlyPropertyMutator) {
+		return new AccessorChainMutator<C, X, Y>(new AccessorChain<>(embeddedMappingAccessor), readonlyPropertyMutator)::set;
 	}
 	
 	@Override
 	@Nullable
-	public Duo<ReversibleAccessor<C, ?>, Column<T, ?>> getVersioningMapping() {
+	public Duo<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> getVersioningMapping() {
 		return versioningMapping;
 	}
 	
 	@Override
-	public ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> getReadConverters() {
+	public ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> getReadConverters() {
 		return mainMapping.getReadConverters();
 	}
 	
 	@Override
-	public ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> getWriteConverters() {
+	public ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> getWriteConverters() {
 		return mainMapping.getWriteConverters();
 	}
 	
@@ -313,7 +326,7 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	}
 	
 	@Override
-	public void addPropertySetByConstructor(ValueAccessPoint<C> accessor) {
+	public void addPropertySetByConstructor(PropertyAccessPoint<C, ?> accessor) {
 		mainMapping.addPropertySetByConstructor(accessor);
 	}
 	
@@ -330,7 +343,7 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	 * @param property an object representing a {@link Field} or {@link Method}
 	 * @param mappingStrategy the strategy that should be used to persist the member
 	 */
-	public <O> void put(ReversibleAccessor<C, O> property, EmbeddedBeanMapping<O, T> mappingStrategy) {
+	public <O> void put(ReadWritePropertyAccessPoint<C, O> property, EmbeddedBeanMapping<O, T> mappingStrategy) {
 		embeddedMappings.put(property, mappingStrategy);
 		// update columns lists
 		addInsertableColumns(mappingStrategy);
@@ -362,7 +375,7 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 		} else {
 			toReturn = mainMapping.getUpdateValues(modified, unmodified, allColumns);
 			this.foreachMappedField(mappingEntry -> {
-				ReversibleAccessor<C, ?> accessor = mappingEntry.getKey();
+				PropertyAccessor<C, ?> accessor = mappingEntry.getKey();
 				Object modifiedValue = accessor.get(modified);
 				Object unmodifiedValue = unmodified == null ? null : accessor.get(unmodified);
 				Map<UpwhereColumn<T>, ?> fieldUpdateValues = mappingEntry.getValue().getUpdateValues(modifiedValue, unmodifiedValue, allColumns);
@@ -393,7 +406,7 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	 * @param consumer code that consumes each embeddedMappings entry
 	 * @param <E> type of mapped beans 
 	 */
-	private <E> void foreachMappedField(Consumer<Entry<ReversibleAccessor<C, E>, EmbeddedBeanMapping<E, T>>> consumer) {
+	private <E> void foreachMappedField(Consumer<Entry<ReadWritePropertyAccessPoint<C, E>, EmbeddedBeanMapping<E, T>>> consumer) {
 		embeddedMappings.entrySet().forEach((Consumer) consumer);
 	}
 	
@@ -502,7 +515,7 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 				}
 				// filling other properties
 				foreachMappedField(mappingEntry -> {
-					mappingEntry.getKey().toMutator().set(toReturn, mappingEntry.getValue().transform(row));
+					mappingEntry.getKey().set(toReturn, mappingEntry.getValue().transform(row));
 				});
 				return toReturn;
 			}

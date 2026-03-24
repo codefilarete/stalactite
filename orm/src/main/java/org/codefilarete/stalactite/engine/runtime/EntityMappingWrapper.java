@@ -1,11 +1,12 @@
 package org.codefilarete.stalactite.engine.runtime;
 
-import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.reflection.PropertyAccessPoint;
+import org.codefilarete.reflection.PropertyMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.mapping.EmbeddedBeanMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
@@ -79,12 +80,12 @@ public class EntityMappingWrapper<C, I, T extends Table<T>> implements EntityMap
 	
 	@Nullable
 	@Override
-	public Duo<ReversibleAccessor<C, ?>, Column<T, ?>> getVersioningMapping() {
+	public Duo<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> getVersioningMapping() {
 		return delegate.getVersioningMapping();
 	}
 	
 	@Override
-	public Map<ReversibleAccessor<C, ?>, EmbeddedBeanMapping<?, T>> getEmbeddedBeanStrategies() {
+	public Map<ReadWritePropertyAccessPoint<C, ?>, EmbeddedBeanMapping<?, T>> getEmbeddedBeanStrategies() {
 		return delegate.getEmbeddedBeanStrategies();
 	}
 	
@@ -124,27 +125,27 @@ public class EntityMappingWrapper<C, I, T extends Table<T>> implements EntityMap
 	}
 	
 	@Override
-	public void addPropertySetByConstructor(ValueAccessPoint<C> accessor) {
+	public void addPropertySetByConstructor(PropertyAccessPoint<C, ?> accessor) {
 		delegate.addPropertySetByConstructor(accessor);
 	}
 	
 	@Override
-	public Map<ReversibleAccessor<C, ?>, Column<T, ?>> getPropertyToColumn() {
+	public Map<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> getPropertyToColumn() {
 		return delegate.getPropertyToColumn();
 	}
 	
 	@Override
-	public Map<ReversibleAccessor<C, ?>, Column<T, ?>> getReadonlyPropertyToColumn() {
+	public Map<PropertyMutator<C, ?>, Column<T, ?>> getReadonlyPropertyToColumn() {
 		return delegate.getReadonlyPropertyToColumn();
 	}
 	
 	@Override
-	public ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> getReadConverters() {
+	public ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> getReadConverters() {
 		return delegate.getReadConverters();
 	}
 	
 	@Override
-	public ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> getWriteConverters() {
+	public ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> getWriteConverters() {
 		return delegate.getWriteConverters();
 	}
 	

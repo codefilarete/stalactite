@@ -3,25 +3,25 @@ package org.codefilarete.stalactite.mapping;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.ValueAccessPointMap;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.bean.FieldIterator;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.ReadWriteAccessPoint;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**
  * @author Guillaume Mary
  */
 public class PersistentFieldHarvester {
 	
-	private Map<ReadWriteAccessPoint, Column> fieldToColumn;
+	private Map<ReadWritePropertyAccessPoint, Column> fieldToColumn;
 	
 	private Map<String, Field> nameTofield;
 	
@@ -30,14 +30,14 @@ public class PersistentFieldHarvester {
 		return Iterables.stream(new FieldIterator(clazz)).filter(fieldVisitor).collect(Collectors.toList());
 	}
 	
-	public Map<ReadWriteAccessPoint, Column> getFieldToColumn() {
+	public Map<ReadWritePropertyAccessPoint, Column> getFieldToColumn() {
 		return fieldToColumn;
 	}
 	
-	public <C, T extends Table<T>> Map<ReadWriteAccessPoint<C, ?>, Column<T, ?>> mapFields(Class<C> clazz, T targetTable) {
+	public <C, T extends Table<T>> Map<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> mapFields(Class<C> clazz, T targetTable) {
 		List<Field> fields = getFields(clazz);
 		Map<String, Column<T, ?>> mapColumnsOnName = targetTable.mapColumnsOnName();
-		fieldToColumn = new LinkedHashMap<>(5);
+		fieldToColumn = new ValueAccessPointMap<>();
 		nameTofield = new HashMap<>(5);
 		for (Field field : fields) {
 			Column<T, ?> column = mapColumnsOnName.get(field.getName());
@@ -66,7 +66,7 @@ public class PersistentFieldHarvester {
 		return nameTofield.get(name);
 	}
 	
-	public Column getColumn(ReadWriteAccessPoint field) {
+	public Column getColumn(ReadWritePropertyAccessPoint field) {
 		return fieldToColumn.get(field);
 	}
 	

@@ -15,6 +15,7 @@ import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMethod;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.ReadWriteAccessPoint;
@@ -150,11 +151,11 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 				if (reverseField != null) {
 					Nullable<AccessorByMethod<TRGT, Collection<SRC>>> reverseGetterMethod = nullable(Accessors.accessorByMethod(reverseField));
 					if (reverseGetterMethod.isPresent()) {
-						collectionAccessor = new ReadWriteAccessPoint<>(reverseGetterMethod.get());
+						collectionAccessor = new DefaultReadWritePropertyAccessPoint<>(reverseGetterMethod.get());
 					} else {
 						Nullable<MutatorByMethod<TRGT, Collection<SRC>>> reverseSetterMethod = nullable(Accessors.mutatorByMethod(reverseField));
 						if (reverseSetterMethod.isPresent()) {
-							collectionAccessor = new ReadWriteAccessPoint<>(reverseSetterMethod.get());
+							collectionAccessor = new DefaultReadWritePropertyAccessPoint<>(reverseSetterMethod.get());
 						}
 					}
 				} // else : relation is not bidirectional, or not a usual one, may be set by reverse link
@@ -219,11 +220,11 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 	}
 	
 	protected BeanRelationFixer<SRC, TRGT> determineRelationFixer(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
-		Mutator<SRC, TRGT> targetSetter = manyToOneRelation.getTargetProvider().toMutator();
+		Mutator<SRC, TRGT> targetSetter = manyToOneRelation.getTargetProvider();
 		SerializableMutator<TRGT, SRC> reverseCombiner = buildReverseCombiner(targetPersister.getClassToPersist());
 		
 		if (reverseCombiner == null) {
-			return BeanRelationFixer.of(targetSetter::set);
+			return BeanRelationFixer.of(targetSetter);
 		} else {
 			return (target, input) -> {
 				targetSetter.set(target, input);

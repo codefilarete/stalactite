@@ -4,11 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.codefilarete.reflection.AccessorChain;
-import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.ReadWriteAccessPoint;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.ReadWriteAccessorChain;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
@@ -36,6 +34,15 @@ public class AssociationRecordMapping<
 		RIGHTID>
 		extends DefaultEntityMapping<AssociationRecord, AssociationRecord, ASSOCIATIONTABLE> {
 	
+	public static final ReadWritePropertyAccessPoint<AssociationRecord, Object> ASSOCIATION_RECORD_LEFT_ACCESSOR = DefaultReadWritePropertyAccessPoint.fromMethodReference(
+			AssociationRecord::getLeft,
+			AssociationRecord::setLeft);
+	
+	public static final ReadWritePropertyAccessPoint<AssociationRecord, Object> ASSOCIATION_RECORD_RIGHT_ACCESSOR = DefaultReadWritePropertyAccessPoint.fromMethodReference(
+			AssociationRecord::getRight,
+			AssociationRecord::setRight);
+	
+	
 	/**
 	 * Computes a mapping from the {@link AssociationRecord} class to the association table's column.
 	 * Handles both single-key and composite-key identifiers.
@@ -43,29 +50,26 @@ public class AssociationRecordMapping<
 	 * @param identifierColumnMapping identifier column mapping
 	 * @param identifierAssembler identifier assembler
 	 * @param valueAccessor value accessor
-	 * @param valueMutator value mutator
 	 * @return a mapping between the association record property and the association table's column.
 	 * @param <ASSOCIATIONTABLE> association table type
 	 * @param <TARGETTABLE> target table type, which can be the left or right one
 	 * @param <ID> identifier type (simple type or complex one)
 	 */
 	private static <ASSOCIATIONTABLE extends Table<ASSOCIATIONTABLE>, TARGETTABLE extends Table<TARGETTABLE>, ID>
-	Map<ReversibleAccessor<AssociationRecord, Object>, Column<ASSOCIATIONTABLE, Object>> mapping(
+	Map<ReadWritePropertyAccessPoint<AssociationRecord, ?>, Column<ASSOCIATIONTABLE, Object>> mapping(
 			Map<Column<TARGETTABLE, ?>, Column<ASSOCIATIONTABLE, ?>> identifierColumnMapping,
 			IdentifierAssembler<ID, TARGETTABLE> identifierAssembler,
-			SerializableAccessor<AssociationRecord, Object> valueAccessor,
-			SerializableMutator<AssociationRecord, Object> valueMutator) {
-		Map<ReversibleAccessor<AssociationRecord, Object>, Column<ASSOCIATIONTABLE, Object>> result = new HashMap<>();
+			ReadWritePropertyAccessPoint<AssociationRecord, ID> valueAccessor) {
+		Map<ReadWritePropertyAccessPoint<AssociationRecord, ?>, Column<ASSOCIATIONTABLE, Object>> result = new HashMap<>();
 		if (identifierAssembler instanceof SingleIdentifierAssembler) {
-			ReversibleAccessor<AssociationRecord, Object> reversibleAccessor = ReadWriteAccessPoint.fromMethodReference(valueAccessor, valueMutator);
 			Column<TARGETTABLE, ID> column = ((SingleIdentifierAssembler<ID, TARGETTABLE>) identifierAssembler).getColumn();
 			Column<ASSOCIATIONTABLE, ID> associationtableColumn = (Column<ASSOCIATIONTABLE, ID>) identifierColumnMapping.get(column);
-			result.put(reversibleAccessor, (Column<ASSOCIATIONTABLE, Object>) associationtableColumn);
+			result.put(valueAccessor, (Column<ASSOCIATIONTABLE, Object>) associationtableColumn);
 		} else if (identifierAssembler instanceof DefaultComposedIdentifierAssembler) {
 			DefaultComposedIdentifierAssembler<ID, TARGETTABLE> leftIdentifierAssembler1 = (DefaultComposedIdentifierAssembler<ID, TARGETTABLE>) identifierAssembler;
-			Map<ReversibleAccessor<ID, ?>, Column<TARGETTABLE, ?>> mapping = leftIdentifierAssembler1.getMapping();
+			Map<ReadWritePropertyAccessPoint<ID, ?>, Column<TARGETTABLE, ?>> mapping = leftIdentifierAssembler1.getMapping();
 			mapping.forEach((accessor, column) -> {
-				AccessorChain<AssociationRecord, Object> propertyAccessor = new AccessorChain<>(Accessors.accessor(valueAccessor), accessor);
+				ReadWriteAccessorChain<AssociationRecord, ID, ?> propertyAccessor = new ReadWriteAccessorChain<>(valueAccessor, accessor);
 				propertyAccessor.setNullValueHandler(new AccessorChain.ValueInitializerOnNullValue((accessor1, aClass) -> Reflections.newInstance(leftIdentifierAssembler1.getDefaultConstructor())));
 				result.put(propertyAccessor, (Column<ASSOCIATIONTABLE, Object>) identifierColumnMapping.get(column));
 			});
@@ -88,8 +92,10 @@ public class AssociationRecordMapping<
 		super(AssociationRecord.class,
 				targetTable,
 				Maps.putAll(
-						mapping(leftIdentifierColumnMapping, leftIdentifierAssembler, AssociationRecord::getLeft, AssociationRecord::setLeft),
-						mapping(rightIdentifierColumnMapping, rightIdentifierAssembler, AssociationRecord::getRight, AssociationRecord::setRight)),
+						AssociationRecordMapping.mapping(leftIdentifierColumnMapping, leftIdentifierAssembler,
+								(ReadWritePropertyAccessPoint<AssociationRecord, LEFTID>) ASSOCIATION_RECORD_LEFT_ACCESSOR),
+						AssociationRecordMapping.mapping(rightIdentifierColumnMapping, rightIdentifierAssembler,
+								(ReadWritePropertyAccessPoint<AssociationRecord, RIGHTID>) ASSOCIATION_RECORD_RIGHT_ACCESSOR)),
 				new ComposedIdMapping<AssociationRecord, AssociationRecord>(
 						new IdAccessor<AssociationRecord, AssociationRecord>() {
 							@Override

@@ -10,12 +10,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.ReadWriteAccessPoint;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.runtime.AbstractVersioningStrategy.VersioningStrategySupport;
+import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.PersistentFieldHarvester;
-import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
@@ -24,7 +24,6 @@ import org.codefilarete.stalactite.mapping.id.manager.JDBCGeneratedKeysIdentifie
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -37,6 +36,7 @@ import org.codefilarete.stalactite.sql.statement.SQLStatement;
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders;
+import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.test.PairSetList;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
@@ -47,9 +47,16 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Guillaume Mary
@@ -151,11 +158,11 @@ class InsertExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 		T totoTable = (T) new Table("toto");
 		Column<T, Integer> pk = totoTable.addColumn("id", Integer.class).primaryKey();
 		Column<T, Long> versionColumn = totoTable.addColumn("version", Long.class);
-		ReadWriteAccessPoint<VersionnedToto, Integer> identifierAccessor = ReadWriteAccessPoint.fromMethodReference(VersionnedToto::getA, VersionnedToto::setA);
-		Map<ReversibleAccessor, Column> mapping = Maps.forHashMap((Class<ReversibleAccessor>) null, (Class<Column>) null)
-				.add(ReadWriteAccessPoint.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion), versionColumn)
+		ReadWritePropertyAccessPoint<VersionnedToto, Integer> identifierAccessor = new DefaultReadWritePropertyAccessPoint<>(VersionnedToto::getA, VersionnedToto::setA);
+		Map<ReadWritePropertyAccessPoint, Column> mapping = Maps.forHashMap((Class<ReadWritePropertyAccessPoint>) null, (Class<Column>) null)
+				.add(new DefaultReadWritePropertyAccessPoint<>(VersionnedToto::getVersion, VersionnedToto::setVersion), versionColumn)
 				.add(identifierAccessor, pk);
-		ReadWriteAccessPoint<VersionnedToto, Long> versioningAttributeAccessor = ReadWriteAccessPoint.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion);
+		ReadWritePropertyAccessPoint<VersionnedToto, Long> versioningAttributeAccessor = new DefaultReadWritePropertyAccessPoint<>(VersionnedToto::getVersion, VersionnedToto::setVersion);
 		SimpleIdMapping<VersionnedToto, Integer> idMapping = new SimpleIdMapping<>(identifierAccessor, new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {}, c -> false), new SingleIdentifierAssembler<>(pk));
 		testInstance = new InsertExecutor<>(new DefaultEntityMapping<VersionnedToto, Integer, T>(
 				VersionnedToto.class,
@@ -188,9 +195,9 @@ class InsertExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 
 		T targetTable = (T) new Table("Toto");
 		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
-		Map<ReadWriteAccessPoint<Toto, ?>, Column<T, ?>> mappedFileds = persistentFieldHarvester.mapFields(Toto.class, targetTable);
-		ReadWriteAccessPoint<Toto, Integer> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("a"));
-		Column primaryKeyColumn = persistentFieldHarvester.getColumn(primaryKeyAccessor);
+		Map<ReadWritePropertyAccessPoint<Toto, ?>, Column<T, ?>> mappedFields = persistentFieldHarvester.mapFields(Toto.class, targetTable);
+		ReadWritePropertyAccessPoint<Toto, Integer> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("a"));
+		Column<T, Integer> primaryKeyColumn = persistentFieldHarvester.getColumn(primaryKeyAccessor);
 		primaryKeyColumn.primaryKey();
 		primaryKeyColumn.setAutoGenerated(true);
 		
@@ -201,11 +208,11 @@ class InsertExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 			Integer.class);
 
 		toReturn.entityMapping = new DefaultEntityMapping<>(
-			Toto.class,
-			targetTable,
-			mappedFileds,
-			primaryKeyAccessor,
-			identifierGenerator);
+				Toto.class,
+				targetTable,
+				mappedFields,
+				primaryKeyAccessor,
+				identifierGenerator);
 		toReturn.targetTable = targetTable;
 
 		return toReturn;

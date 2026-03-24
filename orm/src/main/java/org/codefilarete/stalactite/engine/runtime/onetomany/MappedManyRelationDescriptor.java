@@ -6,7 +6,8 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
-import org.codefilarete.reflection.Mutator;
+import org.codefilarete.reflection.PropertyMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
@@ -21,19 +22,17 @@ public class MappedManyRelationDescriptor<SRC, TRGT, C extends Collection<TRGT>,
 	
 	/**
 	 * @param collectionGetter collection accessor
-	 * @param collectionSetter collection setter
 	 * @param collectionFactory collection factory
 	 * @param reverseSetter setter on the owning side for source bean, optional
 	 * 		because it can be either a {@link org.danekja.java.util.function.serializable.SerializableFunction},
 	 * 		or {@link Function} took from an {@link Accessor}
 	 * @param reverseColumn column owning relation
 	 */
-	public MappedManyRelationDescriptor(Accessor<SRC, C> collectionGetter,
-										Mutator<SRC, C> collectionSetter,
+	public MappedManyRelationDescriptor(ReadWritePropertyAccessPoint<SRC, C> collectionGetter,
 										Supplier<C> collectionFactory,
-										@Nullable Mutator<TRGT, SRC> reverseSetter,
+										@Nullable PropertyMutator<TRGT, SRC> reverseSetter,
 										Key<?, SRCID> reverseColumn) {
-		super(collectionGetter, collectionSetter, collectionFactory, reverseSetter);
+		super(collectionGetter, collectionFactory, reverseSetter);
 		this.reverseColumn = (Key<Table<?>, SRCID>) reverseColumn;
 	}
 	

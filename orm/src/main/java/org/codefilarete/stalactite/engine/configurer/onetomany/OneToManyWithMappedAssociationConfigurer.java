@@ -10,7 +10,7 @@ import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.reflection.Mutator;
+import org.codefilarete.reflection.PropertyMutator;
 import org.codefilarete.reflection.ReversibleMutator;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
@@ -183,11 +183,11 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 	
 	void assignAssociationEngine(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		// We're looking for the foreign key (for necessary join) and for getter/setter required to manage the relation 
-		Mutator<TRGT, SRC> reversePropertyAccessor = null;
+		PropertyMutator<TRGT, SRC> reversePropertyAccessor = null;
 		if (associationConfiguration.getOneToManyRelation().giveReverseSetter() != null) {
 			reversePropertyAccessor = associationConfiguration.getOneToManyRelation().giveReverseSetter();
 		}
-		Mutator<TRGT, SRC> reverseSetterAsConsumer = reversePropertyAccessor;
+		PropertyMutator<TRGT, SRC> reverseSetterAsConsumer = reversePropertyAccessor;
 		if (associationConfiguration.getOneToManyRelation().isOrdered()) {
 			assignEngineForIndexedAssociation(reverseSetterAsConsumer, foreignKey,
 					associationConfiguration.getOneToManyRelation().getIndexingColumn(), targetPersister);
@@ -221,10 +221,9 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 	
 	private void assignEngineForNonIndexedAssociation(Key<?, SRCID> reverseColumn,
 													  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
-													  @Nullable Mutator<TRGT, SRC> reverseSetter) {
+													  @Nullable PropertyMutator<TRGT, SRC> reverseSetter) {
 		MappedManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDefinition = new MappedManyRelationDescriptor<>(
 				associationConfiguration.getCollectionGetter(),
-				associationConfiguration.getSetter(),
 				associationConfiguration.getCollectionFactory(), reverseSetter, reverseColumn);
 		mappedAssociationEngine = new OneToManyWithMappedAssociationEngine<>(
 				targetPersister,
@@ -235,7 +234,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 		);
 	}
 	
-	private void assignEngineForIndexedAssociation(@Nullable Mutator<TRGT, SRC> reverseSetter,
+	private void assignEngineForIndexedAssociation(@Nullable PropertyMutator<TRGT, SRC> reverseSetter,
 												   Key<?, SRCID> reverseColumn,
 												   @Nullable Column<RIGHTTABLE, Integer> indexingColumn,
 												   ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
@@ -249,7 +248,6 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 		
 		IndexedMappedManyRelationDescriptor<SRC, TRGT, C, SRCID, TRGTID> manyRelationDefinition = new IndexedMappedManyRelationDescriptor<>(
 				associationConfiguration.getCollectionGetter(),
-				associationConfiguration.getSetter()::set,
 				associationConfiguration.getCollectionFactory(),
 				reverseSetter,
 				reverseColumn,

@@ -3,15 +3,14 @@ package org.codefilarete.stalactite.engine.runtime;
 import java.util.Map;
 import java.util.Objects;
 
-import org.codefilarete.reflection.AccessorByField;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.ReadWriteAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.InMemoryCounterIdentifierGenerator;
-import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
+import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.stalactite.mapping.PersistentFieldHarvester;
-import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
@@ -31,18 +30,18 @@ abstract class DMLExecutorTest {
 
 		T targetTable = (T) new Table("Toto");
 		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
-		Map<ReadWriteAccessPoint<Toto, ?>, Column<T, ?>> mappedFileds = persistentFieldHarvester.mapFields(Toto.class, targetTable);
-		ReadWriteAccessPoint<Toto, Integer> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("a"));
+		Map<ReadWritePropertyAccessPoint<Toto, ?>, Column<T, ?>> mappedFields = persistentFieldHarvester.mapFields(Toto.class, targetTable);
+		ReadWritePropertyAccessPoint<Toto, Integer> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("a"));
 		persistentFieldHarvester.getColumn(primaryKeyAccessor).primaryKey();
 		IdentifierInsertionManager<Toto, Integer> identifierGenerator = new BeforeInsertIdentifierManager<>(
 			new AccessorWrapperIdAccessor<>(primaryKeyAccessor), new InMemoryCounterIdentifierGenerator(), Integer.class);
-
+		
 		toReturn.entityMapping = new DefaultEntityMapping<>(
-			Toto.class,
-			targetTable,
-			mappedFileds,
-			primaryKeyAccessor,
-			identifierGenerator);
+				Toto.class,
+				targetTable,
+				mappedFields,
+				primaryKeyAccessor,
+				identifierGenerator);
 		toReturn.targetTable = targetTable;
 		
 		return toReturn;
@@ -87,7 +86,7 @@ abstract class DMLExecutorTest {
 		PersistenceConfiguration<Toto, Toto, T> toReturn = new PersistenceConfiguration<>();
 
 		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
-		Map<ReadWriteAccessPoint<Toto, ?>, Column<T, ?>> mappedFields = persistentFieldHarvester.mapFields(Toto.class, targetTable);
+		Map<ReadWritePropertyAccessPoint<Toto, ?>, Column<T, ?>> mappedFields = persistentFieldHarvester.mapFields(Toto.class, targetTable);
 		ComposedIdMapping<Toto, Toto> idMappingStrategy = new ComposedIdMapping<>(idAccessor,
 																				  new AlreadyAssignedIdentifierManager<>(Toto.class, c -> {}, c -> false),
 																				  composedIdentifierAssembler);
@@ -143,7 +142,7 @@ abstract class DMLExecutorTest {
 																						new AlreadyAssignedIdentifierManager<>(ComposedId.class, c -> {}, c -> false),
 																						composedIdentifierAssembler);
 		
-		Map<AccessorByField<Tata, ?>, Column<T, ?>> mappedFields = Maps.asMap(Accessors.accessorByField(Tata.class, "c"), colC);
+		Map<ReadWritePropertyAccessPoint<Tata, ?>, Column<T, ?>> mappedFields = Maps.asMap(Accessors.propertyAccessor(Tata.class, "c"), colC);
 		toReturn.entityMapping = new DefaultEntityMapping<>(
 				Tata.class,
 				targetTable,

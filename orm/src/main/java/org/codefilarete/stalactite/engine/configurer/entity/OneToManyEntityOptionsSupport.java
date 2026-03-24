@@ -3,8 +3,8 @@ package org.codefilarete.stalactite.engine.configurer.entity;
 import java.util.Collection;
 import java.util.function.Supplier;
 
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyJoinTableOptions;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyEntityOptions;
@@ -24,13 +24,13 @@ public class OneToManyEntityOptionsSupport<C, I, O, S extends Collection<O>, O_I
 	}
 	
 	@Override
-	public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableMutator<O, ? super C> reverseLink) {
+	public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializablePropertyMutator<O, ? super C> reverseLink) {
 		oneToManyRelation.setReverseSetter(reverseLink);
 		return null;    // we can return null because dispatcher will return proxy
 	}
 	
 	@Override
-	public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableAccessor<O, ? super C> reverseLink) {
+	public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializablePropertyAccessor<O, ? super C> reverseLink) {
 		oneToManyRelation.setReverseGetter(reverseLink);
 		return null;    // we can return null because dispatcher will return proxy
 	}
@@ -54,7 +54,7 @@ public class OneToManyEntityOptionsSupport<C, I, O, S extends Collection<O>, O_I
 	}
 	
 	@Override
-	public FluentMappingBuilderOneToManyOptions<C, I, O, S> reverselySetBy(SerializableMutator<O, C> reverseLink) {
+	public FluentMappingBuilderOneToManyOptions<C, I, O, S> reverselySetBy(SerializablePropertyMutator<O, C> reverseLink) {
 		oneToManyRelation.setReverseLink(reverseLink);
 		return null;    // we can return null because dispatcher will return proxy
 	}

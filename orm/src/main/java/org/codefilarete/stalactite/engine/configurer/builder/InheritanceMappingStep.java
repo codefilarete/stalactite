@@ -5,7 +5,10 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.PropertyAccessPoint;
+import org.codefilarete.reflection.PropertyMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
@@ -112,29 +115,29 @@ public class InheritanceMappingStep<C, I> {
 	public static class Mapping<C, T extends Table<T>> {
 		private final Object /* EntityMappingConfiguration, EmbeddableMappingConfiguration, SubEntityMappingConfiguration */ mappingConfiguration;
 		private final T targetTable;
-		private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mapping;
-		private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> readonlyMapping;
-		private final Duo<ReversibleAccessor<C, Object>, Column<T, Object>> versioningMapping;
-		private final ValueAccessPointSet<C> propertiesSetByConstructor = new ValueAccessPointSet<>();
+		private final Map<ReadWritePropertyAccessPoint<C, Object>, Column<T, Object>> mapping;
+		private final Map<PropertyMutator<C, Object>, Column<T, Object>> readonlyMapping;
+		private final Duo<ReadWritePropertyAccessPoint<C, Object>, Column<T, Object>> versioningMapping;
+		private final ValueAccessPointSet<C, PropertyAccessPoint<C, ?>> propertiesSetByConstructor = new ValueAccessPointSet<>();
 		private final boolean mappedSuperClass;
-		private final ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> readConverters;
-		private final ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> writeConverters;
+		private final ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> readConverters;
+		private final ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> writeConverters;
 		
 		public Mapping(Object mappingConfiguration,
 					   T targetTable,
-					   Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> mapping,
-					   Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> readonlyMapping,
-					   Duo<? extends ReversibleAccessor<C, ?>, ? extends Column<T, ?>> versioningMapping,
-					   ValueAccessPointMap<C, ? extends Converter<Object, Object>, ReversibleAccessor<C, ?>> readConverters,
-					   ValueAccessPointMap<C, ? extends Converter<Object, Object>, ReversibleAccessor<C, ?>> writeConverters,
+					   Map<? extends ReadWritePropertyAccessPoint<C, Object>, ? extends Column<T, Object>> mapping,
+					   Map<? extends PropertyMutator<C, Object>, ? extends Column<T, Object>> readonlyMapping,
+					   Duo<? extends ReadWritePropertyAccessPoint<C, ?>, ? extends Column<T, ?>> versioningMapping,
+					   ValueAccessPointMap<C, ? extends Converter<Object, Object>, PropertyAccessPoint<C, ?>> readConverters,
+					   ValueAccessPointMap<C, ? extends Converter<Object, Object>, PropertyAccessPoint<C, ?>> writeConverters,
 					   boolean mappedSuperClass) {
 			this.mappingConfiguration = mappingConfiguration;
 			this.targetTable = targetTable;
-			this.mapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mapping;
-			this.readonlyMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) readonlyMapping;
-			this.versioningMapping = (Duo<ReversibleAccessor<C, Object>, Column<T, Object>>) versioningMapping;
-			this.readConverters = (ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>>) readConverters;
-			this.writeConverters = (ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>>) writeConverters;
+			this.mapping = (Map<ReadWritePropertyAccessPoint<C, Object>, Column<T, Object>>) mapping;
+			this.readonlyMapping = (Map<PropertyMutator<C, Object>, Column<T, Object>>) readonlyMapping;
+			this.versioningMapping = (Duo<ReadWritePropertyAccessPoint<C, Object>, Column<T, Object>>) versioningMapping;
+			this.readConverters = (ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>>) readConverters;
+			this.writeConverters = (ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>>) writeConverters;
 			this.mappedSuperClass = mappedSuperClass;
 		}
 		
@@ -158,27 +161,27 @@ public class InheritanceMappingStep<C, I> {
 			return targetTable;
 		}
 		
-		public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getMapping() {
+		public Map<ReadWritePropertyAccessPoint<C, Object>, Column<T, Object>> getMapping() {
 			return mapping;
 		}
 		
-		public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getReadonlyMapping() {
+		public Map<PropertyMutator<C, Object>, Column<T, Object>> getReadonlyMapping() {
 			return readonlyMapping;
 		}
 		
-		public Duo<ReversibleAccessor<C, Object>, Column<T, Object>> getVersioningMapping() {
+		public Duo<ReadWritePropertyAccessPoint<C, Object>, Column<T, Object>> getVersioningMapping() {
 			return versioningMapping;
 		}
 		
-		public ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> getReadConverters() {
+		public ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> getReadConverters() {
 			return readConverters;
 		}
 		
-		public ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> getWriteConverters() {
+		public ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> getWriteConverters() {
 			return writeConverters;
 		}
 		
-		public ValueAccessPointSet<C> getPropertiesSetByConstructor() {
+		public ValueAccessPointSet<C, PropertyAccessPoint<C, ?>> getPropertiesSetByConstructor() {
 			return propertiesSetByConstructor;
 		}
 	}
@@ -190,11 +193,11 @@ public class InheritanceMappingStep<C, I> {
 		<T extends Table<T>> Mapping<C, T> add(
 				Object /* EntityMappingConfiguration, EmbeddableMappingConfiguration, SubEntityMappingConfiguration */ mappingConfiguration,
 				T table,
-				Map<ReversibleAccessor<C, Object>, Column<T, Object>> mapping,
-				Map<ReversibleAccessor<C, Object>, Column<T, Object>> readonlyMapping,
-				Duo<ReversibleAccessor<C, ?>, Column<T, ?>> versioningMapping,
-				ValueAccessPointMap<C, ? extends Converter<Object, Object>, ReversibleAccessor<C, ?>> readConverters,
-				ValueAccessPointMap<C, ? extends Converter<Object, Object>, ReversibleAccessor<C, ?>> writeConverters,
+				Map<ReadWritePropertyAccessPoint<C, Object>, Column<T, Object>> mapping,
+				Map<PropertyMutator<C, Object>, Column<T, Object>> readonlyMapping,
+				Duo<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> versioningMapping,
+				ValueAccessPointMap<C, ? extends Converter<Object, Object>, PropertyAccessPoint<C, ?>> readConverters,
+				ValueAccessPointMap<C, ? extends Converter<Object, Object>, PropertyAccessPoint<C, ?>> writeConverters,
 				boolean mappedSuperClass) {
 			Mapping<C, T> newMapping = new Mapping<>(mappingConfiguration, table,
 					mapping, readonlyMapping, versioningMapping,
@@ -205,7 +208,7 @@ public class InheritanceMappingStep<C, I> {
 			return newMapping;
 		}
 		
-		<T extends Table<T>> Map<ReversibleAccessor<C, Object>, Column<T, Object>> giveMapping(T table) {
+		<T extends Table<T>> Map<ReadWritePropertyAccessPoint<C, Object>, Column<T, Object>> giveMapping(T table) {
 			Mapping<C, T> foundMapping = (Mapping<C, T>) Iterables.find(this.mappings, m -> m.getTargetTable().equals(table));
 			if (foundMapping == null) {
 				throw new IllegalArgumentException("Can't find table '" + table.getAbsoluteName()
@@ -233,15 +236,15 @@ public class InheritanceMappingStep<C, I> {
 		
 		private T currentTable;
 		
-		private Map<ReversibleAccessor<C, Object>, Column<T, Object>> currentColumnMap;
+		private Map<ReadWritePropertyAccessPoint<C, Object>, Column<T, Object>> currentColumnMap;
 		
-		private Map<ReversibleAccessor<C, Object>, Column<T, Object>> currentReadonlyColumnMap;
+		private Map<PropertyMutator<C, Object>, Column<T, Object>> currentReadonlyColumnMap;
 		
-		private Duo<ReversibleAccessor<C, ?>, Column<T, ?>> currentVersioningMapping;
+		private Duo<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> currentVersioningMapping;
 		
-		private final ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> readConverters;
+		private final ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> readConverters;
 		
-		private final ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> writeConverters;
+		private final ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> writeConverters;
 		
 		private Mapping<C, T> currentMapping;
 		
@@ -301,7 +304,7 @@ public class InheritanceMappingStep<C, I> {
 					this.columnNamingStrategy,
 					this.uniqueConstraintNamingStrategy);
 			EmbeddableMapping<C, T> propertiesMapping = embeddableMappingBuilder.build();
-			ValueAccessPointSet<C> localMapping = new ValueAccessPointSet<>(currentColumnMap.keySet());
+			ValueAccessPointSet<C, ValueAccessPoint<C>> localMapping = new ValueAccessPointSet<>(currentColumnMap.keySet());
 			propertiesMapping.getMapping().keySet().forEach(propertyAccessor -> {
 				if (localMapping.contains(propertyAccessor)) {
 					throw new MappingConfigurationException(AccessorDefinition.toString(propertyAccessor) + " is mapped twice");

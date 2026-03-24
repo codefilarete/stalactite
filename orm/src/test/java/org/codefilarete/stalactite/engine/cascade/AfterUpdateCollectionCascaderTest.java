@@ -6,23 +6,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
+import org.codefilarete.stalactite.engine.runtime.BeanPersister;
+import org.codefilarete.stalactite.engine.runtime.UpdateExecutor;
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
+import org.codefilarete.stalactite.mapping.EntityMapping;
+import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
+import org.codefilarete.stalactite.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator;
+import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.engine.runtime.BeanPersister;
-import org.codefilarete.stalactite.engine.runtime.UpdateExecutor;
-import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
-import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.codefilarete.stalactite.sql.ConnectionConfiguration;
-import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator;
-import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,10 +39,10 @@ public class AfterUpdateCollectionCascaderTest extends AbstractCascaderTest {
 		T tataTable = (T) new Table("Tata");
 		Column<T, Long> primaryKey = tataTable.addColumn("id", Long.class).primaryKey();
 		Column<T, String> nameColumn = tataTable.addColumn("name", String.class);
-		ReversibleAccessor<Tata, Long> identifier = Accessors.accessorByField(Tata.class, "id");
-		ReversibleAccessor<Tata, Long> propName = Accessors.accessorByField(Tata.class, "name");
+		ReadWritePropertyAccessPoint<Tata, Long> identifier = new DefaultReadWritePropertyAccessPoint<>(Accessors.accessorByField(Tata.class, "id"));
+		ReadWritePropertyAccessPoint<Tata, Long> propName = new DefaultReadWritePropertyAccessPoint<>(Accessors.accessorByField(Tata.class, "name"));
 		// we must add a property to let us set some differences between 2 instances and have them detected by the system
-		Map<? extends ReversibleAccessor<Tata, Object>, Column<T, Object>> mapping = (Map) Maps.asMap(identifier, (Column) primaryKey).add(propName, nameColumn);
+		Map<ReadWritePropertyAccessPoint<Tata, Object>, Column<T, Object>> mapping = (Map) Maps.asMap(identifier, (Column) primaryKey).add(propName, nameColumn);
 		DefaultEntityMapping<Tata, Long, T> mappingStrategyMock = new DefaultEntityMapping<>(Tata.class, tataTable,
 																			 mapping, identifier,
 																			 new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));

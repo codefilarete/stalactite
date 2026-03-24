@@ -4,9 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorChain.ValueInitializerOnNullValue;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWriteAccessorChain;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecordMapping.KeyValueRecordIdMapping;
 import org.codefilarete.stalactite.mapping.EmbeddedClassMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
@@ -25,10 +25,10 @@ import org.codefilarete.tool.collection.Maps.ChainingMap;
  */
 class KeyValueRecordMappingBuilder<K, V, I, T extends Table<T>, LEFTTABLE extends Table<LEFTTABLE>> {
 	
-	private static <K> ChainingMap<ReversibleAccessor, Column> chainWithKeyAccessor(EmbeddedClassMapping<K, ?> entryKeyMapping) {
-		ChainingMap<ReversibleAccessor, Column> result = new ChainingMap<>();
+	private static <K> ChainingMap<ReadWritePropertyAccessPoint, Column> chainWithKeyAccessor(EmbeddedClassMapping<K, ?> entryKeyMapping) {
+		ChainingMap<ReadWritePropertyAccessPoint, Column> result = new ChainingMap<>();
 		entryKeyMapping.getPropertyToColumn().forEach((keyPropertyAccessor, column) -> {
-			AccessorChain key = new AccessorChain(KeyValueRecord.KEY_ACCESSOR, keyPropertyAccessor);
+			ReadWriteAccessorChain key = new ReadWriteAccessorChain(KeyValueRecord.KEY_ACCESSOR, keyPropertyAccessor);
 			key.setNullValueHandler(new ValueInitializerOnNullValue((accessor, inputType) -> {
 				if (accessor == KeyValueRecord.KEY_ACCESSOR) {
 					return Reflections.newInstance(entryKeyMapping.getClassToPersist());
@@ -40,11 +40,11 @@ class KeyValueRecordMappingBuilder<K, V, I, T extends Table<T>, LEFTTABLE extend
 		return result;
 	}
 	
-	private static <V> ChainingMap<ReversibleAccessor, Column> chainWithValueAccessor(EmbeddedClassMapping<V, ?> entryKeyMapping) {
-		ChainingMap<ReversibleAccessor, Column> result = new ChainingMap<>();
+	private static <V> ChainingMap<ReadWritePropertyAccessPoint, Column> chainWithValueAccessor(EmbeddedClassMapping<V, ?> entryKeyMapping) {
+		ChainingMap<ReadWritePropertyAccessPoint, Column> result = new ChainingMap<>();
 		entryKeyMapping.getPropertyToColumn().forEach((keyPropertyAccessor, column) -> {
-			AccessorChain key = new AccessorChain(KeyValueRecord.VALUE_ACCESSOR, keyPropertyAccessor);
-			key.setNullValueHandler(new ValueInitializerOnNullValue((accessor, inputType) -> {
+			ReadWriteAccessorChain key = new ReadWriteAccessorChain(KeyValueRecord.VALUE_ACCESSOR, keyPropertyAccessor)
+					.setNullValueHandler(new ValueInitializerOnNullValue((accessor, inputType) -> {
 				if (accessor == KeyValueRecord.VALUE_ACCESSOR) {
 					return Reflections.newInstance(entryKeyMapping.getClassToPersist());
 				}
@@ -89,7 +89,7 @@ class KeyValueRecordMappingBuilder<K, V, I, T extends Table<T>, LEFTTABLE extend
 	}
 	
 	KeyValueRecordMapping<K, V, I, T> build() {
-		Map<ReversibleAccessor, Column> propertiesMapping = new HashMap<>();
+		Map<ReadWritePropertyAccessPoint, Column> propertiesMapping = new HashMap<>();
 		KeyValueRecordIdMapping<K, I, T> idMapping = null;
 		if (keyColumn != null) {
 			propertiesMapping.put(KeyValueRecord.KEY_ACCESSOR, keyColumn);

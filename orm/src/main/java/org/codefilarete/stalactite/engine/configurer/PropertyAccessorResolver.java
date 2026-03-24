@@ -11,15 +11,18 @@ import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.AccessorDefinitionDefiner;
 import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.MutatorByField;
 import org.codefilarete.reflection.MutatorByMember;
 import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
+import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.PropertyMutator;
 import org.codefilarete.reflection.ReadWriteAccessPoint;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.Reflections.MemberNotFoundException;
@@ -45,9 +48,9 @@ public class PropertyAccessorResolver<C, O> {
 		this.propertyMapping = propertyMapping;
 	}
 	
-	public ReversibleAccessor<C, O> resolve() {
-		Accessor<C, O> accessor = null;
-		Mutator<C, O> mutator = null;
+	public ReadWritePropertyAccessPoint<C, O> resolve() {
+		PropertyAccessor<C, O> accessor = null;
+		PropertyMutator<C, O> mutator = null;
 		AccessorDefinition accessorDefinition = null;
 		if (this.propertyMapping.getGetter() != null) {
 			AccessorByMethodReference<C, O> getterAsMethodReferenceAccessor = Accessors.accessorByMethodReference(this.propertyMapping.getGetter());
@@ -76,7 +79,7 @@ public class PropertyAccessorResolver<C, O> {
 		if (accessorDefinition != null) {
 			return new DefinedReadWriteAccessPoint<>(accessor, mutator, accessorDefinition);
 		} else {
-			return new ReadWriteAccessPoint<>(accessor, mutator);
+			return new DefaultReadWritePropertyAccessPoint<>(accessor, mutator);
 		}
 	}
 	
@@ -127,18 +130,20 @@ public class PropertyAccessorResolver<C, O> {
 	
 	public interface PropertyMapping<C, O> {
 		
-		SerializableAccessor<C, O> getGetter();
+		//TODO: create some SerializablePropertyAccessor / Mutator and make the below methods return it.
 		
-		SerializableMutator<C, O> getSetter();
+		SerializablePropertyAccessor<C, O> getGetter();
+		
+		SerializablePropertyMutator<C, O> getSetter();
 		
 		Field getField();
 	}
 	
-	private static class DefinedReadWriteAccessPoint<C, T> extends ReadWriteAccessPoint<C, T> implements AccessorDefinitionDefiner<C> {
+	private static class DefinedReadWriteAccessPoint<C, T> extends DefaultReadWritePropertyAccessPoint<C, T> implements AccessorDefinitionDefiner<C> {
 		
 		private final AccessorDefinition accessorDefinition;
 		
-		public DefinedReadWriteAccessPoint(Accessor<C, T> accessor, Mutator<C, T> mutator, AccessorDefinition accessorDefinition) {
+		public DefinedReadWriteAccessPoint(PropertyAccessor<C, T> accessor, PropertyMutator<C, T> mutator, AccessorDefinition accessorDefinition) {
 			super(accessor, mutator);
 			this.accessorDefinition = accessorDefinition;
 		}

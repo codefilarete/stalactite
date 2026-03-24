@@ -3,8 +3,8 @@ package org.codefilarete.stalactite.dsl.embeddable;
 import java.util.Collection;
 import java.util.function.Supplier;
 
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.relation.ManyToManyOptions;
 
 /**
@@ -36,7 +36,7 @@ public interface FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1 extend
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2> reverselySetBy(SerializableMutator<O, C> reverseLink);
+	FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2> reverselySetBy(SerializablePropertyMutator<O, C> reverseLink);
 	
 	/**
 	 * {@inheritDoc}
@@ -45,7 +45,7 @@ public interface FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1 extend
 	 * @param collectionAccessor opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2> reverseCollection(SerializableAccessor<O, S2> collectionAccessor);
+	FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2> reverseCollection(SerializablePropertyAccessor<O, S2> collectionAccessor);
 	
 	/**
 	 * {@inheritDoc}
@@ -54,7 +54,7 @@ public interface FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1 extend
 	 * @param collectionMutator opposite setter of the relation
 	 * @return the global mapping configurer
 	 */
-	FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2> reverseCollection(SerializableMutator<O, S2> collectionMutator);
+	FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2> reverseCollection(SerializablePropertyMutator<O, S2> collectionMutator);
 	
 	/**
 	 * {@inheritDoc}

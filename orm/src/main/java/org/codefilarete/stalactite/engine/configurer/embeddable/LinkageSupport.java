@@ -3,9 +3,9 @@ package org.codefilarete.stalactite.engine.configurer.embeddable;
 import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.ValueAccessPointVariantSupport;
@@ -58,11 +58,11 @@ public class LinkageSupport<T, O> implements EmbeddableMappingConfiguration.Link
 	private Converter<O, ? /* value going to database */> writeConverter;
 	
 	
-	public LinkageSupport(SerializableAccessor<T, O> getter) {
+	public LinkageSupport(SerializablePropertyAccessor<T, O> getter) {
 		this.accessor = new ValueAccessPointVariantSupport<>(getter);
 	}
 	
-	public LinkageSupport(SerializableMutator<T, O> setter) {
+	public LinkageSupport(SerializablePropertyMutator<T, O> setter) {
 		this.accessor = new ValueAccessPointVariantSupport<>(setter);
 	}
 	
@@ -127,7 +127,7 @@ public class LinkageSupport<T, O> implements EmbeddableMappingConfiguration.Link
 	}
 	
 	@Override
-	public ReversibleAccessor<T, O> getAccessor() {
+	public ReadWritePropertyAccessPoint<T, O> getAccessor() {
 		return accessor.getAccessor();
 	}
 	

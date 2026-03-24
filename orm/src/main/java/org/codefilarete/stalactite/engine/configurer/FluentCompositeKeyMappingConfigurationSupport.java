@@ -6,18 +6,19 @@ import java.util.Collection;
 import java.util.List;
 import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.AccessorByMethod;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
-import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.ReadWriteAccessPoint;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.SerializableAccessor;
 import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
@@ -26,6 +27,7 @@ import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfiguration;
 import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.key.CompositeKeyPropertyOptions;
 import org.codefilarete.stalactite.dsl.key.FluentCompositeKeyMappingBuilder;
+import org.codefilarete.stalactite.dsl.key.FluentCompositeKeyMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -78,7 +80,7 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 	}
 	
 	@Override
-	public Collection<Inset<C, Object>> getInsets() {
+	public <O> Collection<Inset<C, O>> getInsets() {
 		return (Collection) insets;
 	}
 	
@@ -123,40 +125,40 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 	 * Gives access to currently configured {@link Inset}. Made so one can access features of {@link Inset} which are wider than
 	 * the one available through {@link FluentCompositeKeyMappingBuilder}.
 	 * 
-	 * @return the last {@link Inset} built by {@link #newInset(SerializableAccessor, CompositeKeyMappingConfigurationProvider)}
-	 * or {@link #newInset(SerializableMutator, CompositeKeyMappingConfigurationProvider)}
+	 * @return the last {@link Inset} built by {@link #newInset(SerializablePropertyAccessor, CompositeKeyMappingConfigurationProvider)}
+	 * or {@link #newInset(SerializablePropertyMutator, CompositeKeyMappingConfigurationProvider)}
 	 */
 	protected Inset<C, ?> currentInset() {
 		return currentInset;
 	}
 	
-	protected <O> Inset<C, O> newInset(SerializableAccessor<C, O> getter, CompositeKeyMappingConfigurationProvider<? extends O> CompositeKeyMappingBuilder) {
+	protected <O> Inset<C, O> newInset(SerializablePropertyAccessor<C, O> getter, CompositeKeyMappingConfigurationProvider<? extends O> CompositeKeyMappingBuilder) {
 		currentInset = new Inset<>(getter, CompositeKeyMappingBuilder, this);
 		return (Inset<C, O>) currentInset;
 	}
 	
-	protected <O> Inset<C, O> newInset(SerializableMutator<C, O> setter, CompositeKeyMappingConfigurationProvider<? extends O> CompositeKeyMappingBuilder) {
+	protected <O> Inset<C, O> newInset(SerializablePropertyMutator<C, O> setter, CompositeKeyMappingConfigurationProvider<? extends O> CompositeKeyMappingBuilder) {
 		currentInset = new Inset<>(setter, CompositeKeyMappingBuilder, this);
 		return (Inset<C, O>) currentInset;
 	}
 	
 	@Override
-	public <O> FluentCompositeKeyMappingBuilderPropertyOptions<C> map(SerializableMutator<C, O> setter) {
+	public <O> FluentCompositeKeyMappingBuilderPropertyOptions<C> map(SerializablePropertyMutator<C, O> setter) {
 		return wrapWithPropertyOptions(addMapping(setter));
 	}
 	
 	@Override
-	public <O> FluentCompositeKeyMappingBuilderPropertyOptions<C> map(SerializableAccessor<C, O> getter) {
+	public <O> FluentCompositeKeyMappingBuilderPropertyOptions<C> map(SerializablePropertyAccessor<C, O> getter) {
 		return wrapWithPropertyOptions(addMapping(getter));
 	}
 	
-	<E> LinkageSupport<C, E> addMapping(SerializableMutator<C, E> setter) {
+	<E> LinkageSupport<C, E> addMapping(SerializablePropertyMutator<C, E> setter) {
 		LinkageSupport<C, E> newLinkage = new LinkageSupport<>(setter);
 		mapping.add(newLinkage);
 		return newLinkage;
 	}
 	
-	<E> LinkageSupport<C, E> addMapping(SerializableAccessor<C, E> getter) {
+	<E> LinkageSupport<C, E> addMapping(SerializablePropertyAccessor<C, E> getter) {
 		LinkageSupport<C, E> newLinkage = new LinkageSupport<>(getter);
 		mapping.add(newLinkage);
 		return newLinkage;
@@ -189,13 +191,13 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentCompositeKeyMappingBuilderEnumOptions<C> mapEnum(SerializableMutator<C, E> setter) {
+	public <E extends Enum<E>> FluentCompositeKeyMappingBuilderEnumOptions<C> mapEnum(SerializablePropertyMutator<C, E> setter) {
 		LinkageSupport<C, E> linkage = addMapping(setter);
 		return wrapWithEnumOptions(linkage);
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentCompositeKeyMappingBuilderEnumOptions<C> mapEnum(SerializableAccessor<C, E> getter) {
+	public <E extends Enum<E>> FluentCompositeKeyMappingBuilderEnumOptions<C> mapEnum(SerializablePropertyAccessor<C, E> getter) {
 		LinkageSupport<C, E> linkage = addMapping(getter);
 		return wrapWithEnumOptions(linkage);
 	}
@@ -248,14 +250,14 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 	
 	@Override
 	public <O> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> embed(
-			SerializableAccessor<C, O> getter,
+			SerializablePropertyAccessor<C, O> getter,
 			CompositeKeyMappingConfigurationProvider<? extends O> compositeKeyMappingBuilder) {
 		return addImportedInset(newInset(getter, compositeKeyMappingBuilder));
 	}
 	
 	@Override
 	public <O> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> embed(
-			SerializableMutator<C, O> setter,
+			SerializablePropertyMutator<C, O> setter,
 			CompositeKeyMappingConfigurationProvider<? extends O> compositeKeyMappingBuilder) {
 		return addImportedInset(newInset(setter, compositeKeyMappingBuilder));
 	}
@@ -266,37 +268,37 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 				.redirect(ImportedEmbedOptions.class, new ImportedEmbedOptions<C>() {
 
 					@Override
-					public <IN> ImportedEmbedOptions<C> overrideName(SerializableAccessor<C, IN> getter, String columnName) {
+					public <IN> ImportedEmbedOptions<C> overrideName(SerializablePropertyAccessor<C, IN> getter, String columnName) {
 						inset.overrideName(getter, columnName);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 
 					@Override
-					public <IN> ImportedEmbedOptions<C> overrideName(SerializableMutator<C, IN> setter, String columnName) {
+					public <IN> ImportedEmbedOptions<C> overrideName(SerializablePropertyMutator<C, IN> setter, String columnName) {
 						inset.overrideName(setter, columnName);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public <IN> ImportedEmbedOptions<C> overrideSize(SerializableAccessor<C, IN> getter, Size columnSize) {
+					public <IN> ImportedEmbedOptions<C> overrideSize(SerializablePropertyAccessor<C, IN> getter, Size columnSize) {
 						inset.overrideSize(getter, columnSize);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public <IN> ImportedEmbedOptions<C> overrideSize(SerializableMutator<C, IN> setter, Size columnSize) {
+					public <IN> ImportedEmbedOptions<C> overrideSize(SerializablePropertyMutator<C, IN> setter, Size columnSize) {
 						inset.overrideSize(setter, columnSize);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public <IN> ImportedEmbedOptions exclude(SerializableMutator<C, IN> setter) {
+					public <IN> ImportedEmbedOptions<C> exclude(SerializablePropertyMutator<C, IN> setter) {
 						inset.exclude(setter);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public ImportedEmbedOptions exclude(SerializableAccessor getter) {
+					public <IN> ImportedEmbedOptions<C> exclude(SerializablePropertyAccessor<C, IN> getter) {
 						inset.exclude(getter);
 						return null;	// we can return null because dispatcher will return proxy
 					}
@@ -333,11 +335,11 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 		
 		private String fieldName;
 		
-		public LinkageSupport(SerializableAccessor<T, O> getter) {
+		public LinkageSupport(SerializablePropertyAccessor<T, O> getter) {
 			this.accessor = new ValueAccessPointVariantSupport<>(getter);
 		}
 		
-		public LinkageSupport(SerializableMutator<T, O> setter) {
+		public LinkageSupport(SerializablePropertyMutator<T, O> setter) {
 			this.accessor = new ValueAccessPointVariantSupport<>(setter);
 		}
 		
@@ -382,7 +384,7 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 		}
 		
 		@Override
-		public ReversibleAccessor<T, O> getAccessor() {
+		public ReadWritePropertyAccessPoint<T, O> getAccessor() {
 			return accessor.getAccessor();
 		}
 		
@@ -407,44 +409,40 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 	
 	/**
 	 * Information storage of embedded mapping defined externally by an {@link CompositeKeyMappingConfigurationProvider},
-	 * see {@link #embed(SerializableAccessor, CompositeKeyMappingConfigurationProvider)}
+	 * see {@link FluentCompositeKeyMappingConfiguration#embed(SerializablePropertyAccessor, CompositeKeyMappingConfigurationProvider)}
 	 *
 	 * @param <SRC>
 	 * @param <TRGT>
-	 * @see #embed(SerializableAccessor, CompositeKeyMappingConfigurationProvider)}
-	 * @see org.codefilarete.stalactite.dsl.key.FluentCompositeKeyMappingConfiguration#embed(SerializableMutator, CompositeKeyMappingConfigurationProvider) }
+	 * @see FluentCompositeKeyMappingConfiguration#embed(SerializablePropertyAccessor, CompositeKeyMappingConfigurationProvider) }
+	 * @see FluentCompositeKeyMappingConfiguration#embed(SerializablePropertyMutator, CompositeKeyMappingConfigurationProvider) }
 	 */
 	public static class Inset<SRC, TRGT> {
 		private final Class<TRGT> embeddedClass;
 		private final Method insetAccessor;
 		/** Equivalent of {@link #insetAccessor} as a {@link ReadWriteAccessPoint}  */
-		private final ReadWriteAccessPoint<SRC, TRGT> accessor;
+		private final ReadWritePropertyAccessPoint<SRC, TRGT> accessor;
 		private final ValueAccessPointMap<SRC, String, ValueAccessPoint<SRC>> overriddenColumnNames = new ValueAccessPointMap<>();
 		private final ValueAccessPointMap<SRC, Size, ValueAccessPoint<SRC>> overriddenColumnSizes = new ValueAccessPointMap<>();
-		private final ValueAccessPointSet<SRC> excludedProperties = new ValueAccessPointSet<>();
+		private final ValueAccessPointSet<SRC, ValueAccessPoint<SRC>> excludedProperties = new ValueAccessPointSet<>();
 		private final CompositeKeyMappingConfigurationProvider<? extends TRGT> configurationProvider;
 		private final ValueAccessPointMap<SRC, Column, ValueAccessPoint<SRC>> overriddenColumns = new ValueAccessPointMap<>();
 		
 		
-		Inset(SerializableMutator<SRC, TRGT> targetSetter,
+		Inset(SerializablePropertyMutator<SRC, TRGT> targetSetter,
 			  CompositeKeyMappingConfigurationProvider<? extends TRGT> configurationProvider,
 			  LambdaMethodUnsheller lambdaMethodUnsheller) {
 			this.insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetSetter);
-			this.accessor = new ReadWriteAccessPoint<>(
-					new MutatorByMethod<SRC, TRGT>(insetAccessor).toAccessor(),
-					new MutatorByMethodReference<>(targetSetter));
+			this.accessor = Accessors.readWriteAccessPoint(targetSetter);
 			// looking for the target type because it's necessary to find its persister (and other objects)
 			this.embeddedClass = Reflections.javaBeanTargetType(getInsetAccessor());
 			this.configurationProvider = configurationProvider;
 		}
 		
-		Inset(SerializableAccessor<SRC, TRGT> targetGetter,
+		Inset(SerializablePropertyAccessor<SRC, TRGT> targetGetter,
 			  CompositeKeyMappingConfigurationProvider<? extends TRGT> configurationProvider,
 			  LambdaMethodUnsheller lambdaMethodUnsheller) {
 			this.insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetGetter);
-			this.accessor = new ReadWriteAccessPoint<>(
-					new AccessorByMethodReference<>(targetGetter),
-					new AccessorByMethod<SRC, TRGT>(insetAccessor).toMutator());
+			this.accessor = Accessors.readWriteAccessPoint(targetGetter);
 			// looking for the target type because it's necessary to find its persister (and other objects)
 			this.embeddedClass = Reflections.javaBeanTargetType(getInsetAccessor());
 			this.configurationProvider = configurationProvider;
@@ -453,7 +451,7 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 		/**
 		 * Equivalent of {@link #insetAccessor} as a {@link ReadWriteAccessPoint}
 		 */
-		public ReadWriteAccessPoint<SRC, TRGT> getAccessor() {
+		public ReadWritePropertyAccessPoint<SRC, TRGT> getAccessor() {
 			return accessor;
 		}
 		
@@ -468,7 +466,7 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 			return embeddedClass;
 		}
 		
-		public ValueAccessPointSet<SRC> getExcludedProperties() {
+		public ValueAccessPointSet<SRC, ValueAccessPoint<SRC>> getExcludedProperties() {
 			return this.excludedProperties;
 		}
 		

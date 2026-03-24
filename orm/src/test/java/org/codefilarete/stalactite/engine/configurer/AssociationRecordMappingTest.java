@@ -5,8 +5,9 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ReadWriteAccessPoint;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.model.City;
@@ -23,7 +24,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.reflection.Accessors.*;
+import static org.codefilarete.reflection.Accessors.accessorByMethodReference;
+import static org.codefilarete.reflection.Accessors.mutatorByMethodReference;
 
 class AssociationRecordMappingTest {
 	
@@ -101,23 +103,23 @@ class AssociationRecordMappingTest {
 					true);
 
 			Map<ReadWriteAccessPoint, Column> leftMapping = Maps.forHashMap(ReadWriteAccessPoint.class, Column.class)
-					.add(new ReadWriteAccessPoint<>(accessorByMethodReference(MavenProject::getGroupId), mutatorByMethodReference(MavenProject::setGroupId)), leftTableGroupIdColumn)
-					.add(new ReadWriteAccessPoint<>(accessorByMethodReference(MavenProject::getArtifactId), mutatorByMethodReference(MavenProject::setArtifactId)), leftTableArtefactIdColumn)
-					.add(new ReadWriteAccessPoint<>(accessorByMethodReference(MavenProject::getVersion), mutatorByMethodReference(MavenProject::setVersion)), leftTableVersionColumn);
+					.add(new DefaultReadWritePropertyAccessPoint<>(accessorByMethodReference(MavenProject::getGroupId), mutatorByMethodReference(MavenProject::setGroupId)), leftTableGroupIdColumn)
+					.add(new DefaultReadWritePropertyAccessPoint<>(accessorByMethodReference(MavenProject::getArtifactId), mutatorByMethodReference(MavenProject::setArtifactId)), leftTableArtefactIdColumn)
+					.add(new DefaultReadWritePropertyAccessPoint<>(accessorByMethodReference(MavenProject::getVersion), mutatorByMethodReference(MavenProject::setVersion)), leftTableVersionColumn);
 
 			Map<ReadWriteAccessPoint, Column> rightMapping = Maps.forHashMap(ReadWriteAccessPoint.class, Column.class)
-					.add(new ReadWriteAccessPoint<>(accessorByMethodReference(MavenProject::getGroupId), mutatorByMethodReference(MavenProject::setGroupId)), rightTableGroupIdColumn)
-					.add(new ReadWriteAccessPoint<>(accessorByMethodReference(MavenProject::getArtifactId), mutatorByMethodReference(MavenProject::setArtifactId)), rightTableArtefactIdColumn)
-					.add(new ReadWriteAccessPoint<>(accessorByMethodReference(MavenProject::getVersion), mutatorByMethodReference(MavenProject::setVersion)), rightTableVersionColumn);
+					.add(new DefaultReadWritePropertyAccessPoint<>(accessorByMethodReference(MavenProject::getGroupId), mutatorByMethodReference(MavenProject::setGroupId)), rightTableGroupIdColumn)
+					.add(new DefaultReadWritePropertyAccessPoint<>(accessorByMethodReference(MavenProject::getArtifactId), mutatorByMethodReference(MavenProject::setArtifactId)), rightTableArtefactIdColumn)
+					.add(new DefaultReadWritePropertyAccessPoint<>(accessorByMethodReference(MavenProject::getVersion), mutatorByMethodReference(MavenProject::setVersion)), rightTableVersionColumn);
 
 			AssociationRecordMapping<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, MavenProject, MavenProject> testInstance = new AssociationRecordMapping<>(
 					associationTable,
 					new DefaultComposedIdentifierAssembler<>(leftTable,
 							MavenProject.class,
-							(Map<? extends ReversibleAccessor<MavenProject, ?>, ? extends Column<LEFTTABLE, ?>>) (Map) leftMapping),
+							(Map<? extends ReadWritePropertyAccessPoint<MavenProject, ?>, ? extends Column<LEFTTABLE, ?>>) (Map) leftMapping),
 					new DefaultComposedIdentifierAssembler<>(rightTable,
 							MavenProject.class,
-							(Map<? extends ReversibleAccessor<MavenProject, ?>, ? extends Column<RIGHTTABLE, ?>>) (Map) rightMapping));
+							(Map<? extends ReadWritePropertyAccessPoint<MavenProject, ?>, ? extends Column<RIGHTTABLE, ?>>) (Map) rightMapping));
 
 			Map<Column<ASSOCIATIONTABLE, ?>, ?> insertValues = testInstance.getInsertValues(new AssociationRecord(
 					new MavenProject("a", "b", "c"),

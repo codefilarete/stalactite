@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
@@ -58,7 +58,7 @@ class RelationalEntityFinderTest {
 		// column for "noise" in select
 		Column totoNameColumn = totoTable.addColumn("name", String.class);
 		
-		Map<ReversibleAccessor<Toto, Object>, Column<T, Object>> totoClassMapping = (Map) new ValueAccessPointMap<>();
+		Map<ReadWritePropertyAccessPoint<Toto, Object>, Column<T, Object>> totoClassMapping = new ValueAccessPointMap<>();
 		totoClassMapping.put(Accessors.propertyAccessor(Toto.class, "id"), totoColId);
 		
 		DefaultEntityMapping<Toto, Integer, T> totoMapping = new DefaultEntityMapping<>(
@@ -77,7 +77,7 @@ class RelationalEntityFinderTest {
 		// column for "noise" in select
 		Column tataNameColumn = tataTable.addColumn("name", String.class);
 		
-		Map<ReversibleAccessor<Tata, Object>, Column<T, Object>> tataClassMapping = (Map) new ValueAccessPointMap<>();
+		Map<ReadWritePropertyAccessPoint<Tata, Object>, Column<T, Object>> tataClassMapping = new ValueAccessPointMap<>();
 		tataClassMapping.put(Accessors.propertyAccessor(Tata.class, "id"), tataColId);
 		
 		

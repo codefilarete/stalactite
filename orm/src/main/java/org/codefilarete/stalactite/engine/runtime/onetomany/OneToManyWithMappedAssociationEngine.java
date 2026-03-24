@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Mutator;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.PropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.idpolicy.GeneratedKeysPolicy;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
@@ -143,7 +143,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	public <T1 extends Table<T1>, T2 extends Table<T2>> String addSelectCascade(Key<T1, SRCID> sourcePrimaryKey,
 																				boolean loadSeparately) {
 		// we add target subgraph joins to main persister
-		String relationJoinNodeName = targetPersister.joinAsMany(ROOT_JOIN_NAME, sourcePersister, manyRelationDescriptor.getCollectionProvider(), sourcePrimaryKey, (Key<T2, SRCID>) manyRelationDescriptor.getReverseColumn(),
+		String relationJoinNodeName = targetPersister.joinAsMany(ROOT_JOIN_NAME, sourcePersister, manyRelationDescriptor.getCollectionAccessPoint(), sourcePrimaryKey, (Key<T2, SRCID>) manyRelationDescriptor.getReverseColumn(),
 				manyRelationDescriptor.getRelationFixer(), null, true, loadSeparately);
 		
 		// we must trigger subgraph event on loading of our own graph, this is mainly for event that initializes things because given ids
@@ -158,7 +158,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 
 			@Override
 			public void afterSelect(Set<? extends SRC> result) {
-				Set<TRGT> collect = Iterables.stream(result).flatMap(src -> Nullable.nullable(manyRelationDescriptor.getCollectionGetter().get(src))
+				Set<TRGT> collect = Iterables.stream(result).flatMap(src -> Nullable.nullable(manyRelationDescriptor.getCollectionAccessPoint().get(src))
 						.map(Collection::stream)
 						.getOr(Stream.empty()))
 						.collect(Collectors.toSet());
@@ -176,7 +176,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	
 	public void addInsertCascade(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		sourcePersister.addInsertListener(
-				new TargetInstancesInsertCascader(targetPersister, manyRelationDescriptor.getCollectionGetter()));
+				new TargetInstancesInsertCascader(targetPersister, manyRelationDescriptor.getCollectionAccessPoint()));
 	}
 	
 	public void addUpdateCascade(boolean shouldDeleteRemoved, ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
@@ -221,7 +221,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	
 	protected void addTargetInstancesUpdateCascader(boolean shouldDeleteRemoved) {
 		Mutator<Duo<SRC, SRC>, Boolean> collectionUpdater = new CollectionUpdater<>(
-				manyRelationDescriptor.getCollectionGetter(),
+				manyRelationDescriptor.getCollectionAccessPoint(),
 				targetPersister,
 				manyRelationDescriptor.getReverseSetter(),
 				shouldDeleteRemoved);
@@ -247,10 +247,10 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		if (shouldDeleteRemoved) {
 			// adding deletion of many-side entities
 			sourcePersister.addDeleteListener(
-					new DeleteTargetEntitiesBeforeDeleteCascader<>(targetPersister, manyRelationDescriptor.getCollectionGetter()));
+					new DeleteTargetEntitiesBeforeDeleteCascader<>(targetPersister, manyRelationDescriptor.getCollectionAccessPoint()));
 			// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
 			sourcePersister.addDeleteByIdListener(
-					new DeleteByIdTargetEntitiesBeforeDeleteByIdCascader<>(targetPersister, manyRelationDescriptor.getCollectionGetter()));
+					new DeleteByIdTargetEntitiesBeforeDeleteByIdCascader<>(targetPersister, manyRelationDescriptor.getCollectionAccessPoint()));
 		} else // entity shouldn't be deleted, so we may have to update it
 			if (manyRelationDescriptor.getReverseSetter() != null) {
 				// we cut the link between target and source
@@ -266,7 +266,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 					
 					@Override
 					protected Collection<TRGT> getTargets(SRC src) {
-						return nullable(manyRelationDescriptor.getCollectionGetter().get(src)).getOr(manyRelationDescriptor.getCollectionFactory());
+						return nullable(manyRelationDescriptor.getCollectionAccessPoint().get(src)).getOr(manyRelationDescriptor.getCollectionFactory());
 					}
 				});
 			}
@@ -297,7 +297,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	 */
 	public <T extends Table<T>> void addSelectIn2Phases(PrimaryKey<T, SRCID> sourcePrimaryKey,
 														Key<T, SRCID> relationOwner,
-														ReversibleAccessor<SRC, C> collectionGetter,
+														PropertyAccessPoint<SRC, C> collectionGetter,
 														FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 		// Join is declared on non-added tables : Person (alias = null) / Person (alias = null)
 		T relationOwnerTable = sourcePrimaryKey.getTable();
@@ -415,7 +415,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 			currentTargetToSourceRelationStorage.set(new TargetToSourceRelationStorage());
 		}
 		for (SRC sourceEntity : sourceEntities) {
-			C collection = manyRelationDescriptor.getCollectionGetter().get(sourceEntity);
+			C collection = manyRelationDescriptor.getCollectionAccessPoint().get(sourceEntity);
 			nullable(collection).getOr(manyRelationDescriptor.getCollectionFactory()).forEach(trgt -> {
 				giveRelationStorageContext().add(trgt, relationIsNullified ? null : sourceEntity);
 			});

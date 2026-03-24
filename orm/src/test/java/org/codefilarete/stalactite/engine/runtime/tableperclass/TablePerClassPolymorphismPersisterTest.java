@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.engine.runtime.tableperclass;
 
-import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.sql.Array;
 import java.sql.Connection;
@@ -13,19 +12,20 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.sql.DataSource;
 
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.ReadWriteAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.InMemoryCounterIdentifierGenerator;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
-import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
-import org.codefilarete.stalactite.dsl.PolymorphismPolicy.TablePerClassPolymorphism;
-import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListener;
+import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.model.Car;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Engine;
@@ -49,17 +49,17 @@ import org.codefilarete.stalactite.query.Operators;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
+import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.test.PairSetList;
 import org.codefilarete.tool.Duo;
@@ -125,8 +125,8 @@ class TablePerClassPolymorphismPersisterTest {
 	
 	protected ConfiguredRelationalPersister<TotoA, Identifier<Integer>> initMappingTotoA(Table table) {
 		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
-		Map<ReadWriteAccessPoint<TotoA, ?>, Column<Table, ?>> mappedFields = persistentFieldHarvester.mapFields(TotoA.class, table);
-		ReadWriteAccessPoint<TotoA, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("id"));
+		Map<ReadWritePropertyAccessPoint<TotoA, ?>, Column<Table, ?>> mappedFields = persistentFieldHarvester.mapFields(TotoA.class, table);
+		ReadWritePropertyAccessPoint<TotoA, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("id"));
 		persistentFieldHarvester.getColumn(primaryKeyAccessor).primaryKey();
 		
 		IdentifierInsertionManager<TotoA, Identifier<Integer>> identifierManager = (IdentifierInsertionManager) totoEntityMapping.getIdMapping().getIdentifierInsertionManager();
@@ -140,8 +140,8 @@ class TablePerClassPolymorphismPersisterTest {
 	
 	protected ConfiguredRelationalPersister<TotoB, Identifier<Integer>> initMappingTotoB(Table table) {
 		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
-		Map<ReadWriteAccessPoint<TotoB, ?>, Column<Table, ?>> mappedFields = persistentFieldHarvester.mapFields(TotoB.class, table);
-		ReadWriteAccessPoint<TotoB, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("id"));
+		Map<ReadWritePropertyAccessPoint<TotoB, ?>, Column<Table, ?>> mappedFields = persistentFieldHarvester.mapFields(TotoB.class, table);
+		ReadWritePropertyAccessPoint<TotoB, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("id"));
 		persistentFieldHarvester.getColumn(primaryKeyAccessor).primaryKey();
 		
 		IdentifierInsertionManager<TotoB, Identifier<Integer>> identifierManager = (IdentifierInsertionManager) totoEntityMapping.getIdMapping().getIdentifierInsertionManager();
@@ -163,10 +163,10 @@ class TablePerClassPolymorphismPersisterTest {
 		Column<Table, Object> xColumn = totoTable.addColumn("x", fieldA.getType());
 		Column<Table, Object> qColumn = totoTable.addColumn("q", fieldQ.getType());
 		
-		ReadWriteAccessPoint<AbstractToto, Identifier<Integer>> identifierAccessor = Accessors.propertyAccessor(fieldId);
-		Map<ReadWriteAccessPoint<AbstractToto, Object>, Column<Table, Object>> totoPropertyMapping = Maps.forHashMap(
-						(Class<ReadWriteAccessPoint<AbstractToto, Object>>) (Class) ReadWriteAccessPoint.class, (Class<Column<Table, Object>>) (Class) Column.class)
-				.add((ReadWriteAccessPoint) identifierAccessor, idColumn)
+		ReadWritePropertyAccessPoint<AbstractToto, Identifier<Integer>> identifierAccessor = Accessors.propertyAccessor(fieldId);
+		Map<ReadWritePropertyAccessPoint<AbstractToto, Object>, Column<Table, Object>> totoPropertyMapping = Maps.forHashMap(
+						(Class<ReadWritePropertyAccessPoint<AbstractToto, Object>>) (Class) ReadWritePropertyAccessPoint.class, (Class<Column<Table, Object>>) (Class) Column.class)
+				.add((ReadWritePropertyAccessPoint) identifierAccessor, idColumn)
 				.add(Accessors.propertyAccessor(fieldA), xColumn)
 				.add(Accessors.propertyAccessor(fieldQ), qColumn);
 		
@@ -304,14 +304,14 @@ class TablePerClassPolymorphismPersisterTest {
 			// it's much more difficult
 			verify(preparedStatement, times(12)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"insert into TotoA(a, id, x, q) values (?, ?, ?, ?)",
-					"insert into TotoB(b, id, x, q) values (?, ?, ?, ?)"
+					"insert into TotoA(a, x, q, id) values (?, ?, ?, ?)",
+					"insert into TotoB(b, x, q, id) values (?, ?, ?, ?)"
 			));
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-					.newRow(1, 23).add(2, 1).add(3, 17)
-					.newRow(1, 31).add(2, 2).add(3, 29)
-					.newRow(1, 41).add(2, 3).add(3, 37)
-					.newRow(1, 53).add(2, 4).add(3, 43);
+					.newRow(1, 23).add(2, 17).add(4, 1)
+					.newRow(1, 31).add(2, 29).add(4, 2)
+					.newRow(1, 41).add(2, 37).add(4, 3)
+					.newRow(1, 53).add(2, 43).add(4, 4);
 			assertCapturedPairsEqual(expectedPairs);
 		}
 		
@@ -364,18 +364,19 @@ class TablePerClassPolymorphismPersisterTest {
 			verify(preparedStatement, times(4)).addBatch();
 			verify(preparedStatement, times(2)).executeLargeBatch();
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"select Toto.id as " + idAlias
+					"select"
+							+ " Toto.id as " + idAlias
 							+ ", Toto.x as " + xAlias
 							+ ", Toto.q as Toto_q"
 							+ ", Toto.DISCRIMINATOR as Toto_DISCRIMINATOR"
 							+ ", TotoA.a as " + totoAAlias
-							+ ", TotoA.id as " + totoAIdAlias
 							+ ", TotoA.x as " + totoAXAlias
 							+ ", TotoA.q as " + totoAQAlias
+							+ ", TotoA.id as " + totoAIdAlias
 							+ ", TotoB.b as " + totoBAlias
-							+ ", TotoB.id as " + totoBIdAlias
 							+ ", TotoB.x as " + totoBXAlias
 							+ ", TotoB.q as " + totoBQAlias
+							+ ", TotoB.id as " + totoBIdAlias
 							+ " from ("
 								+ "select TotoA.id as id,"
 								+ " TotoA.x as x,"
@@ -551,13 +552,13 @@ class TablePerClassPolymorphismPersisterTest {
 							+ ", Toto.q as " + qAlias
 							+ ", Toto.DISCRIMINATOR as " + totoDTYPEAlias
 							+ ", TotoA.a as " + totoAAAlias
-							+ ", TotoA.id as " + totoAIdAlias
 							+ ", TotoA.x as " + totoAXAlias
 							+ ", TotoA.q as " + "TotoA_q"
+							+ ", TotoA.id as " + totoAIdAlias
 							+ ", TotoB.b as " + totoBBAlias
-							+ ", TotoB.id as " + totoBIdAlias
 							+ ", TotoB.x as " + totoBXAlias
 							+ ", TotoB.q as " + "TotoB_q"
+							+ ", TotoB.id as " + totoBIdAlias
 							+ " from ("
 							+ "select TotoA.id as id,"
 							+ " TotoA.x as x,"
@@ -623,13 +624,13 @@ class TablePerClassPolymorphismPersisterTest {
 							+ ", Toto.q as " + qAlias
 							+ ", Toto.DISCRIMINATOR as " + totoDTYPEAlias
 							+ ", TotoA.a as " + totoAAAlias
-							+ ", TotoA.id as " + totoAIdAlias
 							+ ", TotoA.x as " + totoAXAlias
 							+ ", TotoA.q as " + "TotoA_q"
+							+ ", TotoA.id as " + totoAIdAlias
 							+ ", TotoB.b as " + totoBBAlias
-							+ ", TotoB.id as " + totoBIdAlias
 							+ ", TotoB.x as " + totoBXAlias
 							+ ", TotoB.q as " + "TotoB_q"
+							+ ", TotoB.id as " + totoBIdAlias
 							+ " from ("
 							+ "select TotoA.id as id,"
 							+ " TotoA.x as x,"
@@ -695,13 +696,13 @@ class TablePerClassPolymorphismPersisterTest {
 							+ ", Toto.q as " + qAlias
 							+ ", Toto.DISCRIMINATOR as " + totoDTYPEAlias
 							+ ", TotoA.a as " + totoAAAlias
-							+ ", TotoA.id as " + totoAIdAlias
 							+ ", TotoA.x as " + totoAXAlias
 							+ ", TotoA.q as " + "TotoA_q"
+							+ ", TotoA.id as " + totoAIdAlias
 							+ ", TotoB.b as " + totoBBAlias
-							+ ", TotoB.id as " + totoBIdAlias
 							+ ", TotoB.x as " + totoBXAlias
 							+ ", TotoB.q as " + "TotoB_q"
+							+ ", TotoB.id as " + totoBIdAlias
 							+ " from ("
 							+ "select TotoA.id as id,"
 							+ " TotoA.x as x,"
@@ -807,13 +808,13 @@ class TablePerClassPolymorphismPersisterTest {
 							+ ", Toto.q as Toto_q"
 							+ ", Toto.DISCRIMINATOR as " + totoDiscriminator
 							+ ", TotoA.a as " + totoAAlias
-							+ ", TotoA.id as TotoA_id"
 							+ ", TotoA.x as " + totoAXAlias
 							+ ", TotoA.q as TotoA_q"
+							+ ", TotoA.id as TotoA_id"
 							+ ", TotoB.b as " + totoBAlias
-							+ ", TotoB.id as TotoB_id"
 							+ ", TotoB.x as " + totoBXAlias
 							+ ", TotoB.q as TotoB_q"
+							+ ", TotoB.id as TotoB_id"
 							+ " from (select TotoA.id as id"
 								+ ", TotoA.x as " + xAlias
 								+ ", TotoA.q as " + qAlias

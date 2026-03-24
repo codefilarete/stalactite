@@ -3,8 +3,8 @@ package org.codefilarete.stalactite.dsl.subentity;
 import java.util.Collection;
 import java.util.function.Supplier;
 
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyJoinTableOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyEntityOptions;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -19,7 +19,7 @@ public interface FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S extend
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableMutator<O, ? super C> reverseLink);
+	FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializablePropertyMutator<O, ? super C> reverseLink);
 	
 	/**
 	 * {@inheritDoc}
@@ -29,7 +29,7 @@ public interface FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S extend
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableAccessor<O, ? super C> reverseLink);
+	FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializablePropertyAccessor<O, ? super C> reverseLink);
 	
 	/**
 	 * {@inheritDoc}
@@ -69,7 +69,7 @@ public interface FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S extend
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S> reverselySetBy(SerializableMutator<O, C> reverseLink);
+	FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S> reverselySetBy(SerializablePropertyMutator<O, C> reverseLink);
 	
 	/**
 	 * {@inheritDoc}

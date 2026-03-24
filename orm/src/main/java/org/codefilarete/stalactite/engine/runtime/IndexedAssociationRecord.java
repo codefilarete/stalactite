@@ -2,9 +2,8 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import java.util.Objects;
 
-import org.codefilarete.reflection.ReversibleAccessor;
-
-import static org.codefilarete.reflection.Accessors.accessorByMethodReference;
+import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 
 /**
  * Same as {@link AssociationRecord} but with an index field to store indexed collections such as {@link java.util.List}
@@ -14,9 +13,9 @@ import static org.codefilarete.reflection.Accessors.accessorByMethodReference;
  */
 public class IndexedAssociationRecord extends AssociationRecord {
 	
-	public static final ReversibleAccessor<IndexedAssociationRecord, Object> LEFT_ACCESSOR = accessorByMethodReference(IndexedAssociationRecord::getLeft, IndexedAssociationRecord::setLeft);
-	public static final ReversibleAccessor<IndexedAssociationRecord, Object> RIGHT_ACCESSOR = accessorByMethodReference(IndexedAssociationRecord::getRight, IndexedAssociationRecord::setRight);
-	public static final ReversibleAccessor<IndexedAssociationRecord, Integer> INDEX_ACCESSOR = accessorByMethodReference(IndexedAssociationRecord::getIndex, IndexedAssociationRecord::setIndex);
+	public static final ReadWritePropertyAccessPoint<IndexedAssociationRecord, Object> LEFT_ACCESSOR = DefaultReadWritePropertyAccessPoint.fromMethodReference(IndexedAssociationRecord::getLeft, IndexedAssociationRecord::setLeft);
+	public static final ReadWritePropertyAccessPoint<IndexedAssociationRecord, Object> RIGHT_ACCESSOR = DefaultReadWritePropertyAccessPoint.fromMethodReference(IndexedAssociationRecord::getRight, IndexedAssociationRecord::setRight);
+	public static final ReadWritePropertyAccessPoint<IndexedAssociationRecord, Integer> INDEX_ACCESSOR = DefaultReadWritePropertyAccessPoint.fromMethodReference(IndexedAssociationRecord::getIndex, IndexedAssociationRecord::setIndex);
 	
 	private int index;
 	

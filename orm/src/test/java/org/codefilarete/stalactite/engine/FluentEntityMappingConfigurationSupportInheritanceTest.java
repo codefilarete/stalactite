@@ -329,7 +329,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 						.build(persistenceContext))
 					.isInstanceOf(UnsupportedOperationException.class)
 					.hasMessage("Identifier is not defined for o.c.s.e.m.Car,"
-							+ " please add one through o.c.s.d.e.FluentEntityMappingBuilder.mapKey(o.c.r.SerializableMutator, o.c.s.d.i.IdentifierPolicy)");
+							+ " please add one through o.c.s.d.e.FluentEntityMappingBuilder.mapKey(o.c.r.SerializablePropertyMutator, o.c.s.d.i.IdentifierPolicy)");
 		}
 		
 		@Test

@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.engine.runtime.singletable;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,12 +9,13 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.PropertyAccessPoint;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.engine.DeleteExecutor;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.InsertExecutor;
-import org.codefilarete.stalactite.dsl.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.engine.UpdateExecutor;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer;
@@ -243,7 +243,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 	
 	@Override
 	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																							 Accessor<SRC, C> propertyAccessor,
+																							 PropertyAccessPoint<SRC, C> propertyAccessor,
 																							 Key<T1, JOINID> leftColumn,
 																							 Key<T2, JOINID> rightColumn,
 																							 String rightTableAlias,
@@ -281,9 +281,9 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 	}
 	
 	@Override
-	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsMany(String joinName,
+	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID, S> String joinAsMany(String joinName,
 																							  RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																							  Accessor<SRC, ?> propertyAccessor,
+																							  PropertyAccessPoint<SRC, S> propertyAccessor,
 																							  Key<T1, JOINID> leftColumn,
 																							  Key<T2, JOINID> rightColumn,
 																							  BeanRelationFixer<SRC, C> beanRelationFixer,
@@ -325,7 +325,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 			EntityJoinTree<SRC, SRCID> entityJoinTree,
 			String leftStrategyName,
 			ConfiguredRelationalPersister<U, ID> mainPersister,
-			Accessor<SRC, ?> propertyAccessor,
+			PropertyAccessPoint<SRC, ?> propertyAccessor,
 			Key<T1, JOINCOLTYPE> leftJoinColumn,
 			Key<T2, JOINCOLTYPE> rightJoinColumn,
 			Set<ConfiguredRelationalPersister<? extends U, ID>> subPersisters,

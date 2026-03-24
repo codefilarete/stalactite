@@ -2,8 +2,8 @@ package org.codefilarete.stalactite.engine.configurer.builder.embeddable;
 
 import java.lang.reflect.Method;
 
-import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.ReadWriteAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
@@ -15,7 +15,7 @@ public interface Inset<SRC, TRGT> {
 	/**
 	 * Equivalent of {@link #getInsetAccessor()} as a {@link ReadWriteAccessPoint}
 	 */
-	Accessor<SRC, TRGT> getAccessor();
+	ReadWritePropertyAccessPoint<SRC, TRGT> getAccessor();
 	
 	/**
 	 * Equivalent of given getter or setter at construction time as a {@link Method}
@@ -24,7 +24,7 @@ public interface Inset<SRC, TRGT> {
 	
 	Class<TRGT> getEmbeddedClass();
 	
-	ValueAccessPointSet<SRC> getExcludedProperties();
+	ValueAccessPointSet<SRC, ValueAccessPoint<SRC>> getExcludedProperties();
 	
 	ValueAccessPointMap<SRC, String, ValueAccessPoint<SRC>> getOverriddenColumnNames();
 	

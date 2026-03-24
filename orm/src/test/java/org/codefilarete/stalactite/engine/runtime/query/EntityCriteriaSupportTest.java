@@ -7,7 +7,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
@@ -28,25 +28,25 @@ import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
+import org.codefilarete.stalactite.query.Operators;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.GroupBy;
 import org.codefilarete.stalactite.query.model.Having;
 import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.LogicalOperator;
-import org.codefilarete.stalactite.query.Operators;
 import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
+import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
-import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.Test;
@@ -170,7 +170,7 @@ class EntityCriteriaSupportTest {
 		Column nameColumn = personTable.addColumn("name", String.class);
 		
 		EntityMapping entityMappingMock = mock(EntityMapping.class);
-		when(entityMappingMock.getPropertyToColumn()).thenReturn(Maps.forHashMap(ReversibleAccessor.class, Column.class).add(Accessors.accessor(Person::getName), nameColumn));
+		when(entityMappingMock.getPropertyToColumn()).thenReturn(Maps.forHashMap(ReadWritePropertyAccessPoint.class, Column.class).add(Accessors.readWriteAccessPoint(Person::getName), nameColumn));
 		// we have to mock the identifier mapping because its columns are collected as eventual criteria (else a NPE is thrown)
 		when(entityMappingMock.getIdMapping()).thenReturn(mock(IdMapping.class));
 		when(entityMappingMock.getTargetTable()).thenReturn(personTable);
@@ -188,7 +188,7 @@ class EntityCriteriaSupportTest {
 		Column nameColumn = personTable.addColumn("name", String.class);
 		
 		EntityMapping entityMappingMock = mock(EntityMapping.class);
-		when(entityMappingMock.getPropertyToColumn()).thenReturn(Maps.forHashMap(ReversibleAccessor.class, Column.class).add(Accessors.accessor(Person::getNicknames), nameColumn));
+		when(entityMappingMock.getPropertyToColumn()).thenReturn(Maps.forHashMap(ReadWritePropertyAccessPoint.class, Column.class).add(Accessors.readWriteAccessPoint(Person::getNicknames), nameColumn));
 		// we have to mock the identifier mapping because its columns are collected as eventual criteria (else a NPE is thrown)
 		when(entityMappingMock.getIdMapping()).thenReturn(mock(IdMapping.class));
 		when(entityMappingMock.getTargetTable()).thenReturn(personTable);

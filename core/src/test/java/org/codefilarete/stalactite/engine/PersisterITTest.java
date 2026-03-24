@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.ReadWriteAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
@@ -44,13 +44,13 @@ abstract class PersisterITTest extends DatabaseIntegrationTest {
 	void setUp() {
 		TotoTable totoClassTable = new TotoTable(null, "Toto");
 		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
-		Map<ReadWriteAccessPoint<Toto, ?>, Column<TotoTable, ?>> totoClassMapping = persistentFieldHarvester.mapFields(Toto.class, totoClassTable);
+		Map<ReadWritePropertyAccessPoint<Toto, ?>, Column<TotoTable, ?>> totoClassMapping = persistentFieldHarvester.mapFields(Toto.class, totoClassTable);
 		Map<String, Column<TotoTable, ?>> columns = totoClassTable.mapColumnsOnName();
 		columns.get("a").setPrimaryKey(true);
 		
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
 		// defining a test instance that maps Toto class onto TotoTable with "a" field as identifier
-		ReadWriteAccessPoint<Toto, Integer> identifierAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("a"));
+		ReadWritePropertyAccessPoint<Toto, Integer> identifierAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("a"));
 		DefaultEntityMapping<Toto, Integer, TotoTable> totoEntityMappingStrategy = new DefaultEntityMapping<>(
 				Toto.class,
 				totoClassTable,

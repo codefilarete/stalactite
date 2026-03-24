@@ -5,7 +5,7 @@ import java.util.function.Supplier;
 
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Mutator;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
@@ -25,7 +25,7 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	private final JoinColumnNamingStrategy joinColumnNamingStrategy;
 	private final ColumnNamingStrategy indexColumnNamingStrategy;
-	private final ReversibleAccessor<SRC, C> collectionGetter;
+	private final ReadWritePropertyAccessPoint<SRC, C> collectionGetter;
 	private final String indexingColumnName;
 	private final Mutator<SRC, C> setter;
 	private final boolean orphanRemoval;
@@ -50,7 +50,7 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 		this.indexColumnNamingStrategy = indexColumnNamingStrategy;
 		this.indexingColumnName = indexingColumnName;
 		this.collectionGetter = oneToManyRelation.getCollectionAccessor();
-		this.setter = collectionGetter.toMutator();
+		this.setter = collectionGetter;
 		this.orphanRemoval = orphanRemoval;
 		this.writeAuthorized = writeAuthorized;
 		this.accessorDefinition = AccessorDefinition.giveDefinition(this.oneToManyRelation.getCollectionAccessor());
@@ -93,7 +93,7 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 		return indexingColumnName;
 	}
 	
-	public ReversibleAccessor<SRC, C> getCollectionGetter() {
+	public ReadWritePropertyAccessPoint<SRC, C> getCollectionGetter() {
 		return collectionGetter;
 	}
 	

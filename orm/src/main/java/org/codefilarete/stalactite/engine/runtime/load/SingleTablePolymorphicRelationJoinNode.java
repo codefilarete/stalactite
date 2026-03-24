@@ -1,12 +1,12 @@
 package org.codefilarete.stalactite.engine.runtime.load;
 
-import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.PropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
@@ -44,7 +44,7 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 
 	private final Column<T2, DTYPE> discriminatorColumn;
 	
 	public SingleTablePolymorphicRelationJoinNode(JoinNode<?, T1> parent,
-												  Accessor<?, ?> propertyAccessor,
+												  PropertyAccessPoint<?, ?> propertyAccessor,
 												  Key<T1, JOINCOLTYPE> leftJoinColumn,
 												  Key<T2, JOINCOLTYPE> rightJoinColumn,
 												  JoinType joinType,

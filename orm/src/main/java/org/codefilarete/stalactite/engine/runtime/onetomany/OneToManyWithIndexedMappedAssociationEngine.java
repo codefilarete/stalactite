@@ -69,7 +69,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		// we add target subgraph joins to main persister
 		Set<Column<RIGHTTABLE, ?>> columnsToSelect = new HashSet<>(targetPersister.<RIGHTTABLE>getMainTable().getPrimaryKey().getColumns());
 		columnsToSelect.add(indexColumn);
-		String relationJoinNodeName = targetPersister.joinAsMany(EntityJoinTree.ROOT_JOIN_NAME, sourcePersister, manyRelationDescriptor.getCollectionProvider(), sourcePrimaryKey, (Key<RIGHTTABLE, SRCID>) manyRelationDescriptor.getReverseColumn(),
+		String relationJoinNodeName = targetPersister.joinAsMany(EntityJoinTree.ROOT_JOIN_NAME, sourcePersister, manyRelationDescriptor.getCollectionAccessPoint(), sourcePrimaryKey, (Key<RIGHTTABLE, SRCID>) manyRelationDescriptor.getReverseColumn(),
 				manyRelationDescriptor.getRelationFixer(),
 				(columnedRow) -> {
 					TRGTID identifier = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(columnedRow);
@@ -94,7 +94,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			
 			@Override
 			public void afterSelect(Set<? extends SRC> result) {
-				Set<TRGT> collect = Iterables.stream(result).flatMap(src -> nullable(manyRelationDescriptor.getCollectionGetter().get(src))
+				Set<TRGT> collect = Iterables.stream(result).flatMap(src -> nullable(manyRelationDescriptor.getCollectionAccessPoint().get(src))
 						.map(Collection::stream)
 						.getOr(Stream.empty()))
 						.collect(Collectors.toSet());
@@ -170,7 +170,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	 */
 	private <TARGETTABLE extends Table<TARGETTABLE>> void addIndexInsertion() {
 		// we declare the indexing column as a silent one, then AfterInsertCollectionCascader will insert it
-		Accessor<SRC, C> collectionGetter = this.manyRelationDescriptor.getCollectionGetter();
+		Accessor<SRC, C> collectionGetter = this.manyRelationDescriptor.getCollectionAccessPoint();
 		ShadowColumnValueProvider<TRGT, TARGETTABLE> indexValueProvider = new ShadowColumnValueProvider<TRGT, TARGETTABLE>() {
 			@Override
 			public boolean accept(TRGT entity) {
@@ -250,7 +250,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	@Override
 	protected void addTargetInstancesUpdateCascader(boolean shouldDeleteRemoved) {
 		Mutator<Duo<SRC, SRC>, Boolean> collectionUpdater = new ListCollectionUpdater<>(
-				this.manyRelationDescriptor.getCollectionGetter(),
+				this.manyRelationDescriptor.getCollectionAccessPoint(),
 				this.targetPersister,
 				this.manyRelationDescriptor.getReverseSetter(),
 				shouldDeleteRemoved,

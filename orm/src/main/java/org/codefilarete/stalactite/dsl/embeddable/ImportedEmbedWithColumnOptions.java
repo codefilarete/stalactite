@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.dsl.embeddable;
 
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -16,22 +16,22 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 public interface ImportedEmbedWithColumnOptions<C> extends ImportedEmbedOptions<C> {
 	
 	@Override
-	<IN> ImportedEmbedWithColumnOptions<C> overrideName(SerializableAccessor<C, IN> getter, String columnName);
+	<IN> ImportedEmbedWithColumnOptions<C> overrideName(SerializablePropertyAccessor<C, IN> getter, String columnName);
 	
 	@Override
-	<IN> ImportedEmbedWithColumnOptions<C> overrideName(SerializableMutator<C, IN> setter, String columnName);
+	<IN> ImportedEmbedWithColumnOptions<C> overrideName(SerializablePropertyMutator<C, IN> setter, String columnName);
 	
 	@Override
-	<IN> ImportedEmbedWithColumnOptions<C> overrideSize(SerializableAccessor<C, IN> getter, Size columnSize);
+	<IN> ImportedEmbedWithColumnOptions<C> overrideSize(SerializablePropertyAccessor<C, IN> getter, Size columnSize);
 	
 	@Override
-	<IN> ImportedEmbedWithColumnOptions<C> overrideSize(SerializableMutator<C, IN> setter, Size columnSize);
+	<IN> ImportedEmbedWithColumnOptions<C> overrideSize(SerializablePropertyMutator<C, IN> setter, Size columnSize);
 	
 	@Override
-	<IN> ImportedEmbedWithColumnOptions<C> exclude(SerializableAccessor<C, IN> getter);
+	<IN> ImportedEmbedWithColumnOptions<C> exclude(SerializablePropertyAccessor<C, IN> getter);
 	
 	@Override
-	<IN> ImportedEmbedWithColumnOptions<C> exclude(SerializableMutator<C, IN> setter);
+	<IN> ImportedEmbedWithColumnOptions<C> exclude(SerializablePropertyMutator<C, IN> setter);
 	
 	/**
 	 * Overrides embedding with an existing target column
@@ -41,7 +41,7 @@ public interface ImportedEmbedWithColumnOptions<C> extends ImportedEmbedOptions<
 	 * @param <IN> input of the function (type of the embedded element)
 	 * @return a mapping configurer, specialized for embedded elements
 	 */
-	<IN> ImportedEmbedWithColumnOptions<C> override(SerializableAccessor<C, IN> getter, Column<? extends Table, IN> targetColumn);
+	<IN> ImportedEmbedWithColumnOptions<C> override(SerializablePropertyAccessor<C, IN> getter, Column<? extends Table, IN> targetColumn);
 	
 	/**
 	 * Overrides embedding with an existing target column
@@ -51,6 +51,6 @@ public interface ImportedEmbedWithColumnOptions<C> extends ImportedEmbedOptions<
 	 * @param <IN> input of the function (type of the embedded element)
 	 * @return a mapping configurer, specialized for embedded elements
 	 */
-	<IN> ImportedEmbedWithColumnOptions<C> override(SerializableMutator<C, IN> setter, Column<? extends Table, IN> targetColumn);
+	<IN> ImportedEmbedWithColumnOptions<C> override(SerializablePropertyMutator<C, IN> setter, Column<? extends Table, IN> targetColumn);
 	
 }

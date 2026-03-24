@@ -1,11 +1,10 @@
 package org.codefilarete.stalactite.dsl.key;
 
-import javax.annotation.Nullable;
-import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.List;
+import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.FluentCompositeKeyMappingConfigurationSupport.Inset;
 import org.codefilarete.stalactite.sql.ddl.Size;
@@ -26,7 +25,7 @@ public interface CompositeKeyMappingConfiguration<C> {
 	
 	List<CompositeKeyLinkage> getPropertiesMapping();
 	
-	Collection<Inset<C, Object>> getInsets();
+	<O> Collection<Inset<C, O>> getInsets();
 	
 	@Nullable
 	ColumnNamingStrategy getColumnNamingStrategy();
@@ -39,7 +38,7 @@ public interface CompositeKeyMappingConfiguration<C> {
 	 */
 	interface CompositeKeyLinkage<C, O> {
 		
-		ReversibleAccessor<C, O> getAccessor();
+		ReadWritePropertyAccessPoint<C, O> getAccessor();
 		
 		@Nullable
 		String getFieldName();

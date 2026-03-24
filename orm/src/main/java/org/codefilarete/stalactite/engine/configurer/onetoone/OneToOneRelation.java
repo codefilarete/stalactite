@@ -3,9 +3,9 @@ package org.codefilarete.stalactite.engine.configurer.onetoone;
 import java.util.function.BooleanSupplier;
 import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWriteAccessorChain;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.SerializableAccessor;
 import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
@@ -14,6 +14,7 @@ import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.collection.Arrays;
 
 /**
  * @author Guillaume Mary
@@ -21,7 +22,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	
 	/** The method that gives the target entity from the source one */
-	private final ReversibleAccessor<SRC, TRGT> targetProvider;
+	private final ReadWritePropertyAccessPoint<SRC, TRGT> targetProvider;
 	
 	/** Configuration used for target beans persistence */
 	private final EntityMappingConfigurationProvider<TRGT, TRGTID> targetMappingConfiguration;
@@ -56,7 +57,7 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	
 	private boolean unique;
 	
-	public OneToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider,
+	public OneToOneRelation(ReadWritePropertyAccessPoint<SRC, TRGT> targetProvider,
 							BooleanSupplier sourceTablePerClassPolymorphic,
 							EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration) {
 		this.sourceTablePerClassPolymorphic = sourceTablePerClassPolymorphic;
@@ -65,7 +66,7 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	}
 	
 	/** Original method reference given for mapping */
-	public ReversibleAccessor<SRC, TRGT> getTargetProvider() {
+	public ReadWritePropertyAccessPoint<SRC, TRGT> getTargetProvider() {
 		return targetProvider;
 	}
 	
@@ -182,8 +183,8 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	 * @return a clone of this instance prefixed with the given accessor
 	 * @param <C> the root entity type that owns the embeddable which has this relation
 	 */
-	public <C> OneToOneRelation<C, TRGT, TRGTID> embedInto(Accessor<C, SRC> accessor) {
-		AccessorChain<C, TRGT> shiftedTargetProvider = new AccessorChain<>(accessor, targetProvider);
+	public <C> OneToOneRelation<C, TRGT, TRGTID> embedInto(ReadWritePropertyAccessPoint<C, SRC> accessor) {
+		ReadWritePropertyAccessPoint<C, TRGT> shiftedTargetProvider = new ReadWriteAccessorChain<>(AccessorChain.fromAccessorsWithNullSafe(Arrays.asList(accessor, targetProvider)));
 		OneToOneRelation<C, TRGT, TRGTID> result = new OneToOneRelation<>(shiftedTargetProvider, this::isSourceTablePerClassPolymorphic, this::getTargetMappingConfiguration);
 		result.setRelationMode(this.getRelationMode());
 		result.setNullable(this.isNullable());

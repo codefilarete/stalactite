@@ -1,6 +1,6 @@
 package org.codefilarete.stalactite.engine;
 
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.PropertyAccessPoint;
 
 /**
  * @author Guillaume Mary
@@ -8,7 +8,7 @@ import org.codefilarete.reflection.ReversibleAccessor;
  */
 public interface VersioningStrategy<C, V> {
 	
-	ReversibleAccessor<C, V> getVersionAccessor();
+	PropertyAccessPoint<C, V> getVersionAccessor();
 	
 	V getVersion(C o);
 	

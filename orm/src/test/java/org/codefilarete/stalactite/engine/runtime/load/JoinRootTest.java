@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.engine.runtime.load;
 
 import java.util.Collections;
 
-import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.PropertyAccessPoint;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
@@ -40,38 +40,39 @@ class JoinRootTest {
 		EntityJoinTree entityJoinTree = new EntityJoinTree(new EntityMappingAdapter(mappingStrategyMock), table);
 		assertThatThrownBy(() -> {
 					// we don't care about other arguments (null passed) because existing strategy name is checked first
-					entityJoinTree.addRelationJoin("XX", null, mock(Accessor.class), null, null, null, OUTER, null, Collections.emptySet());
+					entityJoinTree.addRelationJoin("XX", null, mock(PropertyAccessPoint.class), null, null, null, OUTER, null, Collections.emptySet());
 				})
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("No join named XX exists to add a new join on");
 	}
 	
 	@Test
-	public void giveTables() {
+	public <T1 extends Table<T1>, T2 extends Table<T2>, T3 extends Table<T3>, T4 extends Table<T4>>
+	void giveTables() {
 		DefaultEntityMapping totoMappingMock = buildMappingStrategyMock("Toto");
-		Table totoTable = totoMappingMock.getTargetTable();
+		T1 totoTable = (T1) totoMappingMock.getTargetTable();
 		totoTable.addColumn("id", long.class).primaryKey();
-		PrimaryKey totoPrimaryKey = totoTable.getPrimaryKey();
+		PrimaryKey<T1, Long> totoPrimaryKey = totoTable.getPrimaryKey();
 		
 		DefaultEntityMapping tataMappingMock = buildMappingStrategyMock("Tata");
-		Table tataTable = tataMappingMock.getTargetTable();
+		T2 tataTable = (T2) tataMappingMock.getTargetTable();
 		tataTable.addColumn("id", long.class).primaryKey();
-		PrimaryKey tataPrimaryKey = tataTable.getPrimaryKey();
+		PrimaryKey<T2, Long> tataPrimaryKey = tataTable.getPrimaryKey();
 		
 		DefaultEntityMapping tutuMappingMock = buildMappingStrategyMock("Tutu");
-		Table tutuTable = tutuMappingMock.getTargetTable();
+		T3 tutuTable = (T3) tutuMappingMock.getTargetTable();
 		tutuTable.addColumn("id", long.class).primaryKey();
-		PrimaryKey tutuPrimaryKey = tutuTable.getPrimaryKey();
+		PrimaryKey<T3, Long> tutuPrimaryKey = tutuTable.getPrimaryKey();
 		
 		DefaultEntityMapping titiMappingMock = buildMappingStrategyMock("Titi");
-		Table titiTable = titiMappingMock.getTargetTable();
+		T4 titiTable = (T4) titiMappingMock.getTargetTable();
 		titiTable.addColumn("id", long.class).primaryKey();
-		PrimaryKey titiPrimaryKey = titiTable.getPrimaryKey();
+		PrimaryKey<T4, Long> titiPrimaryKey = titiTable.getPrimaryKey();
 		
 		EntityJoinTree<?, ?> entityJoinTree = new EntityJoinTree<>(new EntityMappingAdapter(totoMappingMock), totoMappingMock.getTargetTable());
-		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter(tataMappingMock), mock(Accessor.class), totoPrimaryKey, tataPrimaryKey, null, INNER, null, Collections.emptySet());
-		String tutuAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingAdapter(tutuMappingMock), mock(Accessor.class), tataPrimaryKey, tutuPrimaryKey, null, INNER, null, Collections.emptySet());
-		String titiAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter(titiMappingMock), mock(Accessor.class), totoPrimaryKey, titiPrimaryKey, null, INNER, null, Collections.emptySet());
+		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter(tataMappingMock), mock(PropertyAccessPoint.class), totoPrimaryKey, tataPrimaryKey, null, INNER, null, Collections.emptySet());
+		String tutuAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingAdapter(tutuMappingMock), mock(PropertyAccessPoint.class), tataPrimaryKey, tutuPrimaryKey, null, INNER, null, Collections.emptySet());
+		String titiAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter(titiMappingMock), mock(PropertyAccessPoint.class), totoPrimaryKey, titiPrimaryKey, null, INNER, null, Collections.emptySet());
 
 		assertThat(entityJoinTree.giveTables())
 				.usingElementComparator(Table.COMPARATOR_ON_SCHEMA_AND_NAME)

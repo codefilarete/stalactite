@@ -9,9 +9,9 @@ import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.MutatorByMethodReference;
-import org.codefilarete.reflection.ReadWriteAccessPoint;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.ColumnLinkageOptions;
@@ -86,14 +86,15 @@ class OneToOneRelationConfigurerTest {
 		Column countryTableIdColumn = countryTable.addColumn("id", long.class).primaryKey();
 		Column countryTableNameColumn = countryTable.addColumn("name", String.class);
 		Column countryTableCapitalColumn = countryTable.addColumn("capitalId", Identifier.LONG_TYPE);
-		Map<ReversibleAccessor, Column> countryMapping = Maps
-				.asMap((ReversibleAccessor) new ReadWriteAccessPoint<>(new AccessorByMethodReference<>(Country::getId), Accessors.mutatorByField(Country.class, "id")), countryTableIdColumn)
-				.add(new ReadWriteAccessPoint<>(new AccessorByMethodReference<>(Country::getName), new MutatorByMethodReference<>(Country::setName)), countryTableNameColumn)
-				.add(new ReadWriteAccessPoint<>(new AccessorByMethodReference<>(Country::getCapital), new MutatorByMethodReference<>(Country::setCapital)), countryTableCapitalColumn);
-		ReversibleAccessor<Country, Identifier<Long>> countryIdentifierAccessorByMethodReference = new ReadWriteAccessPoint<>(
+		ReadWritePropertyAccessPoint<Country, Identifier<Long>> countryIdentifierAccessorByMethodReference = new DefaultReadWritePropertyAccessPoint<>(
 				Accessors.accessorByMethodReference(Country::getId),
 				Accessors.mutatorByField(Country.class, "id")
 		);
+		Map<ReadWritePropertyAccessPoint, Column> countryMapping = Maps
+				.forHashMap(ReadWritePropertyAccessPoint.class, Column.class)
+				.add(countryIdentifierAccessorByMethodReference, countryTableIdColumn)
+				.add(new DefaultReadWritePropertyAccessPoint<>(new AccessorByMethodReference<>(Country::getName), new MutatorByMethodReference<>(Country::setName)), countryTableNameColumn)
+				.add(new DefaultReadWritePropertyAccessPoint<>(new AccessorByMethodReference<>(Country::getCapital), new MutatorByMethodReference<>(Country::setCapital)), countryTableCapitalColumn);
 		DefaultEntityMapping<Country, Identifier<Long>, T> countryEntityMappingStrategy = new DefaultEntityMapping<Country, Identifier<Long>, T>(Country.class, countryTable,
 				(Map) countryMapping, countryIdentifierAccessorByMethodReference,
 				(IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class, c -> {}, c -> false));
@@ -108,7 +109,7 @@ class OneToOneRelationConfigurerTest {
 		// defining City mapping
 		Table<?> cityTable = new Table<>("city");
 		Column cityTableIdColumn = cityTable.addColumn("id", Identifier.class).primaryKey();
-		ReversibleAccessor<City, Identifier<Long>> cityIdentifierAccessorByMethodReference = new ReadWriteAccessPoint<>(
+		ReadWritePropertyAccessPoint<City, Identifier<Long>> cityIdentifierAccessorByMethodReference = new DefaultReadWritePropertyAccessPoint<>(
 				Accessors.accessorByMethodReference(City::getId),
 				Accessors.mutatorByField(City.class, "id")
 		);
@@ -133,7 +134,7 @@ class OneToOneRelationConfigurerTest {
 			}
 			
 			@Override
-			public ReversibleAccessor<City, Identifier<Long>> getAccessor() {
+			public ReadWritePropertyAccessPoint<City, Identifier<Long>> getAccessor() {
 				return cityIdentifierAccessorByMethodReference;
 			}
 			
@@ -170,7 +171,7 @@ class OneToOneRelationConfigurerTest {
 		when(cityMappingConfiguration.inheritanceIterable()).thenAnswer(CALLS_REAL_METHODS);
 		
 		// defining Country -> City relation through capital property
-		ReadWriteAccessPoint<Country, City> capitalAccessPoint = new ReadWriteAccessPoint<>(new AccessorByMethodReference<>(Country::getCapital),
+		ReadWritePropertyAccessPoint<Country, City> capitalAccessPoint = new DefaultReadWritePropertyAccessPoint<>(new AccessorByMethodReference<>(Country::getCapital),
 				new MutatorByMethodReference<>(Country::setCapital));
 		OneToOneRelation<Country, City, Identifier<Long>> countryCapitalRelation = new OneToOneRelation<>(
 				capitalAccessPoint,
@@ -227,13 +228,14 @@ class OneToOneRelationConfigurerTest {
 		T countryTable = (T) new Table("country");
 		Column countryTableIdColumn = countryTable.addColumn("id", long.class).primaryKey();
 		Column countryTableNameColumn = countryTable.addColumn("name", String.class);
-		Map<ReversibleAccessor, Column> countryMapping = Maps
-				.asMap((ReversibleAccessor) new ReadWriteAccessPoint<>(new AccessorByMethodReference<>(Country::getId), Accessors.mutatorByField(Country.class, "id")), countryTableIdColumn)
-				.add(new ReadWriteAccessPoint<>(new AccessorByMethodReference<>(Country::getName), new MutatorByMethodReference<>(Country::setName)), countryTableNameColumn);
-		ReversibleAccessor<Country, Identifier<Long>> countryIdentifierAccessorByMethodReference = new ReadWriteAccessPoint<>(
+		ReadWritePropertyAccessPoint<Country, Identifier<Long>> countryIdentifierAccessorByMethodReference = new DefaultReadWritePropertyAccessPoint<>(
 				Accessors.accessorByMethodReference(Country::getId),
 				Accessors.mutatorByField(Country.class, "id")
 		);
+		Map<ReadWritePropertyAccessPoint, Column> countryMapping = Maps
+				.forHashMap(ReadWritePropertyAccessPoint.class, Column.class)
+				.add(countryIdentifierAccessorByMethodReference, countryTableIdColumn)
+				.add(new DefaultReadWritePropertyAccessPoint<>(new AccessorByMethodReference<>(Country::getName), new MutatorByMethodReference<>(Country::setName)), countryTableNameColumn);
 		DefaultEntityMapping<Country, Identifier<Long>, T> countryEntityMappingStrategy = new DefaultEntityMapping<Country, Identifier<Long>, T>(Country.class, countryTable,
 				(Map) countryMapping, countryIdentifierAccessorByMethodReference,
 				(IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class, c -> {}, c -> false));
@@ -241,7 +243,7 @@ class OneToOneRelationConfigurerTest {
 		// defining City mapping
 		Table<?> cityTable = new Table<>("city");
 		Column cityTableCountryColumn = cityTable.addColumn("countryId", long.class);
-		ReversibleAccessor<City, Identifier<Long>> cityIdentifierAccessorByMethodReference = new ReadWriteAccessPoint<>(
+		ReadWritePropertyAccessPoint<City, Identifier<Long>> cityIdentifierAccessorByMethodReference = new DefaultReadWritePropertyAccessPoint<>(
 				Accessors.accessorByMethodReference(City::getId),
 				Accessors.mutatorByField(City.class, "id")
 		);
@@ -273,7 +275,7 @@ class OneToOneRelationConfigurerTest {
 			}
 			
 			@Override
-			public ReversibleAccessor<City, Identifier<Long>> getAccessor() {
+			public ReadWritePropertyAccessPoint<City, Identifier<Long>> getAccessor() {
 				return cityIdentifierAccessorByMethodReference;
 			}
 			
@@ -310,7 +312,7 @@ class OneToOneRelationConfigurerTest {
 		when(cityMappingConfiguration.inheritanceIterable()).thenAnswer(CALLS_REAL_METHODS);
 		
 		// defining Country -> City relation through capital property
-		ReadWriteAccessPoint<Country, City> capitalAccessPoint = new ReadWriteAccessPoint<>(new AccessorByMethodReference<>(Country::getCapital),
+		ReadWritePropertyAccessPoint<Country, City> capitalAccessPoint = new DefaultReadWritePropertyAccessPoint<>(new AccessorByMethodReference<>(Country::getCapital),
 				new MutatorByMethodReference<>(Country::setCapital));
 		OneToOneRelation<Country, City, Identifier<Long>> countryCapitalRelation = new OneToOneRelation<>(
 				capitalAccessPoint,

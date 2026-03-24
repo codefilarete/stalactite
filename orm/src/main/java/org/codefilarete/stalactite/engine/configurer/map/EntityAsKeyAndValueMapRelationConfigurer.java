@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -14,8 +13,11 @@ import java.util.stream.Collectors;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.Mutator;
-import org.codefilarete.reflection.ReadWriteAccessPoint;
+import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.PropertyMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
@@ -72,7 +74,7 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 			ConfiguredRelationalPersister<V, VID> valueEntityPersister
 			) {
 		ConvertingMapAccessor<SRC, K, V, KID, VID, M, MM> mapAccessor = new ConvertingMapAccessor<>(mapRelation, (k, v, result) -> result.put(keyEntityPersister.getId(k), valueEntityPersister.getId(v)));
-		ReadWriteAccessPoint<SRC, MM> propertyAccessor = new ReadWriteAccessPoint<>(
+		ReadWritePropertyAccessPoint<SRC, MM> propertyAccessor = new DefaultReadWritePropertyAccessPoint<>(
 				mapAccessor,
 				(src, mm) -> {
 					// No setter need because afterSelect(..) method is in charge of setting the values (too complex to be done here)
@@ -95,7 +97,7 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 	private final MapRelation<SRC, K, V, M> originalMapRelation;
 	private final ConfiguredRelationalPersister<K, KID> keyEntityPersister;
 	private final ConfiguredRelationalPersister<V, VID> valueEntityPersister;
-	private final Function<SRC, M> mapGetter;
+	private final Accessor<SRC, M> mapGetter;
 	private final InMemoryRelationHolder<SRCID, KID, VID, K, V> inMemoryRelationHolder;
 	private Key<?, KID> keyIdColumnsProjectInAssociationTable;
 	private Key<?, VID> valueIdColumnsProjectInAssociationTable;
@@ -148,7 +150,7 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 			@Override
 			public void afterSelect(Set<? extends SRC> result) {
 				BeanRelationFixer<SRC, Duo<K, V>> originalRelationFixer = BeanRelationFixer.ofMapAdapter(
-						originalMapRelation.getMapProvider().toMutator()::set,
+						originalMapRelation.getMapProvider(),
 						mapGetter,
 						mapFactory,
 						(bean, duo, map) -> map.put(duo.getLeft(), duo.getRight()));
@@ -250,7 +252,7 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 				
 				@Override
 				protected Collection<K> getTargets(SRC src) {
-					return mapGetter.apply(src).keySet();
+					return mapGetter.get(src).keySet();
 				}
 			});
 		}
@@ -260,7 +262,7 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 
 				@Override
 				protected Collection<V> getTargets(SRC src) {
-					return mapGetter.apply(src).values();
+					return mapGetter.get(src).values();
 				}
 			});
 		}
@@ -276,7 +278,7 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 		// No direct cascade handling here because it will be done by MapUpdater
 		Accessor<SRC, Set<KeyValueRecord<K, V, SRCID>>> targetEntitiesGetter = src -> {
 			SRCID srcId = sourcePersister.getId(src);
-			M map = mapGetter.apply(src);
+			M map = mapGetter.get(src);
 			return map == null ? Collections.emptySet() : map.entrySet().stream().map(entry -> new KeyValueRecord<>(srcId, entry.getKey(), entry.getValue()))
 					.collect(Collectors.toSet());
 		};
@@ -297,21 +299,18 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 		}
 		
 		if (keyEntityMaintenanceMode == RelationMode.ALL_ORPHAN_REMOVAL) {
-			Function<SRC, Set<K>> targetEntitiesGetter = new NullProofFunction<>(mapGetter).andThen(Map::entrySet).andThen(entries -> entries.stream().map(Entry::getKey).collect(Collectors.toSet()));
+			Function<SRC, Set<K>> keyEntitiesGetter = new NullProofFunction<>(mapGetter::get).andThen(Map::entrySet).andThen(entries -> entries.stream().map(Entry::getKey).collect(Collectors.toSet()));
 			sourcePersister.addDeleteListener(new BeforeDeleteCollectionCascader<SRC, K>(keyEntityPersister) {
 				@Override
 				protected Collection<K> getTargets(SRC src) {
-					return targetEntitiesGetter.apply(src);
+					return keyEntitiesGetter.apply(src);
 				}
 			});
-		}
-		
-		if (valueEntityMaintenanceMode == RelationMode.ALL_ORPHAN_REMOVAL) {
-			Function<SRC, Set<V>> targetEntitiesGetter = new NullProofFunction<>(mapGetter).andThen(Map::entrySet).andThen(entries -> entries.stream().map(Entry::getValue).collect(Collectors.toSet()));
+			Function<SRC, Set<V>> valueEntitiesGetter = new NullProofFunction<>(mapGetter::get).andThen(Map::entrySet).andThen(entries -> entries.stream().map(Entry::getValue).collect(Collectors.toSet()));
 			sourcePersister.addDeleteListener(new BeforeDeleteCollectionCascader<SRC, V>(valueEntityPersister) {
 				@Override
 				protected Collection<V> getTargets(SRC src) {
-					return targetEntitiesGetter.apply(src);
+					return valueEntitiesGetter.apply(src);
 				}
 			});
 		}
@@ -322,8 +321,8 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 									SimpleRelationalEntityPersister<KeyValueRecord<KID, VID, SRCID>, RecordId<KID, SRCID>, ?> relationRecordPersister,
 									PrimaryKey<?, SRCID> sourcePK,
 									ForeignKey<?, ?, SRCID> keyValueRecordToSourceForeignKey,
-									BiConsumer<SRC, MM> mapSetter,
-									Accessor<SRC, MM> mapGetter,
+									PropertyMutator<SRC, MM> mapSetter,
+									PropertyAccessor<SRC, MM> mapGetter,
 									Supplier<MM> mapFactory) {
 		
 		BeanRelationFixer<SRC, KeyValueRecord<KID, VID, SRCID>> relationFixer = BeanRelationFixer.ofMapAdapter(

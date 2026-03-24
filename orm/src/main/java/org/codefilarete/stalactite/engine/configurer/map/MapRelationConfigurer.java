@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
@@ -14,7 +13,9 @@ import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Mutator;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.PropertyMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
@@ -131,7 +132,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 				new SimpleRelationalEntityPersister<>(relationRecordMapping, dialect, connectionConfiguration);
 		
 		// insert management
-		Accessor<SRC, M> collectionAccessor = mapRelation.getMapProvider();
+		ReadWritePropertyAccessPoint<SRC, M> collectionAccessor = mapRelation.getMapProvider();
 		addInsertCascade(sourcePersister, relationRecordPersister, collectionAccessor);
 		
 		// update management
@@ -145,7 +146,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 				mapRelation.getMapFactory(),
 				Reflections.giveMapFactory((Class<M>) mapProviderDefinition.getMemberType()));
 		addSelectCascade(sourcePersister, relationRecordPersister, sourcePK, reverseForeignKey,
-				mapRelation.getMapProvider().toMutator()::set, collectionAccessor,
+				mapRelation.getMapProvider(), collectionAccessor,
 				collectionFactory);
 	}
 	
@@ -188,7 +189,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 				}
 			};
 			EmbeddableMapping<K, MAPTABLE> entryKeyMapping = entryKeyMappingBuilder.build();
-			Map<ReversibleAccessor<K, Object>, Column<MAPTABLE, Object>> columnMapping = entryKeyMapping.getMapping();
+			Map<ReadWritePropertyAccessPoint<K, Object>, Column<MAPTABLE, Object>> columnMapping = entryKeyMapping.getMapping();
 			
 			columnMapping.forEach((propertyAccessor, column) -> column.primaryKey());
 			builder.withEntryKeyIsComplexType(new EmbeddedClassMapping<>(keyEmbeddableConfiguration.getBeanType(), targetTable, columnMapping));
@@ -213,7 +214,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 				}
 			};
 			EmbeddableMapping<V, MAPTABLE> entryValueMapping = recordKeyMappingBuilder.build();
-			Map<ReversibleAccessor<V, Object>, Column<MAPTABLE, Object>> columnMapping = entryValueMapping.getMapping();
+			Map<ReadWritePropertyAccessPoint<V, Object>, Column<MAPTABLE, Object>> columnMapping = entryValueMapping.getMapping();
 			
 			builder.withEntryValueIsComplexType(new EmbeddedClassMapping<>(valueEmbeddableConfiguration.getBeanType(), targetTable, columnMapping));
 		}
@@ -274,15 +275,15 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 									SimpleRelationalEntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>, ?> relationRecordPersister,
 									PrimaryKey<?, ID> sourcePK,
 									ForeignKey<?, ?, ID> keyValueRecordToSourceForeignKey,
-									BiConsumer<SRC, M> mapSetter,
-									Accessor<SRC, M> mapGetter,
+									PropertyMutator<SRC, M> mapSetter,
+									PropertyAccessor<SRC, M> mapGetter,
 									Supplier<M> mapFactory) {
 		// a particular Map fixer that gets raw values (Map entries) from KeyValueRecord
 		// because elementRecordPersister manages KeyValueRecord, so it gives them as input of the relation,
 		// hence an adaption is needed to "convert" it
 		BeanRelationFixer<SRC, KeyValueRecord<K, V, ID>> relationFixer = BeanRelationFixer.ofMapAdapter(
 				mapSetter,
-				mapGetter::get,
+				mapGetter,
 				mapFactory,
 				(bean, input, map) -> map.put(input.getKey(), input.getValue()));
 		

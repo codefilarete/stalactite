@@ -3,9 +3,9 @@ package org.codefilarete.stalactite.engine.configurer.elementcollection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
+import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.EmbeddedClassMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.stalactite.mapping.IdMapping;
@@ -32,7 +32,7 @@ public class ElementRecordMapping<C, I, T extends Table<T>> extends DefaultEntit
 															  Map<Column<LEFTTABLE, ?>, Column<T, ?>> foreignKeyColumnMapping) {
 		super((Class) ElementRecord.class,
 				targetTable,
-				(Map) Maps.forHashMap(ReversibleAccessor.class, Column.class)
+				(Map) Maps.forHashMap(ReadWriteAccessPoint.class, Column.class)
 						.add(ElementRecord.ELEMENT_ACCESSOR, elementColumn),
 				new ElementRecordIdMapping<>(targetTable, elementColumn, sourceIdentifierAssembler, foreignKeyColumnMapping));
 	}

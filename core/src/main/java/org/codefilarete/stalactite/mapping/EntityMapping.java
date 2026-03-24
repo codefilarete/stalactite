@@ -1,10 +1,10 @@
 package org.codefilarete.stalactite.mapping;
 
-import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -41,7 +41,7 @@ public interface EntityMapping<C, I, T extends Table<T>> extends Mapping<C, T>, 
 	Map<Column<T, ?>, ?> getVersionedKeyValues(C c);
 	
 	@Nullable
-	Duo<ReversibleAccessor<C, ?>, Column<T, ?>> getVersioningMapping();
+	Duo<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> getVersioningMapping();
 	
-	Map<ReversibleAccessor<C, ?>, EmbeddedBeanMapping<?, T>> getEmbeddedBeanStrategies();
+	Map<ReadWritePropertyAccessPoint<C, ?>, EmbeddedBeanMapping<?, T>> getEmbeddedBeanStrategies();
 }

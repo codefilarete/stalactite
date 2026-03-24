@@ -19,10 +19,10 @@ public interface OneToManyEntityOptions<C, I, O, S extends Collection<O>> extend
 	
 	/**
 	 * Defines reverse side owning column.
-	 * Note that defining it this way will not allow relation to be fixed in memory (after select in database), prefer {@link OneToManyOptions#mappedBy(org.codefilarete.reflection.SerializableMutator)}.
+	 * Note that defining it this way will not allow relation to be fixed in memory (after select in database), prefer {@link OneToManyOptions#mappedBy(org.codefilarete.reflection.SerializablePropertyMutator)}.
 	 * Use this method to define unidirectional relation.
 	 *
-	 * If the relation is already defined through {@link #mappedBy(org.codefilarete.reflection.SerializableAccessor)} or {@link OneToManyOptions#mappedBy(org.codefilarete.reflection.SerializableMutator)} then there's no
+	 * If the relation is already defined through {@link OneToManyOptions#mappedBy(org.codefilarete.reflection.SerializablePropertyAccessor)} or {@link OneToManyOptions#mappedBy(org.codefilarete.reflection.SerializablePropertyMutator)} then there's no
 	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToManyRelationConfigurer}.
 	 * 
 	 * @param reverseLink opposite owner of the relation

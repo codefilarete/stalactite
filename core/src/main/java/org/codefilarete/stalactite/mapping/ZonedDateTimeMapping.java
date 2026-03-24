@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.mapping;
 
-import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -9,9 +8,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.reflection.PropertyAccessPoint;
+import org.codefilarete.reflection.PropertyMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -78,7 +79,7 @@ public class ZonedDateTimeMapping<T extends Table<T>> implements EmbeddedBeanMap
 	}
 	
 	@Override
-	public void addPropertySetByConstructor(ValueAccessPoint<ZonedDateTime> accessor) {
+	public void addPropertySetByConstructor(PropertyAccessPoint<ZonedDateTime, ?> accessor) {
 		// this class doesn't support bean factory so it can't support properties set by constructor
 	}
 	
@@ -128,13 +129,13 @@ public class ZonedDateTimeMapping<T extends Table<T>> implements EmbeddedBeanMap
 	}
 	
 	@Override
-	public Map<ReversibleAccessor<ZonedDateTime, ?>, Column<T, ?>> getPropertyToColumn() {
+	public Map<ReadWritePropertyAccessPoint<ZonedDateTime, ?>, Column<T, ?>> getPropertyToColumn() {
 		throw new NotImplementedException(Reflections.toString(ZonedDateTimeMapping.class) + " can't export a mapping between some accessors and their columns"
 				+ " because properties of " + Reflections.toString(ZonedDateTime.class) + " can't be set");
 	}
 	
 	@Override
-	public Map<ReversibleAccessor<ZonedDateTime, ?>, Column<T, ?>> getReadonlyPropertyToColumn() {
+	public Map<PropertyMutator<ZonedDateTime, ?>, Column<T, ?>> getReadonlyPropertyToColumn() {
 		throw new NotImplementedException(Reflections.toString(ZonedDateTimeMapping.class) + " can't export a mapping between some accessors and their columns"
 				+ " because properties of " + Reflections.toString(ZonedDateTime.class) + " can't be set");
 	}

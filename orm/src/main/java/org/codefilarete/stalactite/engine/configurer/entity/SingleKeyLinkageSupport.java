@@ -2,9 +2,9 @@ package org.codefilarete.stalactite.engine.configurer.entity;
 
 import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.SingleKeyMapping;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.configurer.ValueAccessPointVariantSupport;
@@ -12,7 +12,7 @@ import org.codefilarete.stalactite.engine.configurer.property.ColumnLinkageOptio
 import org.codefilarete.stalactite.engine.configurer.property.LocalColumnLinkageOptions;
 
 /**
- * Storage for single key mapping definition. See {@link org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder#mapKey(SerializableAccessor, IdentifierPolicy)} methods.
+ * Storage for single key mapping definition. See {@link org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder#mapKey(SerializablePropertyAccessor, IdentifierPolicy)} methods.
  */
 class SingleKeyLinkageSupport<C, I> implements SingleKeyMapping<C, I> {
 	
@@ -27,12 +27,12 @@ class SingleKeyLinkageSupport<C, I> implements SingleKeyMapping<C, I> {
 	@Nullable
 	private String fieldName;
 	
-	public SingleKeyLinkageSupport(SerializableAccessor<C, I> getter, IdentifierPolicy<I> identifierPolicy) {
+	public SingleKeyLinkageSupport(SerializablePropertyAccessor<C, I> getter, IdentifierPolicy<I> identifierPolicy) {
 		this.accessor = new ValueAccessPointVariantSupport<>(getter);
 		this.identifierPolicy = identifierPolicy;
 	}
 	
-	public SingleKeyLinkageSupport(SerializableMutator<C, I> setter, IdentifierPolicy<I> identifierPolicy) {
+	public SingleKeyLinkageSupport(SerializablePropertyMutator<C, I> setter, IdentifierPolicy<I> identifierPolicy) {
 		this.accessor = new ValueAccessPointVariantSupport<>(setter);
 		this.identifierPolicy = identifierPolicy;
 	}
@@ -48,7 +48,7 @@ class SingleKeyLinkageSupport<C, I> implements SingleKeyMapping<C, I> {
 	}
 	
 	@Override
-	public ReversibleAccessor<C, I> getAccessor() {
+	public ReadWritePropertyAccessPoint<C, I> getAccessor() {
 		return accessor.getAccessor();
 	}
 	

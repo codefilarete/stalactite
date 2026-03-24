@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.mapping;
 
 import java.util.function.Function;
 
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.PersistExecutor.DefaultPersistExecutor.DefaultIsNewDeterminer;
 import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
@@ -48,7 +48,7 @@ public class SimpleIdMapping<C, I> implements IdMapping<C, I> {
 		}
 	}
 	
-	public SimpleIdMapping(ReversibleAccessor<C, I> identifierAccessor,
+	public SimpleIdMapping(ReadWritePropertyAccessPoint<C, I> identifierAccessor,
 						   IdentifierInsertionManager<C, I> identifierInsertionManager,
 						   SingleIdentifierAssembler identifierMarshaller) {
 		this(new AccessorWrapperIdAccessor<>(identifierAccessor), identifierInsertionManager, identifierMarshaller);

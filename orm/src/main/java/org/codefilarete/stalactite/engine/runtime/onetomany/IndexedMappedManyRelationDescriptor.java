@@ -11,8 +11,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.Accessor;
-import org.codefilarete.reflection.Mutator;
+import org.codefilarete.reflection.PropertyMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -30,15 +30,14 @@ public class IndexedMappedManyRelationDescriptor<SRC, TRGT, C extends Collection
 	/** Column that stores index value, owned by reverse side table (table of targetPersister) */
 	private final Column<Table, Integer> indexingColumn;
 	
-	public IndexedMappedManyRelationDescriptor(Accessor<SRC, C> collectionGetter,
-											   Mutator<SRC, C> collectionSetter,
+	public IndexedMappedManyRelationDescriptor(ReadWritePropertyAccessPoint<SRC, C> collectionGetter,
 											   Supplier<C> collectionFactory,
-											   @Nullable Mutator<TRGT, SRC> reverseSetter,
+											   @Nullable PropertyMutator<TRGT, SRC> reverseSetter,
 											   Key<?, SRCID> reverseColumn,
 											   Column<? extends Table, Integer> indexingColumn,
 											   Function<SRC, SRCID> idProvider,
 											   Function<TRGT, TRGTID> targetIdProvider) {
-		super(collectionGetter, collectionSetter, collectionFactory, reverseSetter, reverseColumn);
+		super(collectionGetter, collectionFactory, reverseSetter, reverseColumn);
 		this.indexingColumn = (Column<Table, Integer>) indexingColumn;
 		super.relationFixer = new InMemoryRelationHolder(idProvider, targetIdProvider);
 	}
@@ -121,10 +120,10 @@ public class IndexedMappedManyRelationDescriptor<SRC, TRGT, C extends Collection
 				if (inMemoryCollection != null) {	// inMemoryCollection can be null if there's no associated entity in the database
 					Map<TRGTID, Integer> indexPerTargetId = currentSelectedIndexes.get();
 					inMemoryCollection.sort(Comparator.comparingInt(target -> indexPerTargetId.get(targetIdProvider.apply(target))));
-					C relationCollection = getCollectionGetter().get(src);
+					C relationCollection = getCollectionAccessPoint().get(src);
 					if (relationCollection == null) {
 						relationCollection = getCollectionFactory().get();
-						getCollectionSetter().set(src, relationCollection);
+						getCollectionAccessPoint().set(src, relationCollection);
 					}
 					relationCollection.addAll(inMemoryCollection);
 				}

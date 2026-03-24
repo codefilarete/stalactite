@@ -7,9 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.codefilarete.reflection.Accessor;
-import org.codefilarete.reflection.ReadWriteAccessPoint;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.PropertyMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.configurer.DefaultComposedIdentifierAssembler;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRecord;
@@ -36,10 +37,10 @@ import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
 import org.codefilarete.stalactite.query.api.JoinLink;
-import org.codefilarete.stalactite.query.model.FluentQueries;
 import org.codefilarete.stalactite.query.api.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.api.Selectable.SimpleSelectable;
+import org.codefilarete.stalactite.query.model.FluentQueries;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -68,18 +69,18 @@ class AggregateAccessPointToColumnMappingTest {
 		Column<T, Long> versionColumn = personTable.addColumn("version", long.class);
 		when(entityMappingMock.getTargetTable()).thenReturn(personTable);
 		when(entityMappingMock.getPropertyToColumn()).thenReturn(
-				Maps.forHashMap((Class<ReversibleAccessor<Person, ?>>) (Class) ReversibleAccessor.class, (Class<Column<T, ?>>) (Class) Column.class)
-						.add(accessor(Person::getName), nameColumn)
+				Maps.forHashMap((Class<ReadWritePropertyAccessPoint<Person, ?>>) (Class) ReadWritePropertyAccessPoint.class, (Class<Column<T, ?>>) (Class) Column.class)
+						.add(Accessors.readWriteAccessPoint(Person::getName), nameColumn)
 		);
 		when(entityMappingMock.getReadonlyPropertyToColumn()).thenReturn(
-				Maps.forHashMap((Class<ReversibleAccessor<Person, ?>>) (Class) ReversibleAccessor.class, (Class<Column<T, ?>>) (Class) Column.class)
-						.add(accessor(Person::getVersion), versionColumn)
+				Maps.forHashMap((Class<PropertyMutator<Person, ?>>) (Class) PropertyMutator.class, (Class<Column<T, ?>>) (Class) Column.class)
+						.add(Accessors.readWriteAccessPoint(Person::getVersion), versionColumn)
 		);
 		
 		IdMapping<Person, Identifier<Long>> idMapping = mock(IdMapping.class);
 		when(entityMappingMock.getIdMapping()).thenReturn(idMapping);
 		when(idMapping.<T>getIdentifierAssembler()).thenReturn(new SingleIdentifierAssembler<>(idColumn));
-		when(idMapping.getIdAccessor()).thenReturn(new AccessorWrapperIdAccessor<>(accessor(Person::getId)));
+		when(idMapping.getIdAccessor()).thenReturn(new AccessorWrapperIdAccessor<>(Accessors.readWriteAccessPoint(Person::getId)));
 		
 		// When
 		EntityJoinTree<Person, Identifier<Long>> personTree = new EntityJoinTree<>(entityMappingMock);
@@ -105,23 +106,23 @@ class AggregateAccessPointToColumnMappingTest {
 		Column<T, String> streetColumn = personTable.addColumn("street", String.class);
 		when(entityMappingMock.getTargetTable()).thenReturn(personTable);
 		when(entityMappingMock.getPropertyToColumn()).thenReturn(
-				Maps.forHashMap((Class<ReversibleAccessor<House, ?>>) (Class) ReversibleAccessor.class, (Class<Column<T, ?>>) (Class) Column.class)
-						.add(accessor(House::getSurname), nameColumn)
+				Maps.forHashMap((Class<ReadWritePropertyAccessPoint<House, ?>>) (Class) ReadWritePropertyAccessPoint.class, (Class<Column<T, ?>>) (Class) Column.class)
+						.add(Accessors.readWriteAccessPoint(House::getSurname), nameColumn)
 		);
 		when(entityMappingMock.getReadonlyPropertyToColumn()).thenReturn(
-				Maps.forHashMap((Class<ReversibleAccessor<House, ?>>) (Class) ReversibleAccessor.class, (Class<Column<T, ?>>) (Class) Column.class)
-						.add(accessor(House::getVersion), versionColumn)
+				Maps.forHashMap((Class<PropertyMutator<House, ?>>) (Class) PropertyMutator.class, (Class<Column<T, ?>>) (Class) Column.class)
+						.add(Accessors.readWriteAccessPoint(House::getVersion), versionColumn)
 		);
 		
 		IdMapping<House, House.HouseId> idMapping = mock(IdMapping.class);
 		when(entityMappingMock.getIdMapping()).thenReturn(idMapping);
-		when(idMapping.getIdAccessor()).thenReturn(new AccessorWrapperIdAccessor<>(accessor(House::getHouseId)));
+		when(idMapping.getIdAccessor()).thenReturn(new AccessorWrapperIdAccessor<>(Accessors.readWriteAccessPoint(House::getHouseId)));
 		when(idMapping.<T>getIdentifierAssembler()).thenReturn(new DefaultComposedIdentifierAssembler<>(
 				personTable,
 				House.HouseId.class,
-				Maps.forHashMap((Class<ReversibleAccessor<House.HouseId, ?>>) (Class) ReversibleAccessor.class, (Class<Column<T, ?>>) (Class) Column.class)
-						.add(accessor(House.HouseId::getNumber), numberColumn)
-						.add(accessor(House.HouseId::getStreet), streetColumn)
+				Maps.forHashMap((Class<ReadWritePropertyAccessPoint<House.HouseId, ?>>) (Class) ReadWritePropertyAccessPoint.class, (Class<Column<T, ?>>) (Class) Column.class)
+						.add(Accessors.readWriteAccessPoint(House.HouseId::getNumber), numberColumn)
+						.add(Accessors.readWriteAccessPoint(House.HouseId::getStreet), streetColumn)
 		));
 		
 		// When
@@ -149,18 +150,18 @@ class AggregateAccessPointToColumnMappingTest {
 		Column<T, Long> discriminatorColumn = personTable.addColumn("DTYPE", long.class);
 		when(entityMappingMock.getTargetTable()).thenReturn(personTable);
 		when(entityMappingMock.getPropertyToColumn()).thenReturn(
-				Maps.forHashMap((Class<ReversibleAccessor<Person, ?>>) (Class) ReversibleAccessor.class, (Class<Column<T, ?>>) (Class) Column.class)
-						.add(accessor(Person::getName), nameColumn)
+				Maps.forHashMap((Class<ReadWritePropertyAccessPoint<Person, ?>>) (Class) ReadWritePropertyAccessPoint.class, (Class<Column<T, ?>>) (Class) Column.class)
+						.add(Accessors.readWriteAccessPoint(Person::getName), nameColumn)
 		);
 		when(entityMappingMock.getReadonlyPropertyToColumn()).thenReturn(
-				Maps.forHashMap((Class<ReversibleAccessor<Person, ?>>) (Class) ReversibleAccessor.class, (Class<Column<T, ?>>) (Class) Column.class)
-						.add(accessor(Person::getVersion), versionColumn)
+				Maps.forHashMap((Class<PropertyMutator<Person, ?>>) (Class) PropertyMutator.class, (Class<Column<T, ?>>) (Class) Column.class)
+						.add(Accessors.readWriteAccessPoint(Person::getVersion), versionColumn)
 		);
 		
 		IdMapping<Person, Identifier<Long>> idMapping = mock(IdMapping.class);
 		when(entityMappingMock.getIdMapping()).thenReturn(idMapping);
 		when(idMapping.<T>getIdentifierAssembler()).thenReturn(new SingleIdentifierAssembler<>(idColumn));
-		when(idMapping.getIdAccessor()).thenReturn(new AccessorWrapperIdAccessor<>(accessor(Person::getId)));
+		when(idMapping.getIdAccessor()).thenReturn(new AccessorWrapperIdAccessor<>(Accessors.readWriteAccessPoint(Person::getId)));
 		
 		PseudoTable pseudoTable = new PseudoTable(FluentQueries.select(idColumn, nameColumn, versionColumn).from(personTable).getQuery(), "dummyUnion");
 		ConfiguredRelationalPersister<Person, Identifier<Long>> rootPersisterMock = mock(ConfiguredRelationalPersister.class);
@@ -194,18 +195,18 @@ class AggregateAccessPointToColumnMappingTest {
 		Column<T1, Long> versionColumn = personTable.addColumn("version", long.class);
 		when(entityMappingMock.getTargetTable()).thenReturn(personTable);
 		when(entityMappingMock.getPropertyToColumn()).thenReturn(
-				Maps.forHashMap((Class<ReversibleAccessor<Person, ?>>) (Class) ReversibleAccessor.class, (Class<Column<T1, ?>>) (Class) Column.class)
-						.add(accessor(Person::getName), nameColumn)
+				Maps.forHashMap((Class<ReadWritePropertyAccessPoint<Person, ?>>) (Class) ReadWritePropertyAccessPoint.class, (Class<Column<T1, ?>>) (Class) Column.class)
+						.add(Accessors.readWriteAccessPoint(Person::getName), nameColumn)
 		);
 		when(entityMappingMock.getReadonlyPropertyToColumn()).thenReturn(
-				Maps.forHashMap((Class<ReversibleAccessor<Person, ?>>) (Class) ReversibleAccessor.class, (Class<Column<T1, ?>>) (Class) Column.class)
-						.add(accessor(Person::getVersion), versionColumn)
+				Maps.forHashMap((Class<PropertyMutator<Person, ?>>) (Class) PropertyMutator.class, (Class<Column<T1, ?>>) (Class) Column.class)
+						.add(Accessors.readWriteAccessPoint(Person::getVersion), versionColumn)
 		);
 		
 		IdMapping<Person, Identifier<Long>> idMapping = mock(IdMapping.class);
 		when(entityMappingMock.getIdMapping()).thenReturn(idMapping);
 		when(idMapping.<T1>getIdentifierAssembler()).thenReturn(new SingleIdentifierAssembler<>(idColumn));
-		when(idMapping.getIdAccessor()).thenReturn(new AccessorWrapperIdAccessor<>(accessor(Person::getId)));
+		when(idMapping.getIdAccessor()).thenReturn(new AccessorWrapperIdAccessor<>(Accessors.readWriteAccessPoint(Person::getId)));
 		
 		EntityJoinTree<Person, Identifier<Long>> personTree = new EntityJoinTree<>(entityMappingMock);
 		Key<T1, Identifier<Long>> leftJoinKey = Key.ofSingleColumn(idColumn);
@@ -225,18 +226,18 @@ class AggregateAccessPointToColumnMappingTest {
 		// complexity of the generics type
 		when(entityInflater.getEntityMapping()).thenReturn((EntityMapping) collectionMapping);
 		
-		Accessor<Person, Set<String>> nicknamesAccessor = accessorByMethodReference(Person::getNicknames);
+		PropertyAccessor<Person, Set<String>> nicknamesAccessor = accessorByMethodReference(Person::getNicknames);
 		BeanRelationFixer<Person, ElementRecord<String, Identifier<Long>>> relationFixer =
 				BeanRelationFixer.ofAdapter(
-						mutatorByMethodReference(Person::setNicknames)::set,
-						accessorByMethodReference(Person::getNicknames)::get,
+						mutatorByMethodReference(Person::setNicknames),
+						accessorByMethodReference(Person::getNicknames),
 						HashSet::new,
 						(bean, input, collection) -> collection.add(input.getElement()));
 		
 		// we add a relation node to declare the collection
 		new RelationJoinNode<>(
 				(JoinNode<?, T1>) personTree.getRoot(),
-				(Accessor<Person, ElementRecord<String, Identifier<Long>>>) (Accessor) nicknamesAccessor,
+				(PropertyAccessor<Person, ElementRecord<String, Identifier<Long>>>) (PropertyAccessor) nicknamesAccessor,
 				leftJoinKey,
 				rightJoinKey,
 				JoinType.OUTER,
@@ -268,18 +269,18 @@ class AggregateAccessPointToColumnMappingTest {
 		Column<T1, Long> versionColumn = personTable.addColumn("version", long.class);
 		when(entityMappingMock.getTargetTable()).thenReturn(personTable);
 		when(entityMappingMock.getPropertyToColumn()).thenReturn(
-				Maps.forHashMap((Class<ReversibleAccessor<Person, ?>>) (Class) ReversibleAccessor.class, (Class<Column<T1, ?>>) (Class) Column.class)
-						.add(accessor(Person::getName), nameColumn)
+				Maps.forHashMap((Class<ReadWritePropertyAccessPoint<Person, ?>>) (Class) ReadWritePropertyAccessPoint.class, (Class<Column<T1, ?>>) (Class) Column.class)
+						.add(Accessors.readWriteAccessPoint(Person::getName), nameColumn)
 		);
 		when(entityMappingMock.getReadonlyPropertyToColumn()).thenReturn(
-				Maps.forHashMap((Class<ReversibleAccessor<Person, ?>>) (Class) ReversibleAccessor.class, (Class<Column<T1, ?>>) (Class) Column.class)
-						.add(accessor(Person::getVersion), versionColumn)
+				Maps.forHashMap((Class<PropertyMutator<Person, ?>>) (Class) PropertyMutator.class, (Class<Column<T1, ?>>) (Class) Column.class)
+						.add(Accessors.readWriteAccessPoint(Person::getVersion), versionColumn)
 		);
 		
 		IdMapping<Person, Identifier<Long>> idMapping = mock(IdMapping.class);
 		when(entityMappingMock.getIdMapping()).thenReturn(idMapping);
 		when(idMapping.<T1>getIdentifierAssembler()).thenReturn(new SingleIdentifierAssembler<>(idColumn));
-		when(idMapping.getIdAccessor()).thenReturn(new AccessorWrapperIdAccessor<>(accessor(Person::getId)));
+		when(idMapping.getIdAccessor()).thenReturn(new AccessorWrapperIdAccessor<>(Accessors.readWriteAccessPoint(Person::getId)));
 		
 		EntityJoinTree<Person, Identifier<Long>> personTree = new EntityJoinTree<>(entityMappingMock);
 		Key<T1, Identifier<Long>> leftJoinKey = Key.ofSingleColumn(idColumn);
@@ -289,13 +290,13 @@ class AggregateAccessPointToColumnMappingTest {
 		Column<T2, String> keyColumn = mapTable.addColumn("key", String.class);
 		Column<T2, String> valueColumn = mapTable.addColumn("value", String.class);
 		Key<T2, Identifier<Long>> rightJoinKey = Key.ofSingleColumn(mapIdColumn);
-		ReadWriteAccessPoint<KeyValueRecord<Object, Object, Object>, Object> phoneNumbersAccessor = KeyValueRecord.VALUE_ACCESSOR;
-		Map<ReversibleAccessor<?, ?>, Column> propertiesMapping = new HashMap<>();
+		ReadWritePropertyAccessPoint<KeyValueRecord<Object, Object, Object>, Object> phoneNumbersAccessor = KeyValueRecord.VALUE_ACCESSOR;
+		Map<ReadWritePropertyAccessPoint<?, ?>, Column> propertiesMapping = new HashMap<>();
 		propertiesMapping.put(phoneNumbersAccessor, valueColumn);
 		EntityMapping<KeyValueRecord<String, String, Identifier<Long>>, RecordId<String, Identifier<Long>>, T2> mapMapping = new KeyValueRecordMapping<>(
 				mapTable,
 				// Gross cast due to complex generics (and probably wrong in the code)
-				(Map<? extends ReversibleAccessor<KeyValueRecord<String, String, Identifier<Long>>, ?>, Column<T2, ?>>) (Map) propertiesMapping,
+				(Map<? extends ReadWritePropertyAccessPoint<KeyValueRecord<String, String, Identifier<Long>>, ?>, Column<T2, ?>>) (Map) propertiesMapping,
 				new KeyValueRecordIdMapping<>(mapTable, mock(EmbeddedBeanMapping.class), mock(IdentifierAssembler.class), null)
 		);
 		EntityInflater<KeyValueRecord<String, String, Identifier<Long>>, KeyValueRecord<String, String, Identifier<Long>>> entityInflater = mock(EntityInflater.class);

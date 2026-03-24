@@ -1,11 +1,11 @@
 package org.codefilarete.stalactite.engine.runtime.load;
 
-import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.PropertyAccessPoint;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
@@ -36,7 +36,7 @@ public class JoinTablePolymorphicRelationJoinNode<C, T1 extends Table, T2 extend
 	private final Set<SubPersister<? extends C>> subPersisters = new HashSet<>();
 	
 	public JoinTablePolymorphicRelationJoinNode(JoinNode<?, T1> parent,
-												Accessor<?, ?> propertyAccessor,
+												PropertyAccessPoint<?, ?> propertyAccessor,
 												Key<T1, JOINTYPE> leftJoinColumn,
 												Key<T2, JOINTYPE> rightJoinColumn,
 												JoinType joinType,

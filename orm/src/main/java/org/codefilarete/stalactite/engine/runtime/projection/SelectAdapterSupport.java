@@ -3,11 +3,11 @@ package org.codefilarete.stalactite.engine.runtime.projection;
 import java.util.List;
 import java.util.Set;
 
-import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.EntityPersister.SelectAdapter;
 import org.codefilarete.stalactite.engine.runtime.query.AggregateAccessPointToColumnMapping;
-import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.api.Selectable;
+import org.codefilarete.stalactite.query.model.Select;
 
 /**
  * Implementation of {@link SelectAdapter} that wraps {@link Select} to build its select clause.
@@ -58,7 +58,7 @@ public class SelectAdapterSupport<C> implements SelectAdapter<C> {
 	}
 	
 	@Override
-	public Selectable<?> giveColumn(List<ValueAccessPoint<?>> property) {
+	public Selectable<?> giveColumn(List<ReadWritePropertyAccessPoint<?, ?>> property) {
 		return accessPointToColumn.giveColumn(property);
 	}
 }

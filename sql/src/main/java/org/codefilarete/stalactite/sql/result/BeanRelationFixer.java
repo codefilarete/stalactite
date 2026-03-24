@@ -3,11 +3,11 @@ package org.codefilarete.stalactite.sql.result;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.Mutator;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.function.TriConsumer;
 
@@ -120,6 +120,19 @@ public interface BeanRelationFixer<E, I> {
 	}
 	
 	/**
+	 * Shortcut to create a {@link BeanRelationFixer} for a bidirectionnal relation where the attribute is a {@link Collection}
+	 *
+	 * @param setter the method that sets the {@link Collection} onto the target bean
+	 * @param collectionFactory a supplier of an instance to fill the relation if it is null
+	 * @param reverseSetter the setter for the other side of the relation
+	 * @return a {@link BeanRelationFixer} that will add the input to the Collection and create if the getter returns null
+	 */
+	static <E, I, C extends Collection<I>> BeanRelationFixer<E, I> of(ReadWriteAccessPoint<E, C> setter, Supplier<C> collectionFactory,
+																	  Mutator<I, E> reverseSetter) {
+		return of(setter, setter, collectionFactory, reverseSetter);
+	}
+	
+	/**
 	 * Shortcut to create a {@link BeanRelationFixer} for a relation where the attribute is a {@link Collection}
 	 *
 	 * @param setter the method that sets the {@link Collection} onto the target bean
@@ -144,6 +157,20 @@ public interface BeanRelationFixer<E, I> {
 	}
 	
 	/**
+	 * Shortcut to create a {@link BeanRelationFixer} for a relation where the attribute is a {@link Collection}
+	 *
+	 * @param setter the method that sets the {@link Collection} onto the target bean
+	 * @param collectionFactory a supplier of an instance to fill the relation if it is null
+	 * @param adapter the final method that will be applied to bean, input and collection, expected to have at least a collection add, with eventual input adaptation
+	 * @return a {@link BeanRelationFixer} that will add the input to the Collection and create if the getter returns null
+	 */
+	static <E, I, C extends Collection<?>> BeanRelationFixer<E, I> ofAdapter(ReadWriteAccessPoint<E, C> setter,
+																			 Supplier<C> collectionFactory,
+																			 TriConsumer<E, I, C> adapter) {
+		return ofAdapter(setter, setter, collectionFactory, adapter);
+	}
+	
+	/**
 	 * Shortcut to create a {@link BeanRelationFixer} for a relation where the attribute is a {@link Map}
 	 *
 	 * @param setter the method that sets the {@link Map} onto the target bean
@@ -152,16 +179,16 @@ public interface BeanRelationFixer<E, I> {
 	 * @param adapter the final method that will be applied to bean, input and collection, expected to have at least a collection add, with eventual input adaptation
 	 * @return a {@link BeanRelationFixer} that will add the input to the Collection and create if the getter returns null
 	 */
-	static <E, I, M extends Map<?, ?>> BeanRelationFixer<E, I> ofMapAdapter(BiConsumer<E, M> setter,
-																			Function<E, M> getter,
+	static <E, I, M extends Map<?, ?>> BeanRelationFixer<E, I> ofMapAdapter(Mutator<E, M> setter,
+																			Accessor<E, M> getter,
 																			Supplier<M> mapFactory,
 																			TriConsumer<E, I, M> adapter) {
 		return (target, input) -> {
-			M map = getter.apply(target);
+			M map = getter.get(target);
 			if (map == null) {
 				// we fill the relation
 				map = mapFactory.get();
-				setter.accept(target, map);
+				setter.set(target, map);
 			}
 			adapter.accept(target, input, map);
 		};

@@ -3,9 +3,11 @@ package org.codefilarete.stalactite.engine.configurer;
 import java.lang.reflect.Field;
 
 import org.codefilarete.reflection.AccessorByField;
+import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.function.ThreadSafeLazyInitializer;
 
@@ -20,30 +22,30 @@ import org.codefilarete.tool.function.ThreadSafeLazyInitializer;
  */
 public class ValueAccessPointVariantSupport<T, O> {
 	
-	private final ThreadSafeLazyInitializer<ReversibleAccessor<T, O>> accessor;
+	private final ThreadSafeLazyInitializer<ReadWritePropertyAccessPoint<T, O>> accessor;
 	
-	private SerializableAccessor<T, O> getter;
+	private SerializablePropertyAccessor<T, O> getter;
 	
-	private SerializableMutator<T, O> setter;
+	private SerializablePropertyMutator<T, O> setter;
 	
 	// to be used in addition to getter or setter when attribute differs from method name (case when Java Naming Convention is not respected)
 	private Field field;
 	
-	public ValueAccessPointVariantSupport(SerializableAccessor<T, O> getter) {
+	public ValueAccessPointVariantSupport(SerializablePropertyAccessor<T, O> getter) {
 		this.getter = getter;
 		this.accessor = new AccessorFieldLazyInitializer();
 	}
 	
-	public ValueAccessPointVariantSupport(SerializableMutator<T, O> setter) {
+	public ValueAccessPointVariantSupport(SerializablePropertyMutator<T, O> setter) {
 		this.setter = setter;
 		this.accessor = new AccessorFieldLazyInitializer();
 	}
 	
 	public ValueAccessPointVariantSupport(Class persistedClass, String fieldName) {
-		this.accessor = new ThreadSafeLazyInitializer<ReversibleAccessor<T, O>>() {
+		this.accessor = new ThreadSafeLazyInitializer<ReadWritePropertyAccessPoint<T, O>>() {
 			@Override
-			protected ReversibleAccessor<T, O> createInstance() {
-				return new AccessorByField<>(Reflections.getField(persistedClass, fieldName));
+			protected ReadWritePropertyAccessPoint<T, O> createInstance() {
+				return new DefaultReadWritePropertyAccessPoint<>(new AccessorByField<>(Reflections.getField(persistedClass, fieldName)));
 			}
 		};
 	}
@@ -52,26 +54,26 @@ public class ValueAccessPointVariantSupport<T, O> {
 		this.field = Reflections.getField(persistedClass, fieldName);;
 	}
 	
-	public ReversibleAccessor<T, O> getAccessor() {
+	public ReadWritePropertyAccessPoint<T, O> getAccessor() {
 		return accessor.get();
 	}
 	
 	/**
 	 * Internal class that computes a {@link ReversibleAccessor} from getter or setter according to which one is set up
 	 */
-	private class AccessorFieldLazyInitializer extends ThreadSafeLazyInitializer<ReversibleAccessor<T, O>> {
+	private class AccessorFieldLazyInitializer extends ThreadSafeLazyInitializer<ReadWritePropertyAccessPoint<T, O>> {
 		
 		@Override
-		protected ReversibleAccessor<T, O> createInstance() {
+		protected ReadWritePropertyAccessPoint<T, O> createInstance() {
 			return new PropertyAccessorResolver<>(new PropertyAccessorResolver.PropertyMapping<T, O>() {
 				
 				@Override
-				public SerializableAccessor<T, O> getGetter() {
+				public SerializablePropertyAccessor<T, O> getGetter() {
 					return ValueAccessPointVariantSupport.this.getter;
 				}
 				
 				@Override
-				public SerializableMutator<T, O> getSetter() {
+				public SerializablePropertyMutator<T, O> getSetter() {
 					return ValueAccessPointVariantSupport.this.setter;
 				}
 				

@@ -4,21 +4,21 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.PropertyAccessPoint;
+import org.codefilarete.reflection.PropertyMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy.JoinTablePolymorphism;
 import org.codefilarete.stalactite.dsl.subentity.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
-import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
-import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
-import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
-import org.codefilarete.stalactite.engine.configurer.builder.IdentifierManagerStep;
-import org.codefilarete.stalactite.engine.configurer.builder.InheritanceMappingStep.Mapping;
 import org.codefilarete.stalactite.engine.configurer.builder.MainPersisterStep;
+import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.builder.PrimaryKeyPropagationStep;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
@@ -97,10 +97,10 @@ public class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends Abst
 		EmbeddableMappingBuilder<D, SUBT> embeddableMappingBuilder = new EmbeddableMappingBuilder<>(subConfiguration.getPropertiesMapping(), subTable,
 				this.columnBinderRegistry, this.namingConfiguration.getColumnNamingStrategy(), this.namingConfiguration.getIndexNamingStrategy());
 		EmbeddableMapping<D, SUBT> embeddableMapping = embeddableMappingBuilder.build();
-		Map<ReversibleAccessor<D, Object>, Column<SUBT, Object>> subEntityPropertiesMapping = embeddableMapping.getMapping();
-		Map<ReversibleAccessor<D, Object>, Column<SUBT, Object>> subEntityReadonlyPropertiesMapping = embeddableMapping.getReadonlyMapping();
-		ValueAccessPointMap<D, Converter<Object, Object>, ReversibleAccessor<D, ?>> subEntityPropertiesConverters = embeddableMapping.getReadConverters();
-		ValueAccessPointMap<D, Converter<Object, Object>, ReversibleAccessor<D, ?>> subEntityPropertiesWriteConverters = embeddableMapping.getWriteConverters();
+		Map<ReadWritePropertyAccessPoint<D, Object>, Column<SUBT, Object>> subEntityPropertiesMapping = embeddableMapping.getMapping();
+		Map<PropertyMutator<D, Object>, Column<SUBT, Object>> subEntityReadonlyPropertiesMapping = embeddableMapping.getReadonlyMapping();
+		ValueAccessPointMap<D, Converter<Object, Object>, PropertyAccessPoint<D, ?>> subEntityPropertiesConverters = embeddableMapping.getReadConverters();
+		ValueAccessPointMap<D, Converter<Object, Object>, PropertyAccessPoint<D, ?>> subEntityPropertiesWriteConverters = embeddableMapping.getWriteConverters();
 		addPrimarykey(subTable);
 		addForeignKey(subTable);
 		DefaultEntityMapping<D, I, SUBT> entityMapping = MainPersisterStep.createEntityMapping(

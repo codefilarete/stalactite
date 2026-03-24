@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.engine.configurer.builder;
 import java.util.function.Function;
 
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.idpolicy.AlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.dsl.idpolicy.BeforeInsertIdentifierPolicy;
@@ -16,7 +16,6 @@ import org.codefilarete.stalactite.engine.SeparateTransactionExecutor;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.CompositeKeyIdentification;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.SingleColumnIdentification;
-import org.codefilarete.stalactite.engine.configurer.builder.InheritanceMappingStep.Mapping;
 import org.codefilarete.stalactite.engine.configurer.builder.InheritanceMappingStep.MappingPerTable;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
@@ -44,7 +43,7 @@ public class IdentifierManagerStep<C, I> extends AbstractIdentificationStep<C, I
 	
 	void applyIdentifierManager(AbstractIdentification<C, I> identification,
 								MappingPerTable<C> inheritanceMappingPerTable,
-								ReversibleAccessor<C, I> idAccessor,
+								ReadWritePropertyAccessPoint<C, I> idAccessor,
 								Dialect dialect,
 								ConnectionConfiguration connectionConfiguration) {
 		determineIdentifierManager(identification, inheritanceMappingPerTable, idAccessor, dialect, connectionConfiguration);
@@ -62,7 +61,7 @@ public class IdentifierManagerStep<C, I> extends AbstractIdentificationStep<C, I
 	 */
 	private void determineIdentifierManager(AbstractIdentification<C, I> identification,
 											MappingPerTable<C> mappingPerTable,
-											ReversibleAccessor<C, I> idAccessor,
+											ReadWritePropertyAccessPoint<C, I> idAccessor,
 											Dialect dialect,
 											ConnectionConfiguration connectionConfiguration) {
 		AccessorDefinition idDefinition = AccessorDefinition.giveDefinition(idAccessor);
@@ -136,7 +135,7 @@ public class IdentifierManagerStep<C, I> extends AbstractIdentificationStep<C, I
 				.setFallbackInsertionManager(fallbackMappingIdentifierManager);
 	}
 	
-	private <E> AlreadyAssignedIdentifierManager<E, I> determineFallbackIdentifierManager(ReversibleAccessor<E, I> idAccessor,
+	private <E> AlreadyAssignedIdentifierManager<E, I> determineFallbackIdentifierManager(ReadWritePropertyAccessPoint<E, I> idAccessor,
 																						  IdentifierInsertionManager<E, I> identifierInsertionManager,
 																						  Class<I> identifierType) {
 		AlreadyAssignedIdentifierManager<E, I> fallbackMappingIdentifierManager;

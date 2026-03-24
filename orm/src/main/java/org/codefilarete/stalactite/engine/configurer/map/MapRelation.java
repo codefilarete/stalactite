@@ -7,9 +7,11 @@ import javax.annotation.Nullable;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MutatorByMethodReference;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.SerializableAccessor;
 import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
@@ -31,7 +33,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 	
 	/** The method that gives the entities from the "root" entity */
-	private final ReversibleAccessor<SRC, M> mapProvider;
+	private final ReadWritePropertyAccessPoint<SRC, M> mapProvider;
 	private final Class<K> keyType;
 	private final Class<V> valueType;
 	/** Optional provider of {@link Map} instance to be used if collection value is null */
@@ -90,19 +92,19 @@ public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 	
 	private boolean fetchSeparately;
 	
-	public MapRelation(SerializableMutator<SRC, M> setter,
+	public MapRelation(SerializablePropertyMutator<SRC, M> setter,
 					   Class<K> keyType,
 					   Class<V> valueType) {
-		this(Accessors.mutator(setter), keyType, valueType);
+		this(Accessors.readWriteAccessPoint(setter), keyType, valueType);
 	}
 	
-	public MapRelation(SerializableAccessor<SRC, M> getter,
+	public MapRelation(SerializablePropertyAccessor<SRC, M> getter,
 					   Class<K> keyType,
 					   Class<V> valueType) {
-		this(Accessors.accessor(getter), keyType, valueType);
+		this(Accessors.readWriteAccessPoint(getter), keyType, valueType);
 	}
 	
-	public MapRelation(ReversibleAccessor<SRC, M> mapProvider,
+	public MapRelation(ReadWritePropertyAccessPoint<SRC, M> mapProvider,
 					   Class<K> keyType,
 					   Class<V> valueType) {
 		this.keyType = keyType;
@@ -110,7 +112,7 @@ public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 		this.mapProvider = mapProvider;
 	}
 	
-	public ReversibleAccessor<SRC, M> getMapProvider() {
+	public ReadWritePropertyAccessPoint<SRC, M> getMapProvider() {
 		return mapProvider;
 	}
 	

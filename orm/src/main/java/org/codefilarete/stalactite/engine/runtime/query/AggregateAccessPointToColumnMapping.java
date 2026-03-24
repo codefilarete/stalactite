@@ -13,17 +13,18 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMethodReference;
-import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.PropertyAccessPoint;
+import org.codefilarete.reflection.PropertyMutator;
 import org.codefilarete.reflection.ReadWriteAccessPoint;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.reflection.ValueAccessPointChain;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.configurer.DefaultComposedIdentifierAssembler;
-import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListener;
+import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecordMapping;
 import org.codefilarete.stalactite.engine.runtime.load.AbstractJoinNode;
@@ -102,7 +103,7 @@ public class AggregateAccessPointToColumnMapping<C> {
 	
 	private void collectPropertiesMapping() {
 		Deque<RelationJoinNode<?, ?, ?, ?, ?>> accessorPath = new ArrayDeque<>();
-		Map<List<ValueAccessPoint<?>>, Selectable<?>> rootProperties = collectPropertiesMapping(tree.getRoot(), accessorPath.stream().map(RelationJoinNode::getPropertyAccessor).collect(Collectors.toSet()));
+		Map<List<PropertyAccessPoint<?, ?>>, Selectable<?>> rootProperties = collectPropertiesMapping(tree.getRoot(), new ArrayList<>());
 		rootProperties.forEach((valueAccessPoints, selectable) -> {
 			this.propertyToColumn.put(valueAccessPoints, tree.getRoot().getOriginalColumnsToLocalOnes().get(selectable));
 		});
@@ -113,7 +114,7 @@ public class AggregateAccessPointToColumnMapping<C> {
 			if (abstractJoinNode instanceof RelationJoinNode) {
 				RelationJoinNode<?, ?, ?, ?, ?> relationJoinNode = (RelationJoinNode<?, ?, ?, ?, ?>) abstractJoinNode;
 				accessorPath.add(relationJoinNode);
-				Map<List<ValueAccessPoint<?>>, Selectable<?>> joinNodeProperties = collectPropertiesMapping(relationJoinNode, accessorPath.stream().map(RelationJoinNode::getPropertyAccessor).collect(Collectors.toSet()));
+				Map<List<PropertyAccessPoint<?, ?>>, Selectable<?>> joinNodeProperties = collectPropertiesMapping(relationJoinNode, accessorPath.stream().map(RelationJoinNode::getPropertyAccessor).collect(Collectors.toSet()));
 				joinNodeProperties.forEach((valueAccessPoints, selectable) -> {
 					this.propertyToColumn.put(valueAccessPoints, relationJoinNode.getOriginalColumnsToLocalOnes().get(selectable));
 				});
@@ -133,7 +134,7 @@ public class AggregateAccessPointToColumnMapping<C> {
 	 *
 	 * @param joinNode the node from which we can get a {@link EntityMapping} to collect all properties from
 	 */
-	private <E> Map<List<ValueAccessPoint<?>>, Selectable<?>> collectPropertiesMapping(JoinNode<E, ?> joinNode, Collection<Accessor<?, ?>> accessorPath) {
+	private <E> Map<List<PropertyAccessPoint<?, ?>>, Selectable<?>> collectPropertiesMapping(JoinNode<E, ?> joinNode, Collection<PropertyAccessPoint<?, ?>> accessorPath) {
 		EntityInflater<E, ?> entityInflater;
 		if (joinNode instanceof JoinRoot) {
 			if (joinNode instanceof TablePerClassRootJoinNode) {
@@ -157,16 +158,16 @@ public class AggregateAccessPointToColumnMapping<C> {
 			EntityMapping<E, ?, ?> entityMapping = entityInflater.getEntityMapping();
 			if (entityMapping instanceof ElementRecordMapping) {    // Collection mapping case
 				// Querying Collection is only possible on its values (obviously !)
-				Map<List<ValueAccessPoint<?>>, Selectable<?>> result = new HashMap<>();
+				Map<List<PropertyAccessPoint<?, ?>>, Selectable<?>> result = new HashMap<>();
 				Column<?, ?> mapValueColumn = entityMapping.getPropertyToColumn().get(ELEMENT_ACCESSOR);
-				List<ValueAccessPoint<?>> accessorPrefix = new ArrayList<>(accessorPath);
+				List<PropertyAccessPoint<?, ?>> accessorPrefix = new ArrayList<>(accessorPath);
 				result.put(accessorPrefix, mapValueColumn);
 				return result;
 			} else if (entityMapping instanceof KeyValueRecordMapping) {    // Map mapping case
 				// Querying Map is only possible on its values
-				Map<List<ValueAccessPoint<?>>, Selectable<?>> result = new HashMap<>();
+				Map<List<PropertyAccessPoint<?, ?>>, Selectable<?>> result = new HashMap<>();
 				Column<?, ?> mapValueColumn = entityMapping.getPropertyToColumn().get(VALUE_ACCESSOR);
-				List<ValueAccessPoint<?>> accessorPrefix = new ArrayList<>(accessorPath);
+				List<PropertyAccessPoint<?, ?>> accessorPrefix = new ArrayList<>(accessorPath);
 				result.put(accessorPrefix, mapValueColumn);
 				return result;
 			}
@@ -178,18 +179,21 @@ public class AggregateAccessPointToColumnMapping<C> {
 		return collectPropertiesMapping(entityMapping, accessorPath, Function.identity());
 	}
 	
-	private <E> Map<List<ValueAccessPoint<?>>, Selectable<?>> collectPropertiesMapping(EntityMapping<E, ?, ?> entityMapping,
-																					   Collection<Accessor<?, ?>> nodeAccessorPath,
-																					   Function<Selectable<?>, Selectable<?>> columnAdapter) {
-		Map<List<ValueAccessPoint<?>>, Selectable<?>> result = new HashMap<>();
+	private <E> Map<List<PropertyAccessPoint<?, ?>>, Selectable<?>> collectPropertiesMapping(EntityMapping<E, ?, ?> entityMapping,
+																							 Collection<PropertyAccessPoint<?, ?>> nodeAccessorPath,
+																							 Function<Selectable<?>, Selectable<?>> columnAdapter) {
+		Map<List<PropertyAccessPoint<?, ?>>, Selectable<?>> result = new HashMap<>();
 		
 		// Collecting basic direct properties
 		Stream.concat(entityMapping.getPropertyToColumn().entrySet().stream(), entityMapping.getReadonlyPropertyToColumn().entrySet().stream())
 				.forEach((entry) -> {
-					ReversibleAccessor<E, ?> accessor = entry.getKey();
-					List<ValueAccessPoint<?>> key;
-					if (accessor instanceof AccessorChain) {
-						key = new ArrayList<>(((AccessorChain<?, ?>) accessor).getAccessors());
+					PropertyMutator<E, ?> accessor = entry.getKey();
+					List<PropertyAccessPoint<?, ?>> key;
+					if (accessor instanceof ValueAccessPointChain) {
+						// - we can expect ValueAccessPointChain accessors to be of PropertyAccessPoint type (because the ORM
+						// doesn't support persistence for indexed value like ListAccessor or ArrayAccessor)
+						// - we make a copy of the List because it will be modified some line below to add the accessors prefix
+						key = new ArrayList<>((List<? extends PropertyAccessPoint<?, ?>>) ((ValueAccessPointChain) accessor).getAccessors());
 					} else {
 						key = Arrays.asList(accessor);
 					}
@@ -200,11 +204,11 @@ public class AggregateAccessPointToColumnMapping<C> {
 		IdentifierAssembler<?, ?> identifierAssembler = entityMapping.getIdMapping().getIdentifierAssembler();
 		if (identifierAssembler instanceof SingleIdentifierAssembler) {
 			Column idColumn = ((SingleIdentifierAssembler) identifierAssembler).getColumn();
-			ReversibleAccessor idAccessor = ((AccessorWrapperIdAccessor) entityMapping.getIdMapping().getIdAccessor()).getIdAccessor();
+			ReadWritePropertyAccessPoint idAccessor = ((AccessorWrapperIdAccessor) entityMapping.getIdMapping().getIdAccessor()).getIdAccessor();
 			result.put(Arrays.asList(idAccessor), columnAdapter.apply(idColumn));
 		} else if (identifierAssembler instanceof DefaultComposedIdentifierAssembler) {
 			((DefaultComposedIdentifierAssembler<?, ?>) identifierAssembler).getMapping().forEach((idAccessor, idColumn) -> {
-				ReversibleAccessor accessorPrefix = ((AccessorWrapperIdAccessor) entityMapping.getIdMapping().getIdAccessor()).getIdAccessor();
+				ReadWritePropertyAccessPoint accessorPrefix = ((AccessorWrapperIdAccessor) entityMapping.getIdMapping().getIdAccessor()).getIdAccessor();
 				result.put(Arrays.asList(accessorPrefix, idAccessor), columnAdapter.apply(idColumn));
 			});
 		}
@@ -216,7 +220,7 @@ public class AggregateAccessPointToColumnMapping<C> {
 				})
 		);
 		
-		// adding the accessor prefix to all the found properties, to create an accessor available from the aggregate root
+		// adding the readWriteAccessPoint prefix to all the found properties, to create an readWriteAccessPoint available from the aggregate root
 		result.forEach((k, v) -> {
 			k.addAll(0, nodeAccessorPath);
 		});

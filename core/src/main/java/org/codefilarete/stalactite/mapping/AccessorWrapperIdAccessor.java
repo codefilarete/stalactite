@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.mapping;
 
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
 
 /**
@@ -10,13 +11,13 @@ import org.codefilarete.reflection.ReversibleAccessor;
  */
 public final class AccessorWrapperIdAccessor<T, I> implements IdAccessor<T, I> {
 	
-	private final ReversibleAccessor<T, I> idAccessor;
+	private final ReadWritePropertyAccessPoint<T, I> idAccessor;
 	
-	public AccessorWrapperIdAccessor(ReversibleAccessor<T, I> idAccessor) {
+	public AccessorWrapperIdAccessor(ReadWritePropertyAccessPoint<T, I> idAccessor) {
 		this.idAccessor = idAccessor;
 	}
 	
-	public ReversibleAccessor<T, I> getIdAccessor() {
+	public ReadWritePropertyAccessPoint<T, I> getIdAccessor() {
 		return idAccessor;
 	}
 	
@@ -27,6 +28,6 @@ public final class AccessorWrapperIdAccessor<T, I> implements IdAccessor<T, I> {
 	
 	@Override
 	public void setId(T t, I identifier) {
-		idAccessor.toMutator().set(t, identifier);
+		idAccessor.set(t, identifier);
 	}
 }

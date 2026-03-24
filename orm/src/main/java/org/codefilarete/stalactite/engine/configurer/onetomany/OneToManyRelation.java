@@ -12,9 +12,11 @@ import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.AccessorDefinitionDefiner;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.Mutator;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.PropertyMutator;
+import org.codefilarete.reflection.ReadWriteAccessorChain;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
@@ -24,6 +26,7 @@ import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.collection.Arrays;
 
 /**
  * 
@@ -35,7 +38,7 @@ import org.codefilarete.tool.Reflections;
 public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	
 	/** The method that gives the "many" entities from the "one" entity */
-	private final ReversibleAccessor<SRC, S> collectionAccessor;
+	private final ReadWritePropertyAccessPoint<SRC, S> collectionAccessor;
 	
 	/** Indicator that says if source persister has table-per-class polymorphism */
 	private final BooleanSupplier sourceTablePerClassPolymorphic;
@@ -50,7 +53,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	 * Useful only for cases of association table because this case doesn't set any reverse information hence such setter can't be deduced.
 	 */
 	@Nullable
-	private SerializableMutator<TRGT, SRC> reverseLink;
+	private SerializablePropertyMutator<TRGT, SRC> reverseLink;
 	
 	/** Default relation mode is {@link RelationMode#ALL} */
 	private RelationMode relationMode = RelationMode.ALL;
@@ -79,7 +82,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	 * @param sourceTablePerClassPolymorphic must return true if source persister has table-per-class polymorphism
 	 * @param targetMappingConfiguration must return persistence configuration of entities stored in the target collection
 	 */
-	public OneToManyRelation(ReversibleAccessor<SRC, S> collectionAccessor,
+	public OneToManyRelation(ReadWritePropertyAccessPoint<SRC, S> collectionAccessor,
 							 BooleanSupplier sourceTablePerClassPolymorphic,
 							 EntityMappingConfigurationProvider<? super TRGT, TRGTID> targetMappingConfiguration) {
 		this.collectionAccessor = collectionAccessor;
@@ -88,7 +91,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		this.mappedByConfiguration = new MappedByConfiguration<>();
 	}
 	
-	private OneToManyRelation(ReversibleAccessor<SRC, S> collectionAccessor,
+	private OneToManyRelation(ReadWritePropertyAccessPoint<SRC, S> collectionAccessor,
 							  BooleanSupplier sourceTablePerClassPolymorphic,
 							  EntityMappingConfigurationProvider<? super TRGT, TRGTID> targetMappingConfiguration,
 							  MappedByConfiguration<TRGT, ?> mappedByConfiguration) {
@@ -103,7 +106,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		this.mappedByConfiguration = (MappedByConfiguration<TRGT, SRC>) mappedByConfiguration;
 	}
 	
-	public ReversibleAccessor<SRC, S> getCollectionAccessor() {
+	public ReadWritePropertyAccessPoint<SRC, S> getCollectionAccessor() {
 		return collectionAccessor;
 	}
 	
@@ -120,16 +123,16 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		return getTargetMappingConfiguration().getPolymorphismPolicy() instanceof PolymorphismPolicy.TablePerClassPolymorphism;
 	}
 	
-	public void setReverseGetter(SerializableAccessor<TRGT, ? super SRC> reverseGetter) {
-		this.mappedByConfiguration.setReverseGetter((SerializableAccessor<TRGT, SRC>) reverseGetter);
+	public void setReverseGetter(SerializablePropertyAccessor<TRGT, ? super SRC> reverseGetter) {
+		this.mappedByConfiguration.setReverseGetter((SerializablePropertyAccessor<TRGT, SRC>) reverseGetter);
 	}
 	
-	public void setReverseSetter(SerializableMutator<TRGT, ? super SRC> reverseSetter) {
-		this.mappedByConfiguration.setReverseSetter((SerializableMutator<TRGT, SRC>) reverseSetter);
+	public void setReverseSetter(SerializablePropertyMutator<TRGT, ? super SRC> reverseSetter) {
+		this.mappedByConfiguration.setReverseSetter((SerializablePropertyMutator<TRGT, SRC>) reverseSetter);
 	}
 	
 	@Nullable
-	public Mutator<TRGT, SRC> giveReverseSetter() {
+	public PropertyMutator<TRGT, SRC> giveReverseSetter() {
 		return this.mappedByConfiguration.giveReverseSetter();
 	}
 	
@@ -195,11 +198,11 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	}
 	
 	@Nullable
-	public SerializableMutator<TRGT, SRC> getReverseLink() {
+	public SerializablePropertyMutator<TRGT, SRC> getReverseLink() {
 		return reverseLink;
 	}
 	
-	public void setReverseLink(SerializableMutator<TRGT, SRC> reverseLink) {
+	public void setReverseLink(SerializablePropertyMutator<TRGT, SRC> reverseLink) {
 		this.reverseLink = reverseLink;
 	}
 	
@@ -282,8 +285,8 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	 * @return a clones of this instance prefixed with the given accessor
 	 * @param <C> the root entity type that owns the embeddable which has this relation
 	 */
-	public <C> OneToManyRelation<C, TRGT, TRGTID, S> embedInto(Accessor<C, SRC> accessor, Class<SRC> embeddedType) {
-		AccessorChain<C, S> shiftedTargetProvider = new AccessorChain<>(accessor, collectionAccessor);
+	public <C> OneToManyRelation<C, TRGT, TRGTID, S> embedInto(ReadWritePropertyAccessPoint<C, SRC> accessor, Class<SRC> embeddedType) {
+		AccessorChain<C, S> shiftedTargetProvider = new AccessorChain<>(Arrays.asList(accessor, collectionAccessor));
 		shiftedTargetProvider.setNullValueHandler(new ValueInitializerOnNullValue() {
 			@Override
 			protected <T> T newInstance(Accessor<?, T> segmentAccessor, Class<T> valueType) {
@@ -302,7 +305,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		});
 		MappedByConfiguration<TRGT, C> slidedMappedByConfiguration = this.mappedByConfiguration.embedInto(accessor);
 		
-		OneToManyRelation<C, TRGT, TRGTID, S> result = new OneToManyRelation<>(shiftedTargetProvider,
+		OneToManyRelation<C, TRGT, TRGTID, S> result = new OneToManyRelation<>(new ReadWriteAccessorChain<>(shiftedTargetProvider),
 				this::isSourceTablePerClassPolymorphic,
 				this.targetMappingConfiguration,
 				slidedMappedByConfiguration);
@@ -317,10 +320,10 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	private static class MappedByConfiguration<TRGT, SRC> {
 		
 		/** The method that gets the "one" entity from the "many" entities, may be null */
-		protected ReversibleAccessor<TRGT, SRC> reverseGetter;
+		protected ReadWritePropertyAccessPoint<TRGT, SRC> reverseGetter;
 		
 		/** The method that sets the "one" entity onto the "many" entities, may be null */
-		protected Mutator<TRGT, SRC> reverseSetter;
+		protected ReadWritePropertyAccessPoint<TRGT, SRC> reverseSetter;
 		
 		/**
 		 * The column that stores relation, may be null.
@@ -356,21 +359,21 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		 * @return a clone of this instance prefixed with the given accessor
 		 * @param <C> the root entity type that owns the embeddable which has this relation
 		 */
-		<C> MappedByConfiguration<TRGT, C> embedInto(Accessor<C, SRC> accessor) {
+		<C> MappedByConfiguration<TRGT, C> embedInto(ReadWritePropertyAccessPoint<C, SRC> accessor) {
 			return new ShiftedMappedByConfiguration<>(accessor, this);
 		}
 		
-		public void setReverseGetter(SerializableAccessor<TRGT, SRC> reverseGetter) {
-			this.reverseGetter = Accessors.accessor(reverseGetter);
+		public void setReverseGetter(SerializablePropertyAccessor<TRGT, SRC> reverseGetter) {
+			this.reverseGetter = Accessors.readWriteAccessPoint(reverseGetter);
 		}
 		
-		public void setReverseSetter(SerializableMutator<TRGT, SRC> reverseSetter) {
-			this.reverseSetter = Accessors.mutator(reverseSetter);
+		public void setReverseSetter(SerializablePropertyMutator<TRGT, SRC> reverseSetter) {
+			this.reverseSetter = Accessors.readWriteAccessPoint(reverseSetter);
 		}
 		
-		public Mutator<TRGT, SRC> giveReverseSetter() {
+		public PropertyMutator<TRGT, SRC> giveReverseSetter() {
 			if (this.reverseGetter != null) {
-				return this.reverseGetter.toMutator();
+				return this.reverseGetter;
 			} else if (this.reverseSetter != null) {
 				return this.reverseSetter;
 			} else {
@@ -448,9 +451,9 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	
 	private static class ShiftedMappedByConfiguration<C, TRGT, SRC> extends MappedByConfiguration<TRGT, C> {
 		
-		private final Mutator<TRGT, C> effectiveReverseMutator;
+		private final PropertyMutator<TRGT, C> effectiveReverseMutator;
 		
-		public ShiftedMappedByConfiguration(Accessor<C, SRC> accessor, MappedByConfiguration<TRGT, SRC> mappedByConfiguration) {
+		public ShiftedMappedByConfiguration(ReadWritePropertyAccessPoint<C, SRC> accessor, MappedByConfiguration<TRGT, SRC> mappedByConfiguration) {
 			this.reverseColumn = mappedByConfiguration.reverseColumn;
 			this.reverseColumnName = mappedByConfiguration.reverseColumnName;
 			this.foreignKeyColumnMapping.putAll((ValueAccessPointMap) mappedByConfiguration.foreignKeyColumnMapping);
@@ -459,10 +462,10 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 			
 			// Creates shifted mutator when reverse accessor is present
 			if (mappedByConfiguration.reverseGetter != null || mappedByConfiguration.reverseSetter != null) {
-				Mutator<TRGT, SRC> localReverseSetter;
+				PropertyMutator<TRGT, SRC> localReverseSetter;
 				AccessorDefinition reverseDefinition;
 				if (mappedByConfiguration.reverseGetter != null) {
-					localReverseSetter = mappedByConfiguration.reverseGetter.toMutator();
+					localReverseSetter = mappedByConfiguration.reverseGetter;
 					reverseDefinition = AccessorDefinition.giveDefinition(mappedByConfiguration.reverseGetter);
 				} else {
 					localReverseSetter = mappedByConfiguration.reverseSetter;
@@ -479,7 +482,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		}
 		
 		@Override
-		public Mutator<TRGT, C> giveReverseSetter() {
+		public PropertyMutator<TRGT, C> giveReverseSetter() {
 			return effectiveReverseMutator;
 		}
 		
@@ -487,12 +490,12 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 			return effectiveReverseMutator != null || super.isNotEmpty();
 		}
 		
-		private class ShiftedMutator<C> implements Mutator<TRGT, C>, AccessorDefinitionDefiner<TRGT> {
-			private final Accessor<C, SRC> accessor;
+		private class ShiftedMutator<C> implements PropertyMutator<TRGT, C>, AccessorDefinitionDefiner<TRGT> {
+			private final ReadWritePropertyAccessPoint<C, SRC> accessor;
 			private final AccessorDefinition accessorDefinition;
 			private final Mutator<TRGT, SRC> reverseSetter;
 			
-			public ShiftedMutator(Accessor<C, SRC> accessor, AccessorDefinition accessorDefinition, Mutator<TRGT, SRC> reverseSetter) {
+			public ShiftedMutator(ReadWritePropertyAccessPoint<C, SRC> accessor, AccessorDefinition accessorDefinition, PropertyMutator<TRGT, SRC> reverseSetter) {
 				this.accessor = accessor;
 				this.accessorDefinition = accessorDefinition;
 				this.reverseSetter = reverseSetter;

@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -14,9 +13,11 @@ import javax.annotation.Nullable;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.Mutator;
-import org.codefilarete.reflection.ReadWriteAccessPoint;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.PropertyMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
@@ -78,7 +79,7 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 			MapRelation<SRC, K, V, M> mapRelation,
 			ConfiguredRelationalPersister<K, KID> keyEntityPersister) {
 		ConvertingMapAccessor<SRC, K, V, KID, V, M, MM> mapAccessor = new ConvertingMapAccessor<>(mapRelation, (k, v, result) -> result.put(keyEntityPersister.getId(k), v));
-		ReadWriteAccessPoint<SRC, MM> propertyAccessor = new ReadWriteAccessPoint<>(
+		ReadWritePropertyAccessPoint<SRC, MM> propertyAccessor = new DefaultReadWritePropertyAccessPoint<>(
 				mapAccessor,
 				(src, mm) -> {
 					// No setter need because afterSelect(..) method is in charge of setting the values (too complex to be done here)
@@ -102,7 +103,7 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 	
 	private final MapRelation<SRC, K, V, M> originalMapRelation;
 	private final ConfiguredRelationalPersister<K, KID> keyEntityPersister;
-	private final Function<SRC, M> mapGetter;
+	private final Accessor<SRC, M> mapGetter;
 	private final InMemoryRelationHolder<SRCID, KID, V, K> inMemoryRelationHolder;
 	private Key<?, KID> keyIdColumnsProjectInAssociationTable;
 	private final RelationMode maintenanceMode;
@@ -148,7 +149,7 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 			@Override
 			public void afterSelect(Set<? extends SRC> result) {
 				BeanRelationFixer<SRC, Duo<K, V>> originalRelationFixer = BeanRelationFixer.ofMapAdapter(
-						originalMapRelation.getMapProvider().toMutator()::set,
+						originalMapRelation.getMapProvider(),
 						mapGetter,
 						mapFactory,
 						(bean, duo, map) -> map.put(duo.getLeft(), duo.getRight()));
@@ -232,7 +233,7 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 				}
 			};
 			EmbeddableMapping<V, MAPTABLE> entryKeyMapping = entryKeyMappingBuilder.build();
-			Map<ReversibleAccessor<V, Object>, Column<MAPTABLE, Object>> columnMapping = entryKeyMapping.getMapping();
+			Map<ReadWritePropertyAccessPoint<V, Object>, Column<MAPTABLE, Object>> columnMapping = entryKeyMapping.getMapping();
 			
 			columnMapping.forEach((propertyAccessor, column) -> column.primaryKey());
 			builder.withEntryValueIsComplexType(new EmbeddedClassMapping<>(valueEmbeddableConfiguration.getBeanType(), targetTable, columnMapping));
@@ -246,8 +247,8 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 			maptableColumn.primaryKey();
 			builder.withEntryKeyIsSingleProperty(maptableColumn);
 		} else if (identifierAssembler instanceof DefaultComposedIdentifierAssembler) {
-			Map<ReversibleAccessor<KID, ?>, Column<?, ?>> idMapping = ((DefaultComposedIdentifierAssembler) identifierAssembler).getMapping();
-			Map<ReversibleAccessor<KID, ?>, Column<MAPTABLE, ?>> idMappingInMapTable = new KeepOrderMap<>();
+			Map<ReadWritePropertyAccessPoint<KID, ?>, Column<?, ?>> idMapping = ((DefaultComposedIdentifierAssembler) identifierAssembler).getMapping();
+			Map<ReadWritePropertyAccessPoint<KID, ?>, Column<MAPTABLE, ?>> idMappingInMapTable = new KeepOrderMap<>();
 			idMapping.forEach((key, column) -> {
 				Column<MAPTABLE, ?> maptableColumn = targetTable.addColumn(column.getName(), column.getJavaType(), column.getSize());
 				maptableColumn.primaryKey();
@@ -272,7 +273,7 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 				
 				@Override
 				protected Collection<K> getTargets(SRC src) {
-					return mapGetter.apply(src).keySet();
+					return mapGetter.get(src).keySet();
 				}
 			});
 		}
@@ -285,7 +286,7 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 	@Override
 	protected void addUpdateCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 									EntityPersister<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>> relationRecordPersister) {
-		Accessor<SRC, Set<Entry<K, V>>> targetEntitiesGetter = new NullProofFunction<>(mapGetter).andThen(Map::entrySet)::apply;
+		Accessor<SRC, Set<Entry<K, V>>> targetEntitiesGetter = new NullProofFunction<>(mapGetter::get).andThen(Map::entrySet)::apply;
 		BiFunction<Entry<K, V>, SRCID, KeyValueRecord<KID, V, SRCID>> entryKeyValueRecordFunction =
 				(record, srcId) -> new KeyValueRecord<>(srcId, keyEntityPersister.getId(record.getKey()), record.getValue());
 		Mutator<Duo<SRC, SRC>, Boolean> mapUpdater = new MapUpdater<>(targetEntitiesGetter, keyEntityPersister,
@@ -302,7 +303,7 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 		}
 		
 		if (maintenanceMode == RelationMode.ALL_ORPHAN_REMOVAL) {
-			Function<SRC, Set<K>> targetEntitiesGetter = new NullProofFunction<>(mapGetter).andThen(Map::entrySet).andThen(entries -> entries.stream().map(Entry::getKey).collect(Collectors.toSet()));
+			Function<SRC, Set<K>> targetEntitiesGetter = new NullProofFunction<>(mapGetter::get).andThen(Map::entrySet).andThen(entries -> entries.stream().map(Entry::getKey).collect(Collectors.toSet()));
 			sourcePersister.addDeleteListener(new BeforeDeleteCollectionCascader<SRC, K>(keyEntityPersister) {
 				@Override
 				protected Collection<K> getTargets(SRC src) {
@@ -317,13 +318,13 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 									SimpleRelationalEntityPersister<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>, ?> relationRecordPersister,
 									PrimaryKey<?, SRCID> sourcePK,
 									ForeignKey<?, ?, SRCID> keyValueRecordToSourceForeignKey,
-									BiConsumer<SRC, MM> mapSetter,
-									Accessor<SRC, MM> mapGetter,
+									PropertyMutator<SRC, MM> mapSetter,
+									PropertyAccessor<SRC, MM> mapGetter,
 									Supplier<MM> mapFactory) {
 		
 		BeanRelationFixer<SRC, KeyValueRecord<KID, V, SRCID>> relationFixer = BeanRelationFixer.ofMapAdapter(
 				mapSetter,
-				mapGetter::get,
+				mapGetter,
 				mapFactory,
 				(bean, input, map) -> {
 					inMemoryRelationHolder.storeRelation(sourcePersister.getId(bean), input.getKey(), input.getValue());

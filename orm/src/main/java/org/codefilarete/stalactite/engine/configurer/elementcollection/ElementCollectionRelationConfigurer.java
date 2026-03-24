@@ -12,7 +12,8 @@ import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Mutator;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWriteAccessorChain;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
@@ -59,7 +60,7 @@ import static org.codefilarete.tool.bean.Objects.preventNull;
  * 
  * @author Guillaume Mary
  */
-public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collection<TRGT>> {
+public class ElementCollectionRelationConfigurer<SRC, TRGT, I, S extends Collection<TRGT>> {
 	
 	private static final AccessorDefinition ELEMENT_RECORD_ID_ACCESSOR_DEFINITION = AccessorDefinition.giveDefinition(new AccessorByMethodReference<>(ElementRecord<Object, Object>::getId));
 	private static final AccessorDefinition ELEMENT_RECORD_INDEX_ACCESSOR_DEFINITION = AccessorDefinition.giveDefinition(IndexedElementRecord.INDEX_ACCESSOR);
@@ -92,7 +93,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 	}
 	
 	public <SRCTABLE extends Table<SRCTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>> void
-	configure(ElementCollectionRelation<SRC, TRGT, C> elementCollectionRelation) {
+	configure(ElementCollectionRelation<SRC, TRGT, S> elementCollectionRelation) {
 		AccessorDefinition collectionProviderDefinition = AccessorDefinition.giveDefinition(elementCollectionRelation.getCollectionAccessor());
 		// schema configuration
 		PrimaryKey<SRCTABLE, I> sourcePK = sourcePersister.<SRCTABLE>getMapping().getTargetTable().getPrimaryKey();
@@ -104,7 +105,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 				new ElementRecordPersister<>(elementCollectionMapping.elementRecordMapping, dialect, connectionConfiguration);
 		
 		// insert management
-		Accessor<SRC, C> collectionAccessor = elementCollectionRelation.getCollectionAccessor();
+		ReadWritePropertyAccessPoint<SRC, S> collectionAccessor = elementCollectionRelation.getCollectionAccessor();
 		addInsertCascade(sourcePersister, collectionPersister, elementCollectionMapping.collectionProvider(collectionAccessor, sourcePersister.getMapping(), false));
 		
 		// update management
@@ -114,16 +115,16 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 		addDeleteCascade(sourcePersister, collectionPersister, elementCollectionMapping.collectionProvider(collectionAccessor, sourcePersister.getMapping(), true));
 		
 		// select management
-		Supplier<C> collectionFactory = preventNull(
+		Supplier<S> collectionFactory = preventNull(
 				elementCollectionRelation.getCollectionFactory(),
-				Reflections.giveCollectionFactory((Class<C>) collectionProviderDefinition.getMemberType()));
+				Reflections.giveCollectionFactory((Class<S>) collectionProviderDefinition.getMemberType()));
 		addSelectCascade(sourcePersister, collectionPersister, sourcePK, elementCollectionMapping.reverseForeignKey,
-				elementCollectionRelation.getCollectionAccessor().toMutator()::set, collectionAccessor,
+				collectionAccessor,
 				collectionFactory);
 	}
 	
 	private <SRCTABLE extends Table<SRCTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>, ER extends ElementRecord<TRGT, I>> ElementCollectionMapping<SRCTABLE, COLLECTIONTABLE, ER>
-	buildCollectionTableMapping(ElementCollectionRelation<SRC, TRGT, C> collectionRelation, AccessorDefinition collectionProviderDefinition, PrimaryKey<SRCTABLE, I> sourcePK) {
+	buildCollectionTableMapping(ElementCollectionRelation<SRC, TRGT, S> collectionRelation, AccessorDefinition collectionProviderDefinition, PrimaryKey<SRCTABLE, I> sourcePK) {
 		String tableName = nullable(collectionRelation.getTargetTableName()).getOr(() -> {
 			String generatedTableName = tableNamingStrategy.giveName(collectionProviderDefinition);
 			// we replace dot character by underscore one to take embedded relation properties into account: their accessor is an AccessorChain
@@ -183,9 +184,9 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 					return super.determineColumnSize(linkage, collectionRelation.getOverriddenColumnSizes().get(linkage.getAccessor()));
 				}
 			};
-			Map<ReversibleAccessor<TRGT, Object>, Column<COLLECTIONTABLE, Object>> columnMapping = elementCollectionMappingBuilder.build().getMapping();
+			Map<ReadWritePropertyAccessPoint<TRGT, Object>, Column<COLLECTIONTABLE, Object>> columnMapping = elementCollectionMappingBuilder.build().getMapping();
 			
-			Map<ReversibleAccessor<ElementRecord<TRGT, I>, Object>, Column<COLLECTIONTABLE, Object>> projectedColumnMap = new HashMap<>();
+			Map<ReadWritePropertyAccessPoint<ElementRecord<TRGT, I>, Object>, Column<COLLECTIONTABLE, Object>> projectedColumnMap = new HashMap<>();
 			columnMapping.forEach((propertyAccessor, column) -> {
 				AccessorChain<ElementRecord<TRGT, I>, Object> accessorChain = AccessorChain.fromAccessorsWithNullSafe(Arrays.asList(ElementRecord.ELEMENT_ACCESSOR, propertyAccessor), (accessor, valueType) -> {
 					if (accessor == ElementRecord.ELEMENT_ACCESSOR) {
@@ -198,7 +199,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 					}
 				});
 				
-				projectedColumnMap.put(accessorChain, column);
+				projectedColumnMap.put(new ReadWriteAccessorChain<>(accessorChain), column);
 			});
 			
 			if (collectionRelation.isOrdered()) {
@@ -234,10 +235,10 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 			this.elementRecordMapping = elementRecordMapping;
 		}
 		
-		protected Accessor<SRC, Collection<ElementRecord<TRGT, I>>> collectionProvider(Accessor<SRC, C> collectionAccessor,
+		protected Accessor<SRC, Collection<ElementRecord<TRGT, I>>> collectionProvider(Accessor<SRC, S> collectionAccessor,
 																					   IdAccessor<SRC, I> idAccessor,
 																					   boolean markAsPersisted) {
-			return src -> Iterables.collect(Nullable.nullable(collectionAccessor.get(src)).getOr(() -> (C) new ArrayList<>()),
+			return src -> Iterables.collect(Nullable.nullable(collectionAccessor.get(src)).getOr(() -> (S) new ArrayList<>()),
 					trgt -> new ElementRecord<>(idAccessor.getId(src), trgt).setPersisted(markAsPersisted),
 					HashSet::new);
 		}
@@ -250,11 +251,11 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 		}
 		
 		@Override
-		protected Accessor<SRC, Collection<ElementRecord<TRGT, I>>> collectionProvider(Accessor<SRC, C> collectionAccessor,
+		protected Accessor<SRC, Collection<ElementRecord<TRGT, I>>> collectionProvider(Accessor<SRC, S> collectionAccessor,
 																					   IdAccessor<SRC, I> idAccessor,
 																					   boolean markAsPersisted) {
 			return src -> {
-				C collection = nullable(collectionAccessor.get(src)).getOr(() -> (C) new ArrayList<>());
+				S collection = nullable(collectionAccessor.get(src)).getOr(() -> (S) new ArrayList<>());
 				return Iterables.collect(collection,
 						trgt -> new IndexedElementRecord<>(idAccessor.getId(src), trgt, Iterables.indexOf(collection, trgt)).setPersisted(markAsPersisted),
 						HashSet::new);
@@ -313,9 +314,8 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 									RelationalEntityPersister<ElementRecord<TRGT, I>, ElementRecord<TRGT, I>> elementRecordPersister,
 									PrimaryKey<?, I> sourcePK,
 									ForeignKey<?, ?, I> elementRecordToSourceForeignKey,
-									Mutator<SRC, C> collectionSetter,
-									Accessor<SRC, C> collectionGetter,
-									Supplier<C> collectionFactory) {
+									ReadWritePropertyAccessPoint<SRC, S> collectionGetter,
+									Supplier<S> collectionFactory) {
 		// a particular collection fixer that gets raw values (elements) from ElementRecord
 		// because elementRecordPersister manages ElementRecord, so it gives them as input of the relation,
 		// hence an adaption is needed to "convert" it.
@@ -323,8 +323,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, C extends Collect
 		// ElementRecord<TRGT, I> to fulfill the adapter argument. There's a kind of magic here that make it works (generics type erasure, and wrong
 		// ofAdapter(..) type deduction by compiler to match the relationFixer variable.
 		BeanRelationFixer<SRC, ElementRecord<TRGT, I>> relationFixer = BeanRelationFixer.ofAdapter(
-				collectionSetter,
-				collectionGetter::get,
+				collectionGetter,
 				collectionFactory,
 				(bean, input, collection) -> collection.add(input.getElement()));	// element value is taken from ElementRecord
 		

@@ -3,8 +3,8 @@ package org.codefilarete.stalactite.engine.configurer.entity;
 import java.util.Collection;
 import java.util.function.Supplier;
 
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderManyToManyJoinTableOptions;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderManyToManyOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToManyEntityOptions;
@@ -30,19 +30,19 @@ public class ManyToManyEntityOptionsSupport<C, I, O, S1 extends Collection<O>, S
 	}
 	
 	@Override
-	public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverselySetBy(SerializableMutator<O, C> reverseLink) {
+	public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverselySetBy(SerializablePropertyMutator<O, C> reverseLink) {
 		manyToManyRelation.getMappedByConfiguration().setReverseCombiner(reverseLink);
 		return null;    // we can return null because dispatcher will return proxy
 	}
 	
 	@Override
-	public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverseCollection(SerializableAccessor<O, S2> collectionAccessor) {
+	public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverseCollection(SerializablePropertyAccessor<O, S2> collectionAccessor) {
 		manyToManyRelation.getMappedByConfiguration().setReverseCollectionAccessor(collectionAccessor);
 		return null;    // we can return null because dispatcher will return proxy
 	}
 	
 	@Override
-	public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverseCollection(SerializableMutator<O, S2> collectionMutator) {
+	public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverseCollection(SerializablePropertyMutator<O, S2> collectionMutator) {
 		manyToManyRelation.getMappedByConfiguration().setReverseCollectionMutator(collectionMutator);
 		return null;    // we can return null because dispatcher will return proxy
 	}

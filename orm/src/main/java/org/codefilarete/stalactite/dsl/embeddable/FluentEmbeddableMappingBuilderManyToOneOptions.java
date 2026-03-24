@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.dsl.embeddable;
 import java.util.Collection;
 import java.util.function.Supplier;
 
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.relation.ManyToOneOptions;
 
 /**
@@ -25,7 +25,7 @@ public interface FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S extends 
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S> reverselySetBy(SerializableMutator<O, C> reverseLink);
+	FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S> reverselySetBy(SerializablePropertyMutator<O, C> reverseLink);
 	
 	/**
 	 * {@inheritDoc}

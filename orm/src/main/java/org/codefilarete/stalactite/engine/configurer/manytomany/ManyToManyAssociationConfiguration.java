@@ -1,21 +1,15 @@
 package org.codefilarete.stalactite.engine.configurer.manytomany;
 
-import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.function.Supplier;
 
-import org.codefilarete.reflection.AccessorByMethod;
-import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.MethodReferenceCapturer;
+import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.Mutator;
-import org.codefilarete.reflection.MutatorByMethod;
-import org.codefilarete.reflection.MutatorByMethodReference;
-import org.codefilarete.reflection.ReadWriteAccessPoint;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation.MappedByConfiguration;
@@ -39,7 +33,7 @@ class ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1 extends Co
 	private final PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey;
 	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	private final ColumnNamingStrategy indexColumnNamingStrategy;
-	private final ReversibleAccessor<SRC, C1> collectionGetter;
+	private final ReadWritePropertyAccessPoint<SRC, C1> collectionGetter;
 	private final Mutator<SRC, C1> setter;
 	private final boolean orphanRemoval;
 	private final boolean writeAuthorized;
@@ -59,7 +53,7 @@ class ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1 extends Co
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 		this.collectionGetter = manyToManyRelation.getCollectionAccessor();
 		this.indexColumnNamingStrategy = indexColumnNamingStrategy;
-		this.setter = collectionGetter.toMutator();
+		this.setter = collectionGetter;
 		// we don't use AccessorDefinition.giveMemberDefinition(..) because it gives a cross-member definition, loosing get/set for example,
 		// whereas we need this information to build better association table name
 		this.orphanRemoval = orphanRemoval;
@@ -96,7 +90,7 @@ class ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1 extends Co
 		return foreignKeyNamingStrategy;
 	}
 	
-	public ReversibleAccessor<SRC, C1> getCollectionGetter() {
+	public ReadWritePropertyAccessPoint<SRC, C1> getCollectionGetter() {
 		return collectionGetter;
 	}
 	
@@ -135,33 +129,23 @@ class ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1 extends Co
 	 * @return null if no getter nor setter were defined
 	 */
 	@javax.annotation.Nullable
-	ReadWriteAccessPoint<TRGT, C2> buildReversePropertyAccessor() {
+	ReadWritePropertyAccessPoint<TRGT, C2> buildReversePropertyAccessor() {
 		MappedByConfiguration<SRC, TRGT, C2> mappedByConfiguration = manyToManyRelation.getMappedByConfiguration();
-		Nullable<AccessorByMethodReference<TRGT, C2>> getterReference = nullable(mappedByConfiguration.getReverseCollectionAccessor()).map(Accessors::accessorByMethodReference);
-		Nullable<MutatorByMethodReference<TRGT, C2>> setterReference = nullable(mappedByConfiguration.getReverseCollectionMutator()).map(Accessors::mutatorByMethodReference);
+		Nullable<SerializablePropertyAccessor<TRGT, C2>> getterReference = nullable(mappedByConfiguration.getReverseCollectionAccessor());
+		Nullable<SerializablePropertyMutator<TRGT, C2>> setterReference = nullable(mappedByConfiguration.getReverseCollectionMutator());
 		if (getterReference.isAbsent() && setterReference.isAbsent()) {
 			return null;
 		} else if (getterReference.isPresent() && setterReference.isPresent()) {
 			// we keep close to user demand : we keep its method references
-			return new ReadWriteAccessPoint<>(getterReference.get(), setterReference.get());
+			return new DefaultReadWritePropertyAccessPoint<>(getterReference.get(), setterReference.get());
 		} else if (getterReference.isPresent() && setterReference.isAbsent()) {
 			// we keep close to user demand : we keep its method reference ...
 			// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
-			return new ReadWriteAccessPoint<>(getterReference.get(), new AccessorByMethod<TRGT, C2>(captureMethod(mappedByConfiguration.getReverseCollectionAccessor())).toMutator());
+			return Accessors.readWriteAccessPoint(getterReference.get());
 		} else {
 			// we keep close to user demand : we keep its method reference ...
 			// ... but we can't do it for getter, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
-			return new ReadWriteAccessPoint<>(new MutatorByMethod<TRGT, C2>(captureMethod(mappedByConfiguration.getReverseCollectionMutator())).toAccessor(), setterReference.get());
+			return Accessors.readWriteAccessPoint(setterReference.get());
 		}
-	}
-	
-	private final MethodReferenceCapturer methodSpy = new MethodReferenceCapturer();
-	
-	private Method captureMethod(SerializableAccessor getter) {
-		return this.methodSpy.findMethod(getter);
-	}
-	
-	private Method captureMethod(SerializableMutator setter) {
-		return this.methodSpy.findMethod(setter);
 	}
 }

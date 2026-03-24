@@ -9,8 +9,9 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.reflection.PropertyAccessPoint;
+import org.codefilarete.reflection.PropertyMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
@@ -58,7 +59,7 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 	}
 	
 	@Override
-	public void addPropertySetByConstructor(ValueAccessPoint<C> accessor) {
+	public void addPropertySetByConstructor(PropertyAccessPoint<C, ?> accessor) {
 		// this class doesn't support bean factory so it can't support properties set by constructor
 	}
 	
@@ -175,12 +176,12 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 	}
 	
 	@Override
-	public Map<ReversibleAccessor<C, ?>, Column<T, ?>> getPropertyToColumn() {
+	public Map<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> getPropertyToColumn() {
 		throw new UnsupportedOperationException(Reflections.toString(ColumnedMapMapping.class) + " can't export a mapping between some accessors and their columns");
 	}
 	
 	@Override
-	public Map<ReversibleAccessor<C, ?>, Column<T, ?>> getReadonlyPropertyToColumn() {
+	public Map<PropertyMutator<C, ?>, Column<T, ?>> getReadonlyPropertyToColumn() {
 		throw new UnsupportedOperationException(Reflections.toString(ColumnedMapMapping.class) + " can't export a mapping between some accessors and their columns");
 	}
 	

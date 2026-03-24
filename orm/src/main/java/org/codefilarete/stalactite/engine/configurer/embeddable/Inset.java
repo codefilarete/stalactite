@@ -2,15 +2,16 @@ package org.codefilarete.stalactite.engine.configurer.embeddable;
 
 import java.lang.reflect.Method;
 
-import org.codefilarete.reflection.Accessor;
-import org.codefilarete.reflection.AccessorByMethod;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
-import org.codefilarete.reflection.MutatorByMethod;
+import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.ReadWriteAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.SerializableAccessor;
 import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
@@ -23,34 +24,30 @@ import org.codefilarete.tool.Reflections;
 
 /**
  * Information storage of embedded mapping defined externally by an {@link EmbeddableMappingConfigurationProvider},
- * see {@link FluentEmbeddableMappingConfigurationSupport#embed(SerializableAccessor, EmbeddableMappingConfigurationProvider)}
+ * see {@link FluentEmbeddableMappingConfiguration#embed(org.codefilarete.reflection.SerializablePropertyAccessor, EmbeddableMappingConfigurationProvider)}
  *
  * @param <SRC>
  * @param <TRGT>
- * @see FluentEmbeddableMappingConfigurationSupport#embed(SerializableAccessor, EmbeddableMappingConfigurationProvider)}
- * @see FluentEmbeddableMappingConfiguration#embed(org.codefilarete.reflection.SerializableMutator, EmbeddableMappingConfigurationProvider) }
+ * @see FluentEmbeddableMappingConfiguration#embed(org.codefilarete.reflection.SerializablePropertyAccessor, EmbeddableMappingConfigurationProvider) }
+ * @see FluentEmbeddableMappingConfiguration#embed(org.codefilarete.reflection.SerializablePropertyMutator, EmbeddableMappingConfigurationProvider) }
  */
 public class Inset<SRC, TRGT> {
 	
-	static <SRC, TRGT> Inset<SRC, TRGT> fromSetter(SerializableMutator<SRC, TRGT> targetSetter,
+	static <SRC, TRGT> Inset<SRC, TRGT> fromSetter(SerializablePropertyMutator<SRC, TRGT> targetSetter,
 												   EmbeddableMappingConfigurationProvider<? extends TRGT> beanMappingBuilder,
 												   LambdaMethodUnsheller lambdaMethodUnsheller) {
 		Method insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetSetter);
 		return new Inset<>(insetAccessor,
-				new ReadWriteAccessPoint<>(
-						new MutatorByMethod<SRC, TRGT>(insetAccessor).toAccessor(),
-						new MutatorByMethodReference<>(targetSetter)),
+				Accessors.readWriteAccessPoint(targetSetter),
 				beanMappingBuilder);
 	}
 	
-	static <SRC, TRGT> Inset<SRC, TRGT> fromGetter(SerializableAccessor<SRC, TRGT> targetGetter,
+	static <SRC, TRGT> Inset<SRC, TRGT> fromGetter(SerializablePropertyAccessor<SRC, TRGT> targetGetter,
 												   EmbeddableMappingConfigurationProvider<? extends TRGT> beanMappingBuilder,
 												   LambdaMethodUnsheller lambdaMethodUnsheller) {
 		Method insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetGetter);
 		return new Inset<>(insetAccessor,
-				new ReadWriteAccessPoint<>(
-						new AccessorByMethodReference<>(targetGetter),
-						new AccessorByMethod<SRC, TRGT>(insetAccessor).toMutator()),
+				Accessors.readWriteAccessPoint(targetGetter),
 				beanMappingBuilder);
 	}
 	
@@ -59,27 +56,25 @@ public class Inset<SRC, TRGT> {
 	/**
 	 * Equivalent of {@link #insetAccessor} as a {@link ReadWriteAccessPoint}
 	 */
-	private final Accessor<SRC, TRGT> accessor;
+	private final ReadWritePropertyAccessPoint<SRC, TRGT> accessor;
 	private final ValueAccessPointMap<SRC, String, ValueAccessPoint<SRC>> overriddenColumnNames = new ValueAccessPointMap<>();
 	private final ValueAccessPointMap<SRC, Size, ValueAccessPoint<SRC>> overriddenColumnSizes = new ValueAccessPointMap<>();
-	private final ValueAccessPointSet<SRC> excludedProperties = new ValueAccessPointSet<>();
+	private final ValueAccessPointSet<SRC, ValueAccessPoint<SRC>> excludedProperties = new ValueAccessPointSet<>();
 	private final EmbeddableMappingConfigurationProvider<? extends TRGT> configurationProvider;
 	private final ValueAccessPointMap<SRC, Column, ValueAccessPoint<SRC>> overriddenColumns = new ValueAccessPointMap<>();
 	
-	Inset(SerializableMutator<SRC, TRGT> targetSetter,
+	Inset(SerializablePropertyMutator<SRC, TRGT> targetSetter,
 		  EmbeddableMappingConfigurationProvider<? extends TRGT> configurationProvider,
 		  LambdaMethodUnsheller lambdaMethodUnsheller) {
 		this.insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetSetter);
-		this.accessor = new ReadWriteAccessPoint<>(
-				new MutatorByMethod<SRC, TRGT>(insetAccessor).toAccessor(),
-				new MutatorByMethodReference<>(targetSetter));
+		this.accessor = Accessors.readWriteAccessPoint(targetSetter);
 		// looking for the target type because it's necessary to find its persister (and other objects)
 		this.embeddedClass = Reflections.javaBeanTargetType(getInsetAccessor());
 		this.configurationProvider = configurationProvider;
 	}
 	
 	Inset(Method insetAccessor,
-		  Accessor<SRC, TRGT> accessor,
+		  ReadWritePropertyAccessPoint<SRC, TRGT> accessor,
 		  EmbeddableMappingConfigurationProvider<? extends TRGT> configurationProvider) {
 		this.insetAccessor = insetAccessor;
 		// looking for the target type because it's necessary to find its persister (and other objects)
@@ -91,7 +86,7 @@ public class Inset<SRC, TRGT> {
 	/**
 	 * Equivalent of {@link #insetAccessor} as a {@link ReadWriteAccessPoint}
 	 */
-	public Accessor<SRC, TRGT> getAccessor() {
+	public ReadWritePropertyAccessPoint<SRC, TRGT> getAccessor() {
 		return accessor;
 	}
 	
@@ -106,7 +101,7 @@ public class Inset<SRC, TRGT> {
 		return embeddedClass;
 	}
 	
-	public ValueAccessPointSet<SRC> getExcludedProperties() {
+	public ValueAccessPointSet<SRC, ValueAccessPoint<SRC>> getExcludedProperties() {
 		return this.excludedProperties;
 	}
 	

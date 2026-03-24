@@ -11,9 +11,9 @@ import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.MutatorByField;
 import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
-import org.codefilarete.reflection.ReadWriteAccessPoint;
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.configurer.PropertyAccessorResolver.PropertyMapping;
 import org.codefilarete.stalactite.engine.model.Country;
@@ -82,9 +82,9 @@ class ReadWriteAccessPointResolverTest {
 	<C, O> void resolve(PropertyMapping<C, O> source, Accessor<C, O> expectedAccessor, Mutator<C, O> expectedMutator) {
 		PropertyAccessorResolver<C, O> testInstance = new PropertyAccessorResolver<>(source);
 		
-		ReadWriteAccessPoint<C, O> actual = (ReadWriteAccessPoint<C, O>) testInstance.resolve();
-		assertThat(actual.getAccessor()).isEqualTo(expectedAccessor);
-		assertThat(actual.getMutator()).isEqualTo(expectedMutator);
+		ReadWritePropertyAccessPoint<C, O> actual = testInstance.resolve();
+		assertThat(actual.getReader()).isEqualTo(expectedAccessor);
+		assertThat(actual.getWriter()).isEqualTo(expectedMutator);
 	}
 	
 	@Test
@@ -108,23 +108,23 @@ class ReadWriteAccessPointResolverTest {
 	
 	private static class PropertyMappingSupport<C, O> implements PropertyMapping<C, O> {
 		
-		private final SerializableAccessor<C, O> getter;
-		private final SerializableMutator<C, O> setter;
+		private final SerializablePropertyAccessor<C, O> getter;
+		private final SerializablePropertyMutator<C, O> setter;
 		private final Field field;
 		
-		PropertyMappingSupport(SerializableAccessor<C, O> getter, SerializableMutator<C, O> setter, Field field) {
+		PropertyMappingSupport(SerializablePropertyAccessor<C, O> getter, SerializablePropertyMutator<C, O> setter, Field field) {
 			this.getter = getter;
 			this.setter = setter;
 			this.field = field;
 		}
 		
 		@Override
-		public SerializableAccessor<C, O> getGetter() {
+		public SerializablePropertyAccessor<C, O> getGetter() {
 			return getter;
 		}
 		
 		@Override
-		public SerializableMutator<C, O> getSetter() {
+		public SerializablePropertyMutator<C, O> getSetter() {
 			return setter;
 		}
 		

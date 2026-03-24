@@ -3,8 +3,8 @@ package org.codefilarete.stalactite.dsl.entity;
 import java.util.Collection;
 import java.util.function.Supplier;
 
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.relation.ManyToOneOptions;
 
 public interface FluentMappingBuilderManyToOneOptions<C, I, O, S extends Collection<C>> extends FluentEntityMappingBuilder<C, I>,
@@ -15,7 +15,7 @@ public interface FluentMappingBuilderManyToOneOptions<C, I, O, S extends Collect
 	
 	/**
 	 * Defines combiner of current entity with target entity. This is a more fine-grained way to define how to combine current entity with target
-	 * entity than {@link #reverseCollection(SerializableAccessor)} : sometimes a method already exists in entities to fill the relation instead of
+	 * entity than {@link ManyToOneOptions#reverseCollection(SerializablePropertyAccessor)} : sometimes a method already exists in entities to fill the relation instead of
 	 * calling getter + Collection.add. This method is here to benefit from it.
 	 * This method has no consequence on database mapping since it only interacts in memory.
 	 *
@@ -23,7 +23,7 @@ public interface FluentMappingBuilderManyToOneOptions<C, I, O, S extends Collect
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentMappingBuilderManyToOneOptions<C, I, O, S> reverselySetBy(SerializableMutator<O, C> reverseLink);
+	FluentMappingBuilderManyToOneOptions<C, I, O, S> reverselySetBy(SerializablePropertyMutator<O, C> reverseLink);
 	
 	/**
 	 * Defines reverse collection accessor.
@@ -34,7 +34,7 @@ public interface FluentMappingBuilderManyToOneOptions<C, I, O, S extends Collect
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentMappingBuilderManyToOneOptions<C, I, O, S> reverseCollection(SerializableAccessor<O, S> collectionAccessor);
+	FluentMappingBuilderManyToOneOptions<C, I, O, S> reverseCollection(SerializablePropertyAccessor<O, S> collectionAccessor);
 	
 	/**
 	 * Defines reverse collection mutator.
@@ -45,7 +45,7 @@ public interface FluentMappingBuilderManyToOneOptions<C, I, O, S extends Collect
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentMappingBuilderManyToOneOptions<C, I, O, S> reverseCollection(SerializableMutator<O, S> collectionMutator);
+	FluentMappingBuilderManyToOneOptions<C, I, O, S> reverseCollection(SerializablePropertyMutator<O, S> collectionMutator);
 	
 	/**
 	 * Defines the factory of reverse collection. If not defined and collection is found null, the collection is set with a default value.

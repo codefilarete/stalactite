@@ -5,26 +5,24 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessor;
-import org.codefilarete.reflection.AccessorByMethod;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorChain.ValueInitializerOnNullValue;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MutatorByMethodReference;
-import org.codefilarete.reflection.ReadWriteAccessPoint;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWriteAccessorChain;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.SerializableAccessor;
 import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
-import org.codefilarete.stalactite.engine.configurer.LambdaMethodUnsheller;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Reflections;
-
-import static org.codefilarete.tool.Reflections.propertyName;
 
 /**
  * Support for element-collection configuration
@@ -34,7 +32,7 @@ import static org.codefilarete.tool.Reflections.propertyName;
 public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 	
 	/** The method that gives the entities from the "root" entity */
-	private final ReversibleAccessor<SRC, S> collectionAccessor;
+	private final ReadWritePropertyAccessPoint<SRC, S> collectionAccessor;
 	private final Class<TRGT> componentType;
 	/** Indicator to store element indices in the database, retrieve them, and sort the collection while loading the entities */
 	private boolean ordered = false;
@@ -68,14 +66,11 @@ public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 	 * @param componentType element type in collection
 	 * @param embeddableConfigurationProvider complex type mapping, null when element is a simple type (String, Integer, ...)
 	 */
-	public ElementCollectionRelation(SerializableMutator<SRC, S> setter,
+	public ElementCollectionRelation(SerializablePropertyMutator<SRC, S> setter,
 									 Class<TRGT> componentType,
 									 @Nullable EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider) {
-		MutatorByMethodReference<SRC, S> setterReference = Accessors.mutatorByMethodReference(setter);
-		this.collectionAccessor = new ReadWriteAccessPoint<>(
-				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
-				setterReference
-		);
+		// we keep close to user demand : we keep its method reference
+		this.collectionAccessor = Accessors.readWriteAccessPoint(setter);
 		this.componentType = componentType;
 		this.embeddableConfigurationProvider = embeddableConfigurationProvider;
 	}
@@ -83,24 +78,18 @@ public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 	/**
 	 * @param getter collection accessor
 	 * @param componentType element type in collection
-	 * @param lambdaMethodUnsheller engine to capture getter method reference
 	 * @param embeddableConfigurationProvider complex type mapping, null when element is a simple type (String, Integer, ...)
 	 */
-	public ElementCollectionRelation(SerializableAccessor<SRC, S> getter,
+	public ElementCollectionRelation(SerializablePropertyAccessor<SRC, S> getter,
 									 Class<TRGT> componentType,
-									 LambdaMethodUnsheller lambdaMethodUnsheller,
 									 @Nullable EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider) {
-		AccessorByMethodReference<SRC, S> getterReference = Accessors.accessorByMethodReference(getter);
-		this.collectionAccessor = new ReadWriteAccessPoint<>(
-				// we keep close to user demand : we keep its method reference ...
-				getterReference,
-				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
-				new AccessorByMethod<SRC, S>(lambdaMethodUnsheller.captureLambdaMethod(getter)).toMutator());
+		// we keep close to user demand : we keep its method reference
+		this.collectionAccessor = Accessors.readWriteAccessPoint(getter);
 		this.componentType = componentType;
 		this.embeddableConfigurationProvider = embeddableConfigurationProvider;
 	}
 	
-	public ElementCollectionRelation(ReversibleAccessor<SRC, S> collectionAccessor ,
+	public ElementCollectionRelation(ReadWritePropertyAccessPoint<SRC, S> collectionAccessor ,
 									 Class<TRGT> componentType,
 									 @Nullable EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider) {
 		this.collectionAccessor = collectionAccessor;
@@ -108,7 +97,7 @@ public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 		this.embeddableConfigurationProvider = embeddableConfigurationProvider;
 	}
 	
-	public ReversibleAccessor<SRC, S> getCollectionAccessor() {
+	public ReadWritePropertyAccessPoint<SRC, S> getCollectionAccessor() {
 		return collectionAccessor;
 	}
 	
@@ -251,7 +240,7 @@ public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 				}
 			}
 		});
-		ElementCollectionRelation<C, TRGT, S> result = new ElementCollectionRelation<C, TRGT, S>(shiftedTargetProvider, componentType, embeddableConfigurationProvider);
+		ElementCollectionRelation<C, TRGT, S> result = new ElementCollectionRelation<>(new ReadWriteAccessorChain<>(shiftedTargetProvider), componentType, embeddableConfigurationProvider);
 		
 		result.setElementColumnName(this.getElementColumnName());
 		result.setElementColumnSize(this.getElementColumnSize());

@@ -97,7 +97,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				JoinType.OUTER, Collections.emptySet());
 		
 		// we add target subgraph joins to main persister
-		String relationJoinNodeName = targetPersister.joinAsMany(associationTableJoinNodeName, sourcePersister, manyRelationDescriptor.getCollectionProvider(),
+		String relationJoinNodeName = targetPersister.joinAsMany(associationTableJoinNodeName, sourcePersister, manyRelationDescriptor.getCollectionAccessPoint(),
 				associationPersister.getMainTable().getManySideForeignKey(), associationPersister.getMainTable().getManySideKey(),
 				manyRelationDescriptor.getRelationFixer(), null, true, loadSeparately);
 		
@@ -113,7 +113,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 			
 			@Override
 			public void afterSelect(Set<? extends SRC> result) {
-				Set<TRGT> collect = Iterables.stream(result).flatMap(src -> Nullable.nullable(manyRelationDescriptor.getCollectionGetter().get(src))
+				Set<TRGT> collect = Iterables.stream(result).flatMap(src -> Nullable.nullable(manyRelationDescriptor.getCollectionAccessPoint().get(src))
 						.map(Collection::stream)
 						.getOr(Stream.empty()))
 						.collect(Collectors.toSet());
@@ -133,11 +133,11 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 	public void addInsertCascade(boolean maintainAssociationOnly, ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		// Can we cascade insert on target entities ? it depends on relation maintenance mode
 		if (!maintainAssociationOnly) {
-			persisterListener.addInsertListener(new TargetInstancesInsertCascader(targetPersister, manyRelationDescriptor.getCollectionGetter()));
+			persisterListener.addInsertListener(new TargetInstancesInsertCascader(targetPersister, manyRelationDescriptor.getCollectionAccessPoint()));
 		}
 		
 		persisterListener.addInsertListener(newRecordInsertionCascader(
-				manyRelationDescriptor.getCollectionGetter(),
+				manyRelationDescriptor.getCollectionAccessPoint(),
 				associationPersister,
 				sourcePersister.getMapping(),
 				targetPersister.getMapping()));
@@ -146,7 +146,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 	public void addUpdateCascade(boolean shouldDeleteRemoved, boolean maintainAssociationOnly, ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		// NB: we don't have any reverseSetter (for applying source entity to reverse side (target entity)), because this is only relevant
 		// when association is mapped without intermediary table (owned by "many-side" entity)
-		CollectionUpdater<SRC, TRGT, C> collectionUpdater = new CollectionUpdater<SRC, TRGT, C>(manyRelationDescriptor.getCollectionGetter(), targetPersister, null, shouldDeleteRemoved) {
+		CollectionUpdater<SRC, TRGT, C> collectionUpdater = new CollectionUpdater<SRC, TRGT, C>(manyRelationDescriptor.getCollectionAccessPoint(), targetPersister, null, shouldDeleteRemoved) {
 			@Override
 			protected AssociationTableUpdateContext newUpdateContext(Duo<SRC, SRC> updatePayload) {
 				return new AssociationTableUpdateContext(updatePayload);
@@ -226,7 +226,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				// It should be more efficient because, here, we have to create as many AssociationRecord as necessary which loads the garbage collector
 				List<R> associationRecords = new ArrayList<>();
 				entities.forEach(src -> {
-					Collection<TRGT> targets = nullable(manyRelationDescriptor.getCollectionGetter().get(src)).getOr(manyRelationDescriptor.getCollectionFactory());
+					Collection<TRGT> targets = nullable(manyRelationDescriptor.getCollectionAccessPoint().get(src)).getOr(manyRelationDescriptor.getCollectionFactory());
 					int i = INDEXED_COLLECTION_FIRST_INDEX_VALUE;
 					for (TRGT target : targets) {
 						associationRecords.add(newRecord(src, target, i++));
@@ -279,9 +279,9 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 		
 		if (deleteTargetEntities) {
 			// adding deletion of many-side entities
-			persisterListener.addDeleteListener(new DeleteTargetEntitiesBeforeDeleteCascader<>(targetPersister, manyRelationDescriptor.getCollectionGetter()));
+			persisterListener.addDeleteListener(new DeleteTargetEntitiesBeforeDeleteCascader<>(targetPersister, manyRelationDescriptor.getCollectionAccessPoint()));
 			// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
-			persisterListener.addDeleteByIdListener(new DeleteByIdTargetEntitiesBeforeDeleteByIdCascader<>(targetPersister, manyRelationDescriptor.getCollectionGetter()));
+			persisterListener.addDeleteByIdListener(new DeleteByIdTargetEntitiesBeforeDeleteByIdCascader<>(targetPersister, manyRelationDescriptor.getCollectionAccessPoint()));
 		}
 	}
 	

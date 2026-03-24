@@ -4,16 +4,16 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
-import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.PropertyAccessPoint;
 import org.codefilarete.stalactite.engine.runtime.RawQuery;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
+import org.codefilarete.stalactite.query.api.Fromable;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
-import org.codefilarete.stalactite.query.api.Fromable;
-import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
@@ -58,9 +58,9 @@ class EntityTreeQueryBuilderTest {
 		
 		EntityJoinTree entityJoinTree = new EntityJoinTree(new EntityMappingAdapter(totoMappingMock), totoMappingMock.getTargetTable());
 		String tata1NodeName = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME,
-															  new EntityMappingAdapter(tataMappingMock), mock(Accessor.class), totoTata1IdColumn, tataPrimaryKey, "x", INNER, null, Collections.emptySet());
+															  new EntityMappingAdapter(tataMappingMock), mock(PropertyAccessPoint.class), totoTata1IdColumn, tataPrimaryKey, "x", INNER, null, Collections.emptySet());
 		String tata2NodeName = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME,
-															  new EntityMappingAdapter(tataMappingMock), mock(Accessor.class), totoTata2IdColumn, tataPrimaryKey, "y", INNER, null, Collections.emptySet());
+															  new EntityMappingAdapter(tataMappingMock), mock(PropertyAccessPoint.class), totoTata2IdColumn, tataPrimaryKey, "y", INNER, null, Collections.emptySet());
 		
 		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree, new ColumnBinderRegistry());
 		
@@ -186,7 +186,7 @@ class EntityTreeQueryBuilderTest {
 								String expectedSQL) {
 		EntityJoinTree entityJoinTree = new EntityJoinTree(new EntityMappingAdapter(rootMappingStrategy), rootMappingStrategy.getTargetTable());
 		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree, new ColumnBinderRegistry());
-		entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter(entityMapping), mock(Accessor.class), leftJoinColumn, rightJoinColumn, null, INNER, null, Collections.emptySet());
+		entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter(entityMapping), mock(PropertyAccessPoint.class), leftJoinColumn, rightJoinColumn, null, INNER, null, Collections.emptySet());
 		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilderFactory(new DefaultTypeMapping(), DMLNameProvider::new, new ColumnBinderRegistry()).queryBuilder(testInstance.buildSelectQuery().getQuery());
 		assertThat(sqlQueryBuilder.toSQL()).isEqualTo(expectedSQL);
 	}
@@ -215,8 +215,8 @@ class EntityTreeQueryBuilderTest {
 		Column tutuNameColumn = tutuTable.addColumn("name", String.class);
 		
 		EntityJoinTree entityJoinTree = new EntityJoinTree(new EntityMappingAdapter(totoMappingMock), totoMappingMock.getTargetTable());
-		String tataJoinNodeName = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter(tataMappingMock), mock(Accessor.class), totoPrimaryKey, tataPrimaryKey, null, INNER, null, Collections.emptySet());
-		String tutuJoinNodeName = entityJoinTree.addRelationJoin(tataJoinNodeName, new EntityMappingAdapter(tutuMappingMock), mock(Accessor.class), tataPrimaryKey, tutuPrimaryKey, null, INNER, null, Collections.emptySet());
+		String tataJoinNodeName = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter(tataMappingMock), mock(PropertyAccessPoint.class), totoPrimaryKey, tataPrimaryKey, null, INNER, null, Collections.emptySet());
+		String tutuJoinNodeName = entityJoinTree.addRelationJoin(tataJoinNodeName, new EntityMappingAdapter(tutuMappingMock), mock(PropertyAccessPoint.class), tataPrimaryKey, tutuPrimaryKey, null, INNER, null, Collections.emptySet());
 		
 		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree, new ColumnBinderRegistry());
 		
@@ -271,8 +271,8 @@ class EntityTreeQueryBuilderTest {
 		Column tutuNameColumn = tutuTable.addColumn("name", String.class);
 		
 		EntityJoinTree entityJoinTree = new EntityJoinTree(new EntityMappingAdapter(totoMappingMock), totoMappingMock.getTargetTable());
-		String tataJoinNodeName = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter(tataMappingMock), mock(Accessor.class), tataFK, tataPrimaryKey, null, INNER, null, Collections.emptySet());
-		String tutuJoinNodeName = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter(tutuMappingMock), mock(Accessor.class), tutuFK, tutuPrimaryKey, null, OUTER, null, Collections.emptySet());
+		String tataJoinNodeName = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter(tataMappingMock), mock(PropertyAccessPoint.class), tataFK, tataPrimaryKey, null, INNER, null, Collections.emptySet());
+		String tutuJoinNodeName = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter(tutuMappingMock), mock(PropertyAccessPoint.class), tutuFK, tutuPrimaryKey, null, OUTER, null, Collections.emptySet());
 		
 		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree, new ColumnBinderRegistry());
 		
@@ -335,9 +335,9 @@ class EntityTreeQueryBuilderTest {
 		Column titiNameColumn = titiTable.addColumn("name", String.class);
 		
 		EntityJoinTree entityJoinTree = new EntityJoinTree(new EntityMappingAdapter(totoMappingMock), totoMappingMock.getTargetTable());
-		String tataJoinNodeName = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter(tataMappingMock), mock(Accessor.class), totoPrimaryKey, tataPrimaryKey, null, INNER, null, Collections.emptySet());
-		String tutuJoinNodeName = entityJoinTree.addRelationJoin(tataJoinNodeName, new EntityMappingAdapter(tutuMappingMock), mock(Accessor.class), tataPrimaryKey, tutuPrimaryKey, null, INNER, null, Collections.emptySet());
-		String titiJoinNodeName = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter(titiMappingMock), mock(Accessor.class), totoPrimaryKey, titiPrimaryKey, null, INNER, null, Collections.emptySet());
+		String tataJoinNodeName = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter(tataMappingMock), mock(PropertyAccessPoint.class), totoPrimaryKey, tataPrimaryKey, null, INNER, null, Collections.emptySet());
+		String tutuJoinNodeName = entityJoinTree.addRelationJoin(tataJoinNodeName, new EntityMappingAdapter(tutuMappingMock), mock(PropertyAccessPoint.class), tataPrimaryKey, tutuPrimaryKey, null, INNER, null, Collections.emptySet());
+		String titiJoinNodeName = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_JOIN_NAME, new EntityMappingAdapter(titiMappingMock), mock(PropertyAccessPoint.class), totoPrimaryKey, titiPrimaryKey, null, INNER, null, Collections.emptySet());
 		
 		IdentityHashMap<Selectable, Selectable> tableCloneMap = new IdentityHashMap<>();
 		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree, new ColumnBinderRegistry()) {

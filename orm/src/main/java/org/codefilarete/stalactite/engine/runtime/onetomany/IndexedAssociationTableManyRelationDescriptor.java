@@ -9,8 +9,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.Accessor;
-import org.codefilarete.reflection.Mutator;
+import org.codefilarete.reflection.PropertyMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 
 import static org.codefilarete.tool.bean.Objects.preventNull;
@@ -23,17 +23,15 @@ import static org.codefilarete.tool.bean.Objects.preventNull;
 public class IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C extends Collection<TRGT>, SRCID> extends ManyRelationDescriptor<SRC, TRGT, C> {
 	
 	/**
-	 * @param collectionGetter  collection accessor
-	 * @param collectionSetter  collection setter
+	 * @param collectionAccessPoint collection accessor
 	 * @param collectionFactory collection factory
 	 * @param reverseSetter
 	 */
-	public IndexedAssociationTableManyRelationDescriptor(Accessor<SRC, C> collectionGetter,
-														 Mutator<SRC, C> collectionSetter,
+	public IndexedAssociationTableManyRelationDescriptor(ReadWritePropertyAccessPoint<SRC, C> collectionAccessPoint,
 														 Supplier<C> collectionFactory,
-														 @Nullable Mutator<TRGT, SRC> reverseSetter,
+														 @Nullable PropertyMutator<TRGT, SRC> reverseSetter,
 														 Function<SRC, SRCID> idProvider) {
-		super(collectionGetter, collectionSetter, collectionFactory, reverseSetter);
+		super(collectionAccessPoint, collectionFactory, reverseSetter);
 		super.relationFixer = new InMemoryRelationHolder(idProvider);
 	}
 	
@@ -110,10 +108,10 @@ public class IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C extends 
 				CollectionOrderStorage inMemoryCollection = currentSelectedIndexes.get().get(idProvider.apply(src));
 				if (inMemoryCollection != null) {  // inMemoryCollection can be null if there's no associated entity in the database
 					Map<Integer, TRGT> targetIdPerId = inMemoryCollection.targetPerIndex;
-					C relationCollection = getCollectionGetter().get(src);
+					C relationCollection = getCollectionAccessPoint().get(src);
 					if (relationCollection == null) {
 						relationCollection = getCollectionFactory().get();
-						getCollectionSetter().set(src, relationCollection);
+						getCollectionAccessPoint().set(src, relationCollection);
 					}
 					relationCollection.addAll(new LinkedList<>(targetIdPerId.values()));
 				}

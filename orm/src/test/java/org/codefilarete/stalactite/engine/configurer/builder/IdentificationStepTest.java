@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.configurer.builder;
 
 import org.codefilarete.reflection.AccessorByField;
+import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.junit.jupiter.api.Test;
 
@@ -39,13 +40,13 @@ class IdentificationStepTest {
 		}
 		
 		EntityMappingConfiguration.CompositeKeyMapping<?, ?> compositeKeyMappingMock = mock(EntityMappingConfiguration.CompositeKeyMapping.class, RETURNS_MOCKS);
-		when(compositeKeyMappingMock.getAccessor()).thenReturn(new AccessorByField<>(DummyEntity.class.getDeclaredField("dummyCompositeKeyIdentifier")));
+		when(compositeKeyMappingMock.getAccessor()).thenReturn(new DefaultReadWritePropertyAccessPoint<>(new AccessorByField<>(DummyEntity.class.getDeclaredField("dummyCompositeKeyIdentifier"))));
 		assertThatCode(() -> IdentificationStep.assertCompositeKeyIdentifierOverridesEqualsHashcode(compositeKeyMappingMock))
 				.hasMessage("Composite key identifier class o.c.s.e.c.b.IdentificationStepTest$DummyCompositeKeyIdentifier" +
 						" seems to have default implementation of equals() and hashcode() methods," +
 						" which is not supported (identifiers must be distinguishable), please make it implement them");
 		
-		when(compositeKeyMappingMock.getAccessor()).thenReturn(new AccessorByField<>(DummyEntity.class.getDeclaredField("dummyCompositeKeyIdentifierWithEqualsAndHashCode")));
+		when(compositeKeyMappingMock.getAccessor()).thenReturn(new DefaultReadWritePropertyAccessPoint<>(new AccessorByField<>(DummyEntity.class.getDeclaredField("dummyCompositeKeyIdentifierWithEqualsAndHashCode"))));
 		assertThatCode(() -> IdentificationStep.assertCompositeKeyIdentifierOverridesEqualsHashcode(compositeKeyMappingMock))
 				.doesNotThrowAnyException();
 	}

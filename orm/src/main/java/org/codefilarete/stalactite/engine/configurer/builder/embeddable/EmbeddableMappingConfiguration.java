@@ -6,9 +6,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.Accessor;
-import org.codefilarete.reflection.ReadWriteAccessPoint;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
@@ -32,7 +30,7 @@ public interface EmbeddableMappingConfiguration<C> {
 			
 			private final List<EmbeddableLinkage> linkages = Iterables.collectToList(compositeKeyMappingConfiguration.getPropertiesMapping(), embeddableLinkage -> new EmbeddableLinkage() {
 				@Override
-				public ReversibleAccessor getAccessor() {
+				public ReadWritePropertyAccessPoint getAccessor() {
 					return embeddableLinkage.getAccessor();
 				}
 				
@@ -128,10 +126,10 @@ public interface EmbeddableMappingConfiguration<C> {
 			}
 			
 			@Override
-			public Collection<Inset<C, Object>> getInsets() {
-				return Iterables.collectToList(compositeKeyMappingConfiguration.getInsets(), compositeInset -> new Inset<C, Object>() {
+			public <O> Collection<Inset<C, O>> getInsets() {
+				return Iterables.collectToList(compositeKeyMappingConfiguration.<O>getInsets(), compositeInset -> new Inset<C, O>() {
 					@Override
-					public ReadWriteAccessPoint<C, Object> getAccessor() {
+					public ReadWritePropertyAccessPoint<C, O> getAccessor() {
 						return compositeInset.getAccessor();
 					}
 					
@@ -141,12 +139,12 @@ public interface EmbeddableMappingConfiguration<C> {
 					}
 					
 					@Override
-					public Class<Object> getEmbeddedClass() {
+					public Class<O> getEmbeddedClass() {
 						return compositeInset.getEmbeddedClass();
 					}
 					
 					@Override
-					public ValueAccessPointSet<C> getExcludedProperties() {
+					public ValueAccessPointSet<C, ValueAccessPoint<C>> getExcludedProperties() {
 						return compositeInset.getExcludedProperties();
 					}
 					
@@ -166,7 +164,7 @@ public interface EmbeddableMappingConfiguration<C> {
 					}
 					
 					@Override
-					public EmbeddableMappingConfiguration<Object> getConfiguration() {
+					public EmbeddableMappingConfiguration<O> getConfiguration() {
 						return fromCompositeKeyMappingConfiguration(compositeInset.getConfigurationProvider().getConfiguration());
 					}
 				});
@@ -204,10 +202,10 @@ public interface EmbeddableMappingConfiguration<C> {
 			}
 			
 			@Override
-			public Collection<Inset<C, Object>> getInsets() {
+			public Collection<Inset<C, ?>> getInsets() {
 				return Iterables.collectToList(embeddableMappingConfiguration.getInsets(), embeddableInset -> new Inset<C, Object>() {
 					@Override
-					public Accessor<C, Object> getAccessor() {
+					public ReadWritePropertyAccessPoint<C, Object> getAccessor() {
 						return embeddableInset.getAccessor();
 					}
 					
@@ -222,7 +220,7 @@ public interface EmbeddableMappingConfiguration<C> {
 					}
 					
 					@Override
-					public ValueAccessPointSet<C> getExcludedProperties() {
+					public ValueAccessPointSet<C, ValueAccessPoint<C>> getExcludedProperties() {
 						return embeddableInset.getExcludedProperties();
 					}
 					
@@ -264,7 +262,7 @@ public interface EmbeddableMappingConfiguration<C> {
 	
 	List<EmbeddableLinkage> getPropertiesMapping();
 	
-	Collection<Inset<C, Object>> getInsets();
+	<O> Collection<Inset<C, O>> getInsets();
 	
 	UniqueConstraintNamingStrategy getUniqueConstraintNamingStrategy();
 	
@@ -308,7 +306,7 @@ public interface EmbeddableMappingConfiguration<C> {
 		}
 		
 		@Override
-		public ReversibleAccessor<C, O> getAccessor() {
+		public ReadWritePropertyAccessPoint<C, O> getAccessor() {
 			return dslLinkage.getAccessor();
 		}
 		

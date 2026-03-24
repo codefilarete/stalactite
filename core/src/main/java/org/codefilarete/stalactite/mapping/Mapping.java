@@ -6,8 +6,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.reflection.PropertyAccessPoint;
+import org.codefilarete.reflection.PropertyMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -103,17 +104,17 @@ public interface Mapping<C, T extends Table<T>> {
 		// does nothing by default
 	}
 	
-	void addPropertySetByConstructor(ValueAccessPoint<C> accessor);
+	void addPropertySetByConstructor(PropertyAccessPoint<C, ?> accessor);
 	
-	Map<ReversibleAccessor<C, ?>, Column<T, ?>> getPropertyToColumn();
+	Map<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> getPropertyToColumn();
 	
-	Map<ReversibleAccessor<C, ?>, Column<T, ?>> getReadonlyPropertyToColumn();
+	Map<PropertyMutator<C, ?>, Column<T, ?>> getReadonlyPropertyToColumn();
 	
-	default ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> getReadConverters() {
+	default ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> getReadConverters() {
 		return new ValueAccessPointMap<>();
 	}
 	
-	default ValueAccessPointMap<C, Converter<Object, Object>, ReversibleAccessor<C, ?>> getWriteConverters() {
+	default ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> getWriteConverters() {
 		return new ValueAccessPointMap<>();
 	}
 	

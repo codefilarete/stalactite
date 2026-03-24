@@ -4,16 +4,15 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
-import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.CompositeKeyMapping;
+import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.tool.VisibleForTesting;
 
 /**
  * Stores information about entity identification during configuration process.
@@ -58,7 +57,7 @@ public abstract class AbstractIdentification<C, I> {
 		return new CompositeKeyIdentification<>(identificationDefiner, foundKeyMapping.getMarkAsPersistedFunction(), foundKeyMapping.getIsPersistedFunction());
 	}
 	
-	private final ReversibleAccessor<C, I> idAccessor;
+	private final ReadWritePropertyAccessPoint<C, I> idAccessor;
 	private final EntityMappingConfiguration<C, I> identificationDefiner;
 	private final EntityMappingConfiguration.KeyMapping<C, I> keyLinkage;
 	
@@ -83,7 +82,7 @@ public abstract class AbstractIdentification<C, I> {
 		return keyLinkage;
 	}
 	
-	public ReversibleAccessor<C, I> getIdAccessor() {
+	public ReadWritePropertyAccessPoint<C, I> getIdAccessor() {
 		return idAccessor;
 	}
 	
@@ -141,7 +140,7 @@ public abstract class AbstractIdentification<C, I> {
 		
 		private final Function<C, Boolean> isPersistedFunction;
 		
-		private Map<ReversibleAccessor<I, Object>, Column<Table, Object>> compositeKeyMapping;
+		private Map<ReadWritePropertyAccessPoint<I, Object>, Column<Table, Object>> compositeKeyMapping;
 		
 		private CompositeKeyIdentification(EntityMappingConfiguration<C, I> identificationDefiner,
 										   Consumer<C> markAsPersistedFunction,
@@ -159,12 +158,12 @@ public abstract class AbstractIdentification<C, I> {
 			return isPersistedFunction;
 		}
 		
-		public Map<ReversibleAccessor<I, Object>, Column<Table, Object>> getCompositeKeyMapping() {
+		public Map<ReadWritePropertyAccessPoint<I, Object>, Column<Table, Object>> getCompositeKeyMapping() {
 			return compositeKeyMapping;
 		}
 		
-		public void setCompositeKeyMapping(Map<? extends ReversibleAccessor<I, Object>, ? extends Column<?, Object>> compositeKeyMapping) {
-			this.compositeKeyMapping = (Map<ReversibleAccessor<I, Object>, Column<Table, Object>>) compositeKeyMapping;
+		public void setCompositeKeyMapping(Map<? extends ReadWritePropertyAccessPoint<I, Object>, ? extends Column<?, Object>> compositeKeyMapping) {
+			this.compositeKeyMapping = (Map<ReadWritePropertyAccessPoint<I, Object>, Column<Table, Object>>) compositeKeyMapping;
 		}
 	}
 }

@@ -8,10 +8,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.ReadWriteAccessPoint;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.PropertyAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.EntityCriteria;
 import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.VersioningStrategy;
@@ -53,8 +52,8 @@ import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROO
  * Persister that registers relations of entities joined on "foreign key = primary key".
  * This does not handle inheritance nor entities mapped on several tables, it focuses on select part : a main table is defined by
  * {@link DefaultEntityMapping} passed to constructor which then it can be added to some other {@link RelationalEntityPersister} thanks to
- * {@link RelationalEntityPersister#joinAsMany(String, RelationalEntityPersister, Accessor, Key, Key, BeanRelationFixer, Function, boolean, boolean)} and
- * {@link RelationalEntityPersister#joinAsOne(RelationalEntityPersister, Accessor, Key, Key, String, BeanRelationFixer, boolean, boolean)}.
+ * {@link RelationalEntityPersister#joinAsMany(String, RelationalEntityPersister, PropertyAccessPoint, Key, Key, BeanRelationFixer, Function, boolean, boolean)} and
+ * {@link RelationalEntityPersister#joinAsOne(RelationalEntityPersister, PropertyAccessPoint, Key, Key, String, BeanRelationFixer, boolean, boolean)}.
  * 
  * Entity load is defined by a select that joins all tables, each {@link DefaultEntityMapping} is called to complete
  * entity loading.
@@ -210,7 +209,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	 */
 	@Override
 	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																							 Accessor<SRC, C> propertyAccessor,
+																							 PropertyAccessPoint<SRC, C> propertyAccessor,
 																							 Key<T1, JOINID> leftColumn,
 																							 Key<T2, JOINID> rightColumn,
 																							 @Nullable String rightTableAlias,
@@ -253,9 +252,9 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	 * Implementation for simple one-to-many cases : we add our joins to given persister
 	 */
 	@Override
-	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsMany(String joinName,
+	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID, S> String joinAsMany(String joinName,
 																							  RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																							  Accessor<SRC, ?> propertyAccessor,
+																							  PropertyAccessPoint<SRC, S> propertyAccessor,
 																							  Key<T1, JOINID> leftColumn,
 																							  Key<T2, JOINID> rightColumn,
 																							  BeanRelationFixer<SRC, C> beanRelationFixer,
@@ -327,12 +326,12 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 			newCriteriaSupport.getEntityCriteriaSupport().getCriteria().and(tupleIn);
 			return newCriteriaSupport.wrapIntoExecutable().execute(resultAccumulator);
 		} else {
-			ReversibleAccessor<C, I> criteriaAccessor;
+			ReadWritePropertyAccessPoint<C, I> criteriaAccessor;
 			if (idMapping.getIdAccessor() instanceof AccessorWrapperIdAccessor) {
 				criteriaAccessor = ((AccessorWrapperIdAccessor<C, I>) idMapping.getIdAccessor()).getIdAccessor();
 			} else if (idMapping.getIdAccessor() instanceof KeyValueRecordIdMapping.KeyValueRecordIdAccessor) {
-				ReadWriteAccessPoint<RecordId, ?> accessor = Accessors.accessor(RecordId::getId);
-				criteriaAccessor = (ReversibleAccessor<C, I>) accessor;
+				ReadWritePropertyAccessPoint<RecordId, ?> accessor = Accessors.readWriteAccessPoint(RecordId::getId);
+				criteriaAccessor = (ReadWritePropertyAccessPoint<C, I>) accessor;
 			} else {
 				throw new UnsupportedOperationException("Unsupported id accessor type: " + idMapping.getIdAccessor().getClass());
 			}

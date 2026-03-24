@@ -7,10 +7,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.codefilarete.reflection.AccessorByField;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.ReadWriteAccessPoint;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.StaleStateObjectException;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener.UpdatePayload;
@@ -23,9 +22,8 @@ import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierM
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
-import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -35,6 +33,7 @@ import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListen
 import org.codefilarete.stalactite.sql.statement.SQLStatement;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.test.PairSetList;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
@@ -46,9 +45,17 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 import static org.codefilarete.tool.collection.Arrays.asList;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Guillaume Mary
@@ -145,10 +152,10 @@ class UpdateExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 	void updateById_noColumnToUpdate() {
 		T table = (T) new Table("SimpleEntity");
 		Column<T, Long> id = table.addColumn("id", long.class).primaryKey();
-		AccessorByField<SimpleEntity, Long> idAccessor = Accessors.accessorByField(SimpleEntity.class, "id");
-		Map<AccessorByField<SimpleEntity, Object>, Column<T, Object>> mapping = Maps
-				.forHashMap((Class<AccessorByField<SimpleEntity, Object>>) null, (Class<Column<T, Object>>) null)
-				.add((AccessorByField) idAccessor, (Column) id);
+		ReadWritePropertyAccessPoint<SimpleEntity, Long> idAccessor = Accessors.propertyAccessor(SimpleEntity.class, "id");
+		Map<ReadWritePropertyAccessPoint<SimpleEntity, Object>, Column<T, Object>> mapping = Maps
+				.forHashMap((Class<ReadWritePropertyAccessPoint<SimpleEntity, Object>>) null, (Class<Column<T, Object>>) null)
+				.add((ReadWritePropertyAccessPoint) idAccessor, (Column) id);
 		DefaultEntityMapping<SimpleEntity, Long, T> simpleEntityPersistenceMapping = new DefaultEntityMapping<>(
 				SimpleEntity.class,
 				table,
@@ -278,7 +285,7 @@ class UpdateExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 	<T extends Table<T>> void update_noColumnToUpdate() {
 		T table = (T) new Table<>("SimpleEntity");
 		Column<?, Long> id = table.addColumn("id", long.class).primaryKey();
-		AccessorByField<SimpleEntity, Long> idAccessor = Accessors.accessorByField(SimpleEntity.class, "id");
+		ReadWritePropertyAccessPoint<SimpleEntity, Long> idAccessor = Accessors.propertyAccessor(SimpleEntity.class, "id");
 		DefaultEntityMapping<SimpleEntity, Long, T> simpleEntityPersistenceMapping = new DefaultEntityMapping<SimpleEntity, Long, T>
 				(SimpleEntity.class, table, (Map) Maps.asMap(idAccessor, id), idAccessor, new AlreadyAssignedIdentifierManager<>(long.class, c -> {}, c -> false));
 		UpdateExecutor<SimpleEntity, Long, T> testInstance = new UpdateExecutor<>(
@@ -319,12 +326,12 @@ class UpdateExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 		Column<T, Integer> pk = totoTable.addColumn("id", Integer.class).primaryKey();
 		Column<T, Integer> modifiedColumn = totoTable.addColumn("c", Integer.class);
 		Column<T, Long> versionColumn = totoTable.addColumn("version", Long.class);
-		ReadWriteAccessPoint<VersionnedToto, Integer> identifierAccessor = ReadWriteAccessPoint.fromMethodReference(VersionnedToto::getA, VersionnedToto::setA);
-		Map<ReversibleAccessor, Column> mapping = Maps.forHashMap((Class<ReversibleAccessor>) null, (Class<Column>) null)
-				.add(ReadWriteAccessPoint.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion), versionColumn)
-				.add(Accessors.accessorByField(VersionnedToto.class, "c"), modifiedColumn)
+		ReadWritePropertyAccessPoint<VersionnedToto, Integer> identifierAccessor = new DefaultReadWritePropertyAccessPoint<>(VersionnedToto::getA, VersionnedToto::setA);
+		Map<ReadWritePropertyAccessPoint, Column> mapping = Maps.forHashMap((Class<ReadWritePropertyAccessPoint>) null, (Class<Column>) null)
+				.add(new DefaultReadWritePropertyAccessPoint<>(VersionnedToto::getVersion, VersionnedToto::setVersion), versionColumn)
+				.add(Accessors.propertyAccessor(VersionnedToto.class, "c"), modifiedColumn)
 				.add(identifierAccessor, pk);
-		ReadWriteAccessPoint<VersionnedToto, Long> versioningAttributeAccessor = ReadWriteAccessPoint.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion);
+		ReadWritePropertyAccessPoint<VersionnedToto, Long> versioningAttributeAccessor = new DefaultReadWritePropertyAccessPoint<>(VersionnedToto::getVersion, VersionnedToto::setVersion);
 		SimpleIdMapping<VersionnedToto, Integer> idMapping = new SimpleIdMapping<>(identifierAccessor, new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {}, c -> false), new SingleIdentifierAssembler<>(pk));
 		testInstance = new UpdateExecutor<>(new DefaultEntityMapping<VersionnedToto, Integer, T>(
 				VersionnedToto.class,

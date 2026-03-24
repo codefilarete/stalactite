@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.engine.configurer.builder;
 import java.lang.reflect.Method;
 
 import org.codefilarete.reflection.MethodReferenceCapturer;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.dsl.key.FluentEntityMappingBuilderKeyOptions;
@@ -19,7 +19,7 @@ public class AbstractIdentificationStep<C, I> {
 	}
 	
 	protected UnsupportedOperationException newMissingIdentificationException(Class<C> entityType) {
-		SerializableTriFunction<FluentEntityMappingBuilder, SerializableMutator<C, I>, IdentifierPolicy, FluentEntityMappingBuilderKeyOptions<C, I>>
+		SerializableTriFunction<FluentEntityMappingBuilder, SerializablePropertyMutator<C, I>, IdentifierPolicy, FluentEntityMappingBuilderKeyOptions<C, I>>
 				identifierMethodReference = FluentEntityMappingBuilder::mapKey;
 		Method identifierSetter = this.methodSpy.findMethod(identifierMethodReference);
 		return new UnsupportedOperationException("Identifier is not defined for " + Reflections.toString(entityType)

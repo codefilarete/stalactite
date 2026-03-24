@@ -4,8 +4,9 @@ import java.util.Collection;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.Mutator;
+import org.codefilarete.reflection.PropertyMutator;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.bean.Objects;
 
@@ -19,56 +20,41 @@ public class ManyRelationDescriptor<I, O, C extends Collection<O>> {
 	/** Empty setter for applying source entity to target entity (reverse side) */
 	protected static final Mutator NOOP_REVERSE_SETTER = (o, i) -> {};
 	
-	private final Accessor<I, C> collectionProvider;
-	
-	private final Mutator<I, C> collectionSetter;
+	private final ReadWritePropertyAccessPoint<I, C> collectionAccessPoint;
 	
 	private final Supplier<C> collectionFactory;
 	
-	private final Mutator<O, I> reverseSetter;
+	private final PropertyMutator<O, I> reverseSetter;
 	
 	protected BeanRelationFixer<I, O> relationFixer;
 	
 	/**
-	 * @param collectionProvider collection accessor
-	 * @param collectionSetter collection setter
+	 * @param collectionAccessPoint collection accessor
 	 * @param collectionFactory collection factory
 	 * @param reverseSetter
 	 */
-	public ManyRelationDescriptor(Accessor<I, C> collectionProvider,
-								  Mutator<I, C> collectionSetter,
+	public ManyRelationDescriptor(ReadWritePropertyAccessPoint<I, C> collectionAccessPoint,
 								  Supplier<C> collectionFactory,
-								  @Nullable Mutator<O, I> reverseSetter) {
-		this(collectionProvider,
-				collectionSetter,
+								  @Nullable PropertyMutator<O, I> reverseSetter) {
+		this(collectionAccessPoint,
 				collectionFactory,
 				reverseSetter,
-				BeanRelationFixer.of(collectionSetter, collectionProvider, collectionFactory, Objects.preventNull(reverseSetter, (Mutator<O, I>) NOOP_REVERSE_SETTER))
+				BeanRelationFixer.of(collectionAccessPoint, collectionFactory, Objects.preventNull(reverseSetter, (Mutator<O, I>) NOOP_REVERSE_SETTER))
 		);
 	}
 	
-	public ManyRelationDescriptor(Accessor<I, C> collectionProvider,
-								  Mutator<I, C> collectionSetter,
+	public ManyRelationDescriptor(ReadWritePropertyAccessPoint<I, C> collectionAccessPoint,
 								  Supplier<C> collectionFactory,
-								  Mutator<O, I> reverseSetter,
+								  PropertyMutator<O, I> reverseSetter,
 								  BeanRelationFixer<I, O> relationFixer) {
-		this.collectionProvider = collectionProvider;
-		this.collectionSetter = collectionSetter;
+		this.collectionAccessPoint = collectionAccessPoint;
 		this.collectionFactory = collectionFactory;
 		this.reverseSetter = reverseSetter;
 		this.relationFixer = relationFixer;
 	}
-
-	public Accessor<I, C> getCollectionProvider() {
-		return collectionProvider;
-	}
 	
-	public Accessor<I, C> getCollectionGetter() {
-		return collectionProvider;
-	}
-	
-	public Mutator<I, C> getCollectionSetter() {
-		return collectionSetter;
+	public ReadWritePropertyAccessPoint<I, C> getCollectionAccessPoint() {
+		return collectionAccessPoint;
 	}
 	
 	public Supplier<C> getCollectionFactory() {

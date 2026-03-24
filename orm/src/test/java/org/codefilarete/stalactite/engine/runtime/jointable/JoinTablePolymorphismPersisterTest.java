@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.engine.runtime.jointable;
 
-import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.sql.Array;
 import java.sql.Connection;
@@ -13,19 +12,21 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.sql.DataSource;
 
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ReadWriteAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy.JoinTablePolymorphism;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.InMemoryCounterIdentifierGenerator;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
-import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
-import org.codefilarete.stalactite.dsl.PolymorphismPolicy.JoinTablePolymorphism;
-import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListener;
+import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.model.Car;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Engine;
@@ -48,17 +49,17 @@ import org.codefilarete.stalactite.query.Operators;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
+import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.test.DefaultDialect;
 import org.codefilarete.stalactite.test.PairSetList;
 import org.codefilarete.tool.Duo;
@@ -136,10 +137,10 @@ class JoinTablePolymorphismPersisterTest {
 	}
 	
 	protected ConfiguredRelationalPersister<TotoA, Identifier<Integer>> initMappingTotoA(Table table) {
-		Map<ReadWriteAccessPoint<TotoA, Object>, Column<Table, Object>> mappedFields = new KeepOrderMap<>();
+		Map<ReadWritePropertyAccessPoint<TotoA, Object>, Column<Table, Object>> mappedFields = new KeepOrderMap<>();
 		mappedFields.put(Accessors.propertyAccessor(TotoA.class, "a"), table.addColumn("a", Integer.class));
-		ReadWriteAccessPoint<TotoA, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(TotoA.class, "id");
-		mappedFields.put((ReadWriteAccessPoint) primaryKeyAccessor, table.addColumn("id", Identifier.class).primaryKey());
+		ReadWritePropertyAccessPoint<TotoA, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(TotoA.class, "id");
+		mappedFields.put((ReadWritePropertyAccessPoint) primaryKeyAccessor, table.addColumn("id", Identifier.class).primaryKey());
 		
 		IdentifierInsertionManager<TotoA, Identifier<Integer>> identifierManager = new AlreadyAssignedIdentifierManager<>((Class<Identifier<Integer>>) (Class) Identifier.class,
 				totoA -> totoA.getId().setPersisted(), totoA -> totoA.getId().isPersisted());
@@ -152,10 +153,10 @@ class JoinTablePolymorphismPersisterTest {
 	}
 	
 	protected ConfiguredRelationalPersister<TotoB, Identifier<Integer>> initMappingTotoB(Table table) {
-		Map<ReadWriteAccessPoint<TotoB, Object>, Column<Table, Object>> mappedFields = new KeepOrderMap<>();
+		Map<ReadWritePropertyAccessPoint<TotoB, Object>, Column<Table, Object>> mappedFields = new KeepOrderMap<>();
 		mappedFields.put(Accessors.propertyAccessor(TotoB.class, "b"), table.addColumn("b", Integer.class));
-		ReadWriteAccessPoint<TotoB, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(TotoB.class, "id");
-		mappedFields.put((ReadWriteAccessPoint) primaryKeyAccessor, table.addColumn("id", Identifier.class).primaryKey());
+		ReadWritePropertyAccessPoint<TotoB, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(TotoB.class, "id");
+		mappedFields.put((ReadWritePropertyAccessPoint) primaryKeyAccessor, table.addColumn("id", Identifier.class).primaryKey());
 		
 		IdentifierInsertionManager<TotoB, Identifier<Integer>> identifierManager = new AlreadyAssignedIdentifierManager<>((Class<Identifier<Integer>>) (Class) Identifier.class,
 				totoB -> totoB.getId().setPersisted(), totoB -> totoB.getId().isPersisted());
@@ -177,10 +178,10 @@ class JoinTablePolymorphismPersisterTest {
 		Column<Table, Object> xColumn = totoTable.addColumn("x", fieldA.getType());
 		Column<Table, Object> qColumn = totoTable.addColumn("q", fieldQ.getType());
 		
-		ReadWriteAccessPoint<AbstractToto, Identifier<Integer>> identifierAccessor = Accessors.propertyAccessor(fieldId);
-		Map<ReadWriteAccessPoint<AbstractToto, Object>, Column<Table, Object>> totoPropertyMapping = Maps.forHashMap(
-						(Class<ReadWriteAccessPoint<AbstractToto, Object>>) (Class) ReadWriteAccessPoint.class, (Class<Column<Table, Object>>) (Class) Column.class)
-				.add((ReadWriteAccessPoint) identifierAccessor, idColumn)
+		ReadWritePropertyAccessPoint<AbstractToto, Identifier<Integer>> identifierAccessor = Accessors.propertyAccessor(fieldId);
+		Map<ReadWritePropertyAccessPoint<AbstractToto, Object>, Column<Table, Object>> totoPropertyMapping = Maps.forHashMap(
+						(Class<ReadWritePropertyAccessPoint<AbstractToto, Object>>) (Class) ReadWriteAccessPoint.class, (Class<Column<Table, Object>>) (Class) Column.class)
+				.add((ReadWritePropertyAccessPoint) identifierAccessor, idColumn)
 				.add(Accessors.propertyAccessor(fieldA), xColumn)
 				.add(Accessors.propertyAccessor(fieldQ), qColumn);
 		

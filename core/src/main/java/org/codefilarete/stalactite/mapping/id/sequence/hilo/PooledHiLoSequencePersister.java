@@ -3,12 +3,12 @@ package org.codefilarete.stalactite.mapping.id.sequence.hilo;
 import java.sql.Connection;
 import java.util.Map;
 
+import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
+import org.codefilarete.stalactite.engine.SeparateTransactionExecutor;
 import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
-import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.reflection.ReadWriteAccessPoint;
-import org.codefilarete.stalactite.engine.SeparateTransactionExecutor;
 import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequencePersister.Sequence;
 import org.codefilarete.stalactite.mapping.id.sequence.hilo.PooledHiLoSequencePersister.SequenceTable;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
@@ -16,6 +16,7 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Database.Schema;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.collection.Maps;
 
 /**
  * Persister dedicated to {@link Sequence}.
@@ -63,9 +64,9 @@ public class PooledHiLoSequencePersister extends BeanPersister<Sequence, String,
 			nextValColumn = addColumn(nextValColName, long.class);
 		}
 		
-		public Map<ReadWriteAccessPoint<Sequence, Object>, Column<SequenceTable, Object>> getPooledSequenceFieldMapping() {
+		public Map<ReadWritePropertyAccessPoint<Sequence, Object>, Column<SequenceTable, Object>> getPooledSequenceFieldMapping() {
 			return (Map) Maps
-					.forHashMap(ReadWriteAccessPoint.class, Column.class)
+					.forHashMap(ReadWritePropertyAccessPoint.class, Column.class)
 					.add(Sequence.SEQUENCE_NAME_FIELD, sequenceNameColumn)
 					.add(Sequence.VALUE_FIELD, nextValColumn);
 		}
@@ -76,13 +77,13 @@ public class PooledHiLoSequencePersister extends BeanPersister<Sequence, String,
 	 */
 	public static class Sequence {
 		
-		private static final ReadWriteAccessPoint<Sequence, String> SEQUENCE_NAME_FIELD;
-		private static final ReadWriteAccessPoint<Sequence, Long> VALUE_FIELD;
+		private static final ReadWritePropertyAccessPoint<Sequence, String> SEQUENCE_NAME_FIELD;
+		private static final ReadWritePropertyAccessPoint<Sequence, Long> VALUE_FIELD;
 		
 		
 		static {
-			SEQUENCE_NAME_FIELD = ReadWriteAccessPoint.fromMethodReference(Sequence::getSequenceName, Sequence::setSequenceName);
-			VALUE_FIELD = ReadWriteAccessPoint.fromMethodReference(Sequence::getStep, Sequence::setStep);
+			SEQUENCE_NAME_FIELD = DefaultReadWritePropertyAccessPoint.fromMethodReference(Sequence::getSequenceName, Sequence::setSequenceName);
+			VALUE_FIELD = DefaultReadWritePropertyAccessPoint.fromMethodReference(Sequence::getStep, Sequence::setStep);
 		}
 		
 		private String sequenceName;

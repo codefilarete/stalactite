@@ -6,6 +6,7 @@ import java.util.Map;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.AccessorDefinitionDefiner;
+import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.tool.function.TriConsumer;
 
@@ -25,7 +26,7 @@ import org.codefilarete.tool.function.TriConsumer;
  * @param <MM> redefined Map type to get entity key identifier
  * @author Guillaume Mary
  */
-class ConvertingMapAccessor<SRC, K1, V1, K2, V2, M extends Map<K1, V1>, MM extends Map<K2, V2>> implements Accessor<SRC, MM>, AccessorDefinitionDefiner<SRC> {
+class ConvertingMapAccessor<SRC, K1, V1, K2, V2, M extends Map<K1, V1>, MM extends Map<K2, V2>> implements PropertyAccessor<SRC, MM>, AccessorDefinitionDefiner<SRC> {
 	
 	private final MapRelation<SRC, K1, V1, M> map;
 	

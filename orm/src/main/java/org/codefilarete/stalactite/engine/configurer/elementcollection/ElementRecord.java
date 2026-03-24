@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.configurer.elementcollection;
 
-import org.codefilarete.reflection.ReadWriteAccessPoint;
+import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.diff.CollectionDiffer;
 
 /**
@@ -11,11 +12,11 @@ import org.codefilarete.stalactite.engine.diff.CollectionDiffer;
  */
 public class ElementRecord<TRGT, ID> {
 	
-	static final ReadWriteAccessPoint<ElementRecord<Object, Object>, Object> IDENTIFIER_ACCESSOR = ReadWriteAccessPoint.fromMethodReference(
+	static final ReadWritePropertyAccessPoint<ElementRecord<Object, Object>, Object> IDENTIFIER_ACCESSOR = DefaultReadWritePropertyAccessPoint.fromMethodReference(
 			ElementRecord::getId,
 			ElementRecord::setId);
 	
-	public static final ReadWriteAccessPoint<ElementRecord<Object, Object>, Object> ELEMENT_ACCESSOR = ReadWriteAccessPoint.fromMethodReference(
+	public static final ReadWritePropertyAccessPoint<ElementRecord<Object, Object>, Object> ELEMENT_ACCESSOR = DefaultReadWritePropertyAccessPoint.fromMethodReference(
 			ElementRecord::getElement,
 			ElementRecord::setElement);
 	

@@ -1,8 +1,7 @@
 package org.codefilarete.stalactite.dsl.naming;
 
-import org.codefilarete.reflection.ReadWriteAccessPoint;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration.Linkage;
+import org.codefilarete.reflection.DefaultReadWriteAccessPoint;
+import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.model.AbstractVehicle;
 import org.codefilarete.stalactite.engine.model.Bicycle;
 import org.codefilarete.stalactite.engine.model.Gender;
@@ -14,7 +13,6 @@ import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -24,20 +22,19 @@ class UniqueConstraintNamingStrategyTest {
 	static Iterable<Arguments> defaultImplementation_data() {
 		Table abstractVehicleTable = new Table(null, "AbstractVehicle");
 		Column timestampColumn = abstractVehicleTable.addColumn("timestamp", String.class);
-		ReadWriteAccessPoint<AbstractVehicle, Timestamp> timestampPropertyAccessor = ReadWriteAccessPoint.fromMethodReference(
+		DefaultReadWriteAccessPoint<AbstractVehicle, Timestamp> timestampPropertyAccessor = DefaultReadWriteAccessPoint.fromMethodReference(
 				AbstractVehicle::getTimestamp, AbstractVehicle::setTimestamp
 		);
 		
 		Table personTable = new Table(null, "Person");
 		Column mainBicycleColumn = personTable.addColumn("mainBicycle", String.class);
-		ReadWriteAccessPoint<PersonWithGender, Bicycle> mainBicyclePropertyAccessor = ReadWriteAccessPoint.fromMethodReference(
+		DefaultReadWriteAccessPoint<PersonWithGender, Bicycle> mainBicyclePropertyAccessor = DefaultReadWriteAccessPoint.fromMethodReference(
 				PersonWithGender::getMainBicycle, PersonWithGender::setMainBicycle
 		);
 		Column principalBikeColumn = personTable.addColumn("principalBike", String.class);
 		Table personWithGenderTable = new Table(null, "PersonWithGender");
 		Column genderColumn = personWithGenderTable.addColumn("gender", String.class);
-		Linkage personWithGenderGender_withOverriddenName = Mockito.mock(Linkage.class);
-		ReadWriteAccessPoint<PersonWithGender, Gender> genderPropertyAccessor = ReadWriteAccessPoint.fromMethodReference(
+		DefaultReadWriteAccessPoint<PersonWithGender, Gender> genderPropertyAccessor = DefaultReadWriteAccessPoint.fromMethodReference(
 				PersonWithGender::getGender, PersonWithGender::setGender
 		);
 		return Arrays.asList(
@@ -51,7 +48,7 @@ class UniqueConstraintNamingStrategyTest {
 	
 	@ParameterizedTest
 	@MethodSource("defaultImplementation_data")
-	void defaultImplementation(ReversibleAccessor accessor, Column column, String expectedIndexName) {
+	void defaultImplementation(ValueAccessPoint accessor, Column column, String expectedIndexName) {
 		String constraintName = UniqueConstraintNamingStrategy.DEFAULT.giveName(accessor, column);
 		assertThat(constraintName).isEqualTo(expectedIndexName);
 	}

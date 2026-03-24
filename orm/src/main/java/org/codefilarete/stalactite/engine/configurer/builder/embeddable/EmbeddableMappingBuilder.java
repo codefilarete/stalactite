@@ -20,6 +20,9 @@ import javax.annotation.Nullable;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.PropertyAccessPoint;
+import org.codefilarete.reflection.ReadWriteAccessorChain;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ReversibleMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
@@ -129,7 +132,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 	 * @param beanType read property type
 	 * @return a new {@link AccessorChain} that access property of terminalAccessor thanks to all accessors of rootAccessors
 	 */
-	private static <SRC, TRGT> AccessorChain<SRC, TRGT> newAccessorChain(List<? extends ValueAccessPoint<?>> rootAccessors,
+	private static <SRC, TRGT> ReadWritePropertyAccessPoint<SRC, TRGT> newAccessorChain(List<? extends ValueAccessPoint<?>> rootAccessors,
 																		 ValueAccessPoint<?> terminalAccessor,
 																		 Class<TRGT> beanType) {
 		// we must clone rootAccessors to prevent from accessor mixing
@@ -146,12 +149,13 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 				throw new NotImplementedException(Reflections.toString(valueAccessPoint.getClass()) + " is unknown from chain creation algorithm");
 			}
 		});
-		return AccessorChain.fromAccessorsWithNullSafe(
-				finalAccessors,
-				// this can look superfluous but fills the gap of instantiating right bean when configuration is a subtype of inset accessor,
-				// case which is allowed by signature of embed(..) method : it accepts "? extend T" as parameter type of given configuration
-				// (where T is type returned by accessor, or expected as input of mutator)
-				(accessor, aClass) -> Reflections.newInstance(beanType));
+		return new ReadWriteAccessorChain<>(
+				AccessorChain.fromAccessorsWithNullSafe(
+						finalAccessors,
+						// this can look superfluous but fills the gap of instantiating right bean when configuration is a subtype of inset accessor,
+						// case which is allowed by signature of embed(..) method : it accepts "? extend T" as parameter type of given configuration
+						// (where T is type returned by accessor, or expected as input of mutator)
+						(accessor, aClass) -> Reflections.newInstance(beanType)));
 	}
 	
 	private final EmbeddableMappingConfiguration<C> mainMappingConfiguration;
@@ -210,7 +214,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 		return build(onlyExtraTableLinkages, new ValueAccessPointSet<>());
 	}
 	
-	private EmbeddableMapping<C, T> build(boolean onlyExtraTableLinkages, ValueAccessPointSet<C> excludedProperties) {
+	private EmbeddableMapping<C, T> build(boolean onlyExtraTableLinkages, ValueAccessPointSet<C, ValueAccessPoint<C>> excludedProperties) {
 		InternalProcessor internalProcessor = new InternalProcessor(onlyExtraTableLinkages);
 		// converting direct mapping
 		internalProcessor.includeDirectMapping(this.mainMappingConfiguration,
@@ -261,7 +265,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 											ValueAccessPointMap<C, String, ValueAccessPoint<C>> overriddenColumnNames,
 											ValueAccessPointMap<C, Size, ValueAccessPoint<C>> overriddenColumnSizes,
 											ValueAccessPointMap<C, Column<T, ?>, ValueAccessPoint<C>> overriddenColumns,
-											ValueAccessPointSet<C> excludedProperties) {
+											ValueAccessPointSet<C, ValueAccessPoint<C>> excludedProperties) {
 			Stream<EmbeddableLinkage> linkageStream = mappingConfiguration.getPropertiesMapping().stream()
 					.filter(linkage -> !excludedProperties.contains(linkage.getAccessor()));
 			
@@ -278,7 +282,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 						.map(Column::getSize)
 						.getOr(() -> determineColumnSize(linkage, overriddenColumnSizes.get(linkage.getAccessor())));
 				assertMappingIsNotAlreadyDefinedByInheritance(linkage, columnName, mappingConfiguration);
-				Duo<ReversibleAccessor<C, Object>, Column<T, Object>> mapping = includeMapping(
+				Duo<ReadWritePropertyAccessPoint<C, Object>, Column<T, Object>> mapping = includeMapping(
 						linkage,
 						accessorPrefix,
 						columnName,
@@ -297,12 +301,12 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 			});
 		}
 		
-		protected <O> Duo<ReversibleAccessor<C, ?>, Column<T, Object>> includeMapping(EmbeddableLinkage<C, O> linkage,
-																					  @Nullable ValueAccessPoint<C> accessorPrefix,
-																					  String columnName,
-																					  @Nullable Size columnSize,
-																					  @Nullable Column<T, O> overriddenColumn,
-																					  EmbeddableMappingConfiguration<?> beanMappingConfiguration) {
+		protected <O> Duo<ReadWritePropertyAccessPoint<C, ?>, Column<T, Object>> includeMapping(EmbeddableLinkage<C, O> linkage,
+																								@Nullable ValueAccessPoint<C> accessorPrefix,
+																								String columnName,
+																								@Nullable Size columnSize,
+																								@Nullable Column<T, O> overriddenColumn,
+																								EmbeddableMappingConfiguration<?> beanMappingConfiguration) {
 			Column<T, O> column = nullable(overriddenColumn).getOr(() -> addColumnToTable(linkage, columnName, columnSize));
 			
 			if (linkage.isUnique() && linkage instanceof EmbeddableLinkageSupport) {
@@ -312,7 +316,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 			}
 			
 			ensureColumnBindingInRegistry(linkage, column);
-			ReversibleAccessor<C, ?> accessor;
+			ReadWritePropertyAccessPoint<C, ?> accessor;
 			if (accessorPrefix != null) {
 				accessor = newAccessorChain(Collections.singletonList(accessorPrefix), linkage.getAccessor(), beanMappingConfiguration.getBeanType());
 			} else {
@@ -385,21 +389,21 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 			
 			Queue<Inset<C, ?>> stack = Collections.asLifoQueue(new ArrayDeque<>());
 			stack.addAll(mainMappingConfiguration.getInsets());
-			Queue<Accessor<C, ?>> accessorPath = new ArrayDeque<>();
+			Queue<ReadWritePropertyAccessPoint<C, ?>> accessorPath = new ArrayDeque<>();
 			while (!stack.isEmpty()) {
 				Inset<C, ?> inset = stack.poll();
 				
 				assertNotAlreadyDeclared(inset, treatedInsets);
 				
 				EmbeddableMappingConfiguration<C> configuration = (EmbeddableMappingConfiguration<C>) inset.getConfiguration();
-				ValueAccessPoint<C> mappingPrefix = null;
+				PropertyAccessPoint<C, ?> mappingPrefix = null;
 				if (inset.getAccessor() != null) {
 					accessorPath.add(inset.getAccessor());
 					// small optimization to avoid creation of an Accessor chain of 1 element
 					if (accessorPath.size() == 1) {
 						mappingPrefix = accessorPath.peek();
 					} else {
-						mappingPrefix = AccessorChain.fromAccessorsWithNullSafe(new ArrayList<>(accessorPath));
+						mappingPrefix = new ReadWriteAccessorChain<>(AccessorChain.fromAccessorsWithNullSafe(new ArrayList<>(accessorPath)));
 					}
 				}
 				EmbeddableMappingConfiguration<?> superClassConfiguration = configuration.getMappedSuperClassConfiguration();
@@ -422,10 +426,10 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 			}
 		}
 		
-		private void includeMappedSuperClassMapping(Inset<C, ?> inset, Collection<Accessor<C, ?>> accessorPath, EmbeddableMappingConfiguration<?> superClassConfiguration) {
+		private void includeMappedSuperClassMapping(Inset<C, ?> inset, Collection<ReadWritePropertyAccessPoint<C, ?>> accessorPath, EmbeddableMappingConfiguration<?> superClassConfiguration) {
 			// we include super type mapping by using a new instance of EmbeddableMappingBuilder, this is the simplest (but maybe not the most
 			// debuggable) and allows to manage inheritance of several mappedSuperClass 
-			ValueAccessPointSet<C> excludedProperties = new ValueAccessPointSet<>();
+			ValueAccessPointSet<C, ValueAccessPoint<C>> excludedProperties = new ValueAccessPointSet<>();
 			// we remove overridden inset columns to avoid their creation by the EmbeddableMappingBuilder
 			// to avoid duplicates because they are already in the target table (through their creation) and the builder
 			// will create them with their default name
@@ -447,20 +451,20 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 			EmbeddableMapping<C, T> superMapping = mappedSuperClassBuilder.build(false, excludedProperties);
 			Class<?> insetBeanType = inset.getConfiguration().getBeanType();
 			superMapping.getMapping().forEach((accessor, column) -> {
-				AccessorChain prefix;
-				List<Accessor<?, ?>> accessors;
+				List<ReadWritePropertyAccessPoint<?, ?>> accessors;
 				if (accessorPath.size() == 1) {
 					accessors = Arrays.asList(Iterables.first(accessorPath), accessor);
 				} else {
 					accessors = new ArrayList<>(accessorPath);
 					accessors.add(accessor);
 				}
-				prefix = AccessorChain.fromAccessorsWithNullSafe(
+				
+				ReadWritePropertyAccessPoint<C, Object> prefix = new ReadWriteAccessorChain<>(AccessorChain.fromAccessorsWithNullSafe(
 						accessors,
 						// this can look superfluous but fills the gap with instantiating right bean when configuration is a subtype of inset accessor,
 						// case which is allowed by signature of embed(..) method : it accepts "? extend T" as parameter type of given configuration
 						// (where T is type returned by accessor, or expected as input of mutator)
-						(localAccessor, accessorInputType) -> Reflections.newInstance(insetBeanType));
+						(localAccessor, accessorInputType) -> Reflections.newInstance(insetBeanType)));
 				
 				// Computing definitive column because it may be overridden by inset declaration
 				Column<T, ?> finalColumn;
@@ -471,7 +475,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 				} else {
 					finalColumn = targetTable.addColumn(column.getName(), column.getJavaType());
 				}
-				result.getMapping().put((ReversibleAccessor<C, Object>) prefix, (Column<T, Object>) finalColumn);
+				result.getMapping().put(prefix, (Column<T, Object>) finalColumn);
 			});
 		}
 		
@@ -482,7 +486,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 		 * Throws an exception if that's not the case.
 		 *
 		 * @param inset current inset to be checked for duplicate
-		 * @param treatedInsets already mapped insets : if one of them matches given inset on mapped type, then a fine-graned check is done to look for conflict
+		 * @param treatedInsets already mapped insets : if one of them matches given inset on mapped type, then a fine-grained check is done to look for conflict
 		 */
 		private void assertNotAlreadyDeclared(Inset<C, ?> inset, Set<Inset<C, ?>> treatedInsets) {
 			Optional<Inset<C, ?>> alreadyMappedType = treatedInsets.stream().filter(i -> i.getEmbeddedClass() == inset.getEmbeddedClass()).findFirst();
@@ -527,18 +531,18 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 	static class DuplicateDefinitionChecker implements Consumer<EmbeddableLinkage> {
 		
 		private final String columnNameToCheck;
-		private final ReversibleAccessor propertyAccessor;
+		private final PropertyAccessPoint propertyAccessor;
 		private final ColumnNamingStrategy columnNameStrategy;
 		private static final ValueAccessPointComparator VALUE_ACCESS_POINT_COMPARATOR = new ValueAccessPointComparator();
 		
-		DuplicateDefinitionChecker(String columnNameToCheck, ReversibleAccessor propertyAccessor, ColumnNamingStrategy columnNameStrategy) {
+		DuplicateDefinitionChecker(String columnNameToCheck, PropertyAccessPoint propertyAccessor, ColumnNamingStrategy columnNameStrategy) {
 			this.columnNameToCheck = columnNameToCheck;
 			this.propertyAccessor = propertyAccessor;
 			this.columnNameStrategy = columnNameStrategy;
 		}
 		@Override
 		public void accept(EmbeddableLinkage pawn) {
-			ReversibleAccessor accessor = pawn.getAccessor();
+			PropertyAccessPoint accessor = pawn.getAccessor();
 			if (VALUE_ACCESS_POINT_COMPARATOR.compare(accessor, propertyAccessor) == 0) {
 				throw new MappingConfigurationException("Mapping is already defined by method " + AccessorDefinition.toString(propertyAccessor));
 			} else if (columnNameToCheck.equals(pawn.getColumnName())

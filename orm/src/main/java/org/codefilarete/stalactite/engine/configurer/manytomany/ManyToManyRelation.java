@@ -8,9 +8,10 @@ import javax.annotation.Nullable;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorChain.ValueInitializerOnNullValue;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.ReadWriteAccessorChain;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
@@ -27,7 +28,7 @@ import org.codefilarete.tool.Reflections;
 public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, C2 extends Collection<SRC>> {
 	
 	/** The method that gives the "many" entities from the "one" entity */
-	private final ReversibleAccessor<SRC, C1> collectionAccessor;
+	private final ReadWritePropertyAccessPoint<SRC, C1> collectionAccessor;
 	
 	private final BooleanSupplier sourceTablePerClassPolymorphic;
 	
@@ -60,7 +61,7 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 	 * @param sourceTablePerClassPolymorphic indicates that source is table-per-class polymorphic
 	 * @param targetMappingConfiguration persistence configuration provider of entities stored in the target collection
 	 */
-	public ManyToManyRelation(ReversibleAccessor<SRC, C1> collectionAccessor,
+	public ManyToManyRelation(ReadWritePropertyAccessPoint<SRC, C1> collectionAccessor,
 							  BooleanSupplier sourceTablePerClassPolymorphic,
 							  EntityMappingConfigurationProvider<? super TRGT, TRGTID> targetMappingConfiguration) {
 		this.collectionAccessor = collectionAccessor;
@@ -69,7 +70,7 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 		this.mappedByConfiguration = new MappedByConfiguration<>();
 	}
 	
-	public ManyToManyRelation(ReversibleAccessor<SRC, C1> collectionAccessor,
+	public ManyToManyRelation(ReadWritePropertyAccessPoint<SRC, C1> collectionAccessor,
 							  BooleanSupplier sourceTablePerClassPolymorphic,
 							  EntityMappingConfigurationProvider<? super TRGT, TRGTID> targetMappingConfiguration,
 							  MappedByConfiguration<?, TRGT, ?> mappedByConfiguration) {
@@ -84,7 +85,7 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 		this.mappedByConfiguration = (MappedByConfiguration<SRC, TRGT, C2>) mappedByConfiguration;
 	}
 	
-	public ReversibleAccessor<SRC, C1> getCollectionAccessor() {
+	public ReadWritePropertyAccessPoint<SRC, C1> getCollectionAccessor() {
 		return collectionAccessor;
 	}
 	
@@ -212,7 +213,7 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 		});
 		ShiftedMappedByConfiguration<E, SRC, TRGT, C2> shiftedMappedByConfiguration = this.mappedByConfiguration.embedInto(accessor);
 		
-		ManyToManyRelation<E, TRGT, TRGTID, C1, S> result = new ManyToManyRelation<>(shiftedTargetProvider,
+		ManyToManyRelation<E, TRGT, TRGTID, C1, S> result = new ManyToManyRelation<>(new ReadWriteAccessorChain<>(shiftedTargetProvider),
 				this::isSourceTablePerClassPolymorphic,
 				this.targetMappingConfiguration,
 				shiftedMappedByConfiguration);
@@ -230,19 +231,19 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 		 * Combiner of target entity with source entity
 		 */
 		@Nullable
-		private SerializableMutator<TRGT, SRC> reverseCombiner;
+		private SerializablePropertyMutator<TRGT, SRC> reverseCombiner;
 		
 		/**
 		 * Source getter on target for bidirectionality (no consequence on database mapping).
 		 */
 		@Nullable
-		private SerializableAccessor<TRGT, C2> reverseCollectionAccessor;
+		private SerializablePropertyAccessor<TRGT, C2> reverseCollectionAccessor;
 		
 		/**
 		 * Source setter on target for bidirectionality (no consequence on database mapping).
 		 */
 		@Nullable
-		private SerializableMutator<TRGT, C2> reverseCollectionMutator;
+		private SerializablePropertyMutator<TRGT, C2> reverseCollectionMutator;
 		
 		/** Optional provider of collection instance to be used if collection value is null */
 		@Nullable
@@ -258,29 +259,29 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 		protected String targetJoinColumnName;
 		
 		@Nullable
-		public SerializableMutator<TRGT, SRC> getReverseCombiner() {
+		public SerializablePropertyMutator<TRGT, SRC> getReverseCombiner() {
 			return reverseCombiner;
 		}
 		
-		public void setReverseCombiner(@Nullable SerializableMutator<TRGT, SRC> reverseCombiner) {
+		public void setReverseCombiner(@Nullable SerializablePropertyMutator<TRGT, SRC> reverseCombiner) {
 			this.reverseCombiner = reverseCombiner;
 		}
 		
 		@Nullable
-		public SerializableAccessor<TRGT, C2> getReverseCollectionAccessor() {
+		public SerializablePropertyAccessor<TRGT, C2> getReverseCollectionAccessor() {
 			return reverseCollectionAccessor;
 		}
 		
-		public void setReverseCollectionAccessor(@Nullable SerializableAccessor<TRGT, C2> reverseCollectionAccessor) {
+		public void setReverseCollectionAccessor(@Nullable SerializablePropertyAccessor<TRGT, C2> reverseCollectionAccessor) {
 			this.reverseCollectionAccessor = reverseCollectionAccessor;
 		}
 		
 		@Nullable
-		public SerializableMutator<TRGT, C2> getReverseCollectionMutator() {
+		public SerializablePropertyMutator<TRGT, C2> getReverseCollectionMutator() {
 			return reverseCollectionMutator;
 		}
 		
-		public void setReverseCollectionMutator(@Nullable SerializableMutator<TRGT, C2> reverseCollectionMutator) {
+		public void setReverseCollectionMutator(@Nullable SerializablePropertyMutator<TRGT, C2> reverseCollectionMutator) {
 			this.reverseCollectionMutator = reverseCollectionMutator;
 		}
 		
