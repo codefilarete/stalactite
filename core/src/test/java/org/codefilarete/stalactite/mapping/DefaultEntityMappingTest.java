@@ -1,12 +1,8 @@
 package org.codefilarete.stalactite.mapping;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
@@ -33,10 +29,6 @@ class DefaultEntityMappingTest {
 		private Column<T, ?> colA;
 		private Column<T, ?> colB;
 		private Column<T, ?> colC;
-		private Column<T, ?> colD1;
-		private Column<T, ?> colD2;
-		private Column<T, ?> colE1;
-		private Column<T, ?> colE2;
 		private Map<? extends ReadWritePropertyAccessPoint<Toto, ?>, Column<T, ?>> propertyMapping;
 		private T targetTable;
 		private PersistentFieldHarvester persistentFieldHarvester;
@@ -68,92 +60,20 @@ class DefaultEntityMappingTest {
 			// The basic mapping will be altered to add special mapping for field "myListField" (a Collection) and "myMapField" (a Map)
 			entityMapping = new DefaultEntityMapping<>(
 					Toto.class,
-					(T) targetTable,
+					targetTable,
 					propertyMapping,
 					Accessors.propertyAccessor(persistentFieldHarvester.getField("a")),
 					// Basic mapping to prevent NullPointerException, even if it's not the goal of our test
 					new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {
 					}, c -> false));
 			
-			
-			// Additional mapping: the list is mapped to 2 additional columns
-			int nbCol = 2;
-			Set<Column<T, ?>> collectionColumn = new LinkedHashSet<>(nbCol);
-			for (int i = 1; i <= nbCol; i++) {
-				String columnName = "cold_" + i;
-				collectionColumn.add(targetTable.addColumn(columnName, String.class));
-			}
-			ColumnedCollectionMapping<List<String>, String, T> columnedCollectionMapping = new ColumnedCollectionMapping<List<String>, String, T>((T) targetTable,
-					collectionColumn, (Class<List<String>>) (Class) ArrayList.class) {
-				
-				@Override
-				protected String toCollectionValue(Object object) {
-					return object.toString();
-				}
-			};
-			((DefaultEntityMapping<Toto, Integer, T>) entityMapping).put(myListField, columnedCollectionMapping);
-			
-			// Additional mapping: the map is mapped to 2 additional columns
-			Map<String, Column<T, ?>> mappedColumnsByKey = new HashMap<>();
-			for (int i = 1; i <= 2; i++) {
-				String columnName = "cole_" + i;
-				Column<T, ?> column = targetTable.addColumn(columnName, String.class);
-				switch (i) {
-					case 1:
-						mappedColumnsByKey.put("x", column);
-						break;
-					case 2:
-						mappedColumnsByKey.put("y", column);
-						break;
-				}
-			}
-			ColumnedMapMapping<Map<String, String>, String, String, T> columnedMapMapping = new ColumnedMapMapping<Map<String, String>, String, String, T>(
-					(T) targetTable,
-					new HashSet<>(mappedColumnsByKey.values()),
-					(Class<Map<String, String>>) (Class) HashMap.class) {
-				
-				@Override
-				protected Column<T, ?> getColumn(String key) {
-					Column<T, ?> column = mappedColumnsByKey.get(key);
-					if (column == null) {
-						throw new IllegalArgumentException("Unknown key " + key);
-					} else {
-						return column;
-					}
-				}
-				
-				@Override
-				protected String getKey(Column column) {
-					return null;
-				}
-				
-				@Override
-				protected String toDatabaseValue(String key, String s) {
-					return s;
-				}
-				
-				@Override
-				protected String toMapValue(String key, Object o) {
-					return o.toString();
-				}
-			};
-			((DefaultEntityMapping<Toto, Integer, T>) entityMapping).put(myMapField, columnedMapMapping);
-			
 			columnMapOnName = targetTable.mapColumnsOnName();
-			colD1 = columnMapOnName.get("cold_1");
-			colD2 = columnMapOnName.get("cold_2");
-			colE1 = columnMapOnName.get("cole_1");
-			colE2 = columnMapOnName.get("cole_2");
 		}
 	}
 	
 	private static Column colA;
 	private static Column colB;
 	private static Column colC;
-	private static Column colD1;
-	private static Column colD2;
-	private static Column colE1;
-	private static Column colE2;
 	private static DefaultEntityMapping testInstance;
 	
 	
@@ -163,26 +83,17 @@ class DefaultEntityMappingTest {
 		colA = testData.colA;
 		colB = testData.colB;
 		colC = testData.colC;
-		colD1 = testData.colD1;
-		colD2 = testData.colD2;
-		colE1 = testData.colE1;
-		colE2 = testData.colE2;
 		testInstance = testData.entityMapping;
 	}
 	
 	static Object[][] getInsertValues() {
 		setUpInstance();
 		return new Object[][] {
-				{ new Toto(1, 2, 3), Maps.asMap(colA, 1).add(colB, 2).add(colC, 3)
-						.add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null) },
-				{ new Toto(null, null, null), Maps.asMap(colA, null).add(colB, null).add(colC, null)
-						.add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null) },
-				{ new Toto(null, 2, 3), Maps.asMap(colA, null).add(colB, 2).add(colC, 3)
-						.add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null) },
-				{ new Toto(1, 2, 3, Arrays.asList("a")), Maps.asMap(colA, (Object) 1).add(colB, 2).add(colC, 3)
-						.add(colD1, "a").add(colD2, null).add(colE1, null).add(colE2, null) },
-				{ new Toto(1, 2, 3, Maps.asMap("x", "y")), Maps.asMap(colA, (Object) 1).add(colB, 2).add(colC, 3)
-						.add(colD1, null).add(colD2, null).add(colE1, "y").add(colE2, null) },
+				{ new Toto(1, 2, 3), Maps.asMap(colA, 1).add(colB, 2).add(colC, 3) },
+				{ new Toto(null, null, null), Maps.asMap(colA, null).add(colB, null).add(colC, null) },
+				{ new Toto(null, 2, 3), Maps.asMap(colA, null).add(colB, 2).add(colC, 3) },
+				{ new Toto(1, 2, 3, Arrays.asList("a")), Maps.asMap(colA, (Object) 1).add(colB, 2).add(colC, 3) },
+				{ new Toto(1, 2, 3, Maps.asMap("x", "y")), Maps.asMap(colA, (Object) 1).add(colB, 2).add(colC, 3) },
 		};
 	}
 	
@@ -203,11 +114,11 @@ class DefaultEntityMappingTest {
 				{ new Toto(1, 2, 3), new Toto(1, 2, 3), new HashMap<>() },
 				{ new Toto(1, 2, 3), null, Maps.asMap(colB, 2).add(colC, 3) },
 				{ new Toto(1, 2, 3, Arrays.asList("a")), new Toto(1, 5, 6, Arrays.asList("b")),
-						Maps.asMap(colB, (Object) 2).add(colC, 3).add(colD1, "a") },
+						Maps.asMap(colB, (Object) 2).add(colC, 3) },
 				{ new Toto(1, 2, 3, Maps.asMap("x", "y")), new Toto(1, 5, 6, Maps.asMap("x", "z")),
-						Maps.asMap(colB, (Object) 2).add(colC, 3).add(colE1, "y") },
+						Maps.asMap(colB, (Object) 2).add(colC, 3) },
 				{ new Toto(1, 2, 3, Arrays.asList("a"), Maps.asMap("x", "y")), null,
-						Maps.asMap(colB, (Object) 2).add(colC, 3).add(colD1, "a").add(colE1, "y") },
+						Maps.asMap(colB, (Object) 2).add(colC, 3) },
 				// 2 different entities should not return modifications
 				{ new Toto(1, 2, 3), new Toto(10, 20, 30), new HashMap<>() },
 			
@@ -232,31 +143,31 @@ class DefaultEntityMappingTest {
 		return new Object[][] {
 				{ new Toto(1, 2, 3),
 						new Toto(1, 5, 6),
-						Maps.asMap(colB, 2).add(colC, 3).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null) },
+						Maps.asMap(colB, 2).add(colC, 3) },
 				{ new Toto(1, 2, 3),
 						new Toto(1, null, null),
-						Maps.asMap(colB, 2).add(colC, 3).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null) },
+						Maps.asMap(colB, 2).add(colC, 3) },
 				{ new Toto(1, 2, 3),
 						new Toto(1, 2, 42),
-						Maps.asMap(colB, 2).add(colC, 3).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null) },
+						Maps.asMap(colB, 2).add(colC, 3) },
 				{ new Toto(1, null, null),
 						new Toto(1, 2, 3),
-						Maps.asMap(colB, null).add(colC, null).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null) },
+						Maps.asMap(colB, null).add(colC, null) },
 				{ new Toto(1, 2, 3),
 						new Toto(1, 2, 3),
 						new HashMap<>() },
 				{ new Toto(1, 2, 3),
 						null,
-						Maps.asMap(colB, 2).add(colC, 3).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null) },
+						Maps.asMap(colB, 2).add(colC, 3) },
 				{ new Toto(1, 2, 3, Arrays.asList("a")),
 						new Toto(1, 5, 6, Arrays.asList("b")),
-						Maps.asMap(colB, (Object) 2).add(colC, 3).add(colD1, "a").add(colD2, null).add(colE1, null).add(colE2, null) },
+						Maps.asMap(colB, (Object) 2).add(colC, 3) },
 				{ new Toto(1, 2, 3, Maps.asMap("x", "y")),
 						new Toto(1, 5, 6, Maps.asMap("x", "z")),
-						Maps.asMap(colB, (Object) 2).add(colC, 3).add(colD1, null).add(colD2, null).add(colE1, "y").add(colE2, null) },
+						Maps.asMap(colB, (Object) 2).add(colC, 3) },
 				{ new Toto(1, 2, 3, Arrays.asList("a"), Maps.asMap("x", "y")),
 						null,
-						Maps.asMap(colB, (Object) 2).add(colC, 3).add(colD1, "a").add(colD2, null).add(colE1, "y").add(colE2, null) },
+						Maps.asMap(colB, (Object) 2).add(colC, 3) },
 		};
 	}
 	

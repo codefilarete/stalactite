@@ -42,6 +42,4 @@ public interface EntityMapping<C, I, T extends Table<T>> extends Mapping<C, T>, 
 	
 	@Nullable
 	Duo<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> getVersioningMapping();
-	
-	Map<ReadWritePropertyAccessPoint<C, ?>, EmbeddedBeanMapping<?, T>> getEmbeddedBeanStrategies();
 }

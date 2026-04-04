@@ -1,7 +1,5 @@
 package org.codefilarete.stalactite.mapping;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -9,17 +7,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.AccessorChain;
-import org.codefilarete.reflection.AccessorChainMutator;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.PropertyAccessPoint;
-import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.PropertyMutator;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
@@ -40,10 +33,9 @@ import org.codefilarete.tool.function.Converter;
  * Main class for persistence entity mapping description.
  * Composed of:
  * <ul>
- * <li>a main strategy : an embedded one ({@link EmbeddedClassMapping}, accessible by {@link #getMainMapping()}</li>
+ * <li>a main strategy : an embedded one ({@link EmbeddedClassMapping}, accessible by {@link #getMapping()}</li>
  * <li>an id strategy : {@link SimpleIdMapping} accessible with {@link #getIdMapping()}</li>
  * <li>optional version mapping : accessible with {@link #getVersionedKeys()} for instance</li>
- * <li>additional mappings (for embeddable for instance) : see {@link #put(ReadWritePropertyAccessPoint, EmbeddedBeanMapping)}</li>
  * </ul>
  * </p>
  *
@@ -60,15 +52,13 @@ import org.codefilarete.tool.function.Converter;
  */
 public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMapping<C, I, T> {
 	
-	private final EmbeddedClassMapping<C, T> mainMapping;
+	private final EmbeddedClassMapping<C, T> mapping;
 	
 	private final Set<Column<T, ?>> insertableColumns = new KeepOrderSet<>();
 	
 	private final Set<Column<T, ?>> updatableColumns = new KeepOrderSet<>();
 	
 	private final Set<Column<T, ?>> selectableColumns = new KeepOrderSet<>();
-	
-	private final Map<ReadWritePropertyAccessPoint<C, ?>, EmbeddedBeanMapping<?, T>> embeddedMappings = new KeepOrderMap<>();
 	
 	private final IdMapping<C, I> idMapping;
 	
@@ -80,14 +70,12 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	/**
 	 * Main constructor
 	 * Oriented for single column identifier / primary key. Prefer {@link #DefaultEntityMapping(Class, Table, Map, IdMapping)} for composed id.
-	 * It only defines main class and table, secondary ones, such as embedded class, must be defined through {@link #put(ReadWritePropertyAccessPoint, EmbeddedBeanMapping)}
 	 * 
 	 * @param classToPersist the class to be persisted
 	 * @param targetTable the persisting table
 	 * @param propertyToColumn mapping between bean "properties" and table columns
 	 * @param identifierProperty identifier of the persisted class
 	 * @param identifierInsertionManager manager of identifiers
-	 * @see #put(ReadWritePropertyAccessPoint, EmbeddedBeanMapping) 
 	 */
 	public DefaultEntityMapping(Class<C> classToPersist,
 								T targetTable,
@@ -100,7 +88,7 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 		if (targetTable.getPrimaryKey() == null) {
 			throw new UnsupportedOperationException("No primary key column defined for " + targetTable.getAbsoluteName());
 		}
-		this.mainMapping = new EmbeddedClassMapping<>(classToPersist, targetTable, propertyToColumn);
+		this.mapping = new EmbeddedClassMapping<>(classToPersist, targetTable, propertyToColumn);
 		// identifierAccessor must be the same instance as those stored in propertyToColumn for Map.remove method used in foreach()
 		Column<T, I> identifierColumn = (Column<T, I>) propertyToColumn.get(identifierProperty);
 		if (identifierColumn == null) {
@@ -121,13 +109,11 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	/**
 	 * Secondary constructor, for composed id because one can precisely define the {@link IdMapping} by giving a {@link ComposedIdMapping}
 	 * for instance.
-	 * It only defines main class and table, secondary ones, such as embedded class, must be defined through {@link #put(ReadWritePropertyAccessPoint, EmbeddedBeanMapping)}
 	 *
 	 * @param classToPersist the class to be persisted
 	 * @param targetTable the persisting table
 	 * @param propertyToColumn mapping between bean "properties" and table columns
 	 * @param idMapping mapping strategy of class identifier
-	 * @see #put(ReadWritePropertyAccessPoint, EmbeddedBeanMapping)
 	 */
 	public DefaultEntityMapping(Class<C> classToPersist,
 								T targetTable,
@@ -145,7 +131,6 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	 * @param propertyToColumn mapping between bean "properties" and table columns
 	 * @param idMapping mapping strategy of class identifier
 	 * @param entityFactory entity factory
-	 * @see #put(ReadWritePropertyAccessPoint, EmbeddedBeanMapping)
 	 */
 	public DefaultEntityMapping(Class<C> classToPersist,
 								T targetTable,
@@ -167,7 +152,7 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 		if (versioningMapping != null) {
 			readonlyPropertiesMapping.put(versioningMapping.getLeft(), versioningMapping.getRight());
 		}
-		this.mainMapping = new EmbeddedClassMapping<>(classToPersist, targetTable, propertyToColumn, readonlyPropertiesMapping, entityFactory);
+		this.mapping = new EmbeddedClassMapping<>(classToPersist, targetTable, propertyToColumn, readonlyPropertiesMapping, entityFactory);
 		this.idMapping = idMapping;
 		this.identifierSetByBeanFactory = identifierSetByBeanFactory;
 		this.versioningMapping = (Duo<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>>) versioningMapping;
@@ -177,21 +162,16 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	}
 	
 	public Class<C> getClassToPersist() {
-		return mainMapping.getClassToPersist();
+		return mapping.getClassToPersist();
 	}
 	
 	@Override
 	public T getTargetTable() {
-		return mainMapping.getTargetTable();
+		return mapping.getTargetTable();
 	}
 	
-	public EmbeddedClassMapping<C, T> getMainMapping() {
-		return mainMapping;
-	}
-	
-	@Override
-	public Map<ReadWritePropertyAccessPoint<C, ?>, EmbeddedBeanMapping<?, T>> getEmbeddedBeanStrategies() {
-		return embeddedMappings;
+	public EmbeddedClassMapping<C, T> getMapping() {
+		return mapping;
 	}
 	
 	/**
@@ -202,50 +182,12 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	 */
 	@Override
 	public Map<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> getPropertyToColumn() {
-		Map<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> result = new KeepOrderMap<>();
-		result.putAll(getMainMapping().getPropertyToColumn());
-		result.putAll(collectEmbeddedProperties());
-		return result;
-	}
-	
-	private <X> Map<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> collectEmbeddedProperties() {
-		Map<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> result = new KeepOrderMap<>();
-		this.<X>foreachMappedField( embeddedMapping -> {
-			embeddedMapping.getValue().getPropertyToColumn().forEach((embeddedReadonlyPropertyAccessor, column) -> {
-				ReadWritePropertyAccessPoint<C, ?> mutator = buildEmbeddedPropertyAccessor(embeddedMapping.getKey(), embeddedReadonlyPropertyAccessor);
-				result.put(mutator, column);
-			});
-		});
-		return result;
-	}
-	
-	/** Made for generic compliance */
-	private <X, Y> ReadWritePropertyAccessPoint<C, Y> buildEmbeddedPropertyAccessor(ReadWritePropertyAccessPoint<C, X> embeddedMappingAccessor, PropertyAccessor<X, Y> propertyAccessor) {
-		return new DefaultReadWritePropertyAccessPoint<>(new AccessorChain<>(embeddedMappingAccessor, propertyAccessor));
+		return new KeepOrderMap<>(getMapping().getPropertyToColumn());
 	}
 	
 	@Override
 	public Map<PropertyMutator<C, ?>, Column<T, ?>> getReadonlyPropertyToColumn() {
-		Map<PropertyMutator<C, ?>, Column<T, ?>> result = new KeepOrderMap<>();
-		result.putAll(getMainMapping().getReadonlyPropertyToColumn());
-		result.putAll(collectEmbeddedReadonlyProperties());
-		return result;
-	}
-	
-	private <X> Map<PropertyMutator<C, ?>, Column<T, ?>> collectEmbeddedReadonlyProperties() {
-		Map<PropertyMutator<C, ?>, Column<T, ?>> result = new KeepOrderMap<>();
-		this.<X>foreachMappedField( embeddedMapping -> {
-			embeddedMapping.getValue().getReadonlyPropertyToColumn().forEach((embeddedReadonlyPropertyAccessor, column) -> {
-				PropertyMutator<C, ?> mutator = buildEmbeddedReadonlyPropertyAccessor(embeddedMapping.getKey(), embeddedReadonlyPropertyAccessor);
-				result.put(mutator, column);
-			});
-		});
-		return result;
-	}
-	
-	/** Made for generic compliance */
-	private <X, Y> PropertyMutator<C, Y> buildEmbeddedReadonlyPropertyAccessor(PropertyAccessor<C, X> embeddedMappingAccessor, PropertyMutator<X, Y> readonlyPropertyMutator) {
-		return new AccessorChainMutator<C, X, Y>(new AccessorChain<>(embeddedMappingAccessor), readonlyPropertyMutator)::set;
+		return new KeepOrderMap<>(getMapping().getReadonlyPropertyToColumn());
 	}
 	
 	@Override
@@ -256,12 +198,12 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	
 	@Override
 	public ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> getReadConverters() {
-		return mainMapping.getReadConverters();
+		return mapping.getReadConverters();
 	}
 	
 	@Override
 	public ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> getWriteConverters() {
-		return mainMapping.getWriteConverters();
+		return mapping.getWriteConverters();
 	}
 	
 	/**
@@ -297,22 +239,22 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	}
 	
 	public Collection<ShadowColumnValueProvider<C, T>> getShadowColumnsForInsert() {
-		return Collections.unmodifiableCollection(this.mainMapping.getShadowColumnsForInsert());
+		return Collections.unmodifiableCollection(this.mapping.getShadowColumnsForInsert());
 	}
 	
 	public Collection<ShadowColumnValueProvider<C, T>> getShadowColumnsForUpdate() {
-		return Collections.unmodifiableCollection(this.mainMapping.getShadowColumnsForUpdate());
+		return Collections.unmodifiableCollection(this.mapping.getShadowColumnsForUpdate());
 	}
 	
 	public void addShadowColumns(DefaultEntityMapping<C, I, T> entityMapping) {
-		entityMapping.mainMapping.getShadowColumnsForInsert().forEach(this::addShadowColumnInsert);
-		entityMapping.mainMapping.getShadowColumnsForUpdate().forEach(this::addShadowColumnUpdate);
+		entityMapping.mapping.getShadowColumnsForInsert().forEach(this::addShadowColumnInsert);
+		entityMapping.mapping.getShadowColumnsForUpdate().forEach(this::addShadowColumnUpdate);
 	}
 	
 	@Override
 	public void addShadowColumnInsert(ShadowColumnValueProvider<C, T> valueProvider) {
 		// we delegate value computation to the default mapping strategy
-		mainMapping.addShadowColumnInsert(valueProvider);
+		mapping.addShadowColumnInsert(valueProvider);
 		// we must register it as an insertable column so we'll generate the right SQL order
 		insertableColumns.addAll(valueProvider.getColumns());
 	}
@@ -320,49 +262,29 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	@Override
 	public void addShadowColumnUpdate(ShadowColumnValueProvider<C, T> valueProvider) {
 		// we delegate value computation to the default mapping strategy
-		mainMapping.addShadowColumnUpdate(valueProvider);
+		mapping.addShadowColumnUpdate(valueProvider);
 		// we must register it as an insertable column so we'll generate the right SQL order
 		updatableColumns.addAll(valueProvider.getColumns());
 	}
 	
 	@Override
 	public void addPropertySetByConstructor(PropertyAccessPoint<C, ?> accessor) {
-		mainMapping.addPropertySetByConstructor(accessor);
+		mapping.addPropertySetByConstructor(accessor);
 	}
 	
 	@Override
 	public <O> void addShadowColumnSelect(Column<T, O> column) {
-		mainMapping.addShadowColumnSelect(column);
+		mapping.addShadowColumnSelect(column);
 		fillSelectableColumns();
-	}
-	
-	/**
-	 * Sets a particular strategy for a given property.
-	 * The property type is supposed to be complex so it needs multiple columns for persistence and then needs an {@link EmbeddedBeanMapping}
-	 * 
-	 * @param property an object representing a {@link Field} or {@link Method}
-	 * @param mappingStrategy the strategy that should be used to persist the member
-	 */
-	public <O> void put(ReadWritePropertyAccessPoint<C, O> property, EmbeddedBeanMapping<O, T> mappingStrategy) {
-		embeddedMappings.put(property, mappingStrategy);
-		// update columns lists
-		addInsertableColumns(mappingStrategy);
-		addUpdatableColumns(mappingStrategy);
-		addSelectableColumns(mappingStrategy);
 	}
 	
 	@Override
 	public Map<Column<T, ?>, ?> getInsertValues(C c) {
-		Map<Column<T, ?>, Object> insertValues = mainMapping.getInsertValues(c);
+		Map<Column<T, ?>, Object> insertValues = mapping.getInsertValues(c);
 		getVersionedKeyValues(c).entrySet().stream()
 				// autoincrement columns mustn't be written
 				.filter(entry -> !entry.getKey().isAutoGenerated())
 				.forEach(entry -> insertValues.put(entry.getKey(), entry.getValue()));
-		this.foreachMappedField(mappingEntry -> {
-			Object fieldValue = mappingEntry.getKey().get(c);
-			Map<Column<T, ?>, ?> fieldInsertValues = mappingEntry.getValue().getInsertValues(fieldValue);
-			insertValues.putAll(fieldInsertValues);
-		});
 		return insertValues;
 	}
 	
@@ -373,14 +295,7 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 			// entities are different, so there's no value to be updated 
 			toReturn = new HashMap<>();
 		} else {
-			toReturn = mainMapping.getUpdateValues(modified, unmodified, allColumns);
-			this.foreachMappedField(mappingEntry -> {
-				PropertyAccessor<C, ?> accessor = mappingEntry.getKey();
-				Object modifiedValue = accessor.get(modified);
-				Object unmodifiedValue = unmodified == null ? null : accessor.get(unmodified);
-				Map<UpwhereColumn<T>, ?> fieldUpdateValues = mappingEntry.getValue().getUpdateValues(modifiedValue, unmodifiedValue, allColumns);
-				toReturn.putAll(fieldUpdateValues);
-			});
+			toReturn = mapping.getUpdateValues(modified, unmodified, allColumns);
 			if (!toReturn.isEmpty()) {
 				if (allColumns) {
 					Set<Column<T, ?>> missingColumns = new HashSet<>(getUpdatableColumns());
@@ -400,24 +315,12 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	}
 	
 	/**
-	 * Iterates over embeddedMappings field of this instance and call the given consumer for each of them.
-	 * Made to deal with generics problems on caller (without it, code doesn't compile due to "?")
-	 * 
-	 * @param consumer code that consumes each embeddedMappings entry
-	 * @param <E> type of mapped beans 
-	 */
-	private <E> void foreachMappedField(Consumer<Entry<ReadWritePropertyAccessPoint<C, E>, EmbeddedBeanMapping<E, T>>> consumer) {
-		embeddedMappings.entrySet().forEach((Consumer) consumer);
-	}
-	
-	/**
 	 * Build columns that can be inserted: columns minus generated keys
 	 */
 	private void fillInsertableColumns() {
 		insertableColumns.clear();
-		addInsertableColumns(mainMapping);
+		addInsertableColumns(mapping);
 		insertableColumns.addAll(getIdMapping().<T>getIdentifierAssembler().getColumns());
-		embeddedMappings.values().forEach(this::addInsertableColumns);
 		if (versioningMapping != null) {
 			insertableColumns.add(versioningMapping.getRight());
 		}
@@ -434,8 +337,7 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	 */
 	private void fillUpdatableColumns() {
 		updatableColumns.clear();
-		addUpdatableColumns(mainMapping);
-		embeddedMappings.values().forEach(this::addUpdatableColumns);
+		addUpdatableColumns(mapping);
 		if (versioningMapping != null) {
 			updatableColumns.add(versioningMapping.getRight());
 		}
@@ -450,12 +352,11 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	
 	private void fillSelectableColumns() {
 		selectableColumns.clear();
-		addSelectableColumns(mainMapping);
+		addSelectableColumns(mapping);
 		selectableColumns.addAll(getIdMapping().<T>getIdentifierAssembler().getColumns());
 		if (versioningMapping != null) {
 			selectableColumns.add(versioningMapping.getRight());
 		}
-		embeddedMappings.values().forEach(this::addSelectableColumns);
 	}
 	
 	private void addSelectableColumns(EmbeddedBeanMapping<?, T> embeddedBeanMapping) {
@@ -508,31 +409,27 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 		return new RowTransformer<C>() {
 			@Override
 			public C transform(ColumnedRow row) {
-				C toReturn = mainMapping.getRowTransformer().transform(row);
+				C toReturn = mapping.getRowTransformer().transform(row);
 				// fixing identifier
 				if (!identifierSetByBeanFactory) {
 					setId(toReturn, getIdMapping().getIdentifierAssembler().assemble(row));
 				}
-				// filling other properties
-				foreachMappedField(mappingEntry -> {
-					mappingEntry.getKey().set(toReturn, mappingEntry.getValue().transform(row));
-				});
 				return toReturn;
 			}
 
 			@Override
 			public C newBeanInstance(ColumnedRow row) {
-				return mainMapping.transform(row);
+				return mapping.transform(row);
 			}
 
 			@Override
 			public void applyRowToBean(ColumnedRow row, C bean) {
-				mainMapping.getRowTransformer().applyRowToBean(row, bean);
+				mapping.getRowTransformer().applyRowToBean(row, bean);
 			}
 
 			@Override
 			public void addTransformerListener(TransformerListener<? extends C> listener) {
-				mainMapping.addTransformerListener((TransformerListener<C>) listener);
+				mapping.addTransformerListener((TransformerListener<C>) listener);
 			}
 		};
 	}

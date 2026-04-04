@@ -213,13 +213,6 @@ public class AggregateAccessPointToColumnMapping<C> {
 			});
 		}
 		
-		// going deeper in embeddable properties to collect them
-		entityMapping.getEmbeddedBeanStrategies().forEach((k, v) ->
-				v.getPropertyToColumn().forEach((p, c) -> {
-					result.put(Arrays.asList(k), columnAdapter.apply(c));
-				})
-		);
-		
 		// adding the readWriteAccessPoint prefix to all the found properties, to create an readWriteAccessPoint available from the aggregate root
 		result.forEach((k, v) -> {
 			k.addAll(0, nodeAccessorPath);

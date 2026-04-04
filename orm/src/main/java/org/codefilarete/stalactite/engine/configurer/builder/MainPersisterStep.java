@@ -179,8 +179,8 @@ public class MainPersisterStep<C, I> {
 		}
 		
 		DefaultEntityMapping<E, I, T> result = new DefaultEntityMapping<>(beanType, targetTable, mapping, readOnlyMapping, versioningMapping, idMappingStrategy, beanFactory, identifierSetByBeanFactory);
-		result.getMainMapping().setReadConverters(readConverters);
-		result.getMainMapping().setWriteConverters(writeConverters);
+		result.getMapping().setReadConverters(readConverters);
+		result.getMapping().setWriteConverters(writeConverters);
 		propertiesSetByConstructor.forEach(result::addPropertySetByConstructor);
 		return result;
 	}

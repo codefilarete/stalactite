@@ -8,7 +8,6 @@ import org.codefilarete.reflection.PropertyAccessPoint;
 import org.codefilarete.reflection.PropertyMutator;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
-import org.codefilarete.stalactite.mapping.EmbeddedBeanMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer;
@@ -82,11 +81,6 @@ public class EntityMappingWrapper<C, I, T extends Table<T>> implements EntityMap
 	@Override
 	public Duo<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> getVersioningMapping() {
 		return delegate.getVersioningMapping();
-	}
-	
-	@Override
-	public Map<ReadWritePropertyAccessPoint<C, ?>, EmbeddedBeanMapping<?, T>> getEmbeddedBeanStrategies() {
-		return delegate.getEmbeddedBeanStrategies();
 	}
 	
 	@Override
