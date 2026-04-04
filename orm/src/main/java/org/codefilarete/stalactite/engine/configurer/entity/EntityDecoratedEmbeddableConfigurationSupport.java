@@ -144,9 +144,18 @@ class EntityDecoratedEmbeddableConfigurationSupport<C, I> extends FluentEmbeddab
 						return null;
 					}
 				}, true)
-				.redirect(ExtraTablePropertyOptions.class, name -> {
-					newMapping.setExtraTableName(name);
-					return null;
+				.redirect(ExtraTablePropertyOptions.class, new ExtraTablePropertyOptions() {
+					@Override
+					public PropertyOptions extraTable(String name) {
+						newMapping.setExtraTableName(name);
+						return null;
+					}
+					
+					@Override
+					public PropertyOptions extraTable(Table table) {
+						newMapping.setExtraTable(table);
+						return null;
+					}
 				}, true)
 				.fallbackOn(entityConfigurationSupport)
 				.build((Class<FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions<C, I, O>>) (Class) FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions.class);

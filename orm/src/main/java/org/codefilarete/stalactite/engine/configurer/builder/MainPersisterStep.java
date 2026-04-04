@@ -252,14 +252,14 @@ public class MainPersisterStep<C, I> {
 																	NamingConfiguration namingConfiguration,
 																	Dialect dialect,
 																	ConnectionConfiguration connectionConfiguration) {
-		Map<String, Set<Linkage>> extraTableLinkages = new HashMap<>();
+		Map<Table, Set<Linkage>> extraTableLinkages = new HashMap<>();
 		// iterating over mapping from inheritance
 		entityMappingConfiguration.inheritanceIterable().forEach(entityMappingConfiguration1 -> {
 			EntityMappingConfiguration<C, I> mappingConfiguration = (EntityMappingConfiguration<C, I>) entityMappingConfiguration1;
 			List<Linkage> propertiesMapping = mappingConfiguration.getPropertiesMapping().getPropertiesMapping();
 			for (Linkage linkage : propertiesMapping) {
-				if (linkage.getExtraTableName() != null) {
-					extraTableLinkages.computeIfAbsent(linkage.getExtraTableName(), extraTableName -> new HashSet<>()).add(linkage);
+				if (linkage.getExtraTable() != null) {
+					extraTableLinkages.computeIfAbsent(linkage.getExtraTable(), extraTableName -> new HashSet<>()).add(linkage);
 				}
 			}
 		});

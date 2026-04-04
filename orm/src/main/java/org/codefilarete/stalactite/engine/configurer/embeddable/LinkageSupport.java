@@ -13,6 +13,7 @@ import org.codefilarete.stalactite.engine.configurer.property.ColumnLinkageOptio
 import org.codefilarete.stalactite.engine.configurer.property.ColumnLinkageOptionsSupport;
 import org.codefilarete.stalactite.engine.configurer.property.LocalColumnLinkageOptions;
 import org.codefilarete.stalactite.sql.ddl.Size;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry;
 import org.codefilarete.tool.function.Converter;
@@ -51,7 +52,7 @@ public class LinkageSupport<T, O> implements EmbeddableMappingConfiguration.Link
 	
 	private boolean readonly;
 	
-	private String extraTableName;
+	private Table extraTable;
 	
 	private Converter<? /* value coming from database */, O> readConverter;
 	
@@ -172,12 +173,16 @@ public class LinkageSupport<T, O> implements EmbeddableMappingConfiguration.Link
 	}
 	
 	@Override
-	public String getExtraTableName() {
-		return extraTableName;
+	public Table getExtraTable() {
+		return extraTable;
 	}
 	
-	public void setExtraTableName(String extraTableName) {
-		this.extraTableName = extraTableName;
+	public void setExtraTable(Table extraTable) {
+		this.extraTable = extraTable;
+	}
+	
+	public void setExtraTableName(String extraTable) {
+		this.extraTable = new Table(extraTable);
 	}
 	
 	@Override

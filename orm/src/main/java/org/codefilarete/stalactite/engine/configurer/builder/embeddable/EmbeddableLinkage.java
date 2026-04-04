@@ -4,6 +4,7 @@ import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.sql.ddl.Size;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry.EnumBindType;
 import org.codefilarete.tool.function.Converter;
@@ -30,7 +31,7 @@ public interface EmbeddableLinkage<C, O> {
 	Class<O> getColumnType();
 	
 	@Nullable
-	String getExtraTableName();
+	Table getExtraTable();
 	
 	@Nullable
 	ParameterBinder<Object> getParameterBinder();

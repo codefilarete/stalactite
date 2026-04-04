@@ -1149,10 +1149,11 @@ class FluentEntityMappingConfigurationSupportTest {
 					new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.UUID_BINDER, PersistedIdentifier::new, StatefulIdentifier::getDelegate)));
 			dialect.getSqlTypeRegistry().put(Identifier.class, "VARCHAR(255)");
 			
+			Table extraTable = new Table("Tata");
 			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
 					.mapKey(Toto::getIdentifier, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(Toto::getName)
-					.extraTableName("Tata")
+					.extraTable(extraTable)
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1163,6 +1164,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			assertThat(tablePerName.keySet()).containsExactlyInAnyOrder("Toto", "Tata");
 			Table<?> totoTable = tablePerName.get("Toto");
 			Table<?> tataTable = tablePerName.get("Tata");
+			assertThat(tataTable).isSameAs(extraTable);
 			Column columnForProperty = tataTable.mapColumnsOnName().get("name");
 			assertThat(columnForProperty).isNotNull();
 			assertThat(columnForProperty.getJavaType()).isEqualTo(String.class);
@@ -1190,7 +1192,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
 					.mapKey(Toto::getIdentifier, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(Toto::getName).columnName("dummyName")
-					.extraTableName("Tata")
+					.extraTable("Tata")
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1214,7 +1216,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
 					.mapKey(Toto::getIdentifier, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(Toto::getName).columnSize(Size.length(123))
-					.extraTableName("Tata")
+					.extraTable("Tata")
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1238,7 +1240,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
 					.mapKey(Toto::getIdentifier, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(Toto::getName)
-					.extraTableName("Tata")
+					.extraTable("Tata")
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1273,8 +1275,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			
 			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
 					.mapKey(Toto::getIdentifier, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
-					.map(Toto::getName).extraTableName("Tata")
-					.map(Toto::getFirstName).extraTableName("Tutu")
+					.map(Toto::getName).extraTable("Tata")
+					.map(Toto::getFirstName).extraTable("Tutu")
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1312,11 +1314,11 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getSqlTypeRegistry().put(Identifier.class, "VARCHAR(255)");
 			
 			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
-					.map(Toto::getName).extraTableName("Tata")
-					.map(Toto::getFirstName).extraTableName("Tutu")
+					.map(Toto::getName).extraTable("Tata")
+					.map(Toto::getFirstName).extraTable("Tutu")
 					.mapSuperClass(FluentMappings.entityBuilder(AbstractToto.class, UUID_TYPE)
 							.mapKey(AbstractToto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
-							.map(AbstractToto::getProp1).extraTableName("Titi")
+							.map(AbstractToto::getProp1).extraTable("Titi")
 					)
 					.build(persistenceContext);
 			

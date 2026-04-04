@@ -40,14 +40,14 @@ public class ExtraTableConfigurer<C, I, T extends Table<T>> {
 	private final PrimaryKey<T, I> mainTablePrimaryKey;
 	private final ConfiguredRelationalPersister<C, I> mainPersister;
 	private final AbstractIdentification<C, I> identification;
-	private final Map<String, Set<Linkage>> extraTableLinkages;
+	private final Map<Table, Set<Linkage>> extraTableLinkages;
 	private final ColumnBinderRegistry columnBinderRegistry;
 	
 	private final NamingConfiguration namingConfiguration;
 	
 	public ExtraTableConfigurer(AbstractIdentification<C, I> identification,
 								ConfiguredRelationalPersister<C, I> mainPersister,
-								Map<String, Set<Linkage>> extraTableLinkages,
+								Map<Table, Set<Linkage>> extraTableLinkages,
 								ColumnBinderRegistry columnBinderRegistry,
 								NamingConfiguration namingConfiguration) {
 		this.identification = identification;
@@ -79,8 +79,7 @@ public class ExtraTableConfigurer<C, I, T extends Table<T>> {
 		});
 	}
 	
-	private <EXTRATABLE extends Table<EXTRATABLE>> DefaultEntityMapping<C, I, EXTRATABLE> buildExtraTableClassMapping(String extraTableName, Set<Linkage> linkages) {
-		EXTRATABLE extraTable = (EXTRATABLE) new Table(extraTableName);
+	private <EXTRATABLE extends Table<EXTRATABLE>> DefaultEntityMapping<C, I, EXTRATABLE> buildExtraTableClassMapping(EXTRATABLE extraTable, Set<Linkage> linkages) {
 		addPrimaryKey(extraTable);
 		addForeignKey(extraTable);
 		
@@ -92,7 +91,7 @@ public class ExtraTableConfigurer<C, I, T extends Table<T>> {
 		// we create the DefaultEntityDefaultEntityMapping from the complex method, not from one of its constructor, because it would
 		// require the IdMapping which can be taken from mainPersister but which is wrong since PK column is not the
 		// right one and create exception at runtime (update case for example)
-		DefaultEntityMapping<C, I, EXTRATABLE> extratableEntityMapping = MainPersisterStep.createEntityMapping(
+		DefaultEntityMapping<C, I, EXTRATABLE> extraTableEntityMapping = MainPersisterStep.createEntityMapping(
 				false,
 				extraTable,
 				build.getMapping(),
@@ -105,12 +104,12 @@ public class ExtraTableConfigurer<C, I, T extends Table<T>> {
 				mainPersister.getClassToPersist(),
 				null);
 		mainPersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_JOIN_NAME,
-				new EntityMergerAdapter<>(extratableEntityMapping),
+				new EntityMergerAdapter<>(extraTableEntityMapping),
 				mainPersister.getMainTable().getPrimaryKey(),
 				extraTable.getPrimaryKey(),
 				JoinType.OUTER
 		);
-		return extratableEntityMapping;
+		return extraTableEntityMapping;
 	}
 	
 	private void addPrimaryKey(Table table) {

@@ -271,7 +271,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 			
 			if (!onlyExtraTableLinkages) {
 				// this method (and class) doesn't deal with extra table
-				linkageStream = linkageStream.filter(linkage -> linkage.getExtraTableName() == null);
+				linkageStream = linkageStream.filter(linkage -> linkage.getExtraTable() == null);
 			}
 			linkageStream.forEach(linkage -> {
 				Column<T, ?> overriddenColumn = overriddenColumns.get(linkage.getAccessor());

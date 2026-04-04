@@ -11,6 +11,7 @@ import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.embeddable.Inset;
 import org.codefilarete.stalactite.sql.ddl.Size;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry.EnumBindType;
 import org.codefilarete.tool.collection.ReadOnlyIterator;
@@ -113,7 +114,7 @@ public interface EmbeddableMappingConfiguration<C> extends RelationalMappingConf
 		boolean isReadonly();
 		
 		@Nullable
-		String getExtraTableName();
+		Table getExtraTable();
 		
 		@Nullable
 		Converter<?, O> getReadConverter();

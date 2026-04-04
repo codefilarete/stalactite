@@ -600,7 +600,10 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		FluentMappingBuilderPropertyOptions<C, I, O> fieldName(String name);
 		
 		@Override
-		FluentMappingBuilderPropertyOptions<C, I, O> extraTableName(String name);
+		FluentMappingBuilderPropertyOptions<C, I, O> extraTable(String name);
+		
+		@Override
+		FluentMappingBuilderPropertyOptions<C, I, O> extraTable(Table table);
 		
 		@Override
 		<X> FluentMappingBuilderPropertyOptions<C, I, O> readConverter(Converter<X, O> converter);

@@ -15,6 +15,7 @@ import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry.EnumBindType;
 import org.codefilarete.tool.collection.Iterables;
@@ -58,7 +59,7 @@ public interface EmbeddableMappingConfiguration<C> {
 				}
 				
 				@Override
-				public String getExtraTableName() {
+				public Table getExtraTable() {
 					// we have to return null here since this method is used by EmbeddableMappingBuilder to keep
 					// properties of main table
 					// TODO : a better EmbeddableLinkage API
@@ -335,8 +336,8 @@ public interface EmbeddableMappingConfiguration<C> {
 		
 		@Nullable
 		@Override
-		public String getExtraTableName() {
-			return dslLinkage.getExtraTableName();
+		public Table getExtraTable() {
+			return dslLinkage.getExtraTable();
 		}
 		
 		@Override
