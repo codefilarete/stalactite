@@ -241,12 +241,12 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 				.getConfiguration();
 		
 		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = entityBuilder(Vehicle.class, long.class)
-				.mapSuperClass(inheritanceConfiguration).withJoinedTable()
+				.mapSuperClass(inheritanceConfiguration).joiningTables()
 				.getConfiguration();
 		
 		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
 				.map(Car::getModel)
-				.mapSuperClass(inheritanceConfiguration2).withJoinedTable()
+				.mapSuperClass(inheritanceConfiguration2).joiningTables()
 				.build(persistenceContext);
 		
 		assertThat(DDLDeployer.collectTables(persistenceContext).stream().map(Table::getName).collect(Collectors.toSet())).isEqualTo(Arrays.asHashSet("Car", "Vehicle", "AbstractVehicle"));

@@ -59,7 +59,7 @@ public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfi
 	/** Gives inheritance information if inheritance has been defined, else returns null */
 	@SuppressWarnings("squid:S1452" /* Can't remove wildcard here because it requires to create a local generic "super" type which is forbidden */)
 	@Nullable
-	InheritanceConfiguration<? super C, I> getInheritanceConfiguration();
+	InheritanceConfiguration<C, I> getInheritanceConfiguration();
 	
 	@Nullable
 	ForeignKeyNamingStrategy getForeignKeyNamingStrategy();
@@ -91,11 +91,11 @@ public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfi
 	/**
 	 * @return an iterable for all inheritance configurations, including this
 	 */
-	default Iterable<EntityMappingConfiguration<? super C, I>> inheritanceIterable() {
+	default Iterable<EntityMappingConfiguration<C, I>> inheritanceIterable() {
 		
-		return () -> new ReadOnlyIterator<EntityMappingConfiguration<? super C, I>>() {
+		return () -> new ReadOnlyIterator<EntityMappingConfiguration<C, I>>() {
 			
-			private EntityMappingConfiguration<? super C, I> next = EntityMappingConfiguration.this;
+			private EntityMappingConfiguration<C, I> next = EntityMappingConfiguration.this;
 			
 			@Override
 			public boolean hasNext() {
@@ -103,13 +103,13 @@ public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfi
 			}
 			
 			@Override
-			public EntityMappingConfiguration<? super C, I> next() {
+			public EntityMappingConfiguration<C, I> next() {
 				if (!hasNext()) {
 					// comply with next() method contract
 					throw new NoSuchElementException();
 				}
-				EntityMappingConfiguration<? super C, I> result = this.next;
-				this.next = org.codefilarete.tool.Nullable.nullable(this.next.getInheritanceConfiguration()).map(InheritanceConfiguration::getConfiguration).get();
+				EntityMappingConfiguration<C, I> result = this.next;
+				this.next = org.codefilarete.tool.Nullable.nullable(this.next.getInheritanceConfiguration()).map(InheritanceConfiguration::getParentMappingConfiguration).get();
 				return result;
 			}
 		};
@@ -125,13 +125,13 @@ public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfi
 	interface InheritanceConfiguration<E, I> {
 		
 		/** Entity configuration */
-		EntityMappingConfiguration<E, I> getConfiguration();
+		EntityMappingConfiguration<E, I> getParentMappingConfiguration();
 		
-		boolean isJoinTable();
-		
-		/** Table to be used in case of joined tables ({@link #isJoinTable()} returns true) */
-		@Nullable
-		Table getTable();
+		/**
+		 * Tells if the super configuration table must be stored on a separate table and joined to the current one
+		 * @return true if the super configuration table must be stored on a separate table and joined to the current one
+		 */
+		boolean isJoiningTables();
 	}
 	
 	interface KeyMapping<C, I> {

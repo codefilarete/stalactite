@@ -61,7 +61,7 @@ public class EntityMappingConfigurationWithTable<C, I> implements EntityMappingC
 		return delegate.getTableNamingStrategy();
 	}
 	
-	public Iterable<EntityMappingConfiguration<? super C, I>> inheritanceIterable() {
+	public Iterable<EntityMappingConfiguration<C, I>> inheritanceIterable() {
 		return delegate.inheritanceIterable();
 	}
 	
@@ -93,7 +93,7 @@ public class EntityMappingConfigurationWithTable<C, I> implements EntityMappingC
 	}
 	
 	@Nullable
-	public InheritanceConfiguration<? super C, I> getInheritanceConfiguration() {
+	public InheritanceConfiguration<C, I> getInheritanceConfiguration() {
 		return delegate.getInheritanceConfiguration();
 	}
 	

@@ -33,11 +33,11 @@ public class TableMappingStep<C, I> {
 			public void accept(EntityMappingConfiguration entityMappingConfiguration) {
 				InheritanceConfiguration<?, ?> inheritanceConfiguration = entityMappingConfiguration.getInheritanceConfiguration();
 				boolean changeTable = nullable(inheritanceConfiguration)
-						.map(InheritanceConfiguration::isJoinTable).getOr(false);
+						.map(InheritanceConfiguration::isJoiningTables).getOr(false);
 				result.put(entityMappingConfiguration, currentTable);
 				if (changeTable) {
-					currentTable = nullable(inheritanceConfiguration.getTable())
-							.getOr(() -> new Table(tableNamingStrategy.giveName(inheritanceConfiguration.getConfiguration().getEntityType())));
+					currentTable = nullable(inheritanceConfiguration.getParentMappingConfiguration().getTable())
+							.getOr(() -> new Table(tableNamingStrategy.giveName(inheritanceConfiguration.getParentMappingConfiguration().getEntityType())));
 				}
 			}
 		});

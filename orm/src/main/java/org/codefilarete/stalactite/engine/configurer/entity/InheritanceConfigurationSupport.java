@@ -1,54 +1,35 @@
 package org.codefilarete.stalactite.engine.configurer.entity;
 
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-
-import javax.annotation.Nullable;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.InheritanceConfiguration;
 
 /**
- * Stores information of {@link EntityMappingConfiguration.InheritanceConfiguration}
+ * Stores information of {@link InheritanceConfiguration}
  *
  * @param <E> entity type
  * @param <I> identifier type
  */
-class InheritanceConfigurationSupport<E, I> implements EntityMappingConfiguration.InheritanceConfiguration<E, I> {
+class InheritanceConfigurationSupport<E, I> implements InheritanceConfiguration<E, I> {
 	
-	private final EntityMappingConfiguration<E, I> configuration;
+	private final EntityMappingConfiguration<E, I> superConfiguration;
 	
-	private boolean joinTable = false;
+	private boolean joiningTables = false;
 	
-	@Nullable
-	private Table table;
-	
-	InheritanceConfigurationSupport(EntityMappingConfiguration<E, I> configuration) {
-		this.configuration = configuration;
+	InheritanceConfigurationSupport(EntityMappingConfiguration<E, I> superConfiguration) {
+		this.superConfiguration = superConfiguration;
 	}
 	
 	@Override
-	public EntityMappingConfiguration<E, I> getConfiguration() {
-		return configuration;
+	public EntityMappingConfiguration<E, I> getParentMappingConfiguration() {
+		return superConfiguration;
 	}
 	
-	public void setJoinTable(boolean joinTable) {
-		this.joinTable = joinTable;
-	}
-	
-	@Override
-	public boolean isJoinTable() {
-		return this.joinTable;
+	public void setJoiningTables(boolean joiningTables) {
+		this.joiningTables = joiningTables;
 	}
 	
 	@Override
-	@Nullable
-	public Table getTable() {
-		return this.table;
-	}
-	
-	public void setTable(Table table) {
-		this.table = table;
-	}
-	
-	public void setTable(String parentTableName) {
-		setTable(new Table(parentTableName));
+	public boolean isJoiningTables() {
+		return this.joiningTables;
 	}
 }

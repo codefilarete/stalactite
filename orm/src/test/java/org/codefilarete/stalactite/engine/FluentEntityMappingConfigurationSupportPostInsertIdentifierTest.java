@@ -150,13 +150,13 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 		
 		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = FluentMappings
 				.entityBuilder(Vehicle.class, long.class)
-				.mapSuperClass(inheritanceConfiguration).withJoinedTable()
+				.mapSuperClass(inheritanceConfiguration).joiningTables()
 				.getConfiguration();
 		
 		EntityPersister<Car, Long> carPersister = FluentMappings
 				.entityBuilder(Car.class, long.class)
 				.map(Car::getModel)
-				.mapSuperClass(inheritanceConfiguration2).withJoinedTable()
+				.mapSuperClass(inheritanceConfiguration2).joiningTables()
 				.build(persistenceContext);
 		
 		assertThat(DDLDeployer.collectTables(persistenceContext).stream().map(Table::getName).collect(Collectors.toSet())).containsExactlyInAnyOrder("Car", "Vehicle", "AbstractVehicle");

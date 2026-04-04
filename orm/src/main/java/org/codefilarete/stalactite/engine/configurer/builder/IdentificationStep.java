@@ -32,7 +32,7 @@ public class IdentificationStep<C, I> extends AbstractIdentificationStep<C, I> {
 			throw new MappingConfigurationException("Defining an identifier in conjunction with entity inheritance is not supported : "
 					+ Reflections.toString(entityMappingConfiguration.getEntityType()) + " defines identifier "
 					+ AccessorDefinition.toString(entityMappingConfiguration.getKeyMapping().getAccessor())
-					+ " while it inherits from " + Reflections.toString(entityMappingConfiguration.getInheritanceConfiguration().getConfiguration().getEntityType()));
+					+ " while it inherits from " + Reflections.toString(entityMappingConfiguration.getInheritanceConfiguration().getParentMappingConfiguration().getEntityType()));
 		}
 		
 		// if mappedSuperClass is used, then identifier is expected to be declared on the configuration

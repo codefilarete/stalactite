@@ -280,7 +280,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * by given configuration (or the highest ancestor, not intermediary), not by current one : if id policy is
 	 * also-or-only defined by the current builder, an exception will be thrown at build time.
 	 * This method should be used when given configuration acts as a parent entity, maybe stored on a different table
-	 * than current one (see {@link InheritanceOptions#withJoinedTable()}.
+	 * than current one (see {@link InheritanceOptions#joiningTables()}.
 	 * Note that for now relations of given configuration are not taken into account (not implemented).
 	 * 
 	 * @param mappingConfiguration a mapping configuration of a super type of the current mapped type
@@ -296,7 +296,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * by given configuration (or the highest ancestor, not intermediary), not by current one : if id policy is
 	 * also-or-only defined by the current builder, an exception will be thrown at build time.
 	 * This method should be used when given configuration acts as a parent entity, maybe stored on a different table
-	 * than current one (see {@link InheritanceOptions#withJoinedTable()}.
+	 * than current one (see {@link InheritanceOptions#joiningTables()}.
 	 * Note that for now relations of given configuration are not taken into account (not implemented).
 	 *
 	 * @param mappingConfigurationProvider a mapping configuration of a super type of the current mapped type
@@ -704,13 +704,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 			extends FluentEntityMappingBuilder<C, I>, InheritanceOptions {
 		
 		@Override
-		FluentMappingBuilderInheritanceOptions<C, I> withJoinedTable();
-		
-		@Override
-		FluentMappingBuilderInheritanceOptions<C, I> withJoinedTable(Table parentTable);
-		
-		@Override
-		FluentMappingBuilderInheritanceOptions<C, I> withJoinedTable(String parentTableName);
+		FluentMappingBuilderInheritanceOptions<C, I> joiningTables();
 	}
 	
 	interface FluentMappingBuilderElementCollectionOptions<C, I, O, S extends Collection<O>>

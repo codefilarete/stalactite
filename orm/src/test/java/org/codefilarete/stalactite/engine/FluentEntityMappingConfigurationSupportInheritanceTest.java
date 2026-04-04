@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -9,6 +10,7 @@ import javax.sql.DataSource;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.model.AbstractVehicle;
@@ -38,7 +40,6 @@ import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
-import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.junit.jupiter.api.BeforeAll;
@@ -375,20 +376,22 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 		void withIdDefinedInSuperClass() {
 			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
 			
-			EntityMappingConfiguration<Vehicle, Identifier<Long>> inheritanceConfiguration = entityBuilder(Vehicle.class, LONG_TYPE)
+			EntityMappingConfigurationProvider<Vehicle, Identifier<Long>> inheritanceConfiguration = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.getConfiguration();
+					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED);
 			
 			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
+					.onTable(mappedSuperClassData.carTable)
 					.map(Car::getModel)
 					.map(Car::getColor)	// note : we don't need to embed Color because it is defined in the Dialect registry
 					.mapSuperClass(inheritanceConfiguration)
 					.build(persistenceContext);
 			
-			// as an inherited entity of non joined_tables policy, the table should not be in the context
-			Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
-			assertThat(tables.contains(mappedSuperClassData.vehicleTable)).isFalse();
+			// With mapped super class and no joining-tables option, only the declaring entity table should be in the context
+			// NB: we transform the resulting Set to an identity one because the collected ones is based on name comparison
+			// which is not accurate for our test
+			Collection<Table<?>> tables = new HashSet<>(DDLDeployer.collectTables(persistenceContext));
+			assertThat(tables).containsExactlyInAnyOrder(mappedSuperClassData.carTable);
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -432,8 +435,8 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 		
 		@Test
 		void identifierIsRedefined_throwsException() {
-			EntityMappingConfiguration<AbstractVehicle, Identifier<Long>> inheritanceConfiguration = entityBuilder(AbstractVehicle.class, LONG_TYPE)
-					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED).getConfiguration();
+			EntityMappingConfigurationProvider<AbstractVehicle, Identifier<Long>> inheritanceConfiguration = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED);
 			
 			assertThatThrownBy(() -> entityBuilder(Vehicle.class, LONG_TYPE)
 							.mapSuperClass(inheritanceConfiguration)
@@ -449,24 +452,25 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 		void multipleInheritance() {
 			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
 			
-			EntityMappingConfiguration<AbstractVehicle, Identifier<Long>> inheritanceConfiguration = entityBuilder(AbstractVehicle.class, LONG_TYPE)
-					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.getConfiguration();
+			EntityMappingConfigurationProvider<AbstractVehicle, Identifier<Long>> inheritanceConfiguration = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED);
 			
-			EntityMappingConfiguration<Vehicle, Identifier<Long>> inheritanceConfiguration2 = entityBuilder(Vehicle.class, LONG_TYPE)
+			EntityMappingConfigurationProvider<Vehicle, Identifier<Long>> inheritanceConfiguration2 = entityBuilder(Vehicle.class, LONG_TYPE)
 					.mapSuperClass(inheritanceConfiguration)
-					.map(Vehicle::getColor)
-					.getConfiguration();
+					.map(Vehicle::getColor);
 			
 			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
+					.onTable(mappedSuperClassData.carTable)
 					.map(Car::getModel)
 					.mapSuperClass(inheritanceConfiguration2)
 					.build(persistenceContext);
 			
-			// as an inherited entity, the table should not be in the context
-			Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
-			assertThat(tables.contains(mappedSuperClassData.vehicleTable)).isFalse();
-			assertThat(tables.contains(mappedSuperClassData.carTable)).isTrue();
+			// With mapped super class and no joining-tables option, only the declaring entity table should be in the context
+			// as an inherited entity, AbstractVehicle and Vehicle tables should not be in the context
+			// NB: we transform the resulting Set to an identity one because the collected ones is based on name comparison
+			// which is not accurate for our test
+			Collection<Table<?>> tables = new HashSet<>(DDLDeployer.collectTables(persistenceContext));
+			assertThat(tables).containsExactlyInAnyOrder(mappedSuperClassData.carTable);
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -490,26 +494,30 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 		}
 		
 		@Test
-		void multipleInheritance_joinedTables() {
+		void multipleInheritance_joiningTables() {
 			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
 			
-			EntityMappingConfiguration<AbstractVehicle, Identifier<Long>> inheritanceConfiguration = entityBuilder(AbstractVehicle.class, LONG_TYPE)
-					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.getConfiguration();
+			EntityMappingConfigurationProvider<AbstractVehicle, Identifier<Long>> inheritanceConfiguration = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+					.onTable(mappedSuperClassData.abstractVehicleTable)
+					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED);
 			
-			EntityMappingConfiguration<Vehicle, Identifier<Long>> inheritanceConfiguration2 = entityBuilder(Vehicle.class, LONG_TYPE)
-					.mapSuperClass(inheritanceConfiguration).withJoinedTable()
-					.getConfiguration();
+			EntityMappingConfigurationProvider<Vehicle, Identifier<Long>> inheritanceConfiguration2 = entityBuilder(Vehicle.class, LONG_TYPE)
+					.onTable(mappedSuperClassData.vehicleTable)
+					.mapSuperClass(inheritanceConfiguration).joiningTables();
 			
 			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
+					.onTable(mappedSuperClassData.carTable)
 					.map(Car::getModel)
 					.map(Car::getColor)
-					.mapSuperClass(inheritanceConfiguration2).withJoinedTable()
+					.mapSuperClass(inheritanceConfiguration2).joiningTables()
 					.build(persistenceContext);
 			
-			// as an inherited entity, the table should be in the context, and its persister does exist
-			assertThat(DDLDeployer.collectTables(persistenceContext).stream().map(Table::getName).collect(Collectors.toSet())).isEqualTo(Arrays.asHashSet("Car", "Vehicle", "AbstractVehicle"));
-			assertThat(((ConfiguredRelationalPersister) persistenceContext.findPersister(Car.class)).getMapping().getTargetTable().getName()).isEqualTo("Car");
+			// With mapped super class and joining-tables option, all the declaring entity tables should be in the context
+			// NB: we transform the resulting Set to an identity one because the collected ones is based on name comparison
+			// which is not accurate for our test
+			Collection<Table<?>> tables = new HashSet<>(DDLDeployer.collectTables(persistenceContext));
+			assertThat(tables).containsExactlyInAnyOrder(mappedSuperClassData.carTable, mappedSuperClassData.vehicleTable, mappedSuperClassData.abstractVehicleTable);
+			assertThat(((ConfiguredRelationalPersister) persistenceContext.findPersister(Car.class)).getMapping().getTargetTable()).isEqualTo(mappedSuperClassData.carTable);
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -551,7 +559,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 		}
 		
 		@Test
-		void joinedTables() {
+		void joiningTables() {
 			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
 			
 			EntityMappingConfiguration<Vehicle, Identifier<Long>> inheritanceConfiguration = entityBuilder(Vehicle.class, LONG_TYPE)
@@ -564,12 +572,12 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.onTable(mappedSuperClassData.carTable)
 					.map(Car::getModel)
 					.mapSuperClass(inheritanceConfiguration)
-					.withJoinedTable()
+					.joiningTables()
 					.build(persistenceContext);
 			
 			// as an inherited entity, the table should be in the context
 			Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
-			assertThat(Iterables.collectToList(tables, Table::getName).contains(Vehicle.class.getSimpleName())).isTrue();
+			assertThat(Iterables.collectToList(tables, Table::getName)).containsExactlyInAnyOrder("Car", "Vehicle");
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -670,33 +678,42 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 	 */
 	static class MappedSuperClassData {
 		
-		abstract class AbstractVehicleTable<SELF extends AbstractVehicleTable<SELF>> extends Table<SELF> {
+		abstract class AbstractTable<SELF extends AbstractTable<SELF>> extends Table<SELF> {
 			final Column<SELF, Identifier<Long>> idColumn = addColumn("id", (Class<Identifier<Long>>) (Class) Identifier.class).primaryKey();
 			final Column<SELF, Color> colorColumn = addColumn("color", Color.class);
 			
-			public AbstractVehicleTable(String name) {
+			public AbstractTable(String name) {
 				super(name);
 			}
 		}
 		
-		class VehicleTable extends AbstractVehicleTable<VehicleTable> {
+		class AbstractVehicleTable extends AbstractTable<AbstractVehicleTable> {
 			
-			public VehicleTable(String name) {
-				super(name);
+			public AbstractVehicleTable() {
+				super("AbstractVehicle");
 			}
 		}
 		
-		class CarTable extends AbstractVehicleTable<CarTable> {
+		class VehicleTable extends AbstractTable<VehicleTable> {
+			
+			public VehicleTable() {
+				super("Vehicle");
+			}
+		}
+		
+		class CarTable extends AbstractTable<CarTable> {
 			final Column<CarTable, String> modelColumn = addColumn("model", String.class);
 			
-			public CarTable(String name) {
-				super(name);
+			public CarTable() {
+				super("Car");
 			}
 		}
 		
-		private final VehicleTable vehicleTable = new VehicleTable("vehicle");
+		private final AbstractVehicleTable abstractVehicleTable = new AbstractVehicleTable();
 		
-		private final CarTable carTable = new CarTable("car");
+		private final VehicleTable vehicleTable = new VehicleTable();
+		
+		private final CarTable carTable = new CarTable();
 	}
 	
 }

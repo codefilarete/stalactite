@@ -135,7 +135,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	@Nullable
 	private OptimisticLockOption<C, ?> optimisticLockOption;
 	
-	private InheritanceConfigurationSupport<? super C, I> inheritanceConfiguration;
+	private InheritanceConfigurationSupport<C, I> inheritanceConfiguration;
 	
 	private PolymorphismPolicy<C> polymorphismPolicy;
 	
@@ -254,7 +254,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	@javax.annotation.Nullable
 	@Override
-	public InheritanceConfiguration<? super C, I> getInheritanceConfiguration() {
+	public InheritanceConfiguration<C, I> getInheritanceConfiguration() {
 		return inheritanceConfiguration;
 	}
 	
@@ -769,29 +769,14 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	@Override
 	public FluentMappingBuilderInheritanceOptions<C, I> mapSuperClass(EntityMappingConfigurationProvider<? super C, I> mappingConfiguration) {
-		inheritanceConfiguration = new InheritanceConfigurationSupport<>(mappingConfiguration.getConfiguration());
+		inheritanceConfiguration = new InheritanceConfigurationSupport<>(((EntityMappingConfigurationProvider<C, I>) mappingConfiguration).getConfiguration());
 		return new MethodReferenceDispatcher()
 				.redirect(InheritanceOptions.class, new InheritanceOptions() {
 					@Override
-					public InheritanceOptions withJoinedTable() {
-						inheritanceConfiguration.setJoinTable(true);
+					public InheritanceOptions joiningTables() {
+						inheritanceConfiguration.setJoiningTables(true);
 						return null;
 					}
-
-					@Override
-					public InheritanceOptions withJoinedTable(Table parentTable) {
-						inheritanceConfiguration.setJoinTable(true);
-						inheritanceConfiguration.setTable(parentTable);
-						return null;
-					}
-					
-					@Override
-					public InheritanceOptions withJoinedTable(String parentTableName) {
-						inheritanceConfiguration.setJoinTable(true);
-						inheritanceConfiguration.setTable(parentTableName);
-						return null;
-					}
-
 				}, true)
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderInheritanceOptions<C, I>>) (Class) FluentMappingBuilderInheritanceOptions.class);

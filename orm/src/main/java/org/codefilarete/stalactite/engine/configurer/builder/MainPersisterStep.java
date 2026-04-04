@@ -206,7 +206,7 @@ public class MainPersisterStep<C, I> {
 		EntityMappingConfiguration mappingConfiguration = (EntityMappingConfiguration) mapping.getMappingConfiguration();
 		// If there's some mapped inheritance, then the identifying configuration is the one with the join table
 		boolean isIdentifyingConfiguration = entityMappingConfiguration.getInheritanceConfiguration() == null
-				|| !entityMappingConfiguration.getInheritanceConfiguration().isJoinTable();
+				|| !entityMappingConfiguration.getInheritanceConfiguration().isJoiningTables();
 		
 		
 		OptimisticLockOption<C, V> optimisticLockOption = (OptimisticLockOption<C, V>) entityMappingConfiguration.getOptimisticLockOption();

@@ -186,8 +186,8 @@ class DefaultPersisterBuilderTest {
 								.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
 										.map(Timestamp::getCreationDate)
 										.map(Timestamp::getModificationDate))
-						).withJoinedTable()
-				).withJoinedTable();
+						).joiningTables()
+				).joiningTables();
 		
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
 		Connection connectionMock = mock(Connection.class);

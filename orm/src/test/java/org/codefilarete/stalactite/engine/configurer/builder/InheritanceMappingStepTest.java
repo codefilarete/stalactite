@@ -137,19 +137,22 @@ class InheritanceMappingStepTest {
 		InheritanceMappingStep<Car, Identifier<Long>> testInstance = new InheritanceMappingStep<>();
 		FluentEntityMappingBuilder<Car, Identifier<Long>> entityMappingBuilder =
 				entityBuilder(Car.class, Identifier.LONG_TYPE)
+						.onTable(carTable)
 						.map(Car::getModel)
 						.mapSuperClass(entityBuilder(Vehicle.class, Identifier.LONG_TYPE)
+								.onTable(vehicleTable)
 								.embed(Vehicle::getColor, embeddableBuilder(Color.class)
 										.map(Color::getRgb))
 								.mapSuperClass(entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
+										.onTable(abstractVehicleTable)
 										.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 										.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
 												.map(Timestamp::getCreationDate)
 												.map(Timestamp::getModificationDate)))
 								// AbstractVehicle class doesn't get a Table, for testing purpose
-								.withJoinedTable())
+								.joiningTables())
 						// Vehicle class does get a Table, for testing purpose
-						.withJoinedTable(vehicleTable);
+						.joiningTables();
 
 		EntityMappingConfiguration<Car, Identifier<Long>> configuration = entityMappingBuilder.getConfiguration();
 		MappingPerTable<Car> mappingPerTable = testInstance.collectPropertiesMappingFromInheritance(
@@ -161,7 +164,7 @@ class InheritanceMappingStepTest {
 		);
 
 		assertThat(mappingPerTable.giveTables())
-				.usingElementComparator(Comparator.comparing(Table::getAbsoluteName))
+//				.usingElementComparator(Comparator.comparing(Table::getAbsoluteName))
 				.containsExactly(carTable, vehicleTable, abstractVehicleTable);
 		// NB: AssertJ containsOnly() doesn't work : returns false whereas result is good
 		// (probably due to ValueAccessPoint Comparator not used by containsOnly() method)
@@ -175,7 +178,7 @@ class InheritanceMappingStepTest {
 		List<Entry<ReversibleAccessor, Column>> actualCarMapping = new ArrayList<>(mappingPerTable.giveMapping(carTable).entrySet());
 		actualCarMapping.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
 		assertThat(actualCarMapping)
-				// Objects are similar but not equals so we compare them through their footprint (truly comparing them is quite hard)
+				// Objects are similar but not equal so we compare them through their footprint (truly comparing them is quite hard)
 				.usingElementComparator(Comparator.comparing(Object::toString))
 				.isEqualTo(expectedCarMapping);
 

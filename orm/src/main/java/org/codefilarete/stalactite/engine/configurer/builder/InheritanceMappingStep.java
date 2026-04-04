@@ -75,7 +75,7 @@ public class InheritanceMappingStep<C, I> {
 						
 						// we must reinit mapping when table changes (which is a join table case), then mapping doesn't target always the same Map 
 						initMapping = nullable(entityMappingConfiguration.getInheritanceConfiguration())
-								.map(InheritanceConfiguration::isJoinTable).getOr(false);
+								.map(InheritanceConfiguration::isJoiningTables).getOr(false);
 					}
 				}, embeddableMappingConfiguration -> {
 					mappingCollector.mappedSuperClass = true;
