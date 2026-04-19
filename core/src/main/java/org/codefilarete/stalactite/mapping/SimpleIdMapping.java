@@ -50,7 +50,7 @@ public class SimpleIdMapping<C, I> implements IdMapping<C, I> {
 	
 	public SimpleIdMapping(ReadWritePropertyAccessPoint<C, I> identifierAccessor,
 						   IdentifierInsertionManager<C, I> identifierInsertionManager,
-						   SingleIdentifierAssembler identifierMarshaller) {
+						   SingleIdentifierAssembler<I, ?> identifierMarshaller) {
 		this(new AccessorWrapperIdAccessor<>(identifierAccessor), identifierInsertionManager, identifierMarshaller);
 	}
 	

@@ -51,7 +51,7 @@ public class CompositeKeyLinkageSupport<C, I> implements CompositeKeyMapping<C, 
 		return setByConstructor;
 	}
 	
-	public List<CompositeKeyLinkage> getPropertiesMapping() {
+	public List<CompositeKeyLinkage<I, ?>> getPropertiesMapping() {
 		return compositeKeyMappingBuilder.getConfiguration().getPropertiesMapping();
 	}
 	

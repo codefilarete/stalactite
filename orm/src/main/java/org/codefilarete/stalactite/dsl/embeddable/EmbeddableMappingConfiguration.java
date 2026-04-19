@@ -1,11 +1,12 @@
 package org.codefilarete.stalactite.dsl.embeddable;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
+import org.codefilarete.stalactite.dsl.MappableSuperClassConfiguration;
 import org.codefilarete.stalactite.dsl.RelationalMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
@@ -22,17 +23,24 @@ import org.codefilarete.tool.function.Converter;
  * 
  * @author Guillaume Mary
  */
-public interface EmbeddableMappingConfiguration<C> extends RelationalMappingConfiguration<C> {
+public interface EmbeddableMappingConfiguration<C> extends MappableSuperClassConfiguration<C>, RelationalMappingConfiguration<C> {
 	
 	Class<C> getBeanType();
 	
+	/**
+	 * Overridden to specialize the result type : because {@link EmbeddableMappingConfiguration} can't inherit from
+	 * {@link org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration} (else they would be entity configuration),
+	 * the result type can onbly be made of {@link EmbeddableMappingConfiguration}.
+	 * 
+	 * @return the configuration of a parent type
+	 */
 	@SuppressWarnings("squid:S1452" /* Can't remove wildcard here because it requires to create a local generic "super" type which is forbidden */)
 	@Nullable
 	EmbeddableMappingConfiguration<? super C> getMappedSuperClassConfiguration();
 	
 	List<Linkage> getPropertiesMapping();
 	
-	Collection<Inset<C, Object>> getInsets();
+	<O> Collection<Inset<C, O>> getInsets();
 	
 	@Nullable
 	ColumnNamingStrategy getColumnNamingStrategy();
@@ -41,28 +49,28 @@ public interface EmbeddableMappingConfiguration<C> extends RelationalMappingConf
 	UniqueConstraintNamingStrategy getUniqueConstraintNamingStrategy();
 	
 	/**
+	 * Returns an {@link Iterable} over all mapped super class configurations.
+	 * Overridden for result typ accuracy : because {@link EmbeddableMappingConfiguration} can't inherit from
+	 * {@link org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration} (else they would be entity configuration),
+	 * result type can onbly be made of {@link EmbeddableMappingConfiguration}.
+	 * 
 	 * @return an iterable for all inheritance configurations, including this
 	 */
-	default Iterable<EmbeddableMappingConfiguration> inheritanceIterable() {
-		
-		return () -> new ReadOnlyIterator<EmbeddableMappingConfiguration>() {
-			
-			private EmbeddableMappingConfiguration next = EmbeddableMappingConfiguration.this;
+	@Override
+	default Iterable<EmbeddableMappingConfiguration<C>> inheritanceIterable() {
+		// overridden to specialize the result
+		Iterable<? extends MappableSuperClassConfiguration<?>> superIterable = MappableSuperClassConfiguration.super.inheritanceIterable();
+		return () -> new ReadOnlyIterator<EmbeddableMappingConfiguration<C>>() {
+			private final Iterator<? extends MappableSuperClassConfiguration<?>> delegate = superIterable.iterator();
 			
 			@Override
 			public boolean hasNext() {
-				return next != null;
+				return delegate.hasNext();
 			}
 			
 			@Override
-			public EmbeddableMappingConfiguration next() {
-				if (!hasNext()) {
-					// comply with next() method contract
-					throw new NoSuchElementException();
-				}
-				EmbeddableMappingConfiguration result = this.next;
-				this.next = this.next.getMappedSuperClassConfiguration();
-				return result;
+			public EmbeddableMappingConfiguration<C> next() {
+				return (EmbeddableMappingConfiguration<C>) delegate.next();
 			}
 		};
 	}

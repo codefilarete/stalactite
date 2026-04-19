@@ -95,10 +95,11 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	private final Class<C> classToPersist;
 	
-	@javax.annotation.Nullable
+	@Nullable
 	private Table<?> targetTable;
 	
-	private TableNamingStrategy tableNamingStrategy = TableNamingStrategy.DEFAULT;
+	@Nullable
+	private TableNamingStrategy tableNamingStrategy;
 	
 	private KeyMapping<C, I> keyMapping;
 	
@@ -163,7 +164,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		this.entityFactoryProvider = entityFactoryProvider;
 	}
 	
-	@javax.annotation.Nullable
+	@Nullable
 	public Table<?> getTable() {
 		return targetTable;
 	}
@@ -178,6 +179,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		return entityFactoryProvider;
 	}
 	
+	@Nullable
 	@Override
 	public TableNamingStrategy getTableNamingStrategy() {
 		return tableNamingStrategy;
@@ -252,7 +254,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		return maps;
 	}
 	
-	@javax.annotation.Nullable
+	@Nullable
 	@Override
 	public InheritanceConfiguration<C, I> getInheritanceConfiguration() {
 		return inheritanceConfiguration;
@@ -263,7 +265,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		return this.foreignKeyNamingStrategy;
 	}
 	
-	@javax.annotation.Nullable
+	@Nullable
 	@Override
 	public UniqueConstraintNamingStrategy getUniqueConstraintNamingStrategy() {
 		return uniqueConstraintNamingStrategy;

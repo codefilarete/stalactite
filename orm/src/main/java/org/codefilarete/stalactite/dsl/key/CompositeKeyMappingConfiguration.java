@@ -23,7 +23,7 @@ public interface CompositeKeyMappingConfiguration<C> {
 	@SuppressWarnings("squid:S1452" /* Can't remove wildcard here because it requires to create a local generic "super" type which is forbidden */)
 	CompositeKeyMappingConfiguration<? super C> getMappedSuperClassConfiguration();
 	
-	List<CompositeKeyLinkage> getPropertiesMapping();
+	List<CompositeKeyLinkage<C, ?>> getPropertiesMapping();
 	
 	<O> Collection<Inset<C, O>> getInsets();
 	

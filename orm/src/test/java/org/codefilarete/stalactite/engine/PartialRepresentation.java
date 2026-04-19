@@ -10,7 +10,7 @@ import org.codefilarete.trace.ObjectPrinterBuilder.ObjectPrinter;
  * 
  * @author Guillaume Mary
  */
-class PartialRepresentation<T> implements Representation {
+public class PartialRepresentation<T> implements Representation {
 	
 	private final Class<T> managedType;
 	private final ObjectPrinter<T> printer;

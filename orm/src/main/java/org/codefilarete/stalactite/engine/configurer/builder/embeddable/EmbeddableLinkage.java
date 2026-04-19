@@ -55,6 +55,8 @@ public interface EmbeddableLinkage<C, O> {
 	
 	boolean isUnique();
 	
+	boolean isSetByConstructor();
+	
 	@Nullable
 	Converter<?, O> getReadConverter();
 	

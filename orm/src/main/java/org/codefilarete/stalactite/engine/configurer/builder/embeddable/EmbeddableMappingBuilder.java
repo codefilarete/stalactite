@@ -266,7 +266,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 											ValueAccessPointMap<C, Size, ValueAccessPoint<C>> overriddenColumnSizes,
 											ValueAccessPointMap<C, Column<T, ?>, ValueAccessPoint<C>> overriddenColumns,
 											ValueAccessPointSet<C, ValueAccessPoint<C>> excludedProperties) {
-			Stream<EmbeddableLinkage> linkageStream = mappingConfiguration.getPropertiesMapping().stream()
+			Stream<EmbeddableLinkage> linkageStream = ((List<EmbeddableLinkage>) (List) mappingConfiguration.getPropertiesMapping()).stream()
 					.filter(linkage -> !excludedProperties.contains(linkage.getAccessor()));
 			
 			if (!onlyExtraTableLinkages) {
@@ -413,10 +413,10 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 				
 				includeDirectMapping(configuration,
 						mappingPrefix,
-						inset.getOverriddenColumnNames(),
-						inset.getOverriddenColumnSizes(),
+						(ValueAccessPointMap) inset.getOverriddenColumnNames(),
+						(ValueAccessPointMap) inset.getOverriddenColumnSizes(),
 						(ValueAccessPointMap) inset.getOverriddenColumns(),
-						inset.getExcludedProperties());
+						(ValueAccessPointSet) inset.getExcludedProperties());
 				if (configuration.getInsets().isEmpty()) {
 					accessorPath.remove();
 				} else {
@@ -429,7 +429,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 		private void includeMappedSuperClassMapping(Inset<C, ?> inset, Collection<ReadWritePropertyAccessPoint<C, ?>> accessorPath, EmbeddableMappingConfiguration<?> superClassConfiguration) {
 			// we include super type mapping by using a new instance of EmbeddableMappingBuilder, this is the simplest (but maybe not the most
 			// debuggable) and allows to manage inheritance of several mappedSuperClass 
-			ValueAccessPointSet<C, ValueAccessPoint<C>> excludedProperties = new ValueAccessPointSet<>();
+			ValueAccessPointSet excludedProperties = new ValueAccessPointSet<>();
 			// we remove overridden inset columns to avoid their creation by the EmbeddableMappingBuilder
 			// to avoid duplicates because they are already in the target table (through their creation) and the builder
 			// will create them with their default name
@@ -500,7 +500,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 				
 				Map<String, ValueAccessPoint<?>> columNamePerAccessPoint = new HashMap<>();
 				EmbeddableMappingConfiguration<?> insetConfiguration = inset.getConfiguration();
-				insetConfiguration.getPropertiesMapping().forEach(linkage -> {
+				((List<EmbeddableLinkage>) (List) insetConfiguration.getPropertiesMapping()).forEach(linkage -> {
 					if (!inset.getExcludedProperties().contains(linkage.getAccessor())) {
 						String columnName = determineColumnName(linkage, inset.getOverriddenColumnNames().get(linkage.getAccessor()));
 						columNamePerAccessPoint.put(columnName, linkage.getAccessor());
@@ -508,7 +508,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 				});
 				Inset<?, ?> abstractInset = alreadyMappedType.get();
 				Map<String, ValueAccessPoint<?>> columNamePerAccessPoint2 = new HashMap<>();
-				insetConfiguration.getPropertiesMapping().forEach(linkage -> {
+				((List<EmbeddableLinkage>) (List) insetConfiguration.getPropertiesMapping()).forEach(linkage -> {
 					if (!abstractInset.getExcludedProperties().contains(linkage.getAccessor())) {
 						String columnName = determineColumnName(linkage, abstractInset.getOverriddenColumnNames().get(linkage.getAccessor()));
 						columNamePerAccessPoint2.put(columnName, linkage.getAccessor());

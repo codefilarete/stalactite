@@ -93,6 +93,13 @@ public interface EmbeddableMappingConfiguration<C> {
 					return false;
 				}
 				
+				@Override
+				public boolean isSetByConstructor() {
+					// for now, properties set by constructor on composite keys are not supported (no method on API for it)
+					// TODO: implement set-by-cosntructor feature for composite key
+					return false;
+				}
+				
 				@Nullable
 				@Override
 				public Converter getReadConverter() {
@@ -122,8 +129,8 @@ public interface EmbeddableMappingConfiguration<C> {
 			}
 			
 			@Override
-			public List<EmbeddableLinkage> getPropertiesMapping() {
-				return linkages;
+			public <O> List<EmbeddableLinkage<C, O>> getPropertiesMapping() {
+				return (List<EmbeddableLinkage<C,O>>) (List) linkages;
 			}
 			
 			@Override
@@ -145,22 +152,22 @@ public interface EmbeddableMappingConfiguration<C> {
 					}
 					
 					@Override
-					public ValueAccessPointSet<C, ValueAccessPoint<C>> getExcludedProperties() {
+					public ValueAccessPointSet<O, ValueAccessPoint<O>> getExcludedProperties() {
 						return compositeInset.getExcludedProperties();
 					}
 					
 					@Override
-					public ValueAccessPointMap<C, String, ValueAccessPoint<C>> getOverriddenColumnNames() {
+					public ValueAccessPointMap<O, String, ValueAccessPoint<O>> getOverriddenColumnNames() {
 						return compositeInset.getOverriddenColumnNames();
 					}
 					
 					@Override
-					public ValueAccessPointMap<C, Size, ValueAccessPoint<C>> getOverriddenColumnSizes() {
+					public ValueAccessPointMap<O, Size, ValueAccessPoint<O>> getOverriddenColumnSizes() {
 						return compositeInset.getOverriddenColumnSizes();
 					}
 					
 					@Override
-					public ValueAccessPointMap<C, Column, ValueAccessPoint<C>> getOverriddenColumns() {
+					public ValueAccessPointMap<O, Column, ValueAccessPoint<O>> getOverriddenColumns() {
 						return compositeInset.getOverriddenColumns();
 					}
 					
@@ -198,15 +205,15 @@ public interface EmbeddableMappingConfiguration<C> {
 			}
 			
 			@Override
-			public List<EmbeddableLinkage> getPropertiesMapping() {
-				return linkages;
+			public <O> List<EmbeddableLinkage<C, O>> getPropertiesMapping() {
+				return (List<EmbeddableLinkage<C, O>>) (List) linkages;
 			}
 			
 			@Override
-			public Collection<Inset<C, ?>> getInsets() {
-				return Iterables.collectToList(embeddableMappingConfiguration.getInsets(), embeddableInset -> new Inset<C, Object>() {
+			public <O> Collection<Inset<C, O>> getInsets() {
+				return Iterables.collectToList(embeddableMappingConfiguration.<O>getInsets(), embeddableInset -> new Inset<C, O>() {
 					@Override
-					public ReadWritePropertyAccessPoint<C, Object> getAccessor() {
+					public ReadWritePropertyAccessPoint<C, O> getAccessor() {
 						return embeddableInset.getAccessor();
 					}
 					
@@ -216,32 +223,32 @@ public interface EmbeddableMappingConfiguration<C> {
 					}
 					
 					@Override
-					public Class<Object> getEmbeddedClass() {
+					public Class<O> getEmbeddedClass() {
 						return embeddableInset.getEmbeddedClass();
 					}
 					
 					@Override
-					public ValueAccessPointSet<C, ValueAccessPoint<C>> getExcludedProperties() {
+					public ValueAccessPointSet<O, ValueAccessPoint<O>> getExcludedProperties() {
 						return embeddableInset.getExcludedProperties();
 					}
 					
 					@Override
-					public ValueAccessPointMap<C, String, ValueAccessPoint<C>> getOverriddenColumnNames() {
+					public ValueAccessPointMap<O, String, ValueAccessPoint<O>> getOverriddenColumnNames() {
 						return embeddableInset.getOverriddenColumnNames();
 					}
 					
 					@Override
-					public ValueAccessPointMap<C, Size, ValueAccessPoint<C>> getOverriddenColumnSizes() {
+					public ValueAccessPointMap<O, Size, ValueAccessPoint<O>> getOverriddenColumnSizes() {
 						return embeddableInset.getOverriddenColumnSizes();
 					}
 					
 					@Override
-					public ValueAccessPointMap<C, Column, ValueAccessPoint<C>> getOverriddenColumns() {
+					public ValueAccessPointMap<O, Column, ValueAccessPoint<O>> getOverriddenColumns() {
 						return embeddableInset.getOverriddenColumns();
 					}
 					
 					@Override
-					public EmbeddableMappingConfiguration<Object> getConfiguration() {
+					public EmbeddableMappingConfiguration<O> getConfiguration() {
 						return fromEmbeddableMappingConfiguration(embeddableInset.getConfigurationProvider().getConfiguration());
 					}
 				});
@@ -261,7 +268,7 @@ public interface EmbeddableMappingConfiguration<C> {
 	@Nullable
 	EmbeddableMappingConfiguration<? super C> getMappedSuperClassConfiguration();
 	
-	List<EmbeddableLinkage> getPropertiesMapping();
+	<O> List<EmbeddableLinkage<C, O>> getPropertiesMapping();
 	
 	<O> Collection<Inset<C, O>> getInsets();
 	
@@ -366,6 +373,11 @@ public interface EmbeddableMappingConfiguration<C> {
 		@Override
 		public boolean isUnique() {
 			return dslLinkage.isUnique();
+		}
+		
+		@Override
+		public boolean isSetByConstructor() {
+			return dslLinkage.isSetByConstructor();
 		}
 		
 		@Nullable

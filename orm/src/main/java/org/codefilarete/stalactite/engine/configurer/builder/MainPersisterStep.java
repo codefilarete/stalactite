@@ -145,7 +145,7 @@ public class MainPersisterStep<C, I> {
 			idMappingStrategy = new ComposedIdMapping<>(idAccessor, (AlreadyAssignedIdentifierManager<E, I>) identifierInsertionManager, composedIdentifierAssembler);
 		} else {
 			idMappingStrategy = new SimpleIdMapping<>(idAccessor, identifierInsertionManager,
-					new SingleIdentifierAssembler<>(first(primaryKey.getColumns())));
+					new SingleIdentifierAssembler<>((Column<?, I>) first(primaryKey.getColumns())));
 		}
 		
 		Function<ColumnedRow, E> beanFactory;

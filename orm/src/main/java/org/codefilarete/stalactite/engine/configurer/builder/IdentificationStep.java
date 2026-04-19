@@ -24,7 +24,7 @@ public class IdentificationStep<C, I> extends AbstractIdentificationStep<C, I> {
 	 * @return a wrapper of necessary elements to manage entity identifier
 	 * @throws UnsupportedOperationException when identification was not found, because it doesn't make sense to have an entity without identification
 	 */
-	AbstractIdentification<C, I> determineIdentification(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
+	public AbstractIdentification<C, I> determineIdentification(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
 		if (entityMappingConfiguration.getInheritanceConfiguration() != null && entityMappingConfiguration.getPropertiesMapping().getMappedSuperClassConfiguration() != null) {
 			throw new MappingConfigurationException("Combination of mapped super class and inheritance is not supported, please remove one of them");
 		}

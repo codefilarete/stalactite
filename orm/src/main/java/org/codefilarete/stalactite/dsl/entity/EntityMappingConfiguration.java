@@ -1,18 +1,20 @@
 package org.codefilarete.stalactite.dsl.entity;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.stalactite.dsl.MappableSuperClassConfiguration;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.RelationalMappingConfiguration;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
+import org.codefilarete.stalactite.dsl.key.CompositeKeyMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
@@ -26,12 +28,14 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.collection.ReadOnlyIterator;
 
+import static org.codefilarete.tool.Nullable.nullable;
+
 /**
  * Defines elements needed to configure a mapping of an entity class
  * 
  * @author Guillaume Mary
  */
-public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfiguration<C> {
+public interface EntityMappingConfiguration<C, I> extends MappableSuperClassConfiguration<C>, RelationalMappingConfiguration<C> {
 	
 	@Nullable
 	EntityFactoryProvider<C, ?> getEntityFactoryProvider();
@@ -55,6 +59,19 @@ public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfi
 	
 	@Nullable
 	OptimisticLockOption<C, ?> getOptimisticLockOption();
+	
+	/**
+	 * Returns the parent configuration. Information is taken on the {@link #getInheritanceConfiguration()} instance.
+	 * <strong>Be aware that the caller may take the {@link InheritanceConfiguration#isJoiningTables()} option
+	 * into account for a complete behavior</strong>
+	 * 
+	 * @return the configuration of a parent type
+	 */
+	@Nullable
+	@Override
+	default EntityMappingConfiguration<? super C, I> getMappedSuperClassConfiguration() {
+		return nullable(getInheritanceConfiguration()).map(InheritanceConfiguration::getParentMappingConfiguration).get();
+	}
 	
 	/** Gives inheritance information if inheritance has been defined, else returns null */
 	@SuppressWarnings("squid:S1452" /* Can't remove wildcard here because it requires to create a local generic "super" type which is forbidden */)
@@ -89,28 +106,25 @@ public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfi
 	PolymorphismPolicy<C> getPolymorphismPolicy();
 	
 	/**
+	 * Returns an {@link Iterable} over all mapped super class configurations.
+	 *
 	 * @return an iterable for all inheritance configurations, including this
 	 */
-	default Iterable<EntityMappingConfiguration<C, I>> inheritanceIterable() {
-		
-		return () -> new ReadOnlyIterator<EntityMappingConfiguration<C, I>>() {
-			
-			private EntityMappingConfiguration<C, I> next = EntityMappingConfiguration.this;
+	@Override
+	default Iterable<EntityMappingConfiguration<?, I>> inheritanceIterable() {
+		// overridden to specialize the result
+		Iterable<? extends MappableSuperClassConfiguration<?>> superIterable = MappableSuperClassConfiguration.super.inheritanceIterable();
+		return () -> new ReadOnlyIterator<EntityMappingConfiguration<?, I>>() {
+			private final Iterator<? extends MappableSuperClassConfiguration<?>> delegate = superIterable.iterator();
 			
 			@Override
 			public boolean hasNext() {
-				return next != null;
+				return delegate.hasNext();
 			}
 			
 			@Override
-			public EntityMappingConfiguration<C, I> next() {
-				if (!hasNext()) {
-					// comply with next() method contract
-					throw new NoSuchElementException();
-				}
-				EntityMappingConfiguration<C, I> result = this.next;
-				this.next = org.codefilarete.tool.Nullable.nullable(this.next.getInheritanceConfiguration()).map(InheritanceConfiguration::getParentMappingConfiguration).get();
-				return result;
+			public EntityMappingConfiguration<?, I> next() {
+				return (EntityMappingConfiguration<?, I>) delegate.next();
 			}
 		};
 	}
@@ -156,6 +170,8 @@ public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfi
 		Consumer<C> getMarkAsPersistedFunction();
 		
 		Function<C, Boolean> getIsPersistedFunction();
+		
+		CompositeKeyMappingConfigurationProvider<I> getCompositeKeyMappingBuilder();
 	}
 	
 	interface ColumnLinkageOptions {

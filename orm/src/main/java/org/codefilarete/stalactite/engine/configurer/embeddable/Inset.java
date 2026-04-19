@@ -57,11 +57,11 @@ public class Inset<SRC, TRGT> {
 	 * Equivalent of {@link #insetAccessor} as a {@link ReadWriteAccessPoint}
 	 */
 	private final ReadWritePropertyAccessPoint<SRC, TRGT> accessor;
-	private final ValueAccessPointMap<SRC, String, ValueAccessPoint<SRC>> overriddenColumnNames = new ValueAccessPointMap<>();
-	private final ValueAccessPointMap<SRC, Size, ValueAccessPoint<SRC>> overriddenColumnSizes = new ValueAccessPointMap<>();
-	private final ValueAccessPointSet<SRC, ValueAccessPoint<SRC>> excludedProperties = new ValueAccessPointSet<>();
+	private final ValueAccessPointMap<TRGT, String, ValueAccessPoint<TRGT>> overriddenColumnNames = new ValueAccessPointMap<>();
+	private final ValueAccessPointMap<TRGT, Size, ValueAccessPoint<TRGT>> overriddenColumnSizes = new ValueAccessPointMap<>();
+	private final ValueAccessPointSet<TRGT, ValueAccessPoint<TRGT>> excludedProperties = new ValueAccessPointSet<>();
 	private final EmbeddableMappingConfigurationProvider<? extends TRGT> configurationProvider;
-	private final ValueAccessPointMap<SRC, Column, ValueAccessPoint<SRC>> overriddenColumns = new ValueAccessPointMap<>();
+	private final ValueAccessPointMap<TRGT, Column, ValueAccessPoint<TRGT>> overriddenColumns = new ValueAccessPointMap<>();
 	
 	Inset(SerializablePropertyMutator<SRC, TRGT> targetSetter,
 		  EmbeddableMappingConfigurationProvider<? extends TRGT> configurationProvider,
@@ -101,19 +101,19 @@ public class Inset<SRC, TRGT> {
 		return embeddedClass;
 	}
 	
-	public ValueAccessPointSet<SRC, ValueAccessPoint<SRC>> getExcludedProperties() {
+	public ValueAccessPointSet<TRGT, ValueAccessPoint<TRGT>> getExcludedProperties() {
 		return this.excludedProperties;
 	}
 	
-	public ValueAccessPointMap<SRC, String, ValueAccessPoint<SRC>> getOverriddenColumnNames() {
+	public ValueAccessPointMap<TRGT, String, ValueAccessPoint<TRGT>> getOverriddenColumnNames() {
 		return this.overriddenColumnNames;
 	}
 	
-	public ValueAccessPointMap<SRC, Size, ValueAccessPoint<SRC>> getOverriddenColumnSizes() {
+	public ValueAccessPointMap<TRGT, Size, ValueAccessPoint<TRGT>> getOverriddenColumnSizes() {
 		return overriddenColumnSizes;
 	}
 	
-	public ValueAccessPointMap<SRC, Column, ValueAccessPoint<SRC>> getOverriddenColumns() {
+	public ValueAccessPointMap<TRGT, Column, ValueAccessPoint<TRGT>> getOverriddenColumns() {
 		return overriddenColumns;
 	}
 	

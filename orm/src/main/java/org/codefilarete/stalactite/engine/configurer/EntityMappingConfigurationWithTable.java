@@ -61,7 +61,7 @@ public class EntityMappingConfigurationWithTable<C, I> implements EntityMappingC
 		return delegate.getTableNamingStrategy();
 	}
 	
-	public Iterable<EntityMappingConfiguration<C, I>> inheritanceIterable() {
+	public Iterable<EntityMappingConfiguration<?, I>> inheritanceIterable() {
 		return delegate.inheritanceIterable();
 	}
 	

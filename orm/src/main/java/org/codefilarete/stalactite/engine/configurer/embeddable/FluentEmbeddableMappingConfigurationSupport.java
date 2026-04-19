@@ -84,7 +84,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	protected final List<Linkage> mapping = new ArrayList<>();
 	
 	/** Collection of embedded elements, even inner ones to help final build process */
-	private final Collection<Inset<C, Object>> insets = new ArrayList<>();
+	private final Collection<Inset<C, ?>> insets = new ArrayList<>();
 	
 	/** Last embedded element, introduced to help inner embedding registration (kind of algorithm help). Has no purpose in whole mapping configuration. */
 	private Inset<C, ?> currentInset;
@@ -110,8 +110,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	}
 	
 	@Override
-	public Collection<Inset<C, Object>> getInsets() {
-		return insets;
+	public <O> Collection<Inset<C, O>> getInsets() {
+		return (Collection) insets;
 	}
 	
 	@Override

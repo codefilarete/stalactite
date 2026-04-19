@@ -24,13 +24,13 @@ public interface Inset<SRC, TRGT> {
 	
 	Class<TRGT> getEmbeddedClass();
 	
-	ValueAccessPointSet<SRC, ValueAccessPoint<SRC>> getExcludedProperties();
+	ValueAccessPointSet<TRGT, ValueAccessPoint<TRGT>> getExcludedProperties();
 	
-	ValueAccessPointMap<SRC, String, ValueAccessPoint<SRC>> getOverriddenColumnNames();
+	ValueAccessPointMap<TRGT, String, ValueAccessPoint<TRGT>> getOverriddenColumnNames();
 	
-	ValueAccessPointMap<SRC, Size, ValueAccessPoint<SRC>> getOverriddenColumnSizes();
+	ValueAccessPointMap<TRGT, Size, ValueAccessPoint<TRGT>> getOverriddenColumnSizes();
 	
-	ValueAccessPointMap<SRC, Column, ValueAccessPoint<SRC>> getOverriddenColumns();
+	ValueAccessPointMap<TRGT, Column, ValueAccessPoint<TRGT>> getOverriddenColumns();
 	
 	EmbeddableMappingConfiguration<TRGT> getConfiguration();
 }

@@ -51,7 +51,7 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 	private ColumnNamingStrategy columnNamingStrategy;
 	
 	/** Mapping definitions */
-	protected final List<CompositeKeyLinkage> mapping = new ArrayList<>();
+	protected final List<CompositeKeyLinkage<C, ?>> mapping = new ArrayList<>();
 	
 	/** Collection of embedded elements, even inner ones to help final build process */
 	private final Collection<Inset<C, ?>> insets = new ArrayList<>();
@@ -96,7 +96,7 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 	}
 	
 	@Override
-	public List<CompositeKeyLinkage> getPropertiesMapping() {
+	public List<CompositeKeyLinkage<C, ?>> getPropertiesMapping() {
 		return mapping;
 	}
 	
@@ -265,40 +265,40 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 	private <O> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> addImportedInset(Inset<C, O> inset) {
 		insets.add(inset);
 		return new MethodReferenceDispatcher()
-				.redirect(ImportedEmbedOptions.class, new ImportedEmbedOptions<C>() {
+				.redirect(ImportedEmbedOptions.class, new ImportedEmbedOptions<O>() {
 
 					@Override
-					public <IN> ImportedEmbedOptions<C> overrideName(SerializablePropertyAccessor<C, IN> getter, String columnName) {
+					public <IN> ImportedEmbedOptions<O> overrideName(SerializablePropertyAccessor<O, IN> getter, String columnName) {
 						inset.overrideName(getter, columnName);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 
 					@Override
-					public <IN> ImportedEmbedOptions<C> overrideName(SerializablePropertyMutator<C, IN> setter, String columnName) {
+					public <IN> ImportedEmbedOptions<O> overrideName(SerializablePropertyMutator<O, IN> setter, String columnName) {
 						inset.overrideName(setter, columnName);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public <IN> ImportedEmbedOptions<C> overrideSize(SerializablePropertyAccessor<C, IN> getter, Size columnSize) {
+					public <IN> ImportedEmbedOptions<O> overrideSize(SerializablePropertyAccessor<O, IN> getter, Size columnSize) {
 						inset.overrideSize(getter, columnSize);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public <IN> ImportedEmbedOptions<C> overrideSize(SerializablePropertyMutator<C, IN> setter, Size columnSize) {
+					public <IN> ImportedEmbedOptions<O> overrideSize(SerializablePropertyMutator<O, IN> setter, Size columnSize) {
 						inset.overrideSize(setter, columnSize);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public <IN> ImportedEmbedOptions<C> exclude(SerializablePropertyMutator<C, IN> setter) {
+					public <IN> ImportedEmbedOptions<O> exclude(SerializablePropertyMutator<O, IN> setter) {
 						inset.exclude(setter);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public <IN> ImportedEmbedOptions<C> exclude(SerializablePropertyAccessor<C, IN> getter) {
+					public <IN> ImportedEmbedOptions<O> exclude(SerializablePropertyAccessor<O, IN> getter) {
 						inset.exclude(getter);
 						return null;	// we can return null because dispatcher will return proxy
 					}
@@ -421,11 +421,11 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 		private final Method insetAccessor;
 		/** Equivalent of {@link #insetAccessor} as a {@link ReadWriteAccessPoint}  */
 		private final ReadWritePropertyAccessPoint<SRC, TRGT> accessor;
-		private final ValueAccessPointMap<SRC, String, ValueAccessPoint<SRC>> overriddenColumnNames = new ValueAccessPointMap<>();
-		private final ValueAccessPointMap<SRC, Size, ValueAccessPoint<SRC>> overriddenColumnSizes = new ValueAccessPointMap<>();
-		private final ValueAccessPointSet<SRC, ValueAccessPoint<SRC>> excludedProperties = new ValueAccessPointSet<>();
+		private final ValueAccessPointMap<TRGT, String, ValueAccessPoint<TRGT>> overriddenColumnNames = new ValueAccessPointMap<>();
+		private final ValueAccessPointMap<TRGT, Size, ValueAccessPoint<TRGT>> overriddenColumnSizes = new ValueAccessPointMap<>();
+		private final ValueAccessPointSet<TRGT, ValueAccessPoint<TRGT>> excludedProperties = new ValueAccessPointSet<>();
 		private final CompositeKeyMappingConfigurationProvider<? extends TRGT> configurationProvider;
-		private final ValueAccessPointMap<SRC, Column, ValueAccessPoint<SRC>> overriddenColumns = new ValueAccessPointMap<>();
+		private final ValueAccessPointMap<TRGT, Column, ValueAccessPoint<TRGT>> overriddenColumns = new ValueAccessPointMap<>();
 		
 		
 		Inset(SerializablePropertyMutator<SRC, TRGT> targetSetter,
@@ -466,19 +466,19 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 			return embeddedClass;
 		}
 		
-		public ValueAccessPointSet<SRC, ValueAccessPoint<SRC>> getExcludedProperties() {
+		public ValueAccessPointSet<TRGT, ValueAccessPoint<TRGT>> getExcludedProperties() {
 			return this.excludedProperties;
 		}
 		
-		public ValueAccessPointMap<SRC, String, ValueAccessPoint<SRC>> getOverriddenColumnNames() {
+		public ValueAccessPointMap<TRGT, String, ValueAccessPoint<TRGT>> getOverriddenColumnNames() {
 			return this.overriddenColumnNames;
 		}
 		
-		public ValueAccessPointMap<SRC, Size, ValueAccessPoint<SRC>> getOverriddenColumnSizes() {
+		public ValueAccessPointMap<TRGT, Size, ValueAccessPoint<TRGT>> getOverriddenColumnSizes() {
 			return overriddenColumnSizes;
 		}
 		
-		public ValueAccessPointMap<SRC, Column, ValueAccessPoint<SRC>> getOverriddenColumns() {
+		public ValueAccessPointMap<TRGT, Column, ValueAccessPoint<TRGT>> getOverriddenColumns() {
 			return overriddenColumns;
 		}
 		
@@ -486,31 +486,31 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 			return (CompositeKeyMappingConfigurationProvider<TRGT>) configurationProvider;
 		}
 		
-		public void overrideName(SerializableAccessor<SRC, ?> methodRef, String columnName) {
+		public void overrideName(SerializableAccessor<TRGT, ?> methodRef, String columnName) {
 			this.overriddenColumnNames.put(new AccessorByMethodReference<>(methodRef), columnName);
 		}
 		
-		public void overrideName(SerializableMutator<SRC, ?> methodRef, String columnName) {
+		public void overrideName(SerializableMutator<TRGT, ?> methodRef, String columnName) {
 			this.overriddenColumnNames.put(new MutatorByMethodReference<>(methodRef), columnName);
 		}
 		
-		public void overrideName(AccessorChain<SRC, ?> accessorChain, String columnName) {
+		public void overrideName(AccessorChain<TRGT, ?> accessorChain, String columnName) {
 			this.overriddenColumnNames.put(accessorChain, columnName);
 		}
 		
-		public void overrideSize(SerializableAccessor<SRC, ?> methodRef, Size columnSize) {
+		public void overrideSize(SerializableAccessor<TRGT, ?> methodRef, Size columnSize) {
 			this.overriddenColumnSizes.put(new AccessorByMethodReference<>(methodRef), columnSize);
 		}
 		
-		public void overrideSize(SerializableMutator<SRC, ?> methodRef, Size columnSize) {
+		public void overrideSize(SerializableMutator<TRGT, ?> methodRef, Size columnSize) {
 			this.overriddenColumnSizes.put(new MutatorByMethodReference<>(methodRef), columnSize);
 		}
 		
-		public void overrideSize(AccessorChain<SRC, ?> accessorChain, Size columnSize) {
+		public void overrideSize(AccessorChain<TRGT, ?> accessorChain, Size columnSize) {
 			this.overriddenColumnSizes.put(accessorChain, columnSize);
 		}
 		
-		public void override(SerializableAccessor<SRC, ?> methodRef, Column column) {
+		public void override(SerializableAccessor<TRGT, ?> methodRef, Column column) {
 			this.overriddenColumns.put(new AccessorByMethodReference<>(methodRef), column);
 		}
 		

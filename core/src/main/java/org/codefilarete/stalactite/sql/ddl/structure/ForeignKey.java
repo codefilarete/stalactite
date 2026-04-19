@@ -41,7 +41,7 @@ public class ForeignKey<T extends Table<T>, U extends Table<U>, ID> implements K
 	}
 	
 	@Override
-	public KeepOrderSet<Column<T, Object>> getColumns() {
+	public KeepOrderSet<Column<T, ?>> getColumns() {
 		return new KeepOrderSet<>(columns.keySet());
 	}
 	
