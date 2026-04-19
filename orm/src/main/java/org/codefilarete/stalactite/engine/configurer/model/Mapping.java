@@ -21,7 +21,7 @@ public class Mapping<C, T extends Table<T>> {
 	
 	private final Set<MappingJoin<?, ?, ?>> relations = new KeepOrderSet<>();
 	
-	protected Mapping(Class<C> entityType, T table) {
+	public Mapping(Class<C> entityType, T table) {
 		this.entityType = entityType;
 		this.table = table;
 	}

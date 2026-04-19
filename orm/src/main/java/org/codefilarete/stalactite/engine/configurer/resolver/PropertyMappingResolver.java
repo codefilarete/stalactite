@@ -1,10 +1,8 @@
 package org.codefilarete.stalactite.engine.configurer.resolver;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
@@ -34,7 +32,6 @@ import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.KeepOrderSet;
-import org.codefilarete.tool.function.Functions;
 
 import static org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingConfiguration.fromEmbeddableMappingConfiguration;
 import static org.codefilarete.tool.Nullable.nullable;
@@ -53,33 +50,13 @@ import static org.codefilarete.tool.collection.Iterables.stream;
  * {@link AggregateMetadataResolver}'s work).
  *
  * @author Guillaume Mary
- * @see #build()
+ * @see #resolve(org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration, Table, ColumnNamingStrategy)
  */
 public class PropertyMappingResolver<C, T extends Table<T>> {
 	
-	private final EmbeddableMappingConfiguration<C> mainMappingConfiguration;
-	private T targetTable;
 	private final ColumnBinderRegistry columnBinderRegistry;
-	private final ColumnNamingStrategy columnNamingStrategy;
 	
-	public PropertyMappingResolver(org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration<C> mappingConfiguration,
-								   T targetTable,
-								   ColumnBinderRegistry columnBinderRegistry,
-								   ColumnNamingStrategy columnNamingStrategy) {
-		this(fromEmbeddableMappingConfiguration(mappingConfiguration),
-				targetTable,
-				columnBinderRegistry,
-				columnNamingStrategy
-		);
-	}
-	
-	PropertyMappingResolver(EmbeddableMappingConfiguration<C> mappingConfiguration,
-							T targetTable,
-							ColumnBinderRegistry columnBinderRegistry,
-							ColumnNamingStrategy columnNameStrategy) {
-		this.mainMappingConfiguration = mappingConfiguration;
-		this.targetTable = targetTable;
-		this.columnNamingStrategy = columnNameStrategy;
+	public PropertyMappingResolver(ColumnBinderRegistry columnBinderRegistry) {
 		this.columnBinderRegistry = columnBinderRegistry;
 	}
 	
@@ -88,51 +65,52 @@ public class PropertyMappingResolver<C, T extends Table<T>> {
 	 *
 	 * @return a bean that stores some {@link Map}s representing the definition of the mapping declared by the {@link EmbeddableMappingConfiguration}
 	 */
-	public ResolvedPropertyMapping<C, T> build() {
-		return build(new ValueAccessPointSet<>());
+	public Set<AbstractPropertyMapping<C, ?, T>> resolve(org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration<C> mainMappingConfiguration,
+	                                                     T targetTable,
+	                                                     ColumnNamingStrategy columnNamingStrategy) {
+		return resolve(fromEmbeddableMappingConfiguration(mainMappingConfiguration),
+				targetTable,
+				columnNamingStrategy);
 	}
 	
-	private ResolvedPropertyMapping<C, T> build(ValueAccessPointSet<C, ?> excludedProperties) {
-		ResolvedPropertyMapping<C, T> result = new ResolvedPropertyMapping<>();
+	public Set<AbstractPropertyMapping<C, ?, T>> resolve(EmbeddableMappingConfiguration<C> mainMappingConfiguration,
+	                                                     T targetTable,
+	                                                     ColumnNamingStrategy columnNamingStrategy) {
+		Set<AbstractPropertyMapping<C, ?, T>> result = new KeepOrderSet<>();
 		
-		InternalProcessor<C> internalProcessor = new InternalProcessor<>();
+		InternalProcessor<C> internalProcessor = new InternalProcessor<>(targetTable, columnNamingStrategy);
 		// converting direct mapping
 		ValueAccessPointMap<C, String, ValueAccessPoint<C>> overriddenColumnNames = new ValueAccessPointMap<>();
 		ValueAccessPointMap<C, Size, ValueAccessPoint<C>> overriddenColumnSizes = new ValueAccessPointMap<>();
 		ValueAccessPointMap<C, Column<T, ?>, ValueAccessPoint<C>> overriddenColumns = new ValueAccessPointMap<>();
-		internalProcessor.includeMapping(this.mainMappingConfiguration,
+		ValueAccessPointSet<C, ?> excludedProperties = new ValueAccessPointSet<>();
+		internalProcessor.includeMapping(mainMappingConfiguration,
 				overriddenColumnNames,
 				overriddenColumnSizes,
 				overriddenColumns,
 				excludedProperties);
 		// adding insets
-		result.addAllMapping(includeInsets(mainMappingConfiguration));
+		result.addAll(includeInsets(targetTable, columnNamingStrategy, mainMappingConfiguration));
 		
 		// importing embeddable mapped superclass mapping
-		EmbeddableMappingConfiguration<C> mappedSuperClassConfiguration = (EmbeddableMappingConfiguration<C>) this.mainMappingConfiguration.getMappedSuperClassConfiguration();
+		EmbeddableMappingConfiguration<C> mappedSuperClassConfiguration = (EmbeddableMappingConfiguration<C>) mainMappingConfiguration.getMappedSuperClassConfiguration();
 		while (mappedSuperClassConfiguration != null) {
 			internalProcessor.includeMapping(mappedSuperClassConfiguration,
 					overriddenColumnNames, overriddenColumnSizes, overriddenColumns, excludedProperties);
 			// adding insets
-			result.addAllMapping(includeInsets(mappedSuperClassConfiguration));
+			result.addAll(includeInsets(targetTable, columnNamingStrategy, mappedSuperClassConfiguration));
 			mappedSuperClassConfiguration = (EmbeddableMappingConfiguration<C>) mappedSuperClassConfiguration.getMappedSuperClassConfiguration();
 		}
 		
-		internalProcessor.result.forEach(mappingPawn -> {
-			if (mappingPawn.getColumn().getTable() == targetTable) {
-				result.addMapping(mappingPawn);
-			} else {
-				result.addExtraTableMapping(mappingPawn);
-			}
-		});
+		result.addAll(internalProcessor.result);
 		
 		return result;
 	}
 	
-	private <E> Set<AbstractPropertyMapping<C, ?, T>> includeInsets(EmbeddableMappingConfiguration<C> mainMappingConfiguration) {
+	private <E> Set<AbstractPropertyMapping<C, ?, T>> includeInsets(T targetTable, ColumnNamingStrategy columnNamingStrategy, EmbeddableMappingConfiguration<C> mainMappingConfiguration) {
 		Set<AbstractPropertyMapping<C, ?, T>> result = new KeepOrderSet<>();
 		mainMappingConfiguration.<E>getInsets().forEach(inset -> {
-			InternalProcessor<E> internalProcessorForEmbeddedBeans = new InternalProcessor<>();
+			InternalProcessor<E> internalProcessorForEmbeddedBeans = new InternalProcessor<>(targetTable, columnNamingStrategy);
 			internalProcessorForEmbeddedBeans.includeMapping(inset.getConfiguration(),
 					inset.getOverriddenColumnNames(),
 					inset.getOverriddenColumnSizes(),
@@ -163,31 +141,23 @@ public class PropertyMappingResolver<C, T extends Table<T>> {
 		return new PropertyMapping<>(shiftedAccessor, mapping.getColumn(), mapping.isSetByConstructor(), mapping.getReadConverter(), mapping.getWriteConverter(), mapping.isUnique());
 	}
 	
-	protected T getTargetTable() {
-		return targetTable;
-	}
-	
-	protected <E, O> String determineColumnName(EmbeddableLinkage<E, O> linkage, @Nullable String overriddenColumName) {
-		return nullable(overriddenColumName)
-				.elseSet(linkage::getColumnName)
-				.elseSet(linkage::getFieldName)
-				.elseSet(() -> columnNamingStrategy.giveName(AccessorDefinition.giveDefinition(linkage.getAccessor())))
-				.get();
-	}
-	
-	protected <E, O> Size determineColumnSize(EmbeddableLinkage<E, O> linkage, @Nullable Size overriddenColumSize) {
-		return nullable(overriddenColumSize).elseSet(linkage::getColumnSize).get();
-	}
-	
 	/**
-	 * Internal engine driven by {@link #build()} method.
+	 * Internal engine driven by {@link #resolve(org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration, Table, ColumnNamingStrategy)} method.
 	 * Made to store the result in another class than the main one and to decouple configuration from the processing.
 	 *
 	 * @author Guillaume Mary
 	 */
 	protected class InternalProcessor<E> {
 		
+		private final T targetTable;
+		private final ColumnNamingStrategy columnNamingStrategy;
+		
 		private final Set<AbstractPropertyMapping<E, ?, T>> result = new KeepOrderSet<>();
+		
+		protected InternalProcessor(T targetTable, ColumnNamingStrategy columnNamingStrategy) {
+			this.targetTable = targetTable;
+			this.columnNamingStrategy = columnNamingStrategy;
+		}
 		
 		protected <O> void includeMapping(EmbeddableMappingConfiguration<E> mappingConfiguration,
 		                                  ValueAccessPointMap<E, String, ValueAccessPoint<E>> overriddenColumnNames,
@@ -215,6 +185,18 @@ public class PropertyMappingResolver<C, T extends Table<T>> {
 				);
 				result.add(propertyMapping);
 			});
+		}
+		
+		protected <O> String determineColumnName(EmbeddableLinkage<E, O> linkage, @Nullable String overriddenColumName) {
+			return nullable(overriddenColumName)
+					.elseSet(linkage::getColumnName)
+					.elseSet(linkage::getFieldName)
+					.elseSet(() -> columnNamingStrategy.giveName(AccessorDefinition.giveDefinition(linkage.getAccessor())))
+					.get();
+		}
+		
+		protected <O> Size determineColumnSize(EmbeddableLinkage<E, O> linkage, @Nullable Size overriddenColumSize) {
+			return nullable(overriddenColumSize).elseSet(linkage::getColumnSize).get();
 		}
 		
 		/**
@@ -329,42 +311,6 @@ public class PropertyMappingResolver<C, T extends Table<T>> {
 				throw new MappingConfigurationException("Column '" + columnNameToCheck + "' of mapping '" + AccessorDefinition.toString(propertyAccessor)
 						+ "' is already targeted by '" + AccessorDefinition.toString(pawn.getAccessor()) + "'");
 			}
-		}
-	}
-	
-	public static class ResolvedPropertyMapping<C, T extends Table<T>> {
-		
-		private final Set<AbstractPropertyMapping<C, ?, T>> mappings = new KeepOrderSet<>();
-		
-		private final Set<AbstractPropertyMapping<C, ?, ?>> extraTableMappings = new KeepOrderSet<>();
-		
-		public Set<AbstractPropertyMapping<C, ?, T>> getMappings() {
-			return mappings;
-		}
-		
-		public <EXTRATABLE extends Table<EXTRATABLE>> Set<AbstractPropertyMapping<C, ?, EXTRATABLE>> getExtraTableMappings() {
-			return (Set) extraTableMappings;
-		}
-		
-		void addAllMapping(Collection<AbstractPropertyMapping<C, ?, T>> propertyMapping) {
-			mappings.addAll(propertyMapping);
-		}
-		
-		void addMapping(AbstractPropertyMapping<C, ?, T> propertyMapping) {
-			mappings.add(propertyMapping);
-		}
-		
-		void addAllExtraTableMapping(Collection<AbstractPropertyMapping<C, ?, T>> propertyMapping) {
-			extraTableMappings.addAll(propertyMapping);
-		}
-		
-		void addExtraTableMapping(AbstractPropertyMapping<C, ?, ?> propertyMapping) {
-			extraTableMappings.add(propertyMapping);
-		}
-		
-		public Set<Table> collectExtraTables() {
-			return this.extraTableMappings.stream().map(Functions.chain(AbstractPropertyMapping::getColumn, Column::getTable))
-					.collect(Collectors.toSet());
 		}
 	}
 }

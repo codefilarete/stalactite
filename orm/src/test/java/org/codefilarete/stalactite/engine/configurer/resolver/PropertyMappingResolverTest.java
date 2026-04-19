@@ -1,9 +1,12 @@
 package org.codefilarete.stalactite.engine.configurer.resolver;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.PropertyAccessPoint;
@@ -17,7 +20,6 @@ import org.codefilarete.stalactite.engine.PartialRepresentation;
 import org.codefilarete.stalactite.engine.configurer.model.Entity.AbstractPropertyMapping;
 import org.codefilarete.stalactite.engine.configurer.model.Entity.PropertyMapping;
 import org.codefilarete.stalactite.engine.configurer.model.Entity.ReadOnlyPropertyMapping;
-import org.codefilarete.stalactite.engine.configurer.resolver.PropertyMappingResolver.ResolvedPropertyMapping;
 import org.codefilarete.stalactite.engine.model.AbstractCountry;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.King;
@@ -29,7 +31,9 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Converter;
+import org.codefilarete.tool.function.Functions;
 import org.codefilarete.trace.ObjectPrinterBuilder;
 import org.codefilarete.trace.ObjectPrinterBuilder.ObjectPrinter;
 import org.junit.jupiter.api.Test;
@@ -67,13 +71,9 @@ class PropertyMappingResolverTest {
 				.map(Country::setDescription).readonly();
 		
 		T countryTable = (T) new Table("Country");
-		PropertyMappingResolver<Country, T> testInstance = new PropertyMappingResolver<>(embeddableCountryMapping.getConfiguration(),
-				countryTable,
-				new ColumnBinderRegistry(),
-				ColumnNamingStrategy.DEFAULT
-		);
+		PropertyMappingResolver<Country, T> testInstance = new PropertyMappingResolver<>(new ColumnBinderRegistry());
 		
-		ResolvedPropertyMapping<Country, T> actualResult = testInstance.build();
+		ResolvedPropertyMapping<Country, T> actualResult = new ResolvedPropertyMapping<>(testInstance.resolve(embeddableCountryMapping.getConfiguration(), countryTable, ColumnNamingStrategy.DEFAULT), countryTable);
 		
 		assertThat(actualResult.getMappings())
 				.usingElementComparator(ABSTRACT_PROPERTY_MAPPING_COMPARATOR)
@@ -91,13 +91,9 @@ class PropertyMappingResolverTest {
 				.map(Country::getDescription);
 		
 		T countryTable = (T) new Table("Country");
-		PropertyMappingResolver<Country, T> testInstance = new PropertyMappingResolver<>(embeddableCountryMapping.getConfiguration(),
-				countryTable,
-				new ColumnBinderRegistry(),
-				ColumnNamingStrategy.DEFAULT
-		);
+		PropertyMappingResolver<Country, T> testInstance = new PropertyMappingResolver<>(new ColumnBinderRegistry());
 		
-		ResolvedPropertyMapping<Country, T> actualResult = testInstance.build();
+		ResolvedPropertyMapping<Country, T> actualResult = new ResolvedPropertyMapping<>(testInstance.resolve(embeddableCountryMapping.getConfiguration(), countryTable, ColumnNamingStrategy.DEFAULT), countryTable);
 		
 		assertThat(actualResult.getMappings())
 				.usingElementComparator(ABSTRACT_PROPERTY_MAPPING_COMPARATOR)
@@ -115,13 +111,9 @@ class PropertyMappingResolverTest {
 				.map(Country::getDescription);
 		
 		T countryTable = (T) new Table("Country");
-		PropertyMappingResolver<Country, T> testInstance = new PropertyMappingResolver<>(embeddableCountryMapping.getConfiguration(),
-				countryTable,
-				new ColumnBinderRegistry(),
-				ColumnNamingStrategy.DEFAULT
-		);
+		PropertyMappingResolver<Country, T> testInstance = new PropertyMappingResolver<>(new ColumnBinderRegistry());
 		
-		ResolvedPropertyMapping<Country, T> actualResult = testInstance.build();
+		ResolvedPropertyMapping<Country, T> actualResult = new ResolvedPropertyMapping<>(testInstance.resolve(embeddableCountryMapping.getConfiguration(), countryTable, ColumnNamingStrategy.DEFAULT), countryTable);
 		
 		assertThat(actualResult.getMappings())
 				.usingElementComparator(ABSTRACT_PROPERTY_MAPPING_COMPARATOR)
@@ -143,13 +135,9 @@ class PropertyMappingResolverTest {
 				.map(Country::getDescription);
 		
 		T countryTable = (T) new Table("Country");
-		PropertyMappingResolver<Country, T> testInstance = new PropertyMappingResolver<>(embeddableCountryMapping.getConfiguration(),
-				countryTable,
-				new ColumnBinderRegistry(),
-				ColumnNamingStrategy.DEFAULT
-		);
+		PropertyMappingResolver<Country, T> testInstance = new PropertyMappingResolver<>(new ColumnBinderRegistry());
 		
-		ResolvedPropertyMapping<Country, T> actualResult = testInstance.build();
+		ResolvedPropertyMapping<Country, T> actualResult = new ResolvedPropertyMapping<>(testInstance.resolve(embeddableCountryMapping.getConfiguration(), countryTable, ColumnNamingStrategy.DEFAULT), countryTable);
 		
 		assertThat(actualResult.getMappings())
 				.usingElementComparator(ABSTRACT_PROPERTY_MAPPING_COMPARATOR)
@@ -169,13 +157,9 @@ class PropertyMappingResolverTest {
 					.columnSize(Size.length(42));
 		
 		T countryTable = (T) new Table("Country");
-		PropertyMappingResolver<Country, T> testInstance = new PropertyMappingResolver<>(embeddableCountryMapping.getConfiguration(),
-				countryTable,
-				new ColumnBinderRegistry(),
-				ColumnNamingStrategy.DEFAULT
-		);
+		PropertyMappingResolver<Country, T> testInstance = new PropertyMappingResolver<>(new ColumnBinderRegistry());
 		
-		ResolvedPropertyMapping<Country, T> actualResult = testInstance.build();
+		ResolvedPropertyMapping<Country, T> actualResult = new ResolvedPropertyMapping<>(testInstance.resolve(embeddableCountryMapping.getConfiguration(), countryTable, ColumnNamingStrategy.DEFAULT), countryTable);
 		
 		Column<T, String> descriptionColumn = countryTable.getColumn("xx");
 		assertThat(actualResult.getMappings())
@@ -202,13 +186,9 @@ class PropertyMappingResolverTest {
 				);
 		
 		T countryTable = (T) new Table("Country");
-		PropertyMappingResolver<Country, T> testInstance = new PropertyMappingResolver<>(embeddableCountryMapping.getConfiguration(),
-				countryTable,
-				new ColumnBinderRegistry(),
-				ColumnNamingStrategy.DEFAULT
-		);
+		PropertyMappingResolver<Country, T> testInstance = new PropertyMappingResolver<>(new ColumnBinderRegistry());
 		
-		ResolvedPropertyMapping<Country, T> actualResult = testInstance.build();
+		ResolvedPropertyMapping<Country, T> actualResult = new ResolvedPropertyMapping<>(testInstance.resolve(embeddableCountryMapping.getConfiguration(), countryTable, ColumnNamingStrategy.DEFAULT), countryTable);
 		
 		assertThat(actualResult.getMappings())
 				.usingElementComparator(ABSTRACT_PROPERTY_MAPPING_COMPARATOR)
@@ -233,13 +213,9 @@ class PropertyMappingResolverTest {
 				;
 		
 		T countryTable = (T) new Table("Country");
-		PropertyMappingResolver<Country, T> testInstance = new PropertyMappingResolver<>(embeddableCountryMapping.getConfiguration(),
-				countryTable,
-				new ColumnBinderRegistry(),
-				ColumnNamingStrategy.DEFAULT
-		);
+		PropertyMappingResolver<Country, T> testInstance = new PropertyMappingResolver<>(new ColumnBinderRegistry());
 		
-		ResolvedPropertyMapping<Country, T> actualResult = testInstance.build();
+		ResolvedPropertyMapping<Country, T> actualResult = new ResolvedPropertyMapping<>(testInstance.resolve(embeddableCountryMapping.getConfiguration(), countryTable, ColumnNamingStrategy.DEFAULT), countryTable);
 		
 		List<ReadWritePropertyAccessPoint<Country, Timestamp>> embeddablePrefix = Arrays.asList(readWriteAccessPoint(Country::getTimestamp));
 		Column<T, Date> creationDateColumn = countryTable.getColumn("creation_date");
@@ -266,13 +242,9 @@ class PropertyMappingResolverTest {
 				.map(Country::setDescription).readonly().extraTable("This table name doesn't matter at this stage");
 		
 		T countryTable = (T) new Table("Extended_Country");
-		PropertyMappingResolver<Country, T> testInstance = new PropertyMappingResolver<>(embeddableCountryMapping.getConfiguration().getPropertiesMapping(),
-				countryTable,
-				new ColumnBinderRegistry(),
-				ColumnNamingStrategy.DEFAULT
-		);
+		PropertyMappingResolver<Country, T> testInstance = new PropertyMappingResolver<>(new ColumnBinderRegistry());
 		
-		ResolvedPropertyMapping<Country, T> actualResult = testInstance.build();
+		ResolvedPropertyMapping<Country, T> actualResult = new ResolvedPropertyMapping<>(testInstance.resolve(embeddableCountryMapping.getConfiguration().getPropertiesMapping(), countryTable, ColumnNamingStrategy.DEFAULT), countryTable);
 		Map<String, Table> extraTables = Iterables.map(actualResult.collectExtraTables(), Table::getName);
 		
 		assertThat(actualResult.getExtraTableMappings())
@@ -288,10 +260,10 @@ class PropertyMappingResolverTest {
 	/**
 	 * This test demonstrates that {@link PropertyMappingResolver} collects properties of an entity, which includes
 	 * embeddable ones coming from an upper class, which is a different behavior than for an entity inheriting from another
-	 * entity, see {@link #build_mapSuperClass_superClassIsEntity()}
+	 * entity, see {@link #resolve_mapSuperClass_superClassIsEntity()}
 	 */
 	@Test
-	<T extends Table<T>> void build_mapSuperClass_superClassIsEmbeddable() {
+	<T extends Table<T>> void resolve_mapSuperClass_superClassIsEmbeddable() {
 		FluentEmbeddableMappingBuilder<Realm> entityMappingBuilder = embeddableBuilder(Realm.class)
 				.embed(Realm::getKing, embeddableBuilder(King.class)
 						.map(King::getName).columnName("kingName")
@@ -305,13 +277,9 @@ class PropertyMappingResolverTest {
 						.map(Country::setName).readonly());
 		
 		T countryTable = (T) new Table("Extended_Country");
-		PropertyMappingResolver<Realm, T> testInstance = new PropertyMappingResolver<>(entityMappingBuilder.getConfiguration(),
-				countryTable,
-				new ColumnBinderRegistry(),
-				ColumnNamingStrategy.DEFAULT
-		);
+		PropertyMappingResolver<Realm, T> testInstance = new PropertyMappingResolver<>(new ColumnBinderRegistry());
 		
-		ResolvedPropertyMapping<Realm, T> actualResult = testInstance.build();
+		ResolvedPropertyMapping<Realm, T> actualResult = new ResolvedPropertyMapping<>(testInstance.resolve(entityMappingBuilder.getConfiguration(), countryTable, ColumnNamingStrategy.DEFAULT), countryTable);
 		
 		List<ReadWritePropertyAccessPoint<Country, Timestamp>> embeddablePrefix = Arrays.asList(readWriteAccessPoint(Country::getTimestamp));
 		assertThat(actualResult.getMappings())
@@ -328,10 +296,10 @@ class PropertyMappingResolverTest {
 	
 	/**
 	 * This test demonstrates that {@link PropertyMappingResolver} collects only properties of an entity and doesn't
-	 * go up to a parent one (it will do for an embeddable one, see {@link #build_mapSuperClass_superClassIsEmbeddable()}
+	 * go up to a parent one (it will do for an embeddable one, see {@link #resolve_mapSuperClass_superClassIsEmbeddable()}
 	 */
 	@Test
-	<T extends Table<T>> void build_mapSuperClass_superClassIsEntity() {
+	<T extends Table<T>> void resolve_mapSuperClass_superClassIsEntity() {
 		Table extraTable2 = new Table("extraTable2");
 		FluentEntityMappingBuilder<Country, Integer> superConfigurationProvider = entityBuilder(Country.class, int.class)
 				.mapKey(Country::getVersion, IdentifierPolicy.databaseAutoIncrement()).columnName("myProperty")
@@ -352,13 +320,10 @@ class PropertyMappingResolverTest {
 				.mapSuperClass(superConfigurationProvider);
 		
 		T countryTable = (T) new Table("Country");
-		PropertyMappingResolver<Realm, T> testInstance1 = new PropertyMappingResolver<>(entityMappingBuilder.getConfiguration().getPropertiesMapping(),
-				countryTable,
-				new ColumnBinderRegistry(),
-				ColumnNamingStrategy.DEFAULT
-		);
+		PropertyMappingResolver<Realm, T> testInstance = new PropertyMappingResolver<>(new ColumnBinderRegistry());
 		
-		ResolvedPropertyMapping<Realm, T> actualResult1 = testInstance1.build();
+		ResolvedPropertyMapping<Realm, T> actualResult1 = new ResolvedPropertyMapping<>(testInstance.resolve(entityMappingBuilder.getConfiguration().getPropertiesMapping(), countryTable, ColumnNamingStrategy.DEFAULT), countryTable);
+		
 		assertThat(actualResult1.getMappings())
 				.usingElementComparator(ABSTRACT_PROPERTY_MAPPING_COMPARATOR)
 				.withRepresentation(ABSTRACT_PROPERTY_MAPPING_REPRESENTATION)
@@ -375,12 +340,10 @@ class PropertyMappingResolverTest {
 						new ReadOnlyPropertyMapping<>(mutatorByMethodReference(Country::setDescription), extraTable1.getColumn("description"), false, null, false)
 				));
 		
-		PropertyMappingResolver<Country, T> testInstance2 = new PropertyMappingResolver<>(superConfigurationProvider.getConfiguration().getPropertiesMapping(),
-				countryTable,
-				new ColumnBinderRegistry(),
-				ColumnNamingStrategy.DEFAULT
-		);
-		ResolvedPropertyMapping<Country, T> actualResult2 = testInstance2.build();
+		PropertyMappingResolver<Country, T> testInstance2 = new PropertyMappingResolver<>(new ColumnBinderRegistry());
+		
+		ResolvedPropertyMapping<Country, T> actualResult2 = new ResolvedPropertyMapping<>(testInstance2.resolve(superConfigurationProvider.getConfiguration().getPropertiesMapping(), countryTable, ColumnNamingStrategy.DEFAULT), countryTable);
+		
 		List<ReadWritePropertyAccessPoint<Country, Timestamp>> embeddablePrefix = Arrays.asList(readWriteAccessPoint(Country::getTimestamp));
 		assertThat(actualResult2.getMappings())
 				.usingElementComparator(ABSTRACT_PROPERTY_MAPPING_COMPARATOR)
@@ -398,5 +361,52 @@ class PropertyMappingResolverTest {
 						// extra table, they are not mapped
 						new ReadOnlyPropertyMapping<>(mutatorByMethodReference(Country::setName), extraTable2.getColumn("name"), false, null, false)
 				));
+	}
+	
+	
+	public static class ResolvedPropertyMapping<C, T extends Table<T>> {
+		
+		private final Set<AbstractPropertyMapping<C, ?, T>> mappings = new KeepOrderSet<>();
+		
+		private final Set<AbstractPropertyMapping<C, ?, ?>> extraTableMappings = new KeepOrderSet<>();
+		
+		public ResolvedPropertyMapping(Set<AbstractPropertyMapping<C, ?, T>> mapping, T targetTable) {
+			mapping.forEach(mappingPawn -> {
+				if (mappingPawn.getColumn().getTable() == targetTable) {
+					mappings.add(mappingPawn);
+				} else {
+					extraTableMappings.add(mappingPawn);
+				}
+			});
+		}
+		
+		public Set<AbstractPropertyMapping<C, ?, T>> getMappings() {
+			return mappings;
+		}
+		
+		public <EXTRATABLE extends Table<EXTRATABLE>> Set<AbstractPropertyMapping<C, ?, EXTRATABLE>> getExtraTableMappings() {
+			return (Set) extraTableMappings;
+		}
+		
+		void addAllMapping(Collection<AbstractPropertyMapping<C, ?, T>> propertyMapping) {
+			mappings.addAll(propertyMapping);
+		}
+		
+		void addMapping(AbstractPropertyMapping<C, ?, T> propertyMapping) {
+			mappings.add(propertyMapping);
+		}
+		
+		void addAllExtraTableMapping(Collection<AbstractPropertyMapping<C, ?, T>> propertyMapping) {
+			extraTableMappings.addAll(propertyMapping);
+		}
+		
+		void addExtraTableMapping(AbstractPropertyMapping<C, ?, ?> propertyMapping) {
+			extraTableMappings.add(propertyMapping);
+		}
+		
+		public Set<Table> collectExtraTables() {
+			return this.extraTableMappings.stream().map(Functions.chain(AbstractPropertyMapping::getColumn, Column::getTable))
+					.collect(Collectors.toSet());
+		}
 	}
 }

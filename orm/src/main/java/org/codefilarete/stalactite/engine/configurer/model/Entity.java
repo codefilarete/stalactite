@@ -24,10 +24,11 @@ public class Entity<C, I, T extends Table<T>> {
 	 */
 	private AncestorJoin<? super C, T, ?, I> parent;
 	
+	@Nullable
 	private EntityPolymorphism<C, I> polymorphism;
 	
-	public Entity(Class<C> entityClass, T table, IdentifierMapping<C, I> identifierMapping) {
-		this.mapping = new Mapping<>(entityClass, table);
+	public Entity(IdentifierMapping<C, I> identifierMapping, Mapping<C, T> mapping) {
+		this.mapping = mapping;
 		this.identifierMapping = identifierMapping;
 	}
 	
@@ -46,6 +47,10 @@ public class Entity<C, I, T extends Table<T>> {
 	
 	public void setVersioning(@Nullable Versioning<C, ?, T> versioning) {
 		this.versioning = versioning;
+	}
+	
+	public Mapping<C, T> getMapping() {
+		return mapping;
 	}
 	
 	public Class<C> getEntityType() {
@@ -76,10 +81,11 @@ public class Entity<C, I, T extends Table<T>> {
 		this.parent = parent;
 	}
 	
-	public void setPolymorphism(EntityPolymorphism<C, I> polymorphism) {
+	public void setPolymorphism(@Nullable EntityPolymorphism<C, I> polymorphism) {
 		this.polymorphism = polymorphism;
 	}
 	
+	@Nullable
 	public EntityPolymorphism<C, I> getPolymorphism() {
 		return polymorphism;
 	}
