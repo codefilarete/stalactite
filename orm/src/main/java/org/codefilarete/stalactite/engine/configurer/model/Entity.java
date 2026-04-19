@@ -7,42 +7,28 @@ import org.codefilarete.reflection.PropertyMutator;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.Serie;
 
 public class Entity<C, I, T extends Table<T>> {
 	
-	private final Class<C> entityClass;
-	
-	private final T table;
-	
 	private final IdentifierMapping<C, I> identifierMapping;
-	
-	// TODO: add entity factory
-	
-	private final PropertyMappingHolder<C, T> propertyMappingHolder = new PropertyMappingHolder<>();
 	
 	@Nullable
 	private Versioning<C, ?, T> versioning;
 	
-	private final Set<MappingJoin<?, ?, ?>> relations = new KeepOrderSet<>();
+	private final Mapping<C, T> mapping;
 	
-	/** Parent entity of this one, from a mapped-superclass perspective (not as polymorphic one) */
+	/**
+	 * Parent entity of this one, from a mapped-superclass perspective (not as polymorphic one)
+	 */
 	private AncestorJoin<? super C, T, ?, I> parent;
 	
+	private EntityPolymorphism<C, I> polymorphism;
+	
 	public Entity(Class<C> entityClass, T table, IdentifierMapping<C, I> identifierMapping) {
-		this.entityClass = entityClass;
-		this.table = table;
+		this.mapping = new Mapping<>(entityClass, table);
 		this.identifierMapping = identifierMapping;
-	}
-	
-	public Class<C> getEntityClass() {
-		return entityClass;
-	}
-	
-	public T getTable() {
-		return table;
 	}
 	
 	public IdentifierMapping<C, I> getIdentifierMapping() {
@@ -53,26 +39,33 @@ public class Entity<C, I, T extends Table<T>> {
 		return identifierMapping.getIdAccessor();
 	}
 	
-	
-	public PropertyMappingHolder<C, T> getPropertyMappingHolder() {
-		return propertyMappingHolder;
+	@Nullable
+	public Versioning<C, ?, T> getVersioning() {
+		return versioning;
 	}
 	
 	public void setVersioning(@Nullable Versioning<C, ?, T> versioning) {
 		this.versioning = versioning;
 	}
 	
-	@Nullable
-	public Versioning<C, ?, T> getVersioning() {
-		return versioning;
+	public Class<C> getEntityType() {
+		return mapping.getEntityType();
+	}
+	
+	public T getTable() {
+		return mapping.getTable();
+	}
+	
+	public PropertyMappingHolder<C, T> getPropertyMappingHolder() {
+		return mapping.getPropertyMappingHolder();
 	}
 	
 	public Set<MappingJoin<?, ?, ?>> getRelations() {
-		return relations;
+		return mapping.getRelations();
 	}
 	
 	public void addRelation(MappingJoin<?, ?, ?> relation) {
-		relations.add(relation);
+		mapping.addRelation(relation);
 	}
 	
 	public AncestorJoin<? super C, T, ?, I> getParent() {
@@ -81,6 +74,14 @@ public class Entity<C, I, T extends Table<T>> {
 	
 	public void setParent(AncestorJoin<? super C, T, ?, I> parent) {
 		this.parent = parent;
+	}
+	
+	public void setPolymorphism(EntityPolymorphism<C, I> polymorphism) {
+		this.polymorphism = polymorphism;
+	}
+	
+	public EntityPolymorphism<C, I> getPolymorphism() {
+		return polymorphism;
 	}
 	
 	public static abstract class AbstractPropertyMapping<C, O, T extends Table<T>> {
@@ -132,11 +133,11 @@ public class Entity<C, I, T extends Table<T>> {
 		private final Converter<O, ?> writeConverter;
 		
 		public PropertyMapping(ReadWritePropertyAccessPoint<C, O> accessor,
-							   Column<T, O> column,
-							   boolean setByConstructor,
-							   @Nullable Converter<?, O> readConverter,
-							   @Nullable Converter<O, ?> writeConverter,
-							   boolean unique) {
+		                       Column<T, O> column,
+		                       boolean setByConstructor,
+		                       @Nullable Converter<?, O> readConverter,
+		                       @Nullable Converter<O, ?> writeConverter,
+		                       boolean unique) {
 			super(accessor, column, setByConstructor, readConverter, unique);
 			this.writeConverter = writeConverter;
 		}
@@ -155,10 +156,10 @@ public class Entity<C, I, T extends Table<T>> {
 	public static class ReadOnlyPropertyMapping<C, O, T extends Table<T>> extends AbstractPropertyMapping<C, O, T> {
 		
 		public ReadOnlyPropertyMapping(PropertyMutator<C, O> accessor,
-									   Column<T, O> column,
-									   boolean setByConstructor,
-									   @Nullable Converter<?, O> readConverter,
-									   boolean unique) {
+		                               Column<T, O> column,
+		                               boolean setByConstructor,
+		                               @Nullable Converter<?, O> readConverter,
+		                               boolean unique) {
 			super(accessor, column, setByConstructor, readConverter, unique);
 		}
 	}

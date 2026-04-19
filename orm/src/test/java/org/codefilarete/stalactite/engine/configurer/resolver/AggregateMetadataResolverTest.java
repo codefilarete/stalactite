@@ -51,7 +51,7 @@ class AggregateMetadataResolverTest {
 		
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
 		Entity<E, Integer, ?> entity = testInstance.resolveEntityHierarchy(entityMappingBuilder.getConfiguration());
-		assertThat(entity.getEntityClass()).isEqualTo(E.class);
+		assertThat(entity.getEntityType()).isEqualTo(E.class);
 		assertThat(entity.getIdAccessor()).isEqualTo(readWriteAccessPoint(E::getPropE));
 		assertThat(entity.getTable().getName()).isEqualTo("E");
 		assertThat(entity.getPropertyMappingHolder().getWritablePropertyToColumn())
@@ -78,7 +78,7 @@ class AggregateMetadataResolverTest {
 		
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
 		Entity<E, Integer, ?> entity = testInstance.resolveEntityHierarchy(entityMappingBuilder.getConfiguration());
-		assertThat(entity.getEntityClass()).isEqualTo(E.class);
+		assertThat(entity.getEntityType()).isEqualTo(E.class);
 		assertThat(entity.getIdAccessor()).isEqualTo(readWriteAccessPoint(C::getPropC));
 		assertThat(entity.getTable().getName()).isEqualTo("E");
 		assertThat(entity.getPropertyMappingHolder().getWritablePropertyToColumn())
@@ -115,7 +115,7 @@ class AggregateMetadataResolverTest {
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
 		Entity<E, Integer, ?> entity = testInstance.resolveEntityHierarchy(entityMappingBuilder.getConfiguration());
 		
-		assertThat(entity.getEntityClass()).isEqualTo(E.class);
+		assertThat(entity.getEntityType()).isEqualTo(E.class);
 		assertThat(entity.getIdAccessor()).isEqualTo(readWriteAccessPoint(C::getPropC));
 		assertThat(entity.getTable().getName()).isEqualTo("E");
 		assertThat(entity.getPropertyMappingHolder().getWritablePropertyToColumn())
@@ -153,7 +153,7 @@ class AggregateMetadataResolverTest {
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
 		Entity<E, Integer, ?> entity = testInstance.resolveEntityHierarchy(entityMappingBuilder.getConfiguration());
 		
-		assertThat(entity.getEntityClass()).isEqualTo(E.class);
+		assertThat(entity.getEntityType()).isEqualTo(E.class);
 		assertThat(entity.getIdAccessor()).isEqualTo(readWriteAccessPoint(C::getPropC));
 		assertThat(entity.getIdentifierMapping()).isInstanceOf(AssignedByAnotherIdentifierMapping.class);
 		assertThat(entity.getTable().getName()).isEqualTo("E");
@@ -247,7 +247,7 @@ class AggregateMetadataResolverTest {
 			Entity<E, Integer, ?> entity = testInstance.resolveEntityHierarchy(entityMappingBuilder.getConfiguration());
 			
 			
-			assertThat(entity.getEntityClass()).isEqualTo(E.class);
+			assertThat(entity.getEntityType()).isEqualTo(E.class);
 			assertThat(entity.getIdAccessor()).isEqualTo(readWriteAccessPoint(E::getPropE));
 			assertThat(entity.getTable().getName()).isEqualTo("E");
 			assertThat(entity.getPropertyMappingHolder().getWritablePropertyToColumn())
@@ -319,7 +319,7 @@ class AggregateMetadataResolverTest {
 			// - targets table "E", that has a primary key on column "propC" (because C class defines it) 
 			// - has no direct properties
 			// - has one indirect property on table "extraTable1": propB
-			assertThat(entity.getEntityClass()).isEqualTo(E.class);
+			assertThat(entity.getEntityType()).isEqualTo(E.class);
 			assertThat(entity.getIdAccessor()).isEqualTo(readWriteAccessPoint(C::getPropC));
 			assertThat(entity.getTable().getName()).isEqualTo("E");
 			assertThat(entity.getPropertyMappingHolder().getWritablePropertyToColumn()).isEmpty();

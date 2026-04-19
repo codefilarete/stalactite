@@ -105,7 +105,7 @@ public class AggregateResolver {
 		
 		Versioning<C, ?, T> versioning = entity.getVersioning();
 		DefaultEntityMapping<C, I, T> entityMapping = new DefaultEntityMapping<>(
-				entity.getEntityClass(), entity.getTable(),
+				entity.getEntityType(), entity.getTable(),
 				entity.getPropertyMappingHolder().getWritablePropertiesPerAccessor(), entity.getPropertyMappingHolder().getReadonlyPropertiesPerAccessor(),
 				versioning == null ? null : new Duo<>(versioning.getVersioningAccessor(), versioning.getVersioningColumn()),
 				idMapping,
@@ -226,7 +226,7 @@ public class AggregateResolver {
 		IdMapping<C, I> idMapping = mimicIdMapping(entity.getIdentifierMapping(), extratable);
 		
 		DefaultEntityMapping<C, I, EXTRATABLE> entityMapping = new DefaultEntityMapping<>(
-				entity.getEntityClass(), extratable,
+				entity.getEntityType(), extratable,
 				extraTableJoin.getPropertyMappingHolder().getWritablePropertiesPerAccessor(), extraTableJoin.getPropertyMappingHolder().getReadonlyPropertiesPerAccessor(),
 				// no versioning for extra table persister (make no sense because it's managed by the "trunk" persister)
 				null,
@@ -295,7 +295,7 @@ public class AggregateResolver {
 		
 		Versioning<B, ?, RIGHTTABLE> versioning = parent.getAncestor().getVersioning();
 		DefaultEntityMapping<B, I, RIGHTTABLE> entityMapping = new DefaultEntityMapping<>(
-				parent.getAncestor().getEntityClass(), parent.getAncestor().getTable(),
+				parent.getAncestor().getEntityType(), parent.getAncestor().getTable(),
 				writablePropertyToColumn, readonlyPropertyToColumn,
 				versioning == null ? null : new Duo<>(versioning.getVersioningAccessor(), versioning.getVersioningColumn()),
 				idMapping,
