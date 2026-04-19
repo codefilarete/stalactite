@@ -59,6 +59,10 @@ public class NamingConfiguration {
 		return foreignKeyNamingStrategy;
 	}
 	
+	public UniqueConstraintNamingStrategy getUniqueConstraintNamingStrategy() {
+		return uniqueConstraintNamingStrategy;
+	}
+	
 	public UniqueConstraintNamingStrategy getIndexNamingStrategy() {
 		return uniqueConstraintNamingStrategy;
 	}

@@ -1,6 +1,9 @@
 package org.codefilarete.stalactite.engine.configurer;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
@@ -32,129 +35,153 @@ public class NamingConfigurationCollector {
 	
 	public NamingConfiguration collect() {
 		
-		Nullable<TableNamingStrategy> optionalTableNamingStrategy = empty();
-		visitInheritedEntityMappingConfigurations(configuration -> {
-			if (configuration.getTableNamingStrategy() != null && !optionalTableNamingStrategy.isPresent()) {
-				optionalTableNamingStrategy.set(configuration.getTableNamingStrategy());
-			}
-		});
-		TableNamingStrategy tableNamingStrategy = optionalTableNamingStrategy.getOr(TableNamingStrategy.DEFAULT);
-		
+		EntityPropertyCollector<TableNamingStrategy> tableNamingCollector = new EntityPropertyCollector<>(EntityMappingConfiguration::getTableNamingStrategy);
 		// When a ColumnNamingStrategy is defined on mapping, it must be applied to super classes too
-		Nullable<ColumnNamingStrategy> optionalColumnNamingStrategy = empty();
-		class ColumnNamingStrategyCollector implements Consumer<EmbeddableMappingConfiguration> {
-			@Override
-			public void accept(EmbeddableMappingConfiguration embeddableMappingConfiguration) {
-				if (embeddableMappingConfiguration.getColumnNamingStrategy() != null && !optionalColumnNamingStrategy.isPresent()) {
-					optionalColumnNamingStrategy.set(embeddableMappingConfiguration.getColumnNamingStrategy());
-				}
-			}
-		}
-		ColumnNamingStrategyCollector columnNamingStrategyCollector = new ColumnNamingStrategyCollector();
-		visitInheritedEmbeddableMappingConfigurations(entityConfigurationConsumer ->
-				columnNamingStrategyCollector.accept(entityConfigurationConsumer.getPropertiesMapping()), columnNamingStrategyCollector);
-		ColumnNamingStrategy columnNamingStrategy = optionalColumnNamingStrategy.getOr(ColumnNamingStrategy.DEFAULT);
+		EmbeddablePropertyCollector<ColumnNamingStrategy> columnNamingCollector = new EmbeddablePropertyCollector<>(EntityMappingConfiguration::getColumnNamingStrategy, EmbeddableMappingConfiguration::getColumnNamingStrategy);
+		EntityPropertyCollector<ForeignKeyNamingStrategy> foreignKeyNamingCollector = new EntityPropertyCollector<>(EntityMappingConfiguration::getForeignKeyNamingStrategy);
+		EmbeddablePropertyCollector<UniqueConstraintNamingStrategy> uniqueConstraintNamingCollector = new EmbeddablePropertyCollector<>(EntityMappingConfiguration::getUniqueConstraintNamingStrategy, EmbeddableMappingConfiguration::getUniqueConstraintNamingStrategy);
+		EntityPropertyCollector<JoinColumnNamingStrategy> joinColumnNamingCollector = new EntityPropertyCollector<>(EntityMappingConfiguration::getJoinColumnNamingStrategy);
+		EntityPropertyCollector<ColumnNamingStrategy> indexColumnNamingCollector = new EntityPropertyCollector<>(EntityMappingConfiguration::getIndexColumnNamingStrategy);
+		EntityPropertyCollector<AssociationTableNamingStrategy> associationTableNamingCollector = new EntityPropertyCollector<>(EntityMappingConfiguration::getAssociationTableNamingStrategy);
+		EntityPropertyCollector<ElementCollectionTableNamingStrategy> elementCollectionTableNamingCollector = new EntityPropertyCollector<>(EntityMappingConfiguration::getElementCollectionTableNamingStrategy);
+		EntityPropertyCollector<MapEntryTableNamingStrategy> mapEntryTableNamingCollector = new EntityPropertyCollector<>(EntityMappingConfiguration::getEntryMapTableNamingStrategy);
 		
-		Nullable<ForeignKeyNamingStrategy> optionalForeignKeyNamingStrategy = empty();
-		visitInheritedEntityMappingConfigurations(configuration -> {
-			if (configuration.getForeignKeyNamingStrategy() != null && !optionalForeignKeyNamingStrategy.isPresent()) {
-				optionalForeignKeyNamingStrategy.set(configuration.getForeignKeyNamingStrategy());
-			}
-		});
-		ForeignKeyNamingStrategy foreignKeyNamingStrategy = optionalForeignKeyNamingStrategy.getOr(ForeignKeyNamingStrategy.DEFAULT);
+		PropertiesCollector propertiesCollector = new PropertiesCollector();
+		propertiesCollector.addEntityPropertyCollector(tableNamingCollector);
+		propertiesCollector.addEmbeddablePropertyCollector(columnNamingCollector);
+		propertiesCollector.addEntityPropertyCollector(foreignKeyNamingCollector);
+		propertiesCollector.addEmbeddablePropertyCollector(uniqueConstraintNamingCollector);
+		propertiesCollector.addEntityPropertyCollector(joinColumnNamingCollector);
+		propertiesCollector.addEntityPropertyCollector(indexColumnNamingCollector);
+		propertiesCollector.addEntityPropertyCollector(associationTableNamingCollector);
+		propertiesCollector.addEntityPropertyCollector(elementCollectionTableNamingCollector);
+		propertiesCollector.addEntityPropertyCollector(mapEntryTableNamingCollector);
 		
-		Nullable<UniqueConstraintNamingStrategy> optionalUniqueConstraintNamingStrategy = empty();
-		visitInheritedEmbeddableMappingConfigurations(configuration -> {
-			if (configuration.getUniqueConstraintNamingStrategy() != null && !optionalUniqueConstraintNamingStrategy.isPresent()) {
-				optionalUniqueConstraintNamingStrategy.set(configuration.getUniqueConstraintNamingStrategy());
-			}
-		}, embeddableMappingConfiguration -> {
-			if (embeddableMappingConfiguration.getUniqueConstraintNamingStrategy() != null && !optionalUniqueConstraintNamingStrategy.isPresent()) {
-				optionalUniqueConstraintNamingStrategy.set(embeddableMappingConfiguration.getUniqueConstraintNamingStrategy());
-			}
-		});
-		UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy = optionalUniqueConstraintNamingStrategy.getOr(UniqueConstraintNamingStrategy.DEFAULT);
-		
-		Nullable<JoinColumnNamingStrategy> optionalJoinColumnNamingStrategy = empty();
-		visitInheritedEntityMappingConfigurations(configuration -> {
-			if (configuration.getJoinColumnNamingStrategy() != null && !optionalJoinColumnNamingStrategy.isPresent()) {
-				optionalJoinColumnNamingStrategy.set(configuration.getJoinColumnNamingStrategy());
-			}
-		});
-		JoinColumnNamingStrategy joinColumnNamingStrategy = optionalJoinColumnNamingStrategy.getOr(JoinColumnNamingStrategy.JOIN_DEFAULT);
-		
-		Nullable<ColumnNamingStrategy> optionalIndexColumnNamingStrategy = empty();
-		visitInheritedEntityMappingConfigurations(configuration -> {
-			if (configuration.getIndexColumnNamingStrategy() != null && !optionalIndexColumnNamingStrategy.isPresent()) {
-				optionalIndexColumnNamingStrategy.set(configuration.getIndexColumnNamingStrategy());
-			}
-		});
-		ColumnNamingStrategy indexColumnNamingStrategy = optionalIndexColumnNamingStrategy.getOr(ColumnNamingStrategy.INDEX_DEFAULT);
-		
-		Nullable<AssociationTableNamingStrategy> optionalAssociationTableNamingStrategy = empty();
-		visitInheritedEntityMappingConfigurations(configuration -> {
-			if (configuration.getAssociationTableNamingStrategy() != null && !optionalAssociationTableNamingStrategy.isPresent()) {
-				optionalAssociationTableNamingStrategy.set(configuration.getAssociationTableNamingStrategy());
-			}
-		});
-		AssociationTableNamingStrategy associationTableNamingStrategy = optionalAssociationTableNamingStrategy.getOr(AssociationTableNamingStrategy.DEFAULT);
-		
-		Nullable<ElementCollectionTableNamingStrategy> optionalElementCollectionTableNamingStrategy = empty();
-		visitInheritedEntityMappingConfigurations(configuration -> {
-			if (configuration.getElementCollectionTableNamingStrategy() != null && !optionalElementCollectionTableNamingStrategy.isPresent()) {
-				optionalElementCollectionTableNamingStrategy.set(configuration.getElementCollectionTableNamingStrategy());
-			}
-		});
-		ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy = optionalElementCollectionTableNamingStrategy.getOr(ElementCollectionTableNamingStrategy.DEFAULT);
-		
-		Nullable<MapEntryTableNamingStrategy> optionalEntryMapTableNamingStrategy = empty();
-		visitInheritedEntityMappingConfigurations(configuration -> {
-			if (configuration.getEntryMapTableNamingStrategy() != null && !optionalEntryMapTableNamingStrategy.isPresent()) {
-				optionalEntryMapTableNamingStrategy.set(configuration.getEntryMapTableNamingStrategy());
-			}
-		});
-		MapEntryTableNamingStrategy mapEntryTableNamingStrategy = optionalEntryMapTableNamingStrategy.getOr(MapEntryTableNamingStrategy.DEFAULT);
+		visitInheritedConfigurations(propertiesCollector);
 		
 		return new NamingConfiguration(
-				tableNamingStrategy,
-				columnNamingStrategy,
-				foreignKeyNamingStrategy,
-				uniqueConstraintNamingStrategy,
-				elementCollectionTableNamingStrategy,
-				mapEntryTableNamingStrategy,
-				joinColumnNamingStrategy,
-				indexColumnNamingStrategy,
-				associationTableNamingStrategy);
-	}
-	
-	void visitInheritedEntityMappingConfigurations(Consumer<EntityMappingConfiguration> configurationConsumer) {
-		// iterating over mapping from inheritance
-		entityMappingConfiguration.inheritanceIterable().forEach(configurationConsumer);
+				tableNamingCollector.getResult().getOr(TableNamingStrategy.DEFAULT),
+				columnNamingCollector.getResult().getOr(ColumnNamingStrategy.DEFAULT),
+				foreignKeyNamingCollector.getResult().getOr(ForeignKeyNamingStrategy.DEFAULT),
+				uniqueConstraintNamingCollector.getResult().getOr(UniqueConstraintNamingStrategy.DEFAULT),
+				elementCollectionTableNamingCollector.getResult().getOr(ElementCollectionTableNamingStrategy.DEFAULT),
+				mapEntryTableNamingCollector.getResult().getOr(MapEntryTableNamingStrategy.DEFAULT),
+				joinColumnNamingCollector.getResult().getOr(JoinColumnNamingStrategy.JOIN_DEFAULT),
+				indexColumnNamingCollector.getResult().getOr(ColumnNamingStrategy.INDEX_DEFAULT),
+				associationTableNamingCollector.getResult().getOr(AssociationTableNamingStrategy.DEFAULT));
 	}
 	
 	/**
-	 * Visits parent {@link EntityMappingConfiguration} of current entity mapping configuration (including itself), this is an optional operation
+	 * Visits parent {@link EntityMappingConfiguration}s of current entity mapping (including itself), this is an optional operation
 	 * because current configuration may not have a direct entity ancestor.
 	 * Then visits mapped super classes as {@link EmbeddableMappingConfiguration} of the last visited {@link EntityMappingConfiguration}, optional
 	 * operation too.
 	 * This is because inheritance can only have 2 paths :
-	 * - first an optional inheritance from some other entity
-	 * - then an optional inheritance from some mapped super class
+	 * - inheritance from some other entities, then inheritance from some embeddable classes
+	 * - inheritance from some embeddable classes
+	 * This is because embeddable classes can't inherit from any entity (else it would be an embeddable with an identifier, which is an entity)
 	 *
-	 * @param entityConfigurationConsumer
-	 * @param mappedSuperClassConfigurationConsumer
+	 * @param collector
 	 */
-	void visitInheritedEmbeddableMappingConfigurations(Consumer<EntityMappingConfiguration> entityConfigurationConsumer,
-													   Consumer<EmbeddableMappingConfiguration> mappedSuperClassConfigurationConsumer) {
+	void visitInheritedConfigurations(PropertiesCollector collector) {
 		// iterating over mapping from inheritance
-		Holder<EntityMappingConfiguration> lastMapping = new Holder<>();
-		visitInheritedEntityMappingConfigurations(entityMappingConfiguration -> {
-			entityConfigurationConsumer.accept(entityMappingConfiguration);
+		Holder<EntityMappingConfiguration<?, ?>> lastMapping = new Holder<>();
+		// iterating over inheritance mapping from bottom to top
+		entityMappingConfiguration.inheritanceIterable().forEach(entityMappingConfiguration -> {
+			collector.getEntityPropertyCollectors().forEach(entityPropertyCollector -> entityPropertyCollector.accept(entityMappingConfiguration));
+			collector.getEmbeddablePropertyCollectors().forEach(embeddablePropertyCollector -> embeddablePropertyCollector.accept(entityMappingConfiguration));
 			lastMapping.set(entityMappingConfiguration);
 		});
 		if (lastMapping.get().getPropertiesMapping().getMappedSuperClassConfiguration() != null) {
 			// iterating over mapping from mapped super classes
-			lastMapping.get().getPropertiesMapping().getMappedSuperClassConfiguration().inheritanceIterable().forEach(mappedSuperClassConfigurationConsumer);
+			lastMapping.get().getPropertiesMapping().getMappedSuperClassConfiguration().inheritanceIterable().forEach(embeddableMappingConfiguration -> {
+				collector.getEmbeddablePropertyCollectors().forEach(embeddablePropertyCollector -> embeddablePropertyCollector.accept(embeddableMappingConfiguration));
+			});
+		}
+	}
+	
+	private static class PropertiesCollector {
+		
+		private final Set<EntityPropertyCollector<?>> entityPropertyCollectors = new HashSet<>();
+		
+		private final Set<EmbeddablePropertyCollector<?>> embeddablePropertyCollectors = new HashSet<>();
+		
+		PropertiesCollector() {
+		}
+		
+		public <P> void addEntityPropertyCollector(EntityPropertyCollector<P> entityPropertyCollector) {
+			this.entityPropertyCollectors.add(entityPropertyCollector);
+		}
+		
+		public <P> void addEmbeddablePropertyCollector(EmbeddablePropertyCollector<P> embeddablePropertyCollector) {
+			this.embeddablePropertyCollectors.add(embeddablePropertyCollector);
+		}
+		
+		public Set<EntityPropertyCollector<?>> getEntityPropertyCollectors() {
+			return entityPropertyCollectors;
+		}
+		
+		public Set<EmbeddablePropertyCollector<?>> getEmbeddablePropertyCollectors() {
+			return embeddablePropertyCollectors;
+		}
+	}
+	
+	/**
+	 * Will collect a property on entity mappings
+	 * 
+	 * @param <P> the property type to collect
+	 * @author Guillaume Mary
+	 */
+	private static class EntityPropertyCollector<P> implements Consumer<EntityMappingConfiguration> {
+		
+		private final Function<EntityMappingConfiguration, P> propertyGetter;
+		
+		private final Nullable<P> holder = empty();
+		
+		private EntityPropertyCollector(Function<EntityMappingConfiguration, P> propertyGetter) {
+			this.propertyGetter = propertyGetter;
+		}
+		
+		@Override
+		public void accept(EntityMappingConfiguration entityMappingConfiguration) {
+			P property = propertyGetter.apply(entityMappingConfiguration);
+			holder.setIfAbsent(property);
+		}
+		
+		public Nullable<P> getResult() {
+			return holder;
+		}
+	}
+	
+	/**
+	 * Will collect the same property on both entity and embeddable mappings
+	 * 
+	 * @param <P> the property type to collect
+	 * @author Guillaume Mary
+	 */
+	private static class EmbeddablePropertyCollector<P> implements Consumer<EmbeddableMappingConfiguration> {
+		
+		private final EntityPropertyCollector<P> entityPropertyCollector;
+		private final Function<EmbeddableMappingConfiguration, P> embeddablePropertyGetter;
+		
+		private EmbeddablePropertyCollector(Function<EntityMappingConfiguration, P> propertyGetter,
+		                                    Function<EmbeddableMappingConfiguration, P> embeddablePropertyGetter) {
+			this.entityPropertyCollector = new EntityPropertyCollector<>(propertyGetter);
+			this.embeddablePropertyGetter = embeddablePropertyGetter;
+		}
+		
+		public void accept(EntityMappingConfiguration embeddableMappingConfiguration) {
+			entityPropertyCollector.accept(embeddableMappingConfiguration);
+		}
+		
+		@Override
+		public void accept(EmbeddableMappingConfiguration embeddableMappingConfiguration) {
+			P property = embeddablePropertyGetter.apply(embeddableMappingConfiguration);
+			entityPropertyCollector.getResult().setIfAbsent(property);
+		}
+		
+		public Nullable<P> getResult() {
+			return entityPropertyCollector.getResult();
 		}
 	}
 }
