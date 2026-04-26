@@ -42,34 +42,34 @@ import org.codefilarete.tool.Strings;
  */
 public class PropertyAccessorResolver<C, O> {
 	
-	private final PropertyMapping<C, O> propertyMapping;
+	private final AccessPointCoordinates<C, O> accessPointCoordinates;
 	
-	public PropertyAccessorResolver(PropertyMapping<C, O> propertyMapping) {
-		this.propertyMapping = propertyMapping;
+	public PropertyAccessorResolver(AccessPointCoordinates<C, O> accessPointCoordinates) {
+		this.accessPointCoordinates = accessPointCoordinates;
 	}
 	
 	public ReadWritePropertyAccessPoint<C, O> resolve() {
 		PropertyAccessor<C, O> accessor = null;
 		PropertyMutator<C, O> mutator = null;
 		AccessorDefinition accessorDefinition = null;
-		if (this.propertyMapping.getGetter() != null) {
-			AccessorByMethodReference<C, O> getterAsMethodReferenceAccessor = Accessors.accessorByMethodReference(this.propertyMapping.getGetter());
+		if (this.accessPointCoordinates.getGetter() != null) {
+			AccessorByMethodReference<C, O> getterAsMethodReferenceAccessor = Accessors.accessorByMethodReference(this.accessPointCoordinates.getGetter());
 			accessor = getterAsMethodReferenceAccessor;
 			
 			MutatorByMember<C, O, ?> propertySetter;
-			if (this.propertyMapping.getField() != null) {
-				propertySetter = new MutatorByField<>(this.propertyMapping.getField());
+			if (this.accessPointCoordinates.getField() != null) {
+				propertySetter = new MutatorByField<>(this.accessPointCoordinates.getField());
 				accessorDefinition = new AccessorDefinition(getterAsMethodReferenceAccessor.getDeclaringClass(), getterAsMethodReferenceAccessor.getMethodName(), getterAsMethodReferenceAccessor.getPropertyType());
 			} else {
 				propertySetter = resolveMutator(getterAsMethodReferenceAccessor);
 			}
 			mutator = propertySetter;
-		} else if (this.propertyMapping.getSetter() != null) {
-			MutatorByMethodReference<C, O> setterAsMethodReferenceMutator = Accessors.mutatorByMethodReference(this.propertyMapping.getSetter());
+		} else if (this.accessPointCoordinates.getSetter() != null) {
+			MutatorByMethodReference<C, O> setterAsMethodReferenceMutator = Accessors.mutatorByMethodReference(this.accessPointCoordinates.getSetter());
 			mutator = setterAsMethodReferenceMutator;
 			AccessorByMember<C, O, ?> propertyGetter;
-			if (this.propertyMapping.getField() != null) {
-				propertyGetter = new AccessorByField<>(this.propertyMapping.getField());
+			if (this.accessPointCoordinates.getField() != null) {
+				propertyGetter = new AccessorByField<>(this.accessPointCoordinates.getField());
 				accessorDefinition = new AccessorDefinition(setterAsMethodReferenceMutator.getDeclaringClass(), setterAsMethodReferenceMutator.getMethodName(), setterAsMethodReferenceMutator.getPropertyType());
 			} else {
 				propertyGetter = resolveAccessor(setterAsMethodReferenceMutator);
@@ -128,9 +128,7 @@ public class PropertyAccessorResolver<C, O> {
 		}
 	}
 	
-	public interface PropertyMapping<C, O> {
-		
-		//TODO: create some SerializablePropertyAccessor / Mutator and make the below methods return it.
+	public interface AccessPointCoordinates<C, O> {
 		
 		SerializablePropertyAccessor<C, O> getGetter();
 		
