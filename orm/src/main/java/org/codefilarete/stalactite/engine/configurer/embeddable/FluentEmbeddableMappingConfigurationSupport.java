@@ -194,13 +194,13 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					}
 					
 					@Override
-					public OneToOneOptions<C, O> mappedBy(SerializableAccessor<? super O, C> reverseLink) {
+					public OneToOneOptions<C, O> mappedBy(SerializablePropertyAccessor<? super O, C> reverseLink) {
 						oneToOneRelation.setReverseGetter(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneOptions<C, O> mappedBy(SerializableMutator<? super O, C> reverseLink) {
+					public OneToOneOptions<C, O> mappedBy(SerializablePropertyMutator<? super O, C> reverseLink) {
 						oneToOneRelation.setReverseSetter(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}

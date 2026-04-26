@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.dsl.entity;
 
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.relation.OneToOneEntityOptions;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
@@ -24,7 +24,7 @@ public interface FluentMappingBuilderOneToOneOptions<C, I, O> extends FluentEnti
 	 * @param reverseLink opposite owner of the relation (setter)
 	 * @return the global mapping configurer
 	 */
-	FluentMappingBuilderOneToOneOptions<C, I, O> mappedBy(SerializableMutator<? super O, C> reverseLink);
+	FluentMappingBuilderOneToOneOptions<C, I, O> mappedBy(SerializablePropertyMutator<? super O, C> reverseLink);
 	
 	/**
 	 * {@inheritDoc}
@@ -34,7 +34,7 @@ public interface FluentMappingBuilderOneToOneOptions<C, I, O> extends FluentEnti
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentMappingBuilderOneToOneOptions<C, I, O> mappedBy(SerializableAccessor<? super O, C> reverseLink);
+	FluentMappingBuilderOneToOneOptions<C, I, O> mappedBy(SerializablePropertyAccessor<? super O, C> reverseLink);
 	
 	/**
 	 * {@inheritDoc}

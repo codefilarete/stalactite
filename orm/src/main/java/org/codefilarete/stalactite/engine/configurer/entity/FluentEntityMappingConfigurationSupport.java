@@ -841,13 +841,13 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					}
 					
 					@Override
-					public OneToOneEntityOptions<C, J, O> mappedBy(SerializableAccessor<? super O, C> reverseLink) {
+					public OneToOneEntityOptions<C, J, O> mappedBy(SerializablePropertyAccessor<? super O, C> reverseLink) {
 						oneToOneRelation.setReverseGetter(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public OneToOneEntityOptions<C, J, O> mappedBy(SerializableMutator<? super O, C> reverseLink) {
+					public OneToOneEntityOptions<C, J, O> mappedBy(SerializablePropertyMutator<? super O, C> reverseLink) {
 						oneToOneRelation.setReverseSetter(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}

@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.dsl.embeddable;
 
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.relation.OneToOneOptions;
 
 public interface FluentEmbeddableMappingBuilderOneToOneOptions<C, O> extends FluentEmbeddableMappingBuilder<C>,
@@ -23,7 +23,7 @@ public interface FluentEmbeddableMappingBuilderOneToOneOptions<C, O> extends Flu
 	 * @param reverseLink opposite owner of the relation (setter)
 	 * @return the global mapping configurer
 	 */
-	FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mappedBy(SerializableMutator<? super O, C> reverseLink);
+	FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mappedBy(SerializablePropertyMutator<? super O, C> reverseLink);
 	
 	/**
 	 * {@inheritDoc}
@@ -33,7 +33,7 @@ public interface FluentEmbeddableMappingBuilderOneToOneOptions<C, O> extends Flu
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mappedBy(SerializableAccessor<? super O, C> reverseLink);
+	FluentEmbeddableMappingBuilderOneToOneOptions<C, O> mappedBy(SerializablePropertyAccessor<? super O, C> reverseLink);
 	
 	/**
 	 * {@inheritDoc}

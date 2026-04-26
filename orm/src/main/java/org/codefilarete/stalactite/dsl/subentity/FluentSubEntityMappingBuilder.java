@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.reflection.SerializablePropertyAccessor;
 import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.FluentMappings;
@@ -211,7 +209,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		 * @return the global mapping configurer
 		 */
 		@Override
-		FluentMappingBuilderOneToOneOptions<C, I, O> mappedBy(SerializableMutator<? super O, C> reverseLink);
+		FluentMappingBuilderOneToOneOptions<C, I, O> mappedBy(SerializablePropertyMutator<? super O, C> reverseLink);
 		
 		/**
 		 * {@inheritDoc}
@@ -221,7 +219,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		 * @return the global mapping configurer
 		 */
 		@Override
-		FluentMappingBuilderOneToOneOptions<C, I, O> mappedBy(SerializableAccessor<? super O, C> reverseLink);
+		FluentMappingBuilderOneToOneOptions<C, I, O> mappedBy(SerializablePropertyAccessor<? super O, C> reverseLink);
 		
 		/**
 		 * {@inheritDoc}
