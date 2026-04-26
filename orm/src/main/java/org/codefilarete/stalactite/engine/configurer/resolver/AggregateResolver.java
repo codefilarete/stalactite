@@ -62,7 +62,7 @@ public class AggregateResolver {
 	}
 	
 	<C, I> EntityPersister<C, I> resolve(EntityMappingConfiguration<C, I> rootConfiguration) {
-		Entity<C, I, ?> rootEntity = aggregateMetadataResolver.resolveEntityHierarchy(rootConfiguration);
+		Entity<C, I, ?> rootEntity = aggregateMetadataResolver.resolve(rootConfiguration);
 		return build(rootEntity);
 	}
 	
@@ -119,6 +119,7 @@ public class AggregateResolver {
 				persistenceContext.getConnectionConfiguration()
 		);
 		
+		// looking for extra tables: they are stored as ExtraTableJoin in the entity relations 
 		entity.getRelations().stream()
 				.filter(ExtraTableJoin.class::isInstance).map(ExtraTableJoin.class::cast).forEach(extraTableJoin -> {
 					sewExtraTables(extraTableJoin, result, entity);

@@ -36,13 +36,16 @@ import static org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration.
 import static org.codefilarete.tool.Nullable.nullable;
 
 /**
- * A class that collects property mapping including inherited ones through mapped-super-class
+ * A class that collects the configurations inherited by a {@link EntityMappingConfiguration} inheritance to build
+ * a {@link ResolvedConfiguration} for each configuration in the hierarchy.
+ * The {@link ResolvedConfiguration}s are some ready-to-use instances that contain all the necessary information to build
+ * an entity, without the need to go through the whole hierarchy again.
  * 
  * @param <C> the initial configuration entity type
  * @param <I> the configurations identifier type
  * @author Guillaume Mary
  */
-public class InheritanceMappingResolver<C, I> {
+public class InheritanceConfigurationResolver<C, I> {
 	
 	@VisibleForTesting
 	static final SerializableTriFunction<FluentEntityMappingBuilder, SerializablePropertyMutator<?, ?>, IdentifierPolicy, FluentEntityMappingBuilderKeyOptions<?, ?>> IDENTIFIER_METHOD_REFERENCE = FluentEntityMappingBuilder::mapKey;

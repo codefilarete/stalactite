@@ -41,7 +41,7 @@ import static org.codefilarete.stalactite.engine.configurer.resolver.PropertyMap
 import static org.codefilarete.tool.collection.Iterables.first;
 import static org.mockito.Mockito.mock;
 
-class AggregateMetadataResolverTest {
+class InheritanceMetadataResolverTest {
 	
 	@Test
 	void collect_oneEntity() {
@@ -49,8 +49,8 @@ class AggregateMetadataResolverTest {
 				.mapKey(E::getPropE, IdentifierPolicy.databaseAutoIncrement())
 				.map(E::getPropD);
 		
-		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-		Entity<E, Integer, ?> entity = testInstance.resolveEntityHierarchy(entityMappingBuilder.getConfiguration());
+		InheritanceMetadataResolver<E, Integer, ?> testInstance = new InheritanceMetadataResolver<>(new DefaultDialect(), mock(ConnectionConfiguration.class));
+		Entity<E, Integer, ?> entity = testInstance.resolve(entityMappingBuilder.getConfiguration());
 		assertThat(entity.getEntityType()).isEqualTo(E.class);
 		assertThat(entity.getIdAccessor()).isEqualTo(readWriteAccessPoint(E::getPropE));
 		assertThat(entity.getTable().getName()).isEqualTo("E");
@@ -76,8 +76,8 @@ class AggregateMetadataResolverTest {
 								.map(A::getPropA)
 						);
 		
-		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-		Entity<E, Integer, ?> entity = testInstance.resolveEntityHierarchy(entityMappingBuilder.getConfiguration());
+		InheritanceMetadataResolver<E, Integer, ?> testInstance = new InheritanceMetadataResolver<>(new DefaultDialect(), mock(ConnectionConfiguration.class));
+		Entity<E, Integer, ?> entity = testInstance.resolve(entityMappingBuilder.getConfiguration());
 		assertThat(entity.getEntityType()).isEqualTo(E.class);
 		assertThat(entity.getIdAccessor()).isEqualTo(readWriteAccessPoint(C::getPropC));
 		assertThat(entity.getTable().getName()).isEqualTo("E");
@@ -112,8 +112,8 @@ class AggregateMetadataResolverTest {
 						)
 				);
 		
-		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-		Entity<E, Integer, ?> entity = testInstance.resolveEntityHierarchy(entityMappingBuilder.getConfiguration());
+		InheritanceMetadataResolver<E, Integer, ?> testInstance = new InheritanceMetadataResolver<>(new DefaultDialect(), mock(ConnectionConfiguration.class));
+		Entity<E, Integer, ?> entity = testInstance.resolve(entityMappingBuilder.getConfiguration());
 		
 		assertThat(entity.getEntityType()).isEqualTo(E.class);
 		assertThat(entity.getIdAccessor()).isEqualTo(readWriteAccessPoint(C::getPropC));
@@ -150,8 +150,8 @@ class AggregateMetadataResolverTest {
 						)
 				).joiningTables();
 		
-		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-		Entity<E, Integer, ?> entity = testInstance.resolveEntityHierarchy(entityMappingBuilder.getConfiguration());
+		InheritanceMetadataResolver<E, Integer, ?> testInstance = new InheritanceMetadataResolver<>(new DefaultDialect(), mock(ConnectionConfiguration.class));
+		Entity<E, Integer, ?> entity = testInstance.resolve(entityMappingBuilder.getConfiguration());
 		
 		assertThat(entity.getEntityType()).isEqualTo(E.class);
 		assertThat(entity.getIdAccessor()).isEqualTo(readWriteAccessPoint(C::getPropC));
@@ -207,8 +207,8 @@ class AggregateMetadataResolverTest {
 						)
 						.map(Country::setName).readonly());
 		
-		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-		Entity<Realm, Integer, ?> actualResult = testInstance.resolveEntityHierarchy(entityMappingBuilder.getConfiguration());
+		InheritanceMetadataResolver<Realm, Integer, ?> testInstance = new InheritanceMetadataResolver<>(new DefaultDialect(), mock(ConnectionConfiguration.class));
+		Entity<Realm, Integer, ?> actualResult = testInstance.resolve(entityMappingBuilder.getConfiguration());
 		T countryTable = (T) actualResult.getTable();
 		
 		List<ReadWritePropertyAccessPoint<Country, Timestamp>> embeddablePrefix = Arrays.asList(readWriteAccessPoint(Country::getTimestamp));
@@ -243,8 +243,8 @@ class AggregateMetadataResolverTest {
 					.map(E::getPropB).extraTable(extraTable1)
 					.map(E::getPropC).extraTable(extraTable2);
 			
-			AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-			Entity<E, Integer, ?> entity = testInstance.resolveEntityHierarchy(entityMappingBuilder.getConfiguration());
+			InheritanceMetadataResolver<E, Integer, ?> testInstance = new InheritanceMetadataResolver<>(new DefaultDialect(), mock(ConnectionConfiguration.class));
+			Entity<E, Integer, ?> entity = testInstance.resolve(entityMappingBuilder.getConfiguration());
 			
 			
 			assertThat(entity.getEntityType()).isEqualTo(E.class);
@@ -311,8 +311,8 @@ class AggregateMetadataResolverTest {
 									)
 							).joiningTables();
 			
-			AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-			Entity<E, Integer, ?> entity = testInstance.resolveEntityHierarchy(entityMappingBuilder.getConfiguration());
+			InheritanceMetadataResolver<E, Integer, ?> testInstance = new InheritanceMetadataResolver<>(new DefaultDialect(), mock(ConnectionConfiguration.class));
+			Entity<E, Integer, ?> entity = testInstance.resolve(entityMappingBuilder.getConfiguration());
 			
 			// Result:
 			// - is an entity of class E

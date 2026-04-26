@@ -8,8 +8,9 @@ import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
-import org.codefilarete.stalactite.engine.configurer.resolver.InheritanceMappingResolver.ResolvedConfiguration;
+import org.codefilarete.stalactite.engine.configurer.resolver.InheritanceConfigurationResolver.ResolvedConfiguration;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.junit.jupiter.api.Nested;
@@ -18,10 +19,10 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
-import static org.codefilarete.stalactite.engine.configurer.resolver.InheritanceMappingResolver.IDENTIFIER_METHOD_REFERENCE;
+import static org.codefilarete.stalactite.engine.configurer.resolver.InheritanceConfigurationResolver.IDENTIFIER_METHOD_REFERENCE;
 import static org.mockito.Mockito.mock;
 
-class InheritanceMappingResolverTest {
+class InheritanceConfigurationResolverTest {
 	
 	@Nested
 	class Collect {
@@ -31,7 +32,7 @@ class InheritanceMappingResolverTest {
 			FluentEntityMappingBuilder<E, Integer> entityMappingBuilder = entityBuilder(E.class, int.class)
 					.mapKey(E::getPropE, IdentifierPolicy.databaseAutoIncrement());
 			
-			InheritanceMappingResolver<E, Integer> testInstance = new InheritanceMappingResolver<>();
+			InheritanceConfigurationResolver<E, Integer> testInstance = new InheritanceConfigurationResolver<>();
 			KeepOrderSet<ResolvedConfiguration<?, Integer>> configurations = testInstance.resolveConfigurations(entityMappingBuilder.getConfiguration());
 			ResolvedConfiguration<?, Integer> eResolvedConfiguration = Iterables.find(configurations, c -> c.getMappingConfiguration().getEntityType() == E.class);
 			assertThat(eResolvedConfiguration.getTable().getName()).isEqualTo("E");
@@ -68,7 +69,7 @@ class InheritanceMappingResolverTest {
 							)
 					);
 			
-			InheritanceMappingResolver<E, Integer> testInstance = new InheritanceMappingResolver<>();
+			InheritanceConfigurationResolver<E, Integer> testInstance = new InheritanceConfigurationResolver<>();
 			KeepOrderSet<ResolvedConfiguration<?, Integer>> configurations = testInstance.resolveConfigurations(entityMappingBuilder.getConfiguration());
 			
 			ResolvedConfiguration<?, Integer> eResolvedConfiguration = Iterables.find(configurations, c -> c.getMappingConfiguration().getEntityType() == E.class);
@@ -125,7 +126,7 @@ class InheritanceMappingResolverTest {
 							).joiningTables()
 					);
 			
-			InheritanceMappingResolver<E, Integer> testInstance = new InheritanceMappingResolver<>();
+			InheritanceConfigurationResolver<E, Integer> testInstance = new InheritanceConfigurationResolver<>();
 			KeepOrderSet<ResolvedConfiguration<?, Integer>> configurations = testInstance.resolveConfigurations(entityMappingBuilder.getConfiguration());
 			
 			ResolvedConfiguration<?, Integer> eResolvedConfiguration = Iterables.find(configurations, c -> c.getMappingConfiguration().getEntityType() == E.class);
@@ -177,7 +178,7 @@ class InheritanceMappingResolverTest {
 							).joiningTables()
 					);
 			
-			InheritanceMappingResolver<E, Integer> testInstance = new InheritanceMappingResolver<>();
+			InheritanceConfigurationResolver<E, Integer> testInstance = new InheritanceConfigurationResolver<>();
 			KeepOrderSet<ResolvedConfiguration<?, Integer>> configurations = testInstance.resolveConfigurations(entityMappingBuilder.getConfiguration());
 			
 			ResolvedConfiguration<?, Integer> eResolvedConfiguration = Iterables.find(configurations, c -> c.getMappingConfiguration().getEntityType() == E.class);
@@ -227,10 +228,10 @@ class InheritanceMappingResolverTest {
 							)
 					);
 			
-			InheritanceMappingResolver<E, Integer> testInstance = new InheritanceMappingResolver<>();
+			InheritanceConfigurationResolver<E, Integer> testInstance = new InheritanceConfigurationResolver<>();
 			assertThatCode(() -> testInstance.resolveConfigurations(entityMappingBuilder.getConfiguration()))
 					.isInstanceOf(UnsupportedOperationException.class)
-					.hasMessageContaining("Identifier is not defined for o.c.s.e.c.r.InheritanceMappingResolverTest$E, please add one through " +
+					.hasMessageContaining("Identifier is not defined for " + Reflections.toString(E.class) + ", please add one through " +
 							MethodReferences.toMethodReferenceString(IDENTIFIER_METHOD_REFERENCE) + " variants");
 		}
 		
@@ -251,7 +252,7 @@ class InheritanceMappingResolverTest {
 							)
 					);
 			
-			InheritanceMappingResolver<E, Integer> testInstance = new InheritanceMappingResolver<>();
+			InheritanceConfigurationResolver<E, Integer> testInstance = new InheritanceConfigurationResolver<>();
 			assertThatCode(() -> testInstance.resolveConfigurations(entityMappingBuilder.getConfiguration()))
 					.isInstanceOf(MappingConfigurationException.class)
 					.hasMessageContaining("Identifier policy is defined twice in the hierarchy : first by B::getPropB, then by C::getPropC");
