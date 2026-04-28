@@ -11,6 +11,9 @@ import static org.codefilarete.tool.collection.Iterables.pair;
 /**
  * Foreign key between tables
  * 
+ * @param <T> the type of the table owning the foreign key
+ * @param <U> the type of the referenced table
+ * @param <ID> the type of both keys
  * @author Guillaume Mary
  */
 public class ForeignKey<T extends Table<T>, U extends Table<U>, ID> implements Key<T, ID> {
@@ -65,5 +68,11 @@ public class ForeignKey<T extends Table<T>, U extends Table<U>, ID> implements K
 	
 	public U getTargetTable() {
 		return targetTable;
+	}
+	
+	public Key<U, ID> asReferencedKey() {
+		KeyBuilder<U, ID> keyBuilder = Key.from(targetTable);
+		keyBuilder.addAllColumns(columns.values());
+		return keyBuilder.build();
 	}
 }

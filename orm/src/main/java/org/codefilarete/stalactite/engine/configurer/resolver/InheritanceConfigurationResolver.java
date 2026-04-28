@@ -158,7 +158,7 @@ public class InheritanceConfigurationResolver<C, I> {
 				.get();
 	}
 	
-	static class ResolvedConfiguration<C, I> {
+	public static class ResolvedConfiguration<C, I> {
 		
 		private final EntityMappingConfiguration<C, I> mappingConfiguration;
 		

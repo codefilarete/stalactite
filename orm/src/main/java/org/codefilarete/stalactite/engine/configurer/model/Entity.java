@@ -90,6 +90,10 @@ public class Entity<C, I, T extends Table<T>> {
 		return polymorphism;
 	}
 	
+	public boolean isTablePerClass() {
+		return polymorphism != null && polymorphism instanceof TablePerClassPolymorphism;
+	}
+	
 	public static abstract class AbstractPropertyMapping<C, O, T extends Table<T>> {
 		
 		private final PropertyMutator<C, O> accessor;

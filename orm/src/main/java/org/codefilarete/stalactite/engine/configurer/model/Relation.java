@@ -1,6 +1,6 @@
 package org.codefilarete.stalactite.engine.configurer.model;
 
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
@@ -8,7 +8,7 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 public abstract class Relation<SRC, TRGT, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINTYPE>
 		extends MappingJoin<LEFTTABLE, RIGHTTABLE, JOINTYPE> {
 	
-	private final ReversibleAccessor<SRC, TRGT> accessor;
+	private final ReadWriteAccessPoint<SRC, TRGT> accessor;
 	
 	private final boolean fetchSeparately;
 	
@@ -16,9 +16,9 @@ public abstract class Relation<SRC, TRGT, LEFTTABLE extends Table<LEFTTABLE>, RI
 	
 	private final RelationJoin<LEFTTABLE, RIGHTTABLE, JOINTYPE> join;
 	
-	protected Relation(ReversibleAccessor<SRC, TRGT> accessor,
+	protected Relation(ReadWriteAccessPoint<SRC, TRGT> accessor,
 	                   RelationMode relationMode,
-					   boolean fetchSeparately,
+	                   boolean fetchSeparately,
 	                   RelationJoin<LEFTTABLE, RIGHTTABLE, JOINTYPE> join) {
 		super(join);
 		this.accessor = accessor;

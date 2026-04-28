@@ -1,5 +1,7 @@
 package org.codefilarete.stalactite.sql.ddl.structure;
 
+import java.util.Collection;
+
 import org.codefilarete.stalactite.query.api.Fromable;
 import org.codefilarete.stalactite.query.api.JoinLink;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -49,6 +51,10 @@ public interface Key<T extends Fromable, ID /* unused in this class, left for cl
 		public Key<T, ID> build() {
 			return keySupport;
 		}
+		
+		public void addAllColumns(Collection<? extends JoinLink<T, ?>> columns) {
+			this.keySupport.addAllColumns(columns);
+		}
 	}
 	
 	class KeySupport<T extends Fromable, ID> implements Key<T, ID> {
@@ -76,7 +82,11 @@ public interface Key<T extends Fromable, ID /* unused in this class, left for cl
 		}
 		
 		private void addColumn(JoinLink<T, ?> column) {
-			this.columns.add((JoinLink<T, Object>) column);
+			this.columns.add(column);
+		}
+		
+		public void addAllColumns(Collection<? extends JoinLink<T, ?>> columns) {
+			this.columns.addAll(columns);
 		}
 		
 		@Override

@@ -6,12 +6,14 @@ import javax.annotation.Nullable;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.ReadWriteAccessorChain;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
-import org.codefilarete.reflection.SerializableAccessor;
 import org.codefilarete.reflection.SerializableMutator;
+import org.codefilarete.reflection.SerializablePropertyAccessor;
+import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.engine.configurer.ValueAccessPointVariantSupport;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Arrays;
@@ -33,11 +35,14 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	
 	/** the method that gets the "one" entity from the "many" entities */
 	@Nullable
-	private SerializableAccessor<TRGT, SRC> reverseGetter;
+	private SerializablePropertyAccessor<TRGT, SRC> reverseGetter;
 	
 	/** the method that sets the "one" entity onto the "many" entities */
 	@Nullable
-	private SerializableMutator<TRGT, SRC> reverseSetter;
+	private SerializablePropertyMutator<TRGT, SRC> reverseSetter;
+	
+	@Nullable
+	private ValueAccessPointVariantSupport<TRGT, SRC> reverseAccessor;
 	
 	@Nullable
 	private Column<Table, SRC> reverseColumn;
@@ -101,12 +106,13 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	}
 	
 	@Nullable
-	public SerializableAccessor<TRGT, SRC> getReverseGetter() {
+	public SerializablePropertyAccessor<TRGT, SRC> getReverseGetter() {
 		return reverseGetter;
 	}
 	
-	public void setReverseGetter(@Nullable SerializableAccessor<? super TRGT, SRC> reverseGetter) {
-		this.reverseGetter = (SerializableAccessor<TRGT, SRC>) reverseGetter;
+	public void setReverseGetter(@Nullable SerializablePropertyAccessor<? super TRGT, SRC> reverseGetter) {
+		this.reverseGetter = (SerializablePropertyAccessor<TRGT, SRC>) reverseGetter;
+		this.reverseAccessor = new ValueAccessPointVariantSupport<>(this.reverseGetter);
 	}
 	
 	@Nullable
@@ -114,8 +120,14 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 		return reverseSetter;
 	}
 	
-	public void setReverseSetter(@Nullable SerializableMutator<? super TRGT, SRC> reverseSetter) {
-		this.reverseSetter = (SerializableMutator<TRGT, SRC>) reverseSetter;
+	public void setReverseSetter(@Nullable SerializablePropertyMutator<? super TRGT, SRC> reverseSetter) {
+		this.reverseSetter = (SerializablePropertyMutator<TRGT, SRC>) reverseSetter;
+		this.reverseAccessor = new ValueAccessPointVariantSupport<>(this.reverseSetter);
+	}
+	
+	@Nullable
+	public ValueAccessPointVariantSupport<TRGT, SRC> getReverseAccessor() {
+		return reverseAccessor;
 	}
 	
 	@Nullable

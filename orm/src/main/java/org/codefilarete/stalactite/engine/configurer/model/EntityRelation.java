@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.engine.configurer.model;
 
 import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
@@ -17,18 +17,18 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
  * @param <TRGT>
  * @author Guillaume Mary
  */
-public class EntityRelation<SRC, TRGT, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINTYPE> extends Relation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINTYPE> {
+public abstract class EntityRelation<SRC, TRGT, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINTYPE> extends Relation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINTYPE> {
 	
 	private final Entity<TRGT, ?, ?> targetEntity;
 	
 	@Nullable
-	private final ReversibleAccessor<SRC, TRGT> mappedByAccessor;
+	private final ReadWriteAccessPoint<TRGT, SRC> mappedByAccessor;
 	
 	private final BeanRelationFixer<SRC, TRGT> beanRelationFixer;
 	
 	public EntityRelation(Entity<TRGT, ?, RIGHTTABLE> targetEntity,
-						  ReversibleAccessor<SRC, TRGT> accessor,
-						  @Nullable ReversibleAccessor<SRC, TRGT> mappedByAccessor,
+	                      ReadWriteAccessPoint<SRC, TRGT> accessor,
+						  @Nullable ReadWriteAccessPoint<TRGT, SRC> mappedByAccessor,
 						  RelationMode relationMode,
 						  boolean fetchSeparately,
 						  // JOINTYPE can be either SRC PK or TARGET PK for one-to-one. Can only by SRC PK for secondary-table and mapped-superclass
@@ -45,7 +45,7 @@ public class EntityRelation<SRC, TRGT, LEFTTABLE extends Table<LEFTTABLE>, RIGHT
 	}
 	
 	@Nullable
-	public ReversibleAccessor<SRC, TRGT> getMappedByAccessor() {
+	public ReadWriteAccessPoint<TRGT, SRC> getMappedByAccessor() {
 		return mappedByAccessor;
 	}
 	

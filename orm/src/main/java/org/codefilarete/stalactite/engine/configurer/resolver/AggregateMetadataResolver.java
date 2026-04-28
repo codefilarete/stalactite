@@ -5,6 +5,7 @@ import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.EntityPolymorphism;
 import org.codefilarete.stalactite.engine.configurer.resolver.InheritanceConfigurationResolver.ResolvedConfiguration;
+import org.codefilarete.stalactite.engine.configurer.resolver.MetadataSolvingCache.EntitySource;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -32,16 +33,20 @@ public class AggregateMetadataResolver {
 		KeepOrderSet<ResolvedConfiguration<?, I>> bottomToTopConfigurations = inheritanceConfigurationResolver.resolveConfigurations(rootConfiguration);
 		
 		InheritanceMetadataResolver<C, I, ?> keyMappingApplier = new InheritanceMetadataResolver<>(dialect, connectionConfiguration);
-		Entity<C, I, ?> entity = keyMappingApplier.resolve(bottomToTopConfigurations);
+		EntitySource<C, I> entityHierarchy = keyMappingApplier.resolve(bottomToTopConfigurations);
+		Entity<C, I, ?> firstEntity = entityHierarchy.getEntity();
+		
+		RelationsMetadataResolver relationsMetadataResolver = new RelationsMetadataResolver(dialect, connectionConfiguration);
+		relationsMetadataResolver.resolve(entityHierarchy);
 		
 		ResolvedConfiguration<C, I> resolvedRootConfiguration = (ResolvedConfiguration<C, I>) first(bottomToTopConfigurations);
 		PolymorphismPolicy<C> polymorphismPolicy = rootConfiguration.getPolymorphismPolicy();
 		if (polymorphismPolicy != null) {
 			PolymorphismMetadataResolver polymorphismMetadataResolver = new PolymorphismMetadataResolver(dialect);
 			EntityPolymorphism<C, I> entityPolymorphism = polymorphismMetadataResolver.resolve(resolvedRootConfiguration, polymorphismPolicy);
-			entity.setPolymorphism(entityPolymorphism);
+			firstEntity.setPolymorphism(entityPolymorphism);
 		}
 		
-		return entity;
+		return firstEntity;
 	}
 }

@@ -14,6 +14,7 @@ import org.codefilarete.stalactite.engine.configurer.model.ExtraTableJoin;
 import org.codefilarete.stalactite.engine.configurer.model.Mapping;
 import org.codefilarete.stalactite.engine.configurer.model.PropertyMappingHolder;
 import org.codefilarete.stalactite.engine.configurer.resolver.InheritanceConfigurationResolver.ResolvedConfiguration;
+import org.codefilarete.stalactite.engine.configurer.resolver.MetadataSolvingCache.EntitySource;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -55,7 +56,7 @@ public class InheritanceMetadataResolver<C, I, T extends Table<T>> {
 	Entity<C, I, T> resolve(EntityMappingConfiguration<C, I> entityConfiguration) {
 		InheritanceConfigurationResolver<C, I> inheritanceConfigurationResolver = new InheritanceConfigurationResolver<>();
 		KeepOrderSet<ResolvedConfiguration<?, I>> bottomToTopConfigurations = inheritanceConfigurationResolver.resolveConfigurations(entityConfiguration);
-		return resolve(bottomToTopConfigurations);
+		return (Entity<C, I, T>) resolve(bottomToTopConfigurations).getEntity();
 	}
 	
 	/**
@@ -65,18 +66,19 @@ public class InheritanceMetadataResolver<C, I, T extends Table<T>> {
 	 * @param bottomToTopConfigurations the whole configuration hierarchy, ordered from bottom to top, the first one will be transformed into an {@link Entity} instance 
 	 * @return an {@link Entity} instance, filled with identifier and ancestors information
 	 */
-	Entity<C, I, T> resolve(KeepOrderSet<ResolvedConfiguration<?, I>> bottomToTopConfigurations) {
+	EntitySource<C, I> resolve(KeepOrderSet<ResolvedConfiguration<?, I>> bottomToTopConfigurations) {
 		KeyMappingApplier<C, I> keyMappingApplier = new KeyMappingApplier<>(dialect, connectionConfiguration);
 		keyMappingApplier.resolve(bottomToTopConfigurations);
 		
 		return buildHierarchy(bottomToTopConfigurations);
 	}
 	
-	private <X, TT extends Table<TT>> Entity<C, I, T> buildHierarchy(KeepOrderSet<ResolvedConfiguration<?, I>> bottomToTopConfigurations) {
+	<X, TT extends Table<TT>> EntitySource<C, I> buildHierarchy(KeepOrderSet<ResolvedConfiguration<?, I>> bottomToTopConfigurations) {
 		// Handling very first entity as a seed for eventual next iterations on the hierarchy
 		ResolvedConfiguration<C, I> bottomestConfiguration = (ResolvedConfiguration<C, I>) first(bottomToTopConfigurations);
 		T bottomTable = (T) bottomestConfiguration.getTable();
 		Entity<C, I, T> bottomestEntity = this.buildEntity(bottomestConfiguration, bottomTable);
+		EntitySource<C, I> bottomestEntitySource = new EntitySource<>(bottomestEntity, bottomestConfiguration);
 		
 		final Hanger.Holder<TT> previousTable = new Hanger.Holder<>((TT) bottomTable);
 		final Hanger.Holder<Entity<X, I, TT>> previousEntity = new Hanger.Holder<>((Entity<X, I, TT>) bottomestEntity);
@@ -86,15 +88,17 @@ public class InheritanceMetadataResolver<C, I, T extends Table<T>> {
 					TT resolvedTable = (TT) resolvedConfigurationPawn.getTable();
 					if (previousTable.get() != resolvedTable) {
 						Entity<X, I, TT> ancestor = buildEntity(resolvedConfigurationPawn, resolvedTable);
+						bottomestEntitySource.addSource(ancestor, resolvedConfigurationPawn);
 						previousEntity.get().setParent(new AncestorJoin<>(ancestor, new DirectRelationJoin<>(previousTable.get().getPrimaryKey(), resolvedTable.getPrimaryKey())));
 						// preparing next iteration
 						previousTable.set(resolvedTable);
 						previousEntity.set(ancestor);
 					} else {
 						addMapping(previousEntity.get(), resolvedConfigurationPawn, previousTable.get());
+						bottomestEntitySource.addSource(previousEntity.get(), resolvedConfigurationPawn);
 					}
 				});
-		return bottomestEntity;
+		return bottomestEntitySource;
 	}
 	
 	private <X, TT extends Table<TT>> Entity<X, I, TT> buildEntity(ResolvedConfiguration<X, I> configuration, TT table) {

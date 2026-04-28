@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -24,7 +25,7 @@ public class ManyToManyRelation<
 	private final ReversibleAccessor<SRC, TRGT> mappedByAccessor;
 	
 	public ManyToManyRelation(Entity<TRGT, ?, ?> targetEntity,
-	                          ReversibleAccessor<SRC, S> accessor,
+	                          ReadWriteAccessPoint<SRC, S> accessor,
 	                          @Nullable ReversibleAccessor<SRC, TRGT> mappedByAccessor,
 	                          RelationMode relationMode,
 	                          boolean fetchSeparately,
