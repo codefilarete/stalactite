@@ -56,7 +56,7 @@ public class InheritanceMetadataResolver<C, I, T extends Table<T>> {
 	Entity<C, I, T> resolve(EntityMappingConfiguration<C, I> entityConfiguration) {
 		InheritanceConfigurationResolver<C, I> inheritanceConfigurationResolver = new InheritanceConfigurationResolver<>();
 		KeepOrderSet<ResolvedConfiguration<?, I>> bottomToTopConfigurations = inheritanceConfigurationResolver.resolveConfigurations(entityConfiguration);
-		return (Entity<C, I, T>) resolve(bottomToTopConfigurations).getEntity();
+		return resolve(bottomToTopConfigurations).getEntity();
 	}
 	
 	/**
@@ -70,10 +70,10 @@ public class InheritanceMetadataResolver<C, I, T extends Table<T>> {
 		KeyMappingApplier<C, I> keyMappingApplier = new KeyMappingApplier<>(dialect, connectionConfiguration);
 		keyMappingApplier.resolve(bottomToTopConfigurations);
 		
-		return buildHierarchy(bottomToTopConfigurations);
+		return resolveHierarchy(bottomToTopConfigurations);
 	}
 	
-	<X, TT extends Table<TT>> EntitySource<C, I> buildHierarchy(KeepOrderSet<ResolvedConfiguration<?, I>> bottomToTopConfigurations) {
+	<X, TT extends Table<TT>> EntitySource<C, I> resolveHierarchy(KeepOrderSet<ResolvedConfiguration<?, I>> bottomToTopConfigurations) {
 		// Handling very first entity as a seed for eventual next iterations on the hierarchy
 		ResolvedConfiguration<C, I> bottomestConfiguration = (ResolvedConfiguration<C, I>) first(bottomToTopConfigurations);
 		T bottomTable = (T) bottomestConfiguration.getTable();

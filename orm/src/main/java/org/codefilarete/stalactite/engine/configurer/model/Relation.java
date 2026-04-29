@@ -14,8 +14,6 @@ public abstract class Relation<SRC, TRGT, LEFTTABLE extends Table<LEFTTABLE>, RI
 	
 	private final RelationMode relationMode;
 	
-	private final RelationJoin<LEFTTABLE, RIGHTTABLE, JOINTYPE> join;
-	
 	protected Relation(ReadWriteAccessPoint<SRC, TRGT> accessor,
 	                   RelationMode relationMode,
 	                   boolean fetchSeparately,
@@ -24,7 +22,6 @@ public abstract class Relation<SRC, TRGT, LEFTTABLE extends Table<LEFTTABLE>, RI
 		this.accessor = accessor;
 		this.fetchSeparately = fetchSeparately;
 		this.relationMode = relationMode;
-		this.join = join;
 	}
 	
 	/**
@@ -35,8 +32,4 @@ public abstract class Relation<SRC, TRGT, LEFTTABLE extends Table<LEFTTABLE>, RI
 	 * 
 	 */
 	public abstract BeanRelationFixer<SRC, ?> getBeanRelationFixer();
-	
-	public RelationJoin<LEFTTABLE, RIGHTTABLE, JOINTYPE> getJoin() {
-		return join;
-	}
 }

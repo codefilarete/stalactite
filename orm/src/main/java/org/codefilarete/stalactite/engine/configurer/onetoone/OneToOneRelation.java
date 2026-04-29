@@ -6,7 +6,6 @@ import javax.annotation.Nullable;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.ReadWriteAccessorChain;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
-import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.reflection.SerializablePropertyAccessor;
 import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
@@ -33,6 +32,9 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	
 	private boolean nullable = true;
 	
+	@Nullable
+	private ValueAccessPointVariantSupport<TRGT, SRC> reverseAccessor;
+	
 	/** the method that gets the "one" entity from the "many" entities */
 	@Nullable
 	private SerializablePropertyAccessor<TRGT, SRC> reverseGetter;
@@ -40,9 +42,6 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	/** the method that sets the "one" entity onto the "many" entities */
 	@Nullable
 	private SerializablePropertyMutator<TRGT, SRC> reverseSetter;
-	
-	@Nullable
-	private ValueAccessPointVariantSupport<TRGT, SRC> reverseAccessor;
 	
 	@Nullable
 	private Column<Table, SRC> reverseColumn;
@@ -116,7 +115,7 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	}
 	
 	@Nullable
-	public SerializableMutator<TRGT, SRC> getReverseSetter() {
+	public SerializablePropertyMutator<TRGT, SRC> getReverseSetter() {
 		return reverseSetter;
 	}
 	

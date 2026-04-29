@@ -3,7 +3,6 @@ package org.codefilarete.stalactite.engine.configurer;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByField;
 import org.codefilarete.reflection.AccessorByMember;
 import org.codefilarete.reflection.AccessorByMethod;
@@ -12,7 +11,6 @@ import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.AccessorDefinitionDefiner;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
-import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.MutatorByField;
 import org.codefilarete.reflection.MutatorByMember;
 import org.codefilarete.reflection.MutatorByMethod;
@@ -152,12 +150,12 @@ public class PropertyAccessorResolver<C, O> {
 		}
 		
 		@Override
-		public Accessor<C, T> toAccessor() {
+		public PropertyAccessor<C, T> toAccessor() {
 			return this;
 		}
 		
 		@Override
-		public Mutator<C, T> toMutator() {
+		public PropertyMutator<C, T> toMutator() {
 			return this;
 		}
 	}

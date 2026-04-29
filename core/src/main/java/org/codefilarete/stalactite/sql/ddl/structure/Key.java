@@ -8,7 +8,7 @@ import org.codefilarete.tool.collection.KeepOrderSet;
 
 /**
  * Representation of a database key such as Primary Key and Foreign Key, or columns of a join.
- * Can be composed of a single column or multiple ones as in composite key.
+ * Can be composed of a single column or multiple ones as in a composite key.
  * 
  * @param <T> table owning the key, can also be a sub-query
  * @param <ID> object type composed by key columns, left unused here because no method refers to id
@@ -85,7 +85,7 @@ public interface Key<T extends Fromable, ID /* unused in this class, left for cl
 			this.columns.add(column);
 		}
 		
-		public void addAllColumns(Collection<? extends JoinLink<T, ?>> columns) {
+		private void addAllColumns(Collection<? extends JoinLink<T, ?>> columns) {
 			this.columns.addAll(columns);
 		}
 		

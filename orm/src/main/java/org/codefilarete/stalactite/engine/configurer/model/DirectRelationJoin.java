@@ -13,7 +13,7 @@ public class DirectRelationJoin<LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE e
 	}
 	
 	public DirectRelationJoin(ForeignKey<LEFTTABLE, RIGHTTABLE, JOINTYPE> foreignKey) {
-		super(foreignKey, foreignKey.asReferencedKey());
+		super(foreignKey, foreignKey.toReferencedKey());
 	}
 	
 }
