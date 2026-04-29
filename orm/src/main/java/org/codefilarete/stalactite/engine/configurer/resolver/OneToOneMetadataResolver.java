@@ -7,7 +7,7 @@ import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
-import org.codefilarete.stalactite.dsl.RelationalMappingConfiguration;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
@@ -45,16 +45,27 @@ public class OneToOneMetadataResolver {
 	<C, I, X> void resolve(EntitySource<C, I> source) {
 		// configuring one-to-ones owned by this entity
 		source.getResolvedConfigurations().forEach(resolvedConfiguration -> {
-			resolvedConfiguration.getMappingConfiguration().getOneToOnes().forEach(oneToOne -> {
-				Entity<C, I, ?> entity = source.getEntity();
-				this.resolve(entity, oneToOne);
-			});
+			extracted(source.getEntity(), resolvedConfiguration.getMappingConfiguration());
 		});
 		// configuring one-to-ones owned by its ancestors
 		source.<X>getAncestorSources()
-				.forEach((Entity<X, I, ?> ancestor, Set<ResolvedConfiguration<X, I>> resolvedConfigurations) ->
-						resolvedConfigurations.stream().map(ResolvedConfiguration::getMappingConfiguration).map(RelationalMappingConfiguration::getOneToOnes)
-								.forEach(relations -> relations.forEach(oneToOne -> this.resolve(ancestor, oneToOne))));
+				.forEach((Entity<X, I, ?> ancestor, Set<ResolvedConfiguration<X, I>> resolvedConfigurations) -> {
+					resolvedConfigurations.forEach(resolvedConfiguration -> {
+						extracted(ancestor, resolvedConfiguration.getMappingConfiguration());
+					});
+				});
+	}
+	
+	private <C, I> void extracted(Entity<C, I, ?> entity, EntityMappingConfiguration<C, I> mappingConfiguration) {
+		mappingConfiguration.getOneToOnes().forEach(oneToOne -> {
+			this.resolve(entity, oneToOne);
+		});
+		// treating relations embedded in insets
+		mappingConfiguration.getPropertiesMapping().getInsets().forEach(inset -> {
+			inset.getConfigurationProvider().getConfiguration().getOneToOnes().forEach(oneToOne -> {
+				this.resolve(entity, oneToOne.embedInto(inset.getAccessor()));
+			});
+		});
 	}
 	
 	<SRC, TRGT, SRCID, TRGTID, SRCTABLE extends Table<SRCTABLE>, TRGTTABLE extends Table<TRGTTABLE>>

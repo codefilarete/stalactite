@@ -206,12 +206,6 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					}
 					
 					@Override
-					public OneToOneOptions<C, O> reverseJoinColumn(String reverseColumnName) {
-						oneToOneRelation.setReverseColumn(reverseColumnName);
-						return null;	// we can return null because dispatcher will return proxy
-					}
-					
-					@Override
 					public OneToOneOptions<C, O> fetchSeparately() {
 						oneToOneRelation.fetchSeparately();
 						return null;	// we can return null because dispatcher will return proxy

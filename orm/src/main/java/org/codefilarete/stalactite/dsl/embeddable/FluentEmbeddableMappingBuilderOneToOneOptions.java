@@ -39,16 +39,6 @@ public interface FluentEmbeddableMappingBuilderOneToOneOptions<C, O> extends Flu
 	 * {@inheritDoc}
 	 * Declaration overridden to adapt return type to this class.
 	 *
-	 * @param reverseColumnName opposite owner of the relation
-	 * @return the global mapping configurer
-	 */
-	@Override
-	FluentEmbeddableMappingBuilderOneToOneOptions<C, O> reverseJoinColumn(String reverseColumnName);
-	
-	/**
-	 * {@inheritDoc}
-	 * Declaration overridden to adapt return type to this class.
-	 *
 	 * @param relationMode any {@link RelationMode}
 	 * @return the global mapping configurer
 	 */
