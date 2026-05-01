@@ -38,11 +38,12 @@ import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler
 import org.codefilarete.stalactite.mapping.id.manager.CompositeKeyAlreadyAssignedIdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
+
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType.INNER;
 
 public class AggregateResolver {
 	
@@ -67,6 +68,8 @@ public class AggregateResolver {
 	}
 	
 	<C, I> ConfiguredRelationalPersister<C, I> build(Entity<C, I, ?> rootEntity) {
+		// all this is left for compatibility with existing persister builders mechanism
+		// it should be removed (or replaced by a close mechanism) at the very end of the implementation of the new persister build mechanism
 		persisterBuilderContext = PersisterBuilderContext.CURRENT.get();
 		boolean isInitiator = false;
 		if (persisterBuilderContext == null) {
@@ -94,35 +97,41 @@ public class AggregateResolver {
 		}
 	}
 	
-	private <B, C extends B, I, T extends Table<T>,
-			LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
-	ConfiguredRelationalPersister<C, I> buildPersister(Entity<C, I, T> entity) {
+	private <B, C extends B, I, T extends Table<T>>
+	ConfiguredRelationalPersister<C, I> buildPersister(Entity<C, I, T> rootEntity) {
 		// TODO: check for ealready existing persister in the persistence context
 		// TODO: wrap result in an OptimizedUpdatePersister
 		// TODO: be inspired from DefaultPersisterBuilder.build()
 		
-		IdMapping<C, I> idMapping = createIdMapping(entity);
+		IdMapping<C, I> idMapping = createIdMapping(rootEntity);
 		
-		Versioning<C, ?, T> versioning = entity.getVersioning();
+		Versioning<C, ?, T> versioning = rootEntity.getVersioning();
 		DefaultEntityMapping<C, I, T> entityMapping = new DefaultEntityMapping<>(
-				entity.getEntityType(), entity.getTable(),
-				entity.getPropertyMappingHolder().getWritablePropertiesPerAccessor(), entity.getPropertyMappingHolder().getReadonlyPropertiesPerAccessor(),
+				rootEntity.getEntityType(), rootEntity.getTable(),
+				rootEntity.getPropertyMappingHolder().getWritablePropertiesPerAccessor(), rootEntity.getPropertyMappingHolder().getReadonlyPropertiesPerAccessor(),
 				versioning == null ? null : new Duo<>(versioning.getVersioningAccessor(), versioning.getVersioningColumn()),
 				idMapping,
 				null,
 				false
 		);
 		
-		SimpleRelationalEntityPersister<C, I, T> result = new SimpleRelationalEntityPersister<>(
+		SimpleRelationalEntityPersister<C, I, T> rootPersister = new SimpleRelationalEntityPersister<>(
 				entityMapping,
 				persistenceContext.getDialect(),
 				persistenceContext.getConnectionConfiguration()
 		);
 		
+		appendInheritance(rootEntity, rootPersister);
+		
+		return rootPersister;
+	}
+	
+	private <B, C extends B, I, T extends Table<T>, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
+	void appendInheritance(Entity<C, I, T> entity, SimpleRelationalEntityPersister<C, I, T> result) {
 		// looking for extra tables: they are stored as ExtraTableJoin in the entity relations 
 		entity.getRelations().stream()
 				.filter(ExtraTableJoin.class::isInstance).map(ExtraTableJoin.class::cast).forEach(extraTableJoin -> {
-					sewExtraTables(extraTableJoin, result, entity);
+					sewExtraTables(extraTableJoin, result, result, entity, EntityJoinTree.ROOT_JOIN_NAME);
 				});
 		
 		AncestorJoin<B, LEFTTABLE, RIGHTTABLE, I> parent = (AncestorJoin<B, LEFTTABLE, RIGHTTABLE, I>) entity.getParent();
@@ -130,36 +139,27 @@ public class AggregateResolver {
 			SimpleRelationalEntityPersister<B, I, RIGHTTABLE> parentPersister = sewParentEntity(parent, result);
 			
 			DirectRelationJoin<LEFTTABLE, RIGHTTABLE, I> join = parent.getJoin();
-			Key<LEFTTABLE, I> leftKey = join.getLeftKey();
-			Key<RIGHTTABLE, I> rightKey = join.getRightKey();
 			EntityMapping<B, I, RIGHTTABLE> mapping = parentPersister.getMapping();
 			String joinName = result.getEntityJoinTree().addMergeJoin(
 					EntityJoinTree.ROOT_JOIN_NAME,
 					new EntityMergerAdapter<>(mapping),
-					leftKey,
-					rightKey,
-					EntityJoinTree.JoinType.INNER);
+					join.getLeftKey(),
+					join.getRightKey(),
+					INNER);
 			
 			Entity<B, I, RIGHTTABLE> ancestorEntity = parent.getAncestor();
 			ancestorEntity.getRelations().stream()
 					.filter(ExtraTableJoin.class::isInstance).map(ExtraTableJoin.class::cast).forEach(extraTableJoin -> {
-						SimpleRelationalEntityPersister<B, I, RIGHTTABLE> extraTablePersister = buildExtraTablePersister(extraTableJoin, parentPersister, ancestorEntity);
+						
 						// we join the extra table persister to the result persister, not to the ancestor one, to create
 						// a single complete aggregate query instead of multiple partial ones that would need to be
 						// reconciled later
-						result.getEntityJoinTree().addMergeJoin(
-								joinName,
-								new EntityMergerAdapter<>(extraTablePersister.getMapping()),
-								extraTableJoin.getJoin().getLeftKey(),
-								extraTableJoin.getJoin().getRightKey(),
-								EntityJoinTree.JoinType.INNER);
+						sewExtraTables(extraTableJoin, result, parentPersister, ancestorEntity, joinName);
 					});
 			
 			// preparing next iteration
 			parent = (AncestorJoin<B, LEFTTABLE, RIGHTTABLE, I>) parent.getAncestor().getParent();
 		}
-		
-		return result;
 	}
 	
 	@Nullable
@@ -222,12 +222,12 @@ public class AggregateResolver {
 	private <C, I, LEFTTABLE extends Table<LEFTTABLE>, EXTRATABLE extends Table<EXTRATABLE>>
 	SimpleRelationalEntityPersister<C, I, EXTRATABLE> buildExtraTablePersister(ExtraTableJoin<C, LEFTTABLE, EXTRATABLE, I> extraTableJoin,
 	                                                                           SimpleRelationalEntityPersister<C, I, LEFTTABLE> owningPersister,
-	                                                                           Entity<C, I, LEFTTABLE> entity) {
+	                                                                           Entity<C, I, LEFTTABLE> identifierDefiner) {
 		EXTRATABLE extratable = extraTableJoin.getJoin().getRightKey().getTable();
-		IdMapping<C, I> idMapping = mimicIdMapping(entity.getIdentifierMapping(), extratable);
+		IdMapping<C, I> idMapping = mimicIdMapping(identifierDefiner.getIdentifierMapping(), extratable);
 		
 		DefaultEntityMapping<C, I, EXTRATABLE> entityMapping = new DefaultEntityMapping<>(
-				entity.getEntityType(), extratable,
+				identifierDefiner.getEntityType(), extratable,
 				extraTableJoin.getPropertyMappingHolder().getWritablePropertiesPerAccessor(), extraTableJoin.getPropertyMappingHolder().getReadonlyPropertiesPerAccessor(),
 				// no versioning for extra table persister (make no sense because it's managed by the "trunk" persister)
 				null,
@@ -265,20 +265,20 @@ public class AggregateResolver {
 		return extraTablePersister;
 	}
 	
-	private <C, I, LEFTTABLE extends Table<LEFTTABLE>, EXTRATABLE extends Table<EXTRATABLE>>
-	void sewExtraTables(ExtraTableJoin<C, LEFTTABLE, EXTRATABLE, I> extraTableJoin, SimpleRelationalEntityPersister<C, I, LEFTTABLE> result, Entity<C, I, LEFTTABLE> entity) {
-		SimpleRelationalEntityPersister<C, I, EXTRATABLE> extraTablePersister = buildExtraTablePersister(extraTableJoin, result, entity);
+	private <B, C extends B, I, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, EXTRATABLE extends Table<EXTRATABLE>>
+	void sewExtraTables(ExtraTableJoin<B, RIGHTTABLE, EXTRATABLE, I> extraTableJoin,
+	                    SimpleRelationalEntityPersister<C, I, LEFTTABLE> owningPersister,
+	                    SimpleRelationalEntityPersister<B, I, RIGHTTABLE> cascader,
+	                    Entity<B, I, RIGHTTABLE> entity,
+	                    String owningJoinName) {
+		SimpleRelationalEntityPersister<B, I, EXTRATABLE> extraTablePersister = buildExtraTablePersister(extraTableJoin, cascader, entity);
 		
-		DirectRelationJoin<LEFTTABLE, EXTRATABLE, I> join = extraTableJoin.getJoin();
-		Key<LEFTTABLE, I> leftKey = join.getLeftKey();
-		Key<EXTRATABLE, I> rightKey = join.getRightKey();
-		
-		result.getEntityJoinTree().addMergeJoin(
-				EntityJoinTree.ROOT_JOIN_NAME,
+		owningPersister.getEntityJoinTree().addMergeJoin(
+				owningJoinName,
 				new EntityMergerAdapter<>(extraTablePersister.getMapping()),
-				leftKey,
-				rightKey,
-				EntityJoinTree.JoinType.INNER);
+				extraTableJoin.getJoin().getLeftKey(),
+				extraTableJoin.getJoin().getRightKey(),
+				INNER);
 	}
 	
 	private <B, C extends B, I, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
