@@ -1,25 +1,40 @@
 package org.codefilarete.stalactite.engine.configurer.resolver;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.PropertyMutator;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
+import org.codefilarete.stalactite.engine.cascade.AfterDeleteByIdSupport;
+import org.codefilarete.stalactite.engine.cascade.AfterDeleteSupport;
+import org.codefilarete.stalactite.engine.cascade.BeforeInsertSupport;
 import org.codefilarete.stalactite.engine.configurer.DefaultComposedIdentifierAssembler;
 import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListener;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
+import org.codefilarete.stalactite.engine.configurer.manyToOne.ManyToOneOwnedBySourceConfigurer.MandatoryRelationAssertBeforeUpdateListener;
 import org.codefilarete.stalactite.engine.configurer.model.AncestorJoin;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.Entity.Versioning;
 import org.codefilarete.stalactite.engine.configurer.model.ExtraTableJoin;
 import org.codefilarete.stalactite.engine.configurer.model.IdentifierMapping;
+import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
+import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneConfigurerTemplate.MandatoryRelationAssertBeforeInsertListener;
+import org.codefilarete.stalactite.engine.configurer.onetoone.OrphanRemovalOnUpdate;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
@@ -33,15 +48,22 @@ import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
+import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
+import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.CompositeKeyAlreadyAssignedIdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
+import org.codefilarete.stalactite.query.api.JoinLink;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.collection.PairIterator;
+import org.codefilarete.tool.function.Functions.NullProofFunction;
+import org.codefilarete.tool.function.Predicates;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType.INNER;
 
@@ -121,7 +143,18 @@ public class AggregateResolver {
 				persistenceContext.getConnectionConfiguration()
 		);
 		
+		// when identifier policy is already-assigned one, we must ensure that entity is marked as persisted when it comes back from database
+		// because user may forget to / can't mark it as such
+		IdentifierInsertionManager<C, I> identifierInsertionManager = rootPersister.getMapping().getIdMapping().getIdentifierInsertionManager();
+		if (identifierInsertionManager instanceof AlreadyAssignedIdentifierManager) {
+			// Transferring identifier manager InsertListener to here
+			rootPersister.addInsertListener(((AlreadyAssignedIdentifierManager<C, I>) identifierInsertionManager).getInsertListener());
+			rootPersister.addSelectListener(((AlreadyAssignedIdentifierManager<C, I>) identifierInsertionManager).getSelectListener());
+		}
+		
 		appendInheritance(rootEntity, rootPersister);
+		
+		appendOneToOnes(rootEntity, rootPersister);
 		
 		return rootPersister;
 	}
@@ -160,6 +193,112 @@ public class AggregateResolver {
 			// preparing next iteration
 			parent = (AncestorJoin<B, LEFTTABLE, RIGHTTABLE, I>) parent.getAncestor().getParent();
 		}
+	}
+	
+	private <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
+	void appendOneToOnes(Entity<SRC, SRCID, RIGHTTABLE> entity, SimpleRelationalEntityPersister<SRC, SRCID, LEFTTABLE> result) {
+		entity.getRelations().stream()
+				.filter(ResolvedOneToOneRelation.class::isInstance)
+				.map(ResolvedOneToOneRelation.class::cast)
+				.forEach(relation -> {
+					ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> resolvedRelation = relation;
+					ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = buildPersister(resolvedRelation.getTargetEntity());
+					targetPersister.joinAsOne(result,
+							resolvedRelation.getAccessor(),
+							resolvedRelation.getJoin().getLeftKey(),
+							resolvedRelation.getJoin().getRightKey(),
+							null,
+							resolvedRelation.getBeanRelationFixer(),
+							true,
+							resolvedRelation.isFetchSeparately());
+					
+					
+					boolean orphanRemoval = resolvedRelation.getRelationMode() == CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
+					boolean writeAuthorized = resolvedRelation.getRelationMode() != CascadeOptions.RelationMode.READ_ONLY;
+					if (writeAuthorized) {
+						// NB: "delete removed" will be treated internally by updateCascade() and deleteCascade()
+						
+						ReadWritePropertyAccessPoint<SRC, TRGT> targetAccessor = resolvedRelation.getAccessor();
+						// if cascade is mandatory, then adding nullability checking before insert
+						if (resolvedRelation.isMandatory()) {
+							result.addInsertListener(new MandatoryRelationAssertBeforeInsertListener<>(targetAccessor));
+							result.addUpdateListener(new MandatoryRelationAssertBeforeUpdateListener<>(targetAccessor));
+						}
+						
+						Map<Column<LEFTTABLE, ?>, Column<RIGHTTABLE, ?>> keyColumnsMapping;
+						PairIterator<JoinLink<LEFTTABLE, ?>, JoinLink<RIGHTTABLE, ?>> keyColumnsIterator = new PairIterator<>(resolvedRelation.getJoin().getLeftKey().getColumns(), resolvedRelation.getJoin().getRightKey().getColumns());
+						keyColumnsMapping = Iterables.map(() -> keyColumnsIterator, d -> (Column<LEFTTABLE, ?>) d.getLeft(), d -> (Column<RIGHTTABLE, ?>) d.getRight());
+						
+						
+						IdMapping<TRGT, TRGTID> trgtIdMapping = targetPersister.getMapping().getIdMapping();
+						ShadowColumnValueProvider<SRC, LEFTTABLE> foreignKeyValueProvider = new ShadowColumnValueProvider<SRC, LEFTTABLE>() {
+							@Override
+							public Set<Column<LEFTTABLE, ?>> getColumns() {
+								return keyColumnsMapping.keySet();
+							}
+							
+							@Override
+							public Map<Column<LEFTTABLE, ?>, ?> giveValue(SRC bean) {
+								TRGTID trgtid = trgtIdMapping.getIdAccessor().getId(targetAccessor.get(bean));
+								Map<Column<RIGHTTABLE, ?>, ?> columnValues = trgtIdMapping.<RIGHTTABLE>getIdentifierAssembler().getColumnValues(trgtid);
+								return Maps.innerJoinOnValuesAndKeys(keyColumnsMapping, columnValues);
+							}
+						};
+						
+						// Managing insert cascade
+						result.getMapping().addShadowColumnInsert(foreignKeyValueProvider);
+						// adding cascade treatment: before source insert, target is inserted to comply with foreign key constraint
+						result.addInsertListener(new BeforeInsertSupport<>(targetPersister::persist, targetAccessor::get, Objects::nonNull));
+						
+						// Managing update cascade
+						if (orphanRemoval) {
+							result.addUpdateListener(new OrphanRemovalOnUpdate<>(targetPersister, targetAccessor));
+						}
+						result.getMapping().addShadowColumnUpdate(foreignKeyValueProvider);
+						// - insert non-persisted target instances to fulfill foreign key requirement
+						Function<SRC, TRGT> targetProviderAsFunction = new NullProofFunction<>(targetAccessor::get);
+						result.addUpdateListener(new UpdateListener<SRC>() {
+							
+							private final Predicate<TRGT> newInstancePredicate = Predicates.<TRGT>predicate(Objects::nonNull).and(targetPersister.getMapping()::isNew);
+							
+							@Override
+							public void beforeUpdate(Iterable<? extends Duo<SRC, SRC>> payloads, boolean allColumnsStatement) {
+								// we only insert new instances
+								targetPersister.persist(Iterables.stream(payloads).map(duo -> targetProviderAsFunction.apply(duo.getLeft()))
+										.filter(newInstancePredicate).collect(Collectors.toSet()));
+							}
+						});
+						// - after source update, target is updated too
+						result.addUpdateListener(new UpdateListener<SRC>() {
+							
+							@Override
+							public void afterUpdate(Iterable<? extends Duo<SRC, SRC>> payloads, boolean allColumnsStatement) {
+								List<Duo<TRGT, TRGT>> targetsToUpdate = Iterables.collect(payloads,
+										// targets of nullified relations don't need to be updated 
+										e -> getTarget(e.getLeft()) != null,
+										e -> getTargets(e.getLeft(), e.getRight()),
+										ArrayList::new);
+								targetPersister.update(targetsToUpdate, allColumnsStatement);
+							}
+							
+							private Duo<TRGT, TRGT> getTargets(SRC modifiedTrigger, SRC unmodifiedTrigger) {
+								return new Duo<>(getTarget(modifiedTrigger), getTarget(unmodifiedTrigger));
+							}
+							
+							private TRGT getTarget(SRC src) {
+								return targetAccessor.get(src);
+							}
+						});
+						
+						// Managing delete cascade
+						if (orphanRemoval) {
+							// adding cascade treatment: target is deleted after source deletion (because of foreign key constraint)
+							result.addDeleteListener(new AfterDeleteSupport<>(targetPersister::delete, targetAccessor::get, Objects::nonNull));
+							// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
+							result.addDeleteByIdListener(new AfterDeleteByIdSupport<>(targetPersister::delete, targetAccessor::get, Objects::nonNull));
+						} // else : no target entities deletion asked (no delete orphan) : nothing more to do than deleting the source entity
+					}
+				});
 	}
 	
 	@Nullable

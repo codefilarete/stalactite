@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import org.codefilarete.reflection.ReadWriteAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
@@ -28,7 +28,7 @@ public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>, LE
 	
 	private final RIGHTTABLE collectionTable;
 	
-	public ElementCollectionRelation(ReadWriteAccessPoint<SRC, S> accessor,
+	public ElementCollectionRelation(ReadWritePropertyAccessPoint<SRC, S> accessor,
 	                                 RelationMode relationMode,
 	                                 boolean fetchSeparately,
 	                                 DirectRelationJoin<LEFTTABLE, RIGHTTABLE, SRCID> join,

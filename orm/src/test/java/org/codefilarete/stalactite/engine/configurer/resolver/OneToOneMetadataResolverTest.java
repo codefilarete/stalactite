@@ -4,6 +4,7 @@ import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.MappingJoin;
+import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.model.Car;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;

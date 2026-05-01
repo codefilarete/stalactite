@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.engine.configurer.model;
 
 import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.ReadWriteAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
@@ -19,16 +19,16 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
  */
 public abstract class EntityRelation<SRC, TRGT, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINTYPE> extends Relation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINTYPE> {
 	
-	private final Entity<TRGT, ?, ?> targetEntity;
+	private final Entity<TRGT, ?, RIGHTTABLE> targetEntity;
 	
 	@Nullable
-	private final ReadWriteAccessPoint<TRGT, SRC> mappedByAccessor;
+	private final ReadWritePropertyAccessPoint<TRGT, SRC> mappedByAccessor;
 	
 	private final BeanRelationFixer<SRC, TRGT> beanRelationFixer;
 	
 	public EntityRelation(Entity<TRGT, ?, RIGHTTABLE> targetEntity,
-	                      ReadWriteAccessPoint<SRC, TRGT> accessor,
-						  @Nullable ReadWriteAccessPoint<TRGT, SRC> mappedByAccessor,
+	                      ReadWritePropertyAccessPoint<SRC, TRGT> accessor,
+						  @Nullable ReadWritePropertyAccessPoint<TRGT, SRC> mappedByAccessor,
 						  RelationMode relationMode,
 						  boolean fetchSeparately,
 						  // JOINTYPE can be either SRC PK or TARGET PK for one-to-one. Can only by SRC PK for secondary-table and mapped-superclass
@@ -40,12 +40,12 @@ public abstract class EntityRelation<SRC, TRGT, LEFTTABLE extends Table<LEFTTABL
 		this.beanRelationFixer = beanRelationFixer;
 	}
 	
-	public Entity<TRGT, ?, ?> getTargetEntity() {
-		return targetEntity;
+	public <TRGTID> Entity<TRGT, TRGTID, RIGHTTABLE> getTargetEntity() {
+		return (Entity<TRGT, TRGTID, RIGHTTABLE>) targetEntity;
 	}
 	
 	@Nullable
-	public ReadWriteAccessPoint<TRGT, SRC> getMappedByAccessor() {
+	public ReadWritePropertyAccessPoint<TRGT, SRC> getMappedByAccessor() {
 		return mappedByAccessor;
 	}
 	

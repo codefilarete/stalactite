@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.engine.configurer.model;
 
 import java.util.function.Supplier;
 
-import org.codefilarete.reflection.ReadWriteAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -17,7 +17,7 @@ public abstract class ComponentRelation<SRC, TRGT, S, LEFTTABLE extends Table<LE
 	
 	private Column<?, Integer> indexingColumn;
 	
-	protected ComponentRelation(ReadWriteAccessPoint<SRC, S> accessor,
+	protected ComponentRelation(ReadWritePropertyAccessPoint<SRC, S> accessor,
 	                            RelationMode relationMode,
 	                            boolean fetchSeparately,
 	                            RelationJoin<LEFTTABLE, RIGHTTABLE, JOINTYPE> join,

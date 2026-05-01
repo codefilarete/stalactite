@@ -14,6 +14,7 @@ import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.ValueAccessPointVariantSupport;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
+import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.InheritanceConfigurationResolver.ResolvedConfiguration;
 import org.codefilarete.stalactite.engine.configurer.resolver.MetadataSolvingCache.EntitySource;
@@ -84,7 +85,7 @@ public class OneToOneMetadataResolver {
 			boolean canCreateForeignKey = !source.isTablePerClass();
 			if (canCreateForeignKey) {
 				if (!targetEntity.isTablePerClass()) {
-					OneToOneOwnedByTargetHelper<SRC, TRGT, SRCID, TRGTID, SRCTABLE, TRGTTABLE, SRCID> helper = new OneToOneOwnedByTargetHelper<>();
+					OneToOneOwnedByTargetHelper<SRC, TRGT, SRCID, TRGTID, SRCTABLE, TRGTTABLE> helper = new OneToOneOwnedByTargetHelper<>();
 					ForeignKey<TRGTTABLE, SRCTABLE, SRCID> foreignKey = helper.determineForeignKeyColumns(oneToOne, source.getTable().getPrimaryKey(), targetEntity.getTable(), namingConfiguration.getJoinColumnNamingStrategy(), namingConfiguration.getForeignKeyNamingStrategy());
 					tablesJoin = new DirectRelationJoin<>(foreignKey.toReferencedKey(), foreignKey);
 				}
@@ -93,7 +94,7 @@ public class OneToOneMetadataResolver {
 			relationFixer = determineRelationFixer(oneToOne);
 		} else {
 			// source owns the relation
-			OneToOneOwnedBySourceHelper<SRC, TRGT, SRCID, TRGTID, SRCTABLE, TRGTTABLE, TRGTID> helper = new OneToOneOwnedBySourceHelper<>();
+			OneToOneOwnedBySourceHelper<SRC, TRGT, SRCID, TRGTID, SRCTABLE, TRGTTABLE> helper = new OneToOneOwnedBySourceHelper<>();
 			ForeignKey<SRCTABLE, TRGTTABLE, TRGTID> foreignKey = helper.determineForeignKeyColumns(oneToOne, source.getTable(), targetEntity.getTable().getPrimaryKey(), namingConfiguration.getJoinColumnNamingStrategy(), namingConfiguration.getForeignKeyNamingStrategy());
 			tablesJoin = new DirectRelationJoin<>(foreignKey);
 			
@@ -108,7 +109,8 @@ public class OneToOneMetadataResolver {
 				oneToOne.isFetchSeparately(),
 				tablesJoin,
 				relationFixer,
-				oneToOne.isRelationOwnedByTarget()
+				oneToOne.isRelationOwnedByTarget(),
+				!oneToOne.isNullable()
 		);
 		source.addRelation(entitiesLink);
 	}
@@ -156,7 +158,7 @@ public class OneToOneMetadataResolver {
 		return result;
 	}
 	
-	private class OneToOneOwnedBySourceHelper<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID> {
+	private class OneToOneOwnedBySourceHelper<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>> {
 		
 		protected ForeignKey<LEFTTABLE, RIGHTTABLE, TRGTID> determineForeignKeyColumns(OneToOneRelation<SRC, TRGT, ?> oneToOneRelation,
 		                                                                               LEFTTABLE leftTable,
@@ -183,7 +185,7 @@ public class OneToOneMetadataResolver {
 		
 	}
 	
-	private class OneToOneOwnedByTargetHelper<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID> {
+	private class OneToOneOwnedByTargetHelper<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>> {
 		
 		protected ForeignKey<RIGHTTABLE, LEFTTABLE, SRCID> determineForeignKeyColumns(OneToOneRelation<SRC, TRGT, ?> oneToOneRelation,
 		                                                                              PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey,

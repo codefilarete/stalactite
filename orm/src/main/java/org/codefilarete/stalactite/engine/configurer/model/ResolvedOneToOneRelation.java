@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.engine.configurer.model;
 
 import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.ReadWriteAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
@@ -22,19 +22,27 @@ public class ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE extends Table<LEFTTAB
 	
 	private final boolean ownedByTarget;
 	
+	private final boolean mandatory;
+	
 	public ResolvedOneToOneRelation(Entity<TRGT, ?, RIGHTTABLE> targetEntity,
-	                                ReadWriteAccessPoint<SRC, TRGT> accessor,
-	                                @Nullable ReadWriteAccessPoint<TRGT, SRC> mappedByAccessor,
+	                                ReadWritePropertyAccessPoint<SRC, TRGT> accessor,
+	                                @Nullable ReadWritePropertyAccessPoint<TRGT, SRC> mappedByAccessor,
 	                                CascadeOptions.RelationMode relationMode,
 	                                boolean fetchSeparately,
 	                                DirectRelationJoin<LEFTTABLE, RIGHTTABLE, JOINTYPE> join,
 	                                BeanRelationFixer<SRC, TRGT> beanRelationFixer,
-									boolean ownedByTarget) {
+	                                boolean ownedByTarget,
+									boolean mandatory) {
 		super(targetEntity, accessor, mappedByAccessor, relationMode, fetchSeparately, join, beanRelationFixer);
 		this.ownedByTarget = ownedByTarget;
+		this.mandatory = mandatory;
 	}
 	
 	public boolean isOwnedByTarget() {
 		return ownedByTarget;
+	}
+	
+	public boolean isMandatory() {
+		return mandatory;
 	}
 }

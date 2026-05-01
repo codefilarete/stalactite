@@ -4,8 +4,7 @@ import java.util.Collection;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-import org.codefilarete.reflection.ReadWriteAccessPoint;
-import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
@@ -22,11 +21,11 @@ public class ManyToManyRelation<
 	private final Entity<TRGT, ?, ?> targetEntity;
 	
 	@Nullable
-	private final ReversibleAccessor<SRC, TRGT> mappedByAccessor;
+	private final ReadWritePropertyAccessPoint<SRC, TRGT> mappedByAccessor;
 	
 	public ManyToManyRelation(Entity<TRGT, ?, ?> targetEntity,
-	                          ReadWriteAccessPoint<SRC, S> accessor,
-	                          @Nullable ReversibleAccessor<SRC, TRGT> mappedByAccessor,
+	                          ReadWritePropertyAccessPoint<SRC, S> accessor,
+	                          @Nullable ReadWritePropertyAccessPoint<SRC, TRGT> mappedByAccessor,
 	                          RelationMode relationMode,
 	                          boolean fetchSeparately,
 	                          IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID> join,
@@ -42,7 +41,7 @@ public class ManyToManyRelation<
 	}
 	
 	@Nullable
-	public ReversibleAccessor<SRC, TRGT> getMappedByAccessor() {
+	public ReadWritePropertyAccessPoint<SRC, TRGT> getMappedByAccessor() {
 		return mappedByAccessor;
 	}
 }

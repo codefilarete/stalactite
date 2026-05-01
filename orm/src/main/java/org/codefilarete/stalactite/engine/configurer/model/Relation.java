@@ -1,6 +1,6 @@
 package org.codefilarete.stalactite.engine.configurer.model;
 
-import org.codefilarete.reflection.ReadWriteAccessPoint;
+import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
@@ -8,13 +8,13 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 public abstract class Relation<SRC, TRGT, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINTYPE>
 		extends MappingJoin<LEFTTABLE, RIGHTTABLE, JOINTYPE> {
 	
-	private final ReadWriteAccessPoint<SRC, TRGT> accessor;
+	private final ReadWritePropertyAccessPoint<SRC, TRGT> accessor;
 	
 	private final boolean fetchSeparately;
 	
 	private final RelationMode relationMode;
 	
-	protected Relation(ReadWriteAccessPoint<SRC, TRGT> accessor,
+	protected Relation(ReadWritePropertyAccessPoint<SRC, TRGT> accessor,
 	                   RelationMode relationMode,
 	                   boolean fetchSeparately,
 	                   RelationJoin<LEFTTABLE, RIGHTTABLE, JOINTYPE> join) {
@@ -22,6 +22,18 @@ public abstract class Relation<SRC, TRGT, LEFTTABLE extends Table<LEFTTABLE>, RI
 		this.accessor = accessor;
 		this.fetchSeparately = fetchSeparately;
 		this.relationMode = relationMode;
+	}
+	
+	public ReadWritePropertyAccessPoint<SRC, TRGT> getAccessor() {
+		return accessor;
+	}
+	
+	public boolean isFetchSeparately() {
+		return fetchSeparately;
+	}
+	
+	public RelationMode getRelationMode() {
+		return relationMode;
 	}
 	
 	/**
