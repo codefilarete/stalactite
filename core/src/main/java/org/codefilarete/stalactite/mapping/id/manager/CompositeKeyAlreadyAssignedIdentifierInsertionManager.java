@@ -29,16 +29,7 @@ public class CompositeKeyAlreadyAssignedIdentifierInsertionManager<C, I> extends
 																 Consumer<C> markAsPersistedFunction,
 																 Function<C, Boolean> isPersistedFunction) {
 		super(identifierType, markAsPersistedFunction, isPersistedFunction);
-		this.currentMarkedPersistedEntities = null;
-	}
-	
-	public CompositeKeyAlreadyAssignedIdentifierInsertionManager(Class<I> identifierType) {
-		this(identifierType, new ThreadLocal<>());
-	}
-	
-	private CompositeKeyAlreadyAssignedIdentifierInsertionManager(Class<I> identifierType, ThreadLocal<Set<C>> currentMarkedPersistedEntities) {
-		super(identifierType, o -> currentMarkedPersistedEntities.get().add(o), o -> currentMarkedPersistedEntities.get().contains(o));
-		this.currentMarkedPersistedEntities = currentMarkedPersistedEntities;
+		this.currentMarkedPersistedEntities = new ThreadLocal<>();
 	}
 	
 	public PersistListener<C> getPersistListener() {
