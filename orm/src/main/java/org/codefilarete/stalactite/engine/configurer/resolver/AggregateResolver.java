@@ -1,5 +1,13 @@
 package org.codefilarete.stalactite.engine.configurer.resolver;
 
+import java.util.ArrayDeque;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Queue;
+import java.util.function.BiConsumer;
+
+import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.PersistenceContext;
@@ -8,9 +16,14 @@ import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListe
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.AggregateMetadataResolver;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
+import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetoone.OneToOneResolver;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
+import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.tool.Duo;
 
 public class AggregateResolver {
 	
@@ -78,7 +91,65 @@ public class AggregateResolver {
 		return result;
 	}
 	
-	<C, I, T extends Table<T>> void appendOneToOnes(Entity<C, I, T> entity, ConfiguredRelationalPersister<C, I> result) {
-		oneToOneResolver.appendOneToOnes(entity, result);
+	<SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
+	void appendOneToOnes(Entity<SRC, SRCID, LEFTTABLE> entity, ConfiguredRelationalPersister<SRC, SRCID> result) {
+		Queue<Duo<ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>, ConfiguredRelationalPersister<TRGT, TRGTID>>> foundRelations = new ArrayDeque<>();
+		Map<ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>, String> joinNames = new HashMap<>();
+		
+		oneToOneResolver.appendOneToOnes(entity, result, new BiConsumer<ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>, ConfiguredRelationalPersister<TRGT, TRGTID>>() {
+			
+			@Override
+			public void accept(ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> resolvedRelation, ConfiguredRelationalPersister<TRGT, TRGTID> configuredRelationalPersister) {
+				String joinName = configuredRelationalPersister.joinAsOne(result,
+						resolvedRelation.getAccessor(),
+						resolvedRelation.getJoin().getLeftKey(),
+						resolvedRelation.getJoin().getRightKey(),
+						null,
+						resolvedRelation.getBeanRelationFixer(),
+						true,
+						resolvedRelation.isFetchSeparately());
+				
+				foundRelations.add(new Duo<>(resolvedRelation, configuredRelationalPersister));
+				joinNames.put(resolvedRelation, joinName);
+			}
+		});
+		
+		while (!foundRelations.isEmpty()) {
+			Duo<ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>, ConfiguredRelationalPersister<TRGT, TRGTID>> foundRelation = foundRelations.poll();
+			deepOneToOnes(foundRelation, result, joinNames);
+		}
+		
+	}
+	
+	private <SRC, SRCID, TRGT, TRGTID, ANOTHER, ANOTHERID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, ANOTHERTABLE extends Table<ANOTHERTABLE>, JOINID>
+	void deepOneToOnes(Duo<ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>, ConfiguredRelationalPersister<TRGT, TRGTID>> foundRelation,
+	                   ConfiguredRelationalPersister<SRC, SRCID> result,
+	                   Map<ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>, String> joinNames) {
+		oneToOneResolver.appendOneToOnes(foundRelation.getLeft().getTargetEntity(), foundRelation.getRight(),
+				new BiConsumer<ResolvedOneToOneRelation<TRGT, ANOTHER, RIGHTTABLE, ANOTHERTABLE, JOINID>, ConfiguredRelationalPersister<ANOTHER, ANOTHERID>>() {
+					
+					@Override
+					public void accept(ResolvedOneToOneRelation<TRGT, ANOTHER, RIGHTTABLE, ANOTHERTABLE, JOINID> resolvedRelation, ConfiguredRelationalPersister<ANOTHER, ANOTHERID> configuredRelationalPersister) {
+						
+						AccessorChain<SRC, TRGT> accessorChain = new AccessorChain<>(foundRelation.getLeft().getAccessor(), resolvedRelation.getAccessor());
+						accessorChain.setNullValueHandler(AccessorChain.RETURN_NULL);
+						EntityMappingAdapter<ANOTHER, ANOTHERID, ANOTHERTABLE> strategy = new EntityMappingAdapter<>(configuredRelationalPersister.<ANOTHERTABLE>getMapping());
+						BeanRelationFixer<TRGT, ANOTHER> beanRelationFixer = (target, input) -> {
+							resolvedRelation.getBeanRelationFixer().apply(target, input);
+						};
+						String createdJoinNodeName = result.getEntityJoinTree().addRelationJoin(
+								joinNames.get(foundRelation.getLeft()),
+								// because joinAsOne can be called in either case of owned relation or reversely owned relation, generics can't be set correctly,
+								// so we simply cast first argument
+								strategy,
+								accessorChain,
+								resolvedRelation.getJoin().getLeftKey(),
+								resolvedRelation.getJoin().getRightKey(),
+								null,
+								resolvedRelation.isMandatory() ? EntityJoinTree.JoinType.INNER : EntityJoinTree.JoinType.OUTER,
+								beanRelationFixer,
+								Collections.emptySet());
+					}
+				});
 	}
 }

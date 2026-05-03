@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -42,22 +43,14 @@ public class OneToOneResolver {
 	}
 	
 	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
-	void appendOneToOnes(Entity<SRC, SRCID, RIGHTTABLE> entity, ConfiguredRelationalPersister<SRC, SRCID> result) {
+	void appendOneToOnes(Entity<SRC, SRCID, LEFTTABLE> entity, ConfiguredRelationalPersister<SRC, SRCID> result, BiConsumer<ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>, ConfiguredRelationalPersister<TRGT, TRGTID>> createdPersisterConsumer) {
 		entity.getRelations().stream()
 				.filter(ResolvedOneToOneRelation.class::isInstance)
 				.map(ResolvedOneToOneRelation.class::cast)
 				.forEach(relation -> {
 					ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> resolvedRelation = relation;
 					ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getTargetEntity());
-					targetPersister.joinAsOne(result,
-							resolvedRelation.getAccessor(),
-							resolvedRelation.getJoin().getLeftKey(),
-							resolvedRelation.getJoin().getRightKey(),
-							null,
-							resolvedRelation.getBeanRelationFixer(),
-							true,
-							resolvedRelation.isFetchSeparately());
-					
+					createdPersisterConsumer.accept(resolvedRelation, targetPersister);
 					
 					boolean orphanRemoval = resolvedRelation.getRelationMode() == CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
 					boolean writeAuthorized = resolvedRelation.getRelationMode() != CascadeOptions.RelationMode.READ_ONLY;
@@ -82,7 +75,11 @@ public class OneToOneResolver {
 							
 							@Override
 							public Map<Column<LEFTTABLE, ?>, ?> giveValue(SRC bean) {
-								TRGTID trgtid = trgtIdMapping.getIdAccessor().getId(targetAccessor.get(bean));
+								TRGT trgt = targetAccessor.get(bean);
+								TRGTID trgtid = null;
+								if (trgt != null) {
+									trgtid = trgtIdMapping.getIdAccessor().getId(trgt);
+								}
 								Map<Column<RIGHTTABLE, ?>, ?> columnValues = trgtIdMapping.<RIGHTTABLE>getIdentifierAssembler().getColumnValues(trgtid);
 								return Maps.innerJoinOnValuesAndKeys(keyColumnsMapping.getMapping(), columnValues);
 							}

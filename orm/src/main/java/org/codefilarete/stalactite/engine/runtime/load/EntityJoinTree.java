@@ -141,17 +141,17 @@ public class EntityJoinTree<C, I> {
 	 * @param additionalSelectableColumns columns to be added to SQL select clause out of ones took from given inflater, necessary for indexed relations
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
 	 */
-	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelationJoin(String leftStrategyName,
-																					  EntityInflater<U, ID> inflater,
-																					  // Second generic type should be U, or a type containing U (like a Collection<U>or even Map<K, U>) which makes it
-																					  // impossible to implement; thus, we have to use the ? wilcard.
-																					  PropertyAccessPoint<C, ?> propertyAccessor,
-																					  Key<T1, ID> leftJoinColumn,
-																					  Key<T2, ID> rightJoinColumn,
-																					  @Nullable String rightTableAlias,
-																					  JoinType joinType,
-																					  BeanRelationFixer<C, U> beanRelationFixer,
-																					  Set<? extends Column<T2, ?>> additionalSelectableColumns) {
+	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID, X, Y> String addRelationJoin(String leftStrategyName,
+	                                                                                        EntityInflater<U, ?> inflater,
+	                                                                                        // Second generic type should be U, or a type containing U (like a Collection<U>or even Map<K, U>) which makes it
+	                                                                                        // impossible to implement; thus, we have to use the ? wilcard.
+	                                                                                        PropertyAccessPoint<C, X> propertyAccessor,
+	                                                                                        Key<T1, ID> leftJoinColumn,
+	                                                                                        Key<T2, ID> rightJoinColumn,
+	                                                                                        @Nullable String rightTableAlias,
+	                                                                                        JoinType joinType,
+	                                                                                        BeanRelationFixer<Y, U> beanRelationFixer,
+	                                                                                        Set<? extends Column<T2, ?>> additionalSelectableColumns) {
 		return addRelationJoin(leftStrategyName, inflater, propertyAccessor, leftJoinColumn, rightJoinColumn, rightTableAlias, joinType, beanRelationFixer, additionalSelectableColumns, null);
 	}
 	

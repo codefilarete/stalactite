@@ -46,31 +46,37 @@ public class OneToOneMetadataResolver {
 	<C, I, X> void resolve(EntitySource<C, I> source) {
 		// configuring one-to-ones owned by this entity
 		source.getResolvedConfigurations().forEach(resolvedConfiguration -> {
-			extracted(source.getEntity(), resolvedConfiguration.getMappingConfiguration());
+			resolve(source.getEntity(), resolvedConfiguration.getMappingConfiguration());
 		});
 		// configuring one-to-ones owned by its ancestors
 		source.<X>getAncestorSources()
 				.forEach((Entity<X, I, ?> ancestor, Set<ResolvedConfiguration<X, I>> resolvedConfigurations) -> {
 					resolvedConfigurations.forEach(resolvedConfiguration -> {
-						extracted(ancestor, resolvedConfiguration.getMappingConfiguration());
+						resolve(ancestor, resolvedConfiguration.getMappingConfiguration());
 					});
 				});
 	}
 	
-	private <C, I> void extracted(Entity<C, I, ?> entity, EntityMappingConfiguration<C, I> mappingConfiguration) {
+	private <C, I> void resolve(Entity<C, I, ?> entity, EntityMappingConfiguration<C, I> mappingConfiguration) {
+		KeepOrderSet<EntitySource<?, ?>> targetEntities = new KeepOrderSet<>();
 		mappingConfiguration.getOneToOnes().forEach(oneToOne -> {
-			this.resolve(entity, oneToOne);
+			EntitySource<Object, Object> resolve = this.resolve(entity, oneToOne);
+			targetEntities.add(resolve);
 		});
 		// treating relations embedded in insets
 		mappingConfiguration.getPropertiesMapping().getInsets().forEach(inset -> {
 			inset.getConfigurationProvider().getConfiguration().getOneToOnes().forEach(oneToOne -> {
-				this.resolve(entity, oneToOne.embedInto(inset.getAccessor()));
+				EntitySource<Object, Object> resolve = this.resolve(entity, oneToOne.embedInto(inset.getAccessor()));
+				targetEntities.add(resolve);
 			});
 		});
+		
+		// we go deeper on each target entity to resolve its relations: breadth-first algorithm
+		targetEntities.forEach(this::resolve);
 	}
 	
 	<SRC, TRGT, SRCID, TRGTID, SRCTABLE extends Table<SRCTABLE>, TRGTTABLE extends Table<TRGTTABLE>>
-	void resolve(Entity<SRC, SRCID, SRCTABLE> source, OneToOneRelation<SRC, TRGT, TRGTID> oneToOne) {
+	EntitySource<TRGT, TRGTID> resolve(Entity<SRC, SRCID, SRCTABLE> source, OneToOneRelation<SRC, TRGT, TRGTID> oneToOne) {
 		
 		EntitySource<TRGT, TRGTID> targetEntitySource = buildTargetEntity(oneToOne);
 		NamingConfiguration namingConfiguration = first(targetEntitySource.getResolvedConfigurations()).getNamingConfiguration();
@@ -113,6 +119,8 @@ public class OneToOneMetadataResolver {
 				!oneToOne.isNullable()
 		);
 		source.addRelation(entitiesLink);
+		
+		return targetEntitySource;
 	}
 	
 	private <SRC, TRGT, TRGTID> EntitySource<TRGT, TRGTID> buildTargetEntity(OneToOneRelation<SRC, TRGT, TRGTID> oneToOne) {

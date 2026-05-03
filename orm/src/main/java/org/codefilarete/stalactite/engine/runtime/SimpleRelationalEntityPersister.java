@@ -16,7 +16,6 @@ import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.VersioningStrategy;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecordMapping.KeyValueRecordIdMapping;
 import org.codefilarete.stalactite.engine.configurer.map.RecordId;
-import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
@@ -234,13 +233,14 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 					EntityJoinTree.ROOT_JOIN_NAME,
 					// because joinAsOne can be called in either case of owned relation or reversely owned relation, generics can't be set correctly,
 					// so we simply cast first argument
-					(EntityInflater) strategy,
+					strategy,
 					propertyAccessor,
 					leftColumn,
 					rightColumn,
 					rightTableAlias,
 					optional ? JoinType.OUTER : JoinType.INNER,
-					beanRelationFixer, Collections.emptySet());
+					beanRelationFixer,
+					Collections.emptySet());
 			
 			copyRootJoinsTo(sourcePersister.getEntityJoinTree(), createdJoinNodeName);
 			
