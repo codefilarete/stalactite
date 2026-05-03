@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.configurer.resolver;
 
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
@@ -18,18 +19,19 @@ public class PrimaryKeyPropagator<SRCTABLE extends Table<SRCTABLE>, TARGETTABLE 
 	
 	/**
 	 * Creates a primary key on the given table by mimicking the given primary key.
-	 * Also creates a foreign key between both. 
+	 * Also creates a foreign key between both.
 	 * 
 	 * @param primaryKey the template primary key that must be applied to the target table
 	 * @param target target table on which primary key and foreign key must be added
 	 * @param foreignKeyNamingStrategy the naming strategy to use for the foreign key to create
+	 * @return the created foreign key
 	 */
-	public void propagate(PrimaryKey<SRCTABLE, I> primaryKey,
-	                      TARGETTABLE target,
-	                      ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
+	public ForeignKey<TARGETTABLE, SRCTABLE, I> propagate(PrimaryKey<SRCTABLE, I> primaryKey,
+	                                                      TARGETTABLE target,
+	                                                      ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
 		// add primary key and foreign key to all tables
 		projectPrimaryKey(primaryKey, target);
-		addForeignKey(target, primaryKey, foreignKeyNamingStrategy);
+		return addForeignKey(target, primaryKey, foreignKeyNamingStrategy);
 	}
 	
 	/**
@@ -37,9 +39,10 @@ public class PrimaryKeyPropagator<SRCTABLE extends Table<SRCTABLE>, TARGETTABLE 
 	 *
 	 * @param from target tables on which foreign keys must be added, <strong>order matters</strong>
 	 * @param to initial primary key on which the very first table primary key must point to
+	 * @return the created foreign key
 	 */
-	private void addForeignKey(TARGETTABLE from, PrimaryKey<SRCTABLE, I> to, ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
-		addForeignKey(from.getPrimaryKey(), to, foreignKeyNamingStrategy);
+	private ForeignKey<TARGETTABLE, SRCTABLE, I> addForeignKey(TARGETTABLE from, PrimaryKey<SRCTABLE, I> to, ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
+		return addForeignKey(from.getPrimaryKey(), to, foreignKeyNamingStrategy);
 	}
 	
 	/**
@@ -56,7 +59,7 @@ public class PrimaryKeyPropagator<SRCTABLE extends Table<SRCTABLE>, TARGETTABLE 
 		});
 	}
 	
-	private void addForeignKey(PrimaryKey<TARGETTABLE, I> from, PrimaryKey<SRCTABLE, I> to, ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
-		from.getTable().addForeignKey(foreignKeyNamingStrategy.giveName(from, to), from, to);
+	private ForeignKey<TARGETTABLE, SRCTABLE, I> addForeignKey(PrimaryKey<TARGETTABLE, I> from, PrimaryKey<SRCTABLE, I> to, ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
+		return from.getTable().addForeignKey(foreignKeyNamingStrategy.giveName(from, to), from, to);
 	}
 }

@@ -103,7 +103,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		subEntitiesPersisters.values().stream().forEach(subPersister -> {
 			SUBTABLE subTable = subPersister.getMainTable();
 			KeyBuilder<SUBTABLE, JOINTYPE> projectedKeyBuilder = Key.from(subTable);
-			((Set<Column<SUBTABLE, ?>>) foreignKey.getColumns()).forEach(column -> {
+			foreignKey.<Column<SUBTABLE, ?>>getColumns().forEach(column -> {
 				Column<SUBTABLE, ?> subtableColumn = subTable.addColumn(column.getName(), column.getJavaType(), column.getSize(), column.isNullable());
 				projectedKeyBuilder.addColumn(subtableColumn);
 				subPersister.getEntityJoinTree().getRoot().getOriginalColumnsToLocalOnes().put(subtableColumn, subtableColumn);

@@ -1,6 +1,6 @@
 package org.codefilarete.stalactite.engine.configurer.model;
 
-import org.codefilarete.stalactite.sql.ddl.structure.Key;
+import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
@@ -17,9 +17,8 @@ public class ExtraTableJoin<SRC, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE 
 	private final PropertyMappingHolder<SRC, RIGHTTABLE> propertyMappingHolder;
 	
 	public ExtraTableJoin(PropertyMappingHolder<SRC, RIGHTTABLE> propertyMapping,
-						  Key<LEFTTABLE, JOINTYPE> leftKey,
-	                      Key<RIGHTTABLE, JOINTYPE> rightKey) {
-		super(new DirectRelationJoin<>(leftKey, rightKey));
+	                      KeyMapping<LEFTTABLE, RIGHTTABLE, JOINTYPE> leftKey) {
+		super(new DirectRelationJoin<>(leftKey));
 		this.propertyMappingHolder = propertyMapping;
 	}
 	

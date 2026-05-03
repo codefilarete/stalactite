@@ -51,14 +51,14 @@ class OneToOneMetadataResolverTest {
 			MappingJoin<?, ?, ?> relation = first(countryEntity.getRelations());
 			assertThat(relation).isInstanceOf(ResolvedOneToOneRelation.class);
 			
-			Key<?, ?> leftKey = relation.getJoin().getLeftKey();
-			Table countryTable = (Table) leftKey.getTable();
-			KeepOrderSet<Column<?, ?>> leftKeyColumns = (KeepOrderSet<Column<?, ?>>) leftKey.getColumns();
+			Key<Table, ?> leftKey = (Key<Table, ?>) relation.getJoin().getLeftKey();
+			Table countryTable = leftKey.getTable();
+			KeepOrderSet<Column<Table, ?>> leftKeyColumns = leftKey.getColumns();
 			assertThat(leftKeyColumns).containsExactly(countryTable.getColumn("presidentId"));
 			
-			Key<?, ?> rightKey = relation.getJoin().getRightKey();
-			Table personTable = (Table) rightKey.getTable();
-			KeepOrderSet<Column<?, ?>> rightKeyColumns = (KeepOrderSet<Column<?, ?>>) rightKey.getColumns();
+			Key<Table, ?> rightKey = (Key<Table, ?>) relation.getJoin().getRightKey();
+			Table personTable = rightKey.getTable();
+			KeepOrderSet<Column<Table, ?>> rightKeyColumns = rightKey.getColumns();
 			assertThat(rightKeyColumns).containsExactly(personTable.getColumn("id"));
 		}
 		
@@ -80,14 +80,14 @@ class OneToOneMetadataResolverTest {
 			MappingJoin<?, ?, ?> relation = first(countryEntity.getRelations());
 			assertThat(relation).isInstanceOf(ResolvedOneToOneRelation.class);
 			
-			Key<?, ?> leftKey = relation.getJoin().getLeftKey();
-			Table countryTable = (Table) leftKey.getTable();
-			KeepOrderSet<Column<?, ?>> leftKeyColumns = (KeepOrderSet<Column<?, ?>>) leftKey.getColumns();
+			Key<Table, ?> leftKey = (Key<Table, ?>) relation.getJoin().getLeftKey();
+			Table countryTable = leftKey.getTable();
+			KeepOrderSet<Column<Table, ?>> leftKeyColumns = leftKey.getColumns();
 			assertThat(leftKeyColumns).containsExactly(countryTable.getColumn("president"));
 			
-			Key<?, ?> rightKey = relation.getJoin().getRightKey();
-			Table personTable = (Table) rightKey.getTable();
-			KeepOrderSet<Column<?, ?>> rightKeyColumns = (KeepOrderSet<Column<?, ?>>) rightKey.getColumns();
+			Key<Table, ?> rightKey = (Key<Table, ?>) relation.getJoin().getRightKey();
+			Table personTable = rightKey.getTable();
+			KeepOrderSet<Column<Table, ?>> rightKeyColumns = rightKey.getColumns();
 			assertThat(rightKeyColumns).containsExactly(personTable.getColumn("id"));
 		}
 	}
@@ -113,14 +113,14 @@ class OneToOneMetadataResolverTest {
 			MappingJoin<?, ?, ?> relation = first(countryEntity.getRelations());
 			assertThat(relation).isInstanceOf(ResolvedOneToOneRelation.class);
 			
-			Key<?, ?> leftKey = relation.getJoin().getLeftKey();
-			Table countryTable = (Table) leftKey.getTable();
-			KeepOrderSet<Column<?, ?>> leftKeyColumns = (KeepOrderSet<Column<?, ?>>) leftKey.getColumns();
+			Key<Table, ?> leftKey = (Key<Table, ?>) relation.getJoin().getLeftKey();
+			Table countryTable = leftKey.getTable();
+			KeepOrderSet<Column<Table, ?>> leftKeyColumns = leftKey.getColumns();
 			assertThat(leftKeyColumns).containsExactly(countryTable.getColumn("id"));
 			
-			Key<?, ?> rightKey = relation.getJoin().getRightKey();
-			Table personTable = (Table) rightKey.getTable();
-			KeepOrderSet<Column<?, ?>> rightKeyColumns = (KeepOrderSet<Column<?, ?>>) rightKey.getColumns();
+			Key<Table, ?> rightKey = (Key<Table, ?>) relation.getJoin().getRightKey();
+			Table personTable = rightKey.getTable();
+			KeepOrderSet<Column<Table, ?>> rightKeyColumns = rightKey.getColumns();
 			assertThat(rightKeyColumns).containsExactly(personTable.getColumn("presidentOf"));
 		}
 		
@@ -145,13 +145,13 @@ class OneToOneMetadataResolverTest {
 			MappingJoin<?, ?, ?> relation = first(countryEntity.getRelations());
 			assertThat(relation).isInstanceOf(ResolvedOneToOneRelation.class);
 			
-			Key<?, ?> leftKey = relation.getJoin().getLeftKey();
-			Table countryTable = (Table) leftKey.getTable();
-			KeepOrderSet<Column<?, ?>> leftKeyColumns = (KeepOrderSet<Column<?, ?>>) leftKey.getColumns();
+			Key<Table, ?> leftKey = (Key<Table, ?>) relation.getJoin().getLeftKey();
+			Table countryTable = leftKey.getTable();
+			KeepOrderSet<Column<Table, ?>> leftKeyColumns = leftKey.getColumns();
 			assertThat(leftKeyColumns).containsExactly(countryTable.getColumn("id"));
 			
-			Key<?, ?> rightKey = relation.getJoin().getRightKey();
-			KeepOrderSet<Column<?, ?>> rightKeyColumns = (KeepOrderSet<Column<?, ?>>) rightKey.getColumns();
+			Key<Table, ?> rightKey = (Key<Table, ?>) relation.getJoin().getRightKey();
+			KeepOrderSet<Column<Table, ?>> rightKeyColumns = rightKey.getColumns();
 			assertThat(rightKeyColumns).containsExactly(presidentColumn);
 		}
 		
@@ -173,14 +173,14 @@ class OneToOneMetadataResolverTest {
 			MappingJoin<?, ?, ?> relation = first(countryEntity.getRelations());
 			assertThat(relation).isInstanceOf(ResolvedOneToOneRelation.class);
 			
-			Key<?, ?> leftKey = relation.getJoin().getLeftKey();
-			Table countryTable = (Table) leftKey.getTable();
-			KeepOrderSet<Column<?, ?>> leftKeyColumns = (KeepOrderSet<Column<?, ?>>) leftKey.getColumns();
+			Key<Table, ?> leftKey = (Key<Table, ?>) relation.getJoin().getLeftKey();
+			Table countryTable = leftKey.getTable();
+			KeepOrderSet<Column<Table, ?>> leftKeyColumns = leftKey.getColumns();
 			assertThat(leftKeyColumns).containsExactly(countryTable.getColumn("id"));
 			
-			Key<?, ?> rightKey = relation.getJoin().getRightKey();
-			Table personTable = (Table) rightKey.getTable();
-			KeepOrderSet<Column<?, ?>> rightKeyColumns = (KeepOrderSet<Column<?, ?>>) rightKey.getColumns();
+			Key<Table, ?> rightKey = (Key<Table, ?>) relation.getJoin().getRightKey();
+			Table personTable = rightKey.getTable();
+			KeepOrderSet<Column<Table, ?>> rightKeyColumns = rightKey.getColumns();
 			assertThat(rightKeyColumns).containsExactly(personTable.getColumn("presidentId"));
 		}
 		
@@ -202,14 +202,14 @@ class OneToOneMetadataResolverTest {
 			MappingJoin<?, ?, ?> relation = first(countryEntity.getRelations());
 			assertThat(relation).isInstanceOf(ResolvedOneToOneRelation.class);
 			
-			Key<?, ?> leftKey = relation.getJoin().getLeftKey();
-			Table countryTable = (Table) leftKey.getTable();
-			KeepOrderSet<Column<?, ?>> leftKeyColumns = (KeepOrderSet<Column<?, ?>>) leftKey.getColumns();
+			Key<Table, ?> leftKey = (Key<Table, ?>) relation.getJoin().getLeftKey();
+			Table countryTable = leftKey.getTable();
+			KeepOrderSet<Column<Table, ?>> leftKeyColumns = leftKey.getColumns();
 			assertThat(leftKeyColumns).containsExactly(countryTable.getColumn("id"));
 			
-			Key<?, ?> rightKey = relation.getJoin().getRightKey();
-			Table personTable = (Table) rightKey.getTable();
-			KeepOrderSet<Column<?, ?>> rightKeyColumns = (KeepOrderSet<Column<?, ?>>) rightKey.getColumns();
+			Key<Table, ?> rightKey = (Key<Table, ?>) relation.getJoin().getRightKey();
+			Table personTable = rightKey.getTable();
+			KeepOrderSet<Column<Table, ?>> rightKeyColumns = rightKey.getColumns();
 			assertThat(rightKeyColumns).containsExactly(personTable.getColumn("presidentId"));
 		}
 	}
@@ -244,14 +244,14 @@ class OneToOneMetadataResolverTest {
 			MappingJoin<?, ?, ?> relation = first(republicEntity.getRelations());
 			assertThat(relation).isInstanceOf(ResolvedOneToOneRelation.class);
 			
-			Key<?, ?> leftKey = relation.getJoin().getLeftKey();
-			Table actualCountryTable = (Table) leftKey.getTable();
-			KeepOrderSet<Column<?, ?>> leftKeyColumns = (KeepOrderSet<Column<?, ?>>) leftKey.getColumns();
+			Key<Table, ?> leftKey = (Key<Table, ?>) relation.getJoin().getLeftKey();
+			Table actualCountryTable = leftKey.getTable();
+			KeepOrderSet<Column<Table, ?>> leftKeyColumns = leftKey.getColumns();
 			assertThat(leftKeyColumns).containsExactly(actualCountryTable.getColumn("presidentId"));
 			
-			Key<?, ?> rightKey = relation.getJoin().getRightKey();
-			Table actualPersonTable = (Table) rightKey.getTable();
-			KeepOrderSet<Column<?, ?>> rightKeyColumns = (KeepOrderSet<Column<?, ?>>) rightKey.getColumns();
+			Key<Table, ?> rightKey = (Key<Table, ?>) relation.getJoin().getRightKey();
+			Table actualPersonTable = rightKey.getTable();
+			KeepOrderSet<Column<Table, ?>> rightKeyColumns = rightKey.getColumns();
 			assertThat(rightKeyColumns).containsExactly(actualPersonTable.getColumn("id"));
 		}
 	}
@@ -280,14 +280,14 @@ class OneToOneMetadataResolverTest {
 			MappingJoin<?, ?, ?> relation = first(deviceEntity.getRelations());
 			assertThat(relation).isInstanceOf(ResolvedOneToOneRelation.class);
 			
-			Key<?, ?> leftKey = relation.getJoin().getLeftKey();
-			Table deviceTable = (Table) leftKey.getTable();
-			KeepOrderSet<Column<?, ?>> leftKeyColumns = (KeepOrderSet<Column<?, ?>>) leftKey.getColumns();
+			Key<Table, ?> leftKey = (Key<Table, ?>) relation.getJoin().getLeftKey();
+			Table deviceTable = leftKey.getTable();
+			KeepOrderSet<Column<Table, ?>> leftKeyColumns = leftKey.getColumns();
 			assertThat(leftKeyColumns).containsExactly(deviceTable.getColumn("location_cityId"));
 			
-			Key<?, ?> rightKey = relation.getJoin().getRightKey();
-			Table addressTable = (Table) rightKey.getTable();
-			KeepOrderSet<Column<?, ?>> rightKeyColumns = (KeepOrderSet<Column<?, ?>>) rightKey.getColumns();
+			Key<Table, ?> rightKey = (Key<Table, ?>) relation.getJoin().getRightKey();
+			Table addressTable = rightKey.getTable();
+			KeepOrderSet<Column<Table, ?>> rightKeyColumns = rightKey.getColumns();
 			assertThat(rightKeyColumns).containsExactly(addressTable.getColumn("id"));
 			
 		}
@@ -314,14 +314,14 @@ class OneToOneMetadataResolverTest {
 			MappingJoin<?, ?, ?> relation = first(deviceEntity.getRelations());
 			assertThat(relation).isInstanceOf(ResolvedOneToOneRelation.class);
 			
-			Key<?, ?> leftKey = relation.getJoin().getLeftKey();
-			Table deviceTable = (Table) leftKey.getTable();
-			KeepOrderSet<Column<?, ?>> leftKeyColumns = (KeepOrderSet<Column<?, ?>>) leftKey.getColumns();
+			Key<Table, ?> leftKey = (Key<Table, ?>) relation.getJoin().getLeftKey();
+			Table deviceTable = leftKey.getTable();
+			KeepOrderSet<Column<Table, ?>> leftKeyColumns = leftKey.getColumns();
 			assertThat(leftKeyColumns).containsExactly(deviceTable.getColumn("locationCityId"));
 			
-			Key<?, ?> rightKey = relation.getJoin().getRightKey();
-			Table addressTable = (Table) rightKey.getTable();
-			KeepOrderSet<Column<?, ?>> rightKeyColumns = (KeepOrderSet<Column<?, ?>>) rightKey.getColumns();
+			Key<Table, ?> rightKey = (Key<Table, ?>) relation.getJoin().getRightKey();
+			Table addressTable = rightKey.getTable();
+			KeepOrderSet<Column<Table, ?>> rightKeyColumns = rightKey.getColumns();
 			assertThat(rightKeyColumns).containsExactly(addressTable.getColumn("id"));
 		}
 		
@@ -354,14 +354,14 @@ class OneToOneMetadataResolverTest {
 			MappingJoin<?, ?, ?> relation = first(republicEntity.getRelations());
 			assertThat(relation).isInstanceOf(ResolvedOneToOneRelation.class);
 			
-			Key<?, ?> leftKey = relation.getJoin().getLeftKey();
-			Table actualCountryTable = (Table) leftKey.getTable();
-			KeepOrderSet<Column<?, ?>> leftKeyColumns = (KeepOrderSet<Column<?, ?>>) leftKey.getColumns();
+			Key<Table, ?> leftKey = (Key<Table, ?>) relation.getJoin().getLeftKey();
+			Table actualCountryTable = leftKey.getTable();
+			KeepOrderSet<Column<Table, ?>> leftKeyColumns = leftKey.getColumns();
 			assertThat(leftKeyColumns).containsExactly(actualCountryTable.getColumn("president_vehicleId"));
 			
-			Key<?, ?> rightKey = relation.getJoin().getRightKey();
-			Table actualPersonTable = (Table) rightKey.getTable();
-			KeepOrderSet<Column<?, ?>> rightKeyColumns = (KeepOrderSet<Column<?, ?>>) rightKey.getColumns();
+			Key<Table, ?> rightKey = (Key<Table, ?>) relation.getJoin().getRightKey();
+			Table actualPersonTable = rightKey.getTable();
+			KeepOrderSet<Column<Table, ?>> rightKeyColumns = rightKey.getColumns();
 			assertThat(rightKeyColumns).containsExactly(actualPersonTable.getColumn("id"));
 		}
 	}

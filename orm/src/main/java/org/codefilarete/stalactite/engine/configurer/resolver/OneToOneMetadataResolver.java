@@ -87,7 +87,7 @@ public class OneToOneMetadataResolver {
 				if (!targetEntity.isTablePerClass()) {
 					OneToOneOwnedByTargetHelper<SRC, TRGT, SRCID, TRGTID, SRCTABLE, TRGTTABLE> helper = new OneToOneOwnedByTargetHelper<>();
 					ForeignKey<TRGTTABLE, SRCTABLE, SRCID> foreignKey = helper.determineForeignKeyColumns(oneToOne, source.getTable().getPrimaryKey(), targetEntity.getTable(), namingConfiguration.getJoinColumnNamingStrategy(), namingConfiguration.getForeignKeyNamingStrategy());
-					tablesJoin = new DirectRelationJoin<>(foreignKey.toReferencedKey(), foreignKey);
+					tablesJoin = new DirectRelationJoin<>(foreignKey.getRightKey(), foreignKey);
 				}
 			} // else: creating foreign key is not possible, nothing special to do
 			

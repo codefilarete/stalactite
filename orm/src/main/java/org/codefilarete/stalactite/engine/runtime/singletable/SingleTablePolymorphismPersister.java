@@ -119,7 +119,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 			BiFunction<Key<SUBTABLE, JOINTYPE>, PrimaryKey<LEFTTABLE, JOINTYPE>, String> foreignKeyNamingFunction) {
 		SUBTABLE subTable = mainPersister.getMainTable();
 		Key.KeyBuilder<SUBTABLE, JOINTYPE> projectedKeyBuilder = Key.from(subTable);
-		((Set<Column<SUBTABLE, ?>>) foreignKey.getColumns()).forEach(column -> {
+		foreignKey.<Column<SUBTABLE, ?>>getColumns().forEach(column -> {
 			projectedKeyBuilder.addColumn(subTable.addColumn(column.getName(), column.getJavaType(), column.getSize(), column.isNullable()));
 		});
 		Key<SUBTABLE, JOINTYPE> projectedKey = projectedKeyBuilder.build();

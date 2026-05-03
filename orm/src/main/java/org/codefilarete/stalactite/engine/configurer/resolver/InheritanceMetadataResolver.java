@@ -17,6 +17,8 @@ import org.codefilarete.stalactite.engine.configurer.resolver.InheritanceConfigu
 import org.codefilarete.stalactite.engine.configurer.resolver.MetadataSolvingCache.EntitySource;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
+import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -89,6 +91,8 @@ public class InheritanceMetadataResolver<C, I, T extends Table<T>> {
 					if (previousTable.get() != resolvedTable) {
 						Entity<X, I, TT> ancestor = buildEntity(resolvedConfigurationPawn, resolvedTable);
 						bottomestEntitySource.addSource(ancestor, resolvedConfigurationPawn);
+						// We could use the foreign key between previousTable and resolvedTable that has been created by the KeyMappingApplier instance
+						// used during buildEntity(..) logic, but the foreign key is not exposed, thus we mimic it through the primary keys (should be enhanced)
 						previousEntity.get().setParent(new AncestorJoin<>(ancestor, new DirectRelationJoin<>(previousTable.get().getPrimaryKey(), resolvedTable.getPrimaryKey())));
 						// preparing next iteration
 						previousTable.set(resolvedTable);
@@ -137,13 +141,12 @@ public class InheritanceMetadataResolver<C, I, T extends Table<T>> {
 			mappings.add(mapping);
 		});
 		propertiesPerTable.forEach((extraTable, mapping) -> {
-			if (extraTable.getPrimaryKey() == null) {
-				PrimaryKeyPropagator<TT, EXTRATABLE, I> primaryKeyPropagator = new PrimaryKeyPropagator<>();
-				primaryKeyPropagator.propagate(result.getTable().getPrimaryKey(), extraTable, foreignKeyNamingStrategy);
-			}
+			PrimaryKeyPropagator<TT, EXTRATABLE, I> primaryKeyPropagator = new PrimaryKeyPropagator<>();
+			ForeignKey<EXTRATABLE, TT, I> foreignKey = primaryKeyPropagator.propagate(result.getTable().getPrimaryKey(), extraTable, foreignKeyNamingStrategy);
 			PropertyMappingHolder<X, EXTRATABLE> mappingHolder = new PropertyMappingHolder<>();
 			mappingHolder.addMapping(mapping);
-			ExtraTableJoin<X, TT, EXTRATABLE, I> relation = new ExtraTableJoin<>(mappingHolder, result.getTable().<I>getPrimaryKey(), extraTable.getPrimaryKey());
+			KeyMapping<TT, EXTRATABLE, I> reference = foreignKey.getRightKey().reference(foreignKey);
+			ExtraTableJoin<X, TT, EXTRATABLE, I> relation = new ExtraTableJoin<>(mappingHolder, reference);
 			result.addRelation(relation);
 		});
 	}

@@ -108,7 +108,7 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 			BiFunction<Key<SUBTABLE, JOINTYPE>, PrimaryKey<LEFTTABLE, JOINTYPE>, String> foreignKeyNamingFunction) {
 		SUBTABLE mainTable = mainPersister.getMainTable();
 		Key.KeyBuilder<SUBTABLE, JOINTYPE> projectedKeyBuilder = Key.from(mainTable);
-		((Set<Column<SUBTABLE, ?>>) foreignKey.getColumns()).forEach(column -> {
+		foreignKey.<Column<SUBTABLE, ?>>getColumns().forEach(column -> {
 			projectedKeyBuilder.addColumn(mainTable.addColumn(column.getName(), column.getJavaType(), column.getSize(), column.isNullable()));
 		});
 		Key<SUBTABLE, JOINTYPE> projectedKey = projectedKeyBuilder.build();

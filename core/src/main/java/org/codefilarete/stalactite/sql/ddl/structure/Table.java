@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.sql.ddl.structure;
 
-import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -11,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import org.codefilarete.stalactite.query.api.Fromable;
 import org.codefilarete.stalactite.query.api.Selectable;
@@ -323,8 +323,8 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	public <T extends Table<T>, I> ForeignKey<SELF, T, I> addForeignKey(String name, Key<SELF, I> columns, Key<T, I> targetColumns) {
 		ForeignKey<SELF, T, I> foreignKey = new ForeignKey<>(
 				name,
-				(KeepOrderSet<? extends Column<SELF, Object>>) columns.getColumns(),
-				(KeepOrderSet<? extends Column<T, Object>>) targetColumns.getColumns());
+				columns.getColumns(),
+				targetColumns.getColumns());
 		return addssertForeignKey(foreignKey);
 	}
 	
@@ -334,8 +334,8 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 			K2 targetColumns) {
 		ForeignKey<SELF, T, I> foreignKey = new ForeignKey<>(
 				namingFunction.apply(sourceColumns, targetColumns),
-				(KeepOrderSet<? extends Column<SELF, Object>>) sourceColumns.getColumns(),
-				(KeepOrderSet<? extends Column<T, Object>>) targetColumns.getColumns());
+				sourceColumns.getColumns(),
+				targetColumns.getColumns());
 		return addssertForeignKey(foreignKey);
 	}
 	

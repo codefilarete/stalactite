@@ -264,7 +264,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 						throw new UnsupportedOperationException("Can't use tupled-in because database doesn't support it");
 					}
 				} else {
-					Set<Column<T, Object>> columns = (Set<Column<T, Object>>) associationPersister.getMainTable().getOneSideForeignKey().getColumns();
+					Set<Column<T, Object>> columns = associationPersister.getMainTable().getOneSideForeignKey().getColumns();
 					associationTableDelete.getCriteria().and(first(columns), Operators.in(identifiers));
 				}
 				

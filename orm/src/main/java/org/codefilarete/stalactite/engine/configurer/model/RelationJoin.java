@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.configurer.model;
 
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
+import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
@@ -9,20 +10,21 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  */
 public abstract class RelationJoin<LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINTYPE> {
 	
-	private final Key<LEFTTABLE, JOINTYPE> leftKey;
+	private final KeyMapping<LEFTTABLE, RIGHTTABLE, JOINTYPE> keyMapping;
 	
-	private final Key<RIGHTTABLE, JOINTYPE> rightKey;
+	public RelationJoin(KeyMapping<LEFTTABLE, RIGHTTABLE, JOINTYPE> keyMapping) {
+		this.keyMapping = keyMapping;
+	}
 	
-	public RelationJoin(Key<LEFTTABLE, JOINTYPE> leftKey, Key<RIGHTTABLE, JOINTYPE> rightKey) {
-		this.leftKey = leftKey;
-		this.rightKey = rightKey;
+	public RelationJoin(Key<LEFTTABLE, JOINTYPE> keyMapping, Key<RIGHTTABLE, JOINTYPE> rightKey) {
+		this(keyMapping.reference(rightKey));
 	}
 	
 	public Key<LEFTTABLE, JOINTYPE> getLeftKey() {
-		return leftKey;
+		return keyMapping.getLeftKey();
 	}
 	
 	public Key<RIGHTTABLE, JOINTYPE> getRightKey() {
-		return rightKey;
+		return keyMapping.getRightKey();
 	}
 }

@@ -31,9 +31,13 @@ public interface Key<T extends Fromable, ID /* unused in this class, left for cl
 	
 	T getTable();
 	
-	KeepOrderSet<? extends JoinLink<T, ?>> getColumns();
+	<J extends JoinLink<T, ?>> KeepOrderSet<J> getColumns();
 	
 	boolean isComposed();
+	
+	default <TARGETTABLE extends Fromable> KeyMapping<T, TARGETTABLE, ID> reference(Key<TARGETTABLE, ID> targetKey) {
+		return new KeyMapping<>(this, targetKey);
+	}
 	
 	class KeyBuilder<T extends Fromable, ID> {
 		
@@ -66,7 +70,7 @@ public interface Key<T extends Fromable, ID /* unused in this class, left for cl
 			this(table, new KeepOrderSet<>());
 		}
 		
-		private KeySupport(T table, KeepOrderSet<? extends JoinLink<T, ?>> columns) {
+		KeySupport(T table, KeepOrderSet<? extends JoinLink<T, ?>> columns) {
 			this.table = table;
 			this.columns = (KeepOrderSet<JoinLink<T, ?>>) columns;
 		}
@@ -91,7 +95,7 @@ public interface Key<T extends Fromable, ID /* unused in this class, left for cl
 		
 		@Override
 		public boolean isComposed() {
-			return columns.size() == 1;
+			return columns.size() > 1;
 		}
 	}
 }

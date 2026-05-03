@@ -9,7 +9,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
@@ -360,7 +359,7 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 		
 		public ForeignKeyUpdateOrderProvider(Dialect dialect, ConnectionConfiguration connectionConfiguration, Key<RIGHTTABLE, SRCID> rightKey) {
 			PreparedUpdate<RIGHTTABLE> tablePreparedUpdate = dialect.getDmlGenerator().buildUpdate(
-					(Set<Column<RIGHTTABLE, Object>>) rightKey.getColumns(),
+					rightKey.getColumns(),
 					targetPersister.<RIGHTTABLE>getMapping().getVersionedKeys());
 			foreignKeyUpdateOperation = dialect.getWriteOperationFactory().createInstance(tablePreparedUpdate,
 					connectionConfiguration.getConnectionProvider());

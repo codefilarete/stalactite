@@ -54,14 +54,13 @@ import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.CompositeKeyAlreadyAssignedIdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
-import org.codefilarete.stalactite.query.api.JoinLink;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.tool.collection.PairIterator;
 import org.codefilarete.tool.function.Functions.NullProofFunction;
 import org.codefilarete.tool.function.Predicates;
 
@@ -225,23 +224,20 @@ public class AggregateResolver {
 							result.addUpdateListener(new MandatoryRelationAssertBeforeUpdateListener<>(targetAccessor));
 						}
 						
-						Map<Column<LEFTTABLE, ?>, Column<RIGHTTABLE, ?>> keyColumnsMapping;
-						PairIterator<JoinLink<LEFTTABLE, ?>, JoinLink<RIGHTTABLE, ?>> keyColumnsIterator = new PairIterator<>(resolvedRelation.getJoin().getLeftKey().getColumns(), resolvedRelation.getJoin().getRightKey().getColumns());
-						keyColumnsMapping = Iterables.map(() -> keyColumnsIterator, d -> (Column<LEFTTABLE, ?>) d.getLeft(), d -> (Column<RIGHTTABLE, ?>) d.getRight());
-						
+						KeyMapping<LEFTTABLE, RIGHTTABLE, JOINID> keyColumnsMapping = resolvedRelation.getJoin().getLeftKey().reference(resolvedRelation.getJoin().getRightKey());
 						
 						IdMapping<TRGT, TRGTID> trgtIdMapping = targetPersister.getMapping().getIdMapping();
 						ShadowColumnValueProvider<SRC, LEFTTABLE> foreignKeyValueProvider = new ShadowColumnValueProvider<SRC, LEFTTABLE>() {
 							@Override
 							public Set<Column<LEFTTABLE, ?>> getColumns() {
-								return keyColumnsMapping.keySet();
+								return keyColumnsMapping.getLeftColumns();
 							}
 							
 							@Override
 							public Map<Column<LEFTTABLE, ?>, ?> giveValue(SRC bean) {
 								TRGTID trgtid = trgtIdMapping.getIdAccessor().getId(targetAccessor.get(bean));
 								Map<Column<RIGHTTABLE, ?>, ?> columnValues = trgtIdMapping.<RIGHTTABLE>getIdentifierAssembler().getColumnValues(trgtid);
-								return Maps.innerJoinOnValuesAndKeys(keyColumnsMapping, columnValues);
+								return Maps.innerJoinOnValuesAndKeys(keyColumnsMapping.getMapping(), columnValues);
 							}
 						};
 						

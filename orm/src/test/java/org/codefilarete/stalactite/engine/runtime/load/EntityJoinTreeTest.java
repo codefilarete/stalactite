@@ -20,6 +20,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Predicates;
 import org.junit.jupiter.api.Test;
 
@@ -97,7 +98,8 @@ class EntityJoinTreeTest {
 		// ... and its columns must be the same as the original one
 		Function<Selectable, String> getExpression = Selectable::getExpression;
 		Function<Selectable, Class> getJavaType = Selectable::getJavaType;
-		assertThat(tataJoinInTutu.getRightJoinLink().getColumns())
+		KeepOrderSet<Selectable<?>> columns = new KeepOrderSet<>(tataJoinInTutu.getRightJoinLink().getColumns());
+		assertThat(columns)
 				.usingElementComparator(Predicates.toComparator(Predicates.and(getExpression, getExpression).and(Predicates.and(getJavaType, getJavaType))))
 				.isEqualTo(tataTable.getPrimaryKey().getColumns());
 
@@ -169,7 +171,8 @@ class EntityJoinTreeTest {
 		// ... and its columns must be the same as the original one
 		Function<Selectable, String> getExpression = Selectable::getExpression;
 		Function<Selectable, Class> getJavaType = Selectable::getJavaType;
-		assertThat(tataJoinInTutu.getRightJoinLink().getColumns())
+		KeepOrderSet<Selectable<?>> columns = new KeepOrderSet<>(tataJoinInTutu.getRightJoinLink().getColumns());
+		assertThat(columns)
 				.usingElementComparator(Predicates.toComparator(Predicates.and(getExpression, getExpression).and(Predicates.and(getJavaType, getJavaType))))
 				.isEqualTo(tataTable.getPrimaryKey().getColumns());
 
@@ -239,7 +242,8 @@ class EntityJoinTreeTest {
 		// ... and its columns must be the same as the original one
 		Function<Selectable, String> getExpression = Selectable::getExpression;
 		Function<Selectable, Class> getJavaType = Selectable::getJavaType;
-		assertThat(tataJoinInTutu.getRightJoinLink().getColumns())
+		KeepOrderSet<Selectable<?>> columns = new KeepOrderSet<>(tataJoinInTutu.getRightJoinLink().getColumns());
+		assertThat(columns)
 				.usingElementComparator(Predicates.toComparator(Predicates.and(getExpression, getExpression).and(Predicates.and(getJavaType, getJavaType))))
 				.isEqualTo(tataTable.getPrimaryKey().getColumns());
 
