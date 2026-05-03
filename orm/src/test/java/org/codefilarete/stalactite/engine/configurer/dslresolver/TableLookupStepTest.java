@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.configurer.resolver;
+package org.codefilarete.stalactite.engine.configurer.dslresolver;
 
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;

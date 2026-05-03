@@ -1,7 +1,7 @@
-package org.codefilarete.stalactite.engine.configurer.resolver;
+package org.codefilarete.stalactite.engine.configurer.dslresolver;
 
 import org.codefilarete.stalactite.engine.configurer.model.IdentifierMapping;
-import org.codefilarete.stalactite.engine.configurer.resolver.InheritanceConfigurationResolver.ResolvedConfiguration;
+import org.codefilarete.stalactite.engine.configurer.dslresolver.InheritanceConfigurationResolver.ResolvedConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;

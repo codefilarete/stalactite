@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.configurer.resolver;
+package org.codefilarete.stalactite.engine.configurer.dslresolver;
 
 import java.util.List;
 import java.util.Map;
@@ -36,8 +36,8 @@ import static org.codefilarete.reflection.Accessors.mutatorByMethodReference;
 import static org.codefilarete.reflection.Accessors.readWriteAccessPoint;
 import static org.codefilarete.stalactite.dsl.FluentMappings.embeddableBuilder;
 import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
-import static org.codefilarete.stalactite.engine.configurer.resolver.PropertyMappingResolverTest.ABSTRACT_PROPERTY_MAPPING_COMPARATOR;
-import static org.codefilarete.stalactite.engine.configurer.resolver.PropertyMappingResolverTest.ABSTRACT_PROPERTY_MAPPING_REPRESENTATION;
+import static org.codefilarete.stalactite.engine.configurer.dslresolver.PropertyMappingResolverTest.ABSTRACT_PROPERTY_MAPPING_COMPARATOR;
+import static org.codefilarete.stalactite.engine.configurer.dslresolver.PropertyMappingResolverTest.ABSTRACT_PROPERTY_MAPPING_REPRESENTATION;
 import static org.codefilarete.tool.collection.Iterables.first;
 import static org.mockito.Mockito.mock;
 

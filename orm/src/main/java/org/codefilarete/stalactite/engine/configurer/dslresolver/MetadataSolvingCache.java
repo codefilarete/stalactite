@@ -1,11 +1,11 @@
-package org.codefilarete.stalactite.engine.configurer.resolver;
+package org.codefilarete.stalactite.engine.configurer.dslresolver;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
-import org.codefilarete.stalactite.engine.configurer.resolver.InheritanceConfigurationResolver.ResolvedConfiguration;
+import org.codefilarete.stalactite.engine.configurer.dslresolver.InheritanceConfigurationResolver.ResolvedConfiguration;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;

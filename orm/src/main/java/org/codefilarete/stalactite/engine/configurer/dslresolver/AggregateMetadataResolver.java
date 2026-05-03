@@ -1,11 +1,11 @@
-package org.codefilarete.stalactite.engine.configurer.resolver;
+package org.codefilarete.stalactite.engine.configurer.dslresolver;
 
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
+import org.codefilarete.stalactite.engine.configurer.dslresolver.InheritanceConfigurationResolver.ResolvedConfiguration;
+import org.codefilarete.stalactite.engine.configurer.dslresolver.MetadataSolvingCache.EntitySource;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.EntityPolymorphism;
-import org.codefilarete.stalactite.engine.configurer.resolver.InheritanceConfigurationResolver.ResolvedConfiguration;
-import org.codefilarete.stalactite.engine.configurer.resolver.MetadataSolvingCache.EntitySource;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -14,7 +14,7 @@ import static org.codefilarete.tool.collection.Iterables.first;
 
 /**
  * Creates and fulfills an {@link Entity} instance representing the root of an aggregate.
- * The result might be consumed by a {@link AggregateResolver} to create a persister instance afterward.
+ * The result might be consumed by a {@link org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver} to create a persister instance afterward.
  * 
  * @author Guillaume Mary
  */
@@ -28,7 +28,7 @@ public class AggregateMetadataResolver {
 		this.connectionConfiguration = connectionConfiguration;
 	}
 	
-	<C, I> Entity<C, I, ?> resolve(EntityMappingConfiguration<C, I> rootConfiguration) {
+	public <C, I> Entity<C, I, ?> resolve(EntityMappingConfiguration<C, I> rootConfiguration) {
 		InheritanceConfigurationResolver<C, I> inheritanceConfigurationResolver = new InheritanceConfigurationResolver<>();
 		KeepOrderSet<ResolvedConfiguration<?, I>> bottomToTopConfigurations = inheritanceConfigurationResolver.resolveConfigurations(rootConfiguration);
 		

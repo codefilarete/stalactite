@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.configurer.resolver;
+package org.codefilarete.stalactite.engine.configurer.dslresolver;
 
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.MethodReferences;
@@ -8,7 +8,7 @@ import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
-import org.codefilarete.stalactite.engine.configurer.resolver.InheritanceConfigurationResolver.ResolvedConfiguration;
+import org.codefilarete.stalactite.engine.configurer.dslresolver.InheritanceConfigurationResolver.ResolvedConfiguration;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Iterables;
@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
-import static org.codefilarete.stalactite.engine.configurer.resolver.InheritanceConfigurationResolver.IDENTIFIER_METHOD_REFERENCE;
+import static org.codefilarete.stalactite.engine.configurer.dslresolver.InheritanceConfigurationResolver.IDENTIFIER_METHOD_REFERENCE;
 import static org.mockito.Mockito.mock;
 
 class InheritanceConfigurationResolverTest {
