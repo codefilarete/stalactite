@@ -12,12 +12,12 @@ import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.ValueAccessPointVariantSupport;
+import org.codefilarete.stalactite.engine.configurer.dslresolver.InheritanceConfigurationResolver.ResolvedConfiguration;
+import org.codefilarete.stalactite.engine.configurer.dslresolver.MetadataSolvingCache.EntitySource;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
-import org.codefilarete.stalactite.engine.configurer.dslresolver.InheritanceConfigurationResolver.ResolvedConfiguration;
-import org.codefilarete.stalactite.engine.configurer.dslresolver.MetadataSolvingCache.EntitySource;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -222,9 +222,9 @@ public class OneToOneMetadataResolver {
 			
 			// priority 2: user didn't define reverse column, but we can guess it from the reverse accessor
 			if (reverseColumn == null) {
-				AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(oneToOneRelation.getTargetProvider());
+				AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(oneToOneRelation.getReverseAccessor().getAccessor());
 				leftPrimaryKey.getColumns().forEach(pkColumn -> {
-					String effectiveLeftColumnName = nullable(oneToOneRelation.getColumnName()).elseSet(() -> joinColumnNamingStrategy.giveName(accessorDefinition, pkColumn)).get();
+					String effectiveLeftColumnName = joinColumnNamingStrategy.giveName(accessorDefinition, pkColumn);
 					Column<RIGHTTABLE, ?> column = rightTable.addColumn(effectiveLeftColumnName, pkColumn.getJavaType());
 					rightKeyBuilder.addColumn(column);
 				});

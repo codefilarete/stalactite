@@ -7,6 +7,13 @@ import org.codefilarete.tool.collection.KeepOrderSet;
 
 import static org.codefilarete.tool.collection.Iterables.pair;
 
+/**
+ * 
+ * @param <LEFTTABLE> the left table of the join
+ * @param <RIGHTTABLE> the right table of the join
+ * @param <ID> the type of the join key
+ * @author Guillaume Mary
+ */
 public class KeyMapping<LEFTTABLE extends Fromable, RIGHTTABLE extends Fromable, ID> implements Key<LEFTTABLE, ID> {
 	
 	private final Key<LEFTTABLE, ID> leftKey;

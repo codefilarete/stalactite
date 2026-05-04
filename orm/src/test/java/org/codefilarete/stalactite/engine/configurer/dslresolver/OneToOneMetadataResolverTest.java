@@ -181,7 +181,7 @@ class OneToOneMetadataResolverTest {
 			Key<Table, ?> rightKey = (Key<Table, ?>) relation.getJoin().getRightKey();
 			Table personTable = rightKey.getTable();
 			KeepOrderSet<Column<Table, ?>> rightKeyColumns = rightKey.getColumns();
-			assertThat(rightKeyColumns).containsExactly(personTable.getColumn("presidentId"));
+			assertThat(rightKeyColumns).containsExactly(personTable.getColumn("countryId"));
 		}
 		
 		@Test
@@ -210,7 +210,7 @@ class OneToOneMetadataResolverTest {
 			Key<Table, ?> rightKey = (Key<Table, ?>) relation.getJoin().getRightKey();
 			Table personTable = rightKey.getTable();
 			KeepOrderSet<Column<Table, ?>> rightKeyColumns = rightKey.getColumns();
-			assertThat(rightKeyColumns).containsExactly(personTable.getColumn("presidentId"));
+			assertThat(rightKeyColumns).containsExactly(personTable.getColumn("countryId"));
 		}
 	}
 	
