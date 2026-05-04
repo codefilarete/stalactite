@@ -10,6 +10,7 @@ import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.ValueAccessPointVariantSupport;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.InheritanceConfigurationResolver.ResolvedConfiguration;
@@ -94,6 +95,11 @@ public class OneToOneMetadataResolver {
 					OneToOneOwnedByTargetHelper<SRC, TRGT, SRCID, TRGTID, SRCTABLE, TRGTTABLE> helper = new OneToOneOwnedByTargetHelper<>();
 					ForeignKey<TRGTTABLE, SRCTABLE, SRCID> foreignKey = helper.determineForeignKeyColumns(oneToOne, source.getTable().getPrimaryKey(), targetEntity.getTable(), namingConfiguration.getJoinColumnNamingStrategy(), namingConfiguration.getForeignKeyNamingStrategy());
 					tablesJoin = new DirectRelationJoin<>(foreignKey.getRightKey(), foreignKey);
+					
+					// eventually adding unique constraint
+					if (oneToOne.isUnique() && foreignKey.getColumns().size() == 1) {
+						helper.addUniqueConstraint(foreignKey, namingConfiguration.getUniqueConstraintNamingStrategy(), oneToOne.getReverseAccessor().getAccessor());
+					}
 				}
 			} // else: creating foreign key is not possible, nothing special to do
 			
@@ -103,6 +109,11 @@ public class OneToOneMetadataResolver {
 			OneToOneOwnedBySourceHelper<SRC, TRGT, SRCID, TRGTID, SRCTABLE, TRGTTABLE> helper = new OneToOneOwnedBySourceHelper<>();
 			ForeignKey<SRCTABLE, TRGTTABLE, TRGTID> foreignKey = helper.determineForeignKeyColumns(oneToOne, source.getTable(), targetEntity.getTable().getPrimaryKey(), namingConfiguration.getJoinColumnNamingStrategy(), namingConfiguration.getForeignKeyNamingStrategy());
 			tablesJoin = new DirectRelationJoin<>(foreignKey);
+			
+			// eventually adding unique constraint
+			if (oneToOne.isUnique() && foreignKey.getColumns().size() == 1) {
+				helper.addUniqueConstraint(foreignKey, namingConfiguration.getUniqueConstraintNamingStrategy(), oneToOne.getTargetProvider());
+			}
 			
 			relationFixer = BeanRelationFixer.of(oneToOne.getTargetProvider());
 		}
@@ -191,6 +202,11 @@ public class OneToOneMetadataResolver {
 			return leftTable.addForeignKey(foreignKeyName, leftKey, rightPrimaryKey);
 		}
 		
+		public void addUniqueConstraint(ForeignKey<LEFTTABLE, RIGHTTABLE, TRGTID> foreignKey, UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy, ReadWritePropertyAccessPoint<SRC, TRGT> targetProvider) {
+			Column<LEFTTABLE, ?> column = first(foreignKey.getColumns());
+			String constraintName = uniqueConstraintNamingStrategy.giveName(targetProvider, column);
+			column.getTable().addUniqueConstraint(constraintName, column);
+		}
 	}
 	
 	private class OneToOneOwnedByTargetHelper<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>> {
@@ -238,6 +254,12 @@ public class OneToOneMetadataResolver {
 			
 			String foreignKeyName = foreignKeyNamingStrategy.giveName(rightKey, leftPrimaryKey);
 			return rightTable.addForeignKey(foreignKeyName, rightKey, leftPrimaryKey);
+		}
+		
+		public void addUniqueConstraint(ForeignKey<RIGHTTABLE, LEFTTABLE, SRCID> foreignKey, UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy, ReadWritePropertyAccessPoint<TRGT, SRC> mappedByAccessor) {
+			Column<RIGHTTABLE, ?> column = first(foreignKey.getColumns());
+			String constraintName = uniqueConstraintNamingStrategy.giveName(mappedByAccessor, column);
+			column.getTable().addUniqueConstraint(constraintName, column);
 		}
 	}
 }
