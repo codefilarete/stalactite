@@ -9,7 +9,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  * 
  * @author Guillaume Mary
  */
-class JdbcForeignKey {
+public class JdbcForeignKey {
 	private final String name;
 	private final String srcColumnName;
 	private final String srcTableName;
@@ -17,7 +17,7 @@ class JdbcForeignKey {
 	private final String targetTableName;
 	
 	
-	JdbcForeignKey(String name, String srcTableName, String srcColumnName, String targetTableName, String targetColumnName) {
+	public JdbcForeignKey(String name, String srcTableName, String srcColumnName, String targetTableName, String targetColumnName) {
 		this.name = name;
 		this.srcColumnName = srcColumnName;
 		this.srcTableName = srcTableName;
@@ -53,7 +53,7 @@ class JdbcForeignKey {
 		return targetTableName;
 	}
 	
-	String getSignature() {
+	public String getSignature() {
 		return "JdbcForeignKey{" +
 				"name='" + name + '\'' +
 				", srcTableName='" + srcTableName + '\'' +

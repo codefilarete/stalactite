@@ -32,4 +32,8 @@ public abstract class ComponentRelation<SRC, TRGT, S, LEFTTABLE extends Table<LE
 	public BeanRelationFixer<SRC, TRGT> getBeanRelationFixer() {
 		return beanRelationFixer;
 	}
+	
+	public Supplier<S> getComponentFactory() {
+		return componentFactory;
+	}
 }

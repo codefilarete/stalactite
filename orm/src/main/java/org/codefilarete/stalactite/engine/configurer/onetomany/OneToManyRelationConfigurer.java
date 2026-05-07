@@ -82,7 +82,6 @@ public class OneToManyRelationConfigurer<SRC, SRCID, TRGT, TRGTID> extends Abstr
 			configurer = new OneToManyWithAssociationTableConfigurer<>(associationConfiguration,
 					oneToManyRelation.isFetchSeparately(),
 					associationTableNamingStrategy,
-					maintenanceMode == RelationMode.ASSOCIATION_ONLY,
 					dialect,
 					connectionConfiguration);
 		}

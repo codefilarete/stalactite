@@ -19,7 +19,7 @@ import org.codefilarete.tool.trace.MutableInt;
 import static org.codefilarete.stalactite.engine.diff.State.ADDED;
 import static org.codefilarete.stalactite.engine.diff.State.HELD;
 import static org.codefilarete.stalactite.engine.diff.State.REMOVED;
-import static org.codefilarete.stalactite.engine.runtime.onetomany.AbstractOneToManyWithAssociationTableEngine.INDEXED_COLLECTION_FIRST_INDEX_VALUE;
+import static org.codefilarete.stalactite.engine.runtime.onetomany.AbstractOneToManyEngine.INDEXED_COLLECTION_FIRST_INDEX_VALUE;
 
 /**
  * A class to compute the differences between 2 collections of objects: addition, removal or held

@@ -1,11 +1,15 @@
 package org.codefilarete.stalactite.engine.configurer.resolver;
 
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
@@ -16,13 +20,17 @@ import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListe
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.AggregateMetadataResolver;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
+import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
+import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.OneToManyResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetoone.OneToOneResolver;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Duo;
 
 public class AggregateResolver {
@@ -31,6 +39,7 @@ public class AggregateResolver {
 	private final PersisterRegistry persisterRegistry;
 	private final SkeletonAggregateResolver skeletonAggregateResolver;
 	private final OneToOneResolver oneToOneResolver;
+	private final OneToManyResolver oneToManyResolver;
 	
 	public AggregateResolver(PersistenceContext persistenceContext) {
 		this(persistenceContext, persistenceContext.getPersisterRegistry());
@@ -41,6 +50,7 @@ public class AggregateResolver {
 		this.persisterRegistry = persisterRegistry;
 		this.skeletonAggregateResolver = new SkeletonAggregateResolver(persistenceContext);
 		this.oneToOneResolver = new OneToOneResolver(skeletonAggregateResolver);
+		this.oneToManyResolver = new OneToManyResolver(skeletonAggregateResolver);
 	}
 	
 	public <C, I> EntityPersister<C, I> resolve(EntityMappingConfiguration<C, I> rootConfiguration) {
@@ -87,6 +97,7 @@ public class AggregateResolver {
 		ConfiguredRelationalPersister<C, I> result = skeletonAggregateResolver.buildPersister(rootEntity);
 		
 		appendOneToOnes(rootEntity, result);
+		appendOneToManys(rootEntity, result);
 		
 		return result;
 	}
@@ -151,5 +162,55 @@ public class AggregateResolver {
 								Collections.emptySet());
 					}
 				});
+	}
+	
+	<SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
+	void appendOneToManys(Entity<SRC, SRCID, LEFTTABLE> entity, ConfiguredRelationalPersister<SRC, SRCID> result) {
+		Queue<Duo<ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>, ConfiguredRelationalPersister<TRGT, TRGTID>>> foundRelations = new ArrayDeque<>();
+		Map<ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>, String> joinNames = new HashMap<>();
+		
+		oneToManyResolver.appendOneToManys(entity, result, new BiConsumer<ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>, ConfiguredRelationalPersister<TRGT, TRGTID>>() {
+			
+			@Override
+			public void accept(ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> resolvedRelation, ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+				
+				Set<Column<RIGHTTABLE, ?>> columnsToSelect;
+				Function<ColumnedRow, Object> duplicateIdentifierProvider;
+				if (resolvedRelation.isOrdered()) {
+					columnsToSelect = new HashSet<>(targetPersister.<RIGHTTABLE>getMainTable().getPrimaryKey().getColumns());
+					columnsToSelect.add(resolvedRelation.getIndexingColumn());
+					duplicateIdentifierProvider = (columnedRow) -> {
+						TRGTID identifier = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(columnedRow);
+						Integer targetEntityIndex = columnedRow.get(resolvedRelation.getIndexingColumn());
+						return identifier + "-" + targetEntityIndex;
+					};
+				} else {
+					columnsToSelect = Collections.emptySet();
+					duplicateIdentifierProvider = (columnedRow) -> {
+						TRGTID identifier = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(columnedRow);
+						return identifier;
+					};
+				}
+				String joinName = targetPersister.joinAsMany(
+						EntityJoinTree.ROOT_JOIN_NAME,
+						result,
+						resolvedRelation.getAccessor(),
+						resolvedRelation.getJoin().getLeftKey(),
+						resolvedRelation.getJoin().getRightKey(),
+						resolvedRelation.getBeanRelationFixer(),
+						duplicateIdentifierProvider,
+						columnsToSelect,
+						true,
+						resolvedRelation.isFetchSeparately());
+				foundRelations.add(new Duo<>(resolvedRelation, targetPersister));
+				joinNames.put(resolvedRelation, joinName);
+			}
+		});
+		
+//		while (!foundRelations.isEmpty()) {
+//			Duo<ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>, ConfiguredRelationalPersister<TRGT, TRGTID>> foundRelation = foundRelations.poll();
+//			deepOneToOnes(foundRelation, result, joinNames);
+//		}
+		
 	}
 }

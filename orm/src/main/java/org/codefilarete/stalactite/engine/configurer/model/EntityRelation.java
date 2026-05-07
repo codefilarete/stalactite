@@ -17,7 +17,8 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
  * @param <TRGT>
  * @author Guillaume Mary
  */
-public abstract class EntityRelation<SRC, TRGT, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINTYPE> extends Relation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINTYPE> {
+public abstract class EntityRelation<SRC, TRGT, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINTYPE>
+		extends Relation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINTYPE> {
 	
 	private final Entity<TRGT, ?, RIGHTTABLE> targetEntity;
 	

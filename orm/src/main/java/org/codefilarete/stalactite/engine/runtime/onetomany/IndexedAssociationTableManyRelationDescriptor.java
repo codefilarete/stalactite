@@ -30,8 +30,10 @@ public class IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C extends 
 	public IndexedAssociationTableManyRelationDescriptor(ReadWritePropertyAccessPoint<SRC, C> collectionAccessPoint,
 														 Supplier<C> collectionFactory,
 														 @Nullable PropertyMutator<TRGT, SRC> reverseSetter,
-														 Function<SRC, SRCID> idProvider) {
-		super(collectionAccessPoint, collectionFactory, reverseSetter);
+														 Function<SRC, SRCID> idProvider,
+														 boolean maintainAssociationOnly,
+														 boolean orphanRemoval) {
+		super(collectionAccessPoint, collectionFactory, reverseSetter, maintainAssociationOnly, orphanRemoval);
 		super.relationFixer = new InMemoryRelationHolder(idProvider);
 	}
 	

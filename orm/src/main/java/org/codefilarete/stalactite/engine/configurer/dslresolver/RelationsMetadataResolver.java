@@ -17,5 +17,7 @@ public class RelationsMetadataResolver {
 	<C, I> void resolve(EntitySource<C, I> entityHierarchy) {
 		OneToOneMetadataResolver oneToOneMetadataResolver = new OneToOneMetadataResolver(dialect, connectionConfiguration);
 		oneToOneMetadataResolver.resolve(entityHierarchy);
+		OneToManyMetadataResolver oneToManyMetadataResolver = new OneToManyMetadataResolver(dialect, connectionConfiguration);
+		oneToManyMetadataResolver.resolve(entityHierarchy);
 	}
 }

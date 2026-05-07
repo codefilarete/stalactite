@@ -12,6 +12,7 @@ import org.codefilarete.reflection.SerializablePropertyAccessor;
 import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation.MappedByConfiguration;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
@@ -104,6 +105,10 @@ class ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1 extends Co
 	
 	public boolean isWriteAuthorized() {
 		return writeAuthorized;
+	}
+	
+	public boolean isMaintainAssociationOnly() {
+		return manyToManyRelation.getRelationMode() == CascadeOptions.RelationMode.ASSOCIATION_ONLY;
 	}
 	
 	/**

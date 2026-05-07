@@ -27,6 +27,7 @@ import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedA
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.query.api.Fromable;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
@@ -48,32 +49,33 @@ public class OneToManyWithIndexedAssociationTableEngine<
 		TRGT,
 		SRCID,
 		TRGTID,
-		C extends Collection<TRGT>,
+		S extends Collection<TRGT>,
 		LEFTTABLE extends Table<LEFTTABLE>,
 		RIGHTTABLE extends Table<RIGHTTABLE>,
 		ASSOCIATIONTABLE extends IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
-		extends AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, IndexedAssociationRecord, ASSOCIATIONTABLE> {
+		extends OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, S, IndexedAssociationRecord, ASSOCIATIONTABLE> {
 
 	/** Column that stores index value */
 	private final Column<ASSOCIATIONTABLE, Integer> indexColumn;
 	
 	public OneToManyWithIndexedAssociationTableEngine(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 													  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
-													  IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDescriptor,
+													  IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, S, SRCID> manyRelationDescriptor,
 													  AssociationRecordPersister<IndexedAssociationRecord, ASSOCIATIONTABLE> associationPersister,
 													  Column<ASSOCIATIONTABLE, Integer> indexColumn,
-													  WriteOperationFactory writeOperationFactory) {
-		super(sourcePersister, targetPersister, manyRelationDescriptor, associationPersister, writeOperationFactory);
+													  WriteOperationFactory writeOperationFactory,
+													  Dialect dialect) {
+		super(sourcePersister, targetPersister, manyRelationDescriptor, associationPersister, writeOperationFactory, dialect);
 		this.indexColumn = indexColumn;
 	}
 	
 	@Override
-	public IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C, SRCID> getManyRelationDescriptor() {
-		return (IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C, SRCID>) super.getManyRelationDescriptor();
+	public IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, S, SRCID> getManyRelationDescriptor() {
+		return (IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, S, SRCID>) super.getManyRelationDescriptor();
 	}
 	
 	@Override
-	public String addSelectCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister, boolean loadSeparately) {
+	public String addSelectCascade(boolean loadSeparately) {
 		addIndexSelection(loadSeparately);
 		
 		// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
@@ -156,16 +158,16 @@ public class OneToManyWithIndexedAssociationTableEngine<
 		});
 	}
 	
-	private IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C, SRCID>.InMemoryRelationHolder getRelationFixer() {
+	private IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, S, SRCID>.InMemoryRelationHolder getRelationFixer() {
 		return getManyRelationDescriptor().getRelationFixer();
 	}
 	
 	@Override
-	public void addUpdateCascade(boolean shouldDeleteRemoved, boolean maintainAssociationOnly, ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	public void addUpdateCascade(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		
 		// NB: we don't have any reverseSetter (for applying source entity to reverse side (target entity)), because this is only relevant
 		// when association is mapped without intermediary table (owned by "many-side" entity)
-		CollectionUpdater<SRC, TRGT, C> collectionUpdater = new CollectionUpdater<SRC, TRGT, C>(manyRelationDescriptor.getCollectionAccessPoint(), targetPersister, null, shouldDeleteRemoved) {
+		CollectionUpdater<SRC, TRGT, S> collectionUpdater = new CollectionUpdater<SRC, TRGT, S>(manyRelationDescriptor.getCollectionAccessPoint(), targetPersister, null, getManyRelationDescriptor().isOrphanRemoval()) {
 			
 			@Override
 			protected AssociationTableUpdateContext newUpdateContext(Duo<SRC, SRC> updatePayload) {
@@ -263,14 +265,14 @@ public class OneToManyWithIndexedAssociationTableEngine<
 		};
 		
 		// Can we cascade update on target entities ? it depends on relation maintenance mode
-		if (!maintainAssociationOnly) {
+		if (!getManyRelationDescriptor().isMaintainAssociationOnly()) {
 			persisterListener.addUpdateListener(new AfterUpdateTrigger<>(collectionUpdater));
 		}
 	}
 	
 	@Override
-	protected IndexedAssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C> newRecordInsertionCascader(
-			Accessor<SRC, C> collectionGetter,
+	protected IndexedAssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, S> newRecordInsertionCascader(
+			Accessor<SRC, S> collectionGetter,
 			AssociationRecordPersister<IndexedAssociationRecord, ASSOCIATIONTABLE> associationPersister,
 			EntityMapping<SRC, SRCID, ?> mappingStrategy,
 			EntityMapping<TRGT, TRGTID, ?> targetStrategy) {

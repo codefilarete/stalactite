@@ -13,7 +13,7 @@ import org.codefilarete.stalactite.engine.runtime.AssociationTable;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
-import org.codefilarete.stalactite.engine.runtime.onetomany.AbstractOneToManyWithAssociationTableEngine;
+import org.codefilarete.stalactite.engine.runtime.onetomany.AbstractOneToManyEngine;
 import org.codefilarete.stalactite.engine.runtime.onetomany.IndexedAssociationTableManyRelationDescriptor;
 import org.codefilarete.stalactite.engine.runtime.onetomany.ManyRelationDescriptor;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithAssociationTableEngine;
@@ -36,31 +36,28 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 	
 	private final AssociationTableNamingStrategy associationTableNamingStrategy;
 	private final Dialect dialect;
-	private final boolean maintainAssociationOnly;
 	private final ConnectionConfiguration connectionConfiguration;
 	
 	OneToManyWithAssociationTableConfigurer(OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE> associationConfiguration,
 											boolean loadSeparately,
 											AssociationTableNamingStrategy associationTableNamingStrategy,
-											boolean maintainAssociationOnly,
 											Dialect dialect,
 											ConnectionConfiguration connectionConfiguration) {
 		super(associationConfiguration, loadSeparately);
 		this.associationTableNamingStrategy = associationTableNamingStrategy;
 		this.dialect = dialect;
-		this.maintainAssociationOnly = maintainAssociationOnly;
 		this.connectionConfiguration = connectionConfiguration;
 	}
 	
 	@Override
 	protected String configure(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
-		AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, ? extends AssociationRecord, ?> associationTableEngine = prepare(targetPersister);
-		String relationJoinNodeName = associationTableEngine.addSelectCascade(associationConfiguration.getSrcPersister(), loadSeparately);
+		AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, C> associationTableEngine = prepare(targetPersister);
+		String relationJoinNodeName = associationTableEngine.addSelectCascade(loadSeparately);
 		addWriteCascades(associationTableEngine, targetPersister);
 		return relationJoinNodeName;
 	}
 	
-	private AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, ?, ?> prepare(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	private AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, C> prepare(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		// case : Collection mapping without reverse property : an association table is needed
 		PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey = targetPersister.<RIGHTTABLE>getMapping().getTargetTable().getPrimaryKey();
 		
@@ -77,23 +74,23 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 	public CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(String tableAlias,
 																			  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 																			  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
-		AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, ?, ?> associationTableEngine = prepare(targetPersister);
+		AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, C> associationTableEngine = prepare(targetPersister);
 		associationTableEngine.addSelectCascadeIn2Phases(firstPhaseCycleLoadListener);
 		addWriteCascades(associationTableEngine, targetPersister);
 		return new CascadeConfigurationResult<>(associationTableEngine.getManyRelationDescriptor().getRelationFixer(), associationConfiguration.getSrcPersister());
 	}
 	
-	private void addWriteCascades(AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, ? extends AssociationRecord, ? extends AssociationTable> oneToManyWithAssociationTableEngine,
-								  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	private void addWriteCascades(AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, C> oneToManyWithAssociationTableEngine,
+	                              ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		if (associationConfiguration.isWriteAuthorized()) {
-			oneToManyWithAssociationTableEngine.addInsertCascade(maintainAssociationOnly, targetPersister);
-			oneToManyWithAssociationTableEngine.addUpdateCascade(associationConfiguration.isOrphanRemoval(), maintainAssociationOnly, targetPersister);
-			oneToManyWithAssociationTableEngine.addDeleteCascade(associationConfiguration.isOrphanRemoval(), dialect, targetPersister);
+			oneToManyWithAssociationTableEngine.addInsertCascade(targetPersister);
+			oneToManyWithAssociationTableEngine.addUpdateCascade(targetPersister);
+			oneToManyWithAssociationTableEngine.addDeleteCascade(targetPersister);
 		}
 	}
 	
 	private <ASSOCIATIONTABLE extends AssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
-	OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, ASSOCIATIONTABLE> assignEngineForNonIndexedAssociation(
+	OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, AssociationRecord, ASSOCIATIONTABLE> assignEngineForNonIndexedAssociation(
 			PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey,
 			String associationTableName,
 			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
@@ -135,13 +132,16 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 		ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor = new ManyRelationDescriptor<>(
 				associationConfiguration.getCollectionGetter(),
 				associationConfiguration.getCollectionFactory(),
-				associationConfiguration.getOneToManyRelation().getReverseLink());
+				associationConfiguration.getOneToManyRelation().getReverseLink(),
+				associationConfiguration.isMaintainAssociationOnly(),
+				associationConfiguration.isOrphanRemoval());
 		return new OneToManyWithAssociationTableEngine<>(
 				associationConfiguration.getSrcPersister(),
 				targetPersister,
 				manyRelationDescriptor,
 				associationPersister,
-				dialect.getWriteOperationFactory());
+				dialect.getWriteOperationFactory(),
+				dialect);
 	}
 	
 	private <ASSOCIATIONTABLE extends IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
@@ -194,7 +194,9 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 				associationConfiguration.getCollectionGetter(),
 				associationConfiguration.getCollectionFactory(),
 				relation.getReverseLink(),
-				associationConfiguration.getSrcPersister()::getId
+				associationConfiguration.getSrcPersister()::getId,
+				associationConfiguration.isMaintainAssociationOnly(),
+				associationConfiguration.isOrphanRemoval()
 		);
 		return new OneToManyWithIndexedAssociationTableEngine<>(
 				associationConfiguration.getSrcPersister(),
@@ -202,6 +204,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 				manyRelationDescriptor,
 				indexedAssociationPersister,
 				intermediaryTable.getIndexColumn(),
-				dialect.getWriteOperationFactory());
+				dialect.getWriteOperationFactory(),
+				dialect);
 	}
 }

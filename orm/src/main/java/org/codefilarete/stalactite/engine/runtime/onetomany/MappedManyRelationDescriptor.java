@@ -16,9 +16,9 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  * 
  * @author Guillaume Mary
  */
-public class MappedManyRelationDescriptor<SRC, TRGT, C extends Collection<TRGT>, SRCID> extends ManyRelationDescriptor<SRC, TRGT, C> {
+public class MappedManyRelationDescriptor<SRC, TRGT, C extends Collection<TRGT>, SRCID, TRGTTABLE extends Table<TRGTTABLE>> extends ManyRelationDescriptor<SRC, TRGT, C> {
 	
-	private final Key<Table<?>, SRCID> reverseColumn;
+	private final Key<TRGTTABLE, SRCID> reverseColumn;
 	
 	/**
 	 * @param collectionGetter collection accessor
@@ -31,12 +31,14 @@ public class MappedManyRelationDescriptor<SRC, TRGT, C extends Collection<TRGT>,
 	public MappedManyRelationDescriptor(ReadWritePropertyAccessPoint<SRC, C> collectionGetter,
 										Supplier<C> collectionFactory,
 										@Nullable PropertyMutator<TRGT, SRC> reverseSetter,
-										Key<?, SRCID> reverseColumn) {
-		super(collectionGetter, collectionFactory, reverseSetter);
-		this.reverseColumn = (Key<Table<?>, SRCID>) reverseColumn;
+										Key<TRGTTABLE, SRCID> reverseColumn,
+										boolean maintainAssociationOnly,
+										boolean orphanRemoval) {
+		super(collectionGetter, collectionFactory, reverseSetter, maintainAssociationOnly, orphanRemoval);
+		this.reverseColumn = reverseColumn;
 	}
 	
-	public Key<Table<?>, SRCID> getReverseColumn() {
+	public Key<TRGTTABLE, SRCID> getReverseColumn() {
 		return reverseColumn;
 	}
 }

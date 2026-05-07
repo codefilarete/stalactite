@@ -13,7 +13,6 @@ import java.util.stream.Stream;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Mutator;
-import org.codefilarete.reflection.PropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.idpolicy.GeneratedKeysPolicy;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
@@ -46,13 +45,9 @@ import static org.codefilarete.tool.collection.Iterables.stream;
 /**
  * @author Guillaume Mary
  */
-public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>, RIGHTTABLE extends Table<RIGHTTABLE>> {
-	
-	protected final ConfiguredRelationalPersister<SRC, SRCID> sourcePersister;
-	
-	protected final ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister;
-	
-	protected final MappedManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDescriptor;
+public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S extends Collection<TRGT>, SRCTABLE extends Table<SRCTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
+	extends AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, S>
+{
 	
 	/**
 	 * Foreign key column value store, for insert, update and delete cases : stores parent entity value per child entity,
@@ -90,13 +85,11 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	protected final ShadowColumnValueProvider<TRGT, RIGHTTABLE> foreignKeyValueProvider;
 	
 	public OneToManyWithMappedAssociationEngine(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
-												MappedManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDescriptor,
+												MappedManyRelationDescriptor<SRC, TRGT, S, SRCID, RIGHTTABLE> manyRelationDescriptor,
 												ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 												Set<Column<RIGHTTABLE, ?>> mappedReverseColumns,
 												Function<SRCID, Map<Column<RIGHTTABLE, ?>, ?>> reverseColumnsValueProvider) {
-		this.targetPersister = targetPersister;
-		this.manyRelationDescriptor = manyRelationDescriptor;
-		this.sourcePersister = sourcePersister;
+		super(sourcePersister, targetPersister, manyRelationDescriptor);
 		this.foreignKeyValueProvider = new ShadowColumnValueProvider<TRGT, RIGHTTABLE>() {
 			@Override
 			public Set<Column<RIGHTTABLE, ?>> getColumns() {
@@ -136,14 +129,15 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		targetPersister.<RIGHTTABLE>getMapping().addShadowColumnUpdate(foreignKeyValueProvider);
 	}
 	
-	public MappedManyRelationDescriptor<SRC, TRGT, C, SRCID> getManyRelationDescriptor() {
-		return manyRelationDescriptor;
+	@Override
+	public MappedManyRelationDescriptor<SRC, TRGT, S, SRCID, RIGHTTABLE> getManyRelationDescriptor() {
+		return (MappedManyRelationDescriptor<SRC, TRGT, S, SRCID, RIGHTTABLE>) manyRelationDescriptor;
 	}
 	
-	public <T1 extends Table<T1>, T2 extends Table<T2>> String addSelectCascade(Key<T1, SRCID> sourcePrimaryKey,
-																				boolean loadSeparately) {
+	@Override
+	public String addSelectCascade(boolean loadSeparately) {
 		// we add target subgraph joins to main persister
-		String relationJoinNodeName = targetPersister.joinAsMany(ROOT_JOIN_NAME, sourcePersister, manyRelationDescriptor.getCollectionAccessPoint(), sourcePrimaryKey, (Key<T2, SRCID>) manyRelationDescriptor.getReverseColumn(),
+		String relationJoinNodeName = targetPersister.joinAsMany(ROOT_JOIN_NAME, sourcePersister, manyRelationDescriptor.getCollectionAccessPoint(), sourcePersister.getMainTable().getPrimaryKey(), getManyRelationDescriptor().getReverseColumn(),
 				manyRelationDescriptor.getRelationFixer(), null, true, loadSeparately);
 		
 		// we must trigger subgraph event on loading of our own graph, this is mainly for event that initializes things because given ids
@@ -155,16 +149,16 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 				// since ids are not those of its entities, we should not pass them as argument, this will only initialize things if needed
 				targetSelectListener.beforeSelect(Collections.emptyList());
 			}
-
+			
 			@Override
 			public void afterSelect(Set<? extends SRC> result) {
 				Set<TRGT> collect = Iterables.stream(result).flatMap(src -> Nullable.nullable(manyRelationDescriptor.getCollectionAccessPoint().get(src))
-						.map(Collection::stream)
-						.getOr(Stream.empty()))
+								.map(Collection::stream)
+								.getOr(Stream.empty()))
 						.collect(Collectors.toSet());
 				targetSelectListener.afterSelect(collect);
 			}
-
+			
 			@Override
 			public void onSelectError(Iterable<SRCID> ids, RuntimeException exception) {
 				// since ids are not those of its entities, we should not pass them as argument
@@ -174,12 +168,14 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		return relationJoinNodeName;
 	}
 	
+	@Override
 	public void addInsertCascade(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		sourcePersister.addInsertListener(
 				new TargetInstancesInsertCascader(targetPersister, manyRelationDescriptor.getCollectionAccessPoint()));
 	}
 	
-	public void addUpdateCascade(boolean shouldDeleteRemoved, ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	@Override
+	public void addUpdateCascade(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		sourcePersister.addUpdateListener(new UpdateListener<SRC>() {
 			
 			/**
@@ -201,7 +197,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 				return "targetToSourceRelationStorer";
 			}
 		});
-		addTargetInstancesUpdateCascader(shouldDeleteRemoved);
+		addTargetInstancesUpdateCascader(getManyRelationDescriptor().isOrphanRemoval());
 		sourcePersister.addUpdateListener(new UpdateListener<SRC>() {
 			@Override
 			public void afterUpdate(Iterable<? extends Duo<SRC, SRC>> entities, boolean allColumnsStatement) {
@@ -229,7 +225,8 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 				new AfterUpdateTrigger<>(collectionUpdater));
 	}
 	
-	public void addDeleteCascade(boolean shouldDeleteRemoved, ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	@Override
+	public void addDeleteCascade(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		sourcePersister.addDeleteListener(new DeleteListener<SRC>() {
 			
 			@Override
@@ -244,7 +241,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 			}
 		});
 		
-		if (shouldDeleteRemoved) {
+		if (getManyRelationDescriptor().isOrphanRemoval()) {
 			// adding deletion of many-side entities
 			sourcePersister.addDeleteListener(
 					new DeleteTargetEntitiesBeforeDeleteCascader<>(targetPersister, manyRelationDescriptor.getCollectionAccessPoint()));
@@ -290,35 +287,31 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	 * Query and SQL generation don't support several instances of table and columns in them (aliases generation must be enhanced), and
 	 * overall column reading will be messed up because of that (to avoid all of this we should have mapping strategy clones)
 	 * 				
-	 * @param sourcePrimaryKey left table primary key
-	 * @param relationOwner right table primary key
-	 * @param collectionGetter relation provider
 	 * @param firstPhaseCycleLoadListener code to be invoked when reading rows
 	 */
-	public <T extends Table<T>> void addSelectIn2Phases(PrimaryKey<T, SRCID> sourcePrimaryKey,
-														Key<T, SRCID> relationOwner,
-														PropertyAccessPoint<SRC, C> collectionGetter,
-														FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
+	@Override
+	public void addSelectCascadeIn2Phases(FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 		// Join is declared on non-added tables : Person (alias = null) / Person (alias = null)
-		T relationOwnerTable = sourcePrimaryKey.getTable();
+		PrimaryKey<SRCTABLE, SRCID> sourcePrimaryKey = sourcePersister.<SRCTABLE>getMainTable().<SRCID>getPrimaryKey();
+		SRCTABLE relationOwnerTable = sourcePrimaryKey.getTable();
 		Table relationOwnerTableClone = new Table(relationOwnerTable.getName());
 		KeyBuilder<?, SRCID> relationOwnerPrimaryKeyBuilder = Key.from(relationOwnerTableClone);
-		relationOwnerTable.getPrimaryKey().getColumns().forEach(column ->
+		sourcePrimaryKey.getColumns().forEach(column ->
 				relationOwnerPrimaryKeyBuilder.addColumn(relationOwnerTableClone.addColumn(column.getName(), column.getJavaType()))
 		);
 		KeyBuilder<Table, SRCID> relationOwnerClone = Key.from(relationOwnerTableClone);
-		relationOwner.getColumns().forEach(column ->
+		getManyRelationDescriptor().getReverseColumn().getColumns().forEach(column ->
 				relationOwnerClone.addColumn(relationOwnerTableClone.addColumn(column.getExpression(), column.getJavaType()))
 		);
 		
-		IdentifierAssembler<TRGTID, T> targetIdentifierAssembler = targetPersister.getMapping().getIdMapping().getIdentifierAssembler();
+		IdentifierAssembler<TRGTID, SRCTABLE> targetIdentifierAssembler = targetPersister.getMapping().getIdMapping().getIdentifierAssembler();
 		Key<Table, SRCID> rightKey = relationOwnerClone.build();
 		Key<?, SRCID> rightPrimaryKey = relationOwnerPrimaryKeyBuilder.build();
 		sourcePersister.getEntityJoinTree().addPassiveJoin(
 				ROOT_JOIN_NAME,
 				sourcePrimaryKey,
 				rightKey,
-				relationOwnerTableClone.getName() + "_" + AccessorDefinition.giveDefinition(collectionGetter).getName(),
+				relationOwnerTableClone.getName() + "_" + AccessorDefinition.giveDefinition(getManyRelationDescriptor().getCollectionAccessPoint()).getName(),
 				JoinType.OUTER,
 				rightPrimaryKey.getColumns(),
 				(src, columnValueProvider) -> firstPhaseCycleLoadListener.onFirstPhaseRowRead(src, targetIdentifierAssembler.assemble(columnValueProvider)),
@@ -415,7 +408,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 			currentTargetToSourceRelationStorage.set(new TargetToSourceRelationStorage());
 		}
 		for (SRC sourceEntity : sourceEntities) {
-			C collection = manyRelationDescriptor.getCollectionAccessPoint().get(sourceEntity);
+			S collection = manyRelationDescriptor.getCollectionAccessPoint().get(sourceEntity);
 			nullable(collection).getOr(manyRelationDescriptor.getCollectionFactory()).forEach(trgt -> {
 				giveRelationStorageContext().add(trgt, relationIsNullified ? null : sourceEntity);
 			});

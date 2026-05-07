@@ -61,6 +61,7 @@ public class OneToOneResolver {
 						oneToOneEngine.addUpdateCascade(orphanRemoval);
 						oneToOneEngine.addDeleteCascade(orphanRemoval);
 					} else {
+						// even if write is not authorized, we still have to insert and update source-to-target link, because we are in relation-owned-by-source
 						if (!resolvedRelation.isOwnedByTarget()) {
 							((OneToOneOwnedBySourceEngine) oneToOneEngine).addForeignKeyMaintainer();
 						}

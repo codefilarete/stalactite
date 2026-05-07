@@ -9,6 +9,7 @@ import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -107,6 +108,10 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 	
 	public boolean isWriteAuthorized() {
 		return writeAuthorized;
+	}
+	
+	public boolean isMaintainAssociationOnly() {
+		return oneToManyRelation.getRelationMode() == CascadeOptions.RelationMode.ASSOCIATION_ONLY;
 	}
 	
 	/**

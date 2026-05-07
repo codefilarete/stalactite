@@ -11,7 +11,6 @@ import org.codefilarete.reflection.AccessorChain.ValueInitializerOnNullValue;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.AccessorDefinitionDefiner;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.PropertyMutator;
 import org.codefilarete.reflection.ReadWriteAccessorChain;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
@@ -355,12 +354,12 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		 * Made to shift the current instance with an accessor prefix. Used for embeddable objects with relation to make the relation being accessible
 		 * from the "root" entity.
 		 *
-		 * @param accessor the prefix of the clone to be created
+		 * @param prefix the prefix of the clone to be created
 		 * @return a clone of this instance prefixed with the given accessor
 		 * @param <C> the root entity type that owns the embeddable which has this relation
 		 */
-		<C> MappedByConfiguration<TRGT, C> embedInto(ReadWritePropertyAccessPoint<C, SRC> accessor) {
-			return new ShiftedMappedByConfiguration<>(accessor, this);
+		<C> MappedByConfiguration<TRGT, C> embedInto(ReadWritePropertyAccessPoint<C, SRC> prefix) {
+			return new ShiftedMappedByConfiguration<>(prefix, this);
 		}
 		
 		public void setReverseGetter(SerializablePropertyAccessor<TRGT, SRC> reverseGetter) {
@@ -449,11 +448,11 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		}
 	}
 	
-	private static class ShiftedMappedByConfiguration<C, TRGT, SRC> extends MappedByConfiguration<TRGT, C> {
+	private static class ShiftedMappedByConfiguration<X, SRC, TRGT> extends MappedByConfiguration<TRGT, X> {
 		
-		private final PropertyMutator<TRGT, C> effectiveReverseMutator;
+		private final PropertyMutator<TRGT, X> effectiveReverseMutator;
 		
-		public ShiftedMappedByConfiguration(ReadWritePropertyAccessPoint<C, SRC> accessor, MappedByConfiguration<TRGT, SRC> mappedByConfiguration) {
+		public ShiftedMappedByConfiguration(ReadWritePropertyAccessPoint<X, SRC> prefix, MappedByConfiguration<TRGT, SRC> mappedByConfiguration) {
 			this.reverseColumn = mappedByConfiguration.reverseColumn;
 			this.reverseColumnName = mappedByConfiguration.reverseColumnName;
 			this.foreignKeyColumnMapping.putAll((ValueAccessPointMap) mappedByConfiguration.foreignKeyColumnMapping);
@@ -461,28 +460,19 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 			// Note that we don't set this.reverseGetter nor this.reverseSetter because it raises generics problem, and we can afford not to store them.
 			
 			// Creates shifted mutator when reverse accessor is present
-			if (mappedByConfiguration.reverseGetter != null || mappedByConfiguration.reverseSetter != null) {
-				PropertyMutator<TRGT, SRC> localReverseSetter;
-				AccessorDefinition reverseDefinition;
-				if (mappedByConfiguration.reverseGetter != null) {
-					localReverseSetter = mappedByConfiguration.reverseGetter;
-					reverseDefinition = AccessorDefinition.giveDefinition(mappedByConfiguration.reverseGetter);
-				} else {
-					localReverseSetter = mappedByConfiguration.reverseSetter;
-					reverseDefinition = AccessorDefinition.giveDefinition(mappedByConfiguration.reverseSetter);
-				}
-				AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(accessor);
-				this.effectiveReverseMutator = new ShiftedMutator<>(
-						accessor,
+			if (mappedByConfiguration.giveReverseSetter() != null) {
+				AccessorDefinition reverseDefinition = AccessorDefinition.giveDefinition(mappedByConfiguration.giveReverseSetter());
+				AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(prefix);
+				this.effectiveReverseMutator = new ShiftedMutator<>(prefix,
 						new AccessorDefinition(accessorDefinition.getDeclaringClass(), accessorDefinition.getName() + "." + reverseDefinition.getName(), reverseDefinition.getMemberType()),
-						localReverseSetter);
+						mappedByConfiguration.giveReverseSetter());
 			} else {
 				this.effectiveReverseMutator = null;
 			}
 		}
 		
 		@Override
-		public PropertyMutator<TRGT, C> giveReverseSetter() {
+		public PropertyMutator<TRGT, X> giveReverseSetter() {
 			return effectiveReverseMutator;
 		}
 		
@@ -491,19 +481,19 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		}
 		
 		private class ShiftedMutator<C> implements PropertyMutator<TRGT, C>, AccessorDefinitionDefiner<TRGT> {
-			private final ReadWritePropertyAccessPoint<C, SRC> accessor;
+			private final ReadWritePropertyAccessPoint<C, SRC> shifter;
 			private final AccessorDefinition accessorDefinition;
-			private final Mutator<TRGT, SRC> reverseSetter;
+			private final PropertyMutator<TRGT, SRC> reverseSetter;
 			
-			public ShiftedMutator(ReadWritePropertyAccessPoint<C, SRC> accessor, AccessorDefinition accessorDefinition, PropertyMutator<TRGT, SRC> reverseSetter) {
-				this.accessor = accessor;
+			public ShiftedMutator(ReadWritePropertyAccessPoint<C, SRC> shifter, AccessorDefinition accessorDefinition, PropertyMutator<TRGT, SRC> reverseSetter) {
+				this.shifter = shifter;
 				this.accessorDefinition = accessorDefinition;
 				this.reverseSetter = reverseSetter;
 			}
 			
 			@Override
 			public void set(TRGT trgt, C c) {
-				SRC src = accessor.get(c);
+				SRC src = shifter.get(c);
 				reverseSetter.set(trgt, src);
 			}
 			

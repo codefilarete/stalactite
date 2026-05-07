@@ -37,11 +37,11 @@ import static org.codefilarete.tool.Nullable.nullable;
  * Configurer dedicated to association that are mapped on reverse side by a property and a column on table's target entities
  * @author Guillaume Mary
  */
-class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>,
+class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, S extends Collection<TRGT>,
 		LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
-		extends OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE> {
+		extends OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, S, LEFTTABLE> {
 	
-	private OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C, RIGHTTABLE> mappedAssociationEngine;
+	private OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S, LEFTTABLE, RIGHTTABLE> mappedAssociationEngine;
 	
 	private Key<RIGHTTABLE, SRCID> foreignKey;
 	
@@ -49,7 +49,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 	
 	private Function<SRCID, Map<Column<RIGHTTABLE, ?>, ?>> reverseColumnsValueProvider;
 	
-	OneToManyWithMappedAssociationConfigurer(OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE> associationConfiguration,
+	OneToManyWithMappedAssociationConfigurer(OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, S, LEFTTABLE> associationConfiguration,
 											 boolean loadSeparately) {
 		super(associationConfiguration, loadSeparately);
 	}
@@ -60,7 +60,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 		assignAssociationEngine(targetPersister);
 		propagateMappedAssociationToSubTables(targetPersister);
 		
-		String relationJoinNodeName = mappedAssociationEngine.addSelectCascade(associationConfiguration.getLeftPrimaryKey(), loadSeparately);
+		String relationJoinNodeName = mappedAssociationEngine.addSelectCascade(loadSeparately);
 		addWriteCascades(mappedAssociationEngine, targetPersister);
 		return relationJoinNodeName;
 	}
@@ -84,7 +84,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 	protected void determineForeignKeyColumns(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		RIGHTTABLE mainTargetTable = targetPersister.getMainTable();
 		KeyBuilder<RIGHTTABLE, SRCID> foreignKeyBuilder = Key.from(mainTargetTable);
-		OneToManyRelation<SRC, TRGT, TRGTID, C> relation = associationConfiguration.getOneToManyRelation();
+		OneToManyRelation<SRC, TRGT, TRGTID, S> relation = associationConfiguration.getOneToManyRelation();
 		if (!relation.getForeignKeyNameMapping().isEmpty()) {
 			Map<Accessor<SRCID, ?>, Column<RIGHTTABLE, ?>> foreignKeyColumnMapping = new HashMap<>();
 			relation.getForeignKeyNameMapping().forEach((valueAccessPoint, colName) -> {
@@ -202,29 +202,30 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 																			  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 		determineForeignKeyColumns(targetPersister);
 		assignAssociationEngine(targetPersister);
-		mappedAssociationEngine.addSelectIn2Phases(associationConfiguration.getLeftPrimaryKey(),
-				(Key<LEFTTABLE, SRCID>) mappedAssociationEngine.getManyRelationDescriptor().getReverseColumn(),
-				associationConfiguration.getCollectionGetter(),
-				firstPhaseCycleLoadListener);
+		mappedAssociationEngine.addSelectCascadeIn2Phases(firstPhaseCycleLoadListener);
 		addWriteCascades(mappedAssociationEngine, targetPersister);
 		return new CascadeConfigurationResult<>(mappedAssociationEngine.getManyRelationDescriptor().getRelationFixer(), associationConfiguration.getSrcPersister());
 	}
 	
-	private void addWriteCascades(OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C, RIGHTTABLE> mappedAssociationEngine,
+	private void addWriteCascades(OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S, LEFTTABLE, RIGHTTABLE> mappedAssociationEngine,
 								  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		if (associationConfiguration.isWriteAuthorized()) {
 			mappedAssociationEngine.addInsertCascade(targetPersister);
-			mappedAssociationEngine.addUpdateCascade(associationConfiguration.isOrphanRemoval(), targetPersister);
-			mappedAssociationEngine.addDeleteCascade(associationConfiguration.isOrphanRemoval(), targetPersister);
+			mappedAssociationEngine.addUpdateCascade(targetPersister);
+			mappedAssociationEngine.addDeleteCascade(targetPersister);
 		}
 	}
 	
-	private void assignEngineForNonIndexedAssociation(Key<?, SRCID> reverseColumn,
+	private void assignEngineForNonIndexedAssociation(Key<RIGHTTABLE, SRCID> reverseColumn,
 													  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 													  @Nullable PropertyMutator<TRGT, SRC> reverseSetter) {
-		MappedManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDefinition = new MappedManyRelationDescriptor<>(
+		MappedManyRelationDescriptor<SRC, TRGT, S, SRCID, RIGHTTABLE> manyRelationDefinition = new MappedManyRelationDescriptor<>(
 				associationConfiguration.getCollectionGetter(),
-				associationConfiguration.getCollectionFactory(), reverseSetter, reverseColumn);
+				associationConfiguration.getCollectionFactory(),
+				reverseSetter,
+				reverseColumn,
+				associationConfiguration.isMaintainAssociationOnly(),
+				associationConfiguration.isOrphanRemoval());
 		mappedAssociationEngine = new OneToManyWithMappedAssociationEngine<>(
 				targetPersister,
 				manyRelationDefinition,
@@ -235,7 +236,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 	}
 	
 	private void assignEngineForIndexedAssociation(@Nullable PropertyMutator<TRGT, SRC> reverseSetter,
-												   Key<?, SRCID> reverseColumn,
+												   Key<RIGHTTABLE, SRCID> reverseColumn,
 												   @Nullable Column<RIGHTTABLE, Integer> indexingColumn,
 												   ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		if (indexingColumn == null) {
@@ -246,20 +247,21 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 			indexingColumn = targetPersister.getMapping().getTargetTable().addColumn(indexingColumnName, indexColumnType);
 		}
 		
-		IndexedMappedManyRelationDescriptor<SRC, TRGT, C, SRCID, TRGTID> manyRelationDefinition = new IndexedMappedManyRelationDescriptor<>(
+		IndexedMappedManyRelationDescriptor<SRC, TRGT, S, SRCID, TRGTID, RIGHTTABLE> manyRelationDefinition = new IndexedMappedManyRelationDescriptor<>(
 				associationConfiguration.getCollectionGetter(),
 				associationConfiguration.getCollectionFactory(),
 				reverseSetter,
 				reverseColumn,
 				indexingColumn,
 				associationConfiguration.getSrcPersister()::getId,
-				targetPersister::getId);
+				targetPersister::getId,
+				associationConfiguration.isMaintainAssociationOnly(),
+				associationConfiguration.isOrphanRemoval());
 		mappedAssociationEngine = new OneToManyWithIndexedMappedAssociationEngine<>(
 				targetPersister,
 				manyRelationDefinition,
 				associationConfiguration.getSrcPersister(),
 				mappedReverseColumns,
-				indexingColumn,
 				reverseColumnsValueProvider
 		);
 	}

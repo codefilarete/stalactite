@@ -12,14 +12,14 @@ import static org.codefilarete.tool.collection.Iterables.stream;
 /**
  * @author Guillaume Mary
  */
-public class AssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>>
-		extends AfterInsertCollectionCascader<SRC, AssociationRecord> {
+public class AssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>, R extends AssociationRecord>
+		extends AfterInsertCollectionCascader<SRC, R> {
 	
 	private final Accessor<SRC, C> collectionGetter;
 	private final EntityMapping<SRC, SRCID, ?> mappingStrategy;
 	private final EntityMapping<TRGT, TRGTID, ?> targetStrategy;
 	
-	public AssociationRecordInsertionCascader(AssociationRecordPersister<AssociationRecord, ?> persister,
+	public AssociationRecordInsertionCascader(AssociationRecordPersister<R, ?> persister,
 											  Accessor<SRC, C> collectionGetter,
 											  EntityMapping<SRC, SRCID, ?> mappingStrategy,
 											  EntityMapping<TRGT, TRGTID, ?> targetStrategy) {
@@ -30,16 +30,16 @@ public class AssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C exte
 	}
 	
 	@Override
-	protected void postTargetInsert(Iterable<? extends AssociationRecord> entities) {
+	protected void postTargetInsert(Iterable<? extends R> entities) {
 		// Nothing to do. Identified#isPersisted flag should be fixed by target persister
 	}
 	
 	@Override
-	protected Collection<AssociationRecord> getTargets(SRC src) {
+	protected Collection<R> getTargets(SRC src) {
 		Collection<TRGT> targets = collectionGetter.get(src);
 		// We only insert non-persisted instances (for logic and to prevent duplicate primary key error)
 		return stream(targets)
-				.map(target -> new AssociationRecord(mappingStrategy.getId(src), targetStrategy.getId(target)))
+				.map(target -> (R) new AssociationRecord(mappingStrategy.getId(src), targetStrategy.getId(target)))
 				.collect(Collectors.toList());
 	}
 }

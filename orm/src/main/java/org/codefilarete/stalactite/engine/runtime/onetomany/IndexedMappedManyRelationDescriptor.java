@@ -25,24 +25,26 @@ import static org.codefilarete.tool.bean.Objects.preventNull;
  * 
  * @author Guillaume Mary
  */
-public class IndexedMappedManyRelationDescriptor<SRC, TRGT, C extends Collection<TRGT>, SRCID, TRGTID> extends MappedManyRelationDescriptor<SRC, TRGT, C, SRCID> {
+public class IndexedMappedManyRelationDescriptor<SRC, TRGT, S extends Collection<TRGT>, SRCID, TRGTID, TRGTTABLE extends Table<TRGTTABLE>> extends MappedManyRelationDescriptor<SRC, TRGT, S, SRCID, TRGTTABLE> {
 	
 	/** Column that stores index value, owned by reverse side table (table of targetPersister) */
-	private final Column<Table, Integer> indexingColumn;
+	private final Column<TRGTTABLE, Integer> indexingColumn;
 	
-	public IndexedMappedManyRelationDescriptor(ReadWritePropertyAccessPoint<SRC, C> collectionGetter,
-											   Supplier<C> collectionFactory,
+	public IndexedMappedManyRelationDescriptor(ReadWritePropertyAccessPoint<SRC, S> collectionGetter,
+											   Supplier<S> collectionFactory,
 											   @Nullable PropertyMutator<TRGT, SRC> reverseSetter,
-											   Key<?, SRCID> reverseColumn,
-											   Column<? extends Table, Integer> indexingColumn,
+											   Key<TRGTTABLE, SRCID> reverseColumn,
+											   Column<TRGTTABLE, Integer> indexingColumn,
 											   Function<SRC, SRCID> idProvider,
-											   Function<TRGT, TRGTID> targetIdProvider) {
-		super(collectionGetter, collectionFactory, reverseSetter, reverseColumn);
-		this.indexingColumn = (Column<Table, Integer>) indexingColumn;
+											   Function<TRGT, TRGTID> targetIdProvider,
+											   boolean maintainAssociationOnly,
+											   boolean orphanRemoval) {
+		super(collectionGetter, collectionFactory, reverseSetter, reverseColumn, maintainAssociationOnly, orphanRemoval);
+		this.indexingColumn = indexingColumn;
 		super.relationFixer = new InMemoryRelationHolder(idProvider, targetIdProvider);
 	}
 	
-	public Column<Table, Integer> getIndexingColumn() {
+	public Column<TRGTTABLE, Integer> getIndexingColumn() {
 		return indexingColumn;
 	}
 	
@@ -120,7 +122,7 @@ public class IndexedMappedManyRelationDescriptor<SRC, TRGT, C extends Collection
 				if (inMemoryCollection != null) {	// inMemoryCollection can be null if there's no associated entity in the database
 					Map<TRGTID, Integer> indexPerTargetId = currentSelectedIndexes.get();
 					inMemoryCollection.sort(Comparator.comparingInt(target -> indexPerTargetId.get(targetIdProvider.apply(target))));
-					C relationCollection = getCollectionAccessPoint().get(src);
+					S relationCollection = getCollectionAccessPoint().get(src);
 					if (relationCollection == null) {
 						relationCollection = getCollectionFactory().get();
 						getCollectionAccessPoint().set(src, relationCollection);

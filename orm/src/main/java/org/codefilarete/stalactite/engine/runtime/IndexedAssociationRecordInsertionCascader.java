@@ -9,20 +9,20 @@ import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.tool.trace.MutableInt;
 
-import static org.codefilarete.stalactite.engine.runtime.onetomany.AbstractOneToManyWithAssociationTableEngine.INDEXED_COLLECTION_FIRST_INDEX_VALUE;
+import static org.codefilarete.stalactite.engine.runtime.onetomany.AbstractOneToManyEngine.INDEXED_COLLECTION_FIRST_INDEX_VALUE;
 
 /**
  * @author Guillaume Mary
  */
-public class IndexedAssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>>
+public class IndexedAssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, S extends Collection<TRGT>>
 		extends AfterInsertCollectionCascader<SRC, IndexedAssociationRecord> {
 	
-	private final Accessor<SRC, C> collectionGetter;
+	private final Accessor<SRC, S> collectionGetter;
 	private final EntityMapping<SRC, SRCID, ?> mappingStrategy;
 	private final EntityMapping<TRGT, TRGTID, ?> targetStrategy;
 	
 	public IndexedAssociationRecordInsertionCascader(AssociationRecordPersister<IndexedAssociationRecord, ?> persister,
-													 Accessor<SRC, C> collectionGetter,
+													 Accessor<SRC, S> collectionGetter,
 													 EntityMapping<SRC, SRCID, ?> mappingStrategy,
 													 EntityMapping<TRGT, TRGTID, ?> targetStrategy) {
 		super(persister);
