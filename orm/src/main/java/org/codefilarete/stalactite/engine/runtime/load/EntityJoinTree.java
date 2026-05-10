@@ -144,7 +144,7 @@ public class EntityJoinTree<C, I> {
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID, X, Y> String addRelationJoin(String leftStrategyName,
 	                                                                                        EntityInflater<U, ?> inflater,
 	                                                                                        // Second generic type should be U, or a type containing U (like a Collection<U>or even Map<K, U>) which makes it
-	                                                                                        // impossible to implement; thus, we have to use the ? wilcard.
+	                                                                                        // impossible to implement; thus, we have to use the ? wildcard.
 	                                                                                        PropertyAccessPoint<C, X> propertyAccessor,
 	                                                                                        Key<T1, ID> leftJoinColumn,
 	                                                                                        Key<T2, ID> rightJoinColumn,
@@ -184,7 +184,7 @@ public class EntityJoinTree<C, I> {
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID, JOINTYPE> String addRelationJoin(String leftStrategyName,
 																								EntityInflater<U, ID> inflater,
 																								// Second generic type should be U, or a type containing U (like a Collection<U>or even Map<K, U>) which makes it
-																								// impossible to implement; thus, we have to use the ? wilcard.
+																								// impossible to implement; thus, we have to use the ? wildcard.
 																								PropertyAccessPoint<C, ?> propertyAccessor,
 																								Key<T1, JOINTYPE> leftJoinColumn,
 																								Key<T2, JOINTYPE> rightJoinColumn,

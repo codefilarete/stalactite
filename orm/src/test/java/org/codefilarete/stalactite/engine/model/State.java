@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
+import org.codefilarete.stalactite.id.PersistableIdentifier;
 
 /**
  * @author Guillaume Mary
@@ -20,6 +21,10 @@ public class State implements Identified<Long> {
 	private Set<City> cities = new HashSet<>();
 	
 	public State() {
+	}
+	
+	public State(Long id) {
+		this(new PersistableIdentifier<>(id));
 	}
 	
 	public State(Identifier<Long> id) {

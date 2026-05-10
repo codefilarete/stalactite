@@ -21,6 +21,7 @@ import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
+import org.codefilarete.stalactite.engine.model.State;
 import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.id.AbstractIdentifier;
 import org.codefilarete.stalactite.id.Identifier;
@@ -174,6 +175,9 @@ class OneToOneResolverTest {
 		
 		FluentEntityMappingBuilder<City, Identifier<Long>> cityMappingBuilder = entityBuilder(City.class, Identifier.LONG_TYPE)
 				.mapKey(City::getId, ALREADY_ASSIGNED)
+				.mapOneToOne(City::getState, entityBuilder(State.class, Identifier.LONG_TYPE)
+						.mapKey(State::getId, ALREADY_ASSIGNED)
+						.map(State::getName))
 				.map(City::getName);
 		
 		
@@ -204,6 +208,9 @@ class OneToOneResolverTest {
 		
 		City capital = new City(new LongProvider().giveNewIdentifier());
 		capital.setName("Paris");
+		State state = new State(new LongProvider().giveNewIdentifier());
+		state.setName("Ile de France");
+		capital.setState(state);
 		dummyCountry.setCapital(capital);
 		
 		// testing insert cascade
@@ -212,8 +219,10 @@ class OneToOneResolverTest {
 		assertThat(persistedCountry.getId()).isEqualTo(new PersistedIdentifier<>(0L));
 		assertThat(persistedCountry.getPresident().getName()).isEqualTo("French president");
 		assertThat(persistedCountry.getCapital().getName()).isEqualTo("Paris");
+		assertThat(persistedCountry.getCapital().getState().getName()).isEqualTo("Ile de France");
 		assertThat(persistedCountry.getPresident().getId().isPersisted()).isTrue();
 		assertThat(persistedCountry.getCapital().getId().isPersisted()).isTrue();
+		assertThat(persistedCountry.getCapital().getState().getId().isPersisted()).isTrue();
 		
 		// testing insert cascade with another Country reusing OneToOne entities
 		Country dummyCountry2 = new Country(countryIdProvider.giveNewIdentifier());
@@ -229,10 +238,12 @@ class OneToOneResolverTest {
 		assertThat(persistedCountry2.getCapital().getId().getDelegate()).isEqualTo(persistedCountry.getCapital().getId().getDelegate());
 		assertThat(persistedCountry2.getPresident()).isNotSameAs(persistedCountry.getPresident());
 		assertThat(persistedCountry2.getCapital()).isNotSameAs(persistedCountry.getCapital());
+		assertThat(persistedCountry2.getCapital().getState()).isNotSameAs(persistedCountry.getCapital().getState());
 		
 		// testing update cascade
 		persistedCountry2.getPresident().setName("French president renamed");
 		persistedCountry2.getCapital().setName("Paris renamed");
+		persistedCountry2.getCapital().getState().setName("Ile de France renamed");
 		countryPersister.update(persistedCountry2, dummyCountry2, true);
 		// database must be up to date
 		ResultSet resultSet;
@@ -244,9 +255,10 @@ class OneToOneResolverTest {
 		resultSet.next();
 		assertThat(resultSet.getString("name")).isEqualTo("Paris renamed");
 		assertThat(resultSet.next()).isFalse();
-		
-		
-		
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select name from State");
+		resultSet.next();
+		assertThat(resultSet.getString("name")).isEqualTo("Ile de France renamed");
+		assertThat(resultSet.next()).isFalse();
 		
 		// we use a printer to compare our results because entities override equals() which only keep "id" into account
 		// which is far from enough for our checking
@@ -290,6 +302,9 @@ class OneToOneResolverTest {
 		assertThat(resultSet.next()).isTrue();
 		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement()
 				.executeQuery("select id from City where id = " + persistedCountry.getCapital().getId().getDelegate());
+		assertThat(resultSet.next()).isTrue();
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement()
+				.executeQuery("select id from State where id = " + persistedCountry.getCapital().getState().getId().getDelegate());
 		assertThat(resultSet.next()).isTrue();
 	}
 	

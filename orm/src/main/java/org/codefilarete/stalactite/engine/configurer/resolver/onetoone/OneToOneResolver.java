@@ -1,12 +1,11 @@
 package org.codefilarete.stalactite.engine.configurer.resolver.onetoone;
 
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions;
 import org.codefilarete.stalactite.engine.configurer.manyToOne.ManyToOneOwnedBySourceConfigurer.MandatoryRelationAssertBeforeUpdateListener;
-import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneConfigurerTemplate.MandatoryRelationAssertBeforeInsertListener;
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
@@ -26,10 +25,13 @@ public class OneToOneResolver {
 	}
 	
 	/**
-	 * Appends the direct one-to-one relations to the given {@link ConfiguredRelationalPersister}
-	 * @param entity the entity to collect one-to-ones from
-	 * @param aggregatePersister the persister to append one-to-one relations to
-	 * @param createdPersisterConsumer a consumer to handle created persister for each resolved one-to-one relation
+	 * Configure the given one-to-one relation by creating the persister for its target entity type and the engine that
+	 * will maintain the cascades.
+	 * It calls the given {@link Consumer} for the created target persister.
+	 * 
+	 * @param relationDefinition the one-to-one object that defines the relation to append
+	 * @param sourcePersister the persister having the one-to-one relation
+	 * @param createdPersisterConsumer a consumer to handle the created persister
 	 * @param <SRC> type of the source entity
 	 * @param <SRCID> type of the source entity's identifier
 	 * @param <TRGT> type of the target entity
@@ -39,49 +41,43 @@ public class OneToOneResolver {
 	 * @param <JOINID> type of the join identifier
 	 */
 	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
-	void appendOneToOnes(Entity<SRC, SRCID, LEFTTABLE> entity,
-	                     ConfiguredRelationalPersister<SRC, SRCID> aggregatePersister,
-	                     BiConsumer<ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>, ConfiguredRelationalPersister<TRGT, TRGTID>> createdPersisterConsumer) {
-		entity.getRelations().stream()
-				.filter(ResolvedOneToOneRelation.class::isInstance)
-				.map(ResolvedOneToOneRelation.class::cast)
-				.forEach(relation -> {
-					
-					assertConfigurationIsSupported(relation.getRelationMode());
-					
-					ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> resolvedRelation = relation;
-					ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getTargetEntity());
-					createdPersisterConsumer.accept(resolvedRelation, targetPersister);
-					
-					ReadWritePropertyAccessPoint<SRC, TRGT> targetAccessor = resolvedRelation.getAccessor();
-					KeyMapping<LEFTTABLE, RIGHTTABLE, JOINID> foreignKeyColumnsMapping = resolvedRelation.getJoin().getLeftKey().reference(resolvedRelation.getJoin().getRightKey());
-					
-					AbstractOneToOneEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> oneToOneEngine;
-					if (resolvedRelation.isOwnedByTarget()) {
-						oneToOneEngine = new OneToOneOwnedByTargetEngine<>(aggregatePersister, targetPersister, targetAccessor, foreignKeyColumnsMapping.getMapping());
-					} else {
-						oneToOneEngine = new OneToOneOwnedBySourceEngine<>(aggregatePersister, targetPersister, targetAccessor, foreignKeyColumnsMapping.getMapping());
-					}
-					
-					boolean orphanRemoval = resolvedRelation.getRelationMode() == CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
-					boolean writeAuthorized = resolvedRelation.getRelationMode() != CascadeOptions.RelationMode.READ_ONLY;
-					if (writeAuthorized) {
-						// if cascade is mandatory, then adding nullability checking before insert
-						if (resolvedRelation.isMandatory()) {
-							aggregatePersister.addInsertListener(new MandatoryRelationAssertBeforeInsertListener<>(targetAccessor));
-							aggregatePersister.addUpdateListener(new MandatoryRelationAssertBeforeUpdateListener<>(targetAccessor));
-						}
-						
-						oneToOneEngine.addInsertCascade();
-						oneToOneEngine.addUpdateCascade(orphanRemoval);
-						oneToOneEngine.addDeleteCascade(orphanRemoval);
-					} else {
-						// even if write is not authorized, we still have to insert and update source-to-target link, because we are in relation-owned-by-source
-						if (!resolvedRelation.isOwnedByTarget()) {
-							((OneToOneOwnedBySourceEngine) oneToOneEngine).addForeignKeyMaintainer();
-						}
-					}
-				});
+	void resolve(ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> relationDefinition,
+	             ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
+	             Consumer<ConfiguredRelationalPersister<TRGT, TRGTID>> createdPersisterConsumer) {
+		
+		assertConfigurationIsSupported(relationDefinition.getRelationMode());
+		
+		ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = skeletonAggregateResolver.buildPersister(relationDefinition.getTargetEntity());
+		createdPersisterConsumer.accept(targetPersister);
+		
+		ReadWritePropertyAccessPoint<SRC, TRGT> targetAccessor = relationDefinition.getAccessor();
+		KeyMapping<LEFTTABLE, RIGHTTABLE, JOINID> foreignKeyColumnsMapping = relationDefinition.getJoin().getLeftKey().reference(relationDefinition.getJoin().getRightKey());
+		
+		AbstractOneToOneEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> oneToOneEngine;
+		if (relationDefinition.isOwnedByTarget()) {
+			oneToOneEngine = new OneToOneOwnedByTargetEngine<>(sourcePersister, targetPersister, targetAccessor, foreignKeyColumnsMapping.getMapping());
+		} else {
+			oneToOneEngine = new OneToOneOwnedBySourceEngine<>(sourcePersister, targetPersister, targetAccessor, foreignKeyColumnsMapping.getMapping());
+		}
+		
+		boolean orphanRemoval = relationDefinition.getRelationMode() == CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
+		boolean writeAuthorized = relationDefinition.getRelationMode() != CascadeOptions.RelationMode.READ_ONLY;
+		if (writeAuthorized) {
+			// if cascade is mandatory, then adding nullability checking before insert
+			if (relationDefinition.isMandatory()) {
+				sourcePersister.addInsertListener(new MandatoryRelationAssertBeforeInsertListener<>(targetAccessor));
+				sourcePersister.addUpdateListener(new MandatoryRelationAssertBeforeUpdateListener<>(targetAccessor));
+			}
+			
+			oneToOneEngine.addInsertCascade();
+			oneToOneEngine.addUpdateCascade(orphanRemoval);
+			oneToOneEngine.addDeleteCascade(orphanRemoval);
+		} else {
+			// even if write is not authorized, we still have to insert and update source-to-target link, because we are in relation-owned-by-source
+			if (!relationDefinition.isOwnedByTarget()) {
+				((OneToOneOwnedBySourceEngine) oneToOneEngine).addForeignKeyMaintainer();
+			}
+		}
 	}
 	
 	private void assertConfigurationIsSupported(CascadeOptions.RelationMode maintenanceMode) {
