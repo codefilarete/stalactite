@@ -19,7 +19,9 @@ import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListener;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.AggregateMetadataResolver;
+import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
+import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.OneToManyResolver;
@@ -32,6 +34,9 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Duo;
+
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType.*;
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
 
 public class AggregateResolver {
 	
@@ -50,7 +55,7 @@ public class AggregateResolver {
 		this.persisterRegistry = persisterRegistry;
 		this.skeletonAggregateResolver = new SkeletonAggregateResolver(persistenceContext);
 		this.oneToOneResolver = new OneToOneResolver(skeletonAggregateResolver);
-		this.oneToManyResolver = new OneToManyResolver(skeletonAggregateResolver);
+		this.oneToManyResolver = new OneToManyResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 	}
 	
 	public <C, I> EntityPersister<C, I> resolve(EntityMappingConfiguration<C, I> rootConfiguration) {
@@ -103,20 +108,20 @@ public class AggregateResolver {
 	}
 	
 	<SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
-	void appendOneToOnes(Entity<SRC, SRCID, LEFTTABLE> entity, ConfiguredRelationalPersister<SRC, SRCID> result) {
+	void appendOneToOnes(Entity<SRC, SRCID, LEFTTABLE> entity, ConfiguredRelationalPersister<SRC, SRCID> rootPersister) {
 		Queue<Duo<ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>, ConfiguredRelationalPersister<TRGT, TRGTID>>> foundRelations = new ArrayDeque<>();
 		Map<ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>, String> joinNames = new HashMap<>();
 		
-		oneToOneResolver.appendOneToOnes(entity, result, new BiConsumer<ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>, ConfiguredRelationalPersister<TRGT, TRGTID>>() {
+		oneToOneResolver.appendOneToOnes(entity, rootPersister, new BiConsumer<ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>, ConfiguredRelationalPersister<TRGT, TRGTID>>() {
 			
 			@Override
 			public void accept(ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> resolvedRelation, ConfiguredRelationalPersister<TRGT, TRGTID> configuredRelationalPersister) {
-				String joinName = configuredRelationalPersister.joinAsOne(result,
+				String joinName = configuredRelationalPersister.joinAsOne(rootPersister,
 						resolvedRelation.getAccessor(),
 						resolvedRelation.getJoin().getLeftKey(),
 						resolvedRelation.getJoin().getRightKey(),
 						null,
-						resolvedRelation.getBeanRelationFixer(),
+						resolvedRelation.getRelationFixer(),
 						true,
 						resolvedRelation.isFetchSeparately());
 				
@@ -127,7 +132,7 @@ public class AggregateResolver {
 		
 		while (!foundRelations.isEmpty()) {
 			Duo<ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>, ConfiguredRelationalPersister<TRGT, TRGTID>> foundRelation = foundRelations.poll();
-			deepOneToOnes(foundRelation, result, joinNames);
+			deepOneToOnes(foundRelation, rootPersister, joinNames);
 		}
 		
 	}
@@ -146,9 +151,9 @@ public class AggregateResolver {
 						accessorChain.setNullValueHandler(AccessorChain.RETURN_NULL);
 						EntityMappingAdapter<ANOTHER, ANOTHERID, ANOTHERTABLE> strategy = new EntityMappingAdapter<>(configuredRelationalPersister.<ANOTHERTABLE>getMapping());
 						BeanRelationFixer<TRGT, ANOTHER> beanRelationFixer = (target, input) -> {
-							resolvedRelation.getBeanRelationFixer().apply(target, input);
+							resolvedRelation.getRelationFixer().apply(target, input);
 						};
-						String createdJoinNodeName = result.getEntityJoinTree().addRelationJoin(
+						result.getEntityJoinTree().addRelationJoin(
 								joinNames.get(foundRelation.getLeft()),
 								// because joinAsOne can be called in either case of owned relation or reversely owned relation, generics can't be set correctly,
 								// so we simply cast first argument
@@ -157,7 +162,7 @@ public class AggregateResolver {
 								resolvedRelation.getJoin().getLeftKey(),
 								resolvedRelation.getJoin().getRightKey(),
 								null,
-								resolvedRelation.isMandatory() ? EntityJoinTree.JoinType.INNER : EntityJoinTree.JoinType.OUTER,
+								resolvedRelation.isMandatory() ? INNER : OUTER,
 								beanRelationFixer,
 								Collections.emptySet());
 					}
@@ -165,45 +170,65 @@ public class AggregateResolver {
 	}
 	
 	<SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
-	void appendOneToManys(Entity<SRC, SRCID, LEFTTABLE> entity, ConfiguredRelationalPersister<SRC, SRCID> result) {
+	void appendOneToManys(Entity<SRC, SRCID, LEFTTABLE> entity, ConfiguredRelationalPersister<SRC, SRCID> aggregatePersister) {
 		Queue<Duo<ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>, ConfiguredRelationalPersister<TRGT, TRGTID>>> foundRelations = new ArrayDeque<>();
 		Map<ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>, String> joinNames = new HashMap<>();
 		
-		oneToManyResolver.appendOneToManys(entity, result, new BiConsumer<ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>, ConfiguredRelationalPersister<TRGT, TRGTID>>() {
+		oneToManyResolver.appendOneToManys(entity, aggregatePersister, new BiConsumer<ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>, ConfiguredRelationalPersister<TRGT, TRGTID>>() {
 			
 			@Override
 			public void accept(ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> resolvedRelation, ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 				
-				Set<Column<RIGHTTABLE, ?>> columnsToSelect;
-				Function<ColumnedRow, Object> duplicateIdentifierProvider;
-				if (resolvedRelation.isOrdered()) {
-					columnsToSelect = new HashSet<>(targetPersister.<RIGHTTABLE>getMainTable().getPrimaryKey().getColumns());
-					columnsToSelect.add(resolvedRelation.getIndexingColumn());
-					duplicateIdentifierProvider = (columnedRow) -> {
-						TRGTID identifier = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(columnedRow);
-						Integer targetEntityIndex = columnedRow.get(resolvedRelation.getIndexingColumn());
-						return identifier + "-" + targetEntityIndex;
-					};
+				if (resolvedRelation.isOwnedByReverseSide()) {
+					Set<Column<RIGHTTABLE, ?>> columnsToSelect;
+					Function<ColumnedRow, Object> duplicateIdentifierProvider;
+					if (resolvedRelation.isOrdered()) {
+						columnsToSelect = new HashSet<>(targetPersister.<RIGHTTABLE>getMainTable().getPrimaryKey().getColumns());
+						columnsToSelect.add(resolvedRelation.getIndexingMappedColumn());
+						duplicateIdentifierProvider = (columnedRow) -> {
+							TRGTID identifier = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(columnedRow);
+							Integer targetEntityIndex = columnedRow.get(resolvedRelation.getIndexingMappedColumn());
+							return identifier + "-" + targetEntityIndex;
+						};
+					} else {
+						columnsToSelect = Collections.emptySet();
+						duplicateIdentifierProvider = (columnedRow) -> {
+							TRGTID identifier = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(columnedRow);
+							return identifier;
+						};
+					}
+					DirectRelationJoin<LEFTTABLE, RIGHTTABLE, SRCID> join = (DirectRelationJoin<LEFTTABLE, RIGHTTABLE, SRCID>) resolvedRelation.getJoin();
+					String joinName = targetPersister.joinAsMany(
+							EntityJoinTree.ROOT_JOIN_NAME,
+							aggregatePersister,
+							resolvedRelation.getAccessor(),
+							join.getLeftKey(),
+							join.getRightKey(),
+							resolvedRelation.getRelationFixer(),
+							duplicateIdentifierProvider,
+							columnsToSelect,
+							true,
+							resolvedRelation.isFetchSeparately());
+					foundRelations.add(new Duo<>(resolvedRelation, targetPersister));
+					joinNames.put(resolvedRelation, joinName);
 				} else {
-					columnsToSelect = Collections.emptySet();
-					duplicateIdentifierProvider = (columnedRow) -> {
-						TRGTID identifier = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(columnedRow);
-						return identifier;
-					};
+					if (resolvedRelation.isOrdered()) {
+						
+					} else {
+						// we join on the association table
+						IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ?, SRCID, TRGTID> join = (IntermediaryRelationJoin) resolvedRelation.getJoin();
+						String associationTableJoinNodeName = aggregatePersister.getEntityJoinTree().addPassiveJoin(ROOT_JOIN_NAME,
+								join.getLeftKey(),
+								join.getLeftAssociationKey(),
+								OUTER,
+								Collections.emptySet());
+						
+						targetPersister.joinAsMany(associationTableJoinNodeName, aggregatePersister, resolvedRelation.getAccessor(),
+								join.getJoinTable().getManySideForeignKey(), join.getJoinTable().getManySideKey(),
+								resolvedRelation.getRelationFixer(), null, true, false);
+					}
+					
 				}
-				String joinName = targetPersister.joinAsMany(
-						EntityJoinTree.ROOT_JOIN_NAME,
-						result,
-						resolvedRelation.getAccessor(),
-						resolvedRelation.getJoin().getLeftKey(),
-						resolvedRelation.getJoin().getRightKey(),
-						resolvedRelation.getBeanRelationFixer(),
-						duplicateIdentifierProvider,
-						columnsToSelect,
-						true,
-						resolvedRelation.isFetchSeparately());
-				foundRelations.add(new Duo<>(resolvedRelation, targetPersister));
-				joinNames.put(resolvedRelation, joinName);
 			}
 		});
 		

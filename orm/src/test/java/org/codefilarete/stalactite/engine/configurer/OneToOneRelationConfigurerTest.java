@@ -79,7 +79,7 @@ class OneToOneRelationConfigurerTest {
 	}
 	
 	@Test
-	<T extends Table<T>> void tableStructure_associationTable() throws SQLException {
+	<T extends Table<T>> void tableStructure_ownedBySource() throws SQLException {
 		// Given
 		// defining Country mapping
 		T countryTable = (T) new Table("country");
@@ -223,7 +223,7 @@ class OneToOneRelationConfigurerTest {
 	}
 	
 	@Test
-	<T extends Table<T>> void tableStructure_relationMappedByReverseSide() {
+	<T extends Table<T>> void tableStructure_ownedByTarget() {
 		// defining Country mapping
 		T countryTable = (T) new Table("country");
 		Column countryTableIdColumn = countryTable.addColumn("id", long.class).primaryKey();

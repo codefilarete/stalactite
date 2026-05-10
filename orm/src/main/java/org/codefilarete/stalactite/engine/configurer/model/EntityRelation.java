@@ -56,7 +56,7 @@ public abstract class EntityRelation<SRC, TRGT, LEFTTABLE extends Table<LEFTTABL
 	}
 	
 	@Override
-	public BeanRelationFixer<SRC, TRGT> getBeanRelationFixer() {
+	public BeanRelationFixer<SRC, TRGT> getRelationFixer() {
 		return beanRelationFixer;
 	}
 }

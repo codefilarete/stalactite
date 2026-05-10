@@ -14,6 +14,9 @@ import org.codefilarete.reflection.PropertyMutator;
 import org.codefilarete.reflection.ReversibleMutator;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
+import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy.ReferencedColumnNames;
+import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions;
@@ -22,8 +25,12 @@ import org.codefilarete.stalactite.engine.configurer.dslresolver.InheritanceConf
 import org.codefilarete.stalactite.engine.configurer.dslresolver.MetadataSolvingCache.EntitySource;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
+import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
+import org.codefilarete.stalactite.engine.configurer.model.RelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
+import org.codefilarete.stalactite.engine.runtime.AssociationTable;
+import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -34,6 +41,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.bean.Objects;
+import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 
 import static org.codefilarete.tool.Nullable.nullable;
@@ -88,8 +96,8 @@ public class OneToManyMetadataResolver {
 		NamingConfiguration namingConfiguration = first(targetEntitySource.getResolvedConfigurations()).getNamingConfiguration();
 		
 		PropertyMutator<TRGT, SRC> reverseAccessPoint = oneToMany.giveReverseSetter();
-		DirectRelationJoin<SRCTABLE, TRGTTABLE, SRCID> tablesJoin = null;
-		BeanRelationFixer<SRC, TRGT> relationFixer = null;
+		RelationJoin tablesJoin = null;
+		BeanRelationFixer<SRC, TRGT> relationFixer;
 		Entity<TRGT, TRGTID, TRGTTABLE> targetEntity = targetEntitySource.getEntity();
 		AccessorDefinition collectionAccessorDefinition = AccessorDefinition.giveDefinition(oneToMany.getCollectionAccessor());
 		
@@ -97,6 +105,13 @@ public class OneToManyMetadataResolver {
 		if (collectionFactory == null) {
 			collectionFactory = Reflections.giveCollectionFactory((Class<S>) collectionAccessorDefinition.getMemberType());
 		}
+		
+		AccessorDefinition accessorDefinitionForTableNaming = new AccessorDefinition(
+				collectionAccessorDefinition.getDeclaringClass(),
+				collectionAccessorDefinition.getName(),
+				// we prefer the target persister type to method reference member type because the latter only gets the collection type which is not
+				// valuable information for table / column naming
+				oneToMany.getTargetMappingConfiguration().getEntityType());
 		
 		Column<TRGTTABLE, Integer> indexingColumn = null;
 		if (oneToMany.isOwnedByReverseSide()) {
@@ -106,8 +121,7 @@ public class OneToManyMetadataResolver {
 			if (canCreateForeignKey) {
 				if (!targetEntity.isTablePerClass()) {
 					OneToManyOwnedByTargetHelper<SRC, TRGT, SRCID, TRGTID, SRCTABLE, TRGTTABLE> helper = new OneToManyOwnedByTargetHelper<>();
-					ForeignKey<TRGTTABLE, SRCTABLE, SRCID> foreignKey = helper.determineForeignKeyColumns(oneToMany, source.getTable().getPrimaryKey(), targetEntity.getTable(), namingConfiguration.getJoinColumnNamingStrategy(), namingConfiguration.getForeignKeyNamingStrategy());
-					tablesJoin = new DirectRelationJoin<>(foreignKey.getRightKey(), foreignKey);
+					tablesJoin = helper.determineJoin(oneToMany, source.getTable().getPrimaryKey(), targetEntity.getTable(), namingConfiguration.getJoinColumnNamingStrategy(), namingConfiguration.getForeignKeyNamingStrategy());
 				}
 			} // else: creating foreign key is not possible, nothing special to do
 			
@@ -118,13 +132,6 @@ public class OneToManyMetadataResolver {
 				indexingColumn = oneToMany.getIndexingColumn();
 				if (indexingColumn == null) {
 					
-					AccessorDefinition accessorDefinitionForTableNaming = new AccessorDefinition(
-							collectionAccessorDefinition.getDeclaringClass(),
-							collectionAccessorDefinition.getName(),
-							// we prefer the target persister type to method reference member type because the latter only gets the collection type which is not
-							// valuable information for table / column naming
-							oneToMany.getTargetMappingConfiguration().getEntityType());
-					
 					String indexingColumnName = nullable(oneToMany.getIndexingColumnName()).getOr(() -> namingConfiguration.getIndexColumnNamingStrategy().giveName(accessorDefinitionForTableNaming));
 					Class indexColumnType = oneToMany.getRelationMode() == CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL
 							? int.class
@@ -134,13 +141,36 @@ public class OneToManyMetadataResolver {
 			}
 			
 		} else {
-			// source owns the relation
-//			OneToManyOwnedByTargetHelper<SRC, TRGT, SRCID, TRGTID, SRCTABLE, TRGTTABLE> helper = new OneToManyOwnedByTargetHelper<>();
-//			ForeignKey<SRCTABLE, TRGTTABLE, TRGTID> foreignKey = helper.determineForeignKeyColumns(oneToMany, source.getTable(), targetEntity.getTable().getPrimaryKey(), namingConfiguration.getJoinColumnNamingStrategy(), namingConfiguration.getForeignKeyNamingStrategy());
-//			tablesJoin = new DirectRelationJoin<>(foreignKey);
-//			
-//			Mutator<TRGT, SRC> NOOP_REVERSE_SETTER = (o, i) -> {};
-//			relationFixer = BeanRelationFixer.of(oneToMany.getCollectionAccessor(), oneToMany.getCollectionFactory(), Objects.preventNull(oneToMany.getReverseLink(), NOOP_REVERSE_SETTER));
+			// an association table is necessary to link source and target entities
+			// we don't create foreign key for table-per-class because source columns should reference different tables (the on per entity) which databases do not allow
+			boolean canCreateForeignKey = !source.isTablePerClass();
+			if (canCreateForeignKey) {
+				if (!targetEntity.isTablePerClass()) {
+					OneToManyWithAssociationTableHelper<SRC, TRGT, SRCID, TRGTID, SRCTABLE, TRGTTABLE, ?> helper = new OneToManyWithAssociationTableHelper<>(accessorDefinitionForTableNaming);
+					tablesJoin = helper.determineJoin(
+							oneToMany,
+							source.getTable().getPrimaryKey(),
+							targetEntity.getTable(),
+							namingConfiguration.getAssociationTableNamingStrategy(),
+							namingConfiguration.getForeignKeyNamingStrategy(),
+							namingConfiguration.getIndexColumnNamingStrategy());
+				}
+			} // else: creating foreign key is not possible, nothing special to do
+			
+			Mutator<TRGT, SRC> NOOP_REVERSE_SETTER = (o, i) -> {};
+			relationFixer = BeanRelationFixer.of(oneToMany.getCollectionAccessor(), collectionFactory, Objects.preventNull(oneToMany.getReverseLink(), NOOP_REVERSE_SETTER));
+			
+			if (oneToMany.isOrdered()) {
+				indexingColumn = oneToMany.getIndexingColumn();
+				if (indexingColumn == null) {
+					
+					String indexingColumnName = nullable(oneToMany.getIndexingColumnName()).getOr(() -> namingConfiguration.getIndexColumnNamingStrategy().giveName(accessorDefinitionForTableNaming));
+					Class indexColumnType = oneToMany.getRelationMode() == CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL
+							? int.class
+							: Integer.class;	// column must be nullable since row won't be deleted through orphan removal but only "detached" from parent row
+					indexingColumn = targetEntity.getTable().addColumn(indexingColumnName, indexColumnType);
+				}
+			}
 		}
 		
 		ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, SRCTABLE, TRGTTABLE> entitiesLink = new ResolvedOneToManyRelation<>(
@@ -169,9 +199,19 @@ public class OneToManyMetadataResolver {
 		return keyMappingApplier.resolve(ancestorsConfigurations);
 	}
 	
-	private class OneToManyOwnedByTargetHelper<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>> {
+	private static class OneToManyOwnedByTargetHelper<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>> {
 		
-		protected ForeignKey<RIGHTTABLE, LEFTTABLE, SRCID> determineForeignKeyColumns(OneToManyRelation<SRC, TRGT, TRGTID, ?> relation,
+		protected RelationJoin determineJoin(OneToManyRelation<SRC, TRGT, TRGTID, ?> relation,
+		                                     PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey,
+		                                     RIGHTTABLE targetTable,
+		                                     JoinColumnNamingStrategy joinColumnNamingStrategy,
+		                                     ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
+			ForeignKey<RIGHTTABLE, LEFTTABLE, SRCID> foreignKey = determineForeignKeyColumns(relation, leftPrimaryKey, targetTable, joinColumnNamingStrategy, foreignKeyNamingStrategy);
+			
+			return new DirectRelationJoin<>(foreignKey.getRightKey(), foreignKey);
+		}
+		
+		private ForeignKey<RIGHTTABLE, LEFTTABLE, SRCID> determineForeignKeyColumns(OneToManyRelation<SRC, TRGT, TRGTID, ?> relation,
 		                                                                              PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey,
 		                                                                              RIGHTTABLE targetTable,
 		                                                                              JoinColumnNamingStrategy joinColumnNamingStrategy,
@@ -243,6 +283,76 @@ public class OneToManyMetadataResolver {
 			return targetTable.addForeignKey(foreignKeyNamingStrategy.giveName(foreignKey, leftPrimaryKey), foreignKey, leftPrimaryKey);
 		}
 		
+	}
+	
+	private static class OneToManyWithAssociationTableHelper<
+			SRC, TRGT, SRCID, TRGTID,
+			LEFTTABLE extends Table<LEFTTABLE>,
+			RIGHTTABLE extends Table<RIGHTTABLE>,
+			ASSOCIATIONTABLE extends AssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>> {
+		
+		private final AccessorDefinition accessorDefinitionForTableNaming;
+		
+		public OneToManyWithAssociationTableHelper(AccessorDefinition accessorDefinitionForTableNaming) {
+			this.accessorDefinitionForTableNaming = accessorDefinitionForTableNaming;
+		}
+		
+		protected RelationJoin determineJoin(OneToManyRelation<SRC, TRGT, TRGTID, ?> relation,
+		                                     PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey,
+		                                     RIGHTTABLE targetTable,
+		                                     AssociationTableNamingStrategy associationTableNamingStrategy,
+		                                     ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+		                                     ColumnNamingStrategy indexColumnNamingStrategy
+		) {
+			// we don't create foreign key for table-per-class because source columns should reference different tables (the one
+			// per entity) which databases do not allow
+			boolean createOneSideForeignKey = !relation.isSourceTablePerClassPolymorphic();
+			boolean createManySideForeignKey = !relation.isTargetTablePerClassPolymorphic();
+			PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey = targetTable.getPrimaryKey();
+			ReferencedColumnNames<LEFTTABLE, RIGHTTABLE> columnNames = associationTableNamingStrategy.giveColumnNames(
+					accessorDefinitionForTableNaming,
+					leftPrimaryKey,
+					rightPrimaryKey);
+			if (relation.getSourceJoinColumnName() != null) {
+				columnNames.setLeftColumnName(Iterables.first(leftPrimaryKey.getColumns()), relation.getSourceJoinColumnName());
+			}
+			if (relation.getSourceJoinColumnName() != null) {
+				columnNames.setRightColumnName(Iterables.first(rightPrimaryKey.getColumns()), relation.getTargetJoinColumnName());
+			}
+			String associationTableName = nullable(relation.getAssociationTableName()).getOr(() -> associationTableNamingStrategy.giveName(accessorDefinitionForTableNaming,
+					leftPrimaryKey, rightPrimaryKey));
+			
+			ASSOCIATIONTABLE intermediaryTable;
+			if (relation.isOrdered()) {
+				String indexingColumnName = nullable(relation.getIndexingColumnName()).getOr(() -> indexColumnNamingStrategy.giveName(accessorDefinitionForTableNaming));
+				
+				intermediaryTable = (ASSOCIATIONTABLE) new IndexedAssociationTable<>(
+						leftPrimaryKey.getTable().getSchema(),
+						associationTableName,
+						leftPrimaryKey,
+						rightPrimaryKey,
+						columnNames,
+						foreignKeyNamingStrategy,
+						createOneSideForeignKey,
+						createManySideForeignKey,
+						indexingColumnName
+				);
+			} else {
+				
+				intermediaryTable = (ASSOCIATIONTABLE) new AssociationTable<>(
+						leftPrimaryKey.getTable().getSchema(),
+						associationTableName,
+						leftPrimaryKey,
+						rightPrimaryKey,
+						columnNames,
+						foreignKeyNamingStrategy,
+						createOneSideForeignKey,
+						createManySideForeignKey
+				);
+			}
+			
+			return new IntermediaryRelationJoin<>(intermediaryTable);
+		}
 	}
 	
 }

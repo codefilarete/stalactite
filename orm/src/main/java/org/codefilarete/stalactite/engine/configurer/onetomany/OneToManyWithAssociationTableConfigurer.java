@@ -120,8 +120,6 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 				createManySideForeignKey
 		);
 		
-		associationConfiguration.getSrcPersister().getMapping().getIdMapping();
-		targetPersister.getMapping().getIdMapping();
 		AssociationRecordPersister<AssociationRecord, ASSOCIATIONTABLE> associationPersister = new AssociationRecordPersister<>(
 				new AssociationRecordMapping<>(
 						intermediaryTable,

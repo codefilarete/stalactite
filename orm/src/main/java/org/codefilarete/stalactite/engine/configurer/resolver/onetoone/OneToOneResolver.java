@@ -25,8 +25,23 @@ public class OneToOneResolver {
 		this.skeletonAggregateResolver = skeletonAggregateResolver;
 	}
 	
+	/**
+	 * Appends the direct one-to-one relations to the given {@link ConfiguredRelationalPersister}
+	 * @param entity the entity to collect one-to-ones from
+	 * @param aggregatePersister the persister to append one-to-one relations to
+	 * @param createdPersisterConsumer a consumer to handle created persister for each resolved one-to-one relation
+	 * @param <SRC> type of the source entity
+	 * @param <SRCID> type of the source entity's identifier
+	 * @param <TRGT> type of the target entity
+	 * @param <TRGTID> type of the target entity's identifier
+	 * @param <LEFTTABLE> type of the left table in the one-to-one relation
+	 * @param <RIGHTTABLE> type of the right table in the one-to-one relation
+	 * @param <JOINID> type of the join identifier
+	 */
 	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
-	void appendOneToOnes(Entity<SRC, SRCID, LEFTTABLE> entity, ConfiguredRelationalPersister<SRC, SRCID> result, BiConsumer<ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>, ConfiguredRelationalPersister<TRGT, TRGTID>> createdPersisterConsumer) {
+	void appendOneToOnes(Entity<SRC, SRCID, LEFTTABLE> entity,
+	                     ConfiguredRelationalPersister<SRC, SRCID> aggregatePersister,
+	                     BiConsumer<ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>, ConfiguredRelationalPersister<TRGT, TRGTID>> createdPersisterConsumer) {
 		entity.getRelations().stream()
 				.filter(ResolvedOneToOneRelation.class::isInstance)
 				.map(ResolvedOneToOneRelation.class::cast)
@@ -43,9 +58,9 @@ public class OneToOneResolver {
 					
 					AbstractOneToOneEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> oneToOneEngine;
 					if (resolvedRelation.isOwnedByTarget()) {
-						oneToOneEngine = new OneToOneOwnedByTargetEngine<>(result, targetPersister, targetAccessor, foreignKeyColumnsMapping.getMapping());
+						oneToOneEngine = new OneToOneOwnedByTargetEngine<>(aggregatePersister, targetPersister, targetAccessor, foreignKeyColumnsMapping.getMapping());
 					} else {
-						oneToOneEngine = new OneToOneOwnedBySourceEngine<>(result, targetPersister, targetAccessor, foreignKeyColumnsMapping.getMapping());
+						oneToOneEngine = new OneToOneOwnedBySourceEngine<>(aggregatePersister, targetPersister, targetAccessor, foreignKeyColumnsMapping.getMapping());
 					}
 					
 					boolean orphanRemoval = resolvedRelation.getRelationMode() == CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
@@ -53,8 +68,8 @@ public class OneToOneResolver {
 					if (writeAuthorized) {
 						// if cascade is mandatory, then adding nullability checking before insert
 						if (resolvedRelation.isMandatory()) {
-							result.addInsertListener(new MandatoryRelationAssertBeforeInsertListener<>(targetAccessor));
-							result.addUpdateListener(new MandatoryRelationAssertBeforeUpdateListener<>(targetAccessor));
+							aggregatePersister.addInsertListener(new MandatoryRelationAssertBeforeInsertListener<>(targetAccessor));
+							aggregatePersister.addUpdateListener(new MandatoryRelationAssertBeforeUpdateListener<>(targetAccessor));
 						}
 						
 						oneToOneEngine.addInsertCascade();

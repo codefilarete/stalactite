@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.engine.configurer.dslresolver;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
-import org.codefilarete.stalactite.engine.configurer.model.MappingJoin;
+import org.codefilarete.stalactite.engine.configurer.model.EntityRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.model.Car;
 import org.codefilarete.stalactite.engine.model.City;
@@ -48,7 +48,7 @@ class OneToOneMetadataResolverTest {
 			Entity<Country, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 			
 			assertThat(countryEntity.getRelations()).hasSize(1);
-			MappingJoin<?, ?, ?> relation = first(countryEntity.getRelations());
+			EntityRelation<?, ?, ?, ?, ?> relation = (EntityRelation<?, ?, ?, ?, ?>) first(countryEntity.getRelations());
 			assertThat(relation).isInstanceOf(ResolvedOneToOneRelation.class);
 			
 			Key<Table, ?> leftKey = (Key<Table, ?>) relation.getJoin().getLeftKey();
@@ -77,7 +77,7 @@ class OneToOneMetadataResolverTest {
 			Entity<Country, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 			
 			assertThat(countryEntity.getRelations()).hasSize(1);
-			MappingJoin<?, ?, ?> relation = first(countryEntity.getRelations());
+			EntityRelation<?, ?, ?, ?, ?> relation = (EntityRelation<?, ?, ?, ?, ?>) first(countryEntity.getRelations());
 			assertThat(relation).isInstanceOf(ResolvedOneToOneRelation.class);
 			
 			Key<Table, ?> leftKey = (Key<Table, ?>) relation.getJoin().getLeftKey();
@@ -110,7 +110,7 @@ class OneToOneMetadataResolverTest {
 			Entity<Country, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 			
 			assertThat(countryEntity.getRelations()).hasSize(1);
-			MappingJoin<?, ?, ?> relation = first(countryEntity.getRelations());
+			EntityRelation<?, ?, ?, ?, ?> relation = (EntityRelation<?, ?, ?, ?, ?>) first(countryEntity.getRelations());
 			assertThat(relation).isInstanceOf(ResolvedOneToOneRelation.class);
 			
 			Key<Table, ?> leftKey = (Key<Table, ?>) relation.getJoin().getLeftKey();
@@ -142,7 +142,7 @@ class OneToOneMetadataResolverTest {
 			Entity<Country, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 			
 			assertThat(countryEntity.getRelations()).hasSize(1);
-			MappingJoin<?, ?, ?> relation = first(countryEntity.getRelations());
+			EntityRelation<?, ?, ?, ?, ?> relation = (EntityRelation<?, ?, ?, ?, ?>) first(countryEntity.getRelations());
 			assertThat(relation).isInstanceOf(ResolvedOneToOneRelation.class);
 			
 			Key<Table, ?> leftKey = (Key<Table, ?>) relation.getJoin().getLeftKey();
@@ -170,7 +170,7 @@ class OneToOneMetadataResolverTest {
 			Entity<Country, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 			
 			assertThat(countryEntity.getRelations()).hasSize(1);
-			MappingJoin<?, ?, ?> relation = first(countryEntity.getRelations());
+			EntityRelation<?, ?, ?, ?, ?> relation = (EntityRelation<?, ?, ?, ?, ?>) first(countryEntity.getRelations());
 			assertThat(relation).isInstanceOf(ResolvedOneToOneRelation.class);
 			
 			Key<Table, ?> leftKey = (Key<Table, ?>) relation.getJoin().getLeftKey();
@@ -199,7 +199,7 @@ class OneToOneMetadataResolverTest {
 			Entity<Country, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 			
 			assertThat(countryEntity.getRelations()).hasSize(1);
-			MappingJoin<?, ?, ?> relation = first(countryEntity.getRelations());
+			EntityRelation<?, ?, ?, ?, ?> relation = (EntityRelation<?, ?, ?, ?, ?>) first(countryEntity.getRelations());
 			assertThat(relation).isInstanceOf(ResolvedOneToOneRelation.class);
 			
 			Key<Table, ?> leftKey = (Key<Table, ?>) relation.getJoin().getLeftKey();
@@ -241,7 +241,7 @@ class OneToOneMetadataResolverTest {
 			assertThat(countryEntity.getRelations()).isEmpty();
 			Entity<? super Republic, Identifier<Long>, ?> republicEntity = countryEntity.getParent().getAncestor();
 			assertThat(republicEntity.getRelations()).hasSize(1);
-			MappingJoin<?, ?, ?> relation = first(republicEntity.getRelations());
+			EntityRelation<?, ?, ?, ?, ?> relation = (EntityRelation<?, ?, ?, ?, ?>) first(republicEntity.getRelations());
 			assertThat(relation).isInstanceOf(ResolvedOneToOneRelation.class);
 			
 			Key<Table, ?> leftKey = (Key<Table, ?>) relation.getJoin().getLeftKey();
@@ -277,7 +277,7 @@ class OneToOneMetadataResolverTest {
 			Entity<Device, Identifier<Long>, ?> deviceEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 			
 			assertThat(deviceEntity.getRelations()).hasSize(1);
-			MappingJoin<?, ?, ?> relation = first(deviceEntity.getRelations());
+			EntityRelation<?, ?, ?, ?, ?> relation = (EntityRelation<?, ?, ?, ?, ?>) first(deviceEntity.getRelations());
 			assertThat(relation).isInstanceOf(ResolvedOneToOneRelation.class);
 			
 			Key<Table, ?> leftKey = (Key<Table, ?>) relation.getJoin().getLeftKey();
@@ -311,7 +311,7 @@ class OneToOneMetadataResolverTest {
 			Entity<Device, Identifier<Long>, ?> deviceEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 			
 			assertThat(deviceEntity.getRelations()).hasSize(1);
-			MappingJoin<?, ?, ?> relation = first(deviceEntity.getRelations());
+			EntityRelation<?, ?, ?, ?, ?> relation = (EntityRelation<?, ?, ?, ?, ?>)first(deviceEntity.getRelations());
 			assertThat(relation).isInstanceOf(ResolvedOneToOneRelation.class);
 			
 			Key<Table, ?> leftKey = (Key<Table, ?>) relation.getJoin().getLeftKey();
@@ -351,7 +351,7 @@ class OneToOneMetadataResolverTest {
 			assertThat(countryEntity.getRelations()).isEmpty();
 			Entity<? super Republic, Identifier<Long>, ?> republicEntity = countryEntity.getParent().getAncestor();
 			assertThat(republicEntity.getRelations()).hasSize(1);
-			MappingJoin<?, ?, ?> relation = first(republicEntity.getRelations());
+			EntityRelation<?, ?, ?, ?, ?> relation = (EntityRelation<?, ?, ?, ?, ?>) first(republicEntity.getRelations());
 			assertThat(relation).isInstanceOf(ResolvedOneToOneRelation.class);
 			
 			Key<Table, ?> leftKey = (Key<Table, ?>) relation.getJoin().getLeftKey();

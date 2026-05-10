@@ -7,6 +7,7 @@ import javax.annotation.Nullable;
 import org.codefilarete.reflection.PropertyMutator;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
@@ -38,7 +39,7 @@ public class ResolvedOneToManyRelation<SRC, TRGT, S extends Collection<TRGT>, SR
 	                                 boolean ownedByReverseSide,
 	                                 @Nullable PropertyMutator<TRGT, SRC> mappedByAccessor,
 	                                 boolean fetchSeparately,
-	                                 DirectRelationJoin<LEFTTABLE, RIGHTTABLE, SRCID> join,
+	                                 RelationJoin join,
 	                                 BeanRelationFixer<SRC, TRGT> beanRelationFixer,
 	                                 Supplier<S> collectionFactory,
 									 @Nullable Column<RIGHTTABLE, Integer> indexingColumn) {
@@ -66,7 +67,21 @@ public class ResolvedOneToManyRelation<SRC, TRGT, S extends Collection<TRGT>, SR
 		return indexingColumn != null;
 	}
 	
-	public Column<RIGHTTABLE, Integer> getIndexingColumn() {
+	/**
+	 * Gives the column used to index the related entities.
+	 * Only valuable for relations owned by the reverse side because it can be configured by the user. For relations
+	 * mapped by an association table, it is automatically generated.
+	 * 
+	 * @return the column used to index the related entities for relations owned by the reverse side
+	 */
+	@Nullable
+	public Column<RIGHTTABLE, Integer> getIndexingMappedColumn() {
 		return indexingColumn;
 	}
+	
+	@Nullable
+	public <ASSOCIATIONTABLE extends IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>> Column<ASSOCIATIONTABLE, Integer> getIndexingAssociationColumn() {
+		return ((ASSOCIATIONTABLE) ((IntermediaryRelationJoin) getJoin()).getJoinTable()).getIndexColumn();
+	}
+	
 }

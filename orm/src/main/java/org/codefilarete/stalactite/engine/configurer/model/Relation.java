@@ -17,7 +17,7 @@ public abstract class Relation<SRC, TRGT, LEFTTABLE extends Table<LEFTTABLE>, RI
 	protected Relation(ReadWritePropertyAccessPoint<SRC, TRGT> accessor,
 	                   RelationMode relationMode,
 	                   boolean fetchSeparately,
-	                   RelationJoin<LEFTTABLE, RIGHTTABLE, JOINTYPE> join) {
+	                   RelationJoin join) {
 		super(join);
 		this.accessor = accessor;
 		this.fetchSeparately = fetchSeparately;
@@ -43,5 +43,5 @@ public abstract class Relation<SRC, TRGT, LEFTTABLE extends Table<LEFTTABLE>, RI
 	 * of it can't be of TRGT type, but must be quite a 
 	 * 
 	 */
-	public abstract BeanRelationFixer<SRC, ?> getBeanRelationFixer();
+	public abstract BeanRelationFixer<SRC, ?> getRelationFixer();
 }

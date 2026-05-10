@@ -6,6 +6,7 @@ import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.engine.runtime.AssociationTable;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 
@@ -15,8 +16,8 @@ public class ManyToManyRelation<
 		SRCID, TRGTID,
 		LEFTTABLE extends Table<LEFTTABLE>,
 		RIGHTTABLE extends Table<RIGHTTABLE>,
-		ASSOCIATIONTABLE extends Table<ASSOCIATIONTABLE>>
-		extends ComponentRelation<SRC, TRGT, S, LEFTTABLE, ASSOCIATIONTABLE, SRCID> {
+		ASSOCIATIONTABLE extends AssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
+		extends ComponentRelation<SRC, TRGT, S, LEFTTABLE, RIGHTTABLE, SRCID> {
 	
 	private final Entity<TRGT, ?, ?> targetEntity;
 	
