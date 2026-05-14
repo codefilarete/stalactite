@@ -267,13 +267,13 @@ public class EntityTreeInflater<C> {
 	 */
 	static class RelationIdentifier {
 		
-		protected final Object rootEntity;
+		protected final Object rootEntityIdentifier;
 		protected final Class relatedEntityType;
 		protected final Object relatedBeanIdentifier;
 		protected final RelationJoinRowConsumer joinNode;
 		
-		RelationIdentifier(Object rootEntity, Class<?> relatedEntityType, Object relatedBeanIdentifier, RelationJoinRowConsumer joinNode) {
-			this.rootEntity = rootEntity;
+		RelationIdentifier(Object rootEntityIdentifier, Class<?> relatedEntityType, Object relatedBeanIdentifier, RelationJoinRowConsumer joinNode) {
+			this.rootEntityIdentifier = rootEntityIdentifier;
 			this.relatedEntityType = relatedEntityType;
 			this.relatedBeanIdentifier = relatedBeanIdentifier;
 			this.joinNode = joinNode;
@@ -292,10 +292,10 @@ public class EntityTreeInflater<C> {
 			RelationIdentifier other = (RelationIdentifier) o;
 			
 			// WARN : this is finely defined according to :
-			// - comparison of root entity is based on instance comparison to avoid being dependent of equals() implementation which may vary during inflation process
+			// - comparison of root entity identifier is based on equals comparison because identifiers are expected to be either simple types or comparable with equals() and implement it correctly
 			// - comparison with related bean is based on its identifier with Object equality because it is expected to be simple and comparable type
 			// - comparison of Join Node which stores kind of "relation name" that links current beans (Object equality could be used but using instance matched more our expectation)
-			if (rootEntity != other.rootEntity) return false;
+			if (!rootEntityIdentifier.equals(other.rootEntityIdentifier)) return false;
 			if (!relatedEntityType.equals(other.relatedEntityType)) return false;
 			if (!relatedBeanIdentifier.equals(other.relatedBeanIdentifier)) return false;
 			return joinNode == other.joinNode;
@@ -303,7 +303,7 @@ public class EntityTreeInflater<C> {
 		
 		@Override
 		public int hashCode() {
-			int result = rootEntity.hashCode();
+			int result = rootEntityIdentifier.hashCode();
 			result = 31 * result + relatedEntityType.hashCode();
 			result = 31 * result + relatedBeanIdentifier.hashCode();
 			result = 31 * result + joinNode.hashCode();
