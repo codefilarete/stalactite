@@ -18,11 +18,11 @@ public class DirectRelationJoin<LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE e
 	}
 	
 	public Key<LEFTTABLE, JOINTYPE> getLeftKey() {
-		return keyMapping.getLeftKey();
+		return keyMapping.getSourceKey();
 	}
 	
 	public Key<RIGHTTABLE, JOINTYPE> getRightKey() {
-		return keyMapping.getRightKey();
+		return keyMapping.getReferencedKey();
 	}
 	
 }

@@ -3,13 +3,12 @@ package org.codefilarete.stalactite.engine.configurer.resolver.onetomany;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.codefilarete.stalactite.engine.configurer.AssociationRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.IndexedAssociationRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
-import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
@@ -54,7 +53,7 @@ public class OneToManyResolver {
 	
 	/**
 	 * Appends the direct one-to-many relations to given {@link ConfiguredRelationalPersister}
-	 * @param entity the entity to collect one-to-manys from
+	 * @param resolvedRelation the entity to collect one-to-manys from
 	 * @param aggregatePersister the persister to append one-to-many relations to
 	 * @param createdPersisterConsumer a consumer that processes the resolved one-to-many relationship along with the configured persister
 	 *                                  for the target entity after it has been created.
@@ -68,80 +67,74 @@ public class OneToManyResolver {
 	 * @param <JOINID> type of the join table identifier
 	 */
 	public <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
-	void appendOneToManys(Entity<SRC, SRCID, LEFTTABLE> entity,
-	                      ConfiguredRelationalPersister<SRC, SRCID> aggregatePersister,
-	                      BiConsumer<ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>, ConfiguredRelationalPersister<TRGT, TRGTID>> createdPersisterConsumer) {
-		entity.getRelations().stream()
-				.filter(ResolvedOneToManyRelation.class::isInstance)
-				.map(ResolvedOneToManyRelation.class::cast)
-				.forEach(relation -> {
-					ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> resolvedRelation = relation;
-					ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getTargetEntity());
-					createdPersisterConsumer.accept(resolvedRelation, targetPersister);
-					
-					AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, S> oneToManyEngine;
-					if (resolvedRelation.isOwnedByReverseSide()) {
-						
-						DirectRelationJoin<LEFTTABLE, RIGHTTABLE, SRCID> join = (DirectRelationJoin<LEFTTABLE, RIGHTTABLE, SRCID>) resolvedRelation.getJoin();
-						KeyMapping<LEFTTABLE, RIGHTTABLE, SRCID> foreignKeyColumnsMapping = join.getLeftKey().reference(join.getRightKey());
-						
-						Function<SRCID, Map<Column<RIGHTTABLE, ?>, ?>> reverseColumnsValueProvider;
-						reverseColumnsValueProvider = srcid -> {
-							IdentifierAssembler<SRCID, LEFTTABLE> identifierAssembler = aggregatePersister.getMapping().getIdMapping().getIdentifierAssembler();
-							Map<Column<LEFTTABLE, ?>, ?> columnValues = identifierAssembler.getColumnValues(srcid);
-							return Maps.innerJoin(foreignKeyColumnsMapping.getMapping(), columnValues);
-						};
-						Set<Column<RIGHTTABLE, ?>> reverseColumns = join.getRightKey().getColumns();
-						
-						if (resolvedRelation.isOrdered()) {
-							IndexedMappedManyRelationDescriptor<SRC, TRGT, S, SRCID, TRGTID, RIGHTTABLE> manyRelationDescriptor = new IndexedMappedManyRelationDescriptor<>(
-									resolvedRelation.getAccessor(),
-									resolvedRelation.getComponentFactory(),
-									resolvedRelation.getMappedByAccessor(),
-									join.getRightKey(),
-									resolvedRelation.getIndexingMappedColumn(),
-									aggregatePersister.getMapping()::getId,
-									targetPersister.getMapping()::getId,
-									resolvedRelation.getRelationMode() == ASSOCIATION_ONLY,
-									resolvedRelation.getRelationMode() == ALL_ORPHAN_REMOVAL);
-							
-							oneToManyEngine = new OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S, LEFTTABLE, RIGHTTABLE>(
-									targetPersister,
-									manyRelationDescriptor,
-									aggregatePersister,
-									reverseColumns,
-									reverseColumnsValueProvider);
-						} else {
-							MappedManyRelationDescriptor<SRC, TRGT, S, SRCID, RIGHTTABLE> manyRelationDescriptor = new MappedManyRelationDescriptor<>(
-									resolvedRelation.getAccessor(),
-									resolvedRelation.getComponentFactory(),
-									resolvedRelation.getMappedByAccessor(),
-									join.getRightKey(),
-									resolvedRelation.getRelationMode() == ASSOCIATION_ONLY,
-									resolvedRelation.getRelationMode() == ALL_ORPHAN_REMOVAL);
-							
-							oneToManyEngine = new OneToManyWithMappedAssociationEngine<>(
-									targetPersister,
-									manyRelationDescriptor,
-									aggregatePersister,
-									reverseColumns,
-									reverseColumnsValueProvider);
-						}
-					} else {
-						if (resolvedRelation.isOrdered()) {
-							oneToManyEngine = buildIndexedAssociationTableEngine(aggregatePersister, resolvedRelation, targetPersister);
-						} else {
-							oneToManyEngine = buildAssociationTableEngine(aggregatePersister, resolvedRelation, targetPersister);
-						}
-					}
-					
-					boolean writeAuthorized = resolvedRelation.getRelationMode() != READ_ONLY;
-					if (writeAuthorized) {
-						oneToManyEngine.addInsertCascade(targetPersister);
-						oneToManyEngine.addUpdateCascade(targetPersister);
-						oneToManyEngine.addDeleteCascade(targetPersister);
-					}
-				});
+	void resolve(ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> resolvedRelation,
+	             ConfiguredRelationalPersister<SRC, SRCID> aggregatePersister,
+	             Consumer<ConfiguredRelationalPersister<TRGT, TRGTID>> createdPersisterConsumer) {
+		ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getTargetEntity());
+		createdPersisterConsumer.accept(targetPersister);
+		
+		AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, S> oneToManyEngine;
+		if (resolvedRelation.isOwnedByReverseSide()) {
+			
+			DirectRelationJoin<LEFTTABLE, RIGHTTABLE, SRCID> join = (DirectRelationJoin<LEFTTABLE, RIGHTTABLE, SRCID>) resolvedRelation.getJoin();
+			KeyMapping<LEFTTABLE, RIGHTTABLE, SRCID> foreignKeyColumnsMapping = join.getLeftKey().reference(join.getRightKey());
+			
+			Function<SRCID, Map<Column<RIGHTTABLE, ?>, ?>> reverseColumnsValueProvider;
+			reverseColumnsValueProvider = srcid -> {
+				IdentifierAssembler<SRCID, LEFTTABLE> identifierAssembler = aggregatePersister.getMapping().getIdMapping().getIdentifierAssembler();
+				Map<Column<LEFTTABLE, ?>, ?> columnValues = identifierAssembler.getColumnValues(srcid);
+				return Maps.innerJoin(foreignKeyColumnsMapping.getMapping(), columnValues);
+			};
+			Set<Column<RIGHTTABLE, ?>> reverseColumns = join.getRightKey().getColumns();
+			
+			if (resolvedRelation.isOrdered()) {
+				IndexedMappedManyRelationDescriptor<SRC, TRGT, S, SRCID, TRGTID, RIGHTTABLE> manyRelationDescriptor = new IndexedMappedManyRelationDescriptor<>(
+						resolvedRelation.getAccessor(),
+						resolvedRelation.getComponentFactory(),
+						resolvedRelation.getMappedByAccessor(),
+						join.getRightKey(),
+						resolvedRelation.getIndexingMappedColumn(),
+						aggregatePersister.getMapping()::getId,
+						targetPersister.getMapping()::getId,
+						resolvedRelation.getRelationMode() == ASSOCIATION_ONLY,
+						resolvedRelation.getRelationMode() == ALL_ORPHAN_REMOVAL);
+				
+				oneToManyEngine = new OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S, LEFTTABLE, RIGHTTABLE>(
+						targetPersister,
+						manyRelationDescriptor,
+						aggregatePersister,
+						reverseColumns,
+						reverseColumnsValueProvider);
+			} else {
+				MappedManyRelationDescriptor<SRC, TRGT, S, SRCID, RIGHTTABLE> manyRelationDescriptor = new MappedManyRelationDescriptor<>(
+						resolvedRelation.getAccessor(),
+						resolvedRelation.getComponentFactory(),
+						resolvedRelation.getMappedByAccessor(),
+						join.getRightKey(),
+						resolvedRelation.getRelationMode() == ASSOCIATION_ONLY,
+						resolvedRelation.getRelationMode() == ALL_ORPHAN_REMOVAL);
+				
+				oneToManyEngine = new OneToManyWithMappedAssociationEngine<>(
+						targetPersister,
+						manyRelationDescriptor,
+						aggregatePersister,
+						reverseColumns,
+						reverseColumnsValueProvider);
+			}
+		} else {
+			if (resolvedRelation.isOrdered()) {
+				oneToManyEngine = buildIndexedAssociationTableEngine(aggregatePersister, resolvedRelation, targetPersister);
+			} else {
+				oneToManyEngine = buildAssociationTableEngine(aggregatePersister, resolvedRelation, targetPersister);
+			}
+		}
+		
+		boolean writeAuthorized = resolvedRelation.getRelationMode() != READ_ONLY;
+		if (writeAuthorized) {
+			oneToManyEngine.addInsertCascade(targetPersister);
+			oneToManyEngine.addUpdateCascade(targetPersister);
+			oneToManyEngine.addDeleteCascade(targetPersister);
+		}
 	}
 	
 	private <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>,

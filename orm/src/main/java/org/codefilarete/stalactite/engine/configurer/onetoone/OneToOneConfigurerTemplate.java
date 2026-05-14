@@ -19,6 +19,7 @@ import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
@@ -152,7 +153,7 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 			BeanRelationFixer<SRC, TRGT> beanRelationFixer,
 			boolean loadSeparately) {
 		// we add target subgraph joins to the one that was created
-		String joinNodeName = targetPersister.joinAsOne(sourcePersister, oneToOneRelation.getTargetProvider(), leftKey, rightKey, tableAlias, beanRelationFixer, oneToOneRelation.isNullable(), loadSeparately);
+		String joinNodeName = targetPersister.joinAsOne(EntityJoinTree.ROOT_JOIN_NAME, sourcePersister, oneToOneRelation.getTargetProvider(), leftKey, rightKey, tableAlias, beanRelationFixer, oneToOneRelation.isNullable(), loadSeparately);
 		
 		// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
 		// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity

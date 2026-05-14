@@ -145,7 +145,7 @@ public class InheritanceMetadataResolver<C, I, T extends Table<T>> {
 			ForeignKey<EXTRATABLE, TT, I> foreignKey = primaryKeyPropagator.propagate(result.getTable().getPrimaryKey(), extraTable, foreignKeyNamingStrategy);
 			PropertyMappingHolder<X, EXTRATABLE> mappingHolder = new PropertyMappingHolder<>();
 			mappingHolder.addMapping(mapping);
-			KeyMapping<TT, EXTRATABLE, I> reference = foreignKey.getRightKey().reference(foreignKey);
+			KeyMapping<TT, EXTRATABLE, I> reference = foreignKey.getReferencedKey().reference(foreignKey);
 			ExtraTableJoin<X, TT, EXTRATABLE, I> relation = new ExtraTableJoin<>(mappingHolder, reference);
 			result.addRelation(relation);
 		});

@@ -40,22 +40,22 @@ public class IntermediaryRelationJoin<
 	}
 	
 	public Key<LEFTTABLE, LEFTJOINTYPE> getLeftKey() {
-		return leftKeyMapping.getLeftKey();
+		return leftKeyMapping.getSourceKey();
 	}
 	
 	public Key<ASSOCIATIONTABLE, LEFTJOINTYPE> getLeftAssociationKey() {
-		return leftKeyMapping.getRightKey();
+		return leftKeyMapping.getReferencedKey();
 	}
 	
 	public Key<ASSOCIATIONTABLE, RIGHTJOINTYPE> getRightAssociationKey() {
-		return rightKeyMapping.getLeftKey();
+		return rightKeyMapping.getSourceKey();
 	}
 	
 	public Key<RIGHTTABLE, RIGHTJOINTYPE> getRightKey() {
-		return rightKeyMapping.getRightKey();
+		return rightKeyMapping.getReferencedKey();
 	}
 	
 	public ASSOCIATIONTABLE getJoinTable() {
-		return leftKeyMapping.getRightKey().getTable();
+		return leftKeyMapping.getReferencedKey().getTable();
 	}
 }

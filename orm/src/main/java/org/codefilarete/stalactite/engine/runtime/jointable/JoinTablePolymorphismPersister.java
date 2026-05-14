@@ -227,14 +227,14 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 	}
 	
 	@Override
-	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																							 PropertyAccessPoint<SRC, C> propertyAccessor,
-																							 Key<T1, JOINID> leftColumn,
-																							 Key<T2, JOINID> rightColumn,
-																							 String rightTableAlias,
-																							 BeanRelationFixer<SRC, C> beanRelationFixer,
-																							 boolean optional,
-																							 boolean loadSeparately) {
+	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(String rootJoinName, RelationalEntityPersister<SRC, SRCID> sourcePersister,
+	                                                                                         PropertyAccessPoint<SRC, C> propertyAccessor,
+	                                                                                         Key<T1, JOINID> leftColumn,
+	                                                                                         Key<T2, JOINID> rightColumn,
+	                                                                                         String rightTableAlias,
+	                                                                                         BeanRelationFixer<SRC, C> beanRelationFixer,
+	                                                                                         boolean optional,
+	                                                                                         boolean loadSeparately) {
 		
 		if (loadSeparately) {
 			// because subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener) we add a passive join

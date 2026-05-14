@@ -180,15 +180,15 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	}
 	
 	@Override
-	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																							 PropertyAccessPoint<SRC, C> propertyAccessor,
-																							 Key<T1, JOINID> leftColumn,
-																							 Key<T2, JOINID> rightColumn,
-																							 String rightTableAlias,
-																							 BeanRelationFixer<SRC, C> beanRelationFixer,
-																							 boolean optional,
-																							 boolean loadSeparately) {
-		return delegate.joinAsOne(sourcePersister, propertyAccessor, leftColumn, rightColumn, rightTableAlias, beanRelationFixer, optional, loadSeparately);
+	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(String rootJoinName, RelationalEntityPersister<SRC, SRCID> sourcePersister,
+	                                                                                         PropertyAccessPoint<SRC, C> propertyAccessor,
+	                                                                                         Key<T1, JOINID> leftColumn,
+	                                                                                         Key<T2, JOINID> rightColumn,
+	                                                                                         String rightTableAlias,
+	                                                                                         BeanRelationFixer<SRC, C> beanRelationFixer,
+	                                                                                         boolean optional,
+	                                                                                         boolean loadSeparately) {
+		return delegate.joinAsOne(rootJoinName, sourcePersister, propertyAccessor, leftColumn, rightColumn, rightTableAlias, beanRelationFixer, optional, loadSeparately);
 	}
 	
 	@Override

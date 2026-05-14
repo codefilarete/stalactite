@@ -36,32 +36,32 @@ public class ForeignKey<T extends Table<T>, U extends Table<U>, ID> extends KeyM
 	
 	/**
 	 * Returns the source columns of this foreign key.
-	 * Same as {@link #getLeftColumns()}
+	 * Same as {@link #getSourceColumns()}
 	 * 
 	 * @return the source columns of this foreign key
 	 */
 	@Override
 	public KeepOrderSet<Column<T, ?>> getColumns() {
-		return getLeftColumns();
+		return getSourceColumns();
 	}
 	
 	/**
 	 * Returns the target table of this foreign key.
-	 * Same as {@link #getRightKey()}
+	 * Same as {@link #getReferencedKey()}
 	 * 
 	 * @return the target table of this foreign key
 	 */
 	public U getTargetTable() {
-		return getRightKey().getTable();
+		return getReferencedKey().getTable();
 	}
 	
 	/**
 	 * Returns the target columns of this foreign key.
-	 * Same as {@link #getRightColumns()}
+	 * Same as {@link #getReferencedColumns()}
 	 * 
 	 * @return the target columns of this foreign key
 	 */
 	public KeepOrderSet<Column<U, ?>> getTargetColumns() {
-		return getRightColumns();
+		return getReferencedColumns();
 	}
 }

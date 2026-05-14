@@ -94,7 +94,7 @@ public class OneToOneMetadataResolver {
 				if (!targetEntity.isTablePerClass()) {
 					OneToOneOwnedByTargetHelper<SRC, TRGT, SRCID, TRGTID, SRCTABLE, TRGTTABLE> helper = new OneToOneOwnedByTargetHelper<>();
 					ForeignKey<TRGTTABLE, SRCTABLE, SRCID> foreignKey = helper.determineForeignKeyColumns(oneToOne, source.getTable().getPrimaryKey(), targetEntity.getTable(), namingConfiguration.getJoinColumnNamingStrategy(), namingConfiguration.getForeignKeyNamingStrategy());
-					tablesJoin = new DirectRelationJoin<>(foreignKey.getRightKey(), foreignKey);
+					tablesJoin = new DirectRelationJoin<>(foreignKey.getReferencedKey(), foreignKey);
 					
 					// eventually adding unique constraint
 					if (oneToOne.isUnique() && foreignKey.getColumns().size() == 1) {

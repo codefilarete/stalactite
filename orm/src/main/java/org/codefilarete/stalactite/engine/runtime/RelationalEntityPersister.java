@@ -35,28 +35,30 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	/**
 	 * Called to join this instance with given persister. For this method, current instance is considered as the "right part" of the relation.
 	 * Made as such because polymorphic cases (which are instance of this interface) are the only one who knows how to join themselves with another persister.
-	 * 
-	 * @param <SRC> source entity type
-	 * @param <T1> left table type
-	 * @param <T2> right table type
-	 * @param sourcePersister source that needs this instance joins
-	 * @param propertyAccessor accessor to the property of this persister's entity from the source entity type
-	 * @param leftColumn left part of the join, expected to be one of source table
-	 * @param rightColumn right part of the join, expected to be one of current instance table
-	 * @param rightTableAlias optional alias for right table, if null table name will be used
+	 *
+	 * @param <SRC>             source entity type
+	 * @param <T1>              left table type
+	 * @param <T2>              right table type
+	 * @param rootJoinName
+	 * @param sourcePersister   source that needs this instance joins
+	 * @param propertyAccessor  accessor to the property of this persister's entity from the source entity type
+	 * @param leftColumn        left part of the join, expected to be one of source table
+	 * @param rightColumn       right part of the join, expected to be one of current instance table
+	 * @param rightTableAlias   optional alias for right table, if null table name will be used
 	 * @param beanRelationFixer setter that fix relation of this instance onto source persister instance
-	 * @param optional true for optional relation, makes an outer join, else should create a inner join
-	 * @param loadSeparately indicator to make the target entities loaded in a separate query
+	 * @param optional          true for optional relation, makes an outer join, else should create a inner join
+	 * @param loadSeparately    indicator to make the target entities loaded in a separate query
 	 * @return the created join name, then it could be found in sourcePersister#getEntityJoinTree
 	 */
-	<SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																					  PropertyAccessPoint<SRC, C> propertyAccessor,
-																					  Key<T1, JOINID> leftColumn,
-																					  Key<T2, JOINID> rightColumn,
-																					  @Nullable String rightTableAlias,
-																					  BeanRelationFixer<SRC, C> beanRelationFixer,
-																					  boolean optional,
-																					  boolean loadSeparately);
+	<SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(String rootJoinName,
+																					  RelationalEntityPersister<SRC, SRCID> sourcePersister,
+	                                                                                  PropertyAccessPoint<SRC, C> propertyAccessor,
+	                                                                                  Key<T1, JOINID> leftColumn,
+	                                                                                  Key<T2, JOINID> rightColumn,
+	                                                                                  @Nullable String rightTableAlias,
+	                                                                                  BeanRelationFixer<SRC, C> beanRelationFixer,
+	                                                                                  boolean optional,
+	                                                                                  boolean loadSeparately);
 	
 	/**
 	 * Called to join this instance with given persister. For this method, current instance is considered as the "right part" of the relation.
@@ -77,14 +79,14 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * @param loadSeparately indicator to make the target entities loaded in a separate query
 	 */
 	default <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID, S> String joinAsMany(String joinName,
-																														RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																														PropertyAccessPoint<SRC, S> propertyAccessor,
-																														Key<T1, JOINID> leftColumn,
-																														Key<T2, JOINID> rightColumn,
-																														BeanRelationFixer<SRC, C> beanRelationFixer,
-																														@Nullable Function<ColumnedRow, Object> duplicateIdentifierProvider,
-																														boolean optional,
-																														boolean loadSeparately) {
+	                                                                                              RelationalEntityPersister<SRC, SRCID> sourcePersister,
+	                                                                                              PropertyAccessPoint<SRC, S> propertyAccessor,
+	                                                                                              Key<T1, JOINID> leftColumn,
+	                                                                                              Key<T2, JOINID> rightColumn,
+	                                                                                              BeanRelationFixer<SRC, C> beanRelationFixer,
+	                                                                                              @Nullable Function<ColumnedRow, Object> duplicateIdentifierProvider,
+	                                                                                              boolean optional,
+	                                                                                              boolean loadSeparately) {
 		return joinAsMany(joinName, sourcePersister, propertyAccessor, leftColumn, rightColumn, beanRelationFixer,
 				duplicateIdentifierProvider, Collections.emptySet(), optional, loadSeparately);
 	}
@@ -109,15 +111,15 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * @param loadSeparately indicator to make the target entities loaded in a separate query
 	 */
 	<SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID, S> String joinAsMany(String joinName,
-																					   RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																					   PropertyAccessPoint<SRC, S> propertyAccessor,
-																					   Key<T1, JOINID> leftColumn,
-																					   Key<T2, JOINID> rightColumn,
-																					   BeanRelationFixer<SRC, C> beanRelationFixer,
-																					   @Nullable Function<ColumnedRow, Object> duplicateIdentifierProvider,
-																					   Set<? extends Column<T2, ?>> selectableColumns,
-																					   boolean optional,
-																					   boolean loadSeparately);
+	                                                                                      RelationalEntityPersister<SRC, SRCID> sourcePersister,
+	                                                                                      PropertyAccessPoint<SRC, S> propertyAccessor,
+	                                                                                      Key<T1, JOINID> leftColumn,
+	                                                                                      Key<T2, JOINID> rightColumn,
+	                                                                                      BeanRelationFixer<SRC, C> beanRelationFixer,
+	                                                                                      @Nullable Function<ColumnedRow, Object> duplicateIdentifierProvider,
+	                                                                                      Set<? extends Column<T2, ?>> selectableColumns,
+	                                                                                      boolean optional,
+	                                                                                      boolean loadSeparately);
 	
 	EntityJoinTree<C, I> getEntityJoinTree();
 	

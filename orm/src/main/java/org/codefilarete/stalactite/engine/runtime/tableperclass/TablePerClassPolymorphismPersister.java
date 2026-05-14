@@ -262,14 +262,14 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 	}
 	
 	@Override
-	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																							 PropertyAccessPoint<SRC, C> propertyAccessor,
-																							 Key<T1, JOINID> leftColumn,
-																							 Key<T2, JOINID> rightColumn,
-																							 String rightTableAlias,
-																							 BeanRelationFixer<SRC, C> beanRelationFixer,
-																							 boolean optional,
-																							 boolean loadSeparately) {
+	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(String rootJoinName, RelationalEntityPersister<SRC, SRCID> sourcePersister,
+	                                                                                         PropertyAccessPoint<SRC, C> propertyAccessor,
+	                                                                                         Key<T1, JOINID> leftColumn,
+	                                                                                         Key<T2, JOINID> rightColumn,
+	                                                                                         String rightTableAlias,
+	                                                                                         BeanRelationFixer<SRC, C> beanRelationFixer,
+	                                                                                         boolean optional,
+	                                                                                         boolean loadSeparately) {
 		if (loadSeparately) {
 			String createdJoinNodeName = this.joinAsOneWithSeparateLoading(sourcePersister.getEntityJoinTree(), ROOT_JOIN_NAME,
 					leftColumn,

@@ -39,6 +39,7 @@ import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Functions;
 import org.codefilarete.trace.ObjectPrinterBuilder;
+import org.codefilarete.trace.ObjectPrinterBuilder.ObjectPrinter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -263,12 +264,12 @@ class OneToOneResolverTest {
 		// we use a printer to compare our results because entities override equals() which only keep "id" into account
 		// which is far from enough for our checking
 		// Note that we don't use ObjectPrinterBuilder#printerFor because it take getCities() into account whereas its code is not ready for recursion 
-		ObjectPrinterBuilder.ObjectPrinter<Vehicle> vehiclePrinter = new ObjectPrinterBuilder<Vehicle>()
+		ObjectPrinter<Vehicle> vehiclePrinter = new ObjectPrinterBuilder<Vehicle>()
 				.addProperty(Vehicle::getId)
 				.addProperty(Vehicle::getClass)
 				.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
 				.build();
-		ObjectPrinterBuilder.ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
+		ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
 				.addProperty(Person::getId)
 				.addProperty(Person::getName)
 				.addProperty(Person::getTimestamp)

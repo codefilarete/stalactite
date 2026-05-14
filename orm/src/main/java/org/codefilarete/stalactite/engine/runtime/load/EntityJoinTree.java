@@ -4,6 +4,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Random;
@@ -31,6 +32,7 @@ import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
+import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
@@ -196,7 +198,7 @@ public class EntityJoinTree<C, I> {
 		return this.addJoin(leftStrategyName, parent -> {
 			Duo<T2, IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>>> tableClone = cloneTable(rightJoinColumn.getTable());
 			// Build a new Key using the cloned table and the corresponding cloned columns
-			Key.KeyBuilder<T2, JOINTYPE> rightJoinLinkBuilder = Key.from(tableClone.getLeft());
+			KeyBuilder<T2, JOINTYPE> rightJoinLinkBuilder = Key.from(tableClone.getLeft());
 			Set<? extends JoinLink<?, ?>> columns = rightJoinColumn.getColumns();
 			for (JoinLink<?, ?> column : columns) {
 				// Note that we can cast to JoinLink because we're already dealing with JoinLink since we are in JoinNode
@@ -307,9 +309,12 @@ public class EntityJoinTree<C, I> {
 																						Key<T2, JOINTYPE> rightJoinColumn,
 																						JoinType joinType,
 																						Set<? extends JoinLink<T2, ?>> columnsToSelect) {
-		return this.addJoin(leftStrategyName, parent -> new PassiveJoinNode<C, T1, T2, JOINTYPE>((JoinNode<?, T1>) (JoinNode) parent,
-				leftJoinColumn, rightJoinColumn, joinType,
-				columnsToSelect, null));
+		return this.addJoin(leftStrategyName, parent -> {
+			Key<T1, JOINTYPE> projectedLeftKey = mimicKey(leftJoinColumn, (T1) parent.getTable());
+			return new PassiveJoinNode<C, T1, T2, JOINTYPE>((JoinNode<?, T1>) (JoinNode) parent,
+					projectedLeftKey, rightJoinColumn, joinType,
+					columnsToSelect, null);
+		});
 	}
 	
 	public <T1 extends Table<T1>, T2 extends Table<T2>, JOINTYPE> String addPassiveJoin(String leftStrategyName,
@@ -318,9 +323,12 @@ public class EntityJoinTree<C, I> {
 																						JoinType joinType,
 																						Set<? extends Selectable<?>> columnsToSelect,
 																						EntityTreeJoinNodeConsumptionListener<C> consumptionListener) {
-		return this.addJoin(leftStrategyName, parent -> new PassiveJoinNode<C, T1, T2, JOINTYPE>((JoinNode<?, T1>) (JoinNode) parent,
-				leftJoinColumn, rightJoinColumn, joinType,
-				columnsToSelect, null).setConsumptionListener(consumptionListener));
+		return this.addJoin(leftStrategyName, parent -> {
+			Key<T1, JOINTYPE> projectedLeftKey = mimicKey(leftJoinColumn, (T1) parent.getTable());
+			return new PassiveJoinNode<C, T1, T2, JOINTYPE>((JoinNode<?, T1>) (JoinNode) parent,
+					projectedLeftKey, rightJoinColumn, joinType,
+					columnsToSelect, null).setConsumptionListener(consumptionListener);
+		});
 	}
 	
 	public <T1 extends Table<T1>, T2 extends Table<T2>, JOINTYPE> String addPassiveJoin(String leftStrategyName,
@@ -334,9 +342,32 @@ public class EntityJoinTree<C, I> {
 		if (!rightTableParticipatesToDDL) {
 			tablesToExcludeFromDDL.add(rightJoinColumn.getTable());
 		}
-		return this.addJoin(leftStrategyName, parent -> new PassiveJoinNode<C, T1, T2, JOINTYPE>((JoinNode<?, T1>) (JoinNode) parent,
-				leftJoinColumn, rightJoinColumn, joinType,
-				columnsToSelect, tableAlias).setConsumptionListener(consumptionListener));
+		return this.addJoin(leftStrategyName, parent -> {
+			Key<T1, JOINTYPE> projectedLeftKey = mimicKey(leftJoinColumn, (T1) parent.getTable());
+			return new PassiveJoinNode<C, T1, T2, JOINTYPE>((JoinNode<?, T1>) (JoinNode) parent,
+					projectedLeftKey, rightJoinColumn, joinType,
+					columnsToSelect, tableAlias).setConsumptionListener(consumptionListener);
+		});
+	}
+	
+	/**
+	 * Build a key from a "template" by getting the columns from a join node table.
+	 * The template is one key from the caller, with its columns that might be original ones of those of the parent node,
+	 * because parent join node columns may have been cloned when using addRelation(..) which uses {@link #cloneTable(Fromable)}.
+	 *
+	 * @param leftJoinColumn the key to mimic
+	 * @param table the table to get columns from
+	 * @return a new {@link Key} that is the same as the iven one, but with columns took one the given table by their name
+	 * @param <T> the key table type
+	 * @param <JOINTYPE> the key identifier type
+	 */
+	private <T extends Fromable, JOINTYPE> Key<T, JOINTYPE> mimicKey(Key<T, JOINTYPE> leftJoinColumn, T table) {
+		Key.KeyBuilder<T, JOINTYPE> leftJoinLinkBuilder = Key.from(leftJoinColumn.getTable());
+		Map<String, ? extends Selectable<?>> parentNodeColumnPerName = Iterables.map(table.getColumns(), Selectable::getExpression);
+		leftJoinColumn.getColumns().forEach(column -> {
+			leftJoinLinkBuilder.addColumn((JoinLink<T, ?>) parentNodeColumnPerName.get(column.getExpression()));
+		});
+		return leftJoinLinkBuilder.build();
 	}
 	
 	public String addJoin(String leftStrategyName, Function<? super JoinNode<?, Fromable> /* parent node */, ? extends AbstractJoinNode<?, ?, ?, ?>> joinNodeSupplier) {
@@ -583,43 +614,43 @@ public class EntityJoinTree<C, I> {
 			throw new UnsupportedOperationException("Cloning " + Reflections.toString(fromable.getClass()) + " is not implemented");
 		}
 	}
-
-	static <T extends Fromable> Key.KeyBuilder<T, ?> mimicKey(Key<?, ?> leftJoinColumn, T fromable) {
+	
+	static <T extends Fromable, JOINTYPE> Key<T, JOINTYPE> projectLeftKey(Key<?, JOINTYPE> leftJoinColumn, T fromable) {
 		if (fromable instanceof Table) {
 			Table<?> table = (Table<?>) fromable;
-			Key.KeyBuilder<Table, ?> leftKeyBuilder = Key.from(table);
+			KeyBuilder<T, JOINTYPE> leftKeyBuilder = Key.from(fromable);
 			leftJoinColumn.getColumns().forEach(column -> {
 				Column column1 = table.addColumn(column.getExpression(), column.getJavaType());
 				leftKeyBuilder.addColumn(column1);
 			});
-			return (Key.KeyBuilder<T, ?>) leftKeyBuilder;
+			return leftKeyBuilder.build();
 		} else if (fromable instanceof PseudoTable) {
 			PseudoTable union = (PseudoTable) fromable;
-			Key.KeyBuilder<PseudoTable, ?> leftKeyBuilder = Key.from(union);
+			KeyBuilder<T, JOINTYPE> leftKeyBuilder = (KeyBuilder<T, JOINTYPE>) Key.from(union);
 			leftJoinColumn.getColumns().forEach(column -> {
 				Selectable<?> column1 = union.findColumn(column.getExpression());
-				leftKeyBuilder.addColumn((JoinLink<PseudoTable, ?>) column1);
+				leftKeyBuilder.addColumn((JoinLink<T, ?>) column1);
 			});
-			return (Key.KeyBuilder<T, ?>) leftKeyBuilder;
+			return leftKeyBuilder.build();
 		} else {
 			throw new UnsupportedOperationException("Cloning " + Reflections.toString(fromable.getClass()) + " is not implemented");
 		}
 	}
 	
 	/**
-	 * Copies given node and set it as a child of given parent.
+	 * Copies the given node and sets it as a child of the given parent.
 	 * Could have been implemented by each node class itself but since this behavior is required only by the tree
-	 * and a particular algorithm, decision was made to do it outside of them.
+	 * and a particular algorithm, decision was made to do it outside them.
 	 * 
 	 * @param node node to be cloned
 	 * @param parent parent node target of the clone
 	 * @param leftJoinColumn columns to be used as the left key of the new node
-	 * @return a copy of given node, put as child of parent, using leftColumn
+	 * @return a copy of the given node, put as child of parent, using leftColumn
 	 */
 	public static AbstractJoinNode<?, ?, ?, ?> cloneNodeForParent(AbstractJoinNode<?, ?, ?, ?> node, JoinNode parent, Key<?, ?> leftJoinColumn) {
 		Duo<Fromable, IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>>> tableClone = cloneTable(node.getTable());
 		// Build a new Key using the cloned table and the corresponding cloned columns
-		Key.KeyBuilder<Fromable, Object> rightJoinLinkBuilder = Key.from(tableClone.getLeft());
+		KeyBuilder<Fromable, Object> rightJoinLinkBuilder = Key.from(tableClone.getLeft());
 		Set<? extends JoinLink<?, ?>> columns = node.getRightJoinLink().getColumns();
 		for (JoinLink<?, ?> column : columns) {
 			// Note that we can cast to JoinLink because we're already dealing with JoinLink since we are in JoinNode
@@ -630,14 +661,14 @@ public class EntityJoinTree<C, I> {
 		// This allows keeping the original columns in the map (user's one), which is necessary for caller to decode the result set 
 		IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> originalColumnsToClones = Maps.innerJoinOnValuesAndKeys(node.getOriginalColumnsToLocalOnes(), tableClone.getRight(), IdentityHashMap::new);
 		
-		Key.KeyBuilder<Fromable, ?> leftJoinLinkBuilder = mimicKey(leftJoinColumn, parent.getTable());
+		Key<Fromable, ?> leftJoinLinkBuilder = projectLeftKey(leftJoinColumn, parent.getTable());
 		
 		AbstractJoinNode nodeCopy;
 		if (node instanceof RelationJoinNode) {
 			nodeCopy = new RelationJoinNode(
 					parent,
 					((RelationJoinNode<?, ?, ?, ?, ?>) node).getPropertyAccessor(),
-					leftJoinLinkBuilder.build(),
+					leftJoinLinkBuilder,
 					rightJoinLinkBuilder.build(),
 					node.getJoinType(),
 					node.getColumnsToSelect(),
@@ -649,7 +680,7 @@ public class EntityJoinTree<C, I> {
 		} else if (node instanceof MergeJoinNode) {
 			nodeCopy = new MergeJoinNode(
 					parent,
-					leftJoinLinkBuilder.build(),
+					leftJoinLinkBuilder,
 					rightJoinLinkBuilder.build(),
 					node.getJoinType(),
 					node.getTableAlias(),
@@ -659,7 +690,7 @@ public class EntityJoinTree<C, I> {
 		} else if (node instanceof PassiveJoinNode) {
 			nodeCopy = new PassiveJoinNode(
 					parent,
-					leftJoinLinkBuilder.build(),
+					leftJoinLinkBuilder,
 					rightJoinLinkBuilder.build(),
 					node.getJoinType(),
 					node.getColumnsToSelect(),

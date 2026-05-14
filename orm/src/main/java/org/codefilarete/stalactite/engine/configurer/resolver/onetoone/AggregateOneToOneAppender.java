@@ -1,7 +1,6 @@
 package org.codefilarete.stalactite.engine.configurer.resolver.onetoone;
 
 import java.util.ArrayDeque;
-import java.util.Collections;
 import java.util.Queue;
 
 import org.codefilarete.reflection.AccessorChain;
@@ -10,11 +9,8 @@ import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
-import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-
-import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType.OUTER;
 
 public class AggregateOneToOneAppender {
 	
@@ -45,7 +41,7 @@ public class AggregateOneToOneAppender {
 								oneToOneResolver.resolve(
 										relation,
 										assemblyPawn.getRelationOwnerPersister(),
-										createdPersister -> {
+										targetPersister -> {
 											PropertyAccessor<SRC, TRGT> accessor;
 											if (assemblyPawn.getParentJoinPoint().equals(EntityJoinTree.ROOT_JOIN_NAME)) {
 												// this is the very first step (see stack seed) which is the root entity, no relation accessor shifting here
@@ -58,21 +54,21 @@ public class AggregateOneToOneAppender {
 											}
 											
 											// we join the relation onto the aggregate root to build the whole select tree
-											String joinName = rootPersister.getEntityJoinTree().addRelationJoin(
+											String joinName = targetPersister.joinAsOne(
 													assemblyPawn.getParentJoinPoint(),
-													new EntityMappingAdapter<>(createdPersister.<RIGHTTABLE>getMapping()),
+													rootPersister,
 													accessor,
 													relation.getJoin().getLeftKey(),
 													relation.getJoin().getRightKey(),
 													null,
-													OUTER,
 													relation.getRelationFixer(),
-													Collections.emptySet());
+													true,
+													false);
 											
 											// Preparing for next iteration
 											// Note that we can't set the correct generics types to the AssemblyPoint instance
 											// because we go a step further in the relation by shifting the types from SRC to TRGT 
-											relationStack.add(new AssemblyPoint(relation.getTargetEntity(), createdPersister, joinName, accessor));
+											relationStack.add(new AssemblyPoint(relation.getTargetEntity(), targetPersister, joinName, accessor));
 										});
 							}
 					);

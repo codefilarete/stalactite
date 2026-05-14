@@ -207,14 +207,15 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	 * @return created join name
 	 */
 	@Override
-	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																							 PropertyAccessPoint<SRC, C> propertyAccessor,
-																							 Key<T1, JOINID> leftColumn,
-																							 Key<T2, JOINID> rightColumn,
-																							 @Nullable String rightTableAlias,
-																							 BeanRelationFixer<SRC, C> beanRelationFixer,
-																							 boolean optional,
-																							 boolean loadSeparately) {
+	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(String joinName,
+																							 RelationalEntityPersister<SRC, SRCID> sourcePersister,
+	                                                                                         PropertyAccessPoint<SRC, C> propertyAccessor,
+	                                                                                         Key<T1, JOINID> leftColumn,
+	                                                                                         Key<T2, JOINID> rightColumn,
+	                                                                                         @Nullable String rightTableAlias,
+	                                                                                         BeanRelationFixer<SRC, C> beanRelationFixer,
+	                                                                                         boolean optional,
+	                                                                                         boolean loadSeparately) {
 		if (loadSeparately) {
 			String mainTableJoinName = sourcePersister.getEntityJoinTree().addMergeJoin(ROOT_JOIN_NAME,
 					// Note that "this" uses EntityFinder with identifier as criteria to select entities
@@ -230,7 +231,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 			// We use our own select system since SelectListener is not aimed at joining table
 			EntityMappingAdapter<C, I, T> strategy = new EntityMappingAdapter<>(getMapping());
 			String createdJoinNodeName = sourcePersister.getEntityJoinTree().addRelationJoin(
-					EntityJoinTree.ROOT_JOIN_NAME,
+					joinName,
 					// because joinAsOne can be called in either case of owned relation or reversely owned relation, generics can't be set correctly,
 					// so we simply cast first argument
 					strategy,
@@ -253,15 +254,15 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	 */
 	@Override
 	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID, S> String joinAsMany(String joinName,
-																							  RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																							  PropertyAccessPoint<SRC, S> propertyAccessor,
-																							  Key<T1, JOINID> leftColumn,
-																							  Key<T2, JOINID> rightColumn,
-																							  BeanRelationFixer<SRC, C> beanRelationFixer,
-																							  @Nullable Function<ColumnedRow, Object> relationIdentifierProvider,
-																							  Set<? extends Column<T2, ?>> selectableColumns,
-																							  boolean optional,
-																							  boolean loadSeparately) {
+	                                                                                             RelationalEntityPersister<SRC, SRCID> sourcePersister,
+	                                                                                             PropertyAccessPoint<SRC, S> propertyAccessor,
+	                                                                                             Key<T1, JOINID> leftColumn,
+	                                                                                             Key<T2, JOINID> rightColumn,
+	                                                                                             BeanRelationFixer<SRC, C> beanRelationFixer,
+	                                                                                             @Nullable Function<ColumnedRow, Object> relationIdentifierProvider,
+	                                                                                             Set<? extends Column<T2, ?>> selectableColumns,
+	                                                                                             boolean optional,
+	                                                                                             boolean loadSeparately) {
 		if (loadSeparately) {
 			String mainTableJoinName = sourcePersister.getEntityJoinTree().addMergeJoin(ROOT_JOIN_NAME,
 					// Note that "this" uses EntityFinder with identifier as criteria to select entities

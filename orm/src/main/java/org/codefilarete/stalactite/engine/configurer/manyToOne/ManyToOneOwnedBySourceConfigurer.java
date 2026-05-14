@@ -276,7 +276,7 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 			BeanRelationFixer<SRC, TRGT> beanRelationFixer,
 			boolean loadSeparately) {
 		// we add target subgraph joins to the one that was created
-		String joinNodeName = targetPersister.joinAsOne(sourcePersister, manyToOneRelation.getTargetProvider(), leftKey, rightKey, tableAlias, beanRelationFixer, true, loadSeparately);
+		String joinNodeName = targetPersister.joinAsOne(EntityJoinTree.ROOT_JOIN_NAME, sourcePersister, manyToOneRelation.getTargetProvider(), leftKey, rightKey, tableAlias, beanRelationFixer, true, loadSeparately);
 		
 		// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
 		// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity

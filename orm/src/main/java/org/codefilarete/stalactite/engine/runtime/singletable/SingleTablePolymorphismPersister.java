@@ -242,14 +242,14 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 	}
 	
 	@Override
-	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																							 PropertyAccessPoint<SRC, C> propertyAccessor,
-																							 Key<T1, JOINID> leftColumn,
-																							 Key<T2, JOINID> rightColumn,
-																							 String rightTableAlias,
-																							 BeanRelationFixer<SRC, C> beanRelationFixer,
-																							 boolean optional,
-																							 boolean loadSeparately) {
+	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(String rootJoinName, RelationalEntityPersister<SRC, SRCID> sourcePersister,
+	                                                                                         PropertyAccessPoint<SRC, C> propertyAccessor,
+	                                                                                         Key<T1, JOINID> leftColumn,
+	                                                                                         Key<T2, JOINID> rightColumn,
+	                                                                                         String rightTableAlias,
+	                                                                                         BeanRelationFixer<SRC, C> beanRelationFixer,
+	                                                                                         boolean optional,
+	                                                                                         boolean loadSeparately) {
 		
 		if (loadSeparately) {
 			SingleTableFirstPhaseRelationLoader singleTableFirstPhaseRelationLoader = new SingleTableFirstPhaseRelationLoader(mainPersister.getMapping().getIdMapping(),

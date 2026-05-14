@@ -208,7 +208,7 @@ public class OneToManyMetadataResolver {
 		                                     ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
 			ForeignKey<RIGHTTABLE, LEFTTABLE, SRCID> foreignKey = determineForeignKeyColumns(relation, leftPrimaryKey, targetTable, joinColumnNamingStrategy, foreignKeyNamingStrategy);
 			
-			return new DirectRelationJoin<>(foreignKey.getRightKey(), foreignKey);
+			return new DirectRelationJoin<>(foreignKey.getReferencedKey(), foreignKey);
 		}
 		
 		private ForeignKey<RIGHTTABLE, LEFTTABLE, SRCID> determineForeignKeyColumns(OneToManyRelation<SRC, TRGT, TRGTID, ?> relation,
