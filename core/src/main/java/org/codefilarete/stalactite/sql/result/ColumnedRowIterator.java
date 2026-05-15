@@ -1,11 +1,11 @@
 package org.codefilarete.stalactite.sql.result;
 
-import javax.annotation.Nullable;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nullable;
 
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
@@ -87,6 +87,11 @@ public class ColumnedRowIterator extends ResultSetIterator<ColumnedRow> {
 					alias = column.getExpression();
 				} else {
 					alias = aliases.get(column);
+					if (alias == null) {
+						// This is more for debugging purpose than for a real production goal, may be removed later
+						throw new IllegalArgumentException("Can't find alias for " + column.getExpression() + " in row entries " + aliases.keySet() + "."
+						+ " Please ensure your declared the column in the select clause.");
+					}
 				}
 				return (E) toReturn.get(alias);
 			}
