@@ -14,6 +14,7 @@ import org.codefilarete.stalactite.dsl.relation.OneToManyOptions;
 import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
+import org.codefilarete.tool.collection.KeepOrderSet;
 
 /**
  * @author Guillaume Mary
@@ -38,7 +39,7 @@ public class Country extends AbstractCountry implements Identified<Long> {
 	
 	private Set<Town> towns;
 	
-	private Set<State> states = new HashSet<>();
+	private Set<State> states = new KeepOrderSet<>();
 	
 	private int version;
 	

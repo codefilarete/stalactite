@@ -42,6 +42,7 @@ import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Functions;
 import org.codefilarete.trace.ObjectPrinterBuilder;
 import org.codefilarete.trace.ObjectPrinterBuilder.ObjectPrinter;
@@ -113,7 +114,9 @@ public class OneToManyResolverTest {
 				.mapOneToMany(Country::getCities, cityMappingBuilder).mappedBy(City::setCountry).cascading(ALL)
 				.mapOneToMany(Country::getStates, entityBuilder(State.class, Identifier.LONG_TYPE)
 						.mapKey(State::getId, ALREADY_ASSIGNED)
-						.map(State::getName));
+						.map(State::getName)).indexed().initializeWith(KeepOrderSet::new)
+//				.reverselySetBy(State::setCountry)
+				;
 		
 		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
 		EntityPersister<Country, Identifier<Long>> countryPersister = testInstance.resolve(countryPersisterBuilder.getConfiguration());
@@ -343,7 +346,7 @@ public class OneToManyResolverTest {
 			first(persistedCountry.getCities()).setName("changed");
 			
 			persistedCountry.getStates().remove(ain);
-			State ardeche = new State(new PersistableIdentifier<>(cityIdProvider.giveNewIdentifier()));
+			State ardeche = new State(new PersistableIdentifier<>(stateIdProvider.giveNewIdentifier()));
 			ardeche.setName("ardeche");
 			persistedCountry.addState(ardeche);
 			first(persistedCountry.getStates()).setName("changed");
@@ -510,7 +513,7 @@ public class OneToManyResolverTest {
 			first(persistedCountry.getCities()).setName("changed");
 			
 			persistedCountry.getStates().remove(ain);
-			State ardeche = new State(new PersistableIdentifier<>(cityIdProvider.giveNewIdentifier()));
+			State ardeche = new State(new PersistableIdentifier<>(stateIdProvider.giveNewIdentifier()));
 			ardeche.setName("ardeche");
 			persistedCountry.addState(ardeche);
 			first(persistedCountry.getStates()).setName("changed");

@@ -18,7 +18,7 @@ import org.codefilarete.tool.bean.Objects;
 public class ManyRelationDescriptor<I, O, C extends Collection<O>> {
 	
 	/** Empty setter for applying source entity to target entity (reverse side) */
-	protected static final Mutator NOOP_REVERSE_SETTER = (o, i) -> {};
+	protected static final PropertyMutator NOOP_REVERSE_SETTER = (o, i) -> {};
 	
 	private final ReadWritePropertyAccessPoint<I, C> collectionAccessPoint;
 	
@@ -77,7 +77,7 @@ public class ManyRelationDescriptor<I, O, C extends Collection<O>> {
 	 * @return null if no setter given at construction time
 	 */
 	@Nullable
-	public Mutator<O, I> getReverseSetter() {
+	public PropertyMutator<O, I> getReverseSetter() {
 		return reverseSetter;
 	}
 	

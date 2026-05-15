@@ -158,7 +158,7 @@ public class OneToManyWithIndexedAssociationTableEngine<
 		});
 	}
 	
-	private IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, S, SRCID>.InMemoryRelationHolder getRelationFixer() {
+	private InMemoryRelationHolder<SRC, SRCID, TRGT, S> getRelationFixer() {
 		return getManyRelationDescriptor().getRelationFixer();
 	}
 	

@@ -20,25 +20,25 @@ import static org.codefilarete.tool.bean.Objects.preventNull;
  *
  * @author Guillaume Mary
  */
-public class IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C extends Collection<TRGT>, SRCID> extends ManyRelationDescriptor<SRC, TRGT, C> {
+public class IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, S extends Collection<TRGT>, SRCID> extends ManyRelationDescriptor<SRC, TRGT, S> {
 	
 	/**
 	 * @param collectionAccessPoint collection accessor
 	 * @param collectionFactory collection factory
 	 * @param reverseSetter
 	 */
-	public IndexedAssociationTableManyRelationDescriptor(ReadWritePropertyAccessPoint<SRC, C> collectionAccessPoint,
-														 Supplier<C> collectionFactory,
+	public IndexedAssociationTableManyRelationDescriptor(ReadWritePropertyAccessPoint<SRC, S> collectionAccessPoint,
+														 Supplier<S> collectionFactory,
 														 @Nullable PropertyMutator<TRGT, SRC> reverseSetter,
 														 Function<SRC, SRCID> idProvider,
 														 boolean maintainAssociationOnly,
 														 boolean orphanRemoval) {
 		super(collectionAccessPoint, collectionFactory, reverseSetter, maintainAssociationOnly, orphanRemoval);
-		super.relationFixer = new InMemoryRelationHolder(idProvider);
+		super.relationFixer = new InMemoryRelationHolder<>(idProvider, this);
 	}
 	
 	@Override
-	public InMemoryRelationHolder getRelationFixer() {
+	public InMemoryRelationHolder<SRC, SRCID, TRGT, S> getRelationFixer() {
 		return (InMemoryRelationHolder) super.getRelationFixer();
 	}
 	
@@ -53,15 +53,15 @@ public class IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C extends 
 	 * @see #applySort(Set)
 	 * @author Guillaume Mary
 	 */
-	public class InMemoryRelationHolder implements BeanRelationFixer<SRC, TRGT> {
+	public static class InMemoryRelationHolder<SRC, SRCID, TRGT, S extends Collection<TRGT>> implements BeanRelationFixer<SRC, TRGT> {
 		
 		private class CollectionOrderStorage {
 			
 			// Note that we use index as key instead of target entities to allow them to appear twice in the same collection (List),
 			// Moreover, thanks to this form, it's easy to be applied to final Collection because values() automatically returns the entities as sorted  
+			
 			private final Map<Integer /* index */, TRGT> targetPerIndex = new HashMap<>();
 		}
-		
 		/**
 		 * Context for indexed collections (List, LinkedHashSet, ...). It will keep the entity index during select between "unrelated" methods/phases:
 		 * the index column must be added to the SQL select, read from ResultSet and then, the order is applied to sort the final List, but this
@@ -75,8 +75,24 @@ public class IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C extends 
 		
 		private final Function<SRC, SRCID> idProvider;
 		
-		public InMemoryRelationHolder(Function<SRC, SRCID> idProvider) {
+		private final ReadWritePropertyAccessPoint<SRC, S> collectionAccessPoint;
+		
+		private final Supplier<S> collectionFactory;
+		
+		private final PropertyMutator<TRGT, SRC> reverseSetter;
+		
+		public InMemoryRelationHolder(Function<SRC, SRCID> idProvider, IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, S, SRCID> manyRelationDescriptor) {
+			this(idProvider, manyRelationDescriptor.getCollectionAccessPoint(), manyRelationDescriptor.getCollectionFactory(), manyRelationDescriptor.getReverseSetter());
+		}
+		
+		public InMemoryRelationHolder(Function<SRC, SRCID> idProvider,
+		                              ReadWritePropertyAccessPoint<SRC, S> collectionAccessPoint,
+		                              Supplier<S> collectionFactory,
+		                              PropertyMutator<TRGT, SRC> reverseSetter) {
 			this.idProvider = idProvider;
+			this.collectionAccessPoint = collectionAccessPoint;
+			this.collectionFactory = collectionFactory;
+			this.reverseSetter = (PropertyMutator<TRGT, SRC>) preventNull(reverseSetter, NOOP_REVERSE_SETTER);;
 		}
 		
 		public void addIndex(SRCID leftEntityId, TRGT trgt, int index) {
@@ -88,7 +104,7 @@ public class IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C extends 
 			// we store the relation in memory without setting it onto source entity because we need to sort it later
 			currentSelectedIndexes.get().computeIfAbsent(idProvider.apply(source), srcid -> new CollectionOrderStorage());
 			// bidirectional assignment
-			preventNull(getReverseSetter(), NOOP_REVERSE_SETTER).set(input, source);
+			reverseSetter.set(input, source);
 		}
 		
 		public void init() {
@@ -110,10 +126,10 @@ public class IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, C extends 
 				CollectionOrderStorage inMemoryCollection = currentSelectedIndexes.get().get(idProvider.apply(src));
 				if (inMemoryCollection != null) {  // inMemoryCollection can be null if there's no associated entity in the database
 					Map<Integer, TRGT> targetIdPerId = inMemoryCollection.targetPerIndex;
-					C relationCollection = getCollectionAccessPoint().get(src);
+					S relationCollection = collectionAccessPoint.get(src);
 					if (relationCollection == null) {
-						relationCollection = getCollectionFactory().get();
-						getCollectionAccessPoint().set(src, relationCollection);
+						relationCollection = collectionFactory.get();
+						collectionAccessPoint.set(src, relationCollection);
 					}
 					relationCollection.addAll(new LinkedList<>(targetIdPerId.values()));
 				}

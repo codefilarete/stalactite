@@ -174,7 +174,7 @@ public class OneToManyResolver {
 			LEFTTABLE extends Table<LEFTTABLE>,
 			RIGHTTABLE extends Table<RIGHTTABLE>,
 			ASSOCIATIONTABLE extends IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
-	AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, S> buildIndexedAssociationTableEngine(ConfiguredRelationalPersister<SRC, SRCID> result,
+	AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, S> buildIndexedAssociationTableEngine(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 	                                                                                        ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> resolvedRelation,
 	                                                                                        ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		
@@ -183,7 +183,7 @@ public class OneToManyResolver {
 				resolvedRelation.getAccessor(),
 				resolvedRelation.getComponentFactory(),
 				resolvedRelation.getMappedByAccessor(),
-				result.getMapping()::getId,
+				sourcePersister.getMapping()::getId,
 				resolvedRelation.getRelationMode() == ASSOCIATION_ONLY,
 				resolvedRelation.getRelationMode() == ALL_ORPHAN_REMOVAL);
 		
@@ -191,7 +191,7 @@ public class OneToManyResolver {
 				new AssociationRecordPersister<>(
 						new IndexedAssociationRecordMapping<>(
 								join.getJoinTable(),
-								result.getMapping().getIdMapping().getIdentifierAssembler(),
+								sourcePersister.getMapping().getIdMapping().getIdentifierAssembler(),
 								targetPersister.getMapping().getIdMapping().getIdentifierAssembler(),
 								join.getJoinTable().getLeftIdentifierColumnMapping(),
 								join.getJoinTable().getRightIdentifierColumnMapping()),
@@ -199,7 +199,7 @@ public class OneToManyResolver {
 						connectionConfiguration);
 		
 		return new OneToManyWithIndexedAssociationTableEngine<>(
-				result,
+				sourcePersister,
 				targetPersister,
 				manyRelationDescriptor,
 				indexedAssociationPersister,
