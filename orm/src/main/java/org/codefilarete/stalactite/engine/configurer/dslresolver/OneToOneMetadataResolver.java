@@ -44,21 +44,16 @@ public class OneToOneMetadataResolver {
 		this.connectionConfiguration = connectionConfiguration;
 	}
 	
-	<C, I, X> void resolve(EntitySource<C, I> source) {
+	<C, I> Set<EntitySource<?, ?>> resolve(EntitySource<C, I> source) {
+		KeepOrderSet<EntitySource<?, ?>> targetEntities = new KeepOrderSet<>();
 		// configuring one-to-ones owned by this entity
 		source.getResolvedConfigurations().forEach(resolvedConfiguration -> {
-			resolve(source.getEntity(), resolvedConfiguration.getMappingConfiguration());
+			targetEntities.addAll(resolve(source.getEntity(), resolvedConfiguration.getMappingConfiguration()));
 		});
-		// configuring one-to-ones owned by its ancestors
-		source.<X>getAncestorSources()
-				.forEach((Entity<X, I, ?> ancestor, Set<ResolvedConfiguration<X, I>> resolvedConfigurations) -> {
-					resolvedConfigurations.forEach(resolvedConfiguration -> {
-						resolve(ancestor, resolvedConfiguration.getMappingConfiguration());
-					});
-				});
+		return targetEntities;
 	}
 	
-	private <C, I> void resolve(Entity<C, I, ?> entity, EntityMappingConfiguration<C, I> mappingConfiguration) {
+	private <C, I> Set<EntitySource<?, ?>> resolve(Entity<C, I, ?> entity, EntityMappingConfiguration<C, I> mappingConfiguration) {
 		KeepOrderSet<EntitySource<?, ?>> targetEntities = new KeepOrderSet<>();
 		mappingConfiguration.getOneToOnes().forEach(oneToOne -> {
 			EntitySource<Object, Object> resolve = this.resolve(entity, oneToOne);
@@ -71,9 +66,7 @@ public class OneToOneMetadataResolver {
 				targetEntities.add(resolve);
 			});
 		});
-		
-		// we go deeper on each target entity to resolve its relations: breadth-first algorithm
-		targetEntities.forEach(this::resolve);
+		return targetEntities;
 	}
 	
 	<SRC, TRGT, SRCID, TRGTID, SRCTABLE extends Table<SRCTABLE>, TRGTTABLE extends Table<TRGTTABLE>>

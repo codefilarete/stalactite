@@ -2,10 +2,9 @@ package org.codefilarete.stalactite.engine.configurer.resolver;
 
 import java.util.ArrayDeque;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Queue;
 
+import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.PersistenceContext;
@@ -15,11 +14,13 @@ import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderCon
 import org.codefilarete.stalactite.engine.configurer.dslresolver.AggregateMetadataResolver;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
+import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.AggregateOneToManyAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetoone.AggregateOneToOneAppender;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.tool.Duo;
+
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
 
 public class AggregateResolver {
 	
@@ -76,7 +77,7 @@ public class AggregateResolver {
 		}
 	}
 	
-	private <B, C extends B, I, T extends Table<T>>
+	private <C, I, T extends Table<T>>
 	ConfiguredRelationalPersister<C, I> buildPersister(Entity<C, I, T> rootEntity) {
 		// TODO: check for ealready existing persister in the persistence context
 		// TODO: wrap result in an OptimizedUpdatePersister
@@ -84,8 +85,7 @@ public class AggregateResolver {
 		
 		ConfiguredRelationalPersister<C, I> result = skeletonAggregateResolver.buildPersister(rootEntity);
 		
-		oneToOneAppender.append(rootEntity, result);
-		appendOneToManys(rootEntity, result);
+		appendRelations(rootEntity, result);
 		
 		return result;
 	}
@@ -93,10 +93,63 @@ public class AggregateResolver {
 	
 	
 	<SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
-	void appendOneToManys(Entity<SRC, SRCID, LEFTTABLE> entity, ConfiguredRelationalPersister<SRC, SRCID> aggregatePersister) {
-		Queue<Duo<ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>, ConfiguredRelationalPersister<TRGT, TRGTID>>> foundRelations = new ArrayDeque<>();
-		Map<ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>, String> joinNames = new HashMap<>();
+	void appendRelations(Entity<SRC, SRCID, LEFTTABLE> rootEntity, ConfiguredRelationalPersister<SRC, SRCID> aggregatePersister) {
 		
-		oneToManyAppender.append(entity, aggregatePersister);
+		// Iterating over all the one-to-many relations of the tree (starting from given root entity).
+		// It's made by a breadth-first algorithm with node stacking, no recursion here.
+		// Bread-first principle shouldn't be important because we maintain some AssemblyPoints to keep track of the
+		// depth and the necessary information for the next iteration.
+		Queue<AssemblyPoint<?, ?, ?, ?>> relationStack = new ArrayDeque<>();
+		// We start by a kind of fake seed, without relation, because we don't have any for the root entity
+		relationStack.add(new AssemblyPoint<>(rootEntity, aggregatePersister, ROOT_JOIN_NAME, null));
+		
+		while (!relationStack.isEmpty()) {
+			AssemblyPoint<?, ?, ?, ?> assemblyPawn = relationStack.poll();
+			assemblyPawn.getRelationOwnerEntity().getRelations()
+					.forEach(relationPawn -> {
+						if (relationPawn instanceof ResolvedOneToOneRelation) {
+							AssemblyPoint<?, ?, ?, ?> assemblyPoint = oneToOneAppender.append(aggregatePersister, (ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>) relationPawn, (AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE>) assemblyPawn);
+							relationStack.add(assemblyPoint);
+						}
+						if (relationPawn instanceof ResolvedOneToManyRelation) {
+							AssemblyPoint<?, ?, ?, ?> assemblyPoint = oneToManyAppender.append(aggregatePersister, (ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>) relationPawn, (AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE>) assemblyPawn);
+							relationStack.add(assemblyPoint);
+						}
+					});
+		}
+	}
+	
+	public static class AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE extends Table<LEFTTABLE>> {
+		
+		private final Entity<SRC, SRCID, LEFTTABLE> relationOwnerEntity;
+		private final ConfiguredRelationalPersister<SRC, SRCID> relationOwnerPersister;
+		private final String parentJoinPoint;
+		private final PropertyAccessor<SRC, TRGT> accessor;
+		
+		public AssemblyPoint(Entity<SRC, SRCID, LEFTTABLE> relationOwnerEntity,
+		                     ConfiguredRelationalPersister<SRC, SRCID> relationOwnerPersister,
+		                     String parentJoinPoint,
+		                     PropertyAccessor<SRC, TRGT> accessor) {
+			this.relationOwnerEntity = relationOwnerEntity;
+			this.relationOwnerPersister = relationOwnerPersister;
+			this.parentJoinPoint = parentJoinPoint;
+			this.accessor = accessor;
+		}
+		
+		public ConfiguredRelationalPersister<SRC, SRCID> getRelationOwnerPersister() {
+			return relationOwnerPersister;
+		}
+		
+		public String getParentJoinPoint() {
+			return parentJoinPoint;
+		}
+		
+		public Entity<SRC, SRCID, LEFTTABLE> getRelationOwnerEntity() {
+			return relationOwnerEntity;
+		}
+		
+		public PropertyAccessor<SRC, TRGT> getAccessor() {
+			return accessor;
+		}
 	}
 }

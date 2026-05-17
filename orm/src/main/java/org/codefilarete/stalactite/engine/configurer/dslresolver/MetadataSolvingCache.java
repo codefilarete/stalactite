@@ -4,10 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.InheritanceConfigurationResolver.ResolvedConfiguration;
+import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
 
 public class MetadataSolvingCache {
@@ -36,7 +35,7 @@ public class MetadataSolvingCache {
 		
 		private final Set<ResolvedConfiguration<C, I>> resolvedConfigurations = new KeepOrderSet<>();
 		
-		private final Map<Entity<?, ?, ?>, Set<ResolvedConfiguration<?, I>>> ancestorSources = new KeepOrderMap<>();
+		private final Set<EntitySource<?, I>> ancestorSources = new KeepOrderSet<>();
 		
 		EntitySource(Entity<C, I, ?> entity, ResolvedConfiguration<C, I> resolvedConfiguration) {
 			this.entity = entity;
@@ -51,20 +50,29 @@ public class MetadataSolvingCache {
 			return resolvedConfigurations;
 		}
 		
-		public void addSource(Entity<?, ?, ?> entityOrAncestor, ResolvedConfiguration<?, I> ancestorSource) {
+		public <X> void addSource(Entity<X, I, ?> entityOrAncestor, ResolvedConfiguration<X, I> ancestorSource) {
 			if (entityOrAncestor == entity){
 				resolvedConfigurations.add((ResolvedConfiguration<C, I>) ancestorSource);
 			} else {
-				ancestorSources.computeIfAbsent(entityOrAncestor, k -> new KeepOrderSet<>()).add(ancestorSource);
+				// looking for the ancestor sources of the given entity
+				EntitySource<X, I> foundAncestorSource = findAncestorSource(entityOrAncestor);
+				if (foundAncestorSource == null) {
+					ancestorSources.add(new EntitySource<>(entityOrAncestor, ancestorSource));
+				} else {
+					foundAncestorSource.resolvedConfigurations.add(ancestorSource);
+				}
 			}
 		}
 		
-		public <X> Map<Entity<X, I, ?>, Set<ResolvedConfiguration<X, I>>> getAncestorSources() {
-			return (Map<Entity<X, I, ?>, Set<ResolvedConfiguration<X, I>>>) (Map) ancestorSources;
+		public <X> Set<EntitySource<X, I>> getAncestorSources() {
+			return (Set<EntitySource<X, I>>) (Set) ancestorSources;
 		}
 		
-		public Set<ResolvedConfiguration<?, I>> getAncestorSources(Entity<?, ?, ?> ancestor) {
-			return ancestorSources.get(ancestor);
+		public <X /* super C */> EntitySource<X, I> findAncestorSource(Entity<X, I, ?> ancestor) {
+			return (EntitySource<X, I>) ancestorSources.stream()
+					.filter(s -> s.entity == ancestor)
+					.findFirst()
+					.orElse(null);
 		}
 	}
 }

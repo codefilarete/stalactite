@@ -102,9 +102,14 @@ public class OneToManyResolverTest {
 						.map(Bicycle::getColor))
 				.initializeWith(HashSet::new);
 		
+		FluentEntityMappingBuilder<State, Identifier<Long>> stateConfiguration = entityBuilder(State.class, LONG_TYPE)
+				.mapKey(State::getId, ALREADY_ASSIGNED)
+				.map(State::getName);
+		
 		FluentEntityMappingBuilder<City, Identifier<Long>> cityMappingBuilder = entityBuilder(City.class, LONG_TYPE)
 				.mapKey(City::getId, ALREADY_ASSIGNED)
 				.map(City::getName)
+				.mapOneToOne(City::getState, stateConfiguration)
 				.mapOneToMany(City::getPersons, personMappingBuilder).initializeWith(HashSet::new);
 		
 		FluentEntityMappingBuilder<Country, Identifier<Long>> countryPersisterBuilder = FluentMappings.entityBuilder(Country.class, LONG_TYPE)
@@ -112,10 +117,7 @@ public class OneToManyResolverTest {
 				.map(Country::getName)
 				.map(Country::getDescription)
 				.mapOneToMany(Country::getCities, cityMappingBuilder).mappedBy(City::setCountry).cascading(ALL)
-				.mapOneToMany(Country::getStates, entityBuilder(State.class, Identifier.LONG_TYPE)
-						.mapKey(State::getId, ALREADY_ASSIGNED)
-						.map(State::getName)).indexed().initializeWith(KeepOrderSet::new)
-//				.reverselySetBy(State::setCountry)
+				.mapOneToMany(Country::getStates, stateConfiguration).indexed().initializeWith(KeepOrderSet::new)
 				;
 		
 		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
@@ -151,6 +153,7 @@ public class OneToManyResolverTest {
 		
 		City lyon = new City(cityIdProvider.giveNewIdentifier());
 		lyon.setName("Lyon");
+		lyon.setState(ileDeFrance);
 		dummyCountry.addCity(lyon);
 		
 		Person someone2 = new Person(personIdProvider.giveNewIdentifier());
@@ -185,8 +188,10 @@ public class OneToManyResolverTest {
 		ObjectPrinter<City> cityPrinter = new ObjectPrinterBuilder<City>()
 				.addProperty(City::getId)
 				.addProperty(City::getName)
+				.addProperty(City::getState)
 				.addProperty(City::getPersons, Person.class)
 				.withPrinter(Person.class, personPrinter::toString)
+				.withPrinter(State.class, statePrinter::toString)
 				.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
 				.build();
 		ObjectPrinter<Country> countryPrinter = new ObjectPrinterBuilder<Country>()
