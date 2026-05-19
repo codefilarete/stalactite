@@ -206,6 +206,8 @@ public class EntityJoinTree<C, I> {
 				rightJoinLinkBuilder.addColumn(clonedColumn);
 			}
 			
+			Key<T1, JOINTYPE> projectedLeftKey = mimicKey(leftJoinColumn, (T1) parent.getTable());
+			
 			// We create the column mapping from the original node column to the cloned columns, not from the table clone ones.
 			// This allows keeping the original columns in the map (user's one), which is necessary for caller to decode the result set 
 			IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> originalColumnsToClones = tableClone.getRight();
@@ -213,7 +215,7 @@ public class EntityJoinTree<C, I> {
 			return new RelationJoinNode<U, T1, T2, JOINTYPE, ID>(
 					(JoinNode) parent,
 					propertyAccessor,
-					leftJoinColumn,
+					projectedLeftKey,
 					rightJoinLinkBuilder.build(),
 					joinType,
 					new KeepOrderSet<>(Collections.cat(inflater.getSelectableColumns(), additionalSelectableColumns)),

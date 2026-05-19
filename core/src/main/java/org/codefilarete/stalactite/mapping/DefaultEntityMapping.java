@@ -117,7 +117,7 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 	 */
 	public DefaultEntityMapping(Class<C> classToPersist,
 								T targetTable,
-								Map<? extends ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> propertyToColumn,
+								Map<? extends ReadWritePropertyAccessPoint<C, ?>, ? extends Column<T, ?>> propertyToColumn,
 								IdMapping<C, I> idMapping) {
 		this(classToPersist, targetTable, propertyToColumn, Collections.emptyMap(), null, idMapping, null, false);
 	}

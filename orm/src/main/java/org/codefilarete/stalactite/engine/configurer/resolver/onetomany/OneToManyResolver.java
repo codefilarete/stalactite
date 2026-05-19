@@ -54,7 +54,7 @@ public class OneToManyResolver {
 	/**
 	 * Appends the direct one-to-many relations to given {@link ConfiguredRelationalPersister}
 	 * @param resolvedRelation the entity to collect one-to-manys from
-	 * @param aggregatePersister the persister to append one-to-many relations to
+	 * @param sourcePersister the persister to append one-to-many relations to
 	 * @param createdPersisterConsumer a consumer that processes the resolved one-to-many relationship along with the configured persister
 	 *                                  for the target entity after it has been created.
 	 * @param <SRC> type of the source entity
@@ -68,7 +68,7 @@ public class OneToManyResolver {
 	 */
 	public <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
 	void resolve(ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> resolvedRelation,
-	             ConfiguredRelationalPersister<SRC, SRCID> aggregatePersister,
+	             ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 	             Consumer<ConfiguredRelationalPersister<TRGT, TRGTID>> createdPersisterConsumer) {
 		ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getTargetEntity());
 		createdPersisterConsumer.accept(targetPersister);
@@ -81,7 +81,7 @@ public class OneToManyResolver {
 			
 			Function<SRCID, Map<Column<RIGHTTABLE, ?>, ?>> reverseColumnsValueProvider;
 			reverseColumnsValueProvider = srcid -> {
-				IdentifierAssembler<SRCID, LEFTTABLE> identifierAssembler = aggregatePersister.getMapping().getIdMapping().getIdentifierAssembler();
+				IdentifierAssembler<SRCID, LEFTTABLE> identifierAssembler = sourcePersister.getMapping().getIdMapping().getIdentifierAssembler();
 				Map<Column<LEFTTABLE, ?>, ?> columnValues = identifierAssembler.getColumnValues(srcid);
 				return Maps.innerJoin(foreignKeyColumnsMapping.getMapping(), columnValues);
 			};
@@ -94,7 +94,7 @@ public class OneToManyResolver {
 						resolvedRelation.getMappedByAccessor(),
 						join.getRightKey(),
 						resolvedRelation.getIndexingMappedColumn(),
-						aggregatePersister.getMapping()::getId,
+						sourcePersister.getMapping()::getId,
 						targetPersister.getMapping()::getId,
 						resolvedRelation.getRelationMode() == ASSOCIATION_ONLY,
 						resolvedRelation.getRelationMode() == ALL_ORPHAN_REMOVAL);
@@ -102,7 +102,7 @@ public class OneToManyResolver {
 				oneToManyEngine = new OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S, LEFTTABLE, RIGHTTABLE>(
 						targetPersister,
 						manyRelationDescriptor,
-						aggregatePersister,
+						sourcePersister,
 						reverseColumns,
 						reverseColumnsValueProvider);
 			} else {
@@ -117,15 +117,15 @@ public class OneToManyResolver {
 				oneToManyEngine = new OneToManyWithMappedAssociationEngine<>(
 						targetPersister,
 						manyRelationDescriptor,
-						aggregatePersister,
+						sourcePersister,
 						reverseColumns,
 						reverseColumnsValueProvider);
 			}
 		} else {
 			if (resolvedRelation.isOrdered()) {
-				oneToManyEngine = buildIndexedAssociationTableEngine(aggregatePersister, resolvedRelation, targetPersister);
+				oneToManyEngine = buildIndexedAssociationTableEngine(sourcePersister, resolvedRelation, targetPersister);
 			} else {
-				oneToManyEngine = buildAssociationTableEngine(aggregatePersister, resolvedRelation, targetPersister);
+				oneToManyEngine = buildAssociationTableEngine(sourcePersister, resolvedRelation, targetPersister);
 			}
 		}
 		

@@ -25,4 +25,7 @@ public class DirectRelationJoin<LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE e
 		return keyMapping.getReferencedKey();
 	}
 	
+	public KeyMapping<LEFTTABLE, RIGHTTABLE, JOINTYPE> getKeyMapping() {
+		return keyMapping;
+	}
 }

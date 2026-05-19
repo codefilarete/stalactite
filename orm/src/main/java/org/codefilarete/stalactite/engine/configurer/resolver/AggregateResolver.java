@@ -12,9 +12,12 @@ import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListener;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.AggregateMetadataResolver;
+import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRecord;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
+import org.codefilarete.stalactite.engine.configurer.model.ResolvedElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
+import org.codefilarete.stalactite.engine.configurer.resolver.elementcollection.AggregateElementCollectionAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.AggregateOneToManyAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetoone.AggregateOneToOneAppender;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
@@ -29,6 +32,7 @@ public class AggregateResolver {
 	private final SkeletonAggregateResolver skeletonAggregateResolver;
 	private final AggregateOneToOneAppender oneToOneAppender;
 	private final AggregateOneToManyAppender oneToManyAppender;
+	private final AggregateElementCollectionAppender elementCollectionAppender;
 	
 	public AggregateResolver(PersistenceContext persistenceContext) {
 		this(persistenceContext, persistenceContext.getPersisterRegistry());
@@ -40,6 +44,7 @@ public class AggregateResolver {
 		this.skeletonAggregateResolver = new SkeletonAggregateResolver(persistenceContext);
 		this.oneToOneAppender = new AggregateOneToOneAppender(skeletonAggregateResolver);
 		this.oneToManyAppender = new AggregateOneToManyAppender(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
+		this.elementCollectionAppender = new AggregateElementCollectionAppender(persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 	}
 	
 	public <C, I> EntityPersister<C, I> resolve(EntityMappingConfiguration<C, I> rootConfiguration) {
@@ -108,12 +113,24 @@ public class AggregateResolver {
 			assemblyPawn.getRelationOwnerEntity().getRelations()
 					.forEach(relationPawn -> {
 						if (relationPawn instanceof ResolvedOneToOneRelation) {
-							AssemblyPoint<?, ?, ?, ?> assemblyPoint = oneToOneAppender.append(aggregatePersister, (ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>) relationPawn, (AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE>) assemblyPawn);
+							AssemblyPoint<?, ?, ?, ?> assemblyPoint = oneToOneAppender.append(
+									aggregatePersister,
+									(ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>) relationPawn,
+									(AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE>) assemblyPawn);
 							relationStack.add(assemblyPoint);
 						}
 						if (relationPawn instanceof ResolvedOneToManyRelation) {
-							AssemblyPoint<?, ?, ?, ?> assemblyPoint = oneToManyAppender.append(aggregatePersister, (ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>) relationPawn, (AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE>) assemblyPawn);
+							AssemblyPoint<?, ?, ?, ?> assemblyPoint = oneToManyAppender.append(
+									aggregatePersister,
+									(ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>) relationPawn,
+									(AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE>) assemblyPawn);
 							relationStack.add(assemblyPoint);
+						}
+						if (relationPawn instanceof ResolvedElementCollectionRelation) {
+							elementCollectionAppender.append(
+									aggregatePersister,
+									(ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, LEFTTABLE, RIGHTTABLE, ElementRecord<TRGT, SRCID>>) relationPawn,
+									(AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE>) assemblyPawn);
 						}
 					});
 		}

@@ -31,7 +31,7 @@ public class ResolvedOneToManyRelation<SRC, TRGT, S extends Collection<TRGT>, SR
 	@Nullable
 	private final PropertyMutator<TRGT, SRC> mappedByAccessor;
 	
-	private final Column<RIGHTTABLE, Integer> indexingColumn;
+	private final Column<RIGHTTABLE, Integer> indexColumn;
 	
 	public ResolvedOneToManyRelation(Entity<TRGT, TRGTID, RIGHTTABLE> targetEntity,
 	                                 ReadWritePropertyAccessPoint<SRC, S> accessor,
@@ -42,12 +42,12 @@ public class ResolvedOneToManyRelation<SRC, TRGT, S extends Collection<TRGT>, SR
 	                                 RelationJoin join,
 	                                 BeanRelationFixer<SRC, TRGT> beanRelationFixer,
 	                                 Supplier<S> collectionFactory,
-									 @Nullable Column<RIGHTTABLE, Integer> indexingColumn) {
+									 @Nullable Column<RIGHTTABLE, Integer> indexColumn) {
 		super(accessor, relationMode, fetchSeparately, join, beanRelationFixer, collectionFactory);
 		this.targetEntity = targetEntity;
 		this.mappedByAccessor = mappedByAccessor;
 		this.ownedByReverseSide = ownedByReverseSide;
-		this.indexingColumn = indexingColumn;
+		this.indexColumn = indexColumn;
 	}
 	
 	public Entity<TRGT, TRGTID, RIGHTTABLE> getTargetEntity() {
@@ -64,7 +64,7 @@ public class ResolvedOneToManyRelation<SRC, TRGT, S extends Collection<TRGT>, SR
 	}
 	
 	public boolean isOrdered() {
-		return indexingColumn != null;
+		return indexColumn != null;
 	}
 	
 	/**
@@ -76,7 +76,7 @@ public class ResolvedOneToManyRelation<SRC, TRGT, S extends Collection<TRGT>, SR
 	 */
 	@Nullable
 	public Column<RIGHTTABLE, Integer> getIndexingMappedColumn() {
-		return indexingColumn;
+		return indexColumn;
 	}
 	
 	@Nullable

@@ -23,13 +23,13 @@ import org.codefilarete.tool.collection.Maps;
  * Class mapping dedicated to {@link ElementRecord}. Very close to {@link org.codefilarete.stalactite.engine.configurer.AssociationRecordMapping}
  * in its principle.
  */
-public class ElementRecordMapping<C, I, T extends Table<T>> extends DefaultEntityMapping<ElementRecord<C, I>, ElementRecord<C, I>, T> {
+public class ElementRecordMapping<C, I, T extends Table<T>, ER extends ElementRecord<C, I>> extends DefaultEntityMapping<ER, ER, T> {
 	
 	@VisibleForTesting
 	public <LEFTTABLE extends Table<LEFTTABLE>> ElementRecordMapping(T targetTable,
-															  Column<T, C> elementColumn,
-															  IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
-															  Map<Column<LEFTTABLE, ?>, Column<T, ?>> foreignKeyColumnMapping) {
+	                                                                 Column<T, C> elementColumn,
+	                                                                 IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
+	                                                                 Map<Column<LEFTTABLE, ?>, Column<T, ?>> foreignKeyColumnMapping) {
 		super((Class) ElementRecord.class,
 				targetTable,
 				(Map) Maps.forHashMap(ReadWriteAccessPoint.class, Column.class)
@@ -37,10 +37,10 @@ public class ElementRecordMapping<C, I, T extends Table<T>> extends DefaultEntit
 				new ElementRecordIdMapping<>(targetTable, elementColumn, sourceIdentifierAssembler, foreignKeyColumnMapping));
 	}
 	
-	<LEFTTABLE extends Table<LEFTTABLE>> ElementRecordMapping(T targetTable,
-															  EmbeddedClassMapping<ElementRecord<C, I>, T> embeddableMapping,
-															  IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
-															  Map<Column<LEFTTABLE, ?>, Column<T, ?>> foreignKeyColumnMapping) {
+	public <LEFTTABLE extends Table<LEFTTABLE>> ElementRecordMapping(T targetTable,
+	                                                                 EmbeddedClassMapping<ER, T> embeddableMapping,
+	                                                                 IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
+	                                                                 Map<Column<LEFTTABLE, ?>, Column<T, ?>> foreignKeyColumnMapping) {
 		super((Class) ElementRecord.class,
 				targetTable,
 				embeddableMapping.getPropertyToColumn(),
@@ -52,7 +52,7 @@ public class ElementRecordMapping<C, I, T extends Table<T>> extends DefaultEntit
 	 * - {@link ElementRecord#getId()}
 	 * - {@link ElementRecord#getElement()}
 	 */
-	public static class ElementRecordIdMapping<C, I, T extends Table<T>> extends ComposedIdMapping<ElementRecord<C, I>, ElementRecord<C, I>> {
+	public static class ElementRecordIdMapping<C, I, T extends Table<T>, ER extends ElementRecord<C, I>> extends ComposedIdMapping<ER, ER> {
 		
 		public <LEFTTABLE extends Table<LEFTTABLE>> ElementRecordIdMapping(
 				T targetTable,
@@ -60,7 +60,7 @@ public class ElementRecordMapping<C, I, T extends Table<T>> extends DefaultEntit
 				IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
 				Map<Column<LEFTTABLE, ?>, Column<T, ?>> foreignKeyColumnMapping) {
 			super(new ElementRecordIdMapping.ElementRecordIdAccessor<>(),
-					new AlreadyAssignedIdentifierManager<>((Class<ElementRecord<C, I>>) (Class) ElementRecord.class,
+					new AlreadyAssignedIdentifierManager<>((Class<ER>) (Class) ElementRecord.class,
 							ElementRecord::markAsPersisted,
 							ElementRecord::isPersisted),
 					new ElementRecordIdMapping.DefaultElementRecordIdentifierAssembler<>(targetTable, elementColumn, sourceIdentifierAssembler, foreignKeyColumnMapping));
@@ -68,11 +68,11 @@ public class ElementRecordMapping<C, I, T extends Table<T>> extends DefaultEntit
 		
 		public <LEFTTABLE extends Table<LEFTTABLE>> ElementRecordIdMapping(
 				T targetTable,
-				EmbeddedClassMapping<ElementRecord<C, I>, T> elementMapping,
+				EmbeddedClassMapping<ER, T> elementMapping,
 				IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
 				Map<Column<LEFTTABLE, ?>, Column<T, ?>> primaryKeyForeignColumnMapping) {
 			super(new ElementRecordIdMapping.ElementRecordIdAccessor<>(),
-					new AlreadyAssignedIdentifierManager<>((Class<ElementRecord<C, I>>) (Class) ElementRecord.class,
+					new AlreadyAssignedIdentifierManager<>((Class<ER>) (Class) ElementRecord.class,
 							ElementRecord::markAsPersisted,
 							ElementRecord::isPersisted),
 					new ElementRecordIdentifierAssembler<>(targetTable, elementMapping, sourceIdentifierAssembler, primaryKeyForeignColumnMapping));
@@ -86,19 +86,19 @@ public class ElementRecordMapping<C, I, T extends Table<T>> extends DefaultEntit
 		 * @return true or false based on {@link ElementRecord#isNew()}
 		 */
 		@Override
-		public boolean isNew(ElementRecord<C, I> entity) {
+		public boolean isNew(ER entity) {
 			return entity.isNew();
 		}
 		
-		private static class ElementRecordIdAccessor<C, I> implements IdAccessor<ElementRecord<C, I>, ElementRecord<C, I>> {
+		private static class ElementRecordIdAccessor<C, I, ER extends ElementRecord<C, I>> implements IdAccessor<ER, ER> {
 			
 			@Override
-			public ElementRecord<C, I> getId(ElementRecord<C, I> associationRecord) {
+			public ER getId(ER associationRecord) {
 				return associationRecord;
 			}
 			
 			@Override
-			public void setId(ElementRecord<C, I> associationRecord, ElementRecord<C, I> identifier) {
+			public void setId(ER associationRecord, ER identifier) {
 				associationRecord.setId(identifier.getId());
 				associationRecord.setElement(identifier.getElement());
 			}
@@ -110,18 +110,18 @@ public class ElementRecordMapping<C, I, T extends Table<T>> extends DefaultEntit
 		 * - element value is saved in elementColumn
 		 *
 		 * @param <TRGT> embedded bean type
-		 * @param <ID> source identifier type
+		 * @param <ID>   source identifier type
 		 */
-		public static class DefaultElementRecordIdentifierAssembler<TRGT, ID, T extends Table<T>> extends ComposedIdentifierAssembler<ElementRecord<TRGT, ID>, T> {
+		public static class DefaultElementRecordIdentifierAssembler<TRGT, ID, T extends Table<T>, ER extends ElementRecord<TRGT, ID>> extends ComposedIdentifierAssembler<ER, T> {
 			
 			private final Column<T, TRGT> elementColumn;
 			private final IdentifierAssembler<ID, ?> sourceIdentifierAssembler;
 			private final Map<Column<?, ?>, Column<T, ?>> foreignKeyColumnMapping;
 			
 			private <LEFTTABLE extends Table<LEFTTABLE>> DefaultElementRecordIdentifierAssembler(T targetTable,
-																								 Column<T, TRGT> elementColumn,
-																								 IdentifierAssembler<ID, LEFTTABLE> sourceIdentifierAssembler,
-																								 Map<Column<LEFTTABLE, ?>, Column<T, ?>> foreignKeyColumnMapping) {
+			                                                                                     Column<T, TRGT> elementColumn,
+			                                                                                     IdentifierAssembler<ID, LEFTTABLE> sourceIdentifierAssembler,
+			                                                                                     Map<Column<LEFTTABLE, ?>, Column<T, ?>> foreignKeyColumnMapping) {
 				super(targetTable);
 				this.elementColumn = elementColumn;
 				this.sourceIdentifierAssembler = sourceIdentifierAssembler;
@@ -137,7 +137,7 @@ public class ElementRecordMapping<C, I, T extends Table<T>> extends DefaultEntit
 			}
 			
 			@Override
-			public ElementRecord<TRGT, ID> assemble(ColumnedRow columnValueProvider) {
+			public ER assemble(ColumnedRow columnValueProvider) {
 				ID leftValue = sourceIdentifierAssembler.assemble(new ColumnedRow() {
 					@Override
 					public <E> E get(Selectable<E> sourceColumn) {
@@ -150,12 +150,12 @@ public class ElementRecordMapping<C, I, T extends Table<T>> extends DefaultEntit
 				if (leftValue == null || rightValue == null) {
 					return null;
 				} else {
-					return new ElementRecord<>(leftValue, rightValue);
+					return (ER) new ElementRecord<>(leftValue, rightValue);
 				}
 			}
 			
 			@Override
-			public Map<Column<T, ?>, Object> getColumnValues(ElementRecord<TRGT, ID> id) {
+			public Map<Column<T, ?>, Object> getColumnValues(ER id) {
 				Map<Column<?, ?>, Object> sourceColumnValues = (Map) sourceIdentifierAssembler.getColumnValues(id.getId());
 				Map<Column<T, ?>, Object> idColumnValues = Maps.innerJoin(foreignKeyColumnMapping, sourceColumnValues);
 				Map<Column<T, ?>, Object> result = new HashMap<>();
@@ -169,17 +169,17 @@ public class ElementRecordMapping<C, I, T extends Table<T>> extends DefaultEntit
 		 * Identifier assembler for cases where user gave a configuration to persist embedded beans (default way is not used)
 		 *
 		 * @param <TRGT> embedded bean type
-		 * @param <ID> source identifier type
+		 * @param <ID>   source identifier type
 		 */
-		public static class ElementRecordIdentifierAssembler<TRGT, ID, T extends Table<T>> extends ComposedIdentifierAssembler<ElementRecord<TRGT, ID>, T> {
+		public static class ElementRecordIdentifierAssembler<TRGT, ID, T extends Table<T>, ER extends ElementRecord<TRGT, ID>> extends ComposedIdentifierAssembler<ER, T> {
 			
-			private final EmbeddedClassMapping<ElementRecord<TRGT, ID>, T> elementMapping;
+			private final EmbeddedClassMapping<ER, T> elementMapping;
 			private final IdentifierAssembler<ID, ?> sourceIdentifierAssembler;
 			private final Map<Column<?, ?>, Column<T, ?>> foreignKeyColumnMapping;
 			
 			private <LEFTTABLE extends Table<LEFTTABLE>> ElementRecordIdentifierAssembler(
 					T targetTable,
-					EmbeddedClassMapping<ElementRecord<TRGT, ID>, T> elementMapping,
+					EmbeddedClassMapping<ER, T> elementMapping,
 					IdentifierAssembler<ID, LEFTTABLE> sourceIdentifierAssembler,
 					Map<Column<LEFTTABLE, ?>, Column<T, ?>> foreignKeyColumnMapping) {
 				super(targetTable);
@@ -188,17 +188,17 @@ public class ElementRecordMapping<C, I, T extends Table<T>> extends DefaultEntit
 				this.foreignKeyColumnMapping = (Map) foreignKeyColumnMapping;
 			}
 			
-			public EmbeddedClassMapping<ElementRecord<TRGT, ID>, T> getElementMapping() {
+			public EmbeddedClassMapping<ER, T> getElementMapping() {
 				return elementMapping;
 			}
 			
 			@Override
-			public ElementRecord<TRGT, ID> assemble(ColumnedRow row) {
+			public ER assemble(ColumnedRow row) {
 				return elementMapping.transform(row);
 			}
 			
 			@Override
-			public Map<Column<T, ?>, Object> getColumnValues(ElementRecord<TRGT, ID> id) {
+			public Map<Column<T, ?>, Object> getColumnValues(ER id) {
 				Map<Column<?, ?>, Object> sourceColumnValues = (Map) sourceIdentifierAssembler.getColumnValues(id.getId());
 				Map<Column<T, ?>, Object> idColumnValues = Maps.innerJoin(foreignKeyColumnMapping, sourceColumnValues);
 				Map<Column<T, ?>, Object> result = new HashMap<>();
