@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.configurer.model;
 
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
+import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -12,6 +13,19 @@ public class IntermediaryRelationJoin<
 		LEFTJOINTYPE,
 		RIGHTJOINTYPE
 		> implements RelationJoin {
+	
+	public static <LEFTTABLE extends Table<LEFTTABLE>,
+			RIGHTTABLE extends Table<RIGHTTABLE>,
+			ASSOCIATIONTABLE extends IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, LEFTJOINTYPE, RIGHTJOINTYPE>,
+			LEFTJOINTYPE,
+			RIGHTJOINTYPE
+			> IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE, LEFTJOINTYPE, RIGHTJOINTYPE>
+	from(ASSOCIATIONTABLE associationTable) {
+		return new IntermediaryRelationJoin<>(associationTable.getOneSideKey(),
+				associationTable.getOneSideForeignKey(),
+				associationTable.getManySideForeignKey(),
+				associationTable.getManySideKey());
+	}
 	
 	
 	private final KeyMapping<LEFTTABLE, ASSOCIATIONTABLE, LEFTJOINTYPE> leftKeyMapping;

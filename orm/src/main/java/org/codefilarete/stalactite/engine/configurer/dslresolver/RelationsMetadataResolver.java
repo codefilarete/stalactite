@@ -12,11 +12,13 @@ public class RelationsMetadataResolver {
 	
 	private final OneToOneMetadataResolver oneToOneMetadataResolver;
 	private final OneToManyMetadataResolver oneToManyMetadataResolver;
+	private final ManyToManyMetadataResolver manyToManyMetadataResolver;
 	private final ElementCollectionMetadataResolver elementCollectionMetadataResolver;
 	
 	public RelationsMetadataResolver(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
 		this.oneToOneMetadataResolver = new OneToOneMetadataResolver(dialect, connectionConfiguration);
 		this.oneToManyMetadataResolver = new OneToManyMetadataResolver(dialect, connectionConfiguration);
+		this.manyToManyMetadataResolver = new ManyToManyMetadataResolver(dialect, connectionConfiguration);
 		this.elementCollectionMetadataResolver = new ElementCollectionMetadataResolver(dialect);
 	}
 	
@@ -71,6 +73,8 @@ public class RelationsMetadataResolver {
 		newSourcesFound.addAll(oneToOneMetadataResolver.resolve(source));
 		// One-to-many relations directly on the entity and embedded in insets
 		newSourcesFound.addAll(oneToManyMetadataResolver.resolve(source));
+		// Many-to-many relations directly on the entity and embedded in insets
+		newSourcesFound.addAll(manyToManyMetadataResolver.resolve(source));
 		// Collection of elements' relations directly on the entity and embedded in insets
 		elementCollectionMetadataResolver.resolve(source);
 		
