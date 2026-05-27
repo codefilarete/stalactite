@@ -15,9 +15,11 @@ import org.codefilarete.stalactite.engine.configurer.dslresolver.AggregateMetada
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRecord;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedElementCollectionRelation;
+import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.elementcollection.AggregateElementCollectionAppender;
+import org.codefilarete.stalactite.engine.configurer.resolver.manytomany.AggregateManyToManyAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.AggregateOneToManyAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetoone.AggregateOneToOneAppender;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
@@ -32,6 +34,7 @@ public class AggregateResolver {
 	private final SkeletonAggregateResolver skeletonAggregateResolver;
 	private final AggregateOneToOneAppender oneToOneAppender;
 	private final AggregateOneToManyAppender oneToManyAppender;
+	private final AggregateManyToManyAppender manyToManyAppender;
 	private final AggregateElementCollectionAppender elementCollectionAppender;
 	
 	public AggregateResolver(PersistenceContext persistenceContext) {
@@ -44,6 +47,7 @@ public class AggregateResolver {
 		this.skeletonAggregateResolver = new SkeletonAggregateResolver(persistenceContext);
 		this.oneToOneAppender = new AggregateOneToOneAppender(skeletonAggregateResolver);
 		this.oneToManyAppender = new AggregateOneToManyAppender(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
+		this.manyToManyAppender = new AggregateManyToManyAppender(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 		this.elementCollectionAppender = new AggregateElementCollectionAppender(persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 	}
 	
@@ -126,6 +130,13 @@ public class AggregateResolver {
 									(AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE>) assemblyPawn);
 							relationStack.add(assemblyPoint);
 						}
+					if (relationPawn instanceof ResolvedManyToManyRelation) {
+						AssemblyPoint<?, ?, ?, ?> assemblyPoint = manyToManyAppender.append(
+								aggregatePersister,
+								(ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>) relationPawn,
+								(AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE>) assemblyPawn);
+						relationStack.add(assemblyPoint);
+					}
 						if (relationPawn instanceof ResolvedElementCollectionRelation) {
 							elementCollectionAppender.append(
 									aggregatePersister,

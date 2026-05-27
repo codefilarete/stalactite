@@ -31,6 +31,7 @@ import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelati
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation.ShiftedMappedByConfiguration;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
+import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToManyRelation;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
@@ -49,7 +50,7 @@ import static org.codefilarete.tool.Nullable.nullable;
 import static org.codefilarete.tool.collection.Iterables.first;
 
 /**
- * Resolves {@link ManyToManyRelation} DSL configurations into {@link org.codefilarete.stalactite.engine.configurer.model.ManyToManyRelation}
+ * Resolves {@link ManyToManyRelation} DSL configurations into {@link ResolvedManyToManyRelation}
  * model instances. The process:
  * <ol>
  *   <li>Builds the target {@link EntitySource} via the inheritance resolver.</li>
@@ -105,7 +106,7 @@ public class ManyToManyMetadataResolver {
 	/**
 	 * Resolves a single many-to-many relation: determines the association table structure, builds the relation join and
 	 * the {@link BeanRelationFixer}, and registers the resulting
-	 * {@link org.codefilarete.stalactite.engine.configurer.model.ManyToManyRelation} on the source entity.
+	 * {@link ResolvedManyToManyRelation} on the source entity.
 	 *
 	 * @return the target {@link EntitySource}, ready to be enqueued for further (recursive) resolution
 	 */
@@ -201,11 +202,10 @@ public class ManyToManyMetadataResolver {
 			relationFixer = BeanRelationFixer.of(manyToMany.getCollectionAccessor(), collectionFactory, reverseCombiner);
 		}
 		
-		org.codefilarete.stalactite.engine.configurer.model.ManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, SRCTABLE, TRGTTABLE, ?> entitiesLink =
-				new org.codefilarete.stalactite.engine.configurer.model.ManyToManyRelation<>(
+		ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, SRCTABLE, TRGTTABLE> entitiesLink =
+				new ResolvedManyToManyRelation<>(
 						targetEntity,
 						manyToMany.getCollectionAccessor(),
-						null,  // no single-value reverse accessor for many-to-many; bidirectionality is handled by the relation fixer
 						manyToMany.getRelationMode(),
 						manyToMany.isFetchSeparately(),
 						(IntermediaryRelationJoin) join,
@@ -246,77 +246,70 @@ public class ManyToManyMetadataResolver {
 	PropertyMutator<TRGT, SRC> buildReverseCombiner(ManyToManyRelation<SRC, TRGT, ?, S, C2> manyToMany, Entity<SRC, SRCID, SRCTABLE> source) {
 		MappedByConfiguration<SRC, TRGT, C2> mappedByConfiguration = manyToMany.getMappedByConfiguration();
 		if (mappedByConfiguration.isEmpty()) {
+			// relation is not bidirectional, and not even set by the reverse link, there's nothing to do
 			return null;
-		}
-		
-		ReadWritePropertyAccessPoint<TRGT, C2> collectionAccessor = buildReversePropertyAccessor(manyToMany);
-		if (collectionAccessor == null) {
-			// No explicit accessor was configured: try to find a matching reverse field by type inspection
-			Class<TRGT> targetClass = manyToMany.getTargetMappingConfiguration().getEntityType();
-			FieldIterator targetFields = new InstanceFieldIterator(targetClass);
-			Class<SRC> sourceEntityType = source.getEntityType();
-			Field reverseField = Iterables.find(targetFields, field -> Collection.class.isAssignableFrom(field.getType())
-					&& field.getGenericType() instanceof ParameterizedType
-					&& ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0].equals(sourceEntityType));
-			if (reverseField != null) {
-				Nullable<AccessorByMethod<TRGT, C2>> reverseGetterMethod = nullable(Accessors.accessorByMethod(reverseField));
-				if (reverseGetterMethod.isPresent()) {
-					collectionAccessor = new DefaultReadWritePropertyAccessPoint<>(reverseGetterMethod.get());
-				} else {
-					Nullable<MutatorByMethod<TRGT, C2>> reverseSetterMethod = nullable(Accessors.mutatorByMethod(reverseField));
-					if (reverseSetterMethod.isPresent()) {
-						collectionAccessor = new DefaultReadWritePropertyAccessPoint<>(reverseSetterMethod.get());
+		} else {
+			ReadWritePropertyAccessPoint<TRGT, C2> collectionAccessor = buildReversePropertyAccessor(manyToMany.getMappedByConfiguration());
+			if (collectionAccessor == null) {
+				// No explicit accessor was configured: try to find a matching reverse field by type inspection
+				Class<TRGT> targetClass = manyToMany.getTargetMappingConfiguration().getEntityType();
+				FieldIterator targetFields = new InstanceFieldIterator(targetClass);
+				Class<SRC> sourceEntityType = source.getEntityType();
+				Field reverseField = Iterables.find(targetFields, field -> Collection.class.isAssignableFrom(field.getType())
+						&& ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0].equals(sourceEntityType));
+				if (reverseField != null) {
+					Nullable<AccessorByMethod<TRGT, C2>> reverseGetterMethod = nullable(Accessors.accessorByMethod(reverseField));
+					if (reverseGetterMethod.isPresent()) {
+						collectionAccessor = new DefaultReadWritePropertyAccessPoint<>(reverseGetterMethod.get());
+					} else {
+						Nullable<MutatorByMethod<TRGT, C2>> reverseSetterMethod = nullable(Accessors.mutatorByMethod(reverseField));
+						if (reverseSetterMethod.isPresent()) {
+							collectionAccessor = new DefaultReadWritePropertyAccessPoint<>(reverseSetterMethod.get());
+						}
 					}
-				}
+				} // else : relation is not bidirectional, or not a usual one, may be set by reverse link
 			}
-		}
-		
-		Nullable<SerializablePropertyMutator<TRGT, SRC>> configuredCombiner = nullable(mappedByConfiguration.getReverseCombiner());
-		PropertyMutator<TRGT, SRC> result;
-		if (collectionAccessor == null) {
-			if (configuredCombiner.isAbsent()) {
-				return null;
-			}
-			// No collection to fill but a combiner was explicitly provided
-			result = Accessors.readWriteAccessPoint(configuredCombiner.get());
-		} else {
-			Supplier<C2> reverseCollectionFactory = mappedByConfiguration.getReverseCollectionFactory();
-			if (reverseCollectionFactory == null) {
-				Class<C2> collectionType = AccessorDefinition.giveDefinition(collectionAccessor).getMemberType();
-				reverseCollectionFactory = Reflections.giveCollectionFactory(collectionType);
-			}
-			ReadWriteAccessPoint<TRGT, C2> finalCollectionAccessor = collectionAccessor;
-			SerializableMutator<TRGT, SRC> combiner = configuredCombiner.getOr((TRGT trgt, SRC src) -> {
-				// Default combiner: add source to the target's reverse collection
-				finalCollectionAccessor.get(trgt).add(src);
-			});
-			Supplier<C2> effectiveReverseCollectionFactory = reverseCollectionFactory;
-			result = (TRGT trgt, SRC src) -> {
-				// Lazily initialise the reverse collection if null
-				if (finalCollectionAccessor.get(trgt) == null) {
-					finalCollectionAccessor.set(trgt, effectiveReverseCollectionFactory.get());
-				}
-				combiner.set(trgt, src);
-			};
-		}
-		
-		// When the relation is embedded, the "src" passed to the combiner is the root entity, but the reverse setter
-		// expects the embedded type; the shifter accessor extracts the embedded instance from the root.
-		if (mappedByConfiguration instanceof ShiftedMappedByConfiguration) {
-//			Accessor<?, SRC> shifter = ((ShiftedMappedByConfiguration<?, SRC, TRGT, C2>) mappedByConfiguration).getShifter();
-//			PropertyMutator<TRGT, SRC> finalResult = result;
-//			return (trgt, src) -> {
-//				SRC actualSrc = (SRC) shifter.get(src);
-//				finalResult.set(trgt, src);
-//			};
 			
-			Accessor shifter = ((ShiftedMappedByConfiguration) mappedByConfiguration).getShifter();
-			return (trgt, src) -> {
-				SRC src1 = (SRC) shifter.get(src);
-				result.set(trgt, src1);
-			};
-		} else {
-			return result;
+			Nullable<SerializablePropertyMutator<TRGT, SRC>> configuredCombiner = nullable(mappedByConfiguration.getReverseCombiner());
+			PropertyMutator<TRGT, SRC> result;
+			if (collectionAccessor == null) {
+				if (configuredCombiner.isAbsent()) {
+					return null;
+				}
+				// No collection to fill but a combiner was explicitly provided
+				result = Accessors.readWriteAccessPoint(configuredCombiner.get());
+			} else {
+				Supplier<C2> reverseCollectionFactory = mappedByConfiguration.getReverseCollectionFactory();
+				if (reverseCollectionFactory == null) {
+					Class<C2> collectionType = AccessorDefinition.giveDefinition(collectionAccessor).getMemberType();
+					reverseCollectionFactory = Reflections.giveCollectionFactory(collectionType);
+				}
+				ReadWriteAccessPoint<TRGT, C2> finalCollectionAccessor = collectionAccessor;
+				SerializableMutator<TRGT, SRC> combiner = configuredCombiner.getOr((TRGT trgt, SRC src) -> {
+					// Default combiner: add source to the target's reverse collection
+					finalCollectionAccessor.get(trgt).add(src);
+				});
+				Supplier<C2> effectiveReverseCollectionFactory = reverseCollectionFactory;
+				result = (TRGT trgt, SRC src) -> {
+					// Lazily initialise the reverse collection if null
+					if (finalCollectionAccessor.get(trgt) == null) {
+						finalCollectionAccessor.set(trgt, effectiveReverseCollectionFactory.get());
+					}
+					combiner.set(trgt, src);
+				};
+			}
+			
+			// When the relation is embedded, the "src" passed to the combiner is the root entity, but the reverse setter
+			// expects the embedded type; the shifter accessor extracts the embedded instance from the root.
+			if (mappedByConfiguration instanceof ShiftedMappedByConfiguration) {
+				Accessor shifter = ((ShiftedMappedByConfiguration) mappedByConfiguration).getShifter();
+				return (trgt, src) -> {
+					SRC src1 = (SRC) shifter.get(src);
+					result.set(trgt, src1);
+				};
+			} else {
+				return result;
+			}
 		}
 	}
 	
@@ -325,9 +318,7 @@ public class ManyToManyMetadataResolver {
 	 * getter/setter references. Returns {@code null} when neither a getter nor a setter was specified.
 	 */
 	@javax.annotation.Nullable
-	private <SRC, TRGT, C2 extends Collection<SRC>> ReadWritePropertyAccessPoint<TRGT, C2> buildReversePropertyAccessor(
-			ManyToManyRelation<SRC, TRGT, ?, ?, C2> manyToMany) {
-		MappedByConfiguration<SRC, TRGT, C2> mappedByConfiguration = manyToMany.getMappedByConfiguration();
+	private <SRC, TRGT, C2 extends Collection<SRC>> ReadWritePropertyAccessPoint<TRGT, C2> buildReversePropertyAccessor(MappedByConfiguration<SRC, TRGT, C2> mappedByConfiguration) {
 		Nullable<SerializablePropertyAccessor<TRGT, C2>> getterReference = nullable(mappedByConfiguration.getReverseCollectionAccessor());
 		Nullable<SerializablePropertyMutator<TRGT, C2>> setterReference = nullable(mappedByConfiguration.getReverseCollectionMutator());
 		if (getterReference.isAbsent() && setterReference.isAbsent()) {

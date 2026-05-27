@@ -5,6 +5,7 @@ import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.MappingJoin;
+import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToManyRelation;
 import org.codefilarete.stalactite.engine.model.security.RecoveryQuestion;
 import org.codefilarete.stalactite.engine.model.survey.Answer;
 import org.codefilarete.stalactite.engine.model.survey.Choice;
@@ -20,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.dsl.FluentMappings.embeddableBuilder;
 import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy.databaseAutoIncrement;
+import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 import static org.codefilarete.tool.collection.Iterables.first;
 import static org.mockito.Mockito.mock;
@@ -28,11 +30,11 @@ class ManyToManyMetadataResolverTest {
 	
 	@Test
 	void resolve_defaultAssociationTableMapping() {
-		FluentEntityMappingBuilder<Choice, Identifier<Long>> choiceBuilder = entityBuilder(Choice.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<Choice, Identifier<Long>> choiceBuilder = entityBuilder(Choice.class, LONG_TYPE)
 				.mapKey(Choice::getId, ALREADY_ASSIGNED)
 				.map(Choice::getLabel);
 		
-		FluentEntityMappingBuilder<Answer, Identifier<Long>> answerBuilder = entityBuilder(Answer.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<Answer, Identifier<Long>> answerBuilder = entityBuilder(Answer.class, LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
 				.mapManyToMany(Answer::getChoices, choiceBuilder);
 		
@@ -41,7 +43,7 @@ class ManyToManyMetadataResolverTest {
 		
 		assertThat(answerEntity.getRelations()).hasSize(1);
 		MappingJoin<?, ?, ?> relation = first(answerEntity.getRelations());
-		assertThat(relation).isInstanceOf(org.codefilarete.stalactite.engine.configurer.model.ManyToManyRelation.class);
+		assertThat(relation).isInstanceOf(ResolvedManyToManyRelation.class);
 		
 		IntermediaryRelationJoin<?, ?, ?, ?, ?> join = (IntermediaryRelationJoin<?, ?, ?, ?, ?>) relation.getJoin();
 		assertThat(join.getJoinTable().getName()).isEqualTo("Answer_choices");
@@ -54,11 +56,11 @@ class ManyToManyMetadataResolverTest {
 	
 	@Test
 	void resolve_customJoinTableAndJoinColumns() {
-		FluentEntityMappingBuilder<Choice, Identifier<Long>> choiceBuilder = entityBuilder(Choice.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<Choice, Identifier<Long>> choiceBuilder = entityBuilder(Choice.class, LONG_TYPE)
 				.mapKey(Choice::getId, ALREADY_ASSIGNED)
 				.map(Choice::getLabel);
 		
-		FluentEntityMappingBuilder<Answer, Identifier<Long>> answerBuilder = entityBuilder(Answer.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<Answer, Identifier<Long>> answerBuilder = entityBuilder(Answer.class, LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
 				.mapManyToMany(Answer::getChoices, choiceBuilder)
 						.joinTable("Toto")
@@ -78,11 +80,11 @@ class ManyToManyMetadataResolverTest {
 	
 	@Test
 	void resolve_indexedRelation_usesIndexedAssociationTable() {
-		FluentEntityMappingBuilder<Choice, Identifier<Long>> choiceBuilder = entityBuilder(Choice.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<Choice, Identifier<Long>> choiceBuilder = entityBuilder(Choice.class, LONG_TYPE)
 				.mapKey(Choice::getId, ALREADY_ASSIGNED)
 				.map(Choice::getLabel);
 		
-		FluentEntityMappingBuilder<Answer, Identifier<Long>> answerBuilder = entityBuilder(Answer.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<Answer, Identifier<Long>> answerBuilder = entityBuilder(Answer.class, LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
 				.mapManyToMany(Answer::getChoices, choiceBuilder)
 						.indexedBy("myIdx");
@@ -100,11 +102,11 @@ class ManyToManyMetadataResolverTest {
 	
 	@Test
 	void resolve_reverseCollection_relationFixerPopulatesBothSides() {
-		FluentEntityMappingBuilder<Choice, Identifier<Long>> choiceBuilder = entityBuilder(Choice.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<Choice, Identifier<Long>> choiceBuilder = entityBuilder(Choice.class, LONG_TYPE)
 				.mapKey(Choice::getId, ALREADY_ASSIGNED)
 				.map(Choice::getLabel);
 		
-		FluentEntityMappingBuilder<Answer, Identifier<Long>> answerBuilder = entityBuilder(Answer.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<Answer, Identifier<Long>> answerBuilder = entityBuilder(Answer.class, LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
 				.mapManyToMany(Answer::getChoices, choiceBuilder)
 						.reverseCollection(Choice::getAnswers);
@@ -112,8 +114,8 @@ class ManyToManyMetadataResolverTest {
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
 		Entity<Answer, Identifier<Long>, ?> answerEntity = testInstance.resolve(answerBuilder.getConfiguration());
 		
-		org.codefilarete.stalactite.engine.configurer.model.ManyToManyRelation<Answer, Choice, ?, ?, ?, ?, ?, ?> relation =
-				(org.codefilarete.stalactite.engine.configurer.model.ManyToManyRelation<Answer, Choice, ?, ?, ?, ?, ?, ?>) first(answerEntity.getRelations());
+		ResolvedManyToManyRelation<Answer, Choice, ?, ?, ?, ?, ?> relation =
+				(ResolvedManyToManyRelation<Answer, Choice, ?, ?, ?, ?, ?>) first(answerEntity.getRelations());
 		
 		Answer answer = new Answer(1L);
 		Choice choice = new Choice(42L);
@@ -127,7 +129,7 @@ class ManyToManyMetadataResolverTest {
 	void resolve_insetRelation_associationTableAndColumnsAreShifted() {
 		FluentEmbeddableMappingBuilder<Answer> answerBuilder = embeddableBuilder(Answer.class)
 				.map(Answer::getComment)
-				.mapManyToMany(Answer::getChoices, entityBuilder(Choice.class, Identifier.LONG_TYPE)
+				.mapManyToMany(Answer::getChoices, entityBuilder(Choice.class, LONG_TYPE)
 						.mapKey(Choice::getId, ALREADY_ASSIGNED)
 						.map(Choice::getLabel));
 		
@@ -150,7 +152,7 @@ class ManyToManyMetadataResolverTest {
 	void resolve_insetRelation_reverseCollection_relationFixerUsesEmbeddedSource() {
 		FluentEmbeddableMappingBuilder<Answer> answerBuilder = embeddableBuilder(Answer.class)
 				.map(Answer::getComment)
-				.mapManyToMany(Answer::getChoices, entityBuilder(Choice.class, Identifier.LONG_TYPE)
+				.mapManyToMany(Answer::getChoices, entityBuilder(Choice.class, LONG_TYPE)
 						.mapKey(Choice::getId, ALREADY_ASSIGNED)
 						.map(Choice::getLabel))
 				.reverseCollection(Choice::getAnswers);
@@ -162,8 +164,8 @@ class ManyToManyMetadataResolverTest {
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
 		Entity<RecoveryQuestion, Long, ?> entity = testInstance.resolve(mappingBuilder.getConfiguration());
 		
-		org.codefilarete.stalactite.engine.configurer.model.ManyToManyRelation<RecoveryQuestion, Choice, ?, ?, ?, ?, ?, ?> relation =
-				(org.codefilarete.stalactite.engine.configurer.model.ManyToManyRelation<RecoveryQuestion, Choice, ?, ?, ?, ?, ?, ?>) first(entity.getRelations());
+		ResolvedManyToManyRelation<RecoveryQuestion, Choice, ?, ?, ?, ?, ?> relation =
+				(ResolvedManyToManyRelation<RecoveryQuestion, Choice, ?, ?, ?, ?, ?>) first(entity.getRelations());
 		
 		RecoveryQuestion question = new RecoveryQuestion();
 		Choice choice = new Choice(42L);
