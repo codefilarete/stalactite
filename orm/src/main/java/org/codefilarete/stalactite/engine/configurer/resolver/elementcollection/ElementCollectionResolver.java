@@ -2,7 +2,9 @@ package org.codefilarete.stalactite.engine.configurer.resolver.elementcollection
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.function.Function;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.Mutator;
@@ -25,6 +27,7 @@ import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.collection.Iterables;
@@ -84,7 +87,8 @@ public class ElementCollectionResolver {
 	}
 	
 	private <SRC, SRCID, TRGT, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>, ER extends ElementRecord<TRGT, SRCID>>
-	ElementCollectionMapping<SRC, SRCID, TRGT, S, LEFTTABLE, COLLECTIONTABLE, ElementRecord<TRGT, SRCID>> buildCollectionMapping(ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, LEFTTABLE, COLLECTIONTABLE, ER> resolvedRelation, ConfiguredRelationalPersister<SRC, SRCID> sourcePersister) {
+	ElementCollectionMapping<SRC, SRCID, TRGT, S, LEFTTABLE, COLLECTIONTABLE, ElementRecord<TRGT, SRCID>> buildCollectionMapping(ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, LEFTTABLE, COLLECTIONTABLE, ER> resolvedRelation,
+	                                                                                                                             ConfiguredRelationalPersister<SRC, SRCID> sourcePersister) {
 		ElementCollectionMapping<SRC, SRCID, TRGT, S, LEFTTABLE, COLLECTIONTABLE, ElementRecord<TRGT, SRCID>> elementCollectionMapping;
 		if (resolvedRelation.isOrdered()) {
 			elementCollectionMapping = buildIndexedCollectionMapping((ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, LEFTTABLE, COLLECTIONTABLE, IndexedElementRecord<TRGT, SRCID>>) resolvedRelation, sourcePersister);
@@ -95,10 +99,25 @@ public class ElementCollectionResolver {
 	}
 	
 	private <SRC, SRCID, TRGT, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>, ER extends ElementRecord<TRGT, SRCID>>
-	ElementCollectionMapping<SRC, SRCID, TRGT, S, LEFTTABLE, COLLECTIONTABLE, ElementRecord<TRGT, SRCID>> buildNonIndexedCollectionMapping(ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, LEFTTABLE, COLLECTIONTABLE, ER> resolvedRelation, ConfiguredRelationalPersister<SRC, SRCID> sourcePersister) {
+	ElementCollectionMapping<SRC, SRCID, TRGT, S, LEFTTABLE, COLLECTIONTABLE, ElementRecord<TRGT, SRCID>> buildNonIndexedCollectionMapping(ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, LEFTTABLE, COLLECTIONTABLE, ER> resolvedRelation,
+	                                                                                                                                       ConfiguredRelationalPersister<SRC, SRCID> sourcePersister) {
 		EmbeddedClassMapping<ER, COLLECTIONTABLE> elementRecordMappingStrategy = new EmbeddedClassMapping<ER, COLLECTIONTABLE>((Class) ElementRecord.class,
 				resolvedRelation.getJoin().getRightKey().getTable(),
-				resolvedRelation.getColumnMapping());
+				resolvedRelation.getColumnMapping(),
+				Collections.emptyMap(),
+				new Function<ColumnedRow, ER>() {
+					@Override
+					public ER apply(ColumnedRow columnedRow) {
+						// todo: get the id from the ColumnedRow, instantiate a ElementRecord if id is not null
+						SRCID srcid = sourcePersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(columnedRow);
+						if (srcid != null) {
+							return (ER) new ElementRecord<>(srcid, null).setPersisted(true);
+						} else {
+							return null;
+						}
+					}
+				});
+		
 		ElementRecordMapping<TRGT, SRCID, COLLECTIONTABLE, ER> elementRecordMapping = new ElementRecordMapping<>(
 				resolvedRelation.getJoin().getRightKey().getTable(),
 				elementRecordMappingStrategy,

@@ -1,19 +1,20 @@
 package org.codefilarete.stalactite.engine.configurer.dslresolver;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
-import org.codefilarete.reflection.Accessor;
-import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.AccessorDefinitionDefiner;
+import org.codefilarete.reflection.Mutator;
+import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReadWriteAccessorChain;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
@@ -27,12 +28,9 @@ import org.codefilarete.stalactite.engine.configurer.dslresolver.InheritanceConf
 import org.codefilarete.stalactite.engine.configurer.dslresolver.MetadataSolvingCache.EntitySource;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRecord;
-import org.codefilarete.stalactite.engine.configurer.elementcollection.IndexedElementRecord;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedElementCollectionRelation;
-import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
-import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -44,18 +42,19 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.PairIterator;
 
+import static org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRecord.IDENTIFIER_ACCESSOR;
+import static org.codefilarete.stalactite.engine.configurer.elementcollection.IndexedElementRecord.INDEX_ACCESSOR;
 import static org.codefilarete.tool.Nullable.nullable;
+import static org.codefilarete.tool.bean.Objects.preventNull;
 import static org.codefilarete.tool.collection.Iterables.first;
 
 public class ElementCollectionMetadataResolver {
 	
-	private static final AccessorDefinition ELEMENT_RECORD_ID_ACCESSOR_DEFINITION = AccessorDefinition.giveDefinition(new AccessorByMethodReference<>(ElementRecord<Object, Object>::getId));
-	private static final AccessorDefinition ELEMENT_RECORD_INDEX_ACCESSOR_DEFINITION = AccessorDefinition.giveDefinition(IndexedElementRecord.INDEX_ACCESSOR);
-	
+	private static final AccessorDefinition ELEMENT_RECORD_ID_ACCESSOR_DEFINITION = AccessorDefinition.giveDefinition(IDENTIFIER_ACCESSOR);
+	private static final AccessorDefinition ELEMENT_RECORD_INDEX_ACCESSOR_DEFINITION = AccessorDefinition.giveDefinition(INDEX_ACCESSOR);
 	
 	private final Dialect dialect;
 	
@@ -118,7 +117,7 @@ public class ElementCollectionMetadataResolver {
 			indexColumn = targetTable.addColumn(indexingColumnName, Integer.class);
 			// adding a constraint on the index column, not on the element one (like for Set), to allow duplicates
 			indexColumn.primaryKey();
-			targetColumnMapping.put((ReadWritePropertyAccessPoint) IndexedElementRecord.INDEX_ACCESSOR, indexColumn);
+			targetColumnMapping.put((ReadWritePropertyAccessPoint) INDEX_ACCESSOR, indexColumn);
 		} else {
 			// adding a constraint on the element column because Sets don't allow duplicates
 			targetColumnMapping.values().forEach(Column::primaryKey);
@@ -130,9 +129,12 @@ public class ElementCollectionMetadataResolver {
 		// Note that this code is wrongly typed: the relationFixer should be of <SRC, C> to access the property, whereas it is typed with
 		// ElementRecord<TRGT, I> to fulfill the adapter argument. There's a kind of magic here that make it works (generics type erasure, and wrong
 		// ofAdapter(..) type deduction by compiler to match the relationFixer variable.
+		Supplier<S> collectionFactory = preventNull(
+				collectionRelation.getCollectionFactory(),
+				Reflections.giveCollectionFactory(collectionProviderDefinition.getMemberType()));
 		BeanRelationFixer<SRC, ER> relationFixer = BeanRelationFixer.ofAdapter(
 				collectionRelation.getCollectionAccessor(),
-				collectionRelation.getCollectionFactory(),
+				collectionFactory,
 				(bean, input, collection) -> collection.add(input.getElement()));    // element value is taken from ElementRecord
 		
 		KeyBuilder<COLLECTIONTABLE, SRCID> targetKeyBuilder = Key.from(targetTable);
@@ -146,7 +148,6 @@ public class ElementCollectionMetadataResolver {
 				collectionRelation.getCollectionFactory(),
 				targetColumnMapping,
 				primaryKeyForeignKeyColumnMapping,
-				collectionProviderDefinition.getMemberType(),
 				indexColumn);
 	}
 	
@@ -203,7 +204,8 @@ public class ElementCollectionMetadataResolver {
 					.getOr(() -> namingConfiguration.getColumnNamingStrategy().giveName(collectionProviderDefinition));
 			Column<COLLECTIONTABLE, TRGT> elementColumn = targetTable.addColumn(columnName, collectionRelation.getComponentType(), collectionRelation.getElementColumnSize());
 			// the mapping is only made of the element accessor
-			targetColumnMapping.put((ReadWritePropertyAccessPoint<ER, ?>) ElementRecord.ELEMENT_ACCESSOR, elementColumn);
+			ReadWriteAccessorChain<ER, ER, Object> key = new ReadWriteAccessorChain<>(new XX<>(), (ReadWritePropertyAccessPoint<ER, Object>) ElementRecord.ELEMENT_ACCESSOR);
+			targetColumnMapping.put(key, elementColumn);
 		} else {
 			// a special configuration was given, we compute a EmbeddedClassMapping from it
 			EmbeddableMappingBuilder<TRGT, COLLECTIONTABLE> elementCollectionMappingBuilder = new EmbeddableMappingBuilder<TRGT, COLLECTIONTABLE>(embeddableConfiguration, targetTable,
@@ -241,49 +243,32 @@ public class ElementCollectionMetadataResolver {
 		
 	}
 	
+	private static class XX<TRGT, SRCID, ER extends ElementRecord<TRGT, SRCID>> implements PropertyAccessor<ER, ER>, AccessorDefinitionDefiner<ER>, ReversibleAccessor<ER, ER> {
+		
+		@Override
+		public ER get(ER er) {
+			return er;
+		}
+		
+		@Override
+		public AccessorDefinition asAccessorDefinition() {
+			return new AccessorDefinition(ElementRecord.class, "self", Object.class);
+		}
+		
+		@Override
+		public Mutator<ER, ER> toMutator() {
+			return (er, er2) -> {
+				// does nothing because it is actually never invoked since we never set the ElementRecord on any other Object
+				// => implementing "ReversibleAccessor" is only made to fulfill ReadWriteAccessorChain construction
+			};
+		}
+	}
+	
 	private <SRCID> void registerColumnBinder(ForeignKey<?, ?, SRCID> reverseColumn, PrimaryKey<?, SRCID> sourcePK) {
 		PairIterator<? extends Column<?, ?>, ? extends Column<?, ?>> pairIterator = new PairIterator<>(reverseColumn.getColumns(), sourcePK.getColumns());
 		pairIterator.forEachRemaining(col -> {
 			dialect.getColumnBinderRegistry().register(col.getLeft(), dialect.getColumnBinderRegistry().getBinder(col.getRight()));
 			dialect.getSqlTypeRegistry().put(col.getLeft(), dialect.getSqlTypeRegistry().getTypeName(col.getRight()));
 		});
-	}
-	
-	private static class ElementCollectionMapping<SRC, SRCID, TRGT, S extends Collection<TRGT>, SRCTABLE extends Table<SRCTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>, ER extends ElementRecord<TRGT, SRCID>> {
-		public final ForeignKey<COLLECTIONTABLE, SRCTABLE, SRCID> reverseForeignKey;
-		public final DefaultEntityMapping<ER, ER, COLLECTIONTABLE> elementRecordMapping;
-		
-		private ElementCollectionMapping(ForeignKey<COLLECTIONTABLE, SRCTABLE, SRCID> reverseForeignKey, DefaultEntityMapping<ER, ER, COLLECTIONTABLE> elementRecordMapping) {
-			this.reverseForeignKey = reverseForeignKey;
-			this.elementRecordMapping = elementRecordMapping;
-		}
-		
-		protected Accessor<SRC, Collection<ElementRecord<TRGT, SRCID>>> collectionProvider(Accessor<SRC, S> collectionAccessor,
-		                                                                                   IdAccessor<SRC, SRCID> idAccessor,
-		                                                                                   boolean markAsPersisted) {
-			return src -> Iterables.collect(nullable(collectionAccessor.get(src)).getOr(() -> (S) new ArrayList<>()),
-					trgt -> new ElementRecord<>(idAccessor.getId(src), trgt).setPersisted(markAsPersisted),
-					HashSet::new);
-		}
-	}
-	
-	private static class IndexedElementCollectionMapping<SRC, SRCID, TRGT, S extends Collection<TRGT>, SRCTABLE extends Table<SRCTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>, ER extends IndexedElementRecord<TRGT, SRCID>>
-			extends ElementCollectionMapping<SRC, SRCID, TRGT, S, SRCTABLE, COLLECTIONTABLE, ER> {
-		
-		private IndexedElementCollectionMapping(ForeignKey<COLLECTIONTABLE, SRCTABLE, SRCID> reverseForeignKey, DefaultEntityMapping<ER, ER, COLLECTIONTABLE> elementRecordMapping) {
-			super(reverseForeignKey, elementRecordMapping);
-		}
-		
-		@Override
-		protected Accessor<SRC, Collection<ElementRecord<TRGT, SRCID>>> collectionProvider(Accessor<SRC, S> collectionAccessor,
-		                                                                                   IdAccessor<SRC, SRCID> idAccessor,
-		                                                                                   boolean markAsPersisted) {
-			return src -> {
-				S collection = nullable(collectionAccessor.get(src)).getOr(() -> (S) new ArrayList<>());
-				return Iterables.collect(collection,
-						trgt -> new IndexedElementRecord<>(idAccessor.getId(src), trgt, Iterables.indexOf(collection, trgt)).setPersisted(markAsPersisted),
-						HashSet::new);
-			};
-		}
 	}
 }

@@ -1,7 +1,9 @@
 package org.codefilarete.stalactite.engine.configurer.elementcollection;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.codefilarete.reflection.ReadWriteAccessPoint;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
@@ -44,7 +46,17 @@ public class ElementRecordMapping<C, I, T extends Table<T>, ER extends ElementRe
 		super((Class) ElementRecord.class,
 				targetTable,
 				embeddableMapping.getPropertyToColumn(),
-				new ElementRecordIdMapping<>(targetTable, embeddableMapping, sourceIdentifierAssembler, foreignKeyColumnMapping));
+				Collections.emptyMap(),
+				null,
+				new ElementRecordIdMapping<>(targetTable, embeddableMapping, sourceIdentifierAssembler, foreignKeyColumnMapping),
+				new Function<ColumnedRow, ER>() {
+					@Override
+					public ER apply(ColumnedRow columnedRow) {
+						I id = sourceIdentifierAssembler.assemble(columnedRow);
+						return (ER) new ElementRecord<>(id, null);
+					}
+				},
+				true);
 	}
 	
 	/**

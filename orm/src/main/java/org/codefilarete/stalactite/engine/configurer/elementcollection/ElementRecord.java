@@ -12,7 +12,7 @@ import org.codefilarete.stalactite.engine.diff.CollectionDiffer;
  */
 public class ElementRecord<TRGT, ID> {
 	
-	static final ReadWritePropertyAccessPoint<ElementRecord<Object, Object>, Object> IDENTIFIER_ACCESSOR = DefaultReadWritePropertyAccessPoint.fromMethodReference(
+	public static final ReadWritePropertyAccessPoint<ElementRecord<Object, Object>, Object> IDENTIFIER_ACCESSOR = DefaultReadWritePropertyAccessPoint.fromMethodReference(
 			ElementRecord::getId,
 			ElementRecord::setId);
 	

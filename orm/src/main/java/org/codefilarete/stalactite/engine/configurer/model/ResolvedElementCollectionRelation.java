@@ -19,8 +19,6 @@ public class ResolvedElementCollectionRelation<SRC, TRGT, S extends Collection<T
 	
 	private final Map<Column<SRCTABLE, ?>, Column<COLLECTIONTABLE, ?>> primaryKeyForeignKeyColumnMapping;
 	
-	private final Class<S> collectionType;
-	
 	@Nullable
 	private final Column<COLLECTIONTABLE, Integer> indexColumn;
 	
@@ -32,12 +30,10 @@ public class ResolvedElementCollectionRelation<SRC, TRGT, S extends Collection<T
 	                                         Supplier<S> componentFactory,
 	                                         Map<ReadWritePropertyAccessPoint<ER, ?>, Column<COLLECTIONTABLE, ?>> columnMapping,
 	                                         Map<Column<SRCTABLE, ?>, Column<COLLECTIONTABLE, ?>> primaryKeyForeignKeyColumnMapping,
-											 Class<S> collectionType,
 	                                         @Nullable Column<COLLECTIONTABLE, Integer> indexColumn) {
 		super(accessor, relationMode, fetchSeparately, join, relationFixer, componentFactory);
 		this.columnMapping = columnMapping;
 		this.primaryKeyForeignKeyColumnMapping = primaryKeyForeignKeyColumnMapping;
-		this.collectionType = collectionType;
 		this.indexColumn = indexColumn;
 	}
 	
@@ -52,10 +48,6 @@ public class ResolvedElementCollectionRelation<SRC, TRGT, S extends Collection<T
 	
 	public Map<Column<SRCTABLE, ?>, Column<COLLECTIONTABLE, ?>> getPrimaryKeyForeignKeyColumnMapping() {
 		return primaryKeyForeignKeyColumnMapping;
-	}
-	
-	public Class<S> getCollectionType() {
-		return collectionType;
 	}
 	
 	public boolean isOrdered() {

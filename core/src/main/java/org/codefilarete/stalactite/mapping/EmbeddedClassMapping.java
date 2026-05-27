@@ -333,7 +333,7 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 			// "Person::getTimestamp, Timestamp::setModificationDate", then we keep a boolean per "Person::getTimestamp" saying that if one of
 			// creationDate and modificationDate is not null then we should instantiate Timestamp, if both are null then not. 
 			Map<Entry<Column<?, ?>, Mutator<C, Object>>, Object> beanValues = new HashMap<>();
-			Map<Accessor, MutableBoolean> valuesAreDefaultOnes = new HashMap<>();
+			ValueAccessPointMap<C, MutableBoolean, Accessor<C, ?>> valuesAreDefaultOnes = new ValueAccessPointMap<>();
 			for (Entry<Column<?, ?>, Mutator<C, Object>> columnFieldEntry : getColumnToMember().entrySet()) {
 				Object propertyValue = values.get(columnFieldEntry.getKey());
 				// applying data converter if specified

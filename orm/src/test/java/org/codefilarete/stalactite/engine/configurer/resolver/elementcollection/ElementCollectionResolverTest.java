@@ -212,6 +212,7 @@ class ElementCollectionResolverTest {
 			ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
 					.addProperty(Person::getId)
 					.addProperty(Person::getName)
+					.addProperty(Person::getNicknames)
 					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
 					.build();
 			ObjectPrinter<City> cityPrinter = new ObjectPrinterBuilder<City>()
