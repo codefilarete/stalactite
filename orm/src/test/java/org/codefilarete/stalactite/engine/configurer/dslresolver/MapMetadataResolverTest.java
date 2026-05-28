@@ -1,21 +1,26 @@
 package org.codefilarete.stalactite.engine.configurer.dslresolver;
 
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
+import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.MappingJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
+import org.codefilarete.stalactite.engine.model.compositekey.House;
+import org.codefilarete.stalactite.engine.model.compositekey.House.HouseId;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.test.DefaultDialect;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.codefilarete.stalactite.dsl.FluentMappings.compositeKeyBuilder;
 import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 import static org.codefilarete.tool.collection.Iterables.first;
@@ -148,5 +153,100 @@ class MapMetadataResolverTest {
 				.extracting(foreignKey -> ((ForeignKey<?, ?, ?>) foreignKey).getTargetTable().getName())
 				.contains("Person", "Country");
 	}
-}
 
+	@Test
+	void resolve_entityAsCompositeKey_addsCompositeForeignKeyColumns() {
+		FluentEntityMappingBuilder<House, HouseId> houseBuilder = entityBuilder(House.class, HouseId.class)
+				.mapKey(House::getHouseId, compositeKeyBuilder(HouseId.class)
+						.map(HouseId::getNumber)
+						.map(HouseId::getStreet)
+						.map(HouseId::getZipCode)
+						.map(HouseId::getCity),
+					h -> {
+					},
+					h -> true);
+
+		FluentEntityMappingBuilder<Person, Identifier<Long>> mappingBuilder = entityBuilder(Person.class, Identifier.LONG_TYPE)
+				.mapKey(Person::getId, ALREADY_ASSIGNED)
+				.mapMap(Person::getMapPropertyMadeOfCompositeIdEntityAsKey, House.class, String.class)
+				.withKeyMapping(houseBuilder);
+
+		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
+		Entity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
+		ResolvedMapRelation<Person, House, String, ?, ?, ?, ?> relation =
+				(ResolvedMapRelation<Person, House, String, ?, ?, ?, ?>) first(personEntity.getRelations());
+
+		Table<?> mapTable = relation.getJoin().getRightKey().getTable();
+		assertThat(mapTable.getColumn("number")).isNotNull();
+		assertThat(mapTable.getColumn("street")).isNotNull();
+		assertThat(mapTable.getColumn("zipCode")).isNotNull();
+		assertThat(mapTable.getColumn("city")).isNotNull();
+		assertThat(relation.getColumnMapping().values()).extracting(Column::getName)
+				.contains("number", "street", "zipCode", "city");
+		assertThat(relation.getColumnMapping().keySet())
+				.extracting(AccessorDefinition::giveDefinition)
+				.extracting(AccessorDefinition::getName)
+				.contains("key.houseId.number", "key.houseId.street", "key.houseId.zipCode", "key.houseId.city");
+		assertThat(mapTable.getPrimaryKey().getColumns()).extracting(Column::getName)
+				.contains("id", "number", "street", "zipCode", "city");
+		assertThat(mapTable.getForeignKeys()).hasSize(2);
+		assertThat(mapTable.getForeignKeys())
+				.anySatisfy(foreignKey -> {
+					assertThat(foreignKey.getTargetTable().getName()).isEqualTo("Person");
+					assertThat(foreignKey.getColumns()).extracting(Column::getName).containsExactly("id");
+				})
+				.anySatisfy(foreignKey -> {
+					assertThat(foreignKey.getTargetTable().getName()).isEqualTo("House");
+					assertThat(foreignKey.getColumns()).extracting(Column::getName)
+							.containsExactly("number", "street", "zipCode", "city");
+				});
+	}
+
+	@Test
+	void resolve_entityAsCompositeValue_addsCompositeForeignKeyColumns() {
+		FluentEntityMappingBuilder<House, HouseId> houseBuilder = entityBuilder(House.class, HouseId.class)
+				.mapKey(House::getHouseId, compositeKeyBuilder(HouseId.class)
+						.map(HouseId::getNumber)
+						.map(HouseId::getStreet)
+						.map(HouseId::getZipCode)
+						.map(HouseId::getCity),
+					h -> {
+					},
+					h -> true);
+
+		FluentEntityMappingBuilder<Person, Identifier<Long>> mappingBuilder = entityBuilder(Person.class, Identifier.LONG_TYPE)
+				.mapKey(Person::getId, ALREADY_ASSIGNED)
+				.mapMap(Person::getMapPropertyMadeOfCompositeIdEntityAsValue, String.class, House.class)
+				.withValueMapping(houseBuilder);
+
+		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
+		Entity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
+		ResolvedMapRelation<Person, String, House, ?, ?, ?, ?> relation =
+				(ResolvedMapRelation<Person, String, House, ?, ?, ?, ?>) first(personEntity.getRelations());
+
+		Table<?> mapTable = relation.getJoin().getRightKey().getTable();
+		assertThat(mapTable.getColumn("number")).isNotNull();
+		assertThat(mapTable.getColumn("street")).isNotNull();
+		assertThat(mapTable.getColumn("zipCode")).isNotNull();
+		assertThat(mapTable.getColumn("city")).isNotNull();
+		assertThat(relation.getColumnMapping().values()).extracting(Column::getName)
+				.contains("number", "street", "zipCode", "city");
+		assertThat(relation.getColumnMapping().keySet())
+				.extracting(AccessorDefinition::giveDefinition)
+				.extracting(AccessorDefinition::getName)
+				.contains("value.houseId.number", "value.houseId.street", "value.houseId.zipCode", "value.houseId.city");
+		assertThat(mapTable.getPrimaryKey().getColumns()).extracting(Column::getName)
+				.contains("id", "key");
+		assertThat(mapTable.getForeignKeys()).hasSize(2);
+		assertThat(mapTable.getForeignKeys())
+				.anySatisfy(foreignKey -> {
+					assertThat(foreignKey.getTargetTable().getName()).isEqualTo("Person");
+					assertThat(foreignKey.getColumns()).extracting(Column::getName).containsExactly("id");
+				})
+				.anySatisfy(foreignKey -> {
+					assertThat(foreignKey.getTargetTable().getName()).isEqualTo("House");
+					assertThat(foreignKey.getColumns()).extracting(Column::getName)
+							.containsExactly("number", "street", "zipCode", "city");
+				});
+	}
+}
