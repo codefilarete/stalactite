@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.configurer.resolver;
 
 import java.util.ArrayDeque;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Queue;
 
 import org.codefilarete.reflection.PropertyAccessor;
@@ -16,9 +17,11 @@ import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRe
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToManyRelation;
+import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.elementcollection.AggregateElementCollectionAppender;
+import org.codefilarete.stalactite.engine.configurer.resolver.map.AggregateMapAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.manytomany.AggregateManyToManyAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.AggregateOneToManyAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetoone.AggregateOneToOneAppender;
@@ -36,6 +39,7 @@ public class AggregateResolver {
 	private final AggregateOneToManyAppender oneToManyAppender;
 	private final AggregateManyToManyAppender manyToManyAppender;
 	private final AggregateElementCollectionAppender elementCollectionAppender;
+	private final AggregateMapAppender mapAppender;
 	
 	public AggregateResolver(PersistenceContext persistenceContext) {
 		this(persistenceContext, persistenceContext.getPersisterRegistry());
@@ -49,6 +53,7 @@ public class AggregateResolver {
 		this.oneToManyAppender = new AggregateOneToManyAppender(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 		this.manyToManyAppender = new AggregateManyToManyAppender(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 		this.elementCollectionAppender = new AggregateElementCollectionAppender(persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
+		this.mapAppender = new AggregateMapAppender(persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 	}
 	
 	public <C, I> EntityPersister<C, I> resolve(EntityMappingConfiguration<C, I> rootConfiguration) {
@@ -130,17 +135,23 @@ public class AggregateResolver {
 									(AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE>) assemblyPawn);
 							relationStack.add(assemblyPoint);
 						}
-					if (relationPawn instanceof ResolvedManyToManyRelation) {
-						AssemblyPoint<?, ?, ?, ?> assemblyPoint = manyToManyAppender.append(
-								aggregatePersister,
-								(ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>) relationPawn,
-								(AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE>) assemblyPawn);
-						relationStack.add(assemblyPoint);
-					}
+						if (relationPawn instanceof ResolvedManyToManyRelation) {
+							AssemblyPoint<?, ?, ?, ?> assemblyPoint = manyToManyAppender.append(
+									aggregatePersister,
+									(ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>) relationPawn,
+									(AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE>) assemblyPawn);
+							relationStack.add(assemblyPoint);
+						}
 						if (relationPawn instanceof ResolvedElementCollectionRelation) {
 							elementCollectionAppender.append(
 									aggregatePersister,
 									(ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, LEFTTABLE, RIGHTTABLE, ElementRecord<TRGT, SRCID>>) relationPawn,
+									(AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE>) assemblyPawn);
+						}
+						if (relationPawn instanceof ResolvedMapRelation) {
+							mapAppender.append(
+									aggregatePersister,
+									(ResolvedMapRelation<SRC, Object, Object, Map<Object, Object>, SRCID, LEFTTABLE, RIGHTTABLE>) relationPawn,
 									(AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE>) assemblyPawn);
 						}
 					});
