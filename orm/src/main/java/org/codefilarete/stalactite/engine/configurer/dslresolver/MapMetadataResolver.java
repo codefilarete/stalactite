@@ -16,7 +16,7 @@ import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.MapTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.InheritanceConfigurationResolver.ResolvedConfiguration;
@@ -169,11 +169,11 @@ public class MapMetadataResolver {
 	private <SRC, K, V, M extends Map<K, V>, MAPTABLE extends Table<MAPTABLE>>
 	MAPTABLE determineTable(MapRelation<SRC, K, V, M> mapRelation,
 	                        AccessorDefinition mapAccessorDefinition,
-	                        MapEntryTableNamingStrategy mapEntryTableNamingStrategy) {
+	                        MapTableNamingStrategy mapTableNamingStrategy) {
 		MAPTABLE targetTable = (MAPTABLE) mapRelation.getTargetTable();
 		if (targetTable == null) {
 			String tableName = nullable(mapRelation.getTargetTableName()).getOr(
-					() -> mapEntryTableNamingStrategy.giveTableName(mapAccessorDefinition, mapRelation.getKeyType(), mapRelation.getValueType()));
+					() -> mapTableNamingStrategy.giveTableName(mapAccessorDefinition, mapRelation.getKeyType(), mapRelation.getValueType()));
 			targetTable = (MAPTABLE) new Table<>(tableName.replace('.', '_'));
 		}
 		return targetTable;

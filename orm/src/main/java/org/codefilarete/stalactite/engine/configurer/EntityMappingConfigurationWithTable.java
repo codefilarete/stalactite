@@ -15,7 +15,7 @@ import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.MapTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
@@ -88,8 +88,8 @@ public class EntityMappingConfigurationWithTable<C, I> implements EntityMappingC
 	}
 	
 	@Nullable
-	public MapEntryTableNamingStrategy getEntryMapTableNamingStrategy() {
-		return delegate.getEntryMapTableNamingStrategy();
+	public MapTableNamingStrategy getMapTableNamingStrategy() {
+		return delegate.getMapTableNamingStrategy();
 	}
 	
 	@Nullable

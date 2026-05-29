@@ -20,7 +20,7 @@ import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.MapTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.sql.ddl.Size;
@@ -101,7 +101,7 @@ public interface EntityMappingConfiguration<C, I> extends MappableSuperClassConf
 	ColumnNamingStrategy getIndexColumnNamingStrategy();
 	
 	@Nullable
-	MapEntryTableNamingStrategy getEntryMapTableNamingStrategy();
+	MapTableNamingStrategy getMapTableNamingStrategy();
 	
 	PolymorphismPolicy<C> getPolymorphismPolicy();
 	

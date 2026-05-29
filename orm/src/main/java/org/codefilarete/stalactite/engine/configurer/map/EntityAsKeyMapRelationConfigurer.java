@@ -21,7 +21,7 @@ import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.MapTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.EntityPersister;
@@ -114,7 +114,7 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 			ConfiguredRelationalPersister<K, KID> keyEntityPersister,
 			ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 			ColumnNamingStrategy columnNamingStrategy,
-			MapEntryTableNamingStrategy tableNamingStrategy,
+			MapTableNamingStrategy tableNamingStrategy,
 			Dialect dialect,
 			ConnectionConfiguration connectionConfiguration,
 			UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy) {

@@ -29,7 +29,7 @@ import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.MapTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.ColumnOptions;
@@ -261,7 +261,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	
 	FluentEntityMappingBuilder<C, I> withElementCollectionTableNaming(ElementCollectionTableNamingStrategy tableNamingStrategy);
 	
-	FluentEntityMappingBuilder<C, I> withMapEntryTableNaming(MapEntryTableNamingStrategy tableNamingStrategy);
+	FluentEntityMappingBuilder<C, I> withMapTableNaming(MapTableNamingStrategy tableNamingStrategy);
 	
 	FluentEntityMappingBuilder<C, I> withForeignKeyNaming(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
 	

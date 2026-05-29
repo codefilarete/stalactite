@@ -52,7 +52,7 @@ import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.MapTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.ElementCollectionOptions;
@@ -131,7 +131,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	private ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy = ElementCollectionTableNamingStrategy.DEFAULT;
 	
-	private MapEntryTableNamingStrategy mapEntryTableNamingStrategy = MapEntryTableNamingStrategy.DEFAULT;
+	private MapTableNamingStrategy mapTableNamingStrategy = MapTableNamingStrategy.DEFAULT;
 	
 	@Nullable
 	private OptimisticLockOption<C, ?> optimisticLockOption;
@@ -282,8 +282,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public MapEntryTableNamingStrategy getEntryMapTableNamingStrategy() {
-		return this.mapEntryTableNamingStrategy;
+	public MapTableNamingStrategy getMapTableNamingStrategy() {
+		return this.mapTableNamingStrategy;
 	}
 	
 	@Override
@@ -1198,8 +1198,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public FluentEntityMappingBuilder<C, I> withMapEntryTableNaming(MapEntryTableNamingStrategy tableNamingStrategy) {
-		this.mapEntryTableNamingStrategy = tableNamingStrategy;
+	public FluentEntityMappingBuilder<C, I> withMapTableNaming(MapTableNamingStrategy tableNamingStrategy) {
+		this.mapTableNamingStrategy = tableNamingStrategy;
 		return this;
 	}
 	

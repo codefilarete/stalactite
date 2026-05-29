@@ -20,7 +20,7 @@ import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.MapTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
@@ -70,7 +70,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 	protected final ConfiguredRelationalPersister<SRC, ID> sourcePersister;
 	protected final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	protected final ColumnNamingStrategy columnNamingStrategy;
-	protected final MapEntryTableNamingStrategy tableNamingStrategy;
+	protected final MapTableNamingStrategy tableNamingStrategy;
 	protected final Dialect dialect;
 	protected final ConnectionConfiguration connectionConfiguration;
 	protected final UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy;
@@ -79,7 +79,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 								 ConfiguredRelationalPersister<SRC, ID> sourcePersister,
 								 ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 								 ColumnNamingStrategy columnNamingStrategy,
-								 MapEntryTableNamingStrategy tableNamingStrategy,
+								 MapTableNamingStrategy tableNamingStrategy,
 								 Dialect dialect,
 								 ConnectionConfiguration connectionConfiguration,
 								 UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy) {

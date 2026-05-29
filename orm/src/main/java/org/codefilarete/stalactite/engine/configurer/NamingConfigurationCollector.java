@@ -12,7 +12,7 @@ import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.MapTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.tool.Nullable;
@@ -44,7 +44,7 @@ public class NamingConfigurationCollector {
 		EntityPropertyCollector<ColumnNamingStrategy> indexColumnNamingCollector = new EntityPropertyCollector<>(EntityMappingConfiguration::getIndexColumnNamingStrategy);
 		EntityPropertyCollector<AssociationTableNamingStrategy> associationTableNamingCollector = new EntityPropertyCollector<>(EntityMappingConfiguration::getAssociationTableNamingStrategy);
 		EntityPropertyCollector<ElementCollectionTableNamingStrategy> elementCollectionTableNamingCollector = new EntityPropertyCollector<>(EntityMappingConfiguration::getElementCollectionTableNamingStrategy);
-		EntityPropertyCollector<MapEntryTableNamingStrategy> mapEntryTableNamingCollector = new EntityPropertyCollector<>(EntityMappingConfiguration::getEntryMapTableNamingStrategy);
+		EntityPropertyCollector<MapTableNamingStrategy> mapTableNamingCollector = new EntityPropertyCollector<>(EntityMappingConfiguration::getMapTableNamingStrategy);
 		
 		PropertiesCollector propertiesCollector = new PropertiesCollector();
 		propertiesCollector.addEntityPropertyCollector(tableNamingCollector);
@@ -55,7 +55,7 @@ public class NamingConfigurationCollector {
 		propertiesCollector.addEntityPropertyCollector(indexColumnNamingCollector);
 		propertiesCollector.addEntityPropertyCollector(associationTableNamingCollector);
 		propertiesCollector.addEntityPropertyCollector(elementCollectionTableNamingCollector);
-		propertiesCollector.addEntityPropertyCollector(mapEntryTableNamingCollector);
+		propertiesCollector.addEntityPropertyCollector(mapTableNamingCollector);
 		
 		visitInheritedConfigurations(propertiesCollector);
 		
@@ -65,7 +65,7 @@ public class NamingConfigurationCollector {
 				foreignKeyNamingCollector.getResult().getOr(ForeignKeyNamingStrategy.DEFAULT),
 				uniqueConstraintNamingCollector.getResult().getOr(UniqueConstraintNamingStrategy.DEFAULT),
 				elementCollectionTableNamingCollector.getResult().getOr(ElementCollectionTableNamingStrategy.DEFAULT),
-				mapEntryTableNamingCollector.getResult().getOr(MapEntryTableNamingStrategy.DEFAULT),
+				mapTableNamingCollector.getResult().getOr(MapTableNamingStrategy.DEFAULT),
 				joinColumnNamingCollector.getResult().getOr(JoinColumnNamingStrategy.JOIN_DEFAULT),
 				indexColumnNamingCollector.getResult().getOr(ColumnNamingStrategy.INDEX_DEFAULT),
 				associationTableNamingCollector.getResult().getOr(AssociationTableNamingStrategy.DEFAULT));

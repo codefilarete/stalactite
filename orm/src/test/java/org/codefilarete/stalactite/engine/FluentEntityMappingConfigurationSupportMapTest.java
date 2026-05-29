@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.engine;
 
-import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.AbstractMap.SimpleEntry;
@@ -11,12 +10,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Function;
+import javax.sql.DataSource;
 
 import org.assertj.core.presentation.StandardRepresentation;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
-import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.MapTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.configurer.ToStringBuilder;
 import org.codefilarete.stalactite.engine.model.Car.Radio;
@@ -34,16 +34,16 @@ import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
+import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
-import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -295,11 +295,11 @@ class FluentEntityMappingConfigurationSupportMapTest {
 	}
 
 	@Test
-	void withMapEntryTableNaming() {
+	void withMapTableNaming() {
 		FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
-				.withMapEntryTableNaming(new MapEntryTableNamingStrategy() {
+				.withMapTableNaming(new MapTableNamingStrategy() {
 					
 					@Override
 					public String giveTableName(AccessorDefinition accessorDefinition, Class<?> keyType, Class<?> valueType) {

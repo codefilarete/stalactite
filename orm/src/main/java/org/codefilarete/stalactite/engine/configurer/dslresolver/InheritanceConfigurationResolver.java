@@ -20,7 +20,7 @@ import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.MapTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
@@ -64,7 +64,7 @@ public class InheritanceConfigurationResolver<C, I> {
 				ForeignKeyNamingStrategy.DEFAULT,
 				UniqueConstraintNamingStrategy.DEFAULT,
 				ElementCollectionTableNamingStrategy.DEFAULT,
-				MapEntryTableNamingStrategy.DEFAULT,
+				MapTableNamingStrategy.DEFAULT,
 				JoinColumnNamingStrategy.JOIN_DEFAULT,
 				ColumnNamingStrategy.INDEX_DEFAULT,
 				AssociationTableNamingStrategy.DEFAULT);
@@ -91,7 +91,7 @@ public class InheritanceConfigurationResolver<C, I> {
 					nullable(node.getForeignKeyNamingStrategy()).getOr(inheritedNaming.getForeignKeyNamingStrategy()),
 					nullable(node.getUniqueConstraintNamingStrategy()).getOr(inheritedNaming.getUniqueConstraintNamingStrategy()),
 					nullable(node.getElementCollectionTableNamingStrategy()).getOr(inheritedNaming.getElementCollectionTableNamingStrategy()),
-					nullable(node.getEntryMapTableNamingStrategy()).getOr(inheritedNaming.getEntryMapTableNamingStrategy()),
+					nullable(node.getMapTableNamingStrategy()).getOr(inheritedNaming.getEntryMapTableNamingStrategy()),
 					nullable(node.getJoinColumnNamingStrategy()).getOr(inheritedNaming.getJoinColumnNamingStrategy()),
 					nullable(node.getIndexColumnNamingStrategy()).getOr(inheritedNaming.getIndexColumnNamingStrategy()),
 					nullable(node.getAssociationTableNamingStrategy()).getOr(inheritedNaming.getAssociationTableNamingStrategy()));

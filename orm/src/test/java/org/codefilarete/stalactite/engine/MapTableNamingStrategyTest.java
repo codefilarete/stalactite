@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy.DefaultMapEntryTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.MapTableNamingStrategy.DefaultMapTableNamingStrategy;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -15,18 +15,18 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class MapEntryTableNamingStrategyTest {
+class MapTableNamingStrategyTest {
 	
 	@Test
 	void giveName() {
-		DefaultMapEntryTableNamingStrategy testInstance = new DefaultMapEntryTableNamingStrategy();
+		DefaultMapTableNamingStrategy testInstance = new DefaultMapTableNamingStrategy();
 		assertThat(testInstance.giveTableName(new AccessorDefinition(Country.class, "getCities", City.class), String.class, Integer.class)).isEqualTo("Country_cities");
 		assertThat(testInstance.giveTableName(new AccessorDefinition(Country.class, "giveCities", City.class), String.class, Integer.class)).isEqualTo("Country_giveCities");
 	}
 	
 	@Test
 	void giveMapKeyColumnNames() {
-		DefaultMapEntryTableNamingStrategy testInstance = new DefaultMapEntryTableNamingStrategy();
+		DefaultMapTableNamingStrategy testInstance = new DefaultMapTableNamingStrategy();
 		Table cityTable = new Table("cityTable");
 		cityTable.addColumn("id", long.class).primaryKey();
 		

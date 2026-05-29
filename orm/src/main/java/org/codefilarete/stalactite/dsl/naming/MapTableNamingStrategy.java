@@ -21,7 +21,7 @@ import static org.codefilarete.tool.Reflections.IS_PREFIX_REMOVER;
  * 
  * @author Guillaume Mary
  */
-public interface MapEntryTableNamingStrategy {
+public interface MapTableNamingStrategy {
 	
 	/**
 	 * Gives association table name
@@ -36,18 +36,18 @@ public interface MapEntryTableNamingStrategy {
 						  PrimaryKey<RIGHTTABLE, RIGHTID> rightPrimaryKey,
 						  Set<String> existingColumnNames);
 	
-	MapEntryTableNamingStrategy DEFAULT = new DefaultMapEntryTableNamingStrategy();
+	MapTableNamingStrategy DEFAULT = new DefaultMapTableNamingStrategy();
 	
 	/**
-	 * Default implementation of the {@link MapEntryTableNamingStrategy} interface.
-	 * Will use relation property name for it, prefixed with source table name.
+	 * Default implementation of the {@link MapTableNamingStrategy} interface.
+	 * Will use the relation property name for it, prefixed with the source table name.
 	 * For instance: for a Country entity with the getCities() getter to retrieve country cities,
 	 * the association table will be named "Country_cities".
-	 * If property cannot be deduced from getter (it doesn't start with "get") then target table name will be used, suffixed by "s".
-	 * For instance: for a Country entity with the giveCities() getter to retrieve country cities,
+	 * If the property cannot be deduced from getter (it doesn't start with "get") then the target table name will be
+	 * used, suffixed by "s". For instance: for a Country entity with the giveCities() getter to retrieve country cities,
 	 * the association table will be named "Country_citys".
 	 */
-	class DefaultMapEntryTableNamingStrategy implements MapEntryTableNamingStrategy {
+	class DefaultMapTableNamingStrategy implements MapTableNamingStrategy {
 		
 		@Override
 		public String giveTableName(AccessorDefinition accessorDefinition, Class<?> keyType, Class<?> valueType) {

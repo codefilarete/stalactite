@@ -6,7 +6,7 @@ import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrate
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
-import org.codefilarete.stalactite.dsl.naming.MapEntryTableNamingStrategy;
+import org.codefilarete.stalactite.dsl.naming.MapTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
 
 /**
@@ -22,7 +22,7 @@ public class NamingConfiguration {
 	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	private final UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy;
 	private final ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy;
-	private final MapEntryTableNamingStrategy mapEntryTableNamingStrategy;
+	private final MapTableNamingStrategy mapTableNamingStrategy;
 	private final JoinColumnNamingStrategy joinColumnNamingStrategy;
 	private final ColumnNamingStrategy indexColumnNamingStrategy;
 	private final AssociationTableNamingStrategy associationTableNamingStrategy;
@@ -32,7 +32,7 @@ public class NamingConfiguration {
 							   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 							   UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy,
 							   ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy,
-							   MapEntryTableNamingStrategy mapEntryTableNamingStrategy,
+							   MapTableNamingStrategy mapTableNamingStrategy,
 							   JoinColumnNamingStrategy joinColumnNamingStrategy,
 							   ColumnNamingStrategy indexColumnNamingStrategy,
 							   AssociationTableNamingStrategy associationTableNamingStrategy) {
@@ -41,7 +41,7 @@ public class NamingConfiguration {
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 		this.uniqueConstraintNamingStrategy = uniqueConstraintNamingStrategy;
 		this.elementCollectionTableNamingStrategy = elementCollectionTableNamingStrategy;
-		this.mapEntryTableNamingStrategy = mapEntryTableNamingStrategy;
+		this.mapTableNamingStrategy = mapTableNamingStrategy;
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
 		this.indexColumnNamingStrategy = indexColumnNamingStrategy;
 		this.associationTableNamingStrategy = associationTableNamingStrategy;
@@ -71,8 +71,8 @@ public class NamingConfiguration {
 		return elementCollectionTableNamingStrategy;
 	}
 	
-	public MapEntryTableNamingStrategy getEntryMapTableNamingStrategy() {
-		return mapEntryTableNamingStrategy;
+	public MapTableNamingStrategy getEntryMapTableNamingStrategy() {
+		return mapTableNamingStrategy;
 	}
 	
 	public JoinColumnNamingStrategy getJoinColumnNamingStrategy() {
