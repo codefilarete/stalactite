@@ -99,7 +99,7 @@ public class MapMetadataResolver {
 		PrimaryKey<SRCTABLE, SRCID> sourcePK = source.getTable().getPrimaryKey();
 		NamingConfiguration namingConfiguration = resolvedConfiguration.getNamingConfiguration();
 
-		MAPTABLE targetTable = determineTable(mapRelation, mapAccessorDefinition, namingConfiguration.getEntryMapTableNamingStrategy());
+		MAPTABLE targetTable = determineTable(mapRelation, mapAccessorDefinition, namingConfiguration.getMapTableNamingStrategy());
 		Map<Column<SRCTABLE, ?>, Column<MAPTABLE, ?>> primaryKeyForeignKeyColumnMapping = buildPrimaryKeyForeignKeyColumnMapping(
 				mapRelation,
 				targetTable,

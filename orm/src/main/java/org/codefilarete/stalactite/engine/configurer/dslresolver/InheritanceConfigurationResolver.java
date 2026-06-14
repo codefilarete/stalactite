@@ -91,7 +91,7 @@ public class InheritanceConfigurationResolver<C, I> {
 					nullable(node.getForeignKeyNamingStrategy()).getOr(inheritedNaming.getForeignKeyNamingStrategy()),
 					nullable(node.getUniqueConstraintNamingStrategy()).getOr(inheritedNaming.getUniqueConstraintNamingStrategy()),
 					nullable(node.getElementCollectionTableNamingStrategy()).getOr(inheritedNaming.getElementCollectionTableNamingStrategy()),
-					nullable(node.getMapTableNamingStrategy()).getOr(inheritedNaming.getEntryMapTableNamingStrategy()),
+					nullable(node.getMapTableNamingStrategy()).getOr(inheritedNaming.getMapTableNamingStrategy()),
 					nullable(node.getJoinColumnNamingStrategy()).getOr(inheritedNaming.getJoinColumnNamingStrategy()),
 					nullable(node.getIndexColumnNamingStrategy()).getOr(inheritedNaming.getIndexColumnNamingStrategy()),
 					nullable(node.getAssociationTableNamingStrategy()).getOr(inheritedNaming.getAssociationTableNamingStrategy()));

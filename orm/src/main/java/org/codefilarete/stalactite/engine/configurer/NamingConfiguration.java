@@ -71,7 +71,7 @@ public class NamingConfiguration {
 		return elementCollectionTableNamingStrategy;
 	}
 	
-	public MapTableNamingStrategy getEntryMapTableNamingStrategy() {
+	public MapTableNamingStrategy getMapTableNamingStrategy() {
 		return mapTableNamingStrategy;
 	}
 	

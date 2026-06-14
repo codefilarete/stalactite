@@ -143,7 +143,7 @@ public class RelationConfigurer<C, I> {
 						valueEntityPersister,
 						namingConfiguration.getForeignKeyNamingStrategy(),
 						namingConfiguration.getColumnNamingStrategy(),
-						namingConfiguration.getEntryMapTableNamingStrategy(),
+						namingConfiguration.getMapTableNamingStrategy(),
 						dialect,
 						connectionConfiguration,
 						namingConfiguration.getIndexNamingStrategy());
@@ -157,7 +157,7 @@ public class RelationConfigurer<C, I> {
 						keyEntityPersister,
 						namingConfiguration.getForeignKeyNamingStrategy(),
 						namingConfiguration.getColumnNamingStrategy(),
-						namingConfiguration.getEntryMapTableNamingStrategy(),
+						namingConfiguration.getMapTableNamingStrategy(),
 						dialect,
 						connectionConfiguration,
 						namingConfiguration.getIndexNamingStrategy());
@@ -171,7 +171,7 @@ public class RelationConfigurer<C, I> {
 						valueEntityPersister,
 						namingConfiguration.getForeignKeyNamingStrategy(),
 						namingConfiguration.getColumnNamingStrategy(),
-						namingConfiguration.getEntryMapTableNamingStrategy(),
+						namingConfiguration.getMapTableNamingStrategy(),
 						dialect,
 						connectionConfiguration,
 						namingConfiguration.getIndexNamingStrategy());
@@ -182,7 +182,7 @@ public class RelationConfigurer<C, I> {
 						sourcePersister,
 						namingConfiguration.getForeignKeyNamingStrategy(),
 						namingConfiguration.getColumnNamingStrategy(),
-						namingConfiguration.getEntryMapTableNamingStrategy(),
+						namingConfiguration.getMapTableNamingStrategy(),
 						dialect,
 						connectionConfiguration,
 						namingConfiguration.getIndexNamingStrategy()
