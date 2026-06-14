@@ -115,8 +115,8 @@ public class InheritanceMappingStep<C, I> {
 	public static class Mapping<C, T extends Table<T>> {
 		private final Object /* EntityMappingConfiguration, EmbeddableMappingConfiguration, SubEntityMappingConfiguration */ mappingConfiguration;
 		private final T targetTable;
-		private final Map<ReadWritePropertyAccessPoint<C, Object>, Column<T, Object>> mapping;
-		private final Map<PropertyMutator<C, Object>, Column<T, Object>> readonlyMapping;
+		private final Map<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> mapping;
+		private final Map<PropertyMutator<C, ?>, Column<T, ?>> readonlyMapping;
 		private final Duo<ReadWritePropertyAccessPoint<C, Object>, Column<T, Object>> versioningMapping;
 		private final ValueAccessPointSet<C, PropertyAccessPoint<C, ?>> propertiesSetByConstructor = new ValueAccessPointSet<>();
 		private final boolean mappedSuperClass;
@@ -125,16 +125,16 @@ public class InheritanceMappingStep<C, I> {
 		
 		public Mapping(Object mappingConfiguration,
 					   T targetTable,
-					   Map<? extends ReadWritePropertyAccessPoint<C, Object>, ? extends Column<T, Object>> mapping,
-					   Map<? extends PropertyMutator<C, Object>, ? extends Column<T, Object>> readonlyMapping,
+					   Map<? extends ReadWritePropertyAccessPoint<C, ?>, ? extends Column<T, ?>> mapping,
+					   Map<? extends PropertyMutator<C, ?>, ? extends Column<T, ?>> readonlyMapping,
 					   Duo<? extends ReadWritePropertyAccessPoint<C, ?>, ? extends Column<T, ?>> versioningMapping,
 					   ValueAccessPointMap<C, ? extends Converter<Object, Object>, PropertyAccessPoint<C, ?>> readConverters,
 					   ValueAccessPointMap<C, ? extends Converter<Object, Object>, PropertyAccessPoint<C, ?>> writeConverters,
 					   boolean mappedSuperClass) {
 			this.mappingConfiguration = mappingConfiguration;
 			this.targetTable = targetTable;
-			this.mapping = (Map<ReadWritePropertyAccessPoint<C, Object>, Column<T, Object>>) mapping;
-			this.readonlyMapping = (Map<PropertyMutator<C, Object>, Column<T, Object>>) readonlyMapping;
+			this.mapping = (Map<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>>) mapping;
+			this.readonlyMapping = (Map<PropertyMutator<C, ?>, Column<T, ?>>) readonlyMapping;
 			this.versioningMapping = (Duo<ReadWritePropertyAccessPoint<C, Object>, Column<T, Object>>) versioningMapping;
 			this.readConverters = (ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>>) readConverters;
 			this.writeConverters = (ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>>) writeConverters;
@@ -161,11 +161,11 @@ public class InheritanceMappingStep<C, I> {
 			return targetTable;
 		}
 		
-		public Map<ReadWritePropertyAccessPoint<C, Object>, Column<T, Object>> getMapping() {
+		public Map<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> getMapping() {
 			return mapping;
 		}
 		
-		public Map<PropertyMutator<C, Object>, Column<T, Object>> getReadonlyMapping() {
+		public Map<PropertyMutator<C, ?>, Column<T, ?>> getReadonlyMapping() {
 			return readonlyMapping;
 		}
 		
@@ -193,8 +193,8 @@ public class InheritanceMappingStep<C, I> {
 		<T extends Table<T>> Mapping<C, T> add(
 				Object /* EntityMappingConfiguration, EmbeddableMappingConfiguration, SubEntityMappingConfiguration */ mappingConfiguration,
 				T table,
-				Map<ReadWritePropertyAccessPoint<C, Object>, Column<T, Object>> mapping,
-				Map<PropertyMutator<C, Object>, Column<T, Object>> readonlyMapping,
+				Map<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> mapping,
+				Map<PropertyMutator<C, ?>, Column<T, ?>> readonlyMapping,
 				Duo<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> versioningMapping,
 				ValueAccessPointMap<C, ? extends Converter<Object, Object>, PropertyAccessPoint<C, ?>> readConverters,
 				ValueAccessPointMap<C, ? extends Converter<Object, Object>, PropertyAccessPoint<C, ?>> writeConverters,
@@ -208,7 +208,7 @@ public class InheritanceMappingStep<C, I> {
 			return newMapping;
 		}
 		
-		<T extends Table<T>> Map<ReadWritePropertyAccessPoint<C, Object>, Column<T, Object>> giveMapping(T table) {
+		<T extends Table<T>> Map<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> giveMapping(T table) {
 			Mapping<C, T> foundMapping = (Mapping<C, T>) Iterables.find(this.mappings, m -> m.getTargetTable().equals(table));
 			if (foundMapping == null) {
 				throw new IllegalArgumentException("Can't find table '" + table.getAbsoluteName()
@@ -236,9 +236,9 @@ public class InheritanceMappingStep<C, I> {
 		
 		private T currentTable;
 		
-		private Map<ReadWritePropertyAccessPoint<C, Object>, Column<T, Object>> currentColumnMap;
+		private Map<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> currentColumnMap;
 		
-		private Map<PropertyMutator<C, Object>, Column<T, Object>> currentReadonlyColumnMap;
+		private Map<PropertyMutator<C, ?>, Column<T, ?>> currentReadonlyColumnMap;
 		
 		private Duo<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> currentVersioningMapping;
 		

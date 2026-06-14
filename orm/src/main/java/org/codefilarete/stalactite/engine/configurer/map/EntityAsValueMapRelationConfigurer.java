@@ -233,7 +233,7 @@ public class EntityAsValueMapRelationConfigurer<SRC, SRCID, K, V, VID, M extends
 				}
 			};
 			EmbeddableMapping<K, MAPTABLE> entryKeyMapping = entryKeyMappingBuilder.build();
-			Map<ReadWritePropertyAccessPoint<K, Object>, Column<MAPTABLE, Object>> columnMapping = entryKeyMapping.getMapping();
+			Map<ReadWritePropertyAccessPoint<K, ?>, Column<MAPTABLE, ?>> columnMapping = entryKeyMapping.getMapping();
 			columnMapping.values().forEach(Column::primaryKey);
 			
 			columnMapping.forEach((propertyAccessor, column) -> column.primaryKey());

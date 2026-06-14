@@ -48,7 +48,7 @@ public class PrimaryKeyStep<C, I> {
 			// some readonly columns would be nonsense
 			EmbeddableMappingBuilder<I, T> compositeKeyBuilder = new EmbeddableMappingBuilder<>(configuration, pkTable, columnBinderRegistry, columnNamingStrategy, uniqueConstraintNamingStrategy);
 			EmbeddableMapping<I, T> build = compositeKeyBuilder.build();
-			Map<ReadWritePropertyAccessPoint<I, Object>, Column<T, Object>> compositeKeyMapping = build.getMapping();
+			Map<ReadWritePropertyAccessPoint<I, ?>, Column<T, ?>> compositeKeyMapping = build.getMapping();
 			compositeKeyMapping.values().forEach(Column::primaryKey);
 			((CompositeKeyIdentification<C, I>) identification).setCompositeKeyMapping(compositeKeyMapping);
 		} else {

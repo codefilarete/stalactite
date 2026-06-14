@@ -189,7 +189,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 				}
 			};
 			EmbeddableMapping<K, MAPTABLE> entryKeyMapping = entryKeyMappingBuilder.build();
-			Map<ReadWritePropertyAccessPoint<K, Object>, Column<MAPTABLE, Object>> columnMapping = entryKeyMapping.getMapping();
+			Map<ReadWritePropertyAccessPoint<K, ?>, Column<MAPTABLE, ?>> columnMapping = entryKeyMapping.getMapping();
 			
 			columnMapping.forEach((propertyAccessor, column) -> column.primaryKey());
 			builder.withEntryKeyIsComplexType(new EmbeddedClassMapping<>(keyEmbeddableConfiguration.getBeanType(), targetTable, columnMapping));
@@ -214,7 +214,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 				}
 			};
 			EmbeddableMapping<V, MAPTABLE> entryValueMapping = recordKeyMappingBuilder.build();
-			Map<ReadWritePropertyAccessPoint<V, Object>, Column<MAPTABLE, Object>> columnMapping = entryValueMapping.getMapping();
+			Map<ReadWritePropertyAccessPoint<V, ?>, Column<MAPTABLE, ?>> columnMapping = entryValueMapping.getMapping();
 			
 			builder.withEntryValueIsComplexType(new EmbeddedClassMapping<>(valueEmbeddableConfiguration.getBeanType(), targetTable, columnMapping));
 		}

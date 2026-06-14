@@ -140,7 +140,7 @@ public abstract class AbstractIdentification<C, I> {
 		
 		private final Function<C, Boolean> isPersistedFunction;
 		
-		private Map<ReadWritePropertyAccessPoint<I, Object>, Column<Table, Object>> compositeKeyMapping;
+		private Map<ReadWritePropertyAccessPoint<I, ?>, Column<Table, ?>> compositeKeyMapping;
 		
 		private CompositeKeyIdentification(EntityMappingConfiguration<C, I> identificationDefiner,
 										   Consumer<C> markAsPersistedFunction,
@@ -158,12 +158,12 @@ public abstract class AbstractIdentification<C, I> {
 			return isPersistedFunction;
 		}
 		
-		public Map<ReadWritePropertyAccessPoint<I, Object>, Column<Table, Object>> getCompositeKeyMapping() {
+		public Map<ReadWritePropertyAccessPoint<I, ?>, Column<Table, ?>> getCompositeKeyMapping() {
 			return compositeKeyMapping;
 		}
 		
-		public void setCompositeKeyMapping(Map<? extends ReadWritePropertyAccessPoint<I, Object>, ? extends Column<?, Object>> compositeKeyMapping) {
-			this.compositeKeyMapping = (Map<ReadWritePropertyAccessPoint<I, Object>, Column<Table, Object>>) compositeKeyMapping;
+		public void setCompositeKeyMapping(Map<? extends ReadWritePropertyAccessPoint<I, ?>, ? extends Column<?, ?>> compositeKeyMapping) {
+			this.compositeKeyMapping = (Map<ReadWritePropertyAccessPoint<I, ?>, Column<Table, ?>>) compositeKeyMapping;
 		}
 	}
 }

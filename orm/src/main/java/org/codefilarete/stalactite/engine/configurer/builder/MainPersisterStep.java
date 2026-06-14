@@ -77,8 +77,8 @@ public class MainPersisterStep<C, I> {
 	public static <E, I, T extends Table<T>> DefaultEntityMapping<E, I, T> createEntityMapping(
 			boolean isIdentifyingConfiguration,
 			T targetTable,
-			Map<? extends ReadWritePropertyAccessPoint<E, Object>, ? extends Column<T, Object>> mapping,
-			Map<? extends PropertyMutator<E, Object>, ? extends Column<T, Object>> readOnlyMapping,
+			Map<? extends ReadWritePropertyAccessPoint<E, ?>, ? extends Column<T, ?>> mapping,
+			Map<? extends PropertyMutator<E, ?>, ? extends Column<T, ?>> readOnlyMapping,
 			ValueAccessPointMap<E, ? extends Converter<Object, Object>, PropertyAccessPoint<E, ?>> readConverters,
 			ValueAccessPointMap<E, ? extends Converter<Object, Object>, PropertyAccessPoint<E, ?>> writeConverters,
 			ValueAccessPointSet<E, PropertyAccessPoint<E, ?>> propertiesSetByConstructor,
@@ -116,8 +116,8 @@ public class MainPersisterStep<C, I> {
 	public static <E, I, T extends Table<T>> DefaultEntityMapping<E, I, T> createEntityMapping(
 			boolean isIdentifyingConfiguration,
 			T targetTable,
-			Map<? extends ReadWritePropertyAccessPoint<E, Object>, ? extends Column<T, Object>> mapping,
-			Map<? extends PropertyMutator<E, Object>, ? extends Column<T, Object>> readOnlyMapping,
+			Map<? extends ReadWritePropertyAccessPoint<E, ?>, ? extends Column<T, ?>> mapping,
+			Map<? extends PropertyMutator<E, ?>, ? extends Column<T, ?>> readOnlyMapping,
 			@Nullable Duo<? extends ReadWritePropertyAccessPoint<E, Object>, ? extends Column<T, Object>> versioningMapping,
 			ValueAccessPointMap<E, ? extends Converter<Object, Object>, PropertyAccessPoint<E, ?>> readConverters,
 			ValueAccessPointMap<E, ? extends Converter<Object, Object>, PropertyAccessPoint<E, ?>> writeConverters,
@@ -135,8 +135,8 @@ public class MainPersisterStep<C, I> {
 				: identification.getFallbackInsertionManager();
 		IdMapping<E, I> idMappingStrategy;
 		if (identification instanceof AbstractIdentification.CompositeKeyIdentification) {
-			Map<ReadWritePropertyAccessPoint<I, Object>, Column<Table, Object>> compositeKeyMapping = ((CompositeKeyIdentification<E, I>) identification).getCompositeKeyMapping();
-			Map<ReadWritePropertyAccessPoint<I, Object>, Column<T, Object>> composedKeyMapping = Iterables.map(compositeKeyMapping.entrySet(), Entry::getKey, entry -> targetTable.getColumn(entry.getValue().getName()), KeepOrderMap::new);
+			Map<ReadWritePropertyAccessPoint<I, ?>, Column<Table, ?>> compositeKeyMapping = ((CompositeKeyIdentification<E, I>) identification).getCompositeKeyMapping();
+			Map<ReadWritePropertyAccessPoint<I, ?>, Column<T, ?>> composedKeyMapping = Iterables.map(compositeKeyMapping.entrySet(), Entry::getKey, entry -> targetTable.getColumn(entry.getValue().getName()), KeepOrderMap::new);
 			ComposedIdentifierAssembler<I, T> composedIdentifierAssembler = new DefaultComposedIdentifierAssembler<>(
 					targetTable,
 					(Class<I>) idDefinition.getMemberType(),

@@ -39,8 +39,8 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 	private final AbstractIdentification<C, I> identification;
 	private final ColumnBinderRegistry columnBinderRegistry;
 	
-	private final Map<PropertyAccessPoint<C, Object>, Column<T, Object>> mainMapping;
-	private final Map<PropertyAccessPoint<C, Object>, Column<T, Object>> mainReadonlyMapping;
+	private final Map<PropertyAccessPoint<C, ?>, Column<T, ?>> mainMapping;
+	private final Map<PropertyAccessPoint<C, ?>, Column<T, ?>> mainReadonlyMapping;
 	private final ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> mainReadConverters;
 	private final ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> mainWriteConverters;
 	private final NamingConfiguration namingConfiguration;
@@ -50,8 +50,8 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 										AbstractIdentification<C, I> identification,
 										ConfiguredRelationalPersister<C, I> mainPersister,
 										ColumnBinderRegistry columnBinderRegistry,
-										Map<? extends PropertyAccessPoint<C, Object>, Column<T, Object>> mainMapping,
-										Map<? extends PropertyAccessPoint<C, Object>, Column<T, Object>> mainReadonlyMapping,
+										Map<? extends PropertyAccessPoint<C, ?>, Column<T, ?>> mainMapping,
+										Map<? extends PropertyAccessPoint<C, ?>, Column<T, ?>> mainReadonlyMapping,
 										ValueAccessPointMap<C, ? extends Converter<Object, Object>, PropertyAccessPoint<C, ?>> mainReadConverters,
 										ValueAccessPointMap<C, ? extends Converter<Object, Object>, PropertyAccessPoint<C, ?>> mainWriteConverters,
 										NamingConfiguration namingConfiguration,
@@ -60,8 +60,8 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 		this.identification = identification;
 		this.mainPersister = mainPersister;
 		this.columnBinderRegistry = columnBinderRegistry;
-		this.mainMapping = (Map<PropertyAccessPoint<C, Object>, Column<T, Object>>) mainMapping;
-		this.mainReadonlyMapping = (Map<PropertyAccessPoint<C, Object>, Column<T, Object>>) mainReadonlyMapping;
+		this.mainMapping = (Map<PropertyAccessPoint<C, ?>, Column<T, ?>>) mainMapping;
+		this.mainReadonlyMapping = (Map<PropertyAccessPoint<C, ?>, Column<T, ?>>) mainReadonlyMapping;
 		this.mainReadConverters = (ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>>) mainReadConverters;
 		this.mainWriteConverters = (ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>>) mainWriteConverters;
 		this.namingConfiguration = namingConfiguration;

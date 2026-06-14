@@ -252,12 +252,13 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 	 */
 	protected class InternalProcessor {
 		
-		private final EmbeddableMapping<C, T> result = new EmbeddableMapping<>();
+		private final EmbeddableMapping<C, T> result;
 		
 		private final boolean onlyExtraTableLinkages;
 		
 		protected InternalProcessor(boolean onlyExtraTableLinkages) {
 			this.onlyExtraTableLinkages = onlyExtraTableLinkages;
+			this.result = new EmbeddableMapping<>(mainMappingConfiguration.getBeanType());
 		}
 		
 		protected void includeDirectMapping(EmbeddableMappingConfiguration<?> mappingConfiguration,
@@ -475,7 +476,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 				} else {
 					finalColumn = targetTable.addColumn(column.getName(), column.getJavaType());
 				}
-				result.getMapping().put(prefix, (Column<T, Object>) finalColumn);
+				result.getMapping().put(prefix, finalColumn);
 			});
 		}
 		

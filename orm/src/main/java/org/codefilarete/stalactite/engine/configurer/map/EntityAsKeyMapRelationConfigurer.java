@@ -233,7 +233,7 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 				}
 			};
 			EmbeddableMapping<V, MAPTABLE> entryKeyMapping = entryKeyMappingBuilder.build();
-			Map<ReadWritePropertyAccessPoint<V, Object>, Column<MAPTABLE, Object>> columnMapping = entryKeyMapping.getMapping();
+			Map<ReadWritePropertyAccessPoint<V, ?>, Column<MAPTABLE, ?>> columnMapping = entryKeyMapping.getMapping();
 			
 			columnMapping.forEach((propertyAccessor, column) -> column.primaryKey());
 			builder.withEntryValueIsComplexType(new EmbeddedClassMapping<>(valueEmbeddableConfiguration.getBeanType(), targetTable, columnMapping));

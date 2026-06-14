@@ -19,13 +19,23 @@ import org.codefilarete.tool.function.Converter;
  */
 public class EmbeddableMapping<C, T extends Table<T>> {
 	
+	private final Class<C> beanType;
+	
+	public EmbeddableMapping(Class<C> beanType) {
+		this.beanType = beanType;
+	}
+	
+	public Class<C> getBeanType() {
+		return beanType;
+	}
+	
 	// We keep the order defined by the user, because, in the particular case of composite key definition, it helps to
 	// have stable tests. However, at runtime, I'm not sure about the interest of it, except for the foreign key and its
 	// associated index impact. So it may be better to keep it as well, to let the user have a way to define its column
 	// order... even if it's tied to the order of its own line of code (DSL usage)
-	private final Map<ReadWritePropertyAccessPoint<C, Object>, Column<T, Object>> mapping = new KeepOrderMap<>();
+	private final Map<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> mapping = new KeepOrderMap<>();
 	
-	private final Map<PropertyMutator<C, Object>, Column<T, Object>> readonlyMapping = new KeepOrderMap<>();
+	private final Map<PropertyMutator<C, ?>, Column<T, ?>> readonlyMapping = new KeepOrderMap<>();
 	
 	private final ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> readConverters = new ValueAccessPointMap<>();
 	
@@ -34,14 +44,14 @@ public class EmbeddableMapping<C, T extends Table<T>> {
 	/**
 	 * @return mapped properties
 	 */
-	public Map<ReadWritePropertyAccessPoint<C, Object>, Column<T, Object>> getMapping() {
+	public Map<ReadWritePropertyAccessPoint<C, ?>, Column<T, ?>> getMapping() {
 		return mapping;
 	}
 	
 	/**
 	 * @return mapped readonly properties
 	 */
-	public Map<PropertyMutator<C, Object>, Column<T, Object>> getReadonlyMapping() {
+	public Map<PropertyMutator<C, ?>, Column<T, ?>> getReadonlyMapping() {
 		return readonlyMapping;
 	}
 	

@@ -184,9 +184,9 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, S extends Collect
 					return super.determineColumnSize(linkage, collectionRelation.getOverriddenColumnSizes().get(linkage.getAccessor()));
 				}
 			};
-			Map<ReadWritePropertyAccessPoint<TRGT, Object>, Column<COLLECTIONTABLE, Object>> columnMapping = elementCollectionMappingBuilder.build().getMapping();
+			Map<ReadWritePropertyAccessPoint<TRGT, ?>, Column<COLLECTIONTABLE, ?>> columnMapping = elementCollectionMappingBuilder.build().getMapping();
 			
-			Map<ReadWritePropertyAccessPoint<ElementRecord<TRGT, I>, Object>, Column<COLLECTIONTABLE, Object>> projectedColumnMap = new HashMap<>();
+			Map<ReadWritePropertyAccessPoint<ElementRecord<TRGT, I>, ?>, Column<COLLECTIONTABLE, ?>> projectedColumnMap = new HashMap<>();
 			columnMapping.forEach((propertyAccessor, column) -> {
 				AccessorChain<ElementRecord<TRGT, I>, Object> accessorChain = AccessorChain.fromAccessorsWithNullSafe(Arrays.asList(ElementRecord.ELEMENT_ACCESSOR, propertyAccessor), (accessor, valueType) -> {
 					if (accessor == ElementRecord.ELEMENT_ACCESSOR) {

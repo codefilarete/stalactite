@@ -37,24 +37,24 @@ import org.codefilarete.tool.function.Converter;
  */
 class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends AbstractPolymorphicPersisterBuilder<C, I, T> {
 	
-	private final Map<PropertyAccessPoint<C, Object>, Column<T, Object>> mainMapping;
-	private final Map<PropertyAccessPoint<C, Object>, Column<T, Object>> mainReadonlyMapping;
+	private final Map<PropertyAccessPoint<C, ?>, Column<T, ?>> mainMapping;
+	private final Map<PropertyAccessPoint<C, ?>, Column<T, ?>> mainReadonlyMapping;
 	private final ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> mainReadConverters;
 	private final ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>> mainWriteConverters;
 	
 	SingleTablePolymorphismBuilder(SingleTablePolymorphism<C, DTYPE> polymorphismPolicy,
 								   AbstractIdentification<C, I> identification,
 								   ConfiguredRelationalPersister<C, I> mainPersister,
-								   Map<? extends PropertyAccessPoint<C, Object>, ? extends Column<T, Object>> mainMapping,
-								   Map<? extends PropertyAccessPoint<C, Object>, ? extends Column<T, Object>> mainReadonlyMapping,
+								   Map<? extends PropertyAccessPoint<C, ?>, ? extends Column<T, ?>> mainMapping,
+								   Map<? extends PropertyAccessPoint<C, ?>, ? extends Column<T, ?>> mainReadonlyMapping,
 								   ValueAccessPointMap<C, ? extends Converter<Object, Object>, PropertyAccessPoint<C, ?>> mainReadConverters,
 								   ValueAccessPointMap<C, ? extends Converter<Object, Object>, PropertyAccessPoint<C, ?>> mainWriteConverters,
 								   ColumnBinderRegistry columnBinderRegistry,
 								   NamingConfiguration namingConfiguration,
 								   PersisterBuilderContext persisterBuilderContext) {
 		super(polymorphismPolicy, identification, mainPersister, columnBinderRegistry, namingConfiguration, persisterBuilderContext);
-		this.mainMapping = (Map<PropertyAccessPoint<C, Object>, Column<T, Object>>) mainMapping;
-		this.mainReadonlyMapping = (Map<PropertyAccessPoint<C, Object>, Column<T, Object>>) mainReadonlyMapping;
+		this.mainMapping = (Map<PropertyAccessPoint<C, ?>, Column<T, ?>>) mainMapping;
+		this.mainReadonlyMapping = (Map<PropertyAccessPoint<C, ?>, Column<T, ?>>) mainReadonlyMapping;
 		this.mainReadConverters = (ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>>) mainReadConverters;
 		this.mainWriteConverters = (ValueAccessPointMap<C, Converter<Object, Object>, PropertyAccessPoint<C, ?>>) mainWriteConverters;
 	}
@@ -107,8 +107,8 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 		// so we need to set them to nullable, and we do it globally for simplicity (no primitive type check)
 		embeddableMapping.getMapping().values().forEach(column -> column.nullable(true));
 		
-		Map<ReadWritePropertyAccessPoint<D, Object>, Column<T, Object>> subEntityPropertiesMapping = embeddableMapping.getMapping();
-		Map<PropertyMutator<D, Object>, Column<T, Object>> subEntityReadonlyPropertiesMapping = embeddableMapping.getReadonlyMapping();
+		Map<ReadWritePropertyAccessPoint<D, ?>, Column<T, ?>> subEntityPropertiesMapping = embeddableMapping.getMapping();
+		Map<PropertyMutator<D, ?>, Column<T, ?>> subEntityReadonlyPropertiesMapping = embeddableMapping.getReadonlyMapping();
 		ValueAccessPointMap<D, Converter<Object, Object>, PropertyAccessPoint<D, ?>> subEntityPropertiesReadConverters = embeddableMapping.getReadConverters();
 		ValueAccessPointMap<D, Converter<Object, Object>, PropertyAccessPoint<D, ?>> subEntityPropertiesWriteConverters = embeddableMapping.getWriteConverters();
 		// in single-table polymorphism, main properties must be given to sub-entities ones, because CRUD operations are dispatched to them

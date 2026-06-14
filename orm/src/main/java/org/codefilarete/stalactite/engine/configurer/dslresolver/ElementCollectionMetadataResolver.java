@@ -220,10 +220,10 @@ public class ElementCollectionMetadataResolver {
 					return super.determineColumnSize(linkage, collectionRelation.getOverriddenColumnSizes().get(linkage.getAccessor()));
 				}
 			};
-			Map<ReadWritePropertyAccessPoint<TRGT, Object>, Column<COLLECTIONTABLE, Object>> embeddableColumnMapping = elementCollectionMappingBuilder.build().getMapping();
+			Map<ReadWritePropertyAccessPoint<TRGT, ?>, Column<COLLECTIONTABLE, ?>> embeddableColumnMapping = elementCollectionMappingBuilder.build().getMapping();
 			
 			embeddableColumnMapping.forEach((propertyAccessor, column) -> {
-				List<ReadWritePropertyAccessPoint<?, Object>> shifter = Arrays.asList(ElementRecord.ELEMENT_ACCESSOR, propertyAccessor);
+				List<ReadWritePropertyAccessPoint<?, ?>> shifter = Arrays.asList(ElementRecord.ELEMENT_ACCESSOR, propertyAccessor);
 				AccessorChain<ER, Object> accessorChain = AccessorChain.fromAccessorsWithNullSafe(shifter, (accessor, valueType) -> {
 					if (accessor == ElementRecord.ELEMENT_ACCESSOR) {
 						// on getElement(), bean type can't be deduced by reflection due to generic type erasure : default mechanism returns Object

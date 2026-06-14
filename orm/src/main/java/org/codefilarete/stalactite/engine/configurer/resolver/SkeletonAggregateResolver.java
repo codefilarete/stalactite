@@ -155,7 +155,7 @@ public class SkeletonAggregateResolver {
 		} else if (identifierMapping instanceof CompositeIdentifierMapping) {
 			CompositeIdentifierMapping<C, I, T> compositeIdentifierMapping = (CompositeIdentifierMapping<C, I, T>) identifierMapping;
 			EmbeddableMapping<I, T> build = compositeIdentifierMapping.getCompositeKeyMapping();
-			Map<ReadWritePropertyAccessPoint<I, Object>, Column<T, Object>> compositeKeyMapping = build.getMapping();
+			Map<ReadWritePropertyAccessPoint<I, ?>, Column<T, ?>> compositeKeyMapping = build.getMapping();
 			CompositeKeyAlreadyAssignedIdentifierInsertionManager<C, I> identifierInsertionManager = compositeIdentifierMapping.getIdentifierInsertionManager();
 			idMapping = new ComposedIdMapping<>(
 					entity.getIdAccessor(),
@@ -182,7 +182,7 @@ public class SkeletonAggregateResolver {
 			// propagating the composite identifier to the actual entity and table
 			CompositeKeyAlreadyAssignedIdentifierInsertionManager<C, I> identifierInsertionManager = (CompositeKeyAlreadyAssignedIdentifierInsertionManager<C, I>) identifierMapping.getIdentifierInsertionManager();
 			EmbeddableMapping<I, ?> build = ((CompositeIdentifierMapping<C, I, ?>) identifierMapping).getCompositeKeyMapping();
-			Map<ReadWritePropertyAccessPoint<I, Object>, Column<T, Object>> entityTableKeyMapping = new HashMap<>();
+			Map<ReadWritePropertyAccessPoint<I, ?>, Column<T, ?>> entityTableKeyMapping = new HashMap<>();
 			build.getMapping().forEach((accessor, column) -> {
 				Column<T, Object> entityColumn = targetTable.getColumn(column.getName());
 				entityTableKeyMapping.put(accessor, entityColumn);

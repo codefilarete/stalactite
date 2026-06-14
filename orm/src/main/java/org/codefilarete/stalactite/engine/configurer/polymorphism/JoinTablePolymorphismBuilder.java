@@ -97,8 +97,8 @@ public class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends Abst
 		EmbeddableMappingBuilder<D, SUBT> embeddableMappingBuilder = new EmbeddableMappingBuilder<>(subConfiguration.getPropertiesMapping(), subTable,
 				this.columnBinderRegistry, this.namingConfiguration.getColumnNamingStrategy(), this.namingConfiguration.getIndexNamingStrategy());
 		EmbeddableMapping<D, SUBT> embeddableMapping = embeddableMappingBuilder.build();
-		Map<ReadWritePropertyAccessPoint<D, Object>, Column<SUBT, Object>> subEntityPropertiesMapping = embeddableMapping.getMapping();
-		Map<PropertyMutator<D, Object>, Column<SUBT, Object>> subEntityReadonlyPropertiesMapping = embeddableMapping.getReadonlyMapping();
+		Map<ReadWritePropertyAccessPoint<D, ?>, Column<SUBT, ?>> subEntityPropertiesMapping = embeddableMapping.getMapping();
+		Map<PropertyMutator<D, ?>, Column<SUBT, ?>> subEntityReadonlyPropertiesMapping = embeddableMapping.getReadonlyMapping();
 		ValueAccessPointMap<D, Converter<Object, Object>, PropertyAccessPoint<D, ?>> subEntityPropertiesConverters = embeddableMapping.getReadConverters();
 		ValueAccessPointMap<D, Converter<Object, Object>, PropertyAccessPoint<D, ?>> subEntityPropertiesWriteConverters = embeddableMapping.getWriteConverters();
 		addPrimarykey(subTable);
