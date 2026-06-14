@@ -5,8 +5,8 @@ import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.diff.CollectionDiffer;
 
 /**
- * Represents a line in table storage. Acts as a wrapper of map entry (key and value) with source bean identifier addition
- * (to store foreign key to source entity)
+ * Represents a line in table that stores {@link java.util.Map} entries. Acts as a wrapper of map entry (key and value)
+ * with source bean identifier addition (to store the foreign key to the source entity)
  *
  * @param <K> Map entry key type
  * @param <V> Map entry value type
@@ -15,7 +15,7 @@ import org.codefilarete.stalactite.engine.diff.CollectionDiffer;
 // Made public due to protected methods in MapRelationConfigurer expecting arguments to be accessible from any overriding class
 public class KeyValueRecord<K, V, ID> {
 	
-	static final ReadWritePropertyAccessPoint<KeyValueRecord<Object, Object, Object>, Object> KEY_ACCESSOR = DefaultReadWritePropertyAccessPoint.fromMethodReference(
+	public static final ReadWritePropertyAccessPoint<KeyValueRecord<Object, Object, Object>, Object> KEY_ACCESSOR = DefaultReadWritePropertyAccessPoint.fromMethodReference(
 			KeyValueRecord::getKey,
 			KeyValueRecord::setKey);
 	
@@ -84,10 +84,10 @@ public class KeyValueRecord<K, V, ID> {
 	
 	/**
 	 * Identifier for {@link CollectionDiffer} support (update use case), because it compares beans
-	 * through their "footprint" which is their id in default/entity case, but since we are value type, we must provide a dedicated footprint.
+	 * through their "footprint" which is their id in default/entity case, but since we are a value type, we must provide a dedicated footprint.
 	 * Could be hashCode() if it was implemented on identifier + element, but implementing it would require implementing equals() (to comply
 	 * with best practices) which is not our case nor required by {@link CollectionDiffer}.
-	 * Note : name of this method is not important
+	 * Note : the name of this method is not important
 	 */
 	public int footprint() {
 		// Footprint is composed of id + key only, not value, because its le logic of what's expected ! if you're not

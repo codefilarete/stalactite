@@ -5,11 +5,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.PropertyMutator;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
@@ -28,7 +29,7 @@ import static org.codefilarete.tool.Nullable.nullable;
  * This is made necessary due to double join creation between
  * - source entity table and association table on one hand
  * - association table and key-entity table on one hand
- * Look at joinAsMany(..) invocations in {@link EntityAsValueMapRelationConfigurer#addSelectCascade(ConfiguredRelationalPersister, SimpleRelationalEntityPersister, PrimaryKey, ForeignKey, BiConsumer, Function, Supplier)}
+ * Look at joinAsMany(..) invocations in {@link EntityAsValueMapRelationConfigurer#addSelectCascade(ConfiguredRelationalPersister, SimpleRelationalEntityPersister, PrimaryKey, ForeignKey, PropertyMutator, PropertyAccessor, Supplier)}
  * This is the goal and need, implementation differ due to simplification made after first intent. 
  *
  * Expected to be used in a {@link SelectListener} to {@link #init()} it before select and {@link #clear()} it after select.
@@ -39,7 +40,7 @@ import static org.codefilarete.tool.Nullable.nullable;
  * @param <ENTITY>
  * @author Guillaume Mary
  */
-class InMemoryRelationHolder<I, KEY_LOOKUP, ENTRY_VALUE, ENTITY> {
+public class InMemoryRelationHolder<I, KEY_LOOKUP, ENTRY_VALUE, ENTITY> {
 	
 	public class Trio {
 		private KEY_LOOKUP keyLookup;    // K or KID
@@ -94,7 +95,7 @@ class InMemoryRelationHolder<I, KEY_LOOKUP, ENTRY_VALUE, ENTITY> {
 		Map<I, Set<Trio>> currentMap = relationCollectionPerEntity.get();
 		return nullable(currentMap)
 				.map(map -> map.get(src))
-				.map(map -> map.stream().map(mapper::apply)
+				.map(map -> map.stream().map(mapper)
 						.collect(Collectors.toSet()))
 				.get();
 	}

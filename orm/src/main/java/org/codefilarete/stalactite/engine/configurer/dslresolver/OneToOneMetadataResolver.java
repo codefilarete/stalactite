@@ -90,7 +90,7 @@ public class OneToOneMetadataResolver {
 					tablesJoin = new DirectRelationJoin<>(foreignKey.getReferencedKey(), foreignKey);
 					
 					// eventually adding unique constraint
-					if (oneToOne.isUnique() && foreignKey.getColumns().size() == 1) {
+					if (oneToOne.isUnique() && !foreignKey.isComposed()) {
 						helper.addUniqueConstraint(foreignKey, namingConfiguration.getUniqueConstraintNamingStrategy(), oneToOne.getReverseAccessor().getAccessor());
 					}
 				}
@@ -104,7 +104,7 @@ public class OneToOneMetadataResolver {
 			tablesJoin = new DirectRelationJoin<>(foreignKey);
 			
 			// eventually adding unique constraint
-			if (oneToOne.isUnique() && foreignKey.getColumns().size() == 1) {
+			if (oneToOne.isUnique() && !foreignKey.isComposed()) {
 				helper.addUniqueConstraint(foreignKey, namingConfiguration.getUniqueConstraintNamingStrategy(), oneToOne.getTargetProvider());
 			}
 			
