@@ -53,7 +53,7 @@ public class AggregateResolver {
 		this.oneToManyAppender = new AggregateOneToManyAppender(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 		this.manyToManyAppender = new AggregateManyToManyAppender(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 		this.elementCollectionAppender = new AggregateElementCollectionAppender(persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
-		this.mapAppender = new AggregateMapAppender(persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
+		this.mapAppender = new AggregateMapAppender(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 	}
 	
 	public <C, I> EntityPersister<C, I> resolve(EntityMappingConfiguration<C, I> rootConfiguration) {
@@ -151,7 +151,7 @@ public class AggregateResolver {
 						if (relationPawn instanceof ResolvedMapRelation) {
 							mapAppender.append(
 									aggregatePersister,
-									(ResolvedMapRelation<SRC, Object, Object, Map<Object, Object>, SRCID, LEFTTABLE, RIGHTTABLE>) relationPawn,
+									(ResolvedMapRelation<SRC, SRCID, Object, Object, Object, Object, Map<Object, Object>, LEFTTABLE, RIGHTTABLE, ?, ?>) relationPawn,
 									(AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE>) assemblyPawn);
 						}
 					});

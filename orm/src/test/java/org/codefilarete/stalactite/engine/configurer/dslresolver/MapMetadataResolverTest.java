@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.engine.configurer.dslresolver;
 
-import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.MappingJoin;
@@ -14,7 +14,6 @@ import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.test.DefaultDialect;
 import org.junit.jupiter.api.Test;
@@ -41,8 +40,8 @@ class MapMetadataResolverTest {
 		MappingJoin<?, ?, ?> relation = first(personEntity.getRelations());
 		assertThat(relation).isInstanceOf(ResolvedMapRelation.class);
 
-		ResolvedMapRelation<Person, String, String, ?, ?, ?, ?> mapRelation =
-				(ResolvedMapRelation<Person, String, String, ?, ?, ?, ?>) relation;
+		ResolvedMapRelation<Person, ?, String, ?, String, ?, ?, ?, ?, ?, ?> mapRelation =
+				(ResolvedMapRelation<Person, ?, String, ?, String, ?, ?, ?, ?, ?, ?>) relation;
 		Table<?> mapTable = mapRelation.getJoin().getRightKey().getTable();
 		assertThat(mapTable.getName()).isEqualTo("Person_phoneNumbers");
 		assertThat(mapTable.getColumn("id")).isNotNull();
@@ -63,8 +62,8 @@ class MapMetadataResolverTest {
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
 		Entity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 
-		ResolvedMapRelation<Person, String, String, ?, ?, ?, ?> relation =
-				(ResolvedMapRelation<Person, String, String, ?, ?, ?, ?>) first(personEntity.getRelations());
+		ResolvedMapRelation<Person, ?, String, ?, String, ?, ?, ?, ?, ?, ?> relation =
+				(ResolvedMapRelation<Person, ?, String, ?, String, ?, ?, ?, ?, ?, ?>) first(personEntity.getRelations());
 		Table<?> mapTable = relation.getJoin().getRightKey().getTable();
 		assertThat(mapTable.getName()).isEqualTo("Toto");
 		assertThat(mapTable.getColumn("person_fk")).isNotNull();
@@ -80,8 +79,8 @@ class MapMetadataResolverTest {
 
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
 		Entity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
-		ResolvedMapRelation<Person, String, String, ?, Identifier<Long>, ?, ?> relation =
-				(ResolvedMapRelation<Person, String, String, ?, Identifier<Long>, ?, ?>) first(personEntity.getRelations());
+		ResolvedMapRelation<Person, Identifier<Long>, String, ?, String, ?, ?, ?, ?, ?, ?> relation =
+				(ResolvedMapRelation<Person, Identifier<Long>, String, ?, String, ?, ?, ?, ?, ?, ?>) first(personEntity.getRelations());
 
 		Person person = new Person(new PersistableIdentifier<>(1L));
 		KeyValueRecord<String, String, Identifier<Long>> firstRecord = new KeyValueRecord<>(person.getId(), "home", "01 11 11 11 11");
@@ -102,8 +101,8 @@ class MapMetadataResolverTest {
 
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
 		Entity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
-		ResolvedMapRelation<Person, String, String, ?, ?, ?, ?> relation =
-				(ResolvedMapRelation<Person, String, String, ?, ?, ?, ?>) first(personEntity.getRelations());
+		ResolvedMapRelation<Person, ?, String, ?, String, ?, ?, ?, ?, ?, ?> relation =
+				(ResolvedMapRelation<Person, ?, String, ?, String, ?, ?, ?, ?, ?, ?>) first(personEntity.getRelations());
 
 		assertThat(relation.isFetchSeparately()).isTrue();
 	}
@@ -121,13 +120,13 @@ class MapMetadataResolverTest {
 
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
 		Entity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
-		ResolvedMapRelation<Person, Country, String, ?, ?, ?, ?> relation =
-				(ResolvedMapRelation<Person, Country, String, ?, ?, ?, ?>) first(personEntity.getRelations());
+		ResolvedMapRelation<Person, ?, Country, ?, String, ?, ?, ?, ?, ?, ?> relation =
+				(ResolvedMapRelation<Person, ?, Country, ?, String, ?, ?, ?, ?, ?, ?>) first(personEntity.getRelations());
 
 		Table<?> mapTable = relation.getJoin().getRightKey().getTable();
-		assertThat(mapTable.getColumn("key")).isNotNull();
+		assertThat(mapTable.getColumn("keyId")).isNotNull();
 		assertThat(mapTable.getForeignKeys())
-				.extracting(foreignKey -> ((ForeignKey<?, ?, ?>) foreignKey).getTargetTable().getName())
+				.extracting(foreignKey -> foreignKey.getTargetTable().getName())
 				.contains("Person", "Country");
 	}
 
@@ -144,13 +143,13 @@ class MapMetadataResolverTest {
 
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
 		Entity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
-		ResolvedMapRelation<Person, String, Country, ?, ?, ?, ?> relation =
-				(ResolvedMapRelation<Person, String, Country, ?, ?, ?, ?>) first(personEntity.getRelations());
+		ResolvedMapRelation<Person, ?, String, ?, Country, ?, ?, ?, ?, ?, ?> relation =
+				(ResolvedMapRelation<Person, ?, String, ?, Country, ?, ?, ?, ?, ?, ?>) first(personEntity.getRelations());
 
 		Table<?> mapTable = relation.getJoin().getRightKey().getTable();
-		assertThat(mapTable.getColumn("value")).isNotNull();
+		assertThat(mapTable.getColumn("valueId")).isNotNull();
 		assertThat(mapTable.getForeignKeys())
-				.extracting(foreignKey -> ((ForeignKey<?, ?, ?>) foreignKey).getTargetTable().getName())
+				.extracting(foreignKey -> foreignKey.getTargetTable().getName())
 				.contains("Person", "Country");
 	}
 
@@ -162,8 +161,7 @@ class MapMetadataResolverTest {
 						.map(HouseId::getStreet)
 						.map(HouseId::getZipCode)
 						.map(HouseId::getCity),
-					h -> {
-					},
+					h -> {},
 					h -> true);
 
 		FluentEntityMappingBuilder<Person, Identifier<Long>> mappingBuilder = entityBuilder(Person.class, Identifier.LONG_TYPE)
@@ -173,20 +171,21 @@ class MapMetadataResolverTest {
 
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
 		Entity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
-		ResolvedMapRelation<Person, House, String, ?, ?, ?, ?> relation =
-				(ResolvedMapRelation<Person, House, String, ?, ?, ?, ?>) first(personEntity.getRelations());
+		ResolvedMapRelation<Person, ?, House, ?, String, ?, ?, ?, ?, ?, ?> relation =
+				(ResolvedMapRelation<Person, ?, House, ?, String, ?, ?, ?, ?, ?, ?>) first(personEntity.getRelations());
 
 		Table<?> mapTable = relation.getJoin().getRightKey().getTable();
 		assertThat(mapTable.getColumn("number")).isNotNull();
 		assertThat(mapTable.getColumn("street")).isNotNull();
 		assertThat(mapTable.getColumn("zipCode")).isNotNull();
 		assertThat(mapTable.getColumn("city")).isNotNull();
-		assertThat(relation.getColumnMapping().values()).extracting(Column::getName)
-				.contains("number", "street", "zipCode", "city");
-		assertThat(relation.getColumnMapping().keySet())
+		assertThat(relation.getKeyEntityForeignKey().getColumns()).extracting(Column::getName)
+				.containsExactly("number", "street", "zipCode", "city");
+		ResolvedMapRelation.CompositeMemberMapping<HouseId, ?, ?> keyEntityIdentifierMapping = (ResolvedMapRelation.CompositeMemberMapping) relation.<HouseId>getKeyEntityIdentifierMapping();
+		assertThat(keyEntityIdentifierMapping.getMapping().keySet())
 				.extracting(AccessorDefinition::giveDefinition)
 				.extracting(AccessorDefinition::getName)
-				.contains("key.houseId.number", "key.houseId.street", "key.houseId.zipCode", "key.houseId.city");
+				.containsExactly("number", "street", "zipCode", "city");
 		assertThat(mapTable.getPrimaryKey().getColumns()).extracting(Column::getName)
 				.contains("id", "number", "street", "zipCode", "city");
 		assertThat(mapTable.getForeignKeys()).hasSize(2);
@@ -221,20 +220,21 @@ class MapMetadataResolverTest {
 
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
 		Entity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
-		ResolvedMapRelation<Person, String, House, ?, ?, ?, ?> relation =
-				(ResolvedMapRelation<Person, String, House, ?, ?, ?, ?>) first(personEntity.getRelations());
+		ResolvedMapRelation<Person, ?, String, ?, House, ?, ?, ?, ?, ?, ?> relation =
+				(ResolvedMapRelation<Person, ?, String, ?, House, ?, ?, ?, ?, ?, ?>) first(personEntity.getRelations());
 
 		Table<?> mapTable = relation.getJoin().getRightKey().getTable();
 		assertThat(mapTable.getColumn("number")).isNotNull();
 		assertThat(mapTable.getColumn("street")).isNotNull();
 		assertThat(mapTable.getColumn("zipCode")).isNotNull();
 		assertThat(mapTable.getColumn("city")).isNotNull();
-		assertThat(relation.getColumnMapping().values()).extracting(Column::getName)
+		assertThat(relation.getValueEntityForeignKey().getColumns()).extracting(Column::getName)
 				.contains("number", "street", "zipCode", "city");
-		assertThat(relation.getColumnMapping().keySet())
+		ResolvedMapRelation.CompositeMemberMapping<HouseId, ?, ?> valueEntityIdentifierMapping = (ResolvedMapRelation.CompositeMemberMapping) relation.<HouseId>getValueEntityIdentifierMapping();
+		assertThat(valueEntityIdentifierMapping.getMapping().keySet())
 				.extracting(AccessorDefinition::giveDefinition)
 				.extracting(AccessorDefinition::getName)
-				.contains("value.houseId.number", "value.houseId.street", "value.houseId.zipCode", "value.houseId.city");
+				.containsExactly("number", "street", "zipCode", "city");
 		assertThat(mapTable.getPrimaryKey().getColumns()).extracting(Column::getName)
 				.contains("id", "key");
 		assertThat(mapTable.getForeignKeys()).hasSize(2);

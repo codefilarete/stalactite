@@ -32,7 +32,7 @@ import org.codefilarete.tool.collection.Iterables;
  * @param <VV> type of {@link KeyValueRecord} value when transforming initial Map entries to {@link KeyValueRecord} to be persisted
  * @author Guillaume Mary
  */
-class MapUpdater<SRC, SRCID, K, V, ENTITY, ENTITY_ID, KK, VV> extends CollectionUpdater<SRC, Entry<K, V>, Set<Entry<K, V>>> {
+public class MapUpdater<SRC, SRCID, K, V, ENTITY, ENTITY_ID, KK, VV> extends CollectionUpdater<SRC, Entry<K, V>, Set<Entry<K, V>>> {
 		
 	private final EntityPersister<KeyValueRecord<KK, VV, SRCID>, RecordId<KK, SRCID>> keyValueRecordPersister;
 	

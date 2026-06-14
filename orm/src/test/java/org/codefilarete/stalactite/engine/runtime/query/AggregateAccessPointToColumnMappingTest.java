@@ -17,7 +17,7 @@ import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRe
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecordMapping;
-import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecordMapping.KeyValueRecordIdMapping;
+import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecordIdMapping;
 import org.codefilarete.stalactite.engine.configurer.map.RecordId;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.compositekey.House;

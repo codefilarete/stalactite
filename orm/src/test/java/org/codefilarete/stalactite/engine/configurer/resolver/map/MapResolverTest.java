@@ -8,6 +8,7 @@ import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver;
+import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
@@ -76,6 +77,98 @@ class MapResolverTest {
 		personPersister.delete(reloaded);
 
 		Long mapRowCount = persistenceContext.newQuery("select count(*) as cnt from Person_phoneNumbers", Long.class)
+				.mapKey("cnt", Long.class)
+				.execute(Accumulators.getFirst());
+		assertThat(mapRowCount).isEqualTo(0L);
+	}
+
+	@Test
+	void crud_entityAsKeyMap_insertUpdateDelete() {
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
+				.mapKey(Person::getId, ALREADY_ASSIGNED)
+				.map(Person::getName)
+				.mapMap(Person::getMapPropertyMadeOfEntityAsKey, Country.class, String.class)
+				.withKeyMapping(entityBuilder(Country.class, LONG_TYPE)
+						.mapKey(Country::getId, ALREADY_ASSIGNED)
+						.map(Country::getName)
+						.map(Country::getDescription));
+
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+
+		new DDLDeployer(persistenceContext).deployDDL();
+
+		Person person = new Person(new PersistableIdentifier<>(1L));
+		person.setMapPropertyMadeOfEntityAsKey(new LinkedHashMap<>());
+		person.getMapPropertyMadeOfEntityAsKey().put(new Country(1), "Grenoble");
+		person.getMapPropertyMadeOfEntityAsKey().put(new Country(2), "Lyon");
+		personPersister.insert(person);
+
+		Person loaded = personPersister.select(person.getId());
+		assertThat(loaded.getMapPropertyMadeOfEntityAsKey())
+				.containsEntry(new Country(1), "Grenoble")
+				.containsEntry(new Country(2), "Lyon");
+
+		loaded.getMapPropertyMadeOfEntityAsKey().remove(new Country(1));
+		loaded.getMapPropertyMadeOfEntityAsKey().put(new Country(2), "Paris");
+		loaded.getMapPropertyMadeOfEntityAsKey().put(new Country(3), "Marseille");
+		personPersister.update(loaded, person, true);
+
+		Person reloaded = personPersister.select(person.getId());
+		assertThat(reloaded.getMapPropertyMadeOfEntityAsKey())
+				.containsOnlyKeys(new Country(2), new Country(3))
+				.containsEntry(new Country(2), "Paris")
+				.containsEntry(new Country(3), "Marseille");
+
+		personPersister.delete(reloaded);
+
+		Long mapRowCount = persistenceContext.newQuery("select count(*) as cnt from Person_mapPropertyMadeOfEntityAsKey", Long.class)
+				.mapKey("cnt", Long.class)
+				.execute(Accumulators.getFirst());
+		assertThat(mapRowCount).isEqualTo(0L);
+	}
+
+	@Test
+	void crud_entityAsValueMap_insertUpdateDelete() {
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
+				.mapKey(Person::getId, ALREADY_ASSIGNED)
+				.map(Person::getName)
+				.mapMap(Person::getMapPropertyMadeOfEntityAsValue, String.class, Country.class)
+				.withValueMapping(entityBuilder(Country.class, LONG_TYPE)
+						.mapKey(Country::getId, ALREADY_ASSIGNED)
+						.map(Country::getName)
+						.map(Country::getDescription));
+
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+
+		new DDLDeployer(persistenceContext).deployDDL();
+
+		Person person = new Person(new PersistableIdentifier<>(1L));
+		person.setMapPropertyMadeOfEntityAsValue(new LinkedHashMap<>());
+		person.getMapPropertyMadeOfEntityAsValue().put("home", new Country(1));
+		person.getMapPropertyMadeOfEntityAsValue().put("office", new Country(2));
+		personPersister.insert(person);
+
+		Person loaded = personPersister.select(person.getId());
+		assertThat(loaded.getMapPropertyMadeOfEntityAsValue())
+				.containsEntry("home", new Country(1))
+				.containsEntry("office", new Country(2));
+
+		loaded.getMapPropertyMadeOfEntityAsValue().remove("home");
+		loaded.getMapPropertyMadeOfEntityAsValue().put("office", new Country(3));
+		loaded.getMapPropertyMadeOfEntityAsValue().put("secondary", new Country(4));
+		personPersister.update(loaded, person, true);
+
+		Person reloaded = personPersister.select(person.getId());
+		assertThat(reloaded.getMapPropertyMadeOfEntityAsValue())
+				.containsOnlyKeys("office", "secondary")
+				.containsEntry("office", new Country(3))
+				.containsEntry("secondary", new Country(4));
+
+		personPersister.delete(reloaded);
+
+		Long mapRowCount = persistenceContext.newQuery("select count(*) as cnt from Person_mapPropertyMadeOfEntityAsValue", Long.class)
 				.mapKey("cnt", Long.class)
 				.execute(Accumulators.getFirst());
 		assertThat(mapRowCount).isEqualTo(0L);

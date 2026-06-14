@@ -17,6 +17,7 @@ import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableLinkage;
+import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.model.Entity.AbstractPropertyMapping;
 import org.codefilarete.stalactite.engine.configurer.model.Entity.PropertyMapping;
@@ -32,6 +33,7 @@ import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.KeepOrderSet;
+import org.codefilarete.tool.function.Converter;
 
 import static org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingConfiguration.fromEmbeddableMappingConfiguration;
 import static org.codefilarete.tool.Nullable.nullable;
@@ -58,6 +60,31 @@ public class PropertyMappingResolver<C, T extends Table<T>> {
 	
 	public PropertyMappingResolver(ColumnBinderRegistry columnBinderRegistry) {
 		this.columnBinderRegistry = columnBinderRegistry;
+	}
+	
+	/**
+	 * Converts mapping definition of a {@link EmbeddableMappingConfiguration} into a simple {@link Map}
+	 *
+	 * @return a bean that stores some {@link Map}s representing the definition of the mapping declared by the {@link EmbeddableMappingConfiguration}
+	 */
+	public EmbeddableMapping<C, T> resolveAsMapping(org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration<C> mainMappingConfiguration,
+	                                                     T targetTable,
+	                                                     ColumnNamingStrategy columnNamingStrategy) {
+		Set<AbstractPropertyMapping<C, ?, T>> resolve = resolve(mainMappingConfiguration,
+				targetTable,
+				columnNamingStrategy);
+		EmbeddableMapping<C, T> result = new EmbeddableMapping<>(mainMappingConfiguration.getBeanType());
+		resolve.forEach(mapping -> {
+			if (mapping instanceof PropertyMapping) {
+				result.getMapping().put((ReadWritePropertyAccessPoint<C, ?>) mapping.getAccessPoint(), mapping.getColumn());
+				result.getReadConverters().put(mapping.getAccessPoint(), (Converter<Object, Object>) mapping.getReadConverter());
+				result.getWriteConverters().put(mapping.getAccessPoint(), (Converter<Object, Object>) ((PropertyMapping<C, ?, T>) mapping).getWriteConverter());
+			} else if (mapping instanceof ReadOnlyPropertyMapping) {
+				result.getReadonlyMapping().put(mapping.getAccessPoint(), mapping.getColumn());
+				result.getReadConverters().put(mapping.getAccessPoint(), (Converter<Object, Object>) mapping.getReadConverter());
+			}
+		});
+		return result;
 	}
 	
 	/**

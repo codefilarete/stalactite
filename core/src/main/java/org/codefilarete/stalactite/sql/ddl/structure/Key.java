@@ -6,6 +6,8 @@ import org.codefilarete.stalactite.query.api.Fromable;
 import org.codefilarete.stalactite.query.api.JoinLink;
 import org.codefilarete.tool.collection.KeepOrderSet;
 
+import static org.codefilarete.tool.collection.Iterables.first;
+
 /**
  * Representation of a database key such as Primary Key and Foreign Key, or columns of a join.
  * Can be composed of a single column or multiple ones as in a composite key.
@@ -66,13 +68,18 @@ public interface Key<T extends Fromable, ID /* unused in this class, left for cl
 		private final T table;
 		private final KeepOrderSet<JoinLink<T, ?>> columns;
 		
+		// left private (as addColumn(..) and addAllColumns(..)) to make it only available from the builder
 		private KeySupport(T table) {
 			this(table, new KeepOrderSet<>());
 		}
 		
-		KeySupport(T table, KeepOrderSet<? extends JoinLink<T, ?>> columns) {
+		public KeySupport(T table, KeepOrderSet<? extends JoinLink<T, ?>> columns) {
 			this.table = table;
 			this.columns = (KeepOrderSet<JoinLink<T, ?>>) columns;
+		}
+		
+		public KeySupport(KeepOrderSet<? extends JoinLink<T, ?>> columns) {
+			this(first(columns).getOwner(), columns);
 		}
 		
 		@Override
@@ -85,10 +92,12 @@ public interface Key<T extends Fromable, ID /* unused in this class, left for cl
 			return columns;
 		}
 		
+		// left private (as constructor with Table argument) to make it only available from the builder
 		private void addColumn(JoinLink<T, ?> column) {
 			this.columns.add(column);
 		}
 		
+		// left private (as constructor with Table argument) to make it only available from the builder
 		private void addAllColumns(Collection<? extends JoinLink<T, ?>> columns) {
 			this.columns.addAll(columns);
 		}

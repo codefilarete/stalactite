@@ -29,6 +29,12 @@ public class KeyMapping<LEFTTABLE extends Fromable, RIGHTTABLE extends Fromable,
 		this.mapping = pair(sourceKey.getColumns(), referencedKey.getColumns(), KeepOrderMap::new);
 	}
 	
+	public KeyMapping(KeepOrderMap<JoinLink<LEFTTABLE, ?>, JoinLink<RIGHTTABLE, ?>> mapping) {
+		this.sourceKey = new KeySupport<>(new KeepOrderSet<>(mapping.keySet()));
+		this.referencedKey = new KeySupport<>(new KeepOrderSet<>(mapping.values()));
+		this.mapping = mapping;
+	}
+	
 	public Key<LEFTTABLE, ID> getSourceKey() {
 		return sourceKey;
 	}

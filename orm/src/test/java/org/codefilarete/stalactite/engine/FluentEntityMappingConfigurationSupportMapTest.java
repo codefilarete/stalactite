@@ -1466,6 +1466,39 @@ class FluentEntityMappingConfigurationSupportMapTest {
 									new KeepOrderSet<>(houseTable.getColumn("number"), houseTable.getColumn("street"), houseTable.getColumn("zipCode"), houseTable.getColumn("city"))
 							));
 		}
+		
+		@Test
+		void compositeId_crud_readOnly() throws SQLException {
+			Set<HouseId> persistedHouses = new HashSet<>();
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapMap(Person::getMapPropertyMadeOfCompositeIdEntityAsValue, String.class, House.class)
+					.withValueMapping(entityBuilder(House.class, HouseId.class)
+							.mapKey(House::getHouseId, compositeKeyBuilder(HouseId.class)
+									.map(HouseId::getNumber)
+									.map(HouseId::getStreet)
+									.map(HouseId::getZipCode)
+									.map(HouseId::getCity), h -> persistedHouses.add(h.getHouseId()), h -> persistedHouses.contains(h.getHouseId()))
+					)
+					.cascading(RelationMode.READ_ONLY)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person person = new Person(new PersistableIdentifier<>(1L));
+			person.setMapPropertyMadeOfCompositeIdEntityAsValue(Maps.forHashMap(String.class, House.class)
+					.add("House1", new House(new HouseId(1, "Street1", "ZipCode1", "City1")))
+					.add("House2", new House(new HouseId(2, "Street2", "ZipCode2", "City2")))
+			);
+			personPersister.insert(person);
+			
+			ExecutableQuery<String> longExecutableQuery3 = persistenceContext.newQuery("select city from Person_mapPropertyMadeOfCompositeIdEntityAsValue", Long.class)
+					.mapKey("value", String.class);
+			Set<String> remainingEntries = longExecutableQuery3.execute(Accumulators.toSet());
+			assertThat(remainingEntries).isEmpty();
+		}
 	}
 	
 	@Nested
