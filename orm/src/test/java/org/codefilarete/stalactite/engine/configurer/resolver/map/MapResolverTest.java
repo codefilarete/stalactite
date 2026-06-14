@@ -1,26 +1,35 @@
 package org.codefilarete.stalactite.engine.configurer.resolver.map;
 
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import javax.sql.DataSource;
 
+import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver;
+import org.codefilarete.stalactite.engine.model.Car;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
+import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
+import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.sql.result.Accumulators;
+import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.codefilarete.stalactite.dsl.FluentMappings.embeddableBuilder;
 import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
@@ -41,7 +50,7 @@ class MapResolverTest {
 	}
 
 	@Test
-	void crud_scalarMap_insertUpdateDelete() {
+	void crud_scalarMap() {
 		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
 				.mapKey(Person::getId, ALREADY_ASSIGNED)
 				.map(Person::getName)
@@ -81,9 +90,222 @@ class MapResolverTest {
 				.execute(Accumulators.getFirst());
 		assertThat(mapRowCount).isEqualTo(0L);
 	}
+	
+	@Test
+	void crudEnum() {
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, Identifier.LONG_TYPE)
+				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(Person::getName)
+				.mapMap(Person::getAddressBook, Person.AddressBookType.class, String.class);
+		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Person person = new Person(new PersistableIdentifier<>(1L));
+		person.setAddressBook(Maps.forHashMap(Person.AddressBookType.class, String.class)
+				.add(Person.AddressBookType.HOME, "Grenoble")
+				.add(Person.AddressBookType.BILLING_ADDRESS, "Lyon")
+		);
+		
+		personPersister.insert(person);
+		
+		Person loadedPerson = personPersister.select(person.getId());
+		assertThat(loadedPerson.getAddressBook()).isEqualTo(Maps.forHashMap(Person.AddressBookType.class, String.class)
+				.add(Person.AddressBookType.HOME, "Grenoble")
+				.add(Person.AddressBookType.BILLING_ADDRESS, "Lyon")
+		);
+		
+		person.getAddressBook().remove(Person.AddressBookType.HOME);
+		person.getAddressBook().put(Person.AddressBookType.OTHER, "Marseille");
+		
+		personPersister.update(person, loadedPerson, true);
+		
+		loadedPerson = personPersister.select(person.getId());
+		assertThat(loadedPerson.getAddressBook()).isEqualTo(Maps.forHashMap(Person.AddressBookType.class, String.class)
+				.add(Person.AddressBookType.OTHER, "Marseille")
+				.add(Person.AddressBookType.BILLING_ADDRESS, "Lyon")
+		);
+		
+		personPersister.delete(loadedPerson);
+		ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select 'key' from Person_addressBook", String.class)
+				.mapKey("key", String.class);
+		Set<String> remainingAddressBook = stringExecutableQuery.execute(Accumulators.toSet());
+		assertThat(remainingAddressBook).isEmpty();
+	}
+	
+	@Test
+	void crud_keyIsComplexType() {
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, Identifier.LONG_TYPE)
+				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(Person::getName)
+				.mapMap(Person::getAddresses, Timestamp.class, String.class)
+				.withKeyMapping(embeddableBuilder(Timestamp.class)
+						.map(Timestamp::getCreationDate)
+						.map(Timestamp::getModificationDate)
+				);
+		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Person person = new Person(new PersistableIdentifier<>(1L));
+		LocalDateTime now = LocalDateTime.now();
+		person.setAddresses(Maps.forHashMap(Timestamp.class, String.class)
+				.add(new Timestamp(now.minusDays(10), now.minusDays(10)), "Grenoble")
+				.add(new Timestamp(now.minusDays(1), now.minusDays(1)), "Lyon")
+		);
+		
+		personPersister.insert(person);
+		
+		Person loadedPerson = personPersister.select(person.getId());
+		assertThat(loadedPerson.getAddresses()).isEqualTo(Maps.forHashMap(Timestamp.class, String.class)
+				.add(new Timestamp(now.minusDays(10), now.minusDays(10)), "Grenoble")
+				.add(new Timestamp(now.minusDays(1), now.minusDays(1)), "Lyon")
+		);
+		
+		person.getAddresses().remove(new Timestamp(now.minusDays(10), now.minusDays(10)));
+		// Changing entry value to check value is also updated
+		person.getAddresses().put(new Timestamp(now.minusDays(1), now.minusDays(1)), "Paris");
+		person.getAddresses().put(new Timestamp(now.minusDays(5), now.minusDays(5)), "Marseille");
+		
+		personPersister.update(person, loadedPerson, true);
+		
+		loadedPerson = personPersister.select(person.getId());
+		assertThat(loadedPerson.getAddresses()).isEqualTo(Maps.forHashMap(Timestamp.class, String.class)
+				.add(new Timestamp(now.minusDays(5), now.minusDays(5)), "Marseille")
+				.add(new Timestamp(now.minusDays(1), now.minusDays(1)), "Paris")
+		);
+		
+		personPersister.delete(loadedPerson);
+		ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select 'key' from Person_addresses", String.class)
+				.mapKey("key", String.class);
+		Set<String> remainingAddressBook = stringExecutableQuery.execute(Accumulators.toSet());
+		assertThat(remainingAddressBook).isEmpty();
+	}
+	
+	@Test
+	void crud_valueIsComplexType() {
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, Identifier.LONG_TYPE)
+				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(Person::getName)
+				.mapMap(Person::getContracts, String.class, Timestamp.class)
+				.withValueMapping(FluentMappings.embeddableBuilder(Timestamp.class)
+						.map(Timestamp::getCreationDate)
+						.map(Timestamp::getModificationDate)
+				);
+		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Person person = new Person(new PersistableIdentifier<>(1L));
+		LocalDateTime now = LocalDateTime.now();
+		person.setContracts(Maps.forHashMap(String.class, Timestamp.class)
+				.add("Grenoble", new Timestamp(now.minusDays(10), now.minusDays(10)))
+				.add("Lyon", new Timestamp(now.minusDays(1), now.minusDays(1)))
+		);
+		
+		personPersister.insert(person);
+		
+		Person loadedPerson = personPersister.select(person.getId());
+		assertThat(loadedPerson.getContracts()).isEqualTo(Maps.forHashMap(String.class, Timestamp.class)
+				.add("Grenoble", new Timestamp(now.minusDays(10), now.minusDays(10)))
+				.add("Lyon", new Timestamp(now.minusDays(1), now.minusDays(1)))
+		);
+		
+		person.getContracts().remove("Grenoble");
+		// Changing entry value to check value is also updated
+		person.getContracts().put("Lyon", new Timestamp(now.minusDays(2), now.minusDays(2)));
+		person.getContracts().put("Marseille", new Timestamp(now.minusDays(5), now.minusDays(5)));
+		
+		personPersister.update(person, loadedPerson, true);
+		
+		loadedPerson = personPersister.select(person.getId());
+		assertThat(loadedPerson.getContracts()).isEqualTo(Maps.forHashMap(String.class, Timestamp.class)
+				.add("Marseille", new Timestamp(now.minusDays(5), now.minusDays(5)))
+				.add("Lyon", new Timestamp(now.minusDays(2), now.minusDays(2)))
+		);
+		
+		personPersister.delete(loadedPerson);
+		ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select 'key' from Person_contracts", String.class)
+				.mapKey("key", String.class);
+		Set<String> remainingAddressBook = stringExecutableQuery.execute(Accumulators.toSet());
+		assertThat(remainingAddressBook).isEmpty();
+	}
+	
+	@Test
+	void crud_keyAndValueIsComplexType() {
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
+				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(Person::getName)
+				.mapMap(Person::getMapPropertyMadeOfComplexTypes, Timestamp.class, Car.Radio.class)
+				.withKeyMapping(FluentMappings.embeddableBuilder(Timestamp.class)
+						.map(Timestamp::getCreationDate)
+						.map(Timestamp::getModificationDate)
+				)
+				.withValueMapping(FluentMappings.embeddableBuilder(Car.Radio.class)
+						.map(Car.Radio::getSerialNumber)
+						.map(Car.Radio::getModel)
+				);
+		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Person person = new Person(new PersistableIdentifier<>(1L));
+		LocalDateTime now = LocalDateTime.now();
+		Car.Radio radio1 = new Car.Radio("123");
+		radio1.setModel("model1");
+		Car.Radio radio2 = new Car.Radio("456");
+		radio2.setModel("model2");
+		person.setMapPropertyMadeOfComplexTypes(Maps.forHashMap(Timestamp.class, Car.Radio.class)
+				.add(new Timestamp(now.minusDays(1), now.minusDays(1)), radio1)
+				.add(new Timestamp(now.minusDays(2), now.minusDays(2)), radio2)
+		);
+		
+		personPersister.insert(person);
+		
+		Person loadedPerson = personPersister.select(person.getId());
+		assertThat(loadedPerson.getMapPropertyMadeOfComplexTypes()).isEqualTo(Maps.forHashMap(Timestamp.class, Car.Radio.class)
+				.add(new Timestamp(now.minusDays(1), now.minusDays(1)), radio1)
+				.add(new Timestamp(now.minusDays(2), now.minusDays(2)), radio2)
+		);
+		
+		Car.Radio radio3 = new Car.Radio("789");
+		radio3.setModel("model3");
+		person.getMapPropertyMadeOfComplexTypes().remove(new Timestamp(now.minusDays(1), now.minusDays(1)));
+		// Changing entry value to check value is also updated
+		Car.Radio radio4 = new Car.Radio("789");
+		radio4.setModel("model4");
+		person.getMapPropertyMadeOfComplexTypes().put(new Timestamp(now.minusDays(2), now.minusDays(2)), radio4);
+		person.getMapPropertyMadeOfComplexTypes().put(new Timestamp(now.minusDays(3), now.minusDays(3)), radio3);
+		
+		personPersister.update(person, loadedPerson, true);
+		
+		loadedPerson = personPersister.select(person.getId());
+		assertThat(loadedPerson.getMapPropertyMadeOfComplexTypes()).isEqualTo(Maps.forHashMap(Timestamp.class, Car.Radio.class)
+				.add(new Timestamp(now.minusDays(2), now.minusDays(2)), radio4)
+				.add(new Timestamp(now.minusDays(3), now.minusDays(3)), radio3)
+		);
+		
+		personPersister.delete(loadedPerson);
+		ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfComplexTypes", String.class)
+				.mapKey("key", String.class);
+		Set<String> remainingAddressBook = stringExecutableQuery.execute(Accumulators.toSet());
+		assertThat(remainingAddressBook).isEmpty();
+	}
 
 	@Test
-	void crud_entityAsKeyMap_insertUpdateDelete() {
+	void crud_entityAsKeyMap() {
 		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
 				.mapKey(Person::getId, ALREADY_ASSIGNED)
 				.map(Person::getName)
@@ -129,7 +351,7 @@ class MapResolverTest {
 	}
 
 	@Test
-	void crud_entityAsValueMap_insertUpdateDelete() {
+	void crud_entityAsValueMap() {
 		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
 				.mapKey(Person::getId, ALREADY_ASSIGNED)
 				.map(Person::getName)

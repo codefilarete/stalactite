@@ -7,12 +7,8 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.AccessorByMethodReference;
-import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.reflection.PropertyAccessor;
-import org.codefilarete.reflection.ReadWriteAccessorChain;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
-import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
@@ -42,6 +38,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
 import org.codefilarete.stalactite.sql.ddl.structure.Key.KeySupport;
+import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
@@ -119,49 +116,6 @@ public class MapMetadataResolver {
 				namingConfiguration.getColumnNamingStrategy(),
 				namingConfiguration.getForeignKeyNamingStrategy());
 		
-		Map<ReadWritePropertyAccessPoint<KeyValueRecord<K, V, SRCID>, ?>, Column<MAPTABLE, ?>> keyMapping = new ValueAccessPointMap<>();
-		if (mapRelation.getKeyEmbeddableConfigurationProvider() != null) {
-			keyMapping = buildMemberMapping(
-					targetTable,
-					namingConfiguration,
-					(ReadWritePropertyAccessPoint) RECORD_KEY_ACCESSOR,
-					mapRelation.getKeyEmbeddableConfigurationProvider().getConfiguration()
-			);
-		} else if (mapRelation.getKeyEntityConfigurationProvider() == null) {
-			keyMapping = buildMemberMapping(
-					targetTable,
-					namingConfiguration,
-					(ReadWritePropertyAccessPoint) RECORD_KEY_ACCESSOR,
-					MAP_ENTRY_KEY_ACCESSOR_DEFINITION,
-					mapRelation.getKeyColumnName(),
-					mapRelation.getKeyType(),
-					mapRelation.getKeyColumnSize());
-		}
-		// entry key columns must be part of the Map Table primary key
-		keyMapping.values().forEach(Column::primaryKey);
-		
-		Map<ReadWritePropertyAccessPoint<KeyValueRecord<K, V, SRCID>, ?>, Column<MAPTABLE, ?>> valueMapping = new ValueAccessPointMap<>();
-		if (mapRelation.getValueEmbeddableConfigurationProvider() != null) {
-			valueMapping = buildMemberMapping(
-					targetTable,
-					namingConfiguration,
-					(ReadWritePropertyAccessPoint) RECORD_VALUE_ACCESSOR,
-					mapRelation.getValueEmbeddableConfigurationProvider().getConfiguration()
-			);
-		} else if (mapRelation.getValueEntityConfigurationProvider() == null) {
-			valueMapping = buildMemberMapping(
-					targetTable,
-					namingConfiguration,
-					(ReadWritePropertyAccessPoint) RECORD_VALUE_ACCESSOR,
-					MAP_ENTRY_VALUE_ACCESSOR_DEFINITION,
-					mapRelation.getValueColumnName(),
-					mapRelation.getValueType(),
-					mapRelation.getValueColumnSize()
-			);
-		}
-		
-		Map<ReadWritePropertyAccessPoint<KeyValueRecord<K, V, SRCID>, ?>, Column<MAPTABLE, ?>> entryMapping = Maps.putAll(keyMapping, valueMapping);
-		
 		Supplier<M> mapFactory = preventNull(
 				mapRelation.getMapFactory(),
 				Reflections.giveMapFactory((Class<M>) mapAccessorDefinition.getMemberType()));
@@ -197,13 +151,23 @@ public class MapMetadataResolver {
 			keyEntityIdentifierMapping = (EntryMemberMapping<X, MAPTABLE>) buildEntityMemberMapping(keyEntity.getIdentifierMapping(), keyEntityReferenceMapping);
 			// entry key columns must be part of the Map Table primary key
 			keyEntityReferenceMapping.getColumns().forEach(Column::primaryKey);
+		} else if (mapRelation.getKeyEmbeddableConfigurationProvider() != null) {
+			CompositeMemberMapping<K, MAPTABLE> compositeKeyMapping = buildCompositeMemberMapping(
+					targetTable,
+					namingConfiguration,
+					mapRelation.getKeyEmbeddableConfigurationProvider().getConfiguration()
+			);
+			compositeKeyMapping.getMapping().values().forEach(Column::primaryKey);
+			keyEntityIdentifierMapping = (EntryMemberMapping<X, MAPTABLE>) compositeKeyMapping;
 		} else {
-			keyEntityIdentifierMapping = (EntryMemberMapping<X, MAPTABLE>) buildScalarMemberMapping(targetTable,
+			ScalarMemberMapping<K, MAPTABLE> scalarKeyMapping = buildScalarMemberMapping(targetTable,
 					namingConfiguration,
 					MAP_ENTRY_KEY_ACCESSOR_DEFINITION,
 					mapRelation.getKeyColumnName(),
 					mapRelation.getKeyType(),
 					mapRelation.getKeyColumnSize());
+			scalarKeyMapping.getColumn().primaryKey();
+			keyEntityIdentifierMapping = (EntryMemberMapping<X, MAPTABLE>) scalarKeyMapping;
 		}
 		
 		ForeignKey<MAPTABLE, VTABLE, VID> valueEntityReferenceMapping = null;
@@ -223,6 +187,13 @@ public class MapMetadataResolver {
 					namingConfiguration.getJoinColumnNamingStrategy());
 			// building identifier mapping projected on Map Table 
 			valueEntityIdentifierMapping = (EntryMemberMapping<Y, MAPTABLE>) buildEntityMemberMapping(valueEntity.getIdentifierMapping(), valueEntityReferenceMapping);
+		} else if (mapRelation.getValueEmbeddableConfigurationProvider() != null) {
+			CompositeMemberMapping<V, MAPTABLE> compositeValueMapping = buildCompositeMemberMapping(
+					targetTable,
+					namingConfiguration,
+					mapRelation.getValueEmbeddableConfigurationProvider().getConfiguration()
+			);
+			valueEntityIdentifierMapping = (EntryMemberMapping<Y, MAPTABLE>) compositeValueMapping;
 		} else {
 			valueEntityIdentifierMapping = (EntryMemberMapping<Y, MAPTABLE>) buildScalarMemberMapping(targetTable,
 					namingConfiguration,
@@ -286,7 +257,11 @@ public class MapMetadataResolver {
 	                                                           ForeignKey<MAPTABLE, XTABLE, XID> foreignKeyEntityReferenceMapping) {
 		if (identifierMapping instanceof CompositeIdentifierMapping) {
 			CompositeIdentifierMapping<X, XID, XTABLE> compositeIdentifierMapping = (CompositeIdentifierMapping<X, XID, XTABLE>) identifierMapping;
-			return new CompositeMemberMapping<>(compositeIdentifierMapping.getCompositeKeyMapping().getBeanType(), compositeIdentifierMapping.getCompositeKeyMapping().getMapping());
+			
+			KeyMapping<XTABLE, MAPTABLE, ?> invertedMapping = new KeyMapping<>(foreignKeyEntityReferenceMapping.getReferencedKey(), foreignKeyEntityReferenceMapping);
+			Map<ReadWritePropertyAccessPoint<XID, ?>, Column<MAPTABLE, ?>> identifierMappingInMapTable = Maps.innerJoinOnValuesAndKeys(compositeIdentifierMapping.getCompositeKeyMapping().getMapping(), invertedMapping.getMapping());
+			
+			return new CompositeMemberMapping<>(compositeIdentifierMapping.getCompositeKeyMapping().getBeanType(), identifierMappingInMapTable);
 		} else if (identifierMapping instanceof SingleIdentifierMapping) {
 			return new ScalarMemberMapping<>((Column<MAPTABLE, XID>) first(foreignKeyEntityReferenceMapping.getColumns()));
 		} else if (identifierMapping instanceof AssignedByAnotherIdentifierMapping) {
@@ -342,36 +317,15 @@ public class MapMetadataResolver {
 		return primaryKeyForeignColumnMapping;
 	}
 	
-	private <X, MAPTABLE extends Table<MAPTABLE>, K, V, SRC, SRCID, M extends Map<K, V>>
-	Map<ReadWritePropertyAccessPoint<KeyValueRecord<K, V, SRCID>, ?>, Column<MAPTABLE, ?>>
-	buildMemberMapping(MAPTABLE mapTable,
-	                   NamingConfiguration namingStrategy,
-	                   ReadWritePropertyAccessPoint<KeyValueRecord<K, V, SRCID>, X> recordMemberAccessor,
-	                   EmbeddableMappingConfiguration<X> embeddableMappingConfiguration) {
+	private <X, MAPTABLE extends Table<MAPTABLE>>
+	CompositeMemberMapping<X, MAPTABLE>
+	buildCompositeMemberMapping(MAPTABLE mapTable,
+	                            NamingConfiguration namingStrategy,
+	                            EmbeddableMappingConfiguration<X> embeddableMappingConfiguration) {
 		// a special configuration was given, we compute a EmbeddedClassMapping from it
 		PropertyMappingResolver<X, MAPTABLE> propertyMappingResolver = new PropertyMappingResolver<>(dialect.getColumnBinderRegistry());
 		EmbeddableMapping<X, MAPTABLE> entryKeyMapping = propertyMappingResolver.resolveAsMapping(embeddableMappingConfiguration, mapTable, namingStrategy.getColumnNamingStrategy());
-		return chainWithRecordMemberAccessor(
-				entryKeyMapping.getMapping(),
-				recordMemberAccessor,
-				embeddableMappingConfiguration.getBeanType());
-	}
-	
-	private <X, MAPTABLE extends Table<MAPTABLE>, K, V, SRC, SRCID, M extends Map<K, V>>
-	Map<ReadWritePropertyAccessPoint<KeyValueRecord<K, V, SRCID>, ?>, Column<MAPTABLE, ?>>
-	buildMemberMapping(MAPTABLE mapTable,
-	                   NamingConfiguration namingStrategy,
-	                   ReadWritePropertyAccessPoint<KeyValueRecord<K, V, SRCID>, X> recordMemberAccessor,
-	                   AccessorDefinition entryMemberAccessorDefinition,
-	                   String columnName,
-	                   Class<K> scalarType,
-	                   Size columnSize) {
-		Map<ReadWritePropertyAccessPoint<KeyValueRecord<K, V, SRCID>, ?>, Column<MAPTABLE, ?>> result = new HashMap<>();
-		String keyColumnName = nullable(columnName)
-				.getOr(() -> namingStrategy.getColumnNamingStrategy().giveName(entryMemberAccessorDefinition));
-		Column<MAPTABLE, K> maptableKeyColumn = mapTable.addColumn(keyColumnName, scalarType, columnSize);
-		result.put(recordMemberAccessor, maptableKeyColumn);
-		return result;
+		return new CompositeMemberMapping<>(embeddableMappingConfiguration.getBeanType(), entryKeyMapping.getMapping());
 	}
 	
 	private <X, MAPTABLE extends Table<MAPTABLE>>
@@ -386,24 +340,5 @@ public class MapMetadataResolver {
 				.getOr(() -> namingStrategy.getColumnNamingStrategy().giveName(entryMemberAccessorDefinition));
 		Column<MAPTABLE, X> maptableColumn = mapTable.addColumn(effectiveColumnName, scalarType, columnSize);
 		return new ScalarMemberMapping<>(maptableColumn);
-	}
-	
-	// X is either K or V
-	private <X, MAPTABLE extends Table<MAPTABLE>, K, V, SRCID> Map<ReadWritePropertyAccessPoint<KeyValueRecord<K, V, SRCID>, ?>, Column<MAPTABLE, ?>> chainWithRecordMemberAccessor(
-			Map<ReadWritePropertyAccessPoint<X, ?>, Column<MAPTABLE, ?>> propertyToColumn,
-			PropertyAccessor<KeyValueRecord<K, V, SRCID>, X> recordMemberAccessor,
-			Class<X> embeddedType) {
-		Maps.ChainingMap<ReadWritePropertyAccessPoint<KeyValueRecord<K, V, SRCID>, ?>, Column<MAPTABLE, ?>> result = new Maps.ChainingMap<>();
-		propertyToColumn.forEach((keyPropertyAccessor, column) -> {
-			ReadWriteAccessorChain<KeyValueRecord<K, V, SRCID>, X, ?> key = new ReadWriteAccessorChain<>(recordMemberAccessor, keyPropertyAccessor);
-			key.setNullValueHandler(new AccessorChain.ValueInitializerOnNullValue((accessor, inputType) -> {
-				Class<?> memberType = accessor == recordMemberAccessor
-						? embeddedType
-						: inputType;
-				return Reflections.newInstance(memberType);
-			}));
-			result.add(key, column);
-		});
-		return result;
 	}
 }

@@ -44,13 +44,10 @@ import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
-import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.function.Functions;
 
@@ -257,17 +254,11 @@ public class EntryMapResolver {
 			Column<MAPTABLE, Y> valueColumn = ((ScalarMemberMapping<Y, MAPTABLE>) valueEntityIdentifierMapping).getColumn();
 			propertiesMapping.put((ReadWritePropertyAccessPoint<KeyValueRecord<X, Y, SRCID>, Y>) (ReadWritePropertyAccessPoint) KeyValueRecord.VALUE_ACCESSOR, valueColumn);
 		} else if (valueEntityIdentifierMapping instanceof CompositeMemberMapping) {
-			CompositeMemberMapping<Y, MAPTABLE, VTABLE> compositeMemberMapping = (CompositeMemberMapping<Y, MAPTABLE, VTABLE>) valueEntityIdentifierMapping;
-			Map<ReadWritePropertyAccessPoint<Y, ?>, Column<VTABLE, ?>> mapping = compositeMemberMapping.getMapping();
-			
-			
-			ForeignKey<MAPTABLE, VTABLE, VID> valueEntityForeignKey = resolvedRelation.getValueEntityForeignKey();
-			KeyMapping<VTABLE, MAPTABLE, ?> invertedMapping = new KeyMapping<>(valueEntityForeignKey.getReferencedKey(), valueEntityForeignKey);
-			KeepOrderMap<Column<VTABLE, ?>, Column<MAPTABLE, ?>> mapping1 = invertedMapping.getMapping();
-			Map<ReadWritePropertyAccessPoint<Y, ?>, Column<MAPTABLE, ?>> readWritePropertyAccessPointColumnMap = Maps.innerJoinOnValuesAndKeys(mapping, mapping1);
+			CompositeMemberMapping<Y, MAPTABLE> compositeMemberMapping = (CompositeMemberMapping<Y, MAPTABLE>) valueEntityIdentifierMapping;
+			Map<ReadWritePropertyAccessPoint<Y, ?>, Column<MAPTABLE, ?>> mapping = compositeMemberMapping.getMapping();
 			
 			Map<ReadWritePropertyAccessPoint<KeyValueRecord<X, Y, SRCID>, ?>, Column<MAPTABLE, ?>> x = chainWithRecordMemberAccessor(
-					readWritePropertyAccessPointColumnMap,
+					mapping,
 					(ReadWritePropertyAccessPoint<KeyValueRecord<X, Y, SRCID>, Y>) (ReadWritePropertyAccessPoint) KeyValueRecord.VALUE_ACCESSOR,
 					compositeMemberMapping.getBeanType());
 			propertiesMapping.putAll(x);
@@ -287,8 +278,8 @@ public class EntryMapResolver {
 			
 			propertiesMapping.put((ReadWritePropertyAccessPoint) KeyValueRecord.KEY_ACCESSOR, keyColumn);
 		} else if (resolvedRelation.getKeyEntityIdentifierMapping() instanceof CompositeMemberMapping) {
-			Class<KID> identifierType = resolvedRelation.getKeyEntity().getIdentifierMapping().getIdentifierInsertionManager().getIdentifierType();
-			CompositeMemberMapping<KID, KTABLE, MAPTABLE> keyEntityIdentifierMapping = (CompositeMemberMapping<KID, KTABLE, MAPTABLE>) resolvedRelation.getKeyEntityIdentifierMapping();
+			CompositeMemberMapping<KID, MAPTABLE> keyEntityIdentifierMapping = (CompositeMemberMapping<KID, MAPTABLE>) resolvedRelation.<KID>getKeyEntityIdentifierMapping();
+			Class<KID> identifierType = keyEntityIdentifierMapping.getBeanType();
 			EmbeddedClassMapping<KID, MAPTABLE> entityKeyMapping = new EmbeddedClassMapping<>(identifierType, mapTable, keyEntityIdentifierMapping.getMapping());
 			KeyValueRecordIdMapping<KID, SRCID, MAPTABLE> compositeMapping = new KeyValueRecordIdMapping<>(
 					mapTable,
@@ -368,6 +359,7 @@ public class EntryMapResolver {
 		}
 	}
 	
+	// X is either K or V
 	private <X, MAPTABLE extends Table<MAPTABLE>, K, V, SRCID>
 	Map<ReadWritePropertyAccessPoint<KeyValueRecord<K, V, SRCID>, ?>, Column<MAPTABLE, ?>> chainWithRecordMemberAccessor(
 			Map<ReadWritePropertyAccessPoint<X, ?>, Column<MAPTABLE, ?>> propertyToColumn,

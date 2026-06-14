@@ -130,13 +130,13 @@ public class ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M extends Map<K, V>
 		}
 	}
 	
-	public static class CompositeMemberMapping<XID, MAPTABLE extends Table<MAPTABLE>, XTABLE extends Table<XTABLE>>
+	public static class CompositeMemberMapping<XID, MAPTABLE extends Table<MAPTABLE>>
 			implements EntryMemberMapping<XID, MAPTABLE> {
 		
 		private final Class<XID> beanType;
-		private final Map<ReadWritePropertyAccessPoint<XID, ?>, Column<XTABLE, ?>> mapping;
+		private final Map<ReadWritePropertyAccessPoint<XID, ?>, Column<MAPTABLE, ?>> mapping;
 		
-		public CompositeMemberMapping(Class<XID> beanType, Map<ReadWritePropertyAccessPoint<XID, ?>, Column<XTABLE, ?>> mapping) {
+		public CompositeMemberMapping(Class<XID> beanType, Map<ReadWritePropertyAccessPoint<XID, ?>, Column<MAPTABLE, ?>> mapping) {
 			this.beanType = beanType;
 			this.mapping = mapping;
 		}
@@ -145,7 +145,7 @@ public class ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M extends Map<K, V>
 			return beanType;
 		}
 		
-		public Map<ReadWritePropertyAccessPoint<XID, ?>, Column<XTABLE, ?>> getMapping() {
+		public Map<ReadWritePropertyAccessPoint<XID, ?>, Column<MAPTABLE, ?>> getMapping() {
 			return mapping;
 		}
 	}

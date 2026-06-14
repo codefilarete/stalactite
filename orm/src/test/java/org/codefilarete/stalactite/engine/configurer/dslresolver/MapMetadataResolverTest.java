@@ -6,6 +6,7 @@ import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.MappingJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation;
+import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation.CompositeMemberMapping;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.compositekey.House;
@@ -181,11 +182,11 @@ class MapMetadataResolverTest {
 		assertThat(mapTable.getColumn("city")).isNotNull();
 		assertThat(relation.getKeyEntityForeignKey().getColumns()).extracting(Column::getName)
 				.containsExactly("number", "street", "zipCode", "city");
-		ResolvedMapRelation.CompositeMemberMapping<HouseId, ?, ?> keyEntityIdentifierMapping = (ResolvedMapRelation.CompositeMemberMapping) relation.<HouseId>getKeyEntityIdentifierMapping();
+		CompositeMemberMapping<HouseId, ?> keyEntityIdentifierMapping = (CompositeMemberMapping) relation.<HouseId>getKeyEntityIdentifierMapping();
 		assertThat(keyEntityIdentifierMapping.getMapping().keySet())
 				.extracting(AccessorDefinition::giveDefinition)
 				.extracting(AccessorDefinition::getName)
-				.containsExactly("number", "street", "zipCode", "city");
+				.containsExactlyInAnyOrder("number", "street", "zipCode", "city");
 		assertThat(mapTable.getPrimaryKey().getColumns()).extracting(Column::getName)
 				.contains("id", "number", "street", "zipCode", "city");
 		assertThat(mapTable.getForeignKeys()).hasSize(2);
@@ -230,11 +231,11 @@ class MapMetadataResolverTest {
 		assertThat(mapTable.getColumn("city")).isNotNull();
 		assertThat(relation.getValueEntityForeignKey().getColumns()).extracting(Column::getName)
 				.contains("number", "street", "zipCode", "city");
-		ResolvedMapRelation.CompositeMemberMapping<HouseId, ?, ?> valueEntityIdentifierMapping = (ResolvedMapRelation.CompositeMemberMapping) relation.<HouseId>getValueEntityIdentifierMapping();
+		CompositeMemberMapping<HouseId, ?> valueEntityIdentifierMapping = (CompositeMemberMapping) relation.<HouseId>getValueEntityIdentifierMapping();
 		assertThat(valueEntityIdentifierMapping.getMapping().keySet())
 				.extracting(AccessorDefinition::giveDefinition)
 				.extracting(AccessorDefinition::getName)
-				.containsExactly("number", "street", "zipCode", "city");
+				.containsExactlyInAnyOrder("number", "street", "zipCode", "city");
 		assertThat(mapTable.getPrimaryKey().getColumns()).extracting(Column::getName)
 				.contains("id", "key");
 		assertThat(mapTable.getForeignKeys()).hasSize(2);
