@@ -87,6 +87,32 @@ public class PropertyMappingResolver<C, T extends Table<T>> {
 		return result;
 	}
 	
+	public EmbeddableMapping<C, T> resolveAsMapping(org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration<C> mainMappingConfiguration,
+	                                                ValueAccessPointMap<C, String, ValueAccessPoint<C>> overriddenColumnNames,
+	                                                ValueAccessPointMap<C, Size, ValueAccessPoint<C>> overriddenColumnSizes,
+	                                                ValueAccessPointMap<C, Column<T, ?>, ValueAccessPoint<C>> overriddenColumns,
+	                                                T targetTable,
+	                                                ColumnNamingStrategy columnNamingStrategy) {
+		Set<AbstractPropertyMapping<C, ?, T>> resolve = resolve(mainMappingConfiguration,
+				overriddenColumnNames,
+				overriddenColumnSizes,
+				overriddenColumns,
+				targetTable,
+				columnNamingStrategy);
+		EmbeddableMapping<C, T> result = new EmbeddableMapping<>(mainMappingConfiguration.getBeanType());
+		resolve.forEach(mapping -> {
+			if (mapping instanceof PropertyMapping) {
+				result.getMapping().put((ReadWritePropertyAccessPoint<C, ?>) mapping.getAccessPoint(), mapping.getColumn());
+				result.getReadConverters().put(mapping.getAccessPoint(), (Converter<Object, Object>) mapping.getReadConverter());
+				result.getWriteConverters().put(mapping.getAccessPoint(), (Converter<Object, Object>) ((PropertyMapping<C, ?, T>) mapping).getWriteConverter());
+			} else if (mapping instanceof ReadOnlyPropertyMapping) {
+				result.getReadonlyMapping().put(mapping.getAccessPoint(), mapping.getColumn());
+				result.getReadConverters().put(mapping.getAccessPoint(), (Converter<Object, Object>) mapping.getReadConverter());
+			}
+		});
+		return result;
+	}
+	
 	/**
 	 * Converts mapping definition of a {@link EmbeddableMappingConfiguration} into a simple {@link Map}
 	 *
@@ -96,20 +122,37 @@ public class PropertyMappingResolver<C, T extends Table<T>> {
 	                                                     T targetTable,
 	                                                     ColumnNamingStrategy columnNamingStrategy) {
 		return resolve(fromEmbeddableMappingConfiguration(mainMappingConfiguration),
+				new ValueAccessPointMap<>(),
+				new ValueAccessPointMap<>(),
+				new ValueAccessPointMap<>(),
+				targetTable,
+				columnNamingStrategy);
+	}
+	
+	public Set<AbstractPropertyMapping<C, ?, T>> resolve(org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration<C> mainMappingConfiguration,
+	                                                     ValueAccessPointMap<C, String, ValueAccessPoint<C>> overriddenColumnNames,
+	                                                     ValueAccessPointMap<C, Size, ValueAccessPoint<C>> overriddenColumnSizes,
+	                                                     ValueAccessPointMap<C, Column<T, ?>, ValueAccessPoint<C>> overriddenColumns,
+	                                                     T targetTable,
+	                                                     ColumnNamingStrategy columnNamingStrategy) {
+		return resolve(fromEmbeddableMappingConfiguration(mainMappingConfiguration),
+				overriddenColumnNames,
+				overriddenColumnSizes,
+				overriddenColumns,
 				targetTable,
 				columnNamingStrategy);
 	}
 	
 	public Set<AbstractPropertyMapping<C, ?, T>> resolve(EmbeddableMappingConfiguration<C> mainMappingConfiguration,
+	                                                     ValueAccessPointMap<C, String, ValueAccessPoint<C>> overriddenColumnNames,
+	                                                     ValueAccessPointMap<C, Size, ValueAccessPoint<C>> overriddenColumnSizes,
+	                                                     ValueAccessPointMap<C, Column<T, ?>, ValueAccessPoint<C>> overriddenColumns,
 	                                                     T targetTable,
 	                                                     ColumnNamingStrategy columnNamingStrategy) {
 		Set<AbstractPropertyMapping<C, ?, T>> result = new KeepOrderSet<>();
 		
 		InternalProcessor<C> internalProcessor = new InternalProcessor<>(targetTable, columnNamingStrategy);
 		// converting direct mapping
-		ValueAccessPointMap<C, String, ValueAccessPoint<C>> overriddenColumnNames = new ValueAccessPointMap<>();
-		ValueAccessPointMap<C, Size, ValueAccessPoint<C>> overriddenColumnSizes = new ValueAccessPointMap<>();
-		ValueAccessPointMap<C, Column<T, ?>, ValueAccessPoint<C>> overriddenColumns = new ValueAccessPointMap<>();
 		ValueAccessPointSet<C, ?> excludedProperties = new ValueAccessPointSet<>();
 		internalProcessor.includeMapping(mainMappingConfiguration,
 				overriddenColumnNames,

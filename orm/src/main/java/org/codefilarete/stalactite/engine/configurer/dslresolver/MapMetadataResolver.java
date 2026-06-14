@@ -9,6 +9,8 @@ import javax.annotation.Nullable;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
+import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
@@ -155,7 +157,9 @@ public class MapMetadataResolver {
 			CompositeMemberMapping<K, MAPTABLE> compositeKeyMapping = buildCompositeMemberMapping(
 					targetTable,
 					namingConfiguration,
-					mapRelation.getKeyEmbeddableConfigurationProvider().getConfiguration()
+					mapRelation.getKeyEmbeddableConfigurationProvider().getConfiguration(),
+					mapRelation.getOverriddenKeyColumnNames(),
+					mapRelation.getOverriddenKeyColumnSizes()
 			);
 			compositeKeyMapping.getMapping().values().forEach(Column::primaryKey);
 			keyEntityIdentifierMapping = (EntryMemberMapping<X, MAPTABLE>) compositeKeyMapping;
@@ -191,7 +195,9 @@ public class MapMetadataResolver {
 			CompositeMemberMapping<V, MAPTABLE> compositeValueMapping = buildCompositeMemberMapping(
 					targetTable,
 					namingConfiguration,
-					mapRelation.getValueEmbeddableConfigurationProvider().getConfiguration()
+					mapRelation.getValueEmbeddableConfigurationProvider().getConfiguration(),
+					mapRelation.getOverriddenValueColumnNames(),
+					mapRelation.getOverriddenValueColumnSizes()
 			);
 			valueEntityIdentifierMapping = (EntryMemberMapping<Y, MAPTABLE>) compositeValueMapping;
 		} else {
@@ -321,10 +327,12 @@ public class MapMetadataResolver {
 	CompositeMemberMapping<X, MAPTABLE>
 	buildCompositeMemberMapping(MAPTABLE mapTable,
 	                            NamingConfiguration namingStrategy,
-	                            EmbeddableMappingConfiguration<X> embeddableMappingConfiguration) {
+	                            EmbeddableMappingConfiguration<X> embeddableMappingConfiguration,
+								ValueAccessPointMap<X, String, ValueAccessPoint<X>> overriddenKeyColumnNames,
+								ValueAccessPointMap<X, Size, ValueAccessPoint<X>> overriddenKeyColumnSizes) {
 		// a special configuration was given, we compute a EmbeddedClassMapping from it
 		PropertyMappingResolver<X, MAPTABLE> propertyMappingResolver = new PropertyMappingResolver<>(dialect.getColumnBinderRegistry());
-		EmbeddableMapping<X, MAPTABLE> entryKeyMapping = propertyMappingResolver.resolveAsMapping(embeddableMappingConfiguration, mapTable, namingStrategy.getColumnNamingStrategy());
+		EmbeddableMapping<X, MAPTABLE> entryKeyMapping = propertyMappingResolver.resolveAsMapping(embeddableMappingConfiguration, overriddenKeyColumnNames, overriddenKeyColumnSizes, new ValueAccessPointMap<>(), mapTable, namingStrategy.getColumnNamingStrategy());
 		return new CompositeMemberMapping<>(embeddableMappingConfiguration.getBeanType(), entryKeyMapping.getMapping());
 	}
 	
