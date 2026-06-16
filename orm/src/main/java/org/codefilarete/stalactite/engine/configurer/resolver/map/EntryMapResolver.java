@@ -83,43 +83,27 @@ public class EntryMapResolver {
 		
 		IdAccessor<SRC, SRCID> srcIdAccessor = sourcePersister.getMapping();
 		
+		// First, the target instances must be persisted to avoid foreign key errors.
+		// These two blocks are independent so the "key & value are entities" case naturally registers both cascaders.
+		if (resolvedRelation.getKeyEntity() != null) {
+			registerTargetEntitiesInsertCascader(sourcePersister, keyEntityPersister, resolvedRelation.getAccessor(), Map::keySet);
+		}
+		if (resolvedRelation.getValueEntity() != null) {
+			registerTargetEntitiesInsertCascader(sourcePersister, valueEntityPersister, resolvedRelation.getAccessor(), Map::values);
+		}
+		
+		// Update cascade : a single association table row carries both key and value, hence its records must be managed by a
+		// single updater. Therefore the "key & value are entities" case needs its dedicated updater (cascading to both
+		// persisters at once), while the single-entity cases share registerSingleEntityMapUpdater(..) and the fully scalar
+		// case relies on a plain CollectionUpdater. The conditions below are mutually exclusive, hence the separate ifs.
 		if (resolvedRelation.getKeyEntity() != null && resolvedRelation.getValueEntity() != null) {
 			
 			KeyValueRecordPersister<KID, VID, SRCID, MAPTABLE> entityAsValueRecordPersister = (KeyValueRecordPersister<KID, VID, SRCID, MAPTABLE>) relationRecordPersister;
 			
-			// First, the target instances must be persisted to avoid foreign key errors
-			sourcePersister.addInsertListener(new BeforeInsertCollectionCascader<SRC, K>(keyEntityPersister) {
-				@Override
-				protected Collection<K> getTargets(SRC src) {
-					List<K> keyEntities = nullable(resolvedRelation.getAccessor().get(src))
-							.map(Map::keySet)
-							// - we force type to List<K> to let the getOr() call returns any kind of List, else we are stuck with ArrayList
-							// - we copy the result to a List to avoid the Map being tempered with due to the remove(null), because keySet() is backed by the Map
-							.<List<K>>map(ArrayList::new)
-							.getOr(Collections::emptyList);
-					// Some Map implementations allow null key, so me remove them
-					keyEntities.remove(null);
-					return keyEntities;
-				}
-			});
-			sourcePersister.addInsertListener(new BeforeInsertCollectionCascader<SRC, V>(valueEntityPersister) {
-				@Override
-				protected Collection<V> getTargets(SRC src) {
-					List<V> keyEntities = nullable(resolvedRelation.getAccessor().get(src))
-							.map(Map::values)
-							// - we force type to List<K> to let the getOr() call returns any kind of List, else we are stuck with ArrayList
-							// - we copy the result to a List to avoid the Map being tempered with due to the remove(null), because keySet() is backed by the Map
-							.<List<V>>map(ArrayList::new)
-							.getOr(Collections::emptyList);
-					// Maps allow null value, so me remove them
-					keyEntities.remove(null);
-					return keyEntities;
-				}
-			});
-			
-			Accessor<SRC, Set<Entry<K, V>>> targetEntriesGetter = new NullProofFunction<>(resolvedRelation.getAccessor()::get).andThen(Map::entrySet)::apply;
 			BiFunction<Entry<K, V>, SRCID, KeyValueRecord<KID, VID, SRCID>> entryKeyValueRecordFunction =
-					(record, srcId) -> (KeyValueRecord<KID, VID, SRCID>) new KeyValueRecord<>(srcId, keyEntityPersister.getId(record.getKey()), valueEntityPersister.getId(record.getValue()));
+					(record, srcId) -> new KeyValueRecord<>(srcId, keyEntityPersister.getId(record.getKey()), valueEntityPersister.getId(record.getValue()));
+			// When both key and value are entities, the update has to propagate to both persisters at once, hence a dedicated
+			// EntityWriter is required (the single-entity helper cannot be reused here)
 			CollectionUpdater.EntityWriter<Entry<K, V>, Integer> entityPersister = new EntityWriter<Entry<K, V>, Integer>() {
 				
 				@Override
@@ -160,105 +144,29 @@ public class EntryMapResolver {
 					valueEntityPersister.update(values, allColumnsStatement);
 				}
 			};
-			Mutator<Duo<SRC, SRC>, Boolean> mapUpdater = new MapUpdater<>(targetEntriesGetter, entityPersister,
+			Mutator<Duo<SRC, SRC>, Boolean> mapUpdater = new MapUpdater<>(entriesGetter(resolvedRelation.getAccessor()), entityPersister,
 					entityAsValueRecordPersister, sourcePersister, resolvedRelation.getValueEntityRelationMode(),
 					Function.identity(), entryKeyValueRecordFunction
 			);
 			sourcePersister.addUpdateListener(new AfterUpdateTrigger<>(mapUpdater));
-			
-			if (resolvedRelation.getKeyEntityRelationMode() == CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL) {
-				Function<SRC, Set<K>> targetEntitiesGetter = new NullProofFunction<>(resolvedRelation.getAccessor()::get).andThen(Map::entrySet).andThen(entries -> entries.stream().map(Entry::getKey).collect(Collectors.toSet()));
-				sourcePersister.addDeleteListener(new BeforeDeleteCollectionCascader<SRC, K>(keyEntityPersister) {
-					@Override
-					protected Collection<K> getTargets(SRC src) {
-						return targetEntitiesGetter.apply(src);
-					}
-				});
-			}
-			if (resolvedRelation.getValueEntityRelationMode() == CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL) {
-				Function<SRC, Set<V>> targetEntitiesGetter = new NullProofFunction<>(resolvedRelation.getAccessor()::get).andThen(Map::entrySet).andThen(entries -> entries.stream().map(Entry::getValue).collect(Collectors.toSet()));
-				sourcePersister.addDeleteListener(new BeforeDeleteCollectionCascader<SRC, V>(valueEntityPersister) {
-					@Override
-					protected Collection<V> getTargets(SRC src) {
-						return targetEntitiesGetter.apply(src);
-					}
-				});
-			}
-		} else if (resolvedRelation.getValueEntity() != null) {
+		}
+		if (resolvedRelation.getKeyEntity() == null && resolvedRelation.getValueEntity() != null) {
 			KeyValueRecordPersister<X, VID, SRCID, MAPTABLE> entityAsValueRecordPersister = (KeyValueRecordPersister<X, VID, SRCID, MAPTABLE>) relationRecordPersister;
 			
-			// First, the target instances must be persisted to avoid foreign key errors
-			sourcePersister.addInsertListener(new BeforeInsertCollectionCascader<SRC, V>(valueEntityPersister) {
-				@Override
-				protected Collection<V> getTargets(SRC src) {
-					List<V> keyEntities = nullable(resolvedRelation.getAccessor().get(src))
-							.map(Map::values)
-							// - we force type to List<K> to let the getOr() call returns any kind of List, else we are stuck with ArrayList
-							// - we copy the result to a List to avoid the Map being tempered with due to the remove(null), because keySet() is backed by the Map
-							.<List<V>>map(ArrayList::new)
-							.getOr(Collections::emptyList);
-					// Maps allow null value, so me remove them
-					keyEntities.remove(null);
-					return keyEntities;
-				}
-			});
-			
-			Accessor<SRC, Set<Entry<K, V>>> targetEntriesGetter = new NullProofFunction<>(resolvedRelation.getAccessor()::get).andThen(Map::entrySet)::apply;
 			BiFunction<Entry<K, V>, SRCID, KeyValueRecord<X, VID, SRCID>> entryKeyValueRecordFunction =
 					(record, srcId) -> (KeyValueRecord<X, VID, SRCID>) new KeyValueRecord<>(srcId, record.getKey(), valueEntityPersister.getId(record.getValue()));
-			Mutator<Duo<SRC, SRC>, Boolean> mapUpdater = new MapUpdater<>(targetEntriesGetter, valueEntityPersister,
-					entityAsValueRecordPersister, sourcePersister, resolvedRelation.getValueEntityRelationMode(),
-					Entry::getValue, entryKeyValueRecordFunction
-			);
-			sourcePersister.addUpdateListener(new AfterUpdateTrigger<>(mapUpdater));
-			
-			if (resolvedRelation.getValueEntityRelationMode() == CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL) {
-				Function<SRC, Set<V>> targetEntitiesGetter = new NullProofFunction<>(resolvedRelation.getAccessor()::get).andThen(Map::entrySet).andThen(entries -> entries.stream().map(Entry::getValue).collect(Collectors.toSet()));
-				sourcePersister.addDeleteListener(new BeforeDeleteCollectionCascader<SRC, V>(valueEntityPersister) {
-					@Override
-					protected Collection<V> getTargets(SRC src) {
-						return targetEntitiesGetter.apply(src);
-					}
-				});
-			}
-		} else if (resolvedRelation.getKeyEntity() != null) {
+			registerSingleEntityMapUpdater(sourcePersister, resolvedRelation.getAccessor(), valueEntityPersister,
+					entityAsValueRecordPersister, resolvedRelation.getValueEntityRelationMode(), Entry::getValue, entryKeyValueRecordFunction);
+		}
+		if (resolvedRelation.getKeyEntity() != null && resolvedRelation.getValueEntity() == null) {
 			KeyValueRecordPersister<KID, Y, SRCID, MAPTABLE> entityAsKeyRecordPersister = (KeyValueRecordPersister<KID, Y, SRCID, MAPTABLE>) relationRecordPersister;
 			
-			// First, the target instances must be persisted to avoid foreign key errors
-			sourcePersister.addInsertListener(new BeforeInsertCollectionCascader<SRC, K>(keyEntityPersister) {
-				@Override
-				protected Collection<K> getTargets(SRC src) {
-					List<K> keyEntities = nullable(resolvedRelation.getAccessor().get(src))
-							.map(Map::keySet)
-							// - we force type to List<K> to let the getOr() call returns any kind of List, else we are stuck with ArrayList
-							// - we copy the result to a List to avoid the Map being tempered with due to the remove(null), because keySet() is backed by the Map
-							.<List<K>>map(ArrayList::new)
-							.getOr(Collections::emptyList);
-					// Some Map implementations allow null key, so me remove them
-					keyEntities.remove(null);
-					return keyEntities;
-				}
-			});
-			
-			Accessor<SRC, Set<Entry<K, V>>> targetEntriesGetter = new NullProofFunction<>(resolvedRelation.getAccessor()::get).andThen(Map::entrySet)::apply;
 			BiFunction<Entry<K, V>, SRCID, KeyValueRecord<KID, Y, SRCID>> entryKeyValueRecordFunction =
 					(record, srcId) -> (KeyValueRecord<KID, Y, SRCID>) new KeyValueRecord<>(srcId, keyEntityPersister.getId(record.getKey()), record.getValue());
-			Mutator<Duo<SRC, SRC>, Boolean> mapUpdater = new MapUpdater<>(targetEntriesGetter, keyEntityPersister,
-					entityAsKeyRecordPersister, sourcePersister, resolvedRelation.getKeyEntityRelationMode(),
-					Entry::getKey, entryKeyValueRecordFunction
-			);
-			sourcePersister.addUpdateListener(new AfterUpdateTrigger<>(mapUpdater));
-			
-			if (resolvedRelation.getKeyEntityRelationMode() == CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL) {
-				Function<SRC, Set<K>> targetEntitiesGetter = new NullProofFunction<>(resolvedRelation.getAccessor()::get).andThen(Map::entrySet).andThen(entries -> entries.stream().map(Entry::getKey).collect(Collectors.toSet()));
-				sourcePersister.addDeleteListener(new BeforeDeleteCollectionCascader<SRC, K>(keyEntityPersister) {
-					@Override
-					protected Collection<K> getTargets(SRC src) {
-						return targetEntitiesGetter.apply(src);
-					}
-				});
-			}
-		} else if (resolvedRelation.getKeyEntity() == null && resolvedRelation.getValueEntity() == null) {
+			registerSingleEntityMapUpdater(sourcePersister, resolvedRelation.getAccessor(), keyEntityPersister,
+					entityAsKeyRecordPersister, resolvedRelation.getKeyEntityRelationMode(), Entry::getKey, entryKeyValueRecordFunction);
+		}
+		if (resolvedRelation.getKeyEntity() == null && resolvedRelation.getValueEntity() == null) {
 			KeyValueRecordPersister<K, V, SRCID, MAPTABLE> scalarRecordPersister = (KeyValueRecordPersister<K, V, SRCID, MAPTABLE>) relationRecordPersister;
 			
 			Accessor<SRC, Collection<KeyValueRecord<K, V, SRCID>>> collectionProviderAsPersistedInstances = src -> Iterables.collect(
@@ -289,6 +197,14 @@ public class EntryMapResolver {
 			sourcePersister.addUpdateListener(new AfterUpdateTrigger<>(mapUpdater));
 		}
 		
+		// Orphan removal : independent per side so the "key & value are entities" case naturally registers both cascaders.
+		if (resolvedRelation.getKeyEntity() != null) {
+			registerOrphanRemovalDeleteCascader(sourcePersister, keyEntityPersister, resolvedRelation.getAccessor(), resolvedRelation.getKeyEntityRelationMode(), Entry::getKey);
+		}
+		if (resolvedRelation.getValueEntity() != null) {
+			registerOrphanRemovalDeleteCascader(sourcePersister, valueEntityPersister, resolvedRelation.getAccessor(), resolvedRelation.getValueEntityRelationMode(), Entry::getValue);
+		}
+		
 		if (resolvedRelation.getRelationMode() != CascadeOptions.RelationMode.READ_ONLY) {
 			Function<K, X> keyAdapter;
 			if (resolvedRelation.getKeyEntity() == null) {
@@ -312,6 +228,91 @@ public class EntryMapResolver {
 		}
 		
 		return relationRecordPersister;
+	}
+	
+	/**
+	 * Builds the accessor giving the {@link Entry} {@link Set} of the relation {@link Map} (null-safe).
+	 */
+	private static <SRC, K, V, M extends Map<K, V>> Accessor<SRC, Set<Entry<K, V>>> entriesGetter(Accessor<SRC, M> mapAccessor) {
+		return new NullProofFunction<>(mapAccessor::get).andThen(Map::entrySet)::apply;
+	}
+	
+	/**
+	 * Registers an insert cascade that persists the target entities (keys or values) of the relation {@link Map} before the
+	 * source is inserted, in order to avoid foreign key violations.
+	 *
+	 * @param targetsExtractor extracts the entities to persist from the {@link Map} (typically {@code Map::keySet} or {@code Map::values})
+	 * @param <T> target entity type (either the key type or the value type)
+	 */
+	private static <SRC, K, V, T, M extends Map<K, V>> void registerTargetEntitiesInsertCascader(
+			ConfiguredRelationalPersister<SRC, ?> sourcePersister,
+			ConfiguredRelationalPersister<T, ?> targetPersister,
+			Accessor<SRC, M> mapAccessor,
+			Function<? super M, ? extends Collection<T>> targetsExtractor) {
+		sourcePersister.addInsertListener(new BeforeInsertCollectionCascader<SRC, T>(targetPersister) {
+			@Override
+			protected Collection<T> getTargets(SRC src) {
+				List<T> targets = nullable(mapAccessor.get(src))
+						.map(targetsExtractor)
+						// - we force type to List<T> to let the getOr() call returns any kind of List, else we are stuck with ArrayList
+						// - we copy the result to a List to avoid the Map being tempered with due to the remove(null), because keySet()/values() are backed by the Map
+						.<List<T>>map(ArrayList::new)
+						.getOr(Collections::emptyList);
+				// Some Map implementations allow null key/value, so we remove them
+				targets.remove(null);
+				return targets;
+			}
+		});
+	}
+	
+	/**
+	 * Registers the update cascade for a relation {@link Map} owning a single entity side (either key or value, the other side being a
+	 * simple bean). The opposite side is stored as a raw value.
+	 *
+	 * @param entityPersister persister of the entity side
+	 * @param entryBeanExtractor extracts the entity from a {@link Entry} (typically {@code Entry::getKey} or {@code Entry::getValue})
+	 * @param recordBuilder builds the {@link KeyValueRecord} to be persisted from a {@link Entry} and the source identifier
+	 * @param <ENTITY> entity side type (K or V)
+	 * @param <KK> {@link KeyValueRecord} key type (key identifier or raw key)
+	 * @param <VV> {@link KeyValueRecord} value type (value identifier or raw value)
+	 */
+	private static <SRC, SRCID, K, V, ENTITY, KK, VV, M extends Map<K, V>> void registerSingleEntityMapUpdater(
+			ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
+			Accessor<SRC, M> mapAccessor,
+			ConfiguredRelationalPersister<ENTITY, ?> entityPersister,
+			EntityPersister<KeyValueRecord<KK, VV, SRCID>, RecordId<KK, SRCID>> keyValueRecordPersister,
+			CascadeOptions.RelationMode maintenanceMode,
+			Function<? super Entry<K, V>, ENTITY> entryBeanExtractor,
+			BiFunction<Entry<K, V>, SRCID, KeyValueRecord<KK, VV, SRCID>> recordBuilder) {
+		Mutator<Duo<SRC, SRC>, Boolean> mapUpdater = new MapUpdater<>(entriesGetter(mapAccessor), entityPersister,
+				keyValueRecordPersister, sourcePersister, maintenanceMode, entryBeanExtractor, recordBuilder);
+		sourcePersister.addUpdateListener(new AfterUpdateTrigger<>(mapUpdater));
+	}
+	
+	/**
+	 * Registers, when the given relation mode is {@link CascadeOptions.RelationMode#ALL_ORPHAN_REMOVAL}, a delete cascade that removes
+	 * the target entities (keys or values) of the relation {@link Map} before the source is deleted.
+	 *
+	 * @param entryExtractor extracts the entity from a {@link Entry} (typically {@code Entry::getKey} or {@code Entry::getValue})
+	 * @param <T> target entity type (either the key type or the value type)
+	 */
+	private static <SRC, K, V, T, M extends Map<K, V>> void registerOrphanRemovalDeleteCascader(
+			ConfiguredRelationalPersister<SRC, ?> sourcePersister,
+			ConfiguredRelationalPersister<T, ?> targetPersister,
+			Accessor<SRC, M> mapAccessor,
+			CascadeOptions.RelationMode relationMode,
+			Function<? super Entry<K, V>, T> entryExtractor) {
+		if (relationMode == CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL) {
+			Function<SRC, Set<T>> targetEntitiesGetter = new NullProofFunction<>(mapAccessor::get)
+					.andThen(Map::entrySet)
+					.andThen(entries -> entries.stream().map(entryExtractor).collect(Collectors.toSet()));
+			sourcePersister.addDeleteListener(new BeforeDeleteCollectionCascader<SRC, T>(targetPersister) {
+				@Override
+				protected Collection<T> getTargets(SRC src) {
+					return targetEntitiesGetter.apply(src);
+				}
+			});
+		}
 	}
 	
 	// X is K, or KID if K is entity or not, composite or scalar
