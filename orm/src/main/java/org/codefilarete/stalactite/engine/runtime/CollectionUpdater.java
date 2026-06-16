@@ -34,8 +34,9 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements Mutator
 	private final CollectionDiffer<O> differ;
 	
 	private final Accessor<I, C> collectionGetter;
+	@Nullable
 	private final Mutator<O, I> reverseSetter;
-	protected final EntityWriter<O> elementPersister;
+	protected final EntityWriter<O, ?> elementPersister;
 	private final boolean shouldDeleteRemoved;
 	
 	/**
@@ -78,7 +79,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements Mutator
 	}
 	
 	public CollectionUpdater(Accessor<I, C> collectionGetter,
-							 EntityWriter<O> elementPersister,
+							 EntityWriter<O, ?> elementPersister,
 							 @Nullable Mutator<O, I> reverseSetter,
 							 boolean shouldDeleteRemoved,
 							 Accessor<O, ?> idProvider) {
@@ -187,9 +188,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements Mutator
 	protected void onRemovedElements(UpdateContext updateContext, AbstractDiff<O> diff) {
 		// we delete only persisted entity to prevent from a not found record
 		if (shouldDeleteRemoved) {
-			if (!elementPersister.isNew(diff.getSourceInstance())) {
-				updateContext.getRemovedElements().add(diff.getSourceInstance());
-			}
+			updateContext.getRemovedElements().add(diff.getSourceInstance());
 		} else // entity shouldn't be deleted, so we may have to update it
 			if (reverseSetter != null) {
 				// we cut the link between target and source
@@ -237,7 +236,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements Mutator
 	 * @param <C> entity type to be managed
 	 * @author Guillaume Mary
 	 */
-	public interface EntityWriter<C> {
+	public interface EntityWriter<C, I> {
 		
 		void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement);
 		
@@ -247,7 +246,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements Mutator
 		
 		void persist(Iterable<? extends C> entities);
 		
-		boolean isNew(C entity);
+		I getId(C entity);
 		
 		void updateById(Iterable<? extends C> entities);
 		
@@ -260,11 +259,11 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements Mutator
 	 * @param <C> entity type to be managed
 	 * @author Guillaume Mary
 	 */
-	private static class EntityPersisterEntityWriterAdaptor<C> implements EntityWriter<C> {
+	private static class EntityPersisterEntityWriterAdaptor<C, I> implements EntityWriter<C, I> {
 		
-		private final EntityPersister<C, ?> delegate;
+		private final EntityPersister<C, I> delegate;
 		
-		private EntityPersisterEntityWriterAdaptor(EntityPersister<C, ?> delegate) {
+		private EntityPersisterEntityWriterAdaptor(EntityPersister<C, I> delegate) {
 			this.delegate = delegate;
 		}
 		
@@ -289,10 +288,10 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements Mutator
 		}
 		
 		@Override
-		public boolean isNew(C entity) {
-			return delegate.isNew(entity);
+		public I getId(C entity) {
+			return delegate.getId(entity);
 		}
-		
+
 		@Override
 		public void updateById(Iterable<? extends C> entities) {
 			delegate.updateById(entities);

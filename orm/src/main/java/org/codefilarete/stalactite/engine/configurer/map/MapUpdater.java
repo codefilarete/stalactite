@@ -27,13 +27,12 @@ import org.codefilarete.tool.collection.Iterables;
  * @param <K> Map key entity type
  * @param <V> Map value type
  * @param <ENTITY> entity type, expected to be K or V
- * @param <ENTITY_ID> entity type identifier
  * @param <KK> type of {@link KeyValueRecord} key when transforming initial Map entries to {@link KeyValueRecord} to be persisted
  * @param <VV> type of {@link KeyValueRecord} value when transforming initial Map entries to {@link KeyValueRecord} to be persisted
  * @author Guillaume Mary
  */
-public class MapUpdater<SRC, SRCID, K, V, ENTITY, ENTITY_ID, KK, VV> extends CollectionUpdater<SRC, Entry<K, V>, Set<Entry<K, V>>> {
-		
+public class MapUpdater<SRC, SRCID, K, V, ENTITY, KK, VV> extends CollectionUpdater<SRC, Entry<K, V>, Set<Entry<K, V>>> {
+	
 	private final EntityPersister<KeyValueRecord<KK, VV, SRCID>, RecordId<KK, SRCID>> keyValueRecordPersister;
 	
 	private final ConfiguredRelationalPersister<SRC, SRCID> sourcePersister;
@@ -42,7 +41,7 @@ public class MapUpdater<SRC, SRCID, K, V, ENTITY, ENTITY_ID, KK, VV> extends Col
 	private final BiFunction<Entry<K, V>, SRCID, KeyValueRecord<KK, VV, SRCID>> recordBuilder;
 	
 	public MapUpdater(Accessor<SRC, Set<Entry<K, V>>> targetEntitiesGetter,
-					  ConfiguredRelationalPersister<ENTITY, ENTITY_ID> entityPersister,
+					  ConfiguredRelationalPersister<ENTITY, ?> entityPersister,
 					  EntityPersister<KeyValueRecord<KK, VV, SRCID>, RecordId<KK, SRCID>> keyValueRecordPersister,
 					  ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 					  RelationMode maintenanceMode,
@@ -53,6 +52,24 @@ public class MapUpdater<SRC, SRCID, K, V, ENTITY, ENTITY_ID, KK, VV> extends Col
 				(o, i) -> { /* no reverse setter because we store only raw values */ },
 				true,
 				(Entry<K, V> entry) -> entityPersister.getId(entryBeanExtractor.apply(entry)));
+		this.keyValueRecordPersister = keyValueRecordPersister;
+		this.sourcePersister = sourcePersister;
+		this.maintenanceMode = maintenanceMode;
+		this.recordBuilder = recordBuilder;
+	}
+	
+	public MapUpdater(Accessor<SRC, Set<Entry<K, V>>> targetEntitiesGetter,
+	                  EntityWriter<Entry<K, V>, ?> entityPersister,
+					  EntityPersister<KeyValueRecord<KK, VV, SRCID>, RecordId<KK, SRCID>> keyValueRecordPersister,
+					  ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
+					  RelationMode maintenanceMode,
+					  Function<Entry<K, V>, Entry<K, V>> entryBeanExtractor,
+					  BiFunction<Entry<K, V>, SRCID, KeyValueRecord<KK, VV, SRCID>> recordBuilder) {
+		super(targetEntitiesGetter,
+				entityPersister,
+				null, /* no reverse setter because we store only raw values */
+				true,
+				entryBeanExtractor::apply);
 		this.keyValueRecordPersister = keyValueRecordPersister;
 		this.sourcePersister = sourcePersister;
 		this.maintenanceMode = maintenanceMode;
@@ -126,7 +143,7 @@ public class MapUpdater<SRC, SRCID, K, V, ENTITY, ENTITY_ID, KK, VV> extends Col
 		return recordBuilder.apply(record, sourcePersister.getId(e));
 	}
 	
-	private static class RelationalPersisterAsEntityWriter<K, V, ENTITY, ENTITY_ID> implements EntityWriter<Entry<K, V>> {
+	private static class RelationalPersisterAsEntityWriter<K, V, ENTITY, ENTITY_ID> implements EntityWriter<Entry<K, V>, ENTITY_ID> {
 		
 		private final ConfiguredRelationalPersister<ENTITY, ENTITY_ID> relationEntityPersister;
 		private final Function<? super Entry<K, V>, ENTITY> mapper;
@@ -159,8 +176,8 @@ public class MapUpdater<SRC, SRCID, K, V, ENTITY, ENTITY_ID, KK, VV> extends Col
 		}
 		
 		@Override
-		public boolean isNew(Entry<K, V> entity) {
-			return relationEntityPersister.isNew(mapper.apply(entity));
+		public ENTITY_ID getId(Entry<K, V> entity) {
+			return relationEntityPersister.getId(mapper.apply(entity));
 		}
 		
 		@Override

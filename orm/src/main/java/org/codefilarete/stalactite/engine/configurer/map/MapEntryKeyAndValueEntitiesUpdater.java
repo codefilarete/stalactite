@@ -16,6 +16,8 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.StreamSplitter;
 
+import static org.codefilarete.tool.function.Predicates.not;
+
 /**
  * Class aimed at doing same thing as {@link CollectionUpdater} but for {@link Map} containing entities as keys and values :
  * requires to update {@link Entry} as well as propagate insert / update /delete operation to key-entities and value-entities. 
@@ -122,10 +124,16 @@ class MapEntryKeyAndValueEntitiesUpdater<SRC, SRCID, K, V, KK, VV> extends Colle
 			super.deleteTargets(updateContext);
 		}
 		if (keyEntityMaintenanceMode == RelationMode.ALL_ORPHAN_REMOVAL) {
-			keyEntityPersister.delete(updateContext.getRemovedElements().stream().map(KeyValueRecord::getKey).collect(Collectors.toSet()));
+			keyEntityPersister.delete(updateContext.getRemovedElements().stream()
+					.map(KeyValueRecord::getKey)
+					.filter(not(keyEntityPersister::isNew))	// we don't want to delete entities that are not persisted
+					.collect(Collectors.toSet()));
 		}
 		if (valueEntityMaintenanceMode == RelationMode.ALL_ORPHAN_REMOVAL) {
-			valueEntityPersister.delete(updateContext.getRemovedElements().stream().map(KeyValueRecord::getValue).collect(Collectors.toSet()));
+			valueEntityPersister.delete(updateContext.getRemovedElements().stream()
+					.map(KeyValueRecord::getValue)
+					.filter(not(valueEntityPersister::isNew))	// we don't want to delete entities that are not persisted
+					.collect(Collectors.toSet()));
 		}
 	}
 	
@@ -138,7 +146,7 @@ class MapEntryKeyAndValueEntitiesUpdater<SRC, SRCID, K, V, KK, VV> extends Colle
 	 * @param <SRCID>
 	 * @author Guillaume Mary
 	 */
-	private static class RelationalPersisterAsEntityWriter<K, V, KK, VV, SRCID> implements EntityWriter<KeyValueRecord<K, V, SRCID>> {
+	private static class RelationalPersisterAsEntityWriter<K, V, KK, VV, SRCID> implements EntityWriter<KeyValueRecord<K, V, SRCID>, RecordId<K, SRCID>> {
 		
 		private final EntityPersister<KeyValueRecord<KK, VV, SRCID>, RecordId<KK, SRCID>> relationEntityPersister;
 		private final Accessor<K, KK> keyMapper;
@@ -192,17 +200,16 @@ class MapEntryKeyAndValueEntitiesUpdater<SRC, SRCID, K, V, KK, VV> extends Colle
 		}
 		
 		@Override
+		public RecordId<K, SRCID> getId(KeyValueRecord<K, V, SRCID> entity) {
+			return entity.getId();
+		}
+		
+		@Override
 		public void updateById(Iterable<? extends KeyValueRecord<K, V, SRCID>> entities) {
 			relationEntityPersister.updateById(Iterables.stream(entities)
 					.map(entity -> new KeyValueRecord<>(entity.getId().getId(),
 							keyMapper.get(entity.getKey()), valueMapper.get(entity.getValue())))
 					.collect(Collectors.toSet()));
-		}
-		
-		@Override
-		public boolean isNew(KeyValueRecord<K, V, SRCID> entity) {
-			// all records are persisted (not new) since we've just build them from database above
-			return false;
 		}
 	}
 }
