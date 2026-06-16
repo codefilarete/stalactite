@@ -52,9 +52,19 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.function.Functions.NullProofFunction;
 
+import static org.codefilarete.stalactite.engine.configurer.map.MapUpdater.*;
 import static org.codefilarete.tool.Nullable.nullable;
 
 public class EntryMapResolver {
+	
+	/**
+	 * Combines several {@link EntityWriter} into a single one that fans out every write operation to each of them, in order.
+	 * Used when both the key and the value of a {@link Map} are entities, so that a single updater cascades to both persisters
+	 * (replacing the previously hand-written both-entities {@link EntityWriter}).
+	 */
+	public static <C> EntityWriter<C, ?> combine(Collection<? extends EntityWriter<C, ?>> writers) {
+		return new CompositeEntityWriter<>(writers);
+	}
 	
 	private final Dialect dialect;
 	private final ConnectionConfiguration connectionConfiguration;
@@ -83,90 +93,79 @@ public class EntryMapResolver {
 		
 		IdAccessor<SRC, SRCID> srcIdAccessor = sourcePersister.getMapping();
 		
+		boolean keyIsEntity = resolvedRelation.getKeyEntity() != null;
+		boolean valueIsEntity = resolvedRelation.getValueEntity() != null;
 		// First, the target instances must be persisted to avoid foreign key errors.
 		// These two blocks are independent so the "key & value are entities" case naturally registers both cascaders.
-		if (resolvedRelation.getKeyEntity() != null) {
+		if (keyIsEntity) {
 			registerTargetEntitiesInsertCascader(sourcePersister, keyEntityPersister, resolvedRelation.getAccessor(), Map::keySet);
 		}
-		if (resolvedRelation.getValueEntity() != null) {
+		if (valueIsEntity) {
 			registerTargetEntitiesInsertCascader(sourcePersister, valueEntityPersister, resolvedRelation.getAccessor(), Map::values);
 		}
 		
-		// Update cascade : a single association table row carries both key and value, hence its records must be managed by a
-		// single updater. Therefore the "key & value are entities" case needs its dedicated updater (cascading to both
-		// persisters at once), while the single-entity cases share registerSingleEntityMapUpdater(..) and the fully scalar
-		// case relies on a plain CollectionUpdater. The conditions below are mutually exclusive, hence the separate ifs.
-		if (resolvedRelation.getKeyEntity() != null && resolvedRelation.getValueEntity() != null) {
-			
-			KeyValueRecordPersister<KID, VID, SRCID, MAPTABLE> entityAsValueRecordPersister = (KeyValueRecordPersister<KID, VID, SRCID, MAPTABLE>) relationRecordPersister;
-			
-			BiFunction<Entry<K, V>, SRCID, KeyValueRecord<KID, VID, SRCID>> entryKeyValueRecordFunction =
-					(record, srcId) -> new KeyValueRecord<>(srcId, keyEntityPersister.getId(record.getKey()), valueEntityPersister.getId(record.getValue()));
-			// When both key and value are entities, the update has to propagate to both persisters at once, hence a dedicated
-			// EntityWriter is required (the single-entity helper cannot be reused here)
-			CollectionUpdater.EntityWriter<Entry<K, V>, Integer> entityPersister = new EntityWriter<Entry<K, V>, Integer>() {
-				
-				@Override
-				public Integer getId(Entry<K, V> entity) {
-					return 31 * keyEntityPersister.getId(entity.getKey()).hashCode()
-							+ valueEntityPersister.getId(entity.getValue()).hashCode();
-				}
-				
-				@Override
-				public void delete(Iterable<? extends Entry<K, V>> entities) {
-					keyEntityPersister.delete(Iterables.<Entry<K, V>, K, Set<K>>collect(entities, Entry::getKey, HashSet::new));
-					valueEntityPersister.delete(Iterables.<Entry<K, V>, V, Set<V>>collect(entities, Entry::getValue, HashSet::new));
-				}
-				
-				@Override
-				public void insert(Iterable<? extends Entry<K, V>> entities) {
-					keyEntityPersister.insert(Iterables.<Entry<K, V>, K, Set<K>>collect(entities, Entry::getKey, HashSet::new));
-					valueEntityPersister.insert(Iterables.<Entry<K, V>, V, Set<V>>collect(entities, Entry::getValue, HashSet::new));
-				}
-				
-				@Override
-				public void persist(Iterable<? extends Entry<K, V>> entities) {
-					keyEntityPersister.persist(Iterables.<Entry<K, V>, K, Set<K>>collect(entities, Entry::getKey, HashSet::new));
-					valueEntityPersister.persist(Iterables.<Entry<K, V>, V, Set<V>>collect(entities, Entry::getValue, HashSet::new));
-				}
-				
-				@Override
-				public void updateById(Iterable<? extends Entry<K, V>> entities) {
-					keyEntityPersister.updateById(Iterables.<Entry<K, V>, K, Set<K>>collect(entities, Entry::getKey, HashSet::new));
-					valueEntityPersister.updateById(Iterables.<Entry<K, V>, V, Set<V>>collect(entities, Entry::getValue, HashSet::new));
-				}
-				
-				@Override
-				public void update(Iterable<? extends Duo<Entry<K, V>, Entry<K, V>>> differencesIterable, boolean allColumnsStatement) {
-					Set<Duo<K, K>> keys = Iterables.collect(differencesIterable, duo -> new Duo<>(duo.getLeft().getKey(), duo.getRight().getKey()), HashSet::new);
-					keyEntityPersister.update(keys, allColumnsStatement);
-					Set<Duo<V, V>> values = Iterables.collect(differencesIterable, duo -> new Duo<>(duo.getLeft().getValue(), duo.getRight().getValue()), HashSet::new);
-					valueEntityPersister.update(values, allColumnsStatement);
-				}
-			};
-			Mutator<Duo<SRC, SRC>, Boolean> mapUpdater = new MapUpdater<>(entriesGetter(resolvedRelation.getAccessor()), entityPersister,
-					entityAsValueRecordPersister, sourcePersister, resolvedRelation.getValueEntityRelationMode(),
-					Function.identity(), entryKeyValueRecordFunction
-			);
-			sourcePersister.addUpdateListener(new AfterUpdateTrigger<>(mapUpdater));
+		// The record key/value adapters turn a raw map key/value (K, V) into what is actually stored in the association
+		// table (X, Y) : the entity id when that side is an entity, the raw value otherwise. They are shared by the update
+		// cascade (below) and the insert/delete cascades (further down), and they make record building uniform across cases.
+		Function<K, X> keyAdapter;
+		if (!keyIsEntity) {
+			keyAdapter = k -> (X) k;
+		} else {
+			keyAdapter = k -> (X) resolvedRelation.getKeyEntity().getIdAccessor().get(k);
 		}
-		if (resolvedRelation.getKeyEntity() == null && resolvedRelation.getValueEntity() != null) {
-			KeyValueRecordPersister<X, VID, SRCID, MAPTABLE> entityAsValueRecordPersister = (KeyValueRecordPersister<X, VID, SRCID, MAPTABLE>) relationRecordPersister;
-			
-			BiFunction<Entry<K, V>, SRCID, KeyValueRecord<X, VID, SRCID>> entryKeyValueRecordFunction =
-					(record, srcId) -> (KeyValueRecord<X, VID, SRCID>) new KeyValueRecord<>(srcId, record.getKey(), valueEntityPersister.getId(record.getValue()));
-			registerSingleEntityMapUpdater(sourcePersister, resolvedRelation.getAccessor(), valueEntityPersister,
-					entityAsValueRecordPersister, resolvedRelation.getValueEntityRelationMode(), Entry::getValue, entryKeyValueRecordFunction);
+		Function<V, Y> valueAdapter;
+		if (!valueIsEntity) {
+			valueAdapter = v -> (Y) v;
+		} else {
+			valueAdapter = v -> (Y) resolvedRelation.getValueEntity().getIdAccessor().get(v);
 		}
-		if (resolvedRelation.getKeyEntity() != null && resolvedRelation.getValueEntity() == null) {
-			KeyValueRecordPersister<KID, Y, SRCID, MAPTABLE> entityAsKeyRecordPersister = (KeyValueRecordPersister<KID, Y, SRCID, MAPTABLE>) relationRecordPersister;
+		
+		// Update cascade for the entity side(s) : key, value or both. A single association table row carries both key and
+		// value, so a single updater manages it for all three entity cases. The differences are abstracted away :
+		//  - the cascade writer is the combination of the per-side writers (the both-entities case is therefore just the
+		//    composition of the key writer and the value writer, no dedicated EntityWriter is needed anymore) ;
+		//  - record building is uniform thanks to the key/value adapters above, so the same relationRecordPersister is used.
+		// Only the diff footprint and the maintenance mode remain side-specific (see below).
+		if (keyIsEntity || valueIsEntity) {
+			List<EntityWriter<Entry<K, V>, ?>> entityWriters = new ArrayList<>(2);
+			if (keyIsEntity) {
+				entityWriters.add(new RelationalPersisterAsEntityWriter<>(keyEntityPersister, Entry::getKey));
+			}
+			if (valueIsEntity) {
+				entityWriters.add(new RelationalPersisterAsEntityWriter<>(valueEntityPersister, Entry::getValue));
+			}
+			EntityWriter<Entry<K, V>, ?> entityWriter = entityWriters.size() == 1
+					? entityWriters.get(0)
+					: combine(entityWriters);
 			
-			BiFunction<Entry<K, V>, SRCID, KeyValueRecord<KID, Y, SRCID>> entryKeyValueRecordFunction =
-					(record, srcId) -> (KeyValueRecord<KID, Y, SRCID>) new KeyValueRecord<>(srcId, keyEntityPersister.getId(record.getKey()), record.getValue());
-			registerSingleEntityMapUpdater(sourcePersister, resolvedRelation.getAccessor(), keyEntityPersister,
-					entityAsKeyRecordPersister, resolvedRelation.getKeyEntityRelationMode(), Entry::getKey, entryKeyValueRecordFunction);
-		}
-		if (resolvedRelation.getKeyEntity() == null && resolvedRelation.getValueEntity() == null) {
+			// Footprint used to diff entries : it must rely on the entity side(s) so that, on a scalar side, a value change
+			// becomes an association-record update, while on an entity side a change becomes a remove + add (so the newly
+			// referenced entity gets inserted, preventing a foreign key violation). Hence :
+			//  - only the key is an entity   -> key id
+			//  - only the value is an entity -> value id
+			//  - both are entities           -> the whole entry (entities expose an id-based equals())
+			Accessor<Entry<K, V>, Object> entryFootprint;
+			if (keyIsEntity && valueIsEntity) {
+				entryFootprint = entry -> entry;
+			} else if (keyIsEntity) {
+				entryFootprint = entry -> keyEntityPersister.getId(entry.getKey());
+			} else {
+				entryFootprint = entry -> valueEntityPersister.getId(entry.getValue());
+			}
+			
+			// The single association table is maintained according to the value side mode as soon as the value is an entity,
+			// otherwise the key side one (this preserves the previous per-case behavior).
+			CascadeOptions.RelationMode maintenanceMode = valueIsEntity
+					? resolvedRelation.getValueEntityRelationMode()
+					: resolvedRelation.getKeyEntityRelationMode();
+			
+			BiFunction<Entry<K, V>, SRCID, KeyValueRecord<X, Y, SRCID>> recordBuilder =
+					(entry, srcId) -> new KeyValueRecord<>(srcId, keyAdapter.apply(entry.getKey()), valueAdapter.apply(entry.getValue()));
+			
+			registerMapUpdater(sourcePersister, resolvedRelation.getAccessor(), entityWriter,
+					relationRecordPersister, maintenanceMode, entryFootprint, recordBuilder);
+		} else {
+			// Fully scalar Map : no entity to cascade, a plain CollectionUpdater over the records is enough.
 			KeyValueRecordPersister<K, V, SRCID, MAPTABLE> scalarRecordPersister = (KeyValueRecordPersister<K, V, SRCID, MAPTABLE>) relationRecordPersister;
 			
 			Accessor<SRC, Collection<KeyValueRecord<K, V, SRCID>>> collectionProviderAsPersistedInstances = src -> Iterables.collect(
@@ -198,28 +197,15 @@ public class EntryMapResolver {
 		}
 		
 		// Orphan removal : independent per side so the "key & value are entities" case naturally registers both cascaders.
-		if (resolvedRelation.getKeyEntity() != null) {
+		if (keyIsEntity) {
 			registerOrphanRemovalDeleteCascader(sourcePersister, keyEntityPersister, resolvedRelation.getAccessor(), resolvedRelation.getKeyEntityRelationMode(), Entry::getKey);
 		}
-		if (resolvedRelation.getValueEntity() != null) {
+		if (valueIsEntity) {
 			registerOrphanRemovalDeleteCascader(sourcePersister, valueEntityPersister, resolvedRelation.getAccessor(), resolvedRelation.getValueEntityRelationMode(), Entry::getValue);
 		}
 		
 		if (resolvedRelation.getRelationMode() != CascadeOptions.RelationMode.READ_ONLY) {
-			Function<K, X> keyAdapter;
-			if (resolvedRelation.getKeyEntity() == null) {
-				keyAdapter = k -> (X) k;
-			} else {
-				keyAdapter = k -> (X) resolvedRelation.getKeyEntity().getIdAccessor().get(k);
-			}
-			Function<V, Y> valueAdapter;
-			if (resolvedRelation.getValueEntity() == null) {
-				valueAdapter = v -> (Y) v;
-			} else {
-				valueAdapter = v -> (Y) resolvedRelation.getValueEntity().getIdAccessor().get(v);
-			}
-			
-			// We persist Map entries
+			// We persist Map entries (key/value adapters are shared with the update cascade above)
 			Accessor<SRC, Collection<KeyValueRecord<X, Y, SRCID>>> collectionProviderForInsert = toRecordCollectionProvider(resolvedRelation, srcIdAccessor, keyAdapter, valueAdapter, false);
 			sourcePersister.addInsertListener(new TargetInstancesInsertCascader<>(relationRecordPersister, collectionProviderForInsert));
 			
@@ -266,26 +252,24 @@ public class EntryMapResolver {
 	}
 	
 	/**
-	 * Registers the update cascade for a relation {@link Map} owning a single entity side (either key or value, the other side being a
-	 * simple bean). The opposite side is stored as a raw value.
+	 * Registers the update cascade of a relation {@link Map} whose key and/or value is an entity. The cascade to the entity
+	 * side(s) is delegated to the given {@code entityWriter} (a single-side writer or a {@link EntryMapResolver#combine(Collection)
+	 * composition} of both), the entries are diffed through the given {@code idProvider} footprint and persisted as
+	 * {@link KeyValueRecord} through {@code recordBuilder}.
 	 *
-	 * @param entityPersister persister of the entity side
-	 * @param entryBeanExtractor extracts the entity from a {@link Entry} (typically {@code Entry::getKey} or {@code Entry::getValue})
-	 * @param recordBuilder builds the {@link KeyValueRecord} to be persisted from a {@link Entry} and the source identifier
-	 * @param <ENTITY> entity side type (K or V)
 	 * @param <KK> {@link KeyValueRecord} key type (key identifier or raw key)
 	 * @param <VV> {@link KeyValueRecord} value type (value identifier or raw value)
 	 */
-	private static <SRC, SRCID, K, V, ENTITY, KK, VV, M extends Map<K, V>> void registerSingleEntityMapUpdater(
+	private static <SRC, SRCID, K, V, KK, VV, M extends Map<K, V>> void registerMapUpdater(
 			ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 			Accessor<SRC, M> mapAccessor,
-			ConfiguredRelationalPersister<ENTITY, ?> entityPersister,
+			EntityWriter<Entry<K, V>, ?> entityWriter,
 			EntityPersister<KeyValueRecord<KK, VV, SRCID>, RecordId<KK, SRCID>> keyValueRecordPersister,
 			CascadeOptions.RelationMode maintenanceMode,
-			Function<? super Entry<K, V>, ENTITY> entryBeanExtractor,
+			Accessor<Entry<K, V>, ?> idProvider,
 			BiFunction<Entry<K, V>, SRCID, KeyValueRecord<KK, VV, SRCID>> recordBuilder) {
-		Mutator<Duo<SRC, SRC>, Boolean> mapUpdater = new MapUpdater<>(entriesGetter(mapAccessor), entityPersister,
-				keyValueRecordPersister, sourcePersister, maintenanceMode, entryBeanExtractor, recordBuilder);
+		Mutator<Duo<SRC, SRC>, Boolean> mapUpdater = new MapUpdater<>(entriesGetter(mapAccessor), entityWriter,
+				keyValueRecordPersister, sourcePersister, maintenanceMode, idProvider, recordBuilder);
 		sourcePersister.addUpdateListener(new AfterUpdateTrigger<>(mapUpdater));
 	}
 	

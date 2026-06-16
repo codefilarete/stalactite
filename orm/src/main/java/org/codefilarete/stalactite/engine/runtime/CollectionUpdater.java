@@ -246,8 +246,6 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements Mutator
 		
 		void persist(Iterable<? extends C> entities);
 		
-		I getId(C entity);
-		
 		void updateById(Iterable<? extends C> entities);
 		
 	}
@@ -287,10 +285,10 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements Mutator
 			delegate.persist(entities);
 		}
 		
-		@Override
-		public I getId(C entity) {
-			return delegate.getId(entity);
-		}
+//		@Override
+//		public I getId(C entity) {
+//			return delegate.getId(entity);
+//		}
 
 		@Override
 		public void updateById(Iterable<? extends C> entities) {

@@ -20,7 +20,7 @@ import org.codefilarete.tool.collection.Iterables;
 
 /**
  * Class aimed at doing same thing as {@link CollectionUpdater} but for {@link Map} containing entities as keys :
- * requires to update {@link Map.Entry} as well as propagate insert / update /delete operation to key-entities. 
+ * requires to update {@link Entry} as well as propagate insert / update /delete operation to key-entities. 
  *
  * @param <SRC> entity type owning the relation
  * @param <SRCID> entity owning the relation identifier type 
@@ -40,6 +40,10 @@ public class MapUpdater<SRC, SRCID, K, V, ENTITY, KK, VV> extends CollectionUpda
 	private final RelationMode maintenanceMode;
 	private final BiFunction<Entry<K, V>, SRCID, KeyValueRecord<KK, VV, SRCID>> recordBuilder;
 	
+	/**
+	 * Convenience constructor for the case where a single side of the {@link Map} (key or value) is an entity : wraps
+	 * the given entity persister into an {@link EntityWriter} and uses the entity id as the diff footprint.
+	 */
 	public MapUpdater(Accessor<SRC, Set<Entry<K, V>>> targetEntitiesGetter,
 					  ConfiguredRelationalPersister<ENTITY, ?> entityPersister,
 					  EntityPersister<KeyValueRecord<KK, VV, SRCID>, RecordId<KK, SRCID>> keyValueRecordPersister,
@@ -47,29 +51,31 @@ public class MapUpdater<SRC, SRCID, K, V, ENTITY, KK, VV> extends CollectionUpda
 					  RelationMode maintenanceMode,
 					  Function<? super Entry<K, V>, ENTITY> entryBeanExtractor,
 					  BiFunction<Entry<K, V>, SRCID, KeyValueRecord<KK, VV, SRCID>> recordBuilder) {
-		super(targetEntitiesGetter,
+		this(targetEntitiesGetter,
 				new RelationalPersisterAsEntityWriter<>(entityPersister, entryBeanExtractor),
-				(o, i) -> { /* no reverse setter because we store only raw values */ },
-				true,
-				(Entry<K, V> entry) -> entityPersister.getId(entryBeanExtractor.apply(entry)));
-		this.keyValueRecordPersister = keyValueRecordPersister;
-		this.sourcePersister = sourcePersister;
-		this.maintenanceMode = maintenanceMode;
-		this.recordBuilder = recordBuilder;
+				keyValueRecordPersister,
+				sourcePersister,
+				maintenanceMode,
+				(Entry<K, V> entry) -> entityPersister.getId(entryBeanExtractor.apply(entry)),
+				recordBuilder);
 	}
 	
+	/**
+	 * Primary constructor: the cascade to the entity side(s) is delegated to the given {@link EntityWriter}.
+	 * {@link Map} entries are diffed through the given {@code idProvider} footprint.
+	 */
 	public MapUpdater(Accessor<SRC, Set<Entry<K, V>>> targetEntitiesGetter,
-	                  EntityWriter<Entry<K, V>, ?> entityPersister,
+	                  EntityWriter<Entry<K, V>, ?> entityWriter,
 					  EntityPersister<KeyValueRecord<KK, VV, SRCID>, RecordId<KK, SRCID>> keyValueRecordPersister,
 					  ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 					  RelationMode maintenanceMode,
-					  Function<Entry<K, V>, Entry<K, V>> entryBeanExtractor,
+					  Accessor<Entry<K, V>, ?> idProvider,
 					  BiFunction<Entry<K, V>, SRCID, KeyValueRecord<KK, VV, SRCID>> recordBuilder) {
 		super(targetEntitiesGetter,
-				entityPersister,
+				entityWriter,
 				null, /* no reverse setter because we store only raw values */
 				true,
-				entryBeanExtractor::apply);
+				idProvider);
 		this.keyValueRecordPersister = keyValueRecordPersister;
 		this.sourcePersister = sourcePersister;
 		this.maintenanceMode = maintenanceMode;
@@ -143,11 +149,22 @@ public class MapUpdater<SRC, SRCID, K, V, ENTITY, KK, VV> extends CollectionUpda
 		return recordBuilder.apply(record, sourcePersister.getId(e));
 	}
 	
-	private static class RelationalPersisterAsEntityWriter<K, V, ENTITY, ENTITY_ID> implements EntityWriter<Entry<K, V>, ENTITY_ID> {
+	/**
+	 * {@link EntityWriter} over {@link Entry} that cascades persistence operations to an entity (any side of a
+	 * {@link Map} : key or value).
+	 */
+	public static class RelationalPersisterAsEntityWriter<K, V, ENTITY, ENTITY_ID> implements EntityWriter<Entry<K, V>, ENTITY_ID> {
 		
 		private final ConfiguredRelationalPersister<ENTITY, ENTITY_ID> relationEntityPersister;
 		private final Function<? super Entry<K, V>, ENTITY> mapper;
 		
+		/**
+		 * Wraps the give {@link ConfiguredRelationalPersister} into a {@link RelationalPersisterAsEntityWriter} in
+		 * order to persist the members of a {@link Map} (key or value) : the extracting function is the second argument.
+		 *
+		 * @param relationEntityPersister the relational entity persister responsible for performing persistence operations on ENTITY instances
+		 * @param mapper the function used to extract an ENTITY instance from a {@link Entry}
+		 */
 		public RelationalPersisterAsEntityWriter(ConfiguredRelationalPersister<ENTITY, ENTITY_ID> relationEntityPersister, Function<? super Entry<K, V>, ENTITY> mapper) {
 			this.relationEntityPersister = relationEntityPersister;
 			this.mapper = mapper;
@@ -173,11 +190,6 @@ public class MapUpdater<SRC, SRCID, K, V, ENTITY, KK, VV> extends CollectionUpda
 		@Override
 		public void persist(Iterable<? extends Entry<K, V>> entities) {
 			relationEntityPersister.persist(Iterables.stream(entities).map(mapper).collect(Collectors.toSet()));
-		}
-		
-		@Override
-		public ENTITY_ID getId(Entry<K, V> entity) {
-			return relationEntityPersister.getId(mapper.apply(entity));
 		}
 		
 		@Override

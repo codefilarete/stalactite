@@ -200,11 +200,6 @@ class MapEntryKeyAndValueEntitiesUpdater<SRC, SRCID, K, V, KK, VV> extends Colle
 		}
 		
 		@Override
-		public RecordId<K, SRCID> getId(KeyValueRecord<K, V, SRCID> entity) {
-			return entity.getId();
-		}
-		
-		@Override
 		public void updateById(Iterable<? extends KeyValueRecord<K, V, SRCID>> entities) {
 			relationEntityPersister.updateById(Iterables.stream(entities)
 					.map(entity -> new KeyValueRecord<>(entity.getId().getId(),
