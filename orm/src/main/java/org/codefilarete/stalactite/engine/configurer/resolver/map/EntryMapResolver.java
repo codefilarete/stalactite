@@ -100,18 +100,22 @@ public class EntryMapResolver {
 		List<EntityWriter<Entry<K, V>, ?>> entityWriters = new ArrayList<>(2);
 		if (keyIsEntity) {
 			// First, the target instances must be persisted to avoid foreign key errors.
-			registerTargetEntitiesInsertCascader(sourcePersister, keyEntityPersister, resolvedRelation.getAccessor(), Map::keySet);
+			if (resolvedRelation.getKeyEntityRelationMode().allowsEntityWrite()) {
+				registerTargetEntitiesInsertCascader(sourcePersister, keyEntityPersister, resolvedRelation.getAccessor(), Map::keySet);
+			}
 			keyAdapter = k -> (X) resolvedRelation.getKeyEntity().getIdAccessor().get(k);
-			entityWriters.add(new RelationalPersisterAsEntityWriter<>(keyEntityPersister, Entry::getKey));
+			entityWriters.add(new RelationalPersisterAsEntityWriter<>(keyEntityPersister, Entry::getKey, resolvedRelation.getKeyEntityRelationMode()));
 		} else {
 			keyAdapter = k -> (X) k;
 		}
 		
 		Function<V, Y> valueAdapter;
 		if (valueIsEntity) {
-			registerTargetEntitiesInsertCascader(sourcePersister, valueEntityPersister, resolvedRelation.getAccessor(), Map::values);
+			if (resolvedRelation.getValueEntityRelationMode().allowsEntityWrite()) {
+				registerTargetEntitiesInsertCascader(sourcePersister, valueEntityPersister, resolvedRelation.getAccessor(), Map::values);
+			}
 			valueAdapter = v -> (Y) resolvedRelation.getValueEntity().getIdAccessor().get(v);
-			entityWriters.add(new RelationalPersisterAsEntityWriter<>(valueEntityPersister, Entry::getValue));
+			entityWriters.add(new RelationalPersisterAsEntityWriter<>(valueEntityPersister, Entry::getValue, resolvedRelation.getValueEntityRelationMode()));
 		} else {
 			valueAdapter = v -> (Y) v;
 		}

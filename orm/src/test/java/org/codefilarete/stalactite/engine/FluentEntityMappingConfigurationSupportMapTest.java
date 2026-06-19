@@ -1207,8 +1207,11 @@ class FluentEntityMappingConfigurationSupportMapTest {
 			
 			person.getMapPropertyMadeOfEntityAsValue().remove("Grenoble");
 			// Changing entry value to check value is also updated
-			person.getMapPropertyMadeOfEntityAsValue().put("Lyon", new Country(4));
-			person.getMapPropertyMadeOfEntityAsValue().put("Marseille", new Country(3));
+			Country country4 = new Country(4);
+			Country country3 = new Country(3);
+			countryPersister.insert(Arrays.asList(country3, country4));
+			person.getMapPropertyMadeOfEntityAsValue().put("Lyon", country4);
+			person.getMapPropertyMadeOfEntityAsValue().put("Marseille", country3);
 
 			personPersister.update(person, loadedPerson, true);
 

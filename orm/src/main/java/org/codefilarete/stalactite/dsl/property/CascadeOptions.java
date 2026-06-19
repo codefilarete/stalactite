@@ -41,6 +41,19 @@ public interface CascadeOptions {
 		/**
 		 * Declares relation as readonly: no insert, update nor delete will be performed on target entities (nor association records if it exists)
 		 */
-		READ_ONLY
+		READ_ONLY;
+		
+		public boolean allowsEntityWrite() {
+			// Equivalent to "this == ALL || this == ALL_ORPHAN_REMOVAL", depending on the mindset you're in
+			return this != READ_ONLY && this != ASSOCIATION_ONLY;
+		}
+		
+		public boolean allowsEntityDeletion() {
+			return this == ALL_ORPHAN_REMOVAL;
+		}
+		
+		public boolean allowsAssociationWrite() {
+			return this != READ_ONLY;
+		}
 	}
 }

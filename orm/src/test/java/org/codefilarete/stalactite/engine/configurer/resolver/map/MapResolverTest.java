@@ -8,6 +8,7 @@ import javax.sql.DataSource;
 
 import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.PersistenceContext;
@@ -27,6 +28,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.sql.result.Accumulators;
+import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -242,6 +244,70 @@ class MapResolverTest {
 				.mapKey("key", String.class);
 		Set<String> remainingAddressBook = stringExecutableQuery.execute(Accumulators.toSet());
 		assertThat(remainingAddressBook).isEmpty();
+	}
+	
+	@Test
+	void crud_valueIsEntity_associationOnly() {
+		FluentEntityMappingBuilder<Country, Identifier<Long>> countryPersisterConfiguration = FluentMappings.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(Country::getName)
+				.map(Country::getDescription);
+		EntityPersister<Country, Identifier<Long>> countryPersister = countryPersisterConfiguration.build(persistenceContext);
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, Identifier.LONG_TYPE)
+				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(Person::getName)
+				.mapMap(Person::getMapPropertyMadeOfEntityAsValue, String.class, Country.class)
+					.withValueMapping(countryPersisterConfiguration)
+					.cascading(CascadeOptions.RelationMode.ASSOCIATION_ONLY);
+		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Country country1 = new Country(1);
+		Country country2 = new Country(2);
+		// because we're in ASSOCIATION_ONLY we must persist new values before the Map
+		countryPersister.insert(Arrays.asList(country1, country2));
+		Person person = new Person(new PersistableIdentifier<>(1L));
+		person.setMapPropertyMadeOfEntityAsValue(Maps.forHashMap(String.class, Country.class)
+				.add("Grenoble", country1)
+				.add("Lyon", country2)
+		);
+		
+		personPersister.insert(person);
+		
+		Person loadedPerson = personPersister.select(person.getId());
+
+		person.getMapPropertyMadeOfEntityAsValue().remove("Grenoble");
+		// Changing entry value to check value is also updated
+		Country country4 = new Country(4);
+		Country country3 = new Country(3);
+		// because we're in ASSOCIATION_ONLY we must persist new values before the Map
+		countryPersister.insert(Arrays.asList(country3, country4));
+		person.getMapPropertyMadeOfEntityAsValue().put("Lyon", country4);
+		person.getMapPropertyMadeOfEntityAsValue().put("Marseille", country3);
+
+		personPersister.update(person, loadedPerson, true);
+
+		loadedPerson = personPersister.select(person.getId());
+		ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select valueId from Person_mapPropertyMadeOfEntityAsValue", Long.class)
+				.mapKey("valueId", Long.class);
+		Set<Long> remainingEntries = longExecutableQuery2.execute(Accumulators.toSet());
+		assertThat(remainingEntries).containsExactlyInAnyOrder(4L, 3L);
+
+		personPersister.delete(loadedPerson);
+		ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select valueId from Person_mapPropertyMadeOfEntityAsValue", Long.class)
+				.mapKey("valueId", Long.class);
+		remainingEntries = longExecutableQuery1.execute(Accumulators.toSet());
+		assertThat(remainingEntries).isEmpty();
+
+		// by default key entities are not deleted since cascading is not defined
+		ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from Country", Long.class)
+				.mapKey("id", Long.class);
+		Set<Long> remainingCountries = longExecutableQuery.execute(Accumulators.toSet());
+		assertThat(remainingCountries).containsExactlyInAnyOrder(1L, 2L, 3L, 4L);
 	}
 	
 	@Test

@@ -52,7 +52,7 @@ public class MapUpdater<SRC, SRCID, K, V, ENTITY, KK, VV> extends CollectionUpda
 					  Function<? super Entry<K, V>, ENTITY> entryBeanExtractor,
 					  BiFunction<Entry<K, V>, SRCID, KeyValueRecord<KK, VV, SRCID>> recordBuilder) {
 		this(targetEntitiesGetter,
-				new RelationalPersisterAsEntityWriter<>(entityPersister, entryBeanExtractor),
+				new RelationalPersisterAsEntityWriter<>(entityPersister, entryBeanExtractor, maintenanceMode),
 				keyValueRecordPersister,
 				sourcePersister,
 				maintenanceMode,
@@ -114,22 +114,18 @@ public class MapUpdater<SRC, SRCID, K, V, ENTITY, KK, VV> extends CollectionUpda
 	
 	@Override
 	protected void insertTargets(UpdateContext updateContext) {
-		// we insert association records after targets to satisfy integrity constraint
-		if (maintenanceMode != RelationMode.READ_ONLY && maintenanceMode != RelationMode.ASSOCIATION_ONLY) {
-			super.insertTargets(updateContext);
-		}
-		if (maintenanceMode != RelationMode.READ_ONLY) {
-			super.insertTargets(updateContext);
+		// eventually call any action on related entity persistence before inserting association records to satisfy integrity constraint
+		super.insertTargets(updateContext);
+		if (maintenanceMode.allowsAssociationWrite()) {
 			keyValueRecordPersister.insert(((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeInserted());
 		}
 	}
 	
 	@Override
 	protected void updateTargets(CollectionUpdater<SRC, Entry<K, V>, Set<Entry<K, V>>>.UpdateContext updateContext, boolean allColumnsStatement) {
-		if (maintenanceMode != RelationMode.READ_ONLY && maintenanceMode != RelationMode.ASSOCIATION_ONLY) {
-			super.updateTargets(updateContext, allColumnsStatement);
-		}
-		if (maintenanceMode != RelationMode.READ_ONLY) {
+		// eventually call any action on related entity persistence before updating association records to satisfy integrity constraint
+		super.updateTargets(updateContext, allColumnsStatement);
+		if (maintenanceMode.allowsAssociationWrite()) {
 			keyValueRecordPersister.update(((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeUpdated(), allColumnsStatement);
 		}
 	}
@@ -137,12 +133,11 @@ public class MapUpdater<SRC, SRCID, K, V, ENTITY, KK, VV> extends CollectionUpda
 	@Override
 	protected void deleteTargets(UpdateContext updateContext) {
 		// we delete association records before targets to satisfy integrity constraint
-		if (maintenanceMode != RelationMode.READ_ONLY) {
+		if (maintenanceMode.allowsAssociationWrite()) {
 			keyValueRecordPersister.delete(((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeDeleted());
 		}
-		if (maintenanceMode == RelationMode.ALL_ORPHAN_REMOVAL) {
-			super.deleteTargets(updateContext);
-		}
+		// eventually call any action on related entity persistence after deleting association records to satisfy integrity constraint
+		super.deleteTargets(updateContext);
 	}
 	
 	private KeyValueRecord<KK, VV, SRCID> newRecord(SRC e, Entry<K, V> record) {
@@ -155,46 +150,62 @@ public class MapUpdater<SRC, SRCID, K, V, ENTITY, KK, VV> extends CollectionUpda
 	 */
 	public static class RelationalPersisterAsEntityWriter<K, V, ENTITY, ENTITY_ID> implements EntityWriter<Entry<K, V>, ENTITY_ID> {
 		
-		private final ConfiguredRelationalPersister<ENTITY, ENTITY_ID> relationEntityPersister;
+		private final ConfiguredRelationalPersister<ENTITY, ENTITY_ID> relatedEntityPersister;
 		private final Function<? super Entry<K, V>, ENTITY> mapper;
+		private final RelationMode maintenanceMode;
 		
 		/**
 		 * Wraps the give {@link ConfiguredRelationalPersister} into a {@link RelationalPersisterAsEntityWriter} in
 		 * order to persist the members of a {@link Map} (key or value) : the extracting function is the second argument.
 		 *
-		 * @param relationEntityPersister the relational entity persister responsible for performing persistence operations on ENTITY instances
+		 * @param relatedEntityPersister the relational entity persister responsible for performing persistence operations on ENTITY instances
 		 * @param mapper the function used to extract an ENTITY instance from a {@link Entry}
+		 * @param maintenanceMode the relation mode to use for the given entity persister
 		 */
-		public RelationalPersisterAsEntityWriter(ConfiguredRelationalPersister<ENTITY, ENTITY_ID> relationEntityPersister, Function<? super Entry<K, V>, ENTITY> mapper) {
-			this.relationEntityPersister = relationEntityPersister;
+		public RelationalPersisterAsEntityWriter(
+				ConfiguredRelationalPersister<ENTITY, ENTITY_ID> relatedEntityPersister,
+				Function<? super Entry<K, V>, ENTITY> mapper,
+				RelationMode maintenanceMode) {
+			this.relatedEntityPersister = relatedEntityPersister;
 			this.mapper = mapper;
+			this.maintenanceMode = maintenanceMode;
 		}
 		
 		@Override
 		public void update(Iterable<? extends Duo<Entry<K, V>, Entry<K, V>>> differencesIterable, boolean allColumnsStatement) {
-			relationEntityPersister.update(Iterables.stream(differencesIterable)
-					.map(duo -> new Duo<>(mapper.apply(duo.getLeft()), mapper.apply(duo.getRight())))
-					.collect(Collectors.toSet()), allColumnsStatement);
+			if (maintenanceMode.allowsEntityWrite()) {
+				relatedEntityPersister.update(Iterables.stream(differencesIterable)
+						.map(duo -> new Duo<>(mapper.apply(duo.getLeft()), mapper.apply(duo.getRight())))
+						.collect(Collectors.toSet()), allColumnsStatement);
+			}
 		}
 		
 		@Override
 		public void delete(Iterable<? extends Entry<K, V>> entities) {
-			relationEntityPersister.delete(Iterables.stream(entities).map(mapper).collect(Collectors.toSet()));
+			if (maintenanceMode.allowsEntityDeletion()) {
+				relatedEntityPersister.delete(Iterables.stream(entities).map(mapper).collect(Collectors.toSet()));
+			}
 		}
 		
 		@Override
 		public void insert(Iterable<? extends Entry<K, V>> entities) {
-			relationEntityPersister.insert(Iterables.stream(entities).map(mapper).collect(Collectors.toSet()));
+			if (maintenanceMode.allowsEntityWrite()) {
+				relatedEntityPersister.insert(Iterables.stream(entities).map(mapper).collect(Collectors.toSet()));
+			}
 		}
 		
 		@Override
 		public void persist(Iterable<? extends Entry<K, V>> entities) {
-			relationEntityPersister.persist(Iterables.stream(entities).map(mapper).collect(Collectors.toSet()));
+			if (maintenanceMode.allowsEntityWrite()) {
+				relatedEntityPersister.persist(Iterables.stream(entities).map(mapper).collect(Collectors.toSet()));
+			}
 		}
 		
 		@Override
 		public void updateById(Iterable<? extends Entry<K, V>> entities) {
-			relationEntityPersister.updateById(Iterables.stream(entities).map(mapper).collect(Collectors.toSet()));
+			if (maintenanceMode.allowsEntityWrite()) {
+				relatedEntityPersister.updateById(Iterables.stream(entities).map(mapper).collect(Collectors.toSet()));
+			}
 		}
 	}
 	
