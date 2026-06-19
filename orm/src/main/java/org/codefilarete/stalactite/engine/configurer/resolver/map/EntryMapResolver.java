@@ -11,7 +11,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
@@ -22,7 +21,6 @@ import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
-import org.codefilarete.stalactite.engine.cascade.BeforeDeleteCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecordIdMapping;
@@ -52,7 +50,7 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.function.Functions.NullProofFunction;
 
-import static org.codefilarete.stalactite.engine.configurer.map.MapUpdater.*;
+import static org.codefilarete.stalactite.engine.configurer.map.MapUpdater.RelationalPersisterAsEntityWriter;
 import static org.codefilarete.tool.Nullable.nullable;
 
 public class EntryMapResolver {
@@ -81,9 +79,9 @@ public class EntryMapResolver {
 			VTABLE extends Table<VTABLE>,
 			X, Y>
 	KeyValueRecordPersister<X, Y, SRCID, MAPTABLE> resolve(ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, LEFTTABLE, MAPTABLE, KTABLE, VTABLE> resolvedRelation,
-	                                                         ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-	                                                         ConfiguredRelationalPersister<K, KID> keyEntityPersister,
-	                                                         ConfiguredRelationalPersister<V, VID> valueEntityPersister) {
+	                                                       ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
+	                                                       ConfiguredRelationalPersister<K, KID> keyEntityPersister,
+	                                                       ConfiguredRelationalPersister<V, VID> valueEntityPersister) {
 		
 		KeyValueRecordMapping<X, Y, SRCID, MAPTABLE> relationRecordMapping = buildKeyValueRecordMapping(resolvedRelation, sourcePersister);
 		
@@ -105,7 +103,6 @@ public class EntryMapResolver {
 			registerTargetEntitiesInsertCascader(sourcePersister, keyEntityPersister, resolvedRelation.getAccessor(), Map::keySet);
 			keyAdapter = k -> (X) resolvedRelation.getKeyEntity().getIdAccessor().get(k);
 			entityWriters.add(new RelationalPersisterAsEntityWriter<>(keyEntityPersister, Entry::getKey));
-			registerOrphanRemovalDeleteCascader(sourcePersister, keyEntityPersister, resolvedRelation.getAccessor(), resolvedRelation.getKeyEntityRelationMode(), Entry::getKey);
 		} else {
 			keyAdapter = k -> (X) k;
 		}
@@ -115,7 +112,6 @@ public class EntryMapResolver {
 			registerTargetEntitiesInsertCascader(sourcePersister, valueEntityPersister, resolvedRelation.getAccessor(), Map::values);
 			valueAdapter = v -> (Y) resolvedRelation.getValueEntity().getIdAccessor().get(v);
 			entityWriters.add(new RelationalPersisterAsEntityWriter<>(valueEntityPersister, Entry::getValue));
-			registerOrphanRemovalDeleteCascader(sourcePersister, valueEntityPersister, resolvedRelation.getAccessor(), resolvedRelation.getValueEntityRelationMode(), Entry::getValue);
 		} else {
 			valueAdapter = v -> (Y) v;
 		}
@@ -148,7 +144,8 @@ public class EntryMapResolver {
 			BiFunction<Entry<K, V>, SRCID, KeyValueRecord<X, Y, SRCID>> recordBuilder =
 					(entry, srcId) -> new KeyValueRecord<>(srcId, keyAdapter.apply(entry.getKey()), valueAdapter.apply(entry.getValue()));
 			
-			Mutator<Duo<SRC, SRC>, Boolean> mapUpdater = new MapUpdater<>(entriesGetter(resolvedRelation.getAccessor()), entityWriter,
+			Accessor<SRC, Set<Entry<K, V>>> entriesGetter = new NullProofFunction<>(resolvedRelation.getAccessor()::get).andThen(Map::entrySet)::apply;
+			Mutator<Duo<SRC, SRC>, Boolean> mapUpdater = new MapUpdater<>(entriesGetter, entityWriter,
 					relationRecordPersister, sourcePersister, maintenanceMode, entryFootprint, recordBuilder);
 			sourcePersister.addUpdateListener(new AfterUpdateTrigger<>(mapUpdater));
 		} else {
@@ -196,20 +193,13 @@ public class EntryMapResolver {
 	}
 	
 	/**
-	 * Builds the accessor giving the {@link Entry} {@link Set} of the relation {@link Map} (null-safe).
-	 */
-	private static <SRC, K, V, M extends Map<K, V>> Accessor<SRC, Set<Entry<K, V>>> entriesGetter(Accessor<SRC, M> mapAccessor) {
-		return new NullProofFunction<>(mapAccessor::get).andThen(Map::entrySet)::apply;
-	}
-	
-	/**
 	 * Registers an insert cascade that persists the target entities (keys or values) of the relation {@link Map} before the
 	 * source is inserted, in order to avoid foreign key violations.
 	 *
 	 * @param targetsExtractor extracts the entities to persist from the {@link Map} (typically {@code Map::keySet} or {@code Map::values})
 	 * @param <T> target entity type (either the key type or the value type)
 	 */
-	private static <SRC, K, V, T, M extends Map<K, V>> void registerTargetEntitiesInsertCascader(
+	private <SRC, K, V, T, M extends Map<K, V>> void registerTargetEntitiesInsertCascader(
 			ConfiguredRelationalPersister<SRC, ?> sourcePersister,
 			ConfiguredRelationalPersister<T, ?> targetPersister,
 			Accessor<SRC, M> mapAccessor,
@@ -230,37 +220,11 @@ public class EntryMapResolver {
 		});
 	}
 	
-	/**
-	 * Registers, when the given relation mode is {@link CascadeOptions.RelationMode#ALL_ORPHAN_REMOVAL}, a delete cascade that removes
-	 * the target entities (keys or values) of the relation {@link Map} before the source is deleted.
-	 *
-	 * @param entryExtractor extracts the entity from a {@link Entry} (typically {@code Entry::getKey} or {@code Entry::getValue})
-	 * @param <T> target entity type (either the key type or the value type)
-	 */
-	private static <SRC, K, V, T, M extends Map<K, V>> void registerOrphanRemovalDeleteCascader(
-			ConfiguredRelationalPersister<SRC, ?> sourcePersister,
-			ConfiguredRelationalPersister<T, ?> targetPersister,
-			Accessor<SRC, M> mapAccessor,
-			CascadeOptions.RelationMode relationMode,
-			Function<? super Entry<K, V>, T> entryExtractor) {
-		if (relationMode == CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL) {
-			Function<SRC, Set<T>> targetEntitiesGetter = new NullProofFunction<>(mapAccessor::get)
-					.andThen(Map::entrySet)
-					.andThen(entries -> entries.stream().map(entryExtractor).collect(Collectors.toSet()));
-			sourcePersister.addDeleteListener(new BeforeDeleteCollectionCascader<SRC, T>(targetPersister) {
-				@Override
-				protected Collection<T> getTargets(SRC src) {
-					return targetEntitiesGetter.apply(src);
-				}
-			});
-		}
-	}
-	
 	// X is K, or KID if K is entity or not, composite or scalar
 	// Y is V, or VID if V is entity or not, composite or scalar
 	private <X, Y, SRC, SRCID, K, KID, V, VID, M extends Map<K, V>, LEFTTABLE extends Table<LEFTTABLE>, MAPTABLE extends Table<MAPTABLE>, KTABLE extends Table<KTABLE>, VTABLE extends Table<VTABLE>>
 	KeyValueRecordMapping<X, Y, SRCID, MAPTABLE> buildKeyValueRecordMapping(ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, LEFTTABLE, MAPTABLE, KTABLE, VTABLE> resolvedRelation,
-	                                                                       ConfiguredRelationalPersister<SRC, SRCID> sourcePersister) {
+	                                                                        ConfiguredRelationalPersister<SRC, SRCID> sourcePersister) {
 		IdentifierAssembler<SRCID, LEFTTABLE> sourceIdentifierAssembler = sourcePersister.getMapping().getIdMapping().getIdentifierAssembler();
 		
 		MAPTABLE mapTable = resolvedRelation.getJoin().getRightKey().getTable();
