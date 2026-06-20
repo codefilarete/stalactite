@@ -7,13 +7,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord;
-import org.codefilarete.stalactite.engine.configurer.map.RecordId;
-import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.AssemblyPoint;
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
@@ -79,25 +76,17 @@ public class AggregateMapAppender {
 			}
 		};
 		
+		String mapJoinNodeName = appendAssociationTableJoin(
+				rootPersister,
+				resolvedRelation,
+				assemblyPawn,
+				mapAccessor,
+				inMemoryRelationHolder,
+				(KeyValueRecordPersister<X, Y, SRCID, MAPTABLE>) keyValueRecordPersister);
+		
 		if (resolvedRelation.getKeyEntity() != null && resolvedRelation.getValueEntity() != null) {
 			InMemoryRelationHolder<SRCID, KID, K> inMemoryKeyRelationHolder = new InMemoryRelationHolder<>();
 			InMemoryRelationHolder<SRCID, VID, V> inMemoryValueRelationHolder = new InMemoryRelationHolder<>();
-			
-			BeanRelationFixer<SRC, KeyValueRecord<KID, K, SRCID>> keyRelationFixer = BeanRelationFixer.ofMapAdapter(
-					mapAccessor,
-					mapAccessor,
-					resolvedRelation.getComponentFactory(),
-					(bean, input, map) -> {
-						inMemoryKeyRelationHolder.storeRelation(input.getId().getId(), input.getKey(), input.getValue());
-					});
-			
-			BeanRelationFixer<SRC, KeyValueRecord<VID, V, SRCID>> valueRelationFixer = BeanRelationFixer.ofMapAdapter(
-					mapAccessor,
-					mapAccessor,
-					resolvedRelation.getComponentFactory(),
-					(bean, input, map) -> {
-						inMemoryValueRelationHolder.storeRelation(input.getId().getId(), input.getKey(), input.getValue());
-					});
 			
 			inMemoryRelationAdapter = new Function<SRCID, Set<Duo<K, V>>>() {
 				@Override
@@ -137,37 +126,21 @@ public class AggregateMapAppender {
 			});
 			
 			appendEntityAsKeyJoin(rootPersister,
-					assemblyPawn,
 					mapAccessor,
-					(KeyValueRecordPersister<KID, V, SRCID, MAPTABLE>) keyValueRecordPersister,
 					keyEntityPersisterHolder.get(),
-					resolvedRelation.getComponentFactory(),
-					resolvedRelation.getJoin(),
 					resolvedRelation.getKeyEntityForeignKey(),
-					keyRelationFixer,
-					inMemoryKeyRelationHolder);
+					inMemoryKeyRelationHolder,
+					mapJoinNodeName);
 			
 			appendEntityAsValueJoin(rootPersister,
-					assemblyPawn,
 					mapAccessor,
-					(KeyValueRecordPersister<K, VID, SRCID, MAPTABLE>) keyValueRecordPersister,
 					valueEntityPersisterHolder.get(),
-					resolvedRelation.getComponentFactory(),
-					resolvedRelation.getJoin(),
 					resolvedRelation.getValueEntityForeignKey(),
-					valueRelationFixer,
-					inMemoryValueRelationHolder);
+					inMemoryValueRelationHolder,
+					mapJoinNodeName);
 			
 		} else if (resolvedRelation.getKeyEntity() != null) {
 			InMemoryRelationHolder<SRCID, KID, K> inMemoryKeyRelationHolder = new InMemoryRelationHolder<>();
-			
-			BeanRelationFixer<SRC, KeyValueRecord<KID, K, SRCID>> relationFixer = BeanRelationFixer.ofMapAdapter(
-					mapAccessor,
-					mapAccessor,
-					resolvedRelation.getComponentFactory(),
-					(bean, input, map) -> {
-						inMemoryKeyRelationHolder.storeRelation(input.getId().getId(), input.getKey(), input.getValue());
-					});
 			
 			inMemoryRelationAdapter = new Function<SRCID, Set<Duo<K, V>>>() {
 				@Override
@@ -204,25 +177,13 @@ public class AggregateMapAppender {
 			});
 			
 			appendEntityAsKeyJoin(rootPersister,
-					assemblyPawn,
 					mapAccessor,
-					(KeyValueRecordPersister<KID, V, SRCID, MAPTABLE>) keyValueRecordPersister,
 					keyEntityPersisterHolder.get(),
-					resolvedRelation.getComponentFactory(),
-					resolvedRelation.getJoin(),
 					resolvedRelation.getKeyEntityForeignKey(),
-					relationFixer,
-					inMemoryKeyRelationHolder);
+					inMemoryKeyRelationHolder,
+					mapJoinNodeName);
 		} else if (resolvedRelation.getValueEntity() != null) {
 			InMemoryRelationHolder<SRCID, VID, V> inMemoryValueRelationHolder = new InMemoryRelationHolder<>();
-			
-			BeanRelationFixer<SRC, KeyValueRecord<VID, V, SRCID>> relationFixer = BeanRelationFixer.ofMapAdapter(
-					mapAccessor,
-					mapAccessor,
-					resolvedRelation.getComponentFactory(),
-					(bean, input, map) -> {
-						inMemoryValueRelationHolder.storeRelation(input.getId().getId(), input.getKey(), input.getValue());
-					});
 			
 			inMemoryRelationAdapter = new Function<SRCID, Set<Duo<K, V>>>() {
 				@Override
@@ -259,15 +220,11 @@ public class AggregateMapAppender {
 			});
 			
 			appendEntityAsValueJoin(rootPersister,
-					assemblyPawn,
 					mapAccessor,
-					(KeyValueRecordPersister<K, VID, SRCID, MAPTABLE>) keyValueRecordPersister,
 					valueEntityPersisterHolder.get(),
-					resolvedRelation.getComponentFactory(),
-					resolvedRelation.getJoin(),
 					resolvedRelation.getValueEntityForeignKey(),
-					relationFixer,
-					inMemoryValueRelationHolder);
+					inMemoryValueRelationHolder,
+					mapJoinNodeName);
 		} else if (resolvedRelation.getKeyEntity() == null && resolvedRelation.getValueEntity() == null) {
 			inMemoryRelationAdapter = new Function<SRCID, Set<Duo<K, V>>>() {
 				@Override
@@ -285,8 +242,6 @@ public class AggregateMapAppender {
 		} else {
 			inMemoryRelationAdapter = null;
 		}
-		
-		appendAssociationTableJoin(rootPersister, resolvedRelation, assemblyPawn, mapAccessor, inMemoryRelationHolder, (KeyValueRecordPersister<K, V, SRCID, MAPTABLE>) keyValueRecordPersister);
 		
 		rootPersister.addSelectListener(memoryHolderInitializer.then(
 				new SelectListener<SRC, SRCID>() {
@@ -313,12 +268,12 @@ public class AggregateMapAppender {
 			MAPTABLE extends Table<MAPTABLE>,
 			KTABLE extends Table<KTABLE>,
 			VTABLE extends Table<VTABLE>>
-	void appendAssociationTableJoin(ConfiguredRelationalPersister<SRC, SRCID> rootPersister,
+	String appendAssociationTableJoin(ConfiguredRelationalPersister<SRC, SRCID> rootPersister,
 	                                ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, LEFTTABLE, MAPTABLE, KTABLE, VTABLE> resolvedRelation,
 	                                AssemblyPoint<SRC, SRCID, ?, LEFTTABLE> assemblyPawn,
 	                                ReadWritePropertyAccessPoint<SRC, M> mapAccessor,
 	                                InMemoryRelationHolder<SRCID, X, Y> inMemoryRelationHolder,
-	                                KeyValueRecordPersister<K, V, SRCID, MAPTABLE> keyValueRecordPersister) {
+	                                KeyValueRecordPersister<X, Y, SRCID, MAPTABLE> keyValueRecordPersister) {
 		BeanRelationFixer<SRC, KeyValueRecord<X, Y, SRCID>> relationFixer = BeanRelationFixer.ofMapAdapter(
 				mapAccessor,
 				mapAccessor,
@@ -327,11 +282,9 @@ public class AggregateMapAppender {
 					inMemoryRelationHolder.storeRelation(input.getId().getId(), input.getKey(), input.getValue());
 				});
 		
-		EntityMappingAdapter<KeyValueRecord<K, V, SRCID>, RecordId<K, SRCID>, MAPTABLE> recordInflater = new EntityMappingAdapter<>(keyValueRecordPersister.getMapping());
-		EntityMappingAdapter<KeyValueRecord<X, Y, SRCID>, RecordId<X, SRCID>, MAPTABLE> inflater = (EntityMappingAdapter) recordInflater;
-		String mapJoinNodeName = rootPersister.getEntityJoinTree().addRelationJoin(
+		return rootPersister.getEntityJoinTree().addRelationJoin(
 				assemblyPawn.getParentJoinPoint(),
-				inflater,
+				new EntityMappingAdapter<>(keyValueRecordPersister.getMapping()),
 				mapAccessor,
 				resolvedRelation.getJoin().getLeftKey(),
 				resolvedRelation.getJoin().getRightKey(),
@@ -342,31 +295,13 @@ public class AggregateMapAppender {
 				null);
 	}
 	
-	private <SRC, SRCID, K, KID, V, VID, M extends Map<K, V>, LEFTTABLE extends Table<LEFTTABLE>, MAPTABLE extends Table<MAPTABLE>, KTABLE extends Table<KTABLE>>
+	private <SRC, SRCID, K, KID, V, VID, M extends Map<K, V>, MAPTABLE extends Table<MAPTABLE>, KTABLE extends Table<KTABLE>>
 	void appendEntityAsKeyJoin(ConfiguredRelationalPersister<SRC, SRCID> rootPersister,
-	                           AssemblyPoint<SRC, SRCID, ?, LEFTTABLE> assemblyPawn,
 	                           ReadWritePropertyAccessPoint<SRC, M> mapAccessor,
-	                           KeyValueRecordPersister<KID, V, SRCID, MAPTABLE> keyValueRecordPersister,
 	                           ConfiguredRelationalPersister<K, KID> keyEntityPersister,
-	                           Supplier<M> componentFactory,
-	                           DirectRelationJoin<LEFTTABLE, MAPTABLE, SRCID> join,
 	                           ForeignKey<MAPTABLE, KTABLE, KID> keyEntityReferenceMapping,
-	                           BeanRelationFixer<SRC, KeyValueRecord<KID, K, SRCID>> relationFixer,
-	                           InMemoryRelationHolder<SRCID, KID, K> inMemoryRelationHolder) {
-		
-		EntityMappingAdapter<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>, MAPTABLE> recordInflater = new EntityMappingAdapter<>(keyValueRecordPersister.getMapping());
-		EntityMappingAdapter<KeyValueRecord<KID, K, SRCID>, RecordId<KID, SRCID>, MAPTABLE> inflater = (EntityMappingAdapter) recordInflater;
-		String mapJoinNodeName = rootPersister.getEntityJoinTree().addRelationJoin(
-				assemblyPawn.getParentJoinPoint(),
-				inflater,
-				mapAccessor,
-				join.getLeftKey(),
-				join.getRightKey(),
-				null,
-				OUTER,
-				relationFixer,
-				Collections.emptySet(),
-				null);
+	                           InMemoryRelationHolder<SRCID, KID, K> inMemoryRelationHolder,
+							   String mapJoinNodeName) {
 		
 		rootPersister.getEntityJoinTree().addRelationJoin(
 				mapJoinNodeName,
@@ -384,31 +319,13 @@ public class AggregateMapAppender {
 				null);
 	}
 	
-	private <SRC, SRCID, K, KID, V, VID, M extends Map<K, V>, LEFTTABLE extends Table<LEFTTABLE>, MAPTABLE extends Table<MAPTABLE>, VTABLE extends Table<VTABLE>>
+	private <SRC, SRCID, K, KID, V, VID, M extends Map<K, V>, MAPTABLE extends Table<MAPTABLE>, VTABLE extends Table<VTABLE>>
 	void appendEntityAsValueJoin(ConfiguredRelationalPersister<SRC, SRCID> rootPersister,
-	                             AssemblyPoint<SRC, SRCID, ?, LEFTTABLE> assemblyPawn,
 	                             ReadWritePropertyAccessPoint<SRC, M> mapAccessor,
-	                             KeyValueRecordPersister<K, VID, SRCID, MAPTABLE> keyValueRecordPersister,
 	                             ConfiguredRelationalPersister<V, VID> valueEntityPersister,
-	                             Supplier<M> componentFactory,
-	                             DirectRelationJoin<LEFTTABLE, MAPTABLE, SRCID> join,
 	                             ForeignKey<MAPTABLE, VTABLE, VID> keyEntityReferenceMapping,
-	                             BeanRelationFixer<SRC, KeyValueRecord<VID, V, SRCID>> relationFixer,
-	                             InMemoryRelationHolder<SRCID, VID, V> inMemoryRelationHolder) {
-		
-		EntityMappingAdapter<KeyValueRecord<K, VID, SRCID>, RecordId<K, SRCID>, MAPTABLE> recordInflater = new EntityMappingAdapter<>(keyValueRecordPersister.getMapping());
-		EntityMappingAdapter<KeyValueRecord<VID, V, SRCID>, RecordId<K, SRCID>, MAPTABLE> inflater = (EntityMappingAdapter) recordInflater;
-		String mapJoinNodeName = rootPersister.getEntityJoinTree().addRelationJoin(
-				assemblyPawn.getParentJoinPoint(),
-				inflater,
-				mapAccessor,
-				join.getLeftKey(),
-				join.getRightKey(),
-				null,
-				OUTER,
-				relationFixer,
-				Collections.emptySet(),
-				null);
+	                             InMemoryRelationHolder<SRCID, VID, V> inMemoryRelationHolder,
+								 String mapJoinNodeName) {
 		
 		rootPersister.getEntityJoinTree().addRelationJoin(
 				mapJoinNodeName,
