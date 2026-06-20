@@ -91,8 +91,8 @@ public class EntryMapResolver {
 		
 		IdAccessor<SRC, SRCID> srcIdAccessor = sourcePersister.getMapping();
 		
-		boolean keyIsEntity = resolvedRelation.getKeyEntity() != null;
-		boolean valueIsEntity = resolvedRelation.getValueEntity() != null;
+		boolean keyIsEntity = resolvedRelation.getKeyEntityDefinition() != null;
+		boolean valueIsEntity = resolvedRelation.getValueEntityDefinition() != null;
 		// The record key/value adapters turn a raw map key/value (K, V) into what is actually stored in the association
 		// table (X, Y) : the entity id when that side is an entity, the raw value otherwise. They are shared by the update
 		// cascade (below) and the insert/delete cascades (further down), and they make record building uniform across cases.
@@ -100,22 +100,22 @@ public class EntryMapResolver {
 		List<EntityWriter<Entry<K, V>, ?>> entityWriters = new ArrayList<>(2);
 		if (keyIsEntity) {
 			// First, the target instances must be persisted to avoid foreign key errors.
-			if (resolvedRelation.getKeyEntityRelationMode().allowsEntityWrite()) {
+			if (resolvedRelation.getKeyEntityDefinition().getRelationMode().allowsEntityWrite()) {
 				registerTargetEntitiesInsertCascader(sourcePersister, keyEntityPersister, resolvedRelation.getAccessor(), Map::keySet);
 			}
-			keyAdapter = k -> (X) resolvedRelation.getKeyEntity().getIdAccessor().get(k);
-			entityWriters.add(new RelationalPersisterAsEntityWriter<>(keyEntityPersister, Entry::getKey, resolvedRelation.getKeyEntityRelationMode()));
+			keyAdapter = k -> (X) resolvedRelation.getKeyEntityDefinition().getEntity().getIdAccessor().get(k);
+			entityWriters.add(new RelationalPersisterAsEntityWriter<>(keyEntityPersister, Entry::getKey, resolvedRelation.getKeyEntityDefinition().getRelationMode()));
 		} else {
 			keyAdapter = k -> (X) k;
 		}
 		
 		Function<V, Y> valueAdapter;
 		if (valueIsEntity) {
-			if (resolvedRelation.getValueEntityRelationMode().allowsEntityWrite()) {
+			if (resolvedRelation.getValueEntityDefinition().getRelationMode().allowsEntityWrite()) {
 				registerTargetEntitiesInsertCascader(sourcePersister, valueEntityPersister, resolvedRelation.getAccessor(), Map::values);
 			}
-			valueAdapter = v -> (Y) resolvedRelation.getValueEntity().getIdAccessor().get(v);
-			entityWriters.add(new RelationalPersisterAsEntityWriter<>(valueEntityPersister, Entry::getValue, resolvedRelation.getValueEntityRelationMode()));
+			valueAdapter = v -> (Y) resolvedRelation.getValueEntityDefinition().getEntity().getIdAccessor().get(v);
+			entityWriters.add(new RelationalPersisterAsEntityWriter<>(valueEntityPersister, Entry::getValue, resolvedRelation.getValueEntityDefinition().getRelationMode()));
 		} else {
 			valueAdapter = v -> (Y) v;
 		}
@@ -142,8 +142,8 @@ public class EntryMapResolver {
 			// The single association table is maintained according to the value side mode as soon as the value is an entity,
 			// otherwise the key side one (this preserves the previous per-case behavior).
 			CascadeOptions.RelationMode maintenanceMode = valueIsEntity
-					? resolvedRelation.getValueEntityRelationMode()
-					: resolvedRelation.getKeyEntityRelationMode();
+					? resolvedRelation.getValueEntityDefinition().getRelationMode()
+					: resolvedRelation.getKeyEntityDefinition().getRelationMode();
 			
 			BiFunction<Entry<K, V>, SRCID, KeyValueRecord<X, Y, SRCID>> recordBuilder =
 					(entry, srcId) -> new KeyValueRecord<>(srcId, keyAdapter.apply(entry.getKey()), valueAdapter.apply(entry.getValue()));
@@ -235,7 +235,7 @@ public class EntryMapResolver {
 		KeyValueRecordIdMapping<X, SRCID, MAPTABLE> idMapping;
 		Map<ReadWritePropertyAccessPoint<KeyValueRecord<X, Y, SRCID>, ?>, Column<MAPTABLE, ?>> propertiesMapping = new HashMap<>();
 		
-		EntryMemberMapping<V, MAPTABLE> valueEntityIdentifierMapping = resolvedRelation.getValueEntityIdentifierMapping();
+		EntryMemberMapping<V, MAPTABLE> valueEntityIdentifierMapping = resolvedRelation.getValueMapping();
 		if (valueEntityIdentifierMapping instanceof ScalarMemberMapping) {
 			Column<MAPTABLE, Y> valueColumn = ((ScalarMemberMapping<Y, MAPTABLE>) valueEntityIdentifierMapping).getColumn();
 			propertiesMapping.put((ReadWritePropertyAccessPoint<KeyValueRecord<X, Y, SRCID>, Y>) (ReadWritePropertyAccessPoint) KeyValueRecord.VALUE_ACCESSOR, valueColumn);
@@ -251,8 +251,8 @@ public class EntryMapResolver {
 		}
 		
 		
-		if (resolvedRelation.getKeyEntityIdentifierMapping() instanceof ScalarMemberMapping) {
-			Column<MAPTABLE, K> keyColumn = (Column<MAPTABLE, K>) ((ScalarMemberMapping<X, MAPTABLE>) resolvedRelation.getKeyEntityIdentifierMapping()).getColumn();
+		if (resolvedRelation.getKeyMapping() instanceof ScalarMemberMapping) {
+			Column<MAPTABLE, K> keyColumn = (Column<MAPTABLE, K>) ((ScalarMemberMapping<X, MAPTABLE>) resolvedRelation.getKeyMapping()).getColumn();
 			KeyValueRecordIdMapping<K, SRCID, MAPTABLE> scalarMapping = new KeyValueRecordIdMapping<>(
 					mapTable,
 					columnedRow -> columnedRow.get(keyColumn),
@@ -263,8 +263,8 @@ public class EntryMapResolver {
 			idMapping = (KeyValueRecordIdMapping<X, SRCID, MAPTABLE>) scalarMapping;
 			
 			propertiesMapping.put((ReadWritePropertyAccessPoint) KeyValueRecord.KEY_ACCESSOR, keyColumn);
-		} else if (resolvedRelation.getKeyEntityIdentifierMapping() instanceof CompositeMemberMapping) {
-			CompositeMemberMapping<KID, MAPTABLE> keyEntityIdentifierMapping = (CompositeMemberMapping<KID, MAPTABLE>) resolvedRelation.<KID>getKeyEntityIdentifierMapping();
+		} else if (resolvedRelation.getKeyMapping() instanceof CompositeMemberMapping) {
+			CompositeMemberMapping<KID, MAPTABLE> keyEntityIdentifierMapping = (CompositeMemberMapping<KID, MAPTABLE>) resolvedRelation.<KID>getKeyMapping();
 			Class<KID> identifierType = keyEntityIdentifierMapping.getBeanType();
 			EmbeddedClassMapping<KID, MAPTABLE> entityKeyMapping = new EmbeddedClassMapping<>(identifierType, mapTable, keyEntityIdentifierMapping.getMapping());
 			KeyValueRecordIdMapping<KID, SRCID, MAPTABLE> compositeMapping = new KeyValueRecordIdMapping<>(
@@ -281,7 +281,7 @@ public class EntryMapResolver {
 					keyEntityIdentifierMapping.getBeanType()));
 			
 		} else {
-			throw new IllegalArgumentException("Unsupported key entity identifier mapping : " + resolvedRelation.getKeyEntityIdentifierMapping());
+			throw new IllegalArgumentException("Unsupported key entity identifier mapping : " + resolvedRelation.getKeyMapping());
 		}
 		return new KeyValueRecordMapping<>(
 				resolvedRelation.getJoin().getRightKey().getTable(),

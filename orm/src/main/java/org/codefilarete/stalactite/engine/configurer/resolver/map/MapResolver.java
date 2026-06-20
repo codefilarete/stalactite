@@ -34,14 +34,14 @@ public class MapResolver {
 	                                                       Consumer<ConfiguredRelationalPersister<V, VID>> createdValuePersisterConsumer) {
 		
 		ConfiguredRelationalPersister<K, KID> keyEntityPersister = null;
-		if (resolvedRelation.getKeyEntity() != null) {
-			keyEntityPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getKeyEntity());
+		if (resolvedRelation.getKeyEntityDefinition() != null) {
+			keyEntityPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getKeyEntityDefinition().getEntity());
 			createdKeyPersisterConsumer.accept(keyEntityPersister);
 		}
 		
 		ConfiguredRelationalPersister<V, VID> valueEntityPersister = null;
-		if (resolvedRelation.getValueEntity() != null) {
-			valueEntityPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getValueEntity());
+		if (resolvedRelation.getValueEntityDefinition() != null) {
+			valueEntityPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getValueEntityDefinition().getEntity());
 			createdValuePersisterConsumer.accept(valueEntityPersister);
 		}
 		

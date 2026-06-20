@@ -86,7 +86,7 @@ public class AggregateMapAppender {
 		BiFunction<SRCID, X, K> keyAdapter;
 		BiFunction<SRCID, Y, V> valueAdapter;
 		
-		if (resolvedRelation.getKeyEntity() != null) {
+		if (resolvedRelation.getKeyEntityDefinition() != null) {
 			// we keep the link between id and entity found through the join and then use it to build the final map
 			InMemoryRelationHolder<SRCID, KID, K> inMemoryKeyRelationHolder = new InMemoryRelationHolder<>();
 			
@@ -116,7 +116,7 @@ public class AggregateMapAppender {
 			});
 			
 			ConfiguredRelationalPersister<K, KID> keyEntityPersister = keyEntityPersisterHolder.get();
-			ForeignKey<MAPTABLE, KTABLE, KID> keyEntityReferenceMapping = resolvedRelation.getKeyEntityForeignKey();
+			ForeignKey<MAPTABLE, KTABLE, KID> keyEntityReferenceMapping = resolvedRelation.getKeyEntityDefinition().getForeignKey();
 			
 			appendEntityJoin(rootPersister, mapJoinNodeName, mapAccessor, keyEntityPersister, keyEntityReferenceMapping, inMemoryKeyRelationHolder, record -> (KID) record.getKey());
 		} else {
@@ -124,7 +124,7 @@ public class AggregateMapAppender {
 			keyAdapter = (srcid, leftRawValue) -> (K) leftRawValue;
 		}
 		
-		if (resolvedRelation.getValueEntity() != null) {
+		if (resolvedRelation.getValueEntityDefinition() != null) {
 			// we keep the link between id and entity found through the join and then use it to build the final map
 			InMemoryRelationHolder<SRCID, VID, V> inMemoryValueRelationHolder = new InMemoryRelationHolder<>();
 			
@@ -154,7 +154,7 @@ public class AggregateMapAppender {
 			});
 			
 			ConfiguredRelationalPersister<V, VID> valueEntityPersister = valueEntityPersisterHolder.get();
-			ForeignKey<MAPTABLE, VTABLE, VID> keyEntityReferenceMapping = resolvedRelation.getValueEntityForeignKey();
+			ForeignKey<MAPTABLE, VTABLE, VID> keyEntityReferenceMapping = resolvedRelation.getValueEntityDefinition().getForeignKey();
 			
 			appendEntityJoin(rootPersister, mapJoinNodeName, mapAccessor, valueEntityPersister, keyEntityReferenceMapping, inMemoryValueRelationHolder, record -> (VID) record.getValue());
 		} else {

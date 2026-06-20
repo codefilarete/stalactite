@@ -30,6 +30,7 @@ import org.codefilarete.stalactite.engine.configurer.model.IdentifierMapping;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation.CompositeMemberMapping;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation.EntryMemberMapping;
+import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation.MapMemberAsEntity;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation.ScalarMemberMapping;
 import org.codefilarete.stalactite.query.api.JoinLink;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
@@ -133,14 +134,13 @@ public class MapMetadataResolver {
 		DirectRelationJoin<SRCTABLE, MAPTABLE, SRCID> mapJoin = new DirectRelationJoin<>(sourcePK, targetKeyBuilder.build());
 		
 		KeepOrderSet<EntitySource<?, ?>> targetEntities = new KeepOrderSet<>();
-		ForeignKey<MAPTABLE, KTABLE, KID> keyEntityReferenceMapping = null;
-		Entity<K, KID, KTABLE> keyEntity = null;
-		EntryMemberMapping<X, MAPTABLE> keyEntityIdentifierMapping;
+		MapMemberAsEntity<K, KID, MAPTABLE, KTABLE, X> keyEntityDefinition = null;
+		EntryMemberMapping<X, MAPTABLE> keyMapping;
 		if (mapRelation.getKeyEntityConfigurationProvider() != null) {
 			EntitySource<K, KID> keyEntitySource = buildEntity((EntityMappingConfigurationProvider<K, KID>) mapRelation.getKeyEntityConfigurationProvider());
-			keyEntity = keyEntitySource.getEntity();
+			Entity<K, KID, KTABLE> keyEntity = keyEntitySource.getEntity();
 			targetEntities.add(keyEntitySource);
-			keyEntityReferenceMapping = buildForeignEntityColumnMapping(
+			ForeignKey<MAPTABLE, KTABLE, KID> keyEntityReferenceMapping = buildForeignEntityColumnMapping(
 					keyEntitySource,
 					RECORD_KEY_ACCESSOR,
 					mapRelation.getKeyColumnName(),
@@ -150,9 +150,11 @@ public class MapMetadataResolver {
 					namingConfiguration.getJoinColumnNamingStrategy());
 			
 			// building identifier mapping projected on Map Table 
-			keyEntityIdentifierMapping = (EntryMemberMapping<X, MAPTABLE>) buildEntityMemberMapping(keyEntity.getIdentifierMapping(), keyEntityReferenceMapping);
+			keyMapping = (EntryMemberMapping<X, MAPTABLE>) buildEntityMemberMapping(keyEntity.getIdentifierMapping(), keyEntityReferenceMapping);
 			// entry key columns must be part of the Map Table primary key
 			keyEntityReferenceMapping.getColumns().forEach(Column::primaryKey);
+			keyEntityDefinition = new MapMemberAsEntity<>(
+					keyEntity, keyEntityReferenceMapping, mapRelation.getKeyEntityRelationMode());
 		} else if (mapRelation.getKeyEmbeddableConfigurationProvider() != null) {
 			CompositeMemberMapping<K, MAPTABLE> compositeKeyMapping = buildCompositeMemberMapping(
 					targetTable,
@@ -162,7 +164,7 @@ public class MapMetadataResolver {
 					mapRelation.getOverriddenKeyColumnSizes()
 			);
 			compositeKeyMapping.getMapping().values().forEach(Column::primaryKey);
-			keyEntityIdentifierMapping = (EntryMemberMapping<X, MAPTABLE>) compositeKeyMapping;
+			keyMapping = (EntryMemberMapping<X, MAPTABLE>) compositeKeyMapping;
 		} else {
 			ScalarMemberMapping<K, MAPTABLE> scalarKeyMapping = buildScalarMemberMapping(targetTable,
 					namingConfiguration,
@@ -171,17 +173,16 @@ public class MapMetadataResolver {
 					mapRelation.getKeyType(),
 					mapRelation.getKeyColumnSize());
 			scalarKeyMapping.getColumn().primaryKey();
-			keyEntityIdentifierMapping = (EntryMemberMapping<X, MAPTABLE>) scalarKeyMapping;
+			keyMapping = (EntryMemberMapping<X, MAPTABLE>) scalarKeyMapping;
 		}
 		
-		ForeignKey<MAPTABLE, VTABLE, VID> valueEntityReferenceMapping = null;
-		Entity<V, VID, VTABLE> valueEntity = null;
-		EntryMemberMapping<Y, MAPTABLE> valueEntityIdentifierMapping;
+		MapMemberAsEntity<V, VID, MAPTABLE, VTABLE, Y> valueEntityDefinition = null;
+		EntryMemberMapping<Y, MAPTABLE> valueMapping;
 		if (mapRelation.getValueEntityConfigurationProvider() != null) {
 			EntitySource<V, VID> valueEntitySource = buildEntity((EntityMappingConfigurationProvider<V, VID>) mapRelation.getValueEntityConfigurationProvider());
-			valueEntity = valueEntitySource.getEntity();
+			Entity<V, VID, VTABLE> valueEntity = valueEntitySource.getEntity();
 			targetEntities.add(valueEntitySource);
-			valueEntityReferenceMapping = buildForeignEntityColumnMapping(
+			ForeignKey<MAPTABLE, VTABLE, VID> valueEntityReferenceMapping = buildForeignEntityColumnMapping(
 					valueEntitySource,
 					RECORD_VALUE_ACCESSOR,
 					mapRelation.getValueColumnName(),
@@ -190,7 +191,9 @@ public class MapMetadataResolver {
 					namingConfiguration.getForeignKeyNamingStrategy(),
 					namingConfiguration.getJoinColumnNamingStrategy());
 			// building identifier mapping projected on Map Table 
-			valueEntityIdentifierMapping = (EntryMemberMapping<Y, MAPTABLE>) buildEntityMemberMapping(valueEntity.getIdentifierMapping(), valueEntityReferenceMapping);
+			valueMapping = (EntryMemberMapping<Y, MAPTABLE>) buildEntityMemberMapping(valueEntity.getIdentifierMapping(), valueEntityReferenceMapping);
+			valueEntityDefinition = new MapMemberAsEntity<>(
+					valueEntity, valueEntityReferenceMapping, mapRelation.getValueEntityRelationMode());
 		} else if (mapRelation.getValueEmbeddableConfigurationProvider() != null) {
 			CompositeMemberMapping<V, MAPTABLE> compositeValueMapping = buildCompositeMemberMapping(
 					targetTable,
@@ -199,9 +202,9 @@ public class MapMetadataResolver {
 					mapRelation.getOverriddenValueColumnNames(),
 					mapRelation.getOverriddenValueColumnSizes()
 			);
-			valueEntityIdentifierMapping = (EntryMemberMapping<Y, MAPTABLE>) compositeValueMapping;
+			valueMapping = (EntryMemberMapping<Y, MAPTABLE>) compositeValueMapping;
 		} else {
-			valueEntityIdentifierMapping = (EntryMemberMapping<Y, MAPTABLE>) buildScalarMemberMapping(targetTable,
+			valueMapping = (EntryMemberMapping<Y, MAPTABLE>) buildScalarMemberMapping(targetTable,
 					namingConfiguration,
 					MAP_ENTRY_VALUE_ACCESSOR_DEFINITION,
 					mapRelation.getValueColumnName(),
@@ -216,14 +219,10 @@ public class MapMetadataResolver {
 				relationFixer,
 				mapFactory,
 				primaryKeyForeignKeyColumnMapping,
-				keyEntityReferenceMapping,
-				keyEntity,
-				keyEntityIdentifierMapping,
-				mapRelation.getKeyEntityRelationMode(),
-				valueEntityReferenceMapping,
-				valueEntity,
-				valueEntityIdentifierMapping,
-				mapRelation.getValueEntityRelationMode()
+				keyMapping,
+				valueMapping,
+				keyEntityDefinition,
+				valueEntityDefinition
 		);
 		source.addRelation(relation);
 		

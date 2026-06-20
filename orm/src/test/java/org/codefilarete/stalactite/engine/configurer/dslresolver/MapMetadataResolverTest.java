@@ -180,9 +180,9 @@ class MapMetadataResolverTest {
 		assertThat(mapTable.getColumn("street")).isNotNull();
 		assertThat(mapTable.getColumn("zipCode")).isNotNull();
 		assertThat(mapTable.getColumn("city")).isNotNull();
-		assertThat(relation.getKeyEntityForeignKey().getColumns()).extracting(Column::getName)
+		assertThat(relation.getKeyEntityDefinition().getForeignKey().getColumns()).extracting(Column::getName)
 				.containsExactly("number", "street", "zipCode", "city");
-		CompositeMemberMapping<HouseId, ?> keyEntityIdentifierMapping = (CompositeMemberMapping) relation.<HouseId>getKeyEntityIdentifierMapping();
+		CompositeMemberMapping<HouseId, ?> keyEntityIdentifierMapping = (CompositeMemberMapping) relation.<HouseId>getKeyMapping();
 		assertThat(keyEntityIdentifierMapping.getMapping().keySet())
 				.extracting(AccessorDefinition::giveDefinition)
 				.extracting(AccessorDefinition::getName)
@@ -229,9 +229,9 @@ class MapMetadataResolverTest {
 		assertThat(mapTable.getColumn("street")).isNotNull();
 		assertThat(mapTable.getColumn("zipCode")).isNotNull();
 		assertThat(mapTable.getColumn("city")).isNotNull();
-		assertThat(relation.getValueEntityForeignKey().getColumns()).extracting(Column::getName)
+		assertThat(relation.getValueEntityDefinition().getForeignKey().getColumns()).extracting(Column::getName)
 				.contains("number", "street", "zipCode", "city");
-		CompositeMemberMapping<HouseId, ?> valueEntityIdentifierMapping = (CompositeMemberMapping) relation.<HouseId>getValueEntityIdentifierMapping();
+		CompositeMemberMapping<HouseId, ?> valueEntityIdentifierMapping = (CompositeMemberMapping) relation.<HouseId>getValueMapping();
 		assertThat(valueEntityIdentifierMapping.getMapping().keySet())
 				.extracting(AccessorDefinition::giveDefinition)
 				.extracting(AccessorDefinition::getName)

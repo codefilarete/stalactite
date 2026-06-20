@@ -21,21 +21,13 @@ public class ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M extends Map<K, V>
 	
 	private final Map<Column<LEFTTABLE, ?>, Column<MAPTABLE, ?>> primaryKeyForeignKeyColumnMapping;
 	@Nullable
-	private final ForeignKey<MAPTABLE, KTABLE, KID> keyEntityForeignKey;
+	private final EntryMemberMapping<K, MAPTABLE> keyMapping;
 	@Nullable
-	private final Entity<K, KID, KTABLE> keyEntity;
+	private final EntryMemberMapping<V, MAPTABLE> valueMapping;
 	@Nullable
-	private final EntryMemberMapping<K, MAPTABLE> keyEntityIdentifierMapping;
+	private final MapMemberAsEntity<K, KID, MAPTABLE, KTABLE, ?> keyEntityDefinition;
 	@Nullable
-	private final RelationMode keyEntityRelationMode;
-	@Nullable
-	private final ForeignKey<MAPTABLE, VTABLE, VID> valueEntityForeignKey;
-	@Nullable
-	private final Entity<V, VID, VTABLE> valueEntity;
-	@Nullable
-	private final EntryMemberMapping<V, MAPTABLE> valueEntityIdentifierMapping;
-	@Nullable
-	private final RelationMode valueEntityRelationMode;
+	private final MapMemberAsEntity<V, VID, MAPTABLE, VTABLE, ?> valueEntityDefinition;
 	
 	public <X, Y> ResolvedMapRelation(ReadWritePropertyAccessPoint<SRC, M> accessor,
 	                                  boolean fetchSeparately,
@@ -43,25 +35,17 @@ public class ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M extends Map<K, V>
 	                                  BeanRelationFixer<SRC, KeyValueRecord<K, V, SRCID>> beanRelationFixer,
 	                                  Supplier<M> componentFactory,
 	                                  Map<Column<LEFTTABLE, ?>, Column<MAPTABLE, ?>> primaryKeyForeignKeyColumnMapping,
-	                                  @Nullable ForeignKey<MAPTABLE, KTABLE, KID> keyEntityForeignKey,
-	                                  @Nullable Entity<K, KID, KTABLE> keyEntity,
-	                                  @Nullable EntryMemberMapping<X, MAPTABLE> keyEntityIdentifierMapping,
-	                                  @Nullable RelationMode keyEntityRelationMode,
-	                                  @Nullable ForeignKey<MAPTABLE, VTABLE, VID> valueEntityForeignKey,
-	                                  @Nullable Entity<V, VID, VTABLE> valueEntity,
-	                                  @Nullable EntryMemberMapping<Y, MAPTABLE> valueEntityIdentifierMapping,
-	                                  @Nullable RelationMode valueEntityRelationMode) {
+	                                  @Nullable EntryMemberMapping<X, MAPTABLE> keyMapping,
+	                                  @Nullable EntryMemberMapping<Y, MAPTABLE> valueMapping,
+	                                  @Nullable MapMemberAsEntity<K, KID, MAPTABLE, KTABLE, X> keyEntityDefinition,
+	                                  @Nullable MapMemberAsEntity<V, VID, MAPTABLE, VTABLE, Y> valueEntityDefinition) {
 		// TODO: ALL shouldn't be used for RelationMode : we should extend another class or make the RelationMode not available by default in the super class
 		super(accessor, RelationMode.ALL, fetchSeparately, join, beanRelationFixer, componentFactory);
 		this.primaryKeyForeignKeyColumnMapping = primaryKeyForeignKeyColumnMapping;
-		this.keyEntityForeignKey = keyEntityForeignKey;
-		this.keyEntity = keyEntity;
-		this.keyEntityIdentifierMapping = (EntryMemberMapping<K, MAPTABLE>) keyEntityIdentifierMapping;
-		this.keyEntityRelationMode = keyEntityRelationMode;
-		this.valueEntityIdentifierMapping = (EntryMemberMapping<V, MAPTABLE>) valueEntityIdentifierMapping;
-		this.valueEntityRelationMode = valueEntityRelationMode;
-		this.valueEntityForeignKey = valueEntityForeignKey;
-		this.valueEntity = valueEntity;
+		this.keyMapping = (EntryMemberMapping<K, MAPTABLE>) keyMapping;
+		this.valueMapping = (EntryMemberMapping<V, MAPTABLE>) valueMapping;
+		this.keyEntityDefinition = keyEntityDefinition;
+		this.valueEntityDefinition = valueEntityDefinition;
 	}
 	
 	@Override
@@ -74,43 +58,23 @@ public class ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M extends Map<K, V>
 	}
 	
 	@Nullable
-	public ForeignKey<MAPTABLE, KTABLE, KID> getKeyEntityForeignKey() {
-		return keyEntityForeignKey;
+	public EntryMemberMapping<K, MAPTABLE> getKeyMapping() {
+		return keyMapping;
 	}
 	
 	@Nullable
-	public Entity<K, KID, KTABLE> getKeyEntity() {
-		return keyEntity;
+	public EntryMemberMapping<V, MAPTABLE> getValueMapping() {
+		return valueMapping;
 	}
 	
 	@Nullable
-	public <X> EntryMemberMapping<X, MAPTABLE> getKeyEntityIdentifierMapping() {
-		return (EntryMemberMapping<X, MAPTABLE>) keyEntityIdentifierMapping;
+	public MapMemberAsEntity<K, KID, MAPTABLE, KTABLE, ?> getKeyEntityDefinition() {
+		return keyEntityDefinition;
 	}
 	
 	@Nullable
-	public RelationMode getKeyEntityRelationMode() {
-		return keyEntityRelationMode;
-	}
-	
-	@Nullable
-	public ForeignKey<MAPTABLE, VTABLE, VID> getValueEntityForeignKey() {
-		return valueEntityForeignKey;
-	}
-	
-	@Nullable
-	public Entity<V, VID, VTABLE> getValueEntity() {
-		return valueEntity;
-	}
-	
-	@Nullable
-	public <Y> EntryMemberMapping<Y, MAPTABLE> getValueEntityIdentifierMapping() {
-		return (EntryMemberMapping<Y, MAPTABLE>) valueEntityIdentifierMapping;
-	}
-	
-	@Nullable
-	public RelationMode getValueEntityRelationMode() {
-		return valueEntityRelationMode;
+	public MapMemberAsEntity<V, VID, MAPTABLE, VTABLE, ?> getValueEntityDefinition() {
+		return valueEntityDefinition;
 	}
 	
 	public interface EntryMemberMapping<X, MAPTABLE extends Table<MAPTABLE>> {
@@ -147,6 +111,33 @@ public class ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M extends Map<K, V>
 		
 		public Map<ReadWritePropertyAccessPoint<XID, ?>, Column<MAPTABLE, ?>> getMapping() {
 			return mapping;
+		}
+	}
+	
+	public static class MapMemberAsEntity<ENTITY, ENTITY_ID, MAPTABLE extends Table<MAPTABLE>, ENTITY_TABLE extends Table<ENTITY_TABLE>, X /* is either ENTITY or ENTITY_ID */> {
+		
+		private final ForeignKey<MAPTABLE, ENTITY_TABLE, ENTITY_ID> foreignKey;
+		private final Entity<ENTITY, ENTITY_ID, ENTITY_TABLE> entity;
+		private final RelationMode relationMode;
+		
+		public MapMemberAsEntity(Entity<ENTITY, ENTITY_ID, ENTITY_TABLE> entity,
+		                         ForeignKey<MAPTABLE, ENTITY_TABLE, ENTITY_ID> foreignKey,
+		                         RelationMode relationMode) {
+			this.foreignKey = foreignKey;
+			this.entity = entity;
+			this.relationMode = relationMode;
+		}
+		
+		public ForeignKey<MAPTABLE, ENTITY_TABLE, ENTITY_ID> getForeignKey() {
+			return foreignKey;
+		}
+		
+		public Entity<ENTITY, ENTITY_ID, ENTITY_TABLE> getEntity() {
+			return entity;
+		}
+		
+		public RelationMode getRelationMode() {
+			return relationMode;
 		}
 	}
 }
