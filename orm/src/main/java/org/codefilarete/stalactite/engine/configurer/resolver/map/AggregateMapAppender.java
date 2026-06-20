@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -57,19 +58,14 @@ public class AggregateMapAppender {
 		
 		InMemoryRelationHolder<SRCID, X, Y> inMemoryRelationHolder = new InMemoryRelationHolder<>();
 		
-		// Function expected to provide the values to be put into the map of the source entity after the select.
-		// It is expected to be based on the content of the in memory relation holder that is filled during the select
-		// with the association table content and eventually with the key and value entities if they are defined
-		Function<SRCID, Set<Duo<K, V>>> inMemoryRelationAdapter;
-		
-		SelectListener<SRC, SRCID> memoryHolderInitializer = new SelectListener<SRC, SRCID>() {
+		SelectListener<SRC, SRCID> inMemoryRelationHolderInitializer = new SelectListener<SRC, SRCID>() {
 			@Override
 			public void beforeSelect(Iterable<SRCID> ids) {
 				inMemoryRelationHolder.init();
 			}
 		};
 		
-		SelectListener<SRC, SRCID> memoryHolderClearer = new SelectListener<SRC, SRCID>() {
+		SelectListener<SRC, SRCID> inMemoryRelationHolderClearer = new SelectListener<SRC, SRCID>() {
 			@Override
 			public void afterSelect(Set<? extends SRC> result) {
 				inMemoryRelationHolder.clear();
@@ -84,92 +80,29 @@ public class AggregateMapAppender {
 				inMemoryRelationHolder,
 				(KeyValueRecordPersister<X, Y, SRCID, MAPTABLE>) keyValueRecordPersister);
 		
-		if (resolvedRelation.getKeyEntity() != null && resolvedRelation.getValueEntity() != null) {
-			InMemoryRelationHolder<SRCID, KID, K> inMemoryKeyRelationHolder = new InMemoryRelationHolder<>();
-			InMemoryRelationHolder<SRCID, VID, V> inMemoryValueRelationHolder = new InMemoryRelationHolder<>();
-			
-			inMemoryRelationAdapter = new Function<SRCID, Set<Duo<K, V>>>() {
-				@Override
-				public Set<Duo<K, V>> apply(SRCID srcid) {
-					Collection<Duo<X, Y>> duos = inMemoryRelationHolder.get(srcid);
-					if (duos != null) {
-						Map<KID, K> keyEntities = Iterables.map(inMemoryKeyRelationHolder.get(srcid), Duo::getLeft, Duo::getRight);
-						Map<VID, V> valueEntities = Iterables.map(inMemoryValueRelationHolder.get(srcid), Duo::getLeft, Duo::getRight);
-						if (keyEntities != null) {
-							Set<Duo<K, V>> result = new HashSet<>();
-							duos.forEach(duo -> {
-								result.add(new Duo<>(keyEntities.get(duo.getLeft()), valueEntities.get(duo.getRight())));
-							});
-							return result;
-						} else {
-							return null;
-						}
-					} else {
-						return null;
-					}
-				}
-			};
-			
-			memoryHolderInitializer = memoryHolderInitializer.then(new SelectListener<SRC, SRCID>() {
-				@Override
-				public void beforeSelect(Iterable<SRCID> ids) {
-					inMemoryKeyRelationHolder.init();
-					inMemoryValueRelationHolder.init();
-				}
-			});
-			memoryHolderClearer = memoryHolderClearer.then(new SelectListener<SRC, SRCID>() {
-				@Override
-				public void afterSelect(Set<? extends SRC> result) {
-					inMemoryKeyRelationHolder.clear();
-					inMemoryValueRelationHolder.clear();
-				}
-			});
-			
-			appendEntityAsKeyJoin(rootPersister,
-					mapAccessor,
-					keyEntityPersisterHolder.get(),
-					resolvedRelation.getKeyEntityForeignKey(),
-					inMemoryKeyRelationHolder,
-					mapJoinNodeName);
-			
-			appendEntityAsValueJoin(rootPersister,
-					mapAccessor,
-					valueEntityPersisterHolder.get(),
-					resolvedRelation.getValueEntityForeignKey(),
-					inMemoryValueRelationHolder,
-					mapJoinNodeName);
-			
-		} else if (resolvedRelation.getKeyEntity() != null) {
+		// Functions expected to provide the values to be put into the map of the source entity after the select.
+		// They'll consume the direct content of the in memory relation holder that is filled during the select
+		// which can be raw values or identifiers to entities
+		BiFunction<SRCID, X, K> keyAdapter;
+		BiFunction<SRCID, Y, V> valueAdapter;
+		
+		if (resolvedRelation.getKeyEntity() != null) {
+			// we keep the link between id and entity found through the join and then use it to build the final map
 			InMemoryRelationHolder<SRCID, KID, K> inMemoryKeyRelationHolder = new InMemoryRelationHolder<>();
 			
-			inMemoryRelationAdapter = new Function<SRCID, Set<Duo<K, V>>>() {
-				@Override
-				public Set<Duo<K, V>> apply(SRCID srcid) {
-					Collection<Duo<X, Y>> duos = inMemoryRelationHolder.get(srcid);
-					if (duos != null) {
-						Map<KID, K> entities = Iterables.map(inMemoryKeyRelationHolder.get(srcid), Duo::getLeft, Duo::getRight);
-						if (entities != null) {
-							Set<Duo<K, V>> result = new HashSet<>();
-							duos.forEach(duo -> {
-								result.add(new Duo<>(entities.get(duo.getLeft()), (V) duo.getRight()));
-							});
-							return result;
-						} else {
-							return null;
-						}
-					} else {
-						return null;
-					}
-				}
+			// the final map is made of the entities found in the in-memory relation holder
+			keyAdapter = (srcid, leftRawValue) -> {
+				Map<KID, K> entities = Iterables.map(inMemoryKeyRelationHolder.get(srcid), Duo::getLeft, Duo::getRight);
+				return entities.get((K) leftRawValue);
 			};
-			
-			memoryHolderInitializer = memoryHolderInitializer.then(new SelectListener<SRC, SRCID>() {
+			// we ask for our own relation holder to be initialized and cleared
+			inMemoryRelationHolderInitializer = inMemoryRelationHolderInitializer.then(new SelectListener<SRC, SRCID>() {
 				@Override
 				public void beforeSelect(Iterable<SRCID> ids) {
 					inMemoryKeyRelationHolder.init();
 				}
 			});	
-			memoryHolderClearer = memoryHolderClearer.then(new SelectListener<SRC, SRCID>() {
+			inMemoryRelationHolderClearer = inMemoryRelationHolderClearer.then(new SelectListener<SRC, SRCID>() {
 				@Override
 				public void afterSelect(Set<? extends SRC> result) {
 					inMemoryKeyRelationHolder.clear();
@@ -182,37 +115,28 @@ public class AggregateMapAppender {
 					resolvedRelation.getKeyEntityForeignKey(),
 					inMemoryKeyRelationHolder,
 					mapJoinNodeName);
-		} else if (resolvedRelation.getValueEntity() != null) {
+		} else {
+			// since there's no key entity, a simple cast is enough
+			keyAdapter = (srcid, leftRawValue) -> (K) leftRawValue;
+		}
+		
+		if (resolvedRelation.getValueEntity() != null) {
+			// we keep the link between id and entity found through the join and then use it to build the final map
 			InMemoryRelationHolder<SRCID, VID, V> inMemoryValueRelationHolder = new InMemoryRelationHolder<>();
 			
-			inMemoryRelationAdapter = new Function<SRCID, Set<Duo<K, V>>>() {
-				@Override
-				public Set<Duo<K, V>> apply(SRCID srcid) {
-					Collection<Duo<X, Y>> duos = inMemoryRelationHolder.get(srcid);
-					if (duos != null) {
-						Map<VID, V> entities = Iterables.map(inMemoryValueRelationHolder.get(srcid), Duo::getLeft, Duo::getRight);
-						if (entities != null) {
-							Set<Duo<K, V>> result = new HashSet<>();
-							duos.forEach(duo -> {
-								result.add(new Duo<>((K) duo.getLeft(), entities.get((V) duo.getRight())));
-							});
-							return result;
-						} else {
-							return null;
-						}
-					} else {
-						return null;
-					}
-				}
+			// the final map is made of the entities found in the in-memory relation holder
+			valueAdapter = (srcid, rightRawValue) -> {
+				Map<VID, V> entities = Iterables.map(inMemoryValueRelationHolder.get(srcid), Duo::getLeft, Duo::getRight);
+				return entities.get((V) rightRawValue);
 			};
-			
-			memoryHolderInitializer = memoryHolderInitializer.then(new SelectListener<SRC, SRCID>() {
+			// we ask for our own relation holder to be initialized and cleared
+			inMemoryRelationHolderInitializer = inMemoryRelationHolderInitializer.then(new SelectListener<SRC, SRCID>() {
 				@Override
 				public void beforeSelect(Iterable<SRCID> ids) {
 					inMemoryValueRelationHolder.init();
 				}
 			});
-			memoryHolderClearer = memoryHolderClearer.then(new SelectListener<SRC, SRCID>() {
+			inMemoryRelationHolderClearer = inMemoryRelationHolderClearer.then(new SelectListener<SRC, SRCID>() {
 				@Override
 				public void afterSelect(Set<? extends SRC> result) {
 					inMemoryValueRelationHolder.clear();
@@ -225,25 +149,24 @@ public class AggregateMapAppender {
 					resolvedRelation.getValueEntityForeignKey(),
 					inMemoryValueRelationHolder,
 					mapJoinNodeName);
-		} else if (resolvedRelation.getKeyEntity() == null && resolvedRelation.getValueEntity() == null) {
-			inMemoryRelationAdapter = new Function<SRCID, Set<Duo<K, V>>>() {
-				@Override
-				public Set<Duo<K, V>> apply(SRCID srcid) {
-					Collection<Duo<X, Y>> duos = inMemoryRelationHolder.get(srcid);
-					if (duos != null) {
-						return duos.stream().map(duo -> {
-							return new Duo<>(((K) duo.getLeft()), ((V) duo.getRight()));
-						}).collect(Collectors.toSet());
-					} else {
-						return null;
-					}
-				}
-			};
 		} else {
-			inMemoryRelationAdapter = null;
+			// since there's no value entity, a simple cast is enough
+			valueAdapter = (srcid, rightRawValue) -> (V) rightRawValue;
 		}
 		
-		rootPersister.addSelectListener(memoryHolderInitializer.then(
+		BiFunction<SRCID, Y, V> finalValueAdapter = valueAdapter;
+		BiFunction<SRCID, X, K> finalKeyAdapter = keyAdapter;
+		Function<SRCID, Set<Duo<K, V>>> finalInMemoryRelationAdapter = srcid -> {
+			Collection<Duo<X, Y>> duos = inMemoryRelationHolder.get(srcid);
+			if (duos != null) {
+				return duos.stream().map(duo -> {
+					return new Duo<>(finalKeyAdapter.apply(srcid, duo.getLeft()), finalValueAdapter.apply(srcid, duo.getRight()));
+				}).collect(Collectors.toSet());
+			} else {
+				return null;
+			}
+		};
+		rootPersister.addSelectListener(inMemoryRelationHolderInitializer.then(
 				new SelectListener<SRC, SRCID>() {
 					
 					@Override
@@ -254,13 +177,13 @@ public class AggregateMapAppender {
 								resolvedRelation.getComponentFactory(),
 								(bean, duo, map) -> map.put(duo.getLeft(), duo.getRight()));
 						result.forEach(bean -> {
-							Collection<Duo<K, V>> keyValuePairs = inMemoryRelationAdapter.apply(rootPersister.getId(bean));
+							Collection<Duo<K, V>> keyValuePairs = finalInMemoryRelationAdapter.apply(rootPersister.getId(bean));
 							if (keyValuePairs != null) {
 								keyValuePairs.forEach(duo -> originalRelationFixer.apply(bean, duo));
 							} // else : no association record
 						});
 					}
-				}).then(memoryHolderClearer));
+				}).then(inMemoryRelationHolderClearer));
 	}
 	
 	private <X, Y, SRC, SRCID, K, KID, V, VID, M extends Map<K, V>,
