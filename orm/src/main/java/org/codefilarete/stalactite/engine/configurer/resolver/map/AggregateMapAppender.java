@@ -108,13 +108,17 @@ public class AggregateMapAppender {
 					inMemoryKeyRelationHolder.clear();
 				}
 			});
+			rootPersister.addSelectListener(new SelectListener<SRC, SRCID>() {
+				@Override
+				public void onSelectError(Iterable<SRCID> ids, RuntimeException exception) {
+					inMemoryKeyRelationHolder.clear();
+				}
+			});
 			
-			appendEntityAsKeyJoin(rootPersister,
-					mapAccessor,
-					keyEntityPersisterHolder.get(),
-					resolvedRelation.getKeyEntityForeignKey(),
-					inMemoryKeyRelationHolder,
-					mapJoinNodeName);
+			ConfiguredRelationalPersister<K, KID> keyEntityPersister = keyEntityPersisterHolder.get();
+			ForeignKey<MAPTABLE, KTABLE, KID> keyEntityReferenceMapping = resolvedRelation.getKeyEntityForeignKey();
+			
+			appendEntityJoin(rootPersister, mapJoinNodeName, mapAccessor, keyEntityPersister, keyEntityReferenceMapping, inMemoryKeyRelationHolder, record -> (KID) record.getKey());
 		} else {
 			// since there's no key entity, a simple cast is enough
 			keyAdapter = (srcid, leftRawValue) -> (K) leftRawValue;
@@ -142,25 +146,27 @@ public class AggregateMapAppender {
 					inMemoryValueRelationHolder.clear();
 				}
 			});
+			rootPersister.addSelectListener(new SelectListener<SRC, SRCID>() {
+				@Override
+				public void onSelectError(Iterable<SRCID> ids, RuntimeException exception) {
+					inMemoryValueRelationHolder.clear();
+				}
+			});
 			
-			appendEntityAsValueJoin(rootPersister,
-					mapAccessor,
-					valueEntityPersisterHolder.get(),
-					resolvedRelation.getValueEntityForeignKey(),
-					inMemoryValueRelationHolder,
-					mapJoinNodeName);
+			ConfiguredRelationalPersister<V, VID> valueEntityPersister = valueEntityPersisterHolder.get();
+			ForeignKey<MAPTABLE, VTABLE, VID> keyEntityReferenceMapping = resolvedRelation.getValueEntityForeignKey();
+			
+			appendEntityJoin(rootPersister, mapJoinNodeName, mapAccessor, valueEntityPersister, keyEntityReferenceMapping, inMemoryValueRelationHolder, record -> (VID) record.getValue());
 		} else {
 			// since there's no value entity, a simple cast is enough
 			valueAdapter = (srcid, rightRawValue) -> (V) rightRawValue;
 		}
 		
-		BiFunction<SRCID, Y, V> finalValueAdapter = valueAdapter;
-		BiFunction<SRCID, X, K> finalKeyAdapter = keyAdapter;
 		Function<SRCID, Set<Duo<K, V>>> finalInMemoryRelationAdapter = srcid -> {
 			Collection<Duo<X, Y>> duos = inMemoryRelationHolder.get(srcid);
 			if (duos != null) {
 				return duos.stream().map(duo -> {
-					return new Duo<>(finalKeyAdapter.apply(srcid, duo.getLeft()), finalValueAdapter.apply(srcid, duo.getRight()));
+					return new Duo<>(keyAdapter.apply(srcid, duo.getLeft()), valueAdapter.apply(srcid, duo.getRight()));
 				}).collect(Collectors.toSet());
 			} else {
 				return null;
@@ -218,49 +224,27 @@ public class AggregateMapAppender {
 				null);
 	}
 	
-	private <SRC, SRCID, K, KID, V, VID, M extends Map<K, V>, MAPTABLE extends Table<MAPTABLE>, KTABLE extends Table<KTABLE>>
-	void appendEntityAsKeyJoin(ConfiguredRelationalPersister<SRC, SRCID> rootPersister,
-	                           ReadWritePropertyAccessPoint<SRC, M> mapAccessor,
-	                           ConfiguredRelationalPersister<K, KID> keyEntityPersister,
-	                           ForeignKey<MAPTABLE, KTABLE, KID> keyEntityReferenceMapping,
-	                           InMemoryRelationHolder<SRCID, KID, K> inMemoryRelationHolder,
-							   String mapJoinNodeName) {
+	private <SRC, SRCID, K, V, ENTITY, ENTITY_ID, M extends Map<K, V>, MAPTABLE extends Table<MAPTABLE>, ENTITYTABLE extends Table<ENTITYTABLE>>
+	void appendEntityJoin(ConfiguredRelationalPersister<SRC, SRCID> rootPersister,
+	                      String mapJoinNodeName,
+	                      ReadWritePropertyAccessPoint<SRC, M> mapAccessor,
+	                      ConfiguredRelationalPersister<ENTITY, ENTITY_ID> entityPersister,
+	                      ForeignKey<MAPTABLE, ENTITYTABLE, ENTITY_ID> foreignKey,
+	                      InMemoryRelationHolder<SRCID, ENTITY_ID, ENTITY> inMemoryRelationHolder,
+						  Function<KeyValueRecord<?, ?, SRCID>, ENTITY_ID> entityIdExtractor) {
 		
 		rootPersister.getEntityJoinTree().addRelationJoin(
 				mapJoinNodeName,
-				new EntityMappingAdapter<>(keyEntityPersister.<KTABLE>getMapping()),
+				new EntityMappingAdapter<>(entityPersister.<ENTITYTABLE>getMapping()),
 				mapAccessor,
-				keyEntityReferenceMapping.getSourceKey(),
-				keyEntityReferenceMapping.getReferencedKey(),
+				foreignKey.getSourceKey(),
+				foreignKey.getReferencedKey(),
 				null,
 				OUTER,
 				(bean, input) -> {
-					KeyValueRecord<KID, V, SRCID> record = (KeyValueRecord<KID, V, SRCID>) bean;
-					inMemoryRelationHolder.storeRelation(record.getId().getId(), record.getKey(), input);
-				},
-				Collections.emptySet(),
-				null);
-	}
-	
-	private <SRC, SRCID, K, KID, V, VID, M extends Map<K, V>, MAPTABLE extends Table<MAPTABLE>, VTABLE extends Table<VTABLE>>
-	void appendEntityAsValueJoin(ConfiguredRelationalPersister<SRC, SRCID> rootPersister,
-	                             ReadWritePropertyAccessPoint<SRC, M> mapAccessor,
-	                             ConfiguredRelationalPersister<V, VID> valueEntityPersister,
-	                             ForeignKey<MAPTABLE, VTABLE, VID> keyEntityReferenceMapping,
-	                             InMemoryRelationHolder<SRCID, VID, V> inMemoryRelationHolder,
-								 String mapJoinNodeName) {
-		
-		rootPersister.getEntityJoinTree().addRelationJoin(
-				mapJoinNodeName,
-				new EntityMappingAdapter<>(valueEntityPersister.<VTABLE>getMapping()),
-				mapAccessor,
-				keyEntityReferenceMapping.getSourceKey(),
-				keyEntityReferenceMapping.getReferencedKey(),
-				null,
-				OUTER,
-				(bean, input) -> {
-					KeyValueRecord<K, VID, SRCID> record = (KeyValueRecord<K, VID, SRCID>) bean;
-					inMemoryRelationHolder.storeRelation(record.getId().getId(), record.getValue(), input);
+					// because we joined with the map association table and KeyValueRecordPersister, we know that the given object is a KeyValueRecord
+					KeyValueRecord<?, ?, SRCID> record = (KeyValueRecord<?, ?, SRCID>) bean;
+					inMemoryRelationHolder.storeRelation(record.getId().getId(), entityIdExtractor.apply(record), input);
 				},
 				Collections.emptySet(),
 				null);
