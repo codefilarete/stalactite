@@ -39,7 +39,7 @@ import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCo
 import org.codefilarete.stalactite.engine.configurer.embeddable.FluentEmbeddableMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.configurer.embeddable.LinkageSupport;
 import org.codefilarete.stalactite.engine.configurer.entity.OneToManyEntityOptionsSupport;
-import org.codefilarete.stalactite.engine.configurer.manyToOne.ManyToOneRelation;
+import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;

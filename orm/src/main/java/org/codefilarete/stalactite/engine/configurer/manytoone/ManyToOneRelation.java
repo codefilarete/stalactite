@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.configurer.manyToOne;
+package org.codefilarete.stalactite.engine.configurer.manytoone;
 
 import java.util.Collection;
 import java.util.function.BooleanSupplier;
@@ -10,13 +10,13 @@ import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.DefaultReadWritePropertyAccessPoint;
 import org.codefilarete.reflection.ReadWriteAccessorChain;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
-import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.reflection.SerializablePropertyAccessor;
 import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.tool.Nullable;
 
 import static org.codefilarete.tool.Nullable.nullable;
@@ -24,7 +24,7 @@ import static org.codefilarete.tool.Nullable.nullable;
 /**
  * @author Guillaume Mary
  */
-public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
+public class ManyToOneRelation<SRC, TRGT, TRGTID, S extends Collection<SRC>> {
 	
 	/** The method that gives the target entity from the source one */
 	private final ReadWritePropertyAccessPoint<SRC, TRGT> targetProvider;
@@ -39,7 +39,7 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 	/** Default relation mode is {@link RelationMode#ALL} */
 	private RelationMode relationMode = RelationMode.ALL;
 	
-	private final MappedByConfiguration<SRC, TRGT, C> mappedByConfiguration = new MappedByConfiguration<>();
+	private final MappedByConfiguration<SRC, TRGT, S> mappedByConfiguration = new MappedByConfiguration<>();
 	
 	/**
 	 * Indicates that relation must be loaded in same main query (through join) or in some separate query
@@ -49,6 +49,9 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 	@javax.annotation.Nullable
 	private String columnName;
 	
+	@javax.annotation.Nullable
+	private Column<?, ?> owningColumn;
+
 	/**
 	 *
 	 * @param targetProvider provider of the property to be persisted
@@ -98,7 +101,7 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 		this.relationMode = relationMode;
 	}
 	
-	public MappedByConfiguration<SRC, TRGT, C> getMappedByConfiguration() {
+	public MappedByConfiguration<SRC, TRGT, S> getMappedByConfiguration() {
 		return mappedByConfiguration;
 	}
 	
@@ -123,6 +126,15 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 		this.columnName = columnName;
 	}
 	
+	@javax.annotation.Nullable
+	public Column<?, ?> getOwningColumn() {
+		return owningColumn;
+	}
+
+	public void setOwningColumn(@javax.annotation.Nullable Column<?, ?> owningColumn) {
+		this.owningColumn = owningColumn;
+	}
+
 	/**
 	 * Build the accessor for the reverse property, made of configured getter and setter. If one of them is unavailable, it's deduced from the
 	 * present one. If both are absent, null is returned.
@@ -130,9 +142,9 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 	 * @return null if no getter nor setter were defined
 	 */
 	@javax.annotation.Nullable
-	ReadWritePropertyAccessPoint<TRGT, C> buildReversePropertyAccessor() {
-		Nullable<SerializablePropertyAccessor<TRGT, C>> getterReference = nullable(mappedByConfiguration.getAccessor());
-		Nullable<SerializablePropertyMutator<TRGT, C>> setterReference = nullable(mappedByConfiguration.getMutator());
+	public ReadWritePropertyAccessPoint<TRGT, S> buildReversePropertyAccessor() {
+		Nullable<SerializablePropertyAccessor<TRGT, S>> getterReference = nullable(mappedByConfiguration.getAccessor());
+		Nullable<SerializablePropertyMutator<TRGT, S>> setterReference = nullable(mappedByConfiguration.getMutator());
 		if (getterReference.isAbsent() && setterReference.isAbsent()) {
 			return null;
 		} else if (getterReference.isPresent() && setterReference.isPresent()) {
@@ -165,35 +177,36 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 		result.setNullable(this.isNullable());
 		result.setFetchSeparately(this.isFetchSeparately());
 		result.setColumnName(this.getColumnName());
+		result.setOwningColumn(this.getOwningColumn());
 		return result;
 	}
 	
-	public static class MappedByConfiguration<SRC, TRGT, C2 extends Collection<SRC>> {
+	public static class MappedByConfiguration<SRC, TRGT, S extends Collection<SRC>> {
 		
 		/**
 		 * Combiner of target entity with source entity
 		 */
 		@javax.annotation.Nullable
-		private SerializableMutator<TRGT, SRC> combiner;
+		private SerializablePropertyMutator<TRGT, SRC> combiner;
 		
 		/**
 		 * Source getter on target for bidirectionality (no consequence on database mapping).
 		 */
 		@javax.annotation.Nullable
-		private SerializablePropertyAccessor<TRGT, C2> accessor;
+		private SerializablePropertyAccessor<TRGT, S> accessor;
 		
 		/**
 		 * Source setter on target for bidirectionality (no consequence on database mapping).
 		 */
 		@javax.annotation.Nullable
-		private SerializablePropertyMutator<TRGT, C2> mutator;
+		private SerializablePropertyMutator<TRGT, S> mutator;
 		
 		/** Optional provider of collection instance to be used if collection value is null */
 		@javax.annotation.Nullable
-		private Supplier<C2> factory;
+		private Supplier<S> factory;
 		
 		@javax.annotation.Nullable
-		public SerializableMutator<TRGT, SRC> getCombiner() {
+		public SerializablePropertyMutator<TRGT, SRC> getCombiner() {
 			return combiner;
 		}
 		
@@ -202,29 +215,29 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, C extends Collection<SRC>> {
 		}
 		
 		@javax.annotation.Nullable
-		public SerializablePropertyAccessor<TRGT, C2> getAccessor() {
+		public SerializablePropertyAccessor<TRGT, S> getAccessor() {
 			return accessor;
 		}
 		
-		public void setAccessor(@javax.annotation.Nullable SerializablePropertyAccessor<TRGT, C2> accessor) {
+		public void setAccessor(@javax.annotation.Nullable SerializablePropertyAccessor<TRGT, S> accessor) {
 			this.accessor = accessor;
 		}
 		
 		@javax.annotation.Nullable
-		public SerializablePropertyMutator<TRGT, C2> getMutator() {
+		public SerializablePropertyMutator<TRGT, S> getMutator() {
 			return mutator;
 		}
 		
-		public void setMutator(@javax.annotation.Nullable SerializablePropertyMutator<TRGT, C2> mutator) {
+		public void setMutator(@javax.annotation.Nullable SerializablePropertyMutator<TRGT, S> mutator) {
 			this.mutator = mutator;
 		}
 		
 		@javax.annotation.Nullable
-		public Supplier<C2> getFactory() {
+		public Supplier<S> getFactory() {
 			return factory;
 		}
 		
-		public void setFactory(@javax.annotation.Nullable Supplier<C2> factory) {
+		public void setFactory(@javax.annotation.Nullable Supplier<S> factory) {
 			this.factory = factory;
 		}
 		

@@ -1,7 +1,5 @@
 package org.codefilarete.stalactite.engine.configurer.model;
 
-import javax.annotation.Nullable;
-
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -26,14 +24,13 @@ public class ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE extends Table<LEFTTAB
 	
 	public ResolvedOneToOneRelation(Entity<TRGT, ?, RIGHTTABLE> targetEntity,
 	                                ReadWritePropertyAccessPoint<SRC, TRGT> accessor,
-	                                @Nullable ReadWritePropertyAccessPoint<TRGT, SRC> mappedByAccessor,
 	                                CascadeOptions.RelationMode relationMode,
 	                                boolean fetchSeparately,
 	                                DirectRelationJoin<LEFTTABLE, RIGHTTABLE, JOINTYPE> join,
 	                                BeanRelationFixer<SRC, TRGT> beanRelationFixer,
 	                                boolean ownedByTarget,
 									boolean mandatory) {
-		super(targetEntity, accessor, mappedByAccessor, relationMode, fetchSeparately, join, beanRelationFixer);
+		super(targetEntity, accessor, relationMode, fetchSeparately, join, beanRelationFixer);
 		this.ownedByTarget = ownedByTarget;
 		this.mandatory = mandatory;
 	}

@@ -5,10 +5,12 @@ import java.util.function.Supplier;
 
 import org.codefilarete.reflection.SerializablePropertyAccessor;
 import org.codefilarete.reflection.SerializablePropertyMutator;
+import org.codefilarete.stalactite.dsl.relation.ManyToOneEntityOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToOneOptions;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
-public interface FluentMappingBuilderManyToOneOptions<C, I, O, S extends Collection<C>> extends FluentEntityMappingBuilder<C, I>,
-		ManyToOneOptions<C, O, S> {
+public interface FluentMappingBuilderManyToOneOptions<C, I, O, S extends Collection<C>>
+		extends FluentEntityMappingBuilder<C, I>, ManyToOneEntityOptions<C, O, S> {
 	
 	@Override
 	FluentMappingBuilderManyToOneOptions<C, I, O, S> mandatory();
@@ -65,4 +67,14 @@ public interface FluentMappingBuilderManyToOneOptions<C, I, O, S extends Collect
 	
 	@Override
 	FluentMappingBuilderManyToOneOptions<C, I, O, S> columnName(String columnName);
+
+	/**
+	 * {@inheritDoc}
+	 * Declaration overridden to adapt the return type to this class.
+	 *
+	 * @param reverseLink foreign key column referencing the target entity key
+	 * @return the global mapping configurer
+	 */
+	@Override
+	FluentMappingBuilderManyToOneOptions<C, I, O, S> mappedBy(Column<?, ?> reverseLink);
 }

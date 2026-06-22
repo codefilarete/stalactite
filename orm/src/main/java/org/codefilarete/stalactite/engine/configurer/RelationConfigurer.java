@@ -9,8 +9,8 @@ import org.codefilarete.stalactite.engine.configurer.builder.DefaultPersisterBui
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelationConfigurer;
-import org.codefilarete.stalactite.engine.configurer.manyToOne.ManyToOneRelation;
-import org.codefilarete.stalactite.engine.configurer.manyToOne.ManyToOneRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneRelation;
+import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.map.EntityAsKeyAndValueMapRelationConfigurer;

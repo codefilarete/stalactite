@@ -5,7 +5,7 @@ import java.util.function.Consumer;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions;
-import org.codefilarete.stalactite.engine.configurer.manyToOne.ManyToOneOwnedBySourceConfigurer.MandatoryRelationAssertBeforeUpdateListener;
+import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneConfigurer.MandatoryRelationAssertBeforeUpdateListener;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneConfigurerTemplate.MandatoryRelationAssertBeforeInsertListener;
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;

@@ -63,6 +63,7 @@ import org.codefilarete.stalactite.dsl.property.MapOptions.EmbeddableInMapOption
 import org.codefilarete.stalactite.dsl.property.MapOptions.EntityInMapOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToManyEntityOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToManyJoinTableOptions;
+import org.codefilarete.stalactite.dsl.relation.ManyToOneEntityOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToOneOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyEntityOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyJoinTableOptions;
@@ -72,7 +73,7 @@ import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.configurer.builder.DefaultPersisterBuilder;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.embeddable.LinkageSupport;
-import org.codefilarete.stalactite.engine.configurer.manyToOne.ManyToOneRelation;
+import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
@@ -1071,7 +1072,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	private <O, J, S extends Collection<C>> FluentMappingBuilderManyToOneOptions<C, I, O, S> wrapForAdditionalOptions(ManyToOneRelation<C, O, J, S> manyToOneRelation) {
 		// then we return an object that allows fluent settings over our OneToOne cascade instance
 		return new MethodDispatcher()
-				.redirect(ManyToOneOptions.class, new ManyToOneOptions<C, O, S>() {
+				.redirect(ManyToOneEntityOptions.class, new ManyToOneEntityOptions<C, O, S>() {
 					@Override
 					public ManyToOneOptions<C, O, S> cascading(RelationMode relationMode) {
 						manyToOneRelation.setRelationMode(relationMode);
@@ -1118,6 +1119,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					public ManyToOneOptions<C, O, S> columnName(String columnName) {
 						manyToOneRelation.setColumnName(columnName);
 						return null;
+					}
+
+					@Override
+					public ManyToOneEntityOptions<C, O, S> mappedBy(Column<?, ?> reverseLink) {
+						manyToOneRelation.setOwningColumn(reverseLink);
+						return null;	// we can return null because dispatcher will return proxy
 					}
 				}, true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)

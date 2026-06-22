@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.configurer.manyToOne;
+package org.codefilarete.stalactite.engine.configurer.manytoone;
 
 import java.util.Collection;
 
@@ -17,7 +17,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Iterables;
 
 /**
- * Wrapper for {@link ManyToOneOwnedBySourceConfigurer} to make them available for cycle.
+ * Wrapper for {@link ManyToOneConfigurer} to make them available for cycle.
  *
  * @param <C> type of input (left/source entities)
  * @param <I> identifier type of source entities
@@ -47,8 +47,8 @@ public class ManyToOneRelationConfigurer<C, I, TRGT, TRGTID> extends AbstractRel
 	 * @param manyToOneRelation the relation to be configured
 	 */
 	public void configure(ManyToOneRelation<C, TRGT, TRGTID, Collection<C>> manyToOneRelation) {
-		ManyToOneOwnedBySourceConfigurer<C, TRGT, I, TRGTID, ?, ?, I> configurer;
-		configurer = new ManyToOneOwnedBySourceConfigurer<>(sourcePersister, manyToOneRelation, joinColumnNamingStrategy, foreignKeyNamingStrategy);
+		ManyToOneConfigurer<C, TRGT, I, TRGTID, ?, ?, I> configurer;
+		configurer = new ManyToOneConfigurer<>(sourcePersister, manyToOneRelation, joinColumnNamingStrategy, foreignKeyNamingStrategy);
 		
 		String relationName = AccessorDefinition.giveDefinition(manyToOneRelation.getTargetProvider()).getName();
 		

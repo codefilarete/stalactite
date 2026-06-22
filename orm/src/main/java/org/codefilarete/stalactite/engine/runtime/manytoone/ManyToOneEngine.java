@@ -17,7 +17,6 @@ import org.codefilarete.stalactite.engine.cascade.BeforeInsertSupport;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OrphanRemovalOnUpdate;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
-import org.codefilarete.stalactite.engine.runtime.onetoone.AbstractOneToOneEngine;
 import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -29,7 +28,7 @@ import org.codefilarete.tool.function.Predicates;
 
 import static org.codefilarete.tool.function.Predicates.not;
 
-public class ManyToOneOwnedBySourceEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>> {
+public class ManyToOneEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>> {
 	
 	private final ConfiguredPersister<SRC, SRCID> sourcePersister;
 	
@@ -39,10 +38,10 @@ public class ManyToOneOwnedBySourceEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ex
 	
 	private final ShadowColumnValueProvider<SRC, LEFTTABLE> foreignKeyValueProvider;
 	
-	public ManyToOneOwnedBySourceEngine(ConfiguredPersister<SRC, SRCID> sourcePersister,
-										ConfiguredPersister<TRGT, TRGTID> targetPersister,
-										Accessor<SRC, TRGT> targetAccessor,
-										Map<Column<LEFTTABLE, ?>, Column<RIGHTTABLE, ?>> keyColumnsMapping) {
+	public ManyToOneEngine(ConfiguredPersister<SRC, SRCID> sourcePersister,
+	                       ConfiguredPersister<TRGT, TRGTID> targetPersister,
+	                       Accessor<SRC, TRGT> targetAccessor,
+	                       Map<Column<LEFTTABLE, ?>, Column<RIGHTTABLE, ?>> keyColumnsMapping) {
 		this.sourcePersister = sourcePersister;
 		this.targetPersister = targetPersister;
 		this.targetAccessor = targetAccessor;

@@ -12,7 +12,6 @@ import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
-import org.codefilarete.stalactite.engine.configurer.ValueAccessPointVariantSupport;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.InheritanceConfigurationResolver.ResolvedConfiguration;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.MetadataSolvingCache.EntitySource;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
@@ -28,7 +27,6 @@ import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
-import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.collection.KeepOrderSet;
 
 import static org.codefilarete.tool.Nullable.nullable;
@@ -75,7 +73,6 @@ public class OneToOneMetadataResolver {
 		EntitySource<TRGT, TRGTID> targetEntitySource = buildTargetEntity(oneToOne);
 		NamingConfiguration namingConfiguration = first(targetEntitySource.getResolvedConfigurations()).getNamingConfiguration();
 		
-		ReadWritePropertyAccessPoint<TRGT, SRC> reverseAccessPoint = Nullable.nullable(oneToOne.getReverseAccessor()).map(ValueAccessPointVariantSupport::getAccessor).get();
 		DirectRelationJoin<SRCTABLE, TRGTTABLE, ?> tablesJoin = null;
 		BeanRelationFixer<SRC, TRGT> relationFixer;
 		Entity<TRGT, TRGTID, TRGTTABLE> targetEntity = targetEntitySource.getEntity();
@@ -114,7 +111,6 @@ public class OneToOneMetadataResolver {
 		ResolvedOneToOneRelation<SRC, TRGT, SRCTABLE, TRGTTABLE, ?> entitiesLink = new ResolvedOneToOneRelation<>(
 				targetEntity,
 				oneToOne.getTargetProvider(),
-				reverseAccessPoint,
 				oneToOne.getRelationMode(),
 				oneToOne.isFetchSeparately(),
 				tablesJoin,

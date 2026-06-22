@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.configurer.manyToOne;
+package org.codefilarete.stalactite.engine.configurer.manytoone;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -27,7 +27,7 @@ import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
-import org.codefilarete.stalactite.engine.configurer.manyToOne.ManyToOneRelation.MappedByConfiguration;
+import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneRelation.MappedByConfiguration;
 import org.codefilarete.stalactite.engine.configurer.onetoone.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
@@ -38,7 +38,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.PassiveJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode;
-import org.codefilarete.stalactite.engine.runtime.manytoone.ManyToOneOwnedBySourceEngine;
+import org.codefilarete.stalactite.engine.runtime.manytoone.ManyToOneEngine;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
@@ -65,7 +65,7 @@ import static org.codefilarete.tool.Nullable.nullable;
  * @param <JOINID> joining columns type
  * @author Guillaume Mary
  */
-public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID> {
+public class ManyToOneConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID> {
 	
 	private final ConfiguredRelationalPersister<SRC, SRCID> sourcePersister;
 	
@@ -77,12 +77,12 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 	
 	private final Map<Column<LEFTTABLE, ?>, Column<RIGHTTABLE, ?>> keyColumnsMapping = new HashMap<>();
 	
-	private ManyToOneOwnedBySourceEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> engine;
+	private ManyToOneEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> engine;
 	
-	public ManyToOneOwnedBySourceConfigurer(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-											ManyToOneRelation<SRC, TRGT, TRGTID, ? extends Collection<SRC>> manyToOneRelation,
-											JoinColumnNamingStrategy joinColumnNamingStrategy,
-											ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
+	public ManyToOneConfigurer(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
+	                           ManyToOneRelation<SRC, TRGT, TRGTID, ? extends Collection<SRC>> manyToOneRelation,
+	                           JoinColumnNamingStrategy joinColumnNamingStrategy,
+	                           ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
 		this.sourcePersister = sourcePersister;
 		this.manyToOneRelation = (ManyToOneRelation<SRC, TRGT, TRGTID, Collection<SRC>>) manyToOneRelation;
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
@@ -197,9 +197,16 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 		// adding foreign key constraint
 		KeyBuilder<LEFTTABLE, JOINID> leftKeyBuilder = Key.from(mappingStrategy.getTargetTable());
 		AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(manyToOneRelation.getTargetProvider());
+		Column<LEFTTABLE, ?> providedColumn = (Column<LEFTTABLE, ?>) manyToOneRelation.getOwningColumn();
 		targetMappingStrategy.getTargetTable().getPrimaryKey().getColumns().forEach(column -> {
-			String effectiveLeftColumnName = nullable(leftColumnName).elseSet(() -> joinColumnNamingStrategy.giveName(accessorDefinition, column)).get();
-			Column<LEFTTABLE, ?> foreignKeyColumn = mappingStrategy.getTargetTable().addColumn(effectiveLeftColumnName, column.getJavaType(), column.getSize());
+			Column<LEFTTABLE, ?> foreignKeyColumn;
+			if (providedColumn != null) {
+				// user gave the foreign key column directly (valuable only for single key cases)
+				foreignKeyColumn = providedColumn;
+			} else {
+				String effectiveLeftColumnName = nullable(leftColumnName).elseSet(() -> joinColumnNamingStrategy.giveName(accessorDefinition, column)).get();
+				foreignKeyColumn = mappingStrategy.getTargetTable().addColumn(effectiveLeftColumnName, column.getJavaType(), column.getSize());
+			}
 			leftKeyBuilder.addColumn(foreignKeyColumn);
 			keyColumnsMapping.put(foreignKeyColumn, column);
 		});
@@ -234,7 +241,7 @@ public class ManyToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABL
 	}
 	
 	protected void addWriteCascades(ConfiguredPersister<TRGT, TRGTID> targetPersister) {
-		this.engine = new ManyToOneOwnedBySourceEngine<>(sourcePersister, targetPersister, manyToOneRelation.getTargetProvider(), keyColumnsMapping);
+		this.engine = new ManyToOneEngine<>(sourcePersister, targetPersister, manyToOneRelation.getTargetProvider(), keyColumnsMapping);
 		boolean orphanRemoval = manyToOneRelation.getRelationMode() == RelationMode.ALL_ORPHAN_REMOVAL;
 		boolean writeAuthorized = manyToOneRelation.getRelationMode() != RelationMode.READ_ONLY;
 		if (writeAuthorized) {
