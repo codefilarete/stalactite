@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.engine.configurer;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -10,11 +9,8 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
-import org.codefilarete.reflection.SerializableAccessor;
-import org.codefilarete.reflection.SerializableMutator;
 import org.codefilarete.reflection.SerializablePropertyAccessor;
 import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
@@ -39,8 +35,8 @@ import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCo
 import org.codefilarete.stalactite.engine.configurer.embeddable.FluentEmbeddableMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.configurer.embeddable.LinkageSupport;
 import org.codefilarete.stalactite.engine.configurer.entity.OneToManyEntityOptionsSupport;
-import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
+import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
@@ -60,8 +56,6 @@ import org.codefilarete.tool.reflect.MethodDispatcher;
 public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentSubEntityMappingBuilder<C, I> {
 	
 	private final Class<C> classToPersist;
-	
-	private final MethodReferenceCapturer methodSpy;
 	
 	private final List<OneToOneRelation<C, ?, ?>> oneToOneRelations = new ArrayList<>();
 	
@@ -83,9 +77,6 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	 */
 	public FluentSubEntityMappingConfigurationSupport(Class<C> classToPersist) {
 		this.classToPersist = classToPersist;
-		
-		// Helper to capture Method behind method reference
-		this.methodSpy = new MethodReferenceCapturer();
 		
 		this.propertiesMappingConfigurationDelegate = new SubEntityDecoratedEmbeddableConfigurationSupport<>(this, classToPersist);
 	}
@@ -138,14 +129,6 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 				return polymorphismPolicy;
 			}
 		};
-	}
-	
-	private Method captureMethod(SerializableAccessor getter) {
-		return this.methodSpy.findMethod(getter);
-	}
-	
-	private Method captureMethod(SerializableMutator setter) {
-		return this.methodSpy.findMethod(setter);
 	}
 	
 	@Override
