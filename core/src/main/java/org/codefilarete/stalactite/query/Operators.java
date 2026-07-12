@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.query;
 
+import org.codefilarete.stalactite.engine.EntitySelector;
 import org.codefilarete.stalactite.query.api.QueryProvider;
 import org.codefilarete.stalactite.query.api.QueryStatement;
 import org.codefilarete.stalactite.query.api.Selectable;
@@ -435,7 +436,7 @@ public interface Operators {
 	
 	/**
 	 * Creates a condition for a named placeholder with given {@link ConditionalOperator}
-	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * The value will be set at a later time with {@link EntitySelector.ExecutableEntityQuery#set(String, Object)}
 	 * for example.
 	 *
 	 * @param name the placeholder name
@@ -450,7 +451,7 @@ public interface Operators {
 	
 	/**
 	 * Creates a {@link Equals} condition for a named placeholder.
-	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * The value will be set at a later time with {@link EntitySelector.ExecutableEntityQuery#set(String, Object)}
 	 * for example.
 	 * 
 	 * @param name the placeholder name
@@ -464,7 +465,7 @@ public interface Operators {
 	
 	/**
 	 * Creates a {@link In} condition for a named placeholder.
-	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * The value will be set at a later time with {@link EntitySelector.ExecutableEntityQuery#set(String, Object)}
 	 * for example.
 	 *
 	 * @param name the placeholder name
@@ -478,7 +479,7 @@ public interface Operators {
 	
 	/**
 	 * Creates a {@link Like} condition for a named placeholder.
-	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * The value will be set at a later time with {@link EntitySelector.ExecutableEntityQuery#set(String, Object)}
 	 * for example.
 	 *
 	 * @param name the placeholder name
@@ -492,7 +493,7 @@ public interface Operators {
 	
 	/**
 	 * Creates a "contains" condition (made of {@link Like}) for a named placeholder.
-	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * The value will be set at a later time with {@link EntitySelector.ExecutableEntityQuery#set(String, Object)}
 	 * for example.
 	 *
 	 * @param name the placeholder name
@@ -506,7 +507,7 @@ public interface Operators {
 	
 	/**
 	 * Creates a "starts with" condition (made of {@link Like}) for a named placeholder.
-	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * The value will be set at a later time with {@link EntitySelector.ExecutableEntityQuery#set(String, Object)}
 	 * for example.
 	 *
 	 * @param name the placeholder name
@@ -520,7 +521,7 @@ public interface Operators {
 	
 	/**
 	 * Creates a "ends with" condition (made of {@link Like}) for a named placeholder.
-	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * The value will be set at a later time with {@link EntitySelector.ExecutableEntityQuery#set(String, Object)}
 	 * for example.
 	 *
 	 * @param name the placeholder name
@@ -534,7 +535,7 @@ public interface Operators {
 	
 	/**
 	 * Creates a {@link Lesser} condition for a named placeholder.
-	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * The value will be set at a later time with {@link EntitySelector.ExecutableEntityQuery#set(String, Object)}
 	 * for example.
 	 *
 	 * @param name the placeholder name
@@ -548,7 +549,7 @@ public interface Operators {
 	
 	/**
 	 * Creates a {@link Lesser} or equal condition for a named placeholder.
-	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * The value will be set at a later time with {@link EntitySelector.ExecutableEntityQuery#set(String, Object)}
 	 * for example.
 	 *
 	 * @param name the placeholder name
@@ -562,7 +563,7 @@ public interface Operators {
 	
 	/**
 	 * Creates a {@link Greater} condition for a named placeholder.
-	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * The value will be set at a later time with {@link EntitySelector.ExecutableEntityQuery#set(String, Object)}
 	 * for example.
 	 *
 	 * @param name the placeholder name
@@ -576,7 +577,7 @@ public interface Operators {
 	
 	/**
 	 * Creates a {@link Greater} or equal condition for a named placeholder.
-	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * The value will be set at a later time with {@link EntitySelector.ExecutableEntityQuery#set(String, Object)}
 	 * for example.
 	 *
 	 * @param name the placeholder name
@@ -590,7 +591,7 @@ public interface Operators {
 	
 	/**
 	 * Creates a {@link Between} condition for a named placeholder.
-	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * The value will be set at a later time with {@link EntitySelector.ExecutableEntityQuery#set(String, Object)}
 	 * for example.
 	 *
 	 * @param name the placeholder name

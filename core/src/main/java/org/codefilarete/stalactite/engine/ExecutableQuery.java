@@ -10,7 +10,7 @@ import java.util.Map;
  * 
  * @param <C> type of object returned by query execution
  * @see PersistenceContext.ExecutableBeanPropertyKeyQueryMapper
- * @see EntityPersister.ExecutableEntityQuery
+ * @see EntitySelector.ExecutableEntityQuery
  */
 public interface ExecutableQuery<C> {
 	

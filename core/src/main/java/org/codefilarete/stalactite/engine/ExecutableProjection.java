@@ -13,7 +13,7 @@ import org.codefilarete.stalactite.sql.result.Accumulator;
  * Little interface to declare a projection as executable.
  * 
  * @see PersistenceContext.ExecutableBeanPropertyKeyQueryMapper
- * @see EntityPersister.ExecutableEntityQuery
+ * @see EntitySelector.ExecutableEntityQuery
  */
 public interface ExecutableProjection {
 	

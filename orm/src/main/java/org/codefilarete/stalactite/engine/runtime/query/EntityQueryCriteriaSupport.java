@@ -27,7 +27,7 @@ import org.codefilarete.stalactite.engine.EntityCriteria;
 import org.codefilarete.stalactite.engine.EntityCriteria.LimitAware;
 import org.codefilarete.stalactite.engine.EntityCriteria.OrderByChain;
 import org.codefilarete.stalactite.engine.EntityCriteria.OrderByChain.Order;
-import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
+import org.codefilarete.stalactite.engine.EntitySelector.ExecutableEntityQuery;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.ExecutableEntityQueryCriteria;

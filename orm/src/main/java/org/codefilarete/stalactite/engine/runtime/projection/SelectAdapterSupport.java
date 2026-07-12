@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
-import org.codefilarete.stalactite.engine.EntityPersister.SelectAdapter;
+import org.codefilarete.stalactite.engine.EntitySelector.SelectAdapter;
 import org.codefilarete.stalactite.engine.runtime.query.AggregateAccessPointToColumnMapping;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.model.Select;

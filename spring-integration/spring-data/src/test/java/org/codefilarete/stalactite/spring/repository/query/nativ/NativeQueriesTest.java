@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.spring.repository.query.nativ;
 
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
-import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.EntitySelector;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Language;
@@ -31,7 +31,7 @@ public class NativeQueriesTest extends AbstractNativeQueriesTest {
 	public static class StalactiteRepositoryContextConfiguration {
 		
 		@Bean
-		public EntityPersister<Republic, Identifier<Long>> countryPersister(PersistenceContext persistenceContext) {
+		public EntitySelector<org.codefilarete.stalactite.engine.model.Republic> countryPersister(PersistenceContext persistenceContext) {
 			// Because this test class inherits from an abstract one that instantiates Republic entities (because it is shared with other
 			// polymorphic test classes), we map Republic instead of Country, else, we get some exception because a persister can only persist
 			// instance of its defined type

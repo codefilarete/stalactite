@@ -9,12 +9,12 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.MethodReferenceCapturer;
-import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
+import org.codefilarete.stalactite.engine.EntitySelector;
+import org.codefilarete.stalactite.engine.EntitySelector.ExecutableProjectionQuery;
 import org.codefilarete.stalactite.engine.ExecutableProjection.ProjectionDataProvider;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
-import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.api.Selectable;
+import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.spring.repository.query.BeanQuery;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
 import org.codefilarete.stalactite.spring.repository.query.execution.AbstractQueryExecutor;
@@ -63,7 +63,7 @@ public class QueryRepositoryQuery<O, R> extends AbstractRepositoryQuery<O, R> {
 				return () -> {
 					Limit limit = invocationParameters.getLimit();
 					if (limit != null) {
-						((EntityPersister.ExecutableEntityQuery) entityQuery).limit(limit.getCount(), limit.getOffset());
+						((EntitySelector.ExecutableEntityQuery) entityQuery).limit(limit.getCount(), limit.getOffset());
 					}
 					return (List<Object>) entityQuery.execute(Accumulators.toList(), invocationParameters.getNamedValues());
 				};

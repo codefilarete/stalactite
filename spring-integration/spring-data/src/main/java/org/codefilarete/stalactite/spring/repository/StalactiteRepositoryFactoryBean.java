@@ -4,11 +4,11 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
 import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.EntitySelector;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
-import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
 import org.codefilarete.stalactite.engine.runtime.PersisterWrapper;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.reflect.MethodDispatcher;
@@ -28,7 +28,7 @@ import org.springframework.data.repository.core.support.TransactionalRepositoryF
 public class StalactiteRepositoryFactoryBean<R extends Repository<C, I>, C, I>
 		extends TransactionalRepositoryFactoryBeanSupport<R, C, I> {
 	
-	public static <C, I> AdvancedEntityPersister<C, I> asInternalPersister(EntityPersister<C, I> foundPersister) {
+	public static <C, I> AdvancedEntityPersister<C, I> asInternalPersister(EntitySelector<C> foundPersister) {
 		// Converting found EntityPersister to an AdvancedEntityPersister
 		// This is hideous : due to the will to not expose AdvancedEntityPersister to the outside world, but combined to the need to use it and
 		// the fact that its implementing classes are hidden by several layers of interfaces, with "dig" into given result to find them
@@ -80,7 +80,7 @@ public class StalactiteRepositoryFactoryBean<R extends Repository<C, I>, C, I>
 	
 	@Override
 	protected RepositoryFactorySupport doCreateRepositoryFactory() {
-		EntityPersister<?, Object> foundPersister = persistenceContext.findPersister(this.entityType);
+		EntitySelector<?> foundPersister = persistenceContext.findPersister(this.entityType);
 		if (foundPersister == null) {
 			throw new IllegalArgumentException("No persister found for entityType " + Reflections.toString(entityType) + " in persistence context.");
 		}

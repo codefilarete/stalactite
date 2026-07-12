@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.spring.repository.query.nativ;
 import java.util.Set;
 
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
-import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.EntitySelector;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.model.Country;
@@ -69,7 +69,7 @@ class SingleTableNativeQueriesTest {
 	public static class StalactiteRepositoryContextConfiguration {
 		
 		@Bean
-		public EntityPersister<Country, Identifier<Long>> countryPersister(PersistenceContext persistenceContext) {
+		public EntitySelector<org.codefilarete.stalactite.engine.model.Country> countryPersister(PersistenceContext persistenceContext) {
 			// Because this test class inherits from an abstract one that instantiates Republic entities (because it is shared with other
 			// polymorphic test classes), we map Republic instead of Country, else, we get some exception because a persister can only persist
 			// instance of its defined type

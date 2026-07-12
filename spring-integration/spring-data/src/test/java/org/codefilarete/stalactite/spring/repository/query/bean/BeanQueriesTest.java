@@ -6,8 +6,9 @@ import java.util.Set;
 import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
-import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
+import org.codefilarete.stalactite.engine.EntitySelector;
+import org.codefilarete.stalactite.engine.EntitySelector.ExecutableEntityQuery;
+import org.codefilarete.stalactite.engine.EntitySelector.ExecutableProjectionQuery;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.Country;
@@ -49,7 +50,7 @@ import static org.codefilarete.stalactite.query.Operators.containsArgNamed;
 import static org.codefilarete.stalactite.query.Operators.endsWithArgNamed;
 import static org.codefilarete.stalactite.query.Operators.eq;
 import static org.codefilarete.stalactite.query.Operators.equalsArgNamed;
-import static org.codefilarete.stalactite.query.model.FluentQueries.*;
+import static org.codefilarete.stalactite.query.model.FluentQueries.select;
 import static org.codefilarete.tool.function.Functions.chain;
 
 /**
@@ -372,7 +373,7 @@ public class BeanQueriesTest {
 		}
 		
 		@Bean
-		public EntityPersister<Republic, Identifier<Long>> countryPersister(PersistenceContext persistenceContext) {
+		public EntitySelector<org.codefilarete.stalactite.engine.model.Republic> countryPersister(PersistenceContext persistenceContext) {
 			// Because this test class inherits from an abstract one that instantiates Republic entities (because it is shared with other
 			// polymorphic test classes), we map Republic instead of Country, else, we get some exception because a persister can only persist
 			// instance of its defined type

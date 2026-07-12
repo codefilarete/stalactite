@@ -7,7 +7,7 @@ import java.util.List;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
-import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.EntitySelector;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Country;
@@ -59,7 +59,7 @@ class ProjectionMappingFinderTest {
 		
 		PersistenceContext persistenceContext = new PersistenceContext(mock(DataSource.class), dialect);
 		
-		EntityPersister<Republic, Identifier<Long>> persister = entityBuilder(Republic.class, LONG_TYPE)
+		EntitySelector<org.codefilarete.stalactite.engine.model.Republic> persister = entityBuilder(Republic.class, LONG_TYPE)
 				.mapKey(Republic::getId, IdentifierPolicy.<Country, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
 				.map(Republic::getName)
 				.map(Republic::getDescription)

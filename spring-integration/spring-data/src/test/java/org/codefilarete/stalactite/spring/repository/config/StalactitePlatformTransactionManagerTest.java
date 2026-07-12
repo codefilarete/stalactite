@@ -1,12 +1,12 @@
 package org.codefilarete.stalactite.spring.repository.config;
 
-import javax.sql.DataSource;
 import java.util.Optional;
+import javax.sql.DataSource;
 
+import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.CurrentThreadTransactionalConnectionProvider;
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.id.Identifier;
@@ -14,10 +14,10 @@ import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.spring.repository.config.StalactitePlatformTransactionManagerTest.StalactiteTransactionalContextConfiguration;
 import org.codefilarete.stalactite.spring.transaction.StalactitePlatformTransactionManager;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
-import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
+import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;

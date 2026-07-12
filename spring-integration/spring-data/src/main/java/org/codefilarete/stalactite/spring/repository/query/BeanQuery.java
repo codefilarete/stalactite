@@ -5,6 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.codefilarete.stalactite.engine.EntitySelector;
 import org.codefilarete.stalactite.spring.repository.StalactiteRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.AliasFor;
@@ -12,7 +13,7 @@ import org.springframework.core.annotation.AliasFor;
 /**
  * Annotation to be placed on a method to override the default query that is run by a {@link StalactiteRepository}
  * through Spring derived queries.
- * The method must return an instance of {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery}
+ * The method must return an instance of {@link EntitySelector.ExecutableEntityQuery}
  * which can be created with an {@link org.codefilarete.stalactite.engine.EntityPersister} instance, which will come
  * from another @{@link Bean}.
  * Here an example of usage:

@@ -5,8 +5,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
-import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.dsl.FluentMappings;
+import org.codefilarete.stalactite.engine.EntitySelector;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.model.Country;
@@ -85,7 +85,7 @@ class DerivedQueriesWithTablePerClassPolymorphismTest extends AbstractDerivedQue
 	public static class StalactiteRepositoryContextConfiguration {
 		
 		@Bean
-		public EntityPersister<Country, Identifier<Long>> countryPersister(PersistenceContext persistenceContext) {
+		public EntitySelector<org.codefilarete.stalactite.engine.model.Country> countryPersister(PersistenceContext persistenceContext) {
 			return entityBuilder(Country.class, LONG_TYPE)
 					.mapKey(Country::getId, IdentifierPolicy.<Country, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
 					.map(Country::getName)

@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.spring.repository.query;
 
 import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
-import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.EntitySelector;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.model.Country;
@@ -30,7 +30,7 @@ class DerivedQueriesWithoutMappedCollectionWithSingleTablePolymorphismTest exten
 	public static class StalactiteRepositoryContextConfiguration extends StalactiteRepositoryContextConfigurationWithoutCollection {
 		
 		@Bean
-		public EntityPersister<Country, Identifier<Long>> countryPersister(PersistenceContext persistenceContext) {
+		public EntitySelector<org.codefilarete.stalactite.engine.model.Country> countryPersister(PersistenceContext persistenceContext) {
 			return entityBuilder(Country.class, LONG_TYPE)
 					.mapKey(Country::getId, IdentifierPolicy.<Country, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
 					.map(Country::getName)
