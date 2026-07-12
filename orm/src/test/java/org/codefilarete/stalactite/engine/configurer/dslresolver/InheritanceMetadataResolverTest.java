@@ -12,7 +12,7 @@ import org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.configurer.model.AncestorJoin;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
-import org.codefilarete.stalactite.engine.configurer.model.Entity.PropertyMapping;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity.PropertyMapping;
 import org.codefilarete.stalactite.engine.configurer.model.ExtraTableJoin;
 import org.codefilarete.stalactite.engine.configurer.model.MappingJoin;
 import org.codefilarete.stalactite.engine.model.Country;

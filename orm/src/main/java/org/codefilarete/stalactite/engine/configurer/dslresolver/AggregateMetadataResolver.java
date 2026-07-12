@@ -4,8 +4,10 @@ import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.InheritanceConfigurationResolver.ResolvedConfiguration;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.MetadataSolvingCache.EntitySource;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.EntityPolymorphism;
+import org.codefilarete.stalactite.engine.configurer.model.PolymorphicEntity;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -28,7 +30,7 @@ public class AggregateMetadataResolver {
 		this.connectionConfiguration = connectionConfiguration;
 	}
 	
-	public <C, I> Entity<C, I, ?> resolve(EntityMappingConfiguration<C, I> rootConfiguration) {
+	public <C, I> AbstractEntity<C, I, ?> resolve(EntityMappingConfiguration<C, I> rootConfiguration) {
 		InheritanceConfigurationResolver<C, I> inheritanceConfigurationResolver = new InheritanceConfigurationResolver<>();
 		KeepOrderSet<ResolvedConfiguration<?, I>> bottomToTopConfigurations = inheritanceConfigurationResolver.resolveConfigurations(rootConfiguration);
 		
@@ -41,12 +43,13 @@ public class AggregateMetadataResolver {
 		
 		ResolvedConfiguration<C, I> resolvedRootConfiguration = (ResolvedConfiguration<C, I>) first(bottomToTopConfigurations);
 		PolymorphismPolicy<C> polymorphismPolicy = rootConfiguration.getPolymorphismPolicy();
+		AbstractEntity<C, I, ?> result = firstEntity;
 		if (polymorphismPolicy != null) {
 			PolymorphismMetadataResolver polymorphismMetadataResolver = new PolymorphismMetadataResolver(dialect);
 			EntityPolymorphism<C, I> entityPolymorphism = polymorphismMetadataResolver.resolve(resolvedRootConfiguration, polymorphismPolicy);
-			firstEntity.setPolymorphism(entityPolymorphism);
+			result = new PolymorphicEntity<>(firstEntity.getIdentifierMapping(), firstEntity.getMapping(), entityPolymorphism);
 		}
 		
-		return firstEntity;
+		return result;
 	}
 }

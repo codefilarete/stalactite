@@ -14,6 +14,7 @@ import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListe
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.AggregateMetadataResolver;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRecord;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToManyRelation;
@@ -61,11 +62,11 @@ public class AggregateResolver {
 	}
 	
 	public <C, I> EntityPersister<C, I> resolve(EntityMappingConfiguration<C, I> rootConfiguration) {
-		Entity<C, I, ?> rootEntity = aggregateMetadataResolver.resolve(rootConfiguration);
+		AbstractEntity<C, I, ?> rootEntity = aggregateMetadataResolver.resolve(rootConfiguration);
 		return build(rootEntity);
 	}
 	
-	<C, I> ConfiguredRelationalPersister<C, I> build(Entity<C, I, ?> rootEntity) {
+	<C, I> ConfiguredRelationalPersister<C, I> build(AbstractEntity<C, I, ?> rootEntity) {
 		// all this is left for compatibility with existing persister builders mechanism
 		// it should be removed (or replaced by a close mechanism) at the very end of the implementation of the new persister build mechanism
 		PersisterBuilderContext persisterBuilderContext = PersisterBuilderContext.CURRENT.get();
@@ -96,12 +97,17 @@ public class AggregateResolver {
 	}
 	
 	private <C, I, T extends Table<T>>
-	ConfiguredRelationalPersister<C, I> buildPersister(Entity<C, I, T> rootEntity) {
+	ConfiguredRelationalPersister<C, I> buildPersister(AbstractEntity<C, I, T> rootEntity) {
 		// TODO: check for ealready existing persister in the persistence context
 		// TODO: wrap result in an OptimizedUpdatePersister
 		// TODO: be inspired from DefaultPersisterBuilder.build()
 		
-		ConfiguredRelationalPersister<C, I> result = skeletonAggregateResolver.buildPersister(rootEntity);
+		ConfiguredRelationalPersister<C, I> result = null;
+		if (rootEntity instanceof Entity) {
+			result = skeletonAggregateResolver.buildPersister((Entity<C, I, T>) rootEntity);
+		} else {
+			
+		}
 		
 		appendRelations(rootEntity, result);
 		
@@ -111,7 +117,7 @@ public class AggregateResolver {
 	
 	
 	<SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
-	void appendRelations(Entity<SRC, SRCID, LEFTTABLE> rootEntity, ConfiguredRelationalPersister<SRC, SRCID> aggregatePersister) {
+	void appendRelations(AbstractEntity<SRC, SRCID, LEFTTABLE> rootEntity, ConfiguredRelationalPersister<SRC, SRCID> aggregatePersister) {
 		
 		// Iterating over all the one-to-many relations of the tree (starting from given root entity).
 		// It's made by a breadth-first algorithm with node stacking, no recursion here.
@@ -171,12 +177,12 @@ public class AggregateResolver {
 	
 	public static class AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE extends Table<LEFTTABLE>> {
 		
-		private final Entity<SRC, SRCID, LEFTTABLE> relationOwnerEntity;
+		private final AbstractEntity<SRC, SRCID, LEFTTABLE> relationOwnerEntity;
 		private final ConfiguredRelationalPersister<SRC, SRCID> relationOwnerPersister;
 		private final String parentJoinPoint;
 		private final PropertyAccessor<SRC, TRGT> accessor;
 		
-		public AssemblyPoint(Entity<SRC, SRCID, LEFTTABLE> relationOwnerEntity,
+		public AssemblyPoint(AbstractEntity<SRC, SRCID, LEFTTABLE> relationOwnerEntity,
 		                     ConfiguredRelationalPersister<SRC, SRCID> relationOwnerPersister,
 		                     String parentJoinPoint,
 		                     PropertyAccessor<SRC, TRGT> accessor) {
@@ -194,7 +200,7 @@ public class AggregateResolver {
 			return parentJoinPoint;
 		}
 		
-		public Entity<SRC, SRCID, LEFTTABLE> getRelationOwnerEntity() {
+		public AbstractEntity<SRC, SRCID, LEFTTABLE> getRelationOwnerEntity() {
 			return relationOwnerEntity;
 		}
 		

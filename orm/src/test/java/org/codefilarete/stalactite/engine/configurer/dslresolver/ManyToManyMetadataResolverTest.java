@@ -1,8 +1,8 @@
 package org.codefilarete.stalactite.engine.configurer.dslresolver;
 
-import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder;
-import org.codefilarete.stalactite.engine.configurer.model.Entity;
+import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity;
 import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.MappingJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToManyRelation;
@@ -39,7 +39,7 @@ class ManyToManyMetadataResolverTest {
 				.mapManyToMany(Answer::getChoices, choiceBuilder);
 		
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-		Entity<Answer, Identifier<Long>, ?> answerEntity = testInstance.resolve(answerBuilder.getConfiguration());
+		AbstractEntity<Answer, Identifier<Long>, ?> answerEntity = testInstance.resolve(answerBuilder.getConfiguration());
 		
 		assertThat(answerEntity.getRelations()).hasSize(1);
 		MappingJoin<?, ?, ?> relation = first(answerEntity.getRelations());
@@ -68,7 +68,7 @@ class ManyToManyMetadataResolverTest {
 								.targetJoinColumn("right_side_id");
 		
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-		Entity<Answer, Identifier<Long>, ?> answerEntity = testInstance.resolve(answerBuilder.getConfiguration());
+		AbstractEntity<Answer, Identifier<Long>, ?> answerEntity = testInstance.resolve(answerBuilder.getConfiguration());
 		
 		MappingJoin<?, ?, ?> relation = first(answerEntity.getRelations());
 		IntermediaryRelationJoin<?, ?, ?, ?, ?> join = (IntermediaryRelationJoin<?, ?, ?, ?, ?>) relation.getJoin();
@@ -90,7 +90,7 @@ class ManyToManyMetadataResolverTest {
 						.indexedBy("myIdx");
 		
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-		Entity<Answer, Identifier<Long>, ?> answerEntity = testInstance.resolve(answerBuilder.getConfiguration());
+		AbstractEntity<Answer, Identifier<Long>, ?> answerEntity = testInstance.resolve(answerBuilder.getConfiguration());
 		
 		MappingJoin<?, ?, ?> relation = first(answerEntity.getRelations());
 		IntermediaryRelationJoin<?, ?, ?, ?, ?> join = (IntermediaryRelationJoin<?, ?, ?, ?, ?>) relation.getJoin();
@@ -112,7 +112,7 @@ class ManyToManyMetadataResolverTest {
 						.reverseCollection(Choice::getAnswers);
 		
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-		Entity<Answer, Identifier<Long>, ?> answerEntity = testInstance.resolve(answerBuilder.getConfiguration());
+		AbstractEntity<Answer, Identifier<Long>, ?> answerEntity = testInstance.resolve(answerBuilder.getConfiguration());
 		
 		ResolvedManyToManyRelation<Answer, Choice, ?, ?, ?, ?, ?> relation =
 				(ResolvedManyToManyRelation<Answer, Choice, ?, ?, ?, ?, ?>) first(answerEntity.getRelations());
@@ -138,7 +138,7 @@ class ManyToManyMetadataResolverTest {
 				.embed(RecoveryQuestion::getAnswer, answerBuilder);
 		
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-		Entity<RecoveryQuestion, Long, ?> entity = testInstance.resolve(mappingBuilder.getConfiguration());
+		AbstractEntity<RecoveryQuestion, Long, ?> entity = testInstance.resolve(mappingBuilder.getConfiguration());
 		
 		MappingJoin<?, ?, ?> relation = first(entity.getRelations());
 		IntermediaryRelationJoin<?, ?, ?, ?, ?> join = (IntermediaryRelationJoin<?, ?, ?, ?, ?>) relation.getJoin();
@@ -162,7 +162,7 @@ class ManyToManyMetadataResolverTest {
 				.embed(RecoveryQuestion::getAnswer, answerBuilder);
 		
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-		Entity<RecoveryQuestion, Long, ?> entity = testInstance.resolve(mappingBuilder.getConfiguration());
+		AbstractEntity<RecoveryQuestion, Long, ?> entity = testInstance.resolve(mappingBuilder.getConfiguration());
 		
 		ResolvedManyToManyRelation<RecoveryQuestion, Choice, ?, ?, ?, ?, ?> relation =
 				(ResolvedManyToManyRelation<RecoveryQuestion, Choice, ?, ?, ?, ?, ?>) first(entity.getRelations());

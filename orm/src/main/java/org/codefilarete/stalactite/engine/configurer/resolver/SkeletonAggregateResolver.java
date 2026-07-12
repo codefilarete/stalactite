@@ -16,7 +16,7 @@ import org.codefilarete.stalactite.engine.configurer.dslresolver.SingleIdentifie
 import org.codefilarete.stalactite.engine.configurer.model.AncestorJoin;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
-import org.codefilarete.stalactite.engine.configurer.model.Entity.Versioning;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity.Versioning;
 import org.codefilarete.stalactite.engine.configurer.model.ExtraTableJoin;
 import org.codefilarete.stalactite.engine.configurer.model.IdentifierMapping;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;

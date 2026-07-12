@@ -6,9 +6,9 @@ import java.util.Set;
 
 import org.codefilarete.reflection.PropertyMutator;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
-import org.codefilarete.stalactite.engine.configurer.model.Entity.AbstractPropertyMapping;
-import org.codefilarete.stalactite.engine.configurer.model.Entity.PropertyMapping;
-import org.codefilarete.stalactite.engine.configurer.model.Entity.ReadOnlyPropertyMapping;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity.AbstractPropertyMapping;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity.PropertyMapping;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity.ReadOnlyPropertyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.KeepOrderSet;

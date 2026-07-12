@@ -4,6 +4,7 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity;
 import org.codefilarete.stalactite.engine.configurer.model.AncestorJoin;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.MappingJoin;
@@ -63,7 +64,7 @@ class RelationsMetadataResolverTest {
 						.mapOneToOne(Country::getCapital, cityBuilder);
 
 		// --- when ---
-		Entity<Country, Identifier<Long>, ?> countryEntity =
+		AbstractEntity<Country, Identifier<Long>, ?> countryEntity =
 				testInstance.resolve(countryBuilder.getConfiguration());
 
 		// --- then ---
@@ -116,7 +117,7 @@ class RelationsMetadataResolverTest {
 						.mapOneToMany(Country::getCities, cityBuilder);
 
 		// --- when ---
-		Entity<Country, Identifier<Long>, ?> countryEntity =
+		AbstractEntity<Country, Identifier<Long>, ?> countryEntity =
 				testInstance.resolve(countryBuilder.getConfiguration());
 
 		// --- then ---
@@ -171,7 +172,7 @@ class RelationsMetadataResolverTest {
 						.mapOneToMany(Country::getCities, cityBuilder);
 
 		// --- when ---
-		Entity<Country, Identifier<Long>, ?> countryEntity =
+		AbstractEntity<Country, Identifier<Long>, ?> countryEntity =
 				testInstance.resolve(countryBuilder.getConfiguration());
 
 		// --- then ---
@@ -211,7 +212,7 @@ class RelationsMetadataResolverTest {
 						.mapOneToMany(Country::getCities, cityBuilder);
 
 		// --- when ---
-		Entity<Country, Identifier<Long>, ?> countryEntity =
+		AbstractEntity<Country, Identifier<Long>, ?> countryEntity =
 				testInstance.resolve(countryBuilder.getConfiguration());
 
 		// --- then ---
@@ -269,7 +270,7 @@ class RelationsMetadataResolverTest {
 						.joiningTables();
 
 		// --- when ---
-		Entity<Republic, Identifier<Long>, ?> republicEntity = testInstance.resolve(republicBuilder.getConfiguration());
+		AbstractEntity<Republic, Identifier<Long>, ?> republicEntity = testInstance.resolve(republicBuilder.getConfiguration());
 
 		// --- then ---
 		// The child entity (Republic) itself has no direct relations
@@ -333,7 +334,7 @@ class RelationsMetadataResolverTest {
 						.joiningTables();
 		
 		// --- when ---
-		Entity<Republic, Identifier<Long>, ?> republicEntity =
+		AbstractEntity<Republic, Identifier<Long>, ?> republicEntity =
 				testInstance.resolve(republicBuilder.getConfiguration());
 		
 		// --- then ---
@@ -403,7 +404,7 @@ class RelationsMetadataResolverTest {
 						.joiningTables();
 		
 		// --- when ---
-		Entity<Republic, Identifier<Long>, ?> republicEntity =
+		AbstractEntity<Republic, Identifier<Long>, ?> republicEntity =
 				testInstance.resolve(republicBuilder.getConfiguration());
 		
 		// --- then ---

@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.engine.configurer.dslresolver;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord;
-import org.codefilarete.stalactite.engine.configurer.model.Entity;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity;
 import org.codefilarete.stalactite.engine.configurer.model.MappingJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation.CompositeMemberMapping;
@@ -35,7 +35,7 @@ class MapMetadataResolverTest {
 				.mapMap(Person::getPhoneNumbers, String.class, String.class);
 
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-		Entity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
+		AbstractEntity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 
 		assertThat(personEntity.getRelations()).hasSize(1);
 		MappingJoin<?, ?, ?> relation = first(personEntity.getRelations());
@@ -61,7 +61,7 @@ class MapMetadataResolverTest {
 						.valueColumn("entry_value");
 
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-		Entity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
+		AbstractEntity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 
 		ResolvedMapRelation<Person, ?, String, ?, String, ?, ?, ?, ?, ?, ?> relation =
 				(ResolvedMapRelation<Person, ?, String, ?, String, ?, ?, ?, ?, ?, ?>) first(personEntity.getRelations());
@@ -79,7 +79,7 @@ class MapMetadataResolverTest {
 				.mapMap(Person::getPhoneNumbers, String.class, String.class);
 
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-		Entity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
+		AbstractEntity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 		ResolvedMapRelation<Person, Identifier<Long>, String, ?, String, ?, ?, ?, ?, ?, ?> relation =
 				(ResolvedMapRelation<Person, Identifier<Long>, String, ?, String, ?, ?, ?, ?, ?, ?>) first(personEntity.getRelations());
 
@@ -101,7 +101,7 @@ class MapMetadataResolverTest {
 						.fetchSeparately();
 
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-		Entity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
+		AbstractEntity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 		ResolvedMapRelation<Person, ?, String, ?, String, ?, ?, ?, ?, ?, ?> relation =
 				(ResolvedMapRelation<Person, ?, String, ?, String, ?, ?, ?, ?, ?, ?>) first(personEntity.getRelations());
 
@@ -120,7 +120,7 @@ class MapMetadataResolverTest {
 				.withKeyMapping(countryBuilder);
 
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-		Entity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
+		AbstractEntity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 		ResolvedMapRelation<Person, ?, Country, ?, String, ?, ?, ?, ?, ?, ?> relation =
 				(ResolvedMapRelation<Person, ?, Country, ?, String, ?, ?, ?, ?, ?, ?>) first(personEntity.getRelations());
 
@@ -143,7 +143,7 @@ class MapMetadataResolverTest {
 				.withValueMapping(countryBuilder);
 
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-		Entity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
+		AbstractEntity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 		ResolvedMapRelation<Person, ?, String, ?, Country, ?, ?, ?, ?, ?, ?> relation =
 				(ResolvedMapRelation<Person, ?, String, ?, Country, ?, ?, ?, ?, ?, ?>) first(personEntity.getRelations());
 
@@ -171,7 +171,7 @@ class MapMetadataResolverTest {
 				.withKeyMapping(houseBuilder);
 
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-		Entity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
+		AbstractEntity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 		ResolvedMapRelation<Person, ?, House, ?, String, ?, ?, ?, ?, ?, ?> relation =
 				(ResolvedMapRelation<Person, ?, House, ?, String, ?, ?, ?, ?, ?, ?>) first(personEntity.getRelations());
 
@@ -220,7 +220,7 @@ class MapMetadataResolverTest {
 				.withValueMapping(houseBuilder);
 
 		AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-		Entity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
+		AbstractEntity<Person, Identifier<Long>, ?> personEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 		ResolvedMapRelation<Person, ?, String, ?, House, ?, ?, ?, ?, ?, ?> relation =
 				(ResolvedMapRelation<Person, ?, String, ?, House, ?, ?, ?, ?, ?, ?>) first(personEntity.getRelations());
 

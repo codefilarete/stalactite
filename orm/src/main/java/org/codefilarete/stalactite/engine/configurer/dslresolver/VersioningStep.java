@@ -7,7 +7,7 @@ import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.OptimisticLockOption;
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
-import org.codefilarete.stalactite.engine.configurer.model.Entity.Versioning;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity.Versioning;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Reflections;

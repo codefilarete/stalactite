@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.configurer.dslresolver;
 
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.EntityRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
@@ -45,7 +46,7 @@ class OneToOneMetadataResolverTest {
 			
 			// because building the objects consumed by OneToOneMetadataResolver is complex, we use AggregateMetadataResolver, which do it, as a test instance 
 			AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-			Entity<Country, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
+			AbstractEntity<Country, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 			
 			assertThat(countryEntity.getRelations()).hasSize(1);
 			EntityRelation<?, ?, ?, ?, ?> relation = (EntityRelation<?, ?, ?, ?, ?>) first(countryEntity.getRelations());
@@ -74,7 +75,7 @@ class OneToOneMetadataResolverTest {
 			
 			// because building the objects consumed by OneToOneMetadataResolver is complex, we use AggregateMetadataResolver, which do it, as a test instance 
 			AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-			Entity<Country, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
+			AbstractEntity<Country, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 			
 			assertThat(countryEntity.getRelations()).hasSize(1);
 			EntityRelation<?, ?, ?, ?, ?> relation = (EntityRelation<?, ?, ?, ?, ?>) first(countryEntity.getRelations());
@@ -107,7 +108,7 @@ class OneToOneMetadataResolverTest {
 			
 			// because building the objects consumed by OneToOneMetadataResolver is complex, we use AggregateMetadataResolver, which do it, as a test instance 
 			AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-			Entity<Country, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
+			AbstractEntity<Country, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 			
 			assertThat(countryEntity.getRelations()).hasSize(1);
 			EntityRelation<?, ?, ?, ?, ?> relation = (EntityRelation<?, ?, ?, ?, ?>) first(countryEntity.getRelations());
@@ -139,7 +140,7 @@ class OneToOneMetadataResolverTest {
 			
 			// because building the objects consumed by OneToOneMetadataResolver is complex, we use AggregateMetadataResolver, which do it, as a test instance 
 			AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-			Entity<Country, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
+			AbstractEntity<Country, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 			
 			assertThat(countryEntity.getRelations()).hasSize(1);
 			EntityRelation<?, ?, ?, ?, ?> relation = (EntityRelation<?, ?, ?, ?, ?>) first(countryEntity.getRelations());
@@ -167,7 +168,7 @@ class OneToOneMetadataResolverTest {
 			
 			// because building the objects consumed by OneToOneMetadataResolver is complex, we use AggregateMetadataResolver, which do it, as a test instance 
 			AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-			Entity<Country, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
+			AbstractEntity<Country, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 			
 			assertThat(countryEntity.getRelations()).hasSize(1);
 			EntityRelation<?, ?, ?, ?, ?> relation = (EntityRelation<?, ?, ?, ?, ?>) first(countryEntity.getRelations());
@@ -196,7 +197,7 @@ class OneToOneMetadataResolverTest {
 			
 			// because building the objects consumed by OneToOneMetadataResolver is complex, we use AggregateMetadataResolver, which do it, as a test instance 
 			AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-			Entity<Country, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
+			AbstractEntity<Country, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 			
 			assertThat(countryEntity.getRelations()).hasSize(1);
 			EntityRelation<?, ?, ?, ?, ?> relation = (EntityRelation<?, ?, ?, ?, ?>) first(countryEntity.getRelations());
@@ -236,7 +237,7 @@ class OneToOneMetadataResolverTest {
 			
 			// because building the objects consumed by OneToOneMetadataResolver is complex, we use AggregateMetadataResolver, which do it, as a test instance 
 			AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-			Entity<Republic, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
+			AbstractEntity<Republic, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 			
 			assertThat(countryEntity.getRelations()).isEmpty();
 			Entity<? super Republic, Identifier<Long>, ?> republicEntity = countryEntity.getParent().getAncestor();
@@ -274,7 +275,7 @@ class OneToOneMetadataResolverTest {
 			
 			// because building the objects consumed by OneToOneMetadataResolver is complex, we use AggregateMetadataResolver, which do it, as a test instance 
 			AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-			Entity<Device, Identifier<Long>, ?> deviceEntity = testInstance.resolve(mappingBuilder.getConfiguration());
+			AbstractEntity<Device, Identifier<Long>, ?> deviceEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 			
 			assertThat(deviceEntity.getRelations()).hasSize(1);
 			EntityRelation<?, ?, ?, ?, ?> relation = (EntityRelation<?, ?, ?, ?, ?>) first(deviceEntity.getRelations());
@@ -308,7 +309,7 @@ class OneToOneMetadataResolverTest {
 			
 			// because building the objects consumed by OneToOneMetadataResolver is complex, we use AggregateMetadataResolver, which do it, as a test instance 
 			AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-			Entity<Device, Identifier<Long>, ?> deviceEntity = testInstance.resolve(mappingBuilder.getConfiguration());
+			AbstractEntity<Device, Identifier<Long>, ?> deviceEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 			
 			assertThat(deviceEntity.getRelations()).hasSize(1);
 			EntityRelation<?, ?, ?, ?, ?> relation = (EntityRelation<?, ?, ?, ?, ?>)first(deviceEntity.getRelations());
@@ -346,7 +347,7 @@ class OneToOneMetadataResolverTest {
 			
 			// because building the objects consumed by OneToOneMetadataResolver is complex, we use AggregateMetadataResolver, which do it, as a test instance 
 			AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
-			Entity<Republic, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
+			AbstractEntity<Republic, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
 			
 			assertThat(countryEntity.getRelations()).isEmpty();
 			Entity<? super Republic, Identifier<Long>, ?> republicEntity = countryEntity.getParent().getAncestor();
