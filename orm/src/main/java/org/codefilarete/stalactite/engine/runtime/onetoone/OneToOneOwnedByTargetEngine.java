@@ -32,7 +32,6 @@ import org.codefilarete.stalactite.sql.statement.PreparedUpdate;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.IdentityMap;
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 
 import static org.codefilarete.tool.Nullable.nullable;
@@ -214,23 +213,12 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 					} // else both sides are null => nothing to do
 				}
 				
-				// we look for entities to persist: left elements are the modified ones
-				Set<TRGT> toPersist = Iterables.stream(payloads)
-						.map(duo -> {
-							if (duo.getLeft() != null) {
-								// modified or newly-set entity in the relation, we add it for persistence
-								return getTarget(duo.getLeft());
-							} else {
-								return (TRGT) null;
-							}
-						}).filter(Objects::nonNull)
-						.collect(Collectors.toSet());
-				targetPersister.persist(toPersist);
+				targetPersister.insert(newObjects);
+				targetPersister.update(existingEntities, allColumnsStatement);
 				
 				if (!orphanRemoval) {
 					targetPersister.updateById(nullifiedRelations);
-				}
-				// else : no need to nullify relation since entities are being deleted
+				}// else : no need to nullify relation since entities are being deleted
 				// (overall it fails since entities are already deleted through before delete listener)
 				
 				clearRelationStorageContext();
