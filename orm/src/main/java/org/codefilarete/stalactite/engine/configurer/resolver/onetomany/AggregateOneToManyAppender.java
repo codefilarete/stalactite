@@ -88,17 +88,18 @@ public class AggregateOneToManyAppender {
 							};
 						}
 						DirectRelationJoin<LEFTTABLE, RIGHTTABLE, SRCID> join = (DirectRelationJoin<LEFTTABLE, RIGHTTABLE, SRCID>) relation.getJoin();
-						String manyJoinName = targetPersister.joinAsMany(
+						
+						String manyJoinName = rootPersister.getEntityJoinTree().addRelationJoin(
 								assemblyPawn.getParentJoinPoint(),
-								rootPersister,
+								new EntityInflater.EntityMappingAdapter<>(targetPersister.<RIGHTTABLE>getMapping()),
 								accessor,
 								join.getLeftKey(),
 								join.getRightKey(),
+								null,
+								OUTER,
 								relation.getRelationFixer(),
-								duplicateIdentifierProvider,
-								columnsToSelect,
-								true,
-								relation.isFetchSeparately());
+								columnsToSelect
+						);
 						
 						// Preparing for next iteration
 						// Note that we can't set the correct generics types to the AssemblyPoint instance
