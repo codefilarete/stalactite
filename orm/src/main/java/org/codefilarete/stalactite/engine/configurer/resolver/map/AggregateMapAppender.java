@@ -37,7 +37,7 @@ public class AggregateMapAppender {
 	private final MapResolver mapResolver;
 	
 	public AggregateMapAppender(SkeletonAggregateResolver skeletonAggregateResolver, Dialect dialect, ConnectionConfiguration connectionConfiguration) {
-		this.mapResolver = new MapResolver(dialect, connectionConfiguration, skeletonAggregateResolver);
+		this.mapResolver = new MapResolver(skeletonAggregateResolver, dialect, connectionConfiguration);
 	}
 	
 	public <X, Y, SRC, SRCID, K, KID, V, VID, M extends Map<K, V>, LEFTTABLE extends Table<LEFTTABLE>, MAPTABLE extends Table<MAPTABLE>, KTABLE extends Table<KTABLE>, VTABLE extends Table<VTABLE>>

@@ -54,13 +54,6 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 		// determine insert or update operation
 		persist(Collections.singleton(entity));
 	}
-
-	/**
-	 * Choose either to insert or update entities according to their persistent state.
-	 * 
-	 * @param entities entities to be inserted or updated according to {@link #isNew(Object)} result
-	 */
-	void persist(Iterable<? extends C> entities);
 	
 	default void insert(C entity) {
 		insert(Collections.singletonList(entity));

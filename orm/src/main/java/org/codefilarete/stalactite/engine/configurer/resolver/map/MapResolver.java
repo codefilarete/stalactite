@@ -13,14 +13,14 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 public class MapResolver {
 	
+	private final SkeletonAggregateResolver skeletonAggregateResolver;
 	private final Dialect dialect;
 	private final ConnectionConfiguration connectionConfiguration;
-	private final SkeletonAggregateResolver skeletonAggregateResolver;
 	
-	public MapResolver(Dialect dialect, ConnectionConfiguration connectionConfiguration, SkeletonAggregateResolver skeletonAggregateResolver) {
+	public MapResolver(SkeletonAggregateResolver skeletonAggregateResolver, Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+		this.skeletonAggregateResolver = skeletonAggregateResolver;
 		this.dialect = dialect;
 		this.connectionConfiguration = connectionConfiguration;
-		this.skeletonAggregateResolver = skeletonAggregateResolver;
 	}
 	
 	public <SRC, SRCID, K, KID, V, VID, M extends Map<K, V>,

@@ -24,6 +24,11 @@ import org.codefilarete.tool.collection.Maps;
  */
 public interface PersistExecutor<C> {
 	
+	/**
+	 * Choose either to insert or update entities according to their persistent state.
+	 *
+	 * @param entities entities to be inserted or updated according to {@link EntityPersister#isNew(Object)} result
+	 */
 	void persist(Iterable<? extends C> entities);
 	
 	
