@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine.configurer;
 
+import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 
@@ -10,10 +11,10 @@ public class CascadeConfigurationResult<SRC, TRGT> {
 	
 	private final BeanRelationFixer<SRC, TRGT> beanRelationFixer;
 	
-	private final ConfiguredRelationalPersister<SRC, ?> sourcePersister;
+	private final EntityWriteExecutor<SRC, ?> sourcePersister;
 	
 	public CascadeConfigurationResult(BeanRelationFixer<SRC, TRGT> beanRelationFixer,
-									  ConfiguredRelationalPersister<SRC, ?> sourcePersister) {
+	                                  EntityWriteExecutor<SRC, ?> sourcePersister) {
 		this.beanRelationFixer = beanRelationFixer;
 		this.sourcePersister = sourcePersister;
 	}

@@ -5,11 +5,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.codefilarete.tool.collection.Collections;
-import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
+import org.codefilarete.tool.collection.Collections;
+import org.codefilarete.tool.collection.Iterables;
 
 /**
  * Cascader for insert, written for one-to-many style of cascade where Target owns the relation to Trigger
@@ -20,14 +20,14 @@ import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
  */
 public abstract class AfterInsertCollectionCascader<TRIGGER, TARGET> implements InsertListener<TRIGGER> {
 	
-	private final EntityPersister<TARGET, ?> persister;
+	private final EntityWriteExecutor<TARGET, ?> persister;
 	
 	/**
 	 * Simple constructor. Created instance must be added to {@link PersisterListenerCollection} afterward.
 	 *
-	 * @param persister
+	 * @param persister the entity write executor responsible for persisting target entities
 	 */
-	public AfterInsertCollectionCascader(EntityPersister<TARGET, ?> persister) {
+	public AfterInsertCollectionCascader(EntityWriteExecutor<TARGET, ?> persister) {
 		this.persister = persister;
 		this.persister.addInsertListener(new InsertListener<TARGET>() {
 			@Override
@@ -37,7 +37,7 @@ public abstract class AfterInsertCollectionCascader<TRIGGER, TARGET> implements 
 		});
 	}
 	
-	public EntityPersister<TARGET, ?> getPersister() {
+	public EntityWriteExecutor<TARGET, ?> getPersister() {
 		return persister;
 	}
 	

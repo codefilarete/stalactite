@@ -1,44 +1,31 @@
-package org.codefilarete.stalactite.engine.runtime.onetomany;
+package org.codefilarete.stalactite.engine.configurer.resolver.onetomany;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.codefilarete.reflection.Accessor;
-import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.stalactite.dsl.idpolicy.GeneratedKeysPolicy;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteByIdCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteCollectionCascader;
-import org.codefilarete.stalactite.engine.configurer.onetomany.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
-import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
-import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Key;
-import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
-import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.collection.IdentityMap;
 import org.codefilarete.tool.collection.Iterables;
 
-import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
 import static org.codefilarete.tool.Nullable.nullable;
 import static org.codefilarete.tool.collection.Iterables.stream;
 
@@ -84,11 +71,11 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S ex
 	
 	protected final ShadowColumnValueProvider<TRGT, RIGHTTABLE> foreignKeyValueProvider;
 	
-	public OneToManyWithMappedAssociationEngine(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
-												MappedManyRelationDescriptor<SRC, TRGT, S, SRCID, RIGHTTABLE> manyRelationDescriptor,
-												ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-												Set<Column<RIGHTTABLE, ?>> mappedReverseColumns,
-												Function<SRCID, Map<Column<RIGHTTABLE, ?>, ?>> reverseColumnsValueProvider) {
+	public OneToManyWithMappedAssociationEngine(EntityWriteExecutor<TRGT, TRGTID> targetPersister,
+	                                            MappedManyRelationDescriptor<SRC, TRGT, S, SRCID, RIGHTTABLE> manyRelationDescriptor,
+	                                            EntityWriteExecutor<SRC, SRCID> sourcePersister,
+	                                            Set<Column<RIGHTTABLE, ?>> mappedReverseColumns,
+	                                            Function<SRCID, Map<Column<RIGHTTABLE, ?>, ?>> reverseColumnsValueProvider) {
 		super(sourcePersister, targetPersister, manyRelationDescriptor);
 		this.foreignKeyValueProvider = new ShadowColumnValueProvider<TRGT, RIGHTTABLE>() {
 			@Override
@@ -135,47 +122,13 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S ex
 	}
 	
 	@Override
-	public String addSelectCascade(boolean loadSeparately) {
-		// we add target subgraph joins to main persister
-		String relationJoinNodeName = targetPersister.joinAsMany(ROOT_JOIN_NAME, sourcePersister, manyRelationDescriptor.getCollectionAccessPoint(), sourcePersister.getMainTable().getPrimaryKey(), getManyRelationDescriptor().getReverseColumn(),
-				manyRelationDescriptor.getRelationFixer(), null, true, loadSeparately);
-		
-		// we must trigger subgraph event on loading of our own graph, this is mainly for event that initializes things because given ids
-		// are not those of their entity
-		SelectListener<TRGT, TRGTID> targetSelectListener = targetPersister.getPersisterListener().getSelectListener();
-		sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
-			@Override
-			public void beforeSelect(Iterable<SRCID> ids) {
-				// since ids are not those of its entities, we should not pass them as argument, this will only initialize things if needed
-				targetSelectListener.beforeSelect(Collections.emptyList());
-			}
-			
-			@Override
-			public void afterSelect(Set<? extends SRC> result) {
-				Set<TRGT> collect = Iterables.stream(result).flatMap(src -> Nullable.nullable(manyRelationDescriptor.getCollectionAccessPoint().get(src))
-								.map(Collection::stream)
-								.getOr(Stream.empty()))
-						.collect(Collectors.toSet());
-				targetSelectListener.afterSelect(collect);
-			}
-			
-			@Override
-			public void onSelectError(Iterable<SRCID> ids, RuntimeException exception) {
-				// since ids are not those of its entities, we should not pass them as argument
-				targetSelectListener.onSelectError(Collections.emptyList(), exception);
-			}
-		});
-		return relationJoinNodeName;
-	}
-	
-	@Override
-	public void addInsertCascade(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	public void addInsertCascade(EntityWriteExecutor<TRGT, TRGTID> targetPersister) {
 		sourcePersister.addInsertListener(
 				new TargetInstancesInsertCascader(targetPersister, manyRelationDescriptor.getCollectionAccessPoint()));
 	}
 	
 	@Override
-	public void addUpdateCascade(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	public void addUpdateCascade(EntityWriteExecutor<TRGT, TRGTID> targetPersister) {
 		sourcePersister.addUpdateListener(new UpdateListener<SRC>() {
 			
 			/**
@@ -226,7 +179,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S ex
 	}
 	
 	@Override
-	public void addDeleteCascade(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	public void addDeleteCascade(EntityWriteExecutor<TRGT, TRGTID> targetPersister) {
 		sourcePersister.addDeleteListener(new DeleteListener<SRC>() {
 			
 			@Override
@@ -279,43 +232,6 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S ex
 				clearRelationStorageContext();
 			}
 		});
-	}
-	
-	/**
-	 * Method to be invoked in case of entity cycle detected in its persistence configuration.
-	 * We add a second phase load because cycle can hardly be supported by simply joining things together, in particular due to that
-	 * Query and SQL generation don't support several instances of table and columns in them (aliases generation must be enhanced), and
-	 * overall column reading will be messed up because of that (to avoid all of this we should have mapping strategy clones)
-	 * 				
-	 * @param firstPhaseCycleLoadListener code to be invoked when reading rows
-	 */
-	@Override
-	public void addSelectCascadeIn2Phases(FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
-		// Join is declared on non-added tables : Person (alias = null) / Person (alias = null)
-		PrimaryKey<SRCTABLE, SRCID> sourcePrimaryKey = sourcePersister.<SRCTABLE>getMainTable().<SRCID>getPrimaryKey();
-		SRCTABLE relationOwnerTable = sourcePrimaryKey.getTable();
-		Table relationOwnerTableClone = new Table(relationOwnerTable.getName());
-		KeyBuilder<?, SRCID> relationOwnerPrimaryKeyBuilder = Key.from(relationOwnerTableClone);
-		sourcePrimaryKey.getColumns().forEach(column ->
-				relationOwnerPrimaryKeyBuilder.addColumn(relationOwnerTableClone.addColumn(column.getName(), column.getJavaType()))
-		);
-		KeyBuilder<Table, SRCID> relationOwnerClone = Key.from(relationOwnerTableClone);
-		getManyRelationDescriptor().getReverseColumn().getColumns().forEach(column ->
-				relationOwnerClone.addColumn(relationOwnerTableClone.addColumn(column.getExpression(), column.getJavaType()))
-		);
-		
-		IdentifierAssembler<TRGTID, SRCTABLE> targetIdentifierAssembler = targetPersister.getMapping().getIdMapping().getIdentifierAssembler();
-		Key<Table, SRCID> rightKey = relationOwnerClone.build();
-		Key<?, SRCID> rightPrimaryKey = relationOwnerPrimaryKeyBuilder.build();
-		sourcePersister.getEntityJoinTree().addPassiveJoin(
-				ROOT_JOIN_NAME,
-				sourcePrimaryKey,
-				rightKey,
-				relationOwnerTableClone.getName() + "_" + AccessorDefinition.giveDefinition(getManyRelationDescriptor().getCollectionAccessPoint()).getName(),
-				JoinType.OUTER,
-				rightPrimaryKey.getColumns(),
-				(src, columnValueProvider) -> firstPhaseCycleLoadListener.onFirstPhaseRowRead(src, targetIdentifierAssembler.assemble(columnValueProvider)),
-				true);
 	}
 	
 	public class TargetInstancesInsertCascader extends AfterInsertCollectionCascader<SRC, TRGT> {

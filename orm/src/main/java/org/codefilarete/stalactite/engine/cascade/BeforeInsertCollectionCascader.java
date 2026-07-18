@@ -5,7 +5,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.tool.collection.Collections;
@@ -20,18 +20,18 @@ import org.codefilarete.tool.collection.Iterables;
  */
 public abstract class BeforeInsertCollectionCascader<TRIGGER, TARGET> implements InsertListener<TRIGGER> {
 	
-	private final EntityPersister<TARGET, ?> persister;
+	private final EntityWriteExecutor<TARGET, ?> persister;
 	
 	/**
 	 * Simple constructor. Created instance must be added to {@link PersisterListenerCollection} afterward.
 	 *
 	 * @param persister
 	 */
-	public BeforeInsertCollectionCascader(EntityPersister<TARGET, ?> persister) {
+	public BeforeInsertCollectionCascader(EntityWriteExecutor<TARGET, ?> persister) {
 		this.persister = persister;
 	}
 	
-	public EntityPersister<TARGET, ?> getPersister() {
+	public EntityWriteExecutor<TARGET, ?> getPersister() {
 		return persister;
 	}
 	

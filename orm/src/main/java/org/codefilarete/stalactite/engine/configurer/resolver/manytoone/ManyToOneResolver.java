@@ -5,6 +5,7 @@ import java.util.function.Consumer;
 
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions;
+import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneConfigurer.MandatoryRelationAssertBeforeInsertListener;
 import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneConfigurer.MandatoryRelationAssertBeforeUpdateListener;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToManyRelation;
@@ -12,11 +13,7 @@ import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToOneRela
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.manytomany.AggregateManyToManyAppender;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
-import org.codefilarete.stalactite.engine.runtime.manytoone.ManyToOneEngine;
-import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithAssociationTableEngine;
-import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithIndexedAssociationTableEngine;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.READ_ONLY;
@@ -26,8 +23,8 @@ import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMo
  * Many-to-many relations always use an intermediary association table; there is no "owned by reverse side" variant.
  * Two sub-paths are supported:
  * <ul>
- *   <li>Non-indexed: {@link AssociationTable} + {@link OneToManyWithAssociationTableEngine}</li>
- *   <li>Indexed: {@link IndexedAssociationTable} + {@link OneToManyWithIndexedAssociationTableEngine}</li>
+ *   <li>Non-indexed: {@link AssociationTable} + {@link org.codefilarete.stalactite.engine.configurer.resolver.onetomany.OneToManyWithAssociationTableEngine}</li>
+ *   <li>Indexed: {@link IndexedAssociationTable} + {@link org.codefilarete.stalactite.engine.configurer.resolver.onetomany.OneToManyWithIndexedAssociationTableEngine}</li>
  * </ul>
  * The SELECT join-tree wiring is handled separately by {@link AggregateManyToManyAppender}.
  *
@@ -53,12 +50,12 @@ public class ManyToOneResolver {
 			LEFTTABLE extends Table<LEFTTABLE>,
 			RIGHTTABLE extends Table<RIGHTTABLE>>
 	void resolve(ResolvedManyToOneRelation<SRC, TRGT, TRGTID, LEFTTABLE, RIGHTTABLE> resolvedRelation,
-	             ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-	             Consumer<ConfiguredRelationalPersister<TRGT, TRGTID>> createdPersisterConsumer) {
+	             EntityWriteExecutor<SRC, SRCID> sourcePersister,
+	             Consumer<EntityWriteExecutor<TRGT, TRGTID>> createdPersisterConsumer) {
 		
 		assertConfigurationIsSupported(resolvedRelation.getRelationMode());
 		
-		ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getTargetEntity());
+		EntityWriteExecutor<TRGT, TRGTID> targetPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getTargetEntity());
 		createdPersisterConsumer.accept(targetPersister);
 		
 		ManyToOneEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> engine = new ManyToOneEngine<>(

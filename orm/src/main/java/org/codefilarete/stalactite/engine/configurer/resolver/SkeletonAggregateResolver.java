@@ -6,6 +6,7 @@ import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.PropertyMutator;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
+import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.DefaultComposedIdentifierAssembler;
@@ -13,16 +14,15 @@ import org.codefilarete.stalactite.engine.configurer.builder.embeddable.Embeddab
 import org.codefilarete.stalactite.engine.configurer.dslresolver.AssignedByAnotherIdentifierMapping;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.CompositeIdentifierMapping;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.SingleIdentifierMapping;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity.Versioning;
 import org.codefilarete.stalactite.engine.configurer.model.AncestorJoin;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
-import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity.Versioning;
 import org.codefilarete.stalactite.engine.configurer.model.ExtraTableJoin;
 import org.codefilarete.stalactite.engine.configurer.model.IdentifierMapping;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.WriteExecutor.JDBCBatchingIterator;
@@ -69,7 +69,7 @@ public class SkeletonAggregateResolver {
 	}
 	
 	public <B, C extends B, I, T extends Table<T>>
-	ConfiguredRelationalPersister<C, I> buildPersister(Entity<C, I, T> rootEntity) {
+	EntityWriteExecutor<C, I> buildPersister(Entity<C, I, T> rootEntity) {
 		// TODO: check for ealready existing persister in the persistence context
 		// TODO: wrap result in an OptimizedUpdatePersister
 		// TODO: be inspired from DefaultPersisterBuilder.build()

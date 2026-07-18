@@ -3,10 +3,10 @@ package org.codefilarete.stalactite.engine.cascade;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
-import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
+import org.codefilarete.tool.collection.Iterables;
 
 /**
  * Cascader for delete, written for one-to-many style of cascade where Target owns the relation to Trigger
@@ -17,13 +17,13 @@ import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
  */
 public abstract class BeforeDeleteByIdCollectionCascader<TRIGGER, TARGET> implements DeleteByIdListener<TRIGGER> {
 	
-	private final EntityPersister<TARGET, ?> persister;
+	private final EntityWriteExecutor<TARGET, ?> persister;
 	
 	/**
 	 * Simple constructor. Created instance must be added to {@link PersisterListenerCollection} afterward.
 	 * @param persister
 	 */
-	public BeforeDeleteByIdCollectionCascader(EntityPersister<TARGET, ?> persister) {
+	public BeforeDeleteByIdCollectionCascader(EntityWriteExecutor<TARGET, ?> persister) {
 		this.persister = persister;
 		this.persister.addDeleteByIdListener(new DeleteByIdListener<TARGET>() {
 			@Override
@@ -33,7 +33,7 @@ public abstract class BeforeDeleteByIdCollectionCascader<TRIGGER, TARGET> implem
 		});
 	}
 	
-	public EntityPersister<TARGET, ?> getPersister() {
+	public EntityWriteExecutor<TARGET, ?> getPersister() {
 		return persister;
 	}
 	

@@ -5,14 +5,11 @@ import java.util.function.Consumer;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions;
+import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneConfigurer.MandatoryRelationAssertBeforeUpdateListener;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneConfigurerTemplate.MandatoryRelationAssertBeforeInsertListener;
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
-import org.codefilarete.stalactite.engine.runtime.onetoone.AbstractOneToOneEngine;
-import org.codefilarete.stalactite.engine.runtime.onetoone.OneToOneOwnedBySourceEngine;
-import org.codefilarete.stalactite.engine.runtime.onetoone.OneToOneOwnedByTargetEngine;
 import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
@@ -42,12 +39,12 @@ public class OneToOneResolver {
 	 */
 	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
 	void resolve(ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> relationDefinition,
-	             ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-	             Consumer<ConfiguredRelationalPersister<TRGT, TRGTID>> createdPersisterConsumer) {
+	             EntityWriteExecutor<SRC, SRCID> sourcePersister,
+	             Consumer<EntityWriteExecutor<TRGT, TRGTID>> createdPersisterConsumer) {
 		
 		assertConfigurationIsSupported(relationDefinition.getRelationMode());
 		
-		ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = skeletonAggregateResolver.buildPersister(relationDefinition.getTargetEntity());
+		EntityWriteExecutor<TRGT, TRGTID> targetPersister = skeletonAggregateResolver.buildPersister(relationDefinition.getTargetEntity());
 		createdPersisterConsumer.accept(targetPersister);
 		
 		ReadWritePropertyAccessPoint<SRC, TRGT> targetAccessor = relationDefinition.getAccessor();

@@ -8,7 +8,7 @@ import java.util.function.Function;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.Mutator;
-import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRecord;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRecordMapping;
@@ -16,7 +16,6 @@ import org.codefilarete.stalactite.engine.configurer.elementcollection.IndexedEl
 import org.codefilarete.stalactite.engine.configurer.elementcollection.IndexedElementRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedElementCollectionRelation;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.AfterUpdateTrigger;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.DeleteTargetEntitiesBeforeDeleteCascader;
@@ -46,8 +45,9 @@ public class ElementCollectionResolver {
 	
 	public <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>,
 			ER extends ElementRecord<TRGT, SRCID>>
-	ElementRecordPersister<TRGT, SRCID, COLLECTIONTABLE, ER> resolve(ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, LEFTTABLE, COLLECTIONTABLE, ER> resolvedRelation,
-	             ConfiguredRelationalPersister<SRC, SRCID> sourcePersister) {
+	ElementRecordPersister<TRGT, SRCID, COLLECTIONTABLE, ER> resolve(
+			ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, LEFTTABLE, COLLECTIONTABLE, ER> resolvedRelation,
+			EntityWriteExecutor<SRC, SRCID> sourcePersister) {
 		
 		ElementCollectionMapping<SRC, SRCID, TRGT, S, LEFTTABLE, COLLECTIONTABLE, ER> elementCollectionMapping = (ElementCollectionMapping<SRC, SRCID, TRGT, S, LEFTTABLE, COLLECTIONTABLE, ER>) buildCollectionMapping(resolvedRelation, sourcePersister);
 		
@@ -88,7 +88,7 @@ public class ElementCollectionResolver {
 	
 	private <SRC, SRCID, TRGT, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>, ER extends ElementRecord<TRGT, SRCID>>
 	ElementCollectionMapping<SRC, SRCID, TRGT, S, LEFTTABLE, COLLECTIONTABLE, ElementRecord<TRGT, SRCID>> buildCollectionMapping(ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, LEFTTABLE, COLLECTIONTABLE, ER> resolvedRelation,
-	                                                                                                                             ConfiguredRelationalPersister<SRC, SRCID> sourcePersister) {
+	                                                                                                                             EntityWriteExecutor<SRC, SRCID> sourcePersister) {
 		ElementCollectionMapping<SRC, SRCID, TRGT, S, LEFTTABLE, COLLECTIONTABLE, ElementRecord<TRGT, SRCID>> elementCollectionMapping;
 		if (resolvedRelation.isOrdered()) {
 			elementCollectionMapping = buildIndexedCollectionMapping((ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, LEFTTABLE, COLLECTIONTABLE, IndexedElementRecord<TRGT, SRCID>>) resolvedRelation, sourcePersister);
@@ -100,7 +100,7 @@ public class ElementCollectionResolver {
 	
 	private <SRC, SRCID, TRGT, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>, ER extends ElementRecord<TRGT, SRCID>>
 	ElementCollectionMapping<SRC, SRCID, TRGT, S, LEFTTABLE, COLLECTIONTABLE, ElementRecord<TRGT, SRCID>> buildNonIndexedCollectionMapping(ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, LEFTTABLE, COLLECTIONTABLE, ER> resolvedRelation,
-	                                                                                                                                       ConfiguredRelationalPersister<SRC, SRCID> sourcePersister) {
+	                                                                                                                                       EntityWriteExecutor<SRC, SRCID> sourcePersister) {
 		EmbeddedClassMapping<ER, COLLECTIONTABLE> elementRecordMappingStrategy = new EmbeddedClassMapping<ER, COLLECTIONTABLE>((Class) ElementRecord.class,
 				resolvedRelation.getJoin().getRightKey().getTable(),
 				resolvedRelation.getColumnMapping(),
@@ -129,7 +129,7 @@ public class ElementCollectionResolver {
 	}
 	
 	private <SRC, SRCID, TRGT, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>, ER extends IndexedElementRecord<TRGT, SRCID>>
-	ElementCollectionMapping<SRC, SRCID, TRGT, S, LEFTTABLE, COLLECTIONTABLE, ElementRecord<TRGT, SRCID>> buildIndexedCollectionMapping(ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, LEFTTABLE, COLLECTIONTABLE, ER> resolvedRelation, ConfiguredRelationalPersister<SRC, SRCID> sourcePersister) {
+	ElementCollectionMapping<SRC, SRCID, TRGT, S, LEFTTABLE, COLLECTIONTABLE, ElementRecord<TRGT, SRCID>> buildIndexedCollectionMapping(ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, LEFTTABLE, COLLECTIONTABLE, ER> resolvedRelation, EntityWriteExecutor<SRC, SRCID> sourcePersister) {
 		EmbeddedClassMapping<ER, COLLECTIONTABLE> elementRecordMappingStrategy = new EmbeddedClassMapping<ER, COLLECTIONTABLE>((Class) IndexedElementRecord.class,
 				resolvedRelation.getJoin().getRightKey().getTable(),
 				resolvedRelation.getColumnMapping());
@@ -188,7 +188,7 @@ public class ElementCollectionResolver {
 		
 		private final Accessor<SRC, ? extends Collection<ER>> collectionGetter;
 		
-		public TargetInstancesInsertCascader(EntityPersister<ER, ER> targetPersister, Accessor<SRC, ? extends Collection<ER>> collectionGetter) {
+		public TargetInstancesInsertCascader(EntityWriteExecutor<ER, ER> targetPersister, Accessor<SRC, ? extends Collection<ER>> collectionGetter) {
 			super(targetPersister);
 			this.collectionGetter = collectionGetter;
 		}

@@ -11,6 +11,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
+import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.AssemblyPoint;
@@ -47,8 +48,8 @@ public class AggregateMapAppender {
 		
 		ReadWritePropertyAccessPoint<SRC, M> mapAccessor = resolvedRelation.getAccessor();
 		
-		Holder<ConfiguredRelationalPersister<K, KID>> keyEntityPersisterHolder = new Holder<>();
-		Holder<ConfiguredRelationalPersister<V, VID>> valueEntityPersisterHolder = new Holder<>();
+		Holder<EntityWriteExecutor<K, KID>> keyEntityPersisterHolder = new Holder<>();
+		Holder<EntityWriteExecutor<V, VID>> valueEntityPersisterHolder = new Holder<>();
 		
 		KeyValueRecordPersister<?, ?, SRCID, MAPTABLE> keyValueRecordPersister = mapResolver.resolve(
 				resolvedRelation,
@@ -115,7 +116,7 @@ public class AggregateMapAppender {
 				}
 			});
 			
-			ConfiguredRelationalPersister<K, KID> keyEntityPersister = keyEntityPersisterHolder.get();
+			EntityWriteExecutor<K, KID> keyEntityPersister = keyEntityPersisterHolder.get();
 			ForeignKey<MAPTABLE, KTABLE, KID> keyEntityReferenceMapping = resolvedRelation.getKeyEntityDefinition().getForeignKey();
 			
 			appendEntityJoin(rootPersister, mapJoinNodeName, mapAccessor, keyEntityPersister, keyEntityReferenceMapping, inMemoryKeyRelationHolder, record -> (KID) record.getKey());
@@ -153,7 +154,7 @@ public class AggregateMapAppender {
 				}
 			});
 			
-			ConfiguredRelationalPersister<V, VID> valueEntityPersister = valueEntityPersisterHolder.get();
+			EntityWriteExecutor<V, VID> valueEntityPersister = valueEntityPersisterHolder.get();
 			ForeignKey<MAPTABLE, VTABLE, VID> keyEntityReferenceMapping = resolvedRelation.getValueEntityDefinition().getForeignKey();
 			
 			appendEntityJoin(rootPersister, mapJoinNodeName, mapAccessor, valueEntityPersister, keyEntityReferenceMapping, inMemoryValueRelationHolder, record -> (VID) record.getValue());
@@ -228,7 +229,7 @@ public class AggregateMapAppender {
 	void appendEntityJoin(ConfiguredRelationalPersister<SRC, SRCID> rootPersister,
 	                      String mapJoinNodeName,
 	                      ReadWritePropertyAccessPoint<SRC, M> mapAccessor,
-	                      ConfiguredRelationalPersister<ENTITY, ENTITY_ID> entityPersister,
+	                      EntityWriteExecutor<ENTITY, ENTITY_ID> entityPersister,
 	                      ForeignKey<MAPTABLE, ENTITYTABLE, ENTITY_ID> foreignKey,
 	                      InMemoryRelationHolder<SRCID, ENTITY_ID, ENTITY> inMemoryRelationHolder,
 						  Function<KeyValueRecord<?, ?, SRCID>, ENTITY_ID> entityIdExtractor) {

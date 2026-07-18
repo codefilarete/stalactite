@@ -1,0 +1,242 @@
+package org.codefilarete.stalactite.engine.configurer.resolver.map;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.codefilarete.reflection.Accessor;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.engine.EntityWriteExecutor;
+import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord;
+import org.codefilarete.stalactite.engine.configurer.map.RecordId;
+import org.codefilarete.stalactite.engine.diff.AbstractDiff;
+import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Iterables;
+
+/**
+ * Class aimed at doing same thing as {@link CollectionUpdater} but for {@link Map} containing entities as keys :
+ * requires to update {@link Entry} as well as propagate insert / update /delete operation to key-entities. 
+ *
+ * @param <SRC> entity type owning the relation
+ * @param <SRCID> entity owning the relation identifier type 
+ * @param <K> Map key entity type
+ * @param <V> Map value type
+ * @param <ENTITY> entity type, expected to be K or V
+ * @param <KK> type of {@link KeyValueRecord} key when transforming initial Map entries to {@link KeyValueRecord} to be persisted
+ * @param <VV> type of {@link KeyValueRecord} value when transforming initial Map entries to {@link KeyValueRecord} to be persisted
+ * @author Guillaume Mary
+ */
+public class MapUpdater<SRC, SRCID, K, V, ENTITY, KK, VV> extends CollectionUpdater<SRC, Entry<K, V>, Set<Entry<K, V>>> {
+	
+	private final EntityWriteExecutor<KeyValueRecord<KK, VV, SRCID>, RecordId<KK, SRCID>> keyValueRecordPersister;
+	
+	private final EntityWriteExecutor<SRC, SRCID> sourcePersister;
+	
+	private final RelationMode maintenanceMode;
+	private final BiFunction<Entry<K, V>, SRCID, KeyValueRecord<KK, VV, SRCID>> recordBuilder;
+	
+	/**
+	 * Convenience constructor for the case where a single side of the {@link Map} (key or value) is an entity : wraps
+	 * the given entity persister into an {@link EntityWriter} and uses the entity id as the diff footprint.
+	 */
+	public MapUpdater(Accessor<SRC, Set<Entry<K, V>>> targetEntitiesGetter,
+	                  EntityWriteExecutor<ENTITY, ?> entityPersister,
+					  EntityWriteExecutor<KeyValueRecord<KK, VV, SRCID>, RecordId<KK, SRCID>> keyValueRecordPersister,
+					  EntityWriteExecutor<SRC, SRCID> sourcePersister,
+					  RelationMode maintenanceMode,
+					  Function<? super Entry<K, V>, ENTITY> entryBeanExtractor,
+					  BiFunction<Entry<K, V>, SRCID, KeyValueRecord<KK, VV, SRCID>> recordBuilder) {
+		this(targetEntitiesGetter,
+				new RelationalPersisterAsEntityWriter<>(entityPersister, entryBeanExtractor, maintenanceMode),
+				keyValueRecordPersister,
+				sourcePersister,
+				maintenanceMode,
+				(Entry<K, V> entry) -> entityPersister.getId(entryBeanExtractor.apply(entry)),
+				recordBuilder);
+	}
+	
+	/**
+	 * Primary constructor: the cascade to the entity side(s) is delegated to the given {@link EntityWriter}.
+	 * {@link Map} entries are diffed through the given {@code idProvider} footprint.
+	 */
+	public MapUpdater(Accessor<SRC, Set<Entry<K, V>>> targetEntitiesGetter,
+	                  EntityWriter<Entry<K, V>, ?> entityWriter,
+	                  EntityWriteExecutor<KeyValueRecord<KK, VV, SRCID>, RecordId<KK, SRCID>> keyValueRecordPersister,
+					  EntityWriteExecutor<SRC, SRCID> sourcePersister,
+					  RelationMode maintenanceMode,
+					  Accessor<Entry<K, V>, ?> idProvider,
+					  BiFunction<Entry<K, V>, SRCID, KeyValueRecord<KK, VV, SRCID>> recordBuilder) {
+		super(targetEntitiesGetter,
+				entityWriter,
+				null, /* no reverse setter because we store only raw values */
+				true,
+				idProvider);
+		this.keyValueRecordPersister = keyValueRecordPersister;
+		this.sourcePersister = sourcePersister;
+		this.maintenanceMode = maintenanceMode;
+		this.recordBuilder = recordBuilder;
+	}
+	
+	@Override
+	protected KeyValueAssociationTableUpdateContext newUpdateContext(Duo<SRC, SRC> updatePayload) {
+		return new KeyValueAssociationTableUpdateContext(updatePayload);
+	}
+	
+	@Override
+	protected void onAddedElements(UpdateContext updateContext, AbstractDiff<Entry<K, V>> diff) {
+		super.onAddedElements(updateContext, diff);
+		KeyValueRecord<KK, VV, SRCID> associationRecord = newRecord(updateContext.getPayload().getLeft(), diff.getReplacingInstance());
+		((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeInserted().add(associationRecord);
+	}
+	
+	@Override
+	protected void onHeldElements(CollectionUpdater<SRC, Entry<K, V>, Set<Entry<K, V>>>.UpdateContext updateContext, AbstractDiff<Entry<K, V>> diff) {
+		super.onHeldElements(updateContext, diff);
+		Duo<KeyValueRecord<KK, VV, SRCID>, KeyValueRecord<KK, VV, SRCID>> associationRecord = new Duo<>(
+				newRecord(updateContext.getPayload().getLeft(), diff.getReplacingInstance()),
+				newRecord(updateContext.getPayload().getLeft(), diff.getSourceInstance())
+		);
+		((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeUpdated().add(associationRecord);
+	}
+	
+	@Override
+	protected void onRemovedElements(UpdateContext updateContext, AbstractDiff<Entry<K, V>> diff) {
+		super.onRemovedElements(updateContext, diff);
+		
+		KeyValueRecord<KK, VV, SRCID> associationRecord = newRecord(updateContext.getPayload().getLeft(), diff.getSourceInstance());
+		((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeDeleted().add(associationRecord);
+	}
+	
+	@Override
+	protected void insertTargets(UpdateContext updateContext) {
+		// eventually call any action on related entity persistence before inserting association records to satisfy integrity constraint
+		super.insertTargets(updateContext);
+		if (maintenanceMode.allowsAssociationWrite()) {
+			keyValueRecordPersister.insert(((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeInserted());
+		}
+	}
+	
+	@Override
+	protected void updateTargets(CollectionUpdater<SRC, Entry<K, V>, Set<Entry<K, V>>>.UpdateContext updateContext, boolean allColumnsStatement) {
+		// eventually call any action on related entity persistence before updating association records to satisfy integrity constraint
+		super.updateTargets(updateContext, allColumnsStatement);
+		if (maintenanceMode.allowsAssociationWrite()) {
+			keyValueRecordPersister.update(((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeUpdated(), allColumnsStatement);
+		}
+	}
+	
+	@Override
+	protected void deleteTargets(UpdateContext updateContext) {
+		// we delete association records before targets to satisfy integrity constraint
+		if (maintenanceMode.allowsAssociationWrite()) {
+			keyValueRecordPersister.delete(((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeDeleted());
+		}
+		// eventually call any action on related entity persistence after deleting association records to satisfy integrity constraint
+		super.deleteTargets(updateContext);
+	}
+	
+	private KeyValueRecord<KK, VV, SRCID> newRecord(SRC e, Entry<K, V> record) {
+		return recordBuilder.apply(record, sourcePersister.getId(e));
+	}
+	
+	/**
+	 * {@link EntityWriter} over {@link Entry} that cascades persistence operations to an entity (any side of a
+	 * {@link Map} : key or value).
+	 */
+	public static class RelationalPersisterAsEntityWriter<K, V, ENTITY, ENTITY_ID> implements EntityWriter<Entry<K, V>, ENTITY_ID> {
+		
+		private final EntityWriteExecutor<ENTITY, ENTITY_ID> relatedEntityPersister;
+		private final Function<? super Entry<K, V>, ENTITY> mapper;
+		private final RelationMode maintenanceMode;
+		
+		/**
+		 * Wraps the give {@link ConfiguredRelationalPersister} into a {@link RelationalPersisterAsEntityWriter} in
+		 * order to persist the members of a {@link Map} (key or value) : the extracting function is the second argument.
+		 *
+		 * @param relatedEntityPersister the relational entity persister responsible for performing persistence operations on ENTITY instances
+		 * @param mapper the function used to extract an ENTITY instance from a {@link Entry}
+		 * @param maintenanceMode the relation mode to use for the given entity persister
+		 */
+		public RelationalPersisterAsEntityWriter(
+				EntityWriteExecutor<ENTITY, ENTITY_ID> relatedEntityPersister,
+				Function<? super Entry<K, V>, ENTITY> mapper,
+				RelationMode maintenanceMode) {
+			this.relatedEntityPersister = relatedEntityPersister;
+			this.mapper = mapper;
+			this.maintenanceMode = maintenanceMode;
+		}
+		
+		@Override
+		public void update(Iterable<? extends Duo<Entry<K, V>, Entry<K, V>>> differencesIterable, boolean allColumnsStatement) {
+			if (maintenanceMode.allowsEntityWrite()) {
+				relatedEntityPersister.update(Iterables.stream(differencesIterable)
+						.map(duo -> new Duo<>(mapper.apply(duo.getLeft()), mapper.apply(duo.getRight())))
+						.collect(Collectors.toSet()), allColumnsStatement);
+			}
+		}
+		
+		@Override
+		public void delete(Iterable<? extends Entry<K, V>> entities) {
+			if (maintenanceMode.allowsEntityDeletion()) {
+				relatedEntityPersister.delete(Iterables.stream(entities).map(mapper).collect(Collectors.toSet()));
+			}
+		}
+		
+		@Override
+		public void insert(Iterable<? extends Entry<K, V>> entities) {
+			if (maintenanceMode.allowsEntityWrite()) {
+				relatedEntityPersister.insert(Iterables.stream(entities).map(mapper).collect(Collectors.toSet()));
+			}
+		}
+		
+		@Override
+		public void persist(Iterable<? extends Entry<K, V>> entities) {
+			if (maintenanceMode.allowsEntityWrite()) {
+				relatedEntityPersister.persist(Iterables.stream(entities).map(mapper).collect(Collectors.toSet()));
+			}
+		}
+		
+		@Override
+		public void updateById(Iterable<? extends Entry<K, V>> entities) {
+			if (maintenanceMode.allowsEntityWrite()) {
+				relatedEntityPersister.updateById(Iterables.stream(entities).map(mapper).collect(Collectors.toSet()));
+			}
+		}
+	}
+	
+	/**
+	 * Dedicated context to Map update. Add storage of entries modifications, letting entities modifications management
+	 * to the {@link UpdateContext} upper class.
+	 * 
+	 * @author Guillaume Mary
+	 */
+	class KeyValueAssociationTableUpdateContext extends UpdateContext {
+		
+		private final List<KeyValueRecord<KK, VV, SRCID>> associationRecordsToBeInserted = new ArrayList<>();
+		private final List<Duo<KeyValueRecord<KK, VV, SRCID>, KeyValueRecord<KK, VV, SRCID>>> associationRecordsToBeUpdated = new ArrayList<>();
+		private final List<KeyValueRecord<KK, VV, SRCID>> associationRecordsToBeDeleted = new ArrayList<>();
+		
+		public KeyValueAssociationTableUpdateContext(Duo<SRC, SRC> updatePayload) {
+			super(updatePayload);
+		}
+		
+		public List<KeyValueRecord<KK, VV, SRCID>> getAssociationRecordsToBeInserted() {
+			return associationRecordsToBeInserted;
+		}
+		
+		public List<Duo<KeyValueRecord<KK, VV, SRCID>, KeyValueRecord<KK, VV, SRCID>>> getAssociationRecordsToBeUpdated() {
+			return associationRecordsToBeUpdated;
+		}
+		
+		public List<KeyValueRecord<KK, VV, SRCID>> getAssociationRecordsToBeDeleted() {
+			return associationRecordsToBeDeleted;
+		}
+	}
+}

@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.configurer.IndexedAssociationRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToManyRelation;
@@ -191,8 +192,8 @@ public class AggregateManyToManyAppender {
 			LEFTTABLE extends Table<LEFTTABLE>,
 			RIGHTTABLE extends Table<RIGHTTABLE>,
 			ASSOCIATIONTABLE extends IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
-	String appendIndexedAssociation(ConfiguredRelationalPersister<SRC, SRCID> rootPersister,
-	                                ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
+	String appendIndexedAssociation(EntityWriteExecutor<SRC, SRCID> rootPersister,
+	                                EntityWriteExecutor<TRGT, TRGTID> targetPersister,
 	                                ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
 	                                AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE> assemblyPawn,
 	                                IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ?, SRCID, TRGTID> rawJoin,

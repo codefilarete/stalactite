@@ -8,6 +8,7 @@ import java.util.Queue;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListener;
@@ -23,13 +24,20 @@ import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.elementcollection.AggregateElementCollectionAppender;
+import org.codefilarete.stalactite.engine.configurer.resolver.elementcollection.ElementCollectionResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.manytomany.AggregateManyToManyAppender;
+import org.codefilarete.stalactite.engine.configurer.resolver.manytomany.ManyToManyResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.manytoone.AggregateManyToOneAppender;
+import org.codefilarete.stalactite.engine.configurer.resolver.manytoone.ManyToOneResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.map.AggregateMapAppender;
+import org.codefilarete.stalactite.engine.configurer.resolver.map.MapResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.AggregateOneToManyAppender;
+import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.OneToManyResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetoone.AggregateOneToOneAppender;
+import org.codefilarete.stalactite.engine.configurer.resolver.onetoone.OneToOneResolver;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.function.Hanger.Holder;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
 
@@ -45,6 +53,13 @@ public class AggregateResolver {
 	private final AggregateElementCollectionAppender elementCollectionAppender;
 	private final AggregateMapAppender mapAppender;
 	
+	private final OneToOneResolver oneToOneResolver;
+	private final OneToManyResolver oneToManyResolver;
+	private final ManyToManyResolver manyToManyResolver;
+	private final ManyToOneResolver manyToOneResolver;
+	private final ElementCollectionResolver elementCollectionResolver;
+	private final MapResolver mapResolver;
+	
 	public AggregateResolver(PersistenceContext persistenceContext) {
 		this(persistenceContext, persistenceContext.getPersisterRegistry());
 	}
@@ -59,6 +74,13 @@ public class AggregateResolver {
 		this.manyToOneAppender = new AggregateManyToOneAppender(skeletonAggregateResolver);
 		this.elementCollectionAppender = new AggregateElementCollectionAppender(persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 		this.mapAppender = new AggregateMapAppender(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
+		
+		this.oneToOneResolver = new OneToOneResolver(skeletonAggregateResolver);
+		this.oneToManyResolver = new OneToManyResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
+		this.manyToManyResolver = new ManyToManyResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
+		this.manyToOneResolver = new ManyToOneResolver(skeletonAggregateResolver);
+		this.elementCollectionResolver = new ElementCollectionResolver(persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
+		this.mapResolver = new MapResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 	}
 	
 	public <C, I> EntityPersister<C, I> resolve(EntityMappingConfiguration<C, I> rootConfiguration) {
@@ -102,7 +124,7 @@ public class AggregateResolver {
 		// TODO: wrap result in an OptimizedUpdatePersister
 		// TODO: be inspired from DefaultPersisterBuilder.build()
 		
-		ConfiguredRelationalPersister<C, I> result = null;
+		EntityWriteExecutor<C, I> result = null;
 		if (rootEntity instanceof Entity) {
 			result = skeletonAggregateResolver.buildPersister((Entity<C, I, T>) rootEntity);
 		} else {
@@ -117,7 +139,7 @@ public class AggregateResolver {
 	
 	
 	<SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
-	void appendRelations(AbstractEntity<SRC, SRCID, LEFTTABLE> rootEntity, ConfiguredRelationalPersister<SRC, SRCID> aggregatePersister) {
+	void appendRelations(AbstractEntity<SRC, SRCID, LEFTTABLE> rootEntity, EntityWriteExecutor<SRC, SRCID> aggregatePersister) {
 		
 		// Iterating over all the one-to-many relations of the tree (starting from given root entity).
 		// It's made by a breadth-first algorithm with node stacking, no recursion here.
@@ -127,16 +149,28 @@ public class AggregateResolver {
 		// We start by a kind of fake seed, without relation, because we don't have any for the root entity
 		relationStack.add(new AssemblyPoint<>(rootEntity, aggregatePersister, ROOT_JOIN_NAME, null));
 		
+		Queue<AssemblyPoint<?, ?, ?, ?>> relationStack2 = new ArrayDeque<>();
+		
 		while (!relationStack.isEmpty()) {
 			AssemblyPoint<?, ?, ?, ?> assemblyPawn = relationStack.poll();
 			assemblyPawn.getRelationOwnerEntity().getRelations()
 					.forEach(relationPawn -> {
 						if (relationPawn instanceof ResolvedOneToOneRelation) {
-							AssemblyPoint<?, ?, ?, ?> assemblyPoint = oneToOneAppender.append(
+							Holder<ConfiguredRelationalPersister<TRGT, Object>> targetPersisterHolder = new Holder<>();
+							ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> localRelation = (ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>) relationPawn;
+							// TODO: enhance by returning the built EntityPersister, not by giving it to the Holder
+							oneToOneResolver.resolve(
+									localRelation,
 									aggregatePersister,
-									(ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>) relationPawn,
-									(AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE>) assemblyPawn);
+									targetPersisterHolder::set);
+							AssemblyPoint assemblyPoint = oneToOneAppender.append(
+									localRelation,
+									targetPersisterHolder.get(),
+									assemblyPawn.getParentJoinPoint(),
+									localRelation.getAccessor(),
+									aggregatePersister.getEntityJoinTree());
 							relationStack.add(assemblyPoint);
+							relationStack2.add(assemblyPoint);
 						}
 						if (relationPawn instanceof ResolvedOneToManyRelation) {
 							AssemblyPoint<?, ?, ?, ?> assemblyPoint = oneToManyAppender.append(
@@ -178,12 +212,12 @@ public class AggregateResolver {
 	public static class AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE extends Table<LEFTTABLE>> {
 		
 		private final AbstractEntity<SRC, SRCID, LEFTTABLE> relationOwnerEntity;
-		private final ConfiguredRelationalPersister<SRC, SRCID> relationOwnerPersister;
+		private final EntityWriteExecutor<SRC, SRCID> relationOwnerPersister;
 		private final String parentJoinPoint;
 		private final PropertyAccessor<SRC, TRGT> accessor;
 		
 		public AssemblyPoint(AbstractEntity<SRC, SRCID, LEFTTABLE> relationOwnerEntity,
-		                     ConfiguredRelationalPersister<SRC, SRCID> relationOwnerPersister,
+		                     EntityWriteExecutor<SRC, SRCID> relationOwnerPersister,
 		                     String parentJoinPoint,
 		                     PropertyAccessor<SRC, TRGT> accessor) {
 			this.relationOwnerEntity = relationOwnerEntity;
@@ -192,7 +226,7 @@ public class AggregateResolver {
 			this.accessor = accessor;
 		}
 		
-		public ConfiguredRelationalPersister<SRC, SRCID> getRelationOwnerPersister() {
+		public EntityWriteExecutor<SRC, SRCID> getRelationOwnerPersister() {
 			return relationOwnerPersister;
 		}
 		

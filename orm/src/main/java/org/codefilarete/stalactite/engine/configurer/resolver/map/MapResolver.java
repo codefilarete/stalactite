@@ -3,10 +3,10 @@ package org.codefilarete.stalactite.engine.configurer.resolver.map;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.map.EntryMapResolver.KeyValueRecordPersister;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -29,17 +29,17 @@ public class MapResolver {
 			KTABLE extends Table<KTABLE>,
 			VTABLE extends Table<VTABLE>>
 	KeyValueRecordPersister<?, ?, SRCID, MAPTABLE> resolve(ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, LEFTTABLE, MAPTABLE, KTABLE, VTABLE> resolvedRelation,
-	                                                       ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-	                                                       Consumer<ConfiguredRelationalPersister<K, KID>> createdKeyPersisterConsumer,
-	                                                       Consumer<ConfiguredRelationalPersister<V, VID>> createdValuePersisterConsumer) {
+	                                                       EntityWriteExecutor<SRC, SRCID> sourcePersister,
+	                                                       Consumer<EntityWriteExecutor<K, KID>> createdKeyPersisterConsumer,
+	                                                       Consumer<EntityWriteExecutor<V, VID>> createdValuePersisterConsumer) {
 		
-		ConfiguredRelationalPersister<K, KID> keyEntityPersister = null;
+		EntityWriteExecutor<K, KID> keyEntityPersister = null;
 		if (resolvedRelation.getKeyEntityDefinition() != null) {
 			keyEntityPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getKeyEntityDefinition().getEntity());
 			createdKeyPersisterConsumer.accept(keyEntityPersister);
 		}
 		
-		ConfiguredRelationalPersister<V, VID> valueEntityPersister = null;
+		EntityWriteExecutor<V, VID> valueEntityPersister = null;
 		if (resolvedRelation.getValueEntityDefinition() != null) {
 			valueEntityPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getValueEntityDefinition().getEntity());
 			createdValuePersisterConsumer.accept(valueEntityPersister);

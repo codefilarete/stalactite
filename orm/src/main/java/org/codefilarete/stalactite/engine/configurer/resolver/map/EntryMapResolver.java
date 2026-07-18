@@ -19,21 +19,20 @@ import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReadWriteAccessorChain;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions;
-import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecordIdMapping;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecordMapping;
-import org.codefilarete.stalactite.engine.configurer.map.MapUpdater;
 import org.codefilarete.stalactite.engine.configurer.map.RecordId;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation.CompositeMemberMapping;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation.EntryMemberMapping;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation.ScalarMemberMapping;
+import org.codefilarete.stalactite.engine.configurer.resolver.map.MapUpdater.RelationalPersisterAsEntityWriter;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater.EntityWriter;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.AfterUpdateTrigger;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.DeleteTargetEntitiesBeforeDeleteCascader;
@@ -50,7 +49,6 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.function.Functions.NullProofFunction;
 
-import static org.codefilarete.stalactite.engine.configurer.map.MapUpdater.RelationalPersisterAsEntityWriter;
 import static org.codefilarete.tool.Nullable.nullable;
 
 public class EntryMapResolver {
@@ -79,9 +77,9 @@ public class EntryMapResolver {
 			VTABLE extends Table<VTABLE>,
 			X, Y>
 	KeyValueRecordPersister<X, Y, SRCID, MAPTABLE> resolve(ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, LEFTTABLE, MAPTABLE, KTABLE, VTABLE> resolvedRelation,
-	                                                       ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-	                                                       ConfiguredRelationalPersister<K, KID> keyEntityPersister,
-	                                                       ConfiguredRelationalPersister<V, VID> valueEntityPersister) {
+	                                                       EntityWriteExecutor<SRC, SRCID> sourcePersister,
+	                                                       EntityWriteExecutor<K, KID> keyEntityPersister,
+	                                                       EntityWriteExecutor<V, VID> valueEntityPersister) {
 		
 		KeyValueRecordMapping<X, Y, SRCID, MAPTABLE> relationRecordMapping = buildKeyValueRecordMapping(resolvedRelation, sourcePersister);
 		
@@ -204,8 +202,8 @@ public class EntryMapResolver {
 	 * @param <T> target entity type (either the key type or the value type)
 	 */
 	private <SRC, K, V, T, M extends Map<K, V>> void registerTargetEntitiesInsertCascader(
-			ConfiguredRelationalPersister<SRC, ?> sourcePersister,
-			ConfiguredRelationalPersister<T, ?> targetPersister,
+			EntityWriteExecutor<SRC, ?> sourcePersister,
+			EntityWriteExecutor<T, ?> targetPersister,
 			Accessor<SRC, M> mapAccessor,
 			Function<? super M, ? extends Collection<T>> targetsExtractor) {
 		sourcePersister.addInsertListener(new BeforeInsertCollectionCascader<SRC, T>(targetPersister) {
@@ -228,7 +226,7 @@ public class EntryMapResolver {
 	// Y is V, or VID if V is entity or not, composite or scalar
 	private <X, Y, SRC, SRCID, K, KID, V, VID, M extends Map<K, V>, LEFTTABLE extends Table<LEFTTABLE>, MAPTABLE extends Table<MAPTABLE>, KTABLE extends Table<KTABLE>, VTABLE extends Table<VTABLE>>
 	KeyValueRecordMapping<X, Y, SRCID, MAPTABLE> buildKeyValueRecordMapping(ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, LEFTTABLE, MAPTABLE, KTABLE, VTABLE> resolvedRelation,
-	                                                                        ConfiguredRelationalPersister<SRC, SRCID> sourcePersister) {
+	                                                                        EntityWriteExecutor<SRC, SRCID> sourcePersister) {
 		IdentifierAssembler<SRCID, LEFTTABLE> sourceIdentifierAssembler = sourcePersister.getMapping().getIdMapping().getIdentifierAssembler();
 		
 		MAPTABLE mapTable = resolvedRelation.getJoin().getRightKey().getTable();
@@ -308,7 +306,7 @@ public class EntryMapResolver {
 		
 		private final Accessor<SRC, ? extends Collection<KeyValueRecord<K, V, SRCID>>> mapGetter;
 		
-		private TargetInstancesInsertCascader(EntityPersister<KeyValueRecord<K, V, SRCID>, RecordId<K, SRCID>> targetPersister,
+		private TargetInstancesInsertCascader(EntityWriteExecutor<KeyValueRecord<K, V, SRCID>, RecordId<K, SRCID>> targetPersister,
 		                                      Accessor<SRC, ? extends Collection<KeyValueRecord<K, V, SRCID>>> mapGetter) {
 			super(targetPersister);
 			this.mapGetter = mapGetter;

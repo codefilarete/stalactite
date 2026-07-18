@@ -10,6 +10,7 @@ import javax.annotation.Nullable;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.diff.CollectionDiffer;
 import org.codefilarete.stalactite.engine.diff.Diff;
@@ -41,7 +42,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements Mutator
 	
 	/**
 	 * Default and simple use case constructor.
-	 * See {@link #CollectionUpdater(Accessor, EntityPersister, Mutator, boolean, Accessor)} for particular case about id policy
+	 * See {@link #CollectionUpdater(Accessor, EntityWriteExecutor, Mutator, boolean, Accessor)} for particular case about id policy
 	 * 
 	 * @param collectionGetter getter for collection from source entity
 	 * @param elementPersister target entities persister
@@ -49,7 +50,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements Mutator
 	 * @param shouldDeleteRemoved true to delete orphans
 	 */
 	public CollectionUpdater(Accessor<I, C> collectionGetter,
-							 ConfiguredPersister<O, ?> elementPersister,
+	                         EntityWriteExecutor<O, ?> elementPersister,
 							 @Nullable Mutator<O, I> reverseSetter,
 							 boolean shouldDeleteRemoved) {
 		this(collectionGetter, elementPersister, reverseSetter, shouldDeleteRemoved, elementPersister.getMapping()::getId);
@@ -67,7 +68,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements Mutator
 	 * @param idProvider expected to provide identifier of entities, used to store them per their id (in HashMap) to avoid usage of entity equals/hashcode
 	 */
 	public CollectionUpdater(Accessor<I, C> collectionGetter,
-							 EntityPersister<O, ?> elementPersister,
+	                         EntityWriteExecutor<O, ?> elementPersister,
 							 @Nullable Mutator<O, I> reverseSetter,
 							 boolean shouldDeleteRemoved,
 							 Accessor<O, ?> idProvider) {
@@ -259,9 +260,9 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements Mutator
 	 */
 	private static class EntityPersisterEntityWriterAdaptor<C, I> implements EntityWriter<C, I> {
 		
-		private final EntityPersister<C, I> delegate;
+		private final EntityWriteExecutor<C, I> delegate;
 		
-		private EntityPersisterEntityWriterAdaptor(EntityPersister<C, I> delegate) {
+		private EntityPersisterEntityWriterAdaptor(EntityWriteExecutor<C, I> delegate) {
 			this.delegate = delegate;
 		}
 		
