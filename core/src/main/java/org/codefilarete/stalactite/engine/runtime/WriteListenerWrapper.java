@@ -5,11 +5,10 @@ import org.codefilarete.stalactite.engine.InsertExecutor;
 import org.codefilarete.stalactite.engine.UpdateExecutor;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
+import org.codefilarete.stalactite.engine.listener.EntityWriteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.PersistListener;
-import org.codefilarete.stalactite.engine.listener.PersisterListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
-import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.tool.Duo;
@@ -23,7 +22,7 @@ import org.codefilarete.tool.collection.Iterables;
  * @author Guillaume Mary
  */
 public abstract class WriteListenerWrapper<C, I>
-		implements InsertExecutor<C>, UpdateExecutor<C>, DeleteExecutor<C, I>, PersisterListener<C, I> {
+		implements InsertExecutor<C>, UpdateExecutor<C>, DeleteExecutor<C, I>, EntityWriteListener<C> {
 	
 	protected final PersisterListenerCollection<C, I> persisterListener = new PersisterListenerCollection<>();
 	
@@ -45,11 +44,6 @@ public abstract class WriteListenerWrapper<C, I>
 	@Override
 	public void addUpdateByIdListener(UpdateByIdListener<? extends C> updateByIdListener) {
 		this.persisterListener.addUpdateByIdListener(updateByIdListener);
-	}
-	
-	@Override
-	public void addSelectListener(SelectListener<? extends C, I> selectListener) {
-		this.persisterListener.addSelectListener(selectListener);
 	}
 	
 	@Override

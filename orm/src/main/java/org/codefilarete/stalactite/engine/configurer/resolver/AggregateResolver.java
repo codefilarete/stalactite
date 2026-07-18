@@ -156,7 +156,7 @@ public class AggregateResolver {
 			assemblyPawn.getRelationOwnerEntity().getRelations()
 					.forEach(relationPawn -> {
 						if (relationPawn instanceof ResolvedOneToOneRelation) {
-							Holder<ConfiguredRelationalPersister<TRGT, Object>> targetPersisterHolder = new Holder<>();
+							Holder<EntityWriteExecutor<TRGT, Object>> targetPersisterHolder = new Holder<>();
 							ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> localRelation = (ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>) relationPawn;
 							// TODO: enhance by returning the built EntityPersister, not by giving it to the Holder
 							oneToOneResolver.resolve(
@@ -205,6 +205,57 @@ public class AggregateResolver {
 									(ResolvedMapRelation<SRC, SRCID, Object, Object, Object, Object, Map<Object, Object>, LEFTTABLE, RIGHTTABLE, ?, ?>) relationPawn,
 									(AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE>) assemblyPawn);
 						}
+					});
+		}
+		
+		while (!relationStack2.isEmpty()) {
+			AssemblyPoint<?, ?, ?, ?> assemblyPawn = relationStack2.poll();
+			assemblyPawn.getRelationOwnerEntity().getRelations()
+					.forEach(relationPawn -> {
+						if (relationPawn instanceof ResolvedOneToOneRelation) {
+							Holder<EntityWriteExecutor<TRGT, Object>> targetPersisterHolder = new Holder<>();
+							ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> localRelation = (ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>) relationPawn;
+							AssemblyPoint assemblyPoint = oneToOneAppender.append(
+									localRelation,
+									targetPersisterHolder.get(),
+									assemblyPawn.getParentJoinPoint(),
+									localRelation.getAccessor(),
+									aggregatePersister.getEntityJoinTree());
+							relationStack2.add(assemblyPoint);
+						}
+//						if (relationPawn instanceof ResolvedOneToManyRelation) {
+//							AssemblyPoint<?, ?, ?, ?> assemblyPoint = oneToManyAppender.append(
+//									aggregatePersister,
+//									(ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>) relationPawn,
+//									(AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE>) assemblyPawn);
+//							relationStack.add(assemblyPoint);
+//						}
+//						if (relationPawn instanceof ResolvedManyToManyRelation) {
+//							AssemblyPoint<?, ?, ?, ?> assemblyPoint = manyToManyAppender.append(
+//									aggregatePersister,
+//									(ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>) relationPawn,
+//									(AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE>) assemblyPawn);
+//							relationStack.add(assemblyPoint);
+//						}
+//						if (relationPawn instanceof ResolvedManyToOneRelation) {
+//							AssemblyPoint<?, ?, ?, ?> assemblyPoint = manyToOneAppender.append(
+//									aggregatePersister,
+//									(ResolvedManyToOneRelation<SRC, TRGT, TRGTID, LEFTTABLE, RIGHTTABLE>) relationPawn,
+//									(AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE>) assemblyPawn);
+//							relationStack.add(assemblyPoint);
+//						}
+//						if (relationPawn instanceof ResolvedElementCollectionRelation) {
+//							elementCollectionAppender.append(
+//									aggregatePersister,
+//									(ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, LEFTTABLE, RIGHTTABLE, ElementRecord<TRGT, SRCID>>) relationPawn,
+//									(AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE>) assemblyPawn);
+//						}
+//						if (relationPawn instanceof ResolvedMapRelation) {
+//							mapAppender.append(
+//									aggregatePersister,
+//									(ResolvedMapRelation<SRC, SRCID, Object, Object, Object, Object, Map<Object, Object>, LEFTTABLE, RIGHTTABLE, ?, ?>) relationPawn,
+//									(AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE>) assemblyPawn);
+//						}
 					});
 		}
 	}

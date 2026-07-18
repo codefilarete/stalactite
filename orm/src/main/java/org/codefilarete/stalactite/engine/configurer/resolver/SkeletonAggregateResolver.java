@@ -8,7 +8,6 @@ import org.codefilarete.reflection.PropertyMutator;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.PersistenceContext;
-import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.DefaultComposedIdentifierAssembler;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.AssignedByAnotherIdentifierMapping;
@@ -16,21 +15,15 @@ import org.codefilarete.stalactite.engine.configurer.dslresolver.CompositeIdenti
 import org.codefilarete.stalactite.engine.configurer.dslresolver.SingleIdentifierMapping;
 import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity.Versioning;
 import org.codefilarete.stalactite.engine.configurer.model.AncestorJoin;
-import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.ExtraTableJoin;
 import org.codefilarete.stalactite.engine.configurer.model.IdentifierMapping;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
-import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
-import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.WriteExecutor.JDBCBatchingIterator;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
-import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
-import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
@@ -43,29 +36,21 @@ import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
 
-import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType.INNER;
-
 
 /**
  * Class aims at solving the structural "bones" of an {@link Entity}, which means the mapping of:
  * - identifier
  * - direct properties, including embedded ones
  * - inheritance (ancestors, not polymorphism)
- * 
- * This logic was extended to properties on extra tables. 
+ * <p>
+ * This logic was extended to properties on extra tables.
  */
 public class SkeletonAggregateResolver {
 	
 	private final PersistenceContext persistenceContext;
-	private final PersisterRegistry persisterRegistry;
 	
 	public SkeletonAggregateResolver(PersistenceContext persistenceContext) {
-		this(persistenceContext, persistenceContext.getPersisterRegistry());
-	}
-	
-	SkeletonAggregateResolver(PersistenceContext persistenceContext, PersisterRegistry persisterRegistry) {
 		this.persistenceContext = persistenceContext;
-		this.persisterRegistry = persisterRegistry;
 	}
 	
 	public <B, C extends B, I, T extends Table<T>>
@@ -73,6 +58,7 @@ public class SkeletonAggregateResolver {
 		// TODO: check for ealready existing persister in the persistence context
 		// TODO: wrap result in an OptimizedUpdatePersister
 		// TODO: be inspired from DefaultPersisterBuilder.build()
+		// TODO: merge the created persisters (for ancestors and extra tables) into the global aggregate: maybe make it through a listener ?
 		
 		IdMapping<C, I> idMapping = createIdMapping(rootEntity);
 		
@@ -86,7 +72,7 @@ public class SkeletonAggregateResolver {
 				false
 		);
 		
-		SimpleRelationalEntityPersister<C, I, T> rootPersister = new SimpleRelationalEntityPersister<>(
+		EntityWriter<C, I, T> rootPersister = new EntityWriter<>(
 				entityMapping,
 				persistenceContext.getDialect(),
 				persistenceContext.getConnectionConfiguration()
@@ -98,7 +84,7 @@ public class SkeletonAggregateResolver {
 		if (identifierInsertionManager instanceof AlreadyAssignedIdentifierManager) {
 			// Transferring identifier manager InsertListener to here
 			rootPersister.addInsertListener(((AlreadyAssignedIdentifierManager<C, I>) identifierInsertionManager).getInsertListener());
-			rootPersister.addSelectListener(((AlreadyAssignedIdentifierManager<C, I>) identifierInsertionManager).getSelectListener());
+//			rootPersister.addSelectListener(((AlreadyAssignedIdentifierManager<C, I>) identifierInsertionManager).getSelectListener());
 		}
 		
 		appendInheritance(rootEntity, rootPersister);
@@ -106,26 +92,17 @@ public class SkeletonAggregateResolver {
 		return rootPersister;
 	}
 	
-	private <B, C extends B, I, T extends Table<T>, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
-	void appendInheritance(Entity<C, I, T> entity, SimpleRelationalEntityPersister<C, I, T> result) {
+	private <B, C extends B, I, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
+	void appendInheritance(Entity<C, I, LEFTTABLE> entity, EntityWriter<C, I, LEFTTABLE> rootPersister) {
 		// looking for extra tables: they are stored as ExtraTableJoin in the entity relations 
 		entity.getRelations().stream()
 				.filter(ExtraTableJoin.class::isInstance).map(ExtraTableJoin.class::cast).forEach(extraTableJoin -> {
-					sewExtraTables(extraTableJoin, result, result, entity, EntityJoinTree.ROOT_JOIN_NAME);
+					buildExtraTablePersister(extraTableJoin, rootPersister, entity);
 				});
 		
 		AncestorJoin<B, LEFTTABLE, RIGHTTABLE, I> parent = (AncestorJoin<B, LEFTTABLE, RIGHTTABLE, I>) entity.getParent();
 		while (parent != null) {
-			SimpleRelationalEntityPersister<B, I, RIGHTTABLE> parentPersister = sewParentEntity(parent, result);
-			
-			DirectRelationJoin<LEFTTABLE, RIGHTTABLE, I> join = parent.getJoin();
-			EntityMapping<B, I, RIGHTTABLE> mapping = parentPersister.getMapping();
-			String joinName = result.getEntityJoinTree().addMergeJoin(
-					EntityJoinTree.ROOT_JOIN_NAME,
-					new EntityMergerAdapter<>(mapping),
-					join.getLeftKey(),
-					join.getRightKey(),
-					INNER);
+			EntityWriter<B, I, RIGHTTABLE> parentPersister = sewParentEntity(parent, rootPersister);
 			
 			Entity<B, I, RIGHTTABLE> ancestorEntity = parent.getAncestor();
 			ancestorEntity.getRelations().stream()
@@ -134,7 +111,7 @@ public class SkeletonAggregateResolver {
 						// we join the extra table persister to the result persister, not to the ancestor one, to create
 						// a single complete aggregate query instead of multiple partial ones that would need to be
 						// reconciled later
-						sewExtraTables(extraTableJoin, result, parentPersister, ancestorEntity, joinName);
+						buildExtraTablePersister(extraTableJoin, parentPersister, ancestorEntity);
 					});
 			
 			// preparing next iteration
@@ -200,9 +177,9 @@ public class SkeletonAggregateResolver {
 	}
 	
 	private <C, I, LEFTTABLE extends Table<LEFTTABLE>, EXTRATABLE extends Table<EXTRATABLE>>
-	SimpleRelationalEntityPersister<C, I, EXTRATABLE> buildExtraTablePersister(ExtraTableJoin<C, LEFTTABLE, EXTRATABLE, I> extraTableJoin,
-	                                                                           SimpleRelationalEntityPersister<C, I, LEFTTABLE> owningPersister,
-	                                                                           Entity<C, I, LEFTTABLE> identifierDefiner) {
+	EntityWriter<C, I, EXTRATABLE> buildExtraTablePersister(ExtraTableJoin<C, LEFTTABLE, EXTRATABLE, I> extraTableJoin,
+	                                                        EntityWriter<C, I, LEFTTABLE> owningPersister,
+	                                                        Entity<C, I, LEFTTABLE> identifierDefiner) {
 		EXTRATABLE extratable = extraTableJoin.getJoin().getRightKey().getTable();
 		IdMapping<C, I> idMapping = mimicIdMapping(identifierDefiner.getIdentifierMapping(), extratable);
 		
@@ -218,7 +195,7 @@ public class SkeletonAggregateResolver {
 				false
 		);
 		
-		SimpleRelationalEntityPersister<C, I, EXTRATABLE> extraTablePersister = new SimpleRelationalEntityPersister<>(
+		EntityWriter<C, I, EXTRATABLE> extraTablePersister = new EntityWriter<>(
 				entityMapping,
 				persistenceContext.getDialect(),
 				persistenceContext.getConnectionConfiguration()
@@ -245,24 +222,8 @@ public class SkeletonAggregateResolver {
 		return extraTablePersister;
 	}
 	
-	private <B, C extends B, I, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, EXTRATABLE extends Table<EXTRATABLE>>
-	void sewExtraTables(ExtraTableJoin<B, RIGHTTABLE, EXTRATABLE, I> extraTableJoin,
-	                    SimpleRelationalEntityPersister<C, I, LEFTTABLE> owningPersister,
-	                    SimpleRelationalEntityPersister<B, I, RIGHTTABLE> cascader,
-	                    Entity<B, I, RIGHTTABLE> entity,
-	                    String owningJoinName) {
-		SimpleRelationalEntityPersister<B, I, EXTRATABLE> extraTablePersister = buildExtraTablePersister(extraTableJoin, cascader, entity);
-		
-		owningPersister.getEntityJoinTree().addMergeJoin(
-				owningJoinName,
-				new EntityMergerAdapter<>(extraTablePersister.getMapping()),
-				extraTableJoin.getJoin().getLeftKey(),
-				extraTableJoin.getJoin().getRightKey(),
-				INNER);
-	}
-	
 	private <B, C extends B, I, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
-	SimpleRelationalEntityPersister<B, I, RIGHTTABLE> sewParentEntity(AncestorJoin<B, LEFTTABLE, RIGHTTABLE, I> parent, RelationalEntityPersister<C, I> child) {
+	EntityWriter<B, I, RIGHTTABLE> sewParentEntity(AncestorJoin<B, LEFTTABLE, RIGHTTABLE, I> parent, EntityWriter<C, I, LEFTTABLE> child) {
 		Map<ReadWritePropertyAccessPoint<B, ?>, Column<RIGHTTABLE, ?>> writablePropertyToColumn = new HashMap<>();
 		parent.getAncestor().getPropertyMappingHolder().getWritablePropertyToColumn().forEach(propertyMapping -> {
 			writablePropertyToColumn.put(propertyMapping.getAccessPoint(), propertyMapping.getColumn());
@@ -284,13 +245,13 @@ public class SkeletonAggregateResolver {
 				false
 		);
 		
-		SimpleRelationalEntityPersister<B, I, RIGHTTABLE> ancestorPersister = new SimpleRelationalEntityPersister<>(
+		EntityWriter<B, I, RIGHTTABLE> ancestorPersister = new EntityWriter<>(
 				entityMapping,
 				persistenceContext.getDialect(),
 				persistenceContext.getConnectionConfiguration()
 		);
-		
-		persisterRegistry.addPersister(ancestorPersister);
+
+//		persisterRegistry.addPersister(ancestorPersister);
 		child.addInsertListener(new InsertListener<C>() {
 			@Override
 			public void beforeInsert(Iterable<? extends C> entities) {
@@ -316,10 +277,10 @@ public class SkeletonAggregateResolver {
 	/**
 	 * Basic {@link IdentifierInsertionManager} that provides a simple JDBC batching iterator to write entities
 	 * to the table.
-	 * 
+	 *
 	 * @param <C> the entity type to write
 	 * @param <I> the entity identifier type
-	 * @see JDBCBatchingIterator   
+	 * @see JDBCBatchingIterator
 	 */
 	private static class BasicIdentifierInsertionManager<C, I> implements IdentifierInsertionManager<C, I> {
 		

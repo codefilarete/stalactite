@@ -1,6 +1,6 @@
 package org.codefilarete.stalactite.engine;
 
-import org.codefilarete.stalactite.engine.listener.PersisterListener;
+import org.codefilarete.stalactite.engine.listener.EntityWriteListener;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
@@ -15,7 +15,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  * @param <C>
  * @param <I>
  */
-public interface EntityWriteExecutor<C, I> extends InsertExecutor<C>, UpdateExecutor<C>, DeleteExecutor<C, I>, PersistExecutor<C>, PersisterListener<C, I> {
+public interface EntityWriteExecutor<C, I> extends InsertExecutor<C>, UpdateExecutor<C>, DeleteExecutor<C, I>, EntityWriteListener<C> {
 	
 	<T extends Table<T>> EntityMapping<C, I, T> getMapping();
 	

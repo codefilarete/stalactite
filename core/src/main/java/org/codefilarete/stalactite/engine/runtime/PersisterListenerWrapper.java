@@ -5,8 +5,10 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.SelectExecutor;
+import org.codefilarete.stalactite.engine.listener.EntityReadListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
+import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.tool.collection.Iterables;
 
 /**
@@ -16,7 +18,13 @@ import org.codefilarete.tool.collection.Iterables;
  * 
  * @author Guillaume Mary
  */
-public abstract class PersisterListenerWrapper<C, I> extends WriteListenerWrapper<C, I> implements PersistExecutor<C>, SelectExecutor<C, I> {
+public abstract class PersisterListenerWrapper<C, I> extends WriteListenerWrapper<C, I>
+		implements PersistExecutor<C>, SelectExecutor<C, I>, EntityReadListener<C, I> {
+	
+	@Override
+	public void addSelectListener(SelectListener<? extends C, I> selectListener) {
+		persisterListener.addSelectListener(selectListener);
+	}
 	
 	@Override
 	public Set<C> select(Iterable<I> ids) {

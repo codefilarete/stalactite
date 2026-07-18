@@ -52,7 +52,7 @@ import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROO
  * This does not handle inheritance nor entities mapped on several tables, it focuses on select part : a main table is defined by
  * {@link DefaultEntityMapping} passed to constructor which then it can be added to some other {@link RelationalEntityPersister} thanks to
  * {@link RelationalEntityPersister#joinAsMany(String, RelationalEntityPersister, PropertyAccessPoint, Key, Key, BeanRelationFixer, Function, boolean, boolean)} and
- * {@link RelationalEntityPersister#joinAsOne(RelationalEntityPersister, PropertyAccessPoint, Key, Key, String, BeanRelationFixer, boolean, boolean)}.
+ * {@link RelationalEntityPersister#joinAsOne(String, RelationalEntityPersister, PropertyAccessPoint, Key, Key, String, BeanRelationFixer, boolean, boolean)}.
  * 
  * Entity load is defined by a select that joins all tables, each {@link DefaultEntityMapping} is called to complete
  * entity loading.
