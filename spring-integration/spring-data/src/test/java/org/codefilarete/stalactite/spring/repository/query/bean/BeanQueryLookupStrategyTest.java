@@ -4,8 +4,8 @@ import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.Map;
 
-import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
-import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
+import org.codefilarete.stalactite.engine.EntitySelector.ExecutableEntityQuery;
+import org.codefilarete.stalactite.engine.EntitySelector.ExecutableProjectionQuery;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.spring.repository.StalactiteRepository;
 import org.codefilarete.stalactite.spring.repository.query.BeanQuery;

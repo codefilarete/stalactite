@@ -10,6 +10,7 @@ import java.util.Set;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
+import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
@@ -50,7 +51,7 @@ public class OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C ext
 	private final Dialect dialect;
 	
 	public OneToManyWithAssociationTableEngine(EntityWriteExecutor<SRC, SRCID> sourcePersister,
-	                                           EntityWriteExecutor<TRGT, TRGTID> targetPersister,
+	                                           EntityReadWriteExecutor<TRGT, TRGTID> targetPersister,
 	                                           ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 	                                           AssociationRecordPersister<R, T> associationPersister,
 	                                           WriteOperationFactory writeOperationFactory,
@@ -62,7 +63,7 @@ public class OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C ext
 	}
 	
 	@Override
-	public void addInsertCascade(EntityWriteExecutor<TRGT, TRGTID> targetPersister) {
+	public void addInsertCascade(EntityReadWriteExecutor<TRGT, TRGTID> targetPersister) {
 		// Can we cascade insert on target entities ? it depends on relation maintenance mode
 		if (!getManyRelationDescriptor().isMaintainAssociationOnly()) {
 			sourcePersister.addInsertListener(new TargetInstancesInsertCascader(targetPersister, manyRelationDescriptor.getCollectionAccessPoint()));
@@ -76,7 +77,7 @@ public class OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C ext
 	}
 	
 	@Override
-	public void addUpdateCascade(EntityWriteExecutor<TRGT, TRGTID> targetPersister) {
+	public void addUpdateCascade(EntityReadWriteExecutor<TRGT, TRGTID> targetPersister) {
 		// NB: we don't have any reverseSetter (for applying source entity to reverse side (target entity)), because this is only relevant
 		// when association is mapped without intermediary table (owned by "many-side" entity)
 		CollectionUpdater<SRC, TRGT, C> collectionUpdater = new CollectionUpdater<SRC, TRGT, C>(manyRelationDescriptor.getCollectionAccessPoint(), targetPersister, null, getManyRelationDescriptor().isOrphanRemoval()) {
@@ -220,7 +221,7 @@ public class OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C ext
 		
 		private final Accessor<I, ? extends Collection<O>> collectionGetter;
 		
-		public TargetInstancesInsertCascader(EntityWriteExecutor<O, J> targetPersister, Accessor<I, ? extends Collection<O>> collectionGetter) {
+		public TargetInstancesInsertCascader(EntityReadWriteExecutor<O, J> targetPersister, Accessor<I, ? extends Collection<O>> collectionGetter) {
 			super(targetPersister);
 			this.collectionGetter = collectionGetter;
 		}

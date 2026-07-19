@@ -20,6 +20,7 @@ import org.codefilarete.reflection.ReadWriteAccessorChain;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
+import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord;
@@ -78,8 +79,8 @@ public class EntryMapResolver {
 			X, Y>
 	KeyValueRecordPersister<X, Y, SRCID, MAPTABLE> resolve(ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, LEFTTABLE, MAPTABLE, KTABLE, VTABLE> resolvedRelation,
 	                                                       EntityWriteExecutor<SRC, SRCID> sourcePersister,
-	                                                       EntityWriteExecutor<K, KID> keyEntityPersister,
-	                                                       EntityWriteExecutor<V, VID> valueEntityPersister) {
+	                                                       EntityReadWriteExecutor<K, KID> keyEntityPersister,
+	                                                       EntityReadWriteExecutor<V, VID> valueEntityPersister) {
 		
 		KeyValueRecordMapping<X, Y, SRCID, MAPTABLE> relationRecordMapping = buildKeyValueRecordMapping(resolvedRelation, sourcePersister);
 		
@@ -203,7 +204,7 @@ public class EntryMapResolver {
 	 */
 	private <SRC, K, V, T, M extends Map<K, V>> void registerTargetEntitiesInsertCascader(
 			EntityWriteExecutor<SRC, ?> sourcePersister,
-			EntityWriteExecutor<T, ?> targetPersister,
+			EntityReadWriteExecutor<T, ?> targetPersister,
 			Accessor<SRC, M> mapAccessor,
 			Function<? super M, ? extends Collection<T>> targetsExtractor) {
 		sourcePersister.addInsertListener(new BeforeInsertCollectionCascader<SRC, T>(targetPersister) {
@@ -306,7 +307,7 @@ public class EntryMapResolver {
 		
 		private final Accessor<SRC, ? extends Collection<KeyValueRecord<K, V, SRCID>>> mapGetter;
 		
-		private TargetInstancesInsertCascader(EntityWriteExecutor<KeyValueRecord<K, V, SRCID>, RecordId<K, SRCID>> targetPersister,
+		private TargetInstancesInsertCascader(EntityReadWriteExecutor<KeyValueRecord<K, V, SRCID>, RecordId<K, SRCID>> targetPersister,
 		                                      Accessor<SRC, ? extends Collection<KeyValueRecord<K, V, SRCID>>> mapGetter) {
 			super(targetPersister);
 			this.mapGetter = mapGetter;

@@ -9,8 +9,8 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.MethodReferenceCapturer;
-import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
-import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
+import org.codefilarete.stalactite.engine.EntitySelector.ExecutableEntityQuery;
+import org.codefilarete.stalactite.engine.EntitySelector.ExecutableProjectionQuery;
 import org.codefilarete.stalactite.engine.ExecutableProjection.ProjectionDataProvider;
 import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.api.Selectable;

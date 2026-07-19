@@ -4,20 +4,16 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import org.codefilarete.stalactite.engine.EntityCriteria;
 import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
-import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
-import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
-import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.exception.NotImplementedException;
@@ -77,7 +73,7 @@ public class BeanPersister<C, I, T extends Table<T>>
 	}
 	
 	protected PersistExecutor<C> newPersistExecutor() {
-		return new DefaultPersistExecutor<>(this);
+		return new DefaultPersistExecutor<>(this, this);
 	}
 	
 	protected InsertExecutor<C, I, T> newInsertExecutor(EntityMapping<C, I, T> mappingStrategy,

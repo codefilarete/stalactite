@@ -19,6 +19,7 @@ import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteByIdCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteCollectionCascader;
 import org.codefilarete.stalactite.engine.configurer.onetomany.FirstPhaseCycleLoadListener;
+import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
@@ -322,7 +323,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S ex
 		
 		private final Accessor<SRC, ? extends Collection<TRGT>> collectionGetter;
 		
-		public TargetInstancesInsertCascader(EntityWriteExecutor<TRGT, TRGTID> targetPersister, Accessor<SRC, ? extends Collection<TRGT>> collectionGetter) {
+		public TargetInstancesInsertCascader(EntityReadWriteExecutor<TRGT, TRGTID> targetPersister, Accessor<SRC, ? extends Collection<TRGT>> collectionGetter) {
 			super(targetPersister);
 			this.collectionGetter = collectionGetter;
 		}

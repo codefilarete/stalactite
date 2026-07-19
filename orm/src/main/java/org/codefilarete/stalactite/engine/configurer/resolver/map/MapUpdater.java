@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
+import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord;
 import org.codefilarete.stalactite.engine.configurer.map.RecordId;
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
@@ -47,9 +48,9 @@ public class MapUpdater<SRC, SRCID, K, V, ENTITY, KK, VV> extends CollectionUpda
 	 * the given entity persister into an {@link EntityWriter} and uses the entity id as the diff footprint.
 	 */
 	public MapUpdater(Accessor<SRC, Set<Entry<K, V>>> targetEntitiesGetter,
-	                  EntityWriteExecutor<ENTITY, ?> entityPersister,
+	                  EntityReadWriteExecutor<ENTITY, ?> entityPersister,
 					  EntityWriteExecutor<KeyValueRecord<KK, VV, SRCID>, RecordId<KK, SRCID>> keyValueRecordPersister,
-					  EntityWriteExecutor<SRC, SRCID> sourcePersister,
+					  EntityReadWriteExecutor<SRC, SRCID> sourcePersister,
 					  RelationMode maintenanceMode,
 					  Function<? super Entry<K, V>, ENTITY> entryBeanExtractor,
 					  BiFunction<Entry<K, V>, SRCID, KeyValueRecord<KK, VV, SRCID>> recordBuilder) {
@@ -152,7 +153,7 @@ public class MapUpdater<SRC, SRCID, K, V, ENTITY, KK, VV> extends CollectionUpda
 	 */
 	public static class RelationalPersisterAsEntityWriter<K, V, ENTITY, ENTITY_ID> implements EntityWriter<Entry<K, V>, ENTITY_ID> {
 		
-		private final EntityWriteExecutor<ENTITY, ENTITY_ID> relatedEntityPersister;
+		private final EntityReadWriteExecutor<ENTITY, ENTITY_ID> relatedEntityPersister;
 		private final Function<? super Entry<K, V>, ENTITY> mapper;
 		private final RelationMode maintenanceMode;
 		
@@ -165,7 +166,7 @@ public class MapUpdater<SRC, SRCID, K, V, ENTITY, KK, VV> extends CollectionUpda
 		 * @param maintenanceMode the relation mode to use for the given entity persister
 		 */
 		public RelationalPersisterAsEntityWriter(
-				EntityWriteExecutor<ENTITY, ENTITY_ID> relatedEntityPersister,
+				EntityReadWriteExecutor<ENTITY, ENTITY_ID> relatedEntityPersister,
 				Function<? super Entry<K, V>, ENTITY> mapper,
 				RelationMode maintenanceMode) {
 			this.relatedEntityPersister = relatedEntityPersister;

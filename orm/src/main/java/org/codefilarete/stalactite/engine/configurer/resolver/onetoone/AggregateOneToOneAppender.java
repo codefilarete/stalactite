@@ -6,46 +6,38 @@ import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
-import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.AssemblyPoint;
-import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.AssemblyPoint2;
+import org.codefilarete.stalactite.engine.configurer.resolver.EntityReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.tool.function.Hanger.Holder;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType.OUTER;
 
 public class AggregateOneToOneAppender {
 	
-	private final OneToOneResolver oneToOneResolver;
-	
-	public AggregateOneToOneAppender(SkeletonAggregateResolver skeletonAggregateResolver) {
-		this.oneToOneResolver = new OneToOneResolver(skeletonAggregateResolver);
-	}
-	
+	/**
+	 *
+	 * @param relation
+	 * @param targetPersister
+	 * @param mountPoint
+	 * @param targetPropertyAccessor
+	 * @param aggregateTree
+	 * @param <SRC>
+	 * @param <SRCID>
+	 * @param <TRGT>
+	 * @param <TRGTID>
+	 * @param <LEFTTABLE>
+	 * @param <RIGHTTABLE>
+	 * @param <JOINID> either SRCID or TRGTID, depending on the relation owner
+	 * @return
+	 */
 	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
-	AssemblyPoint append(ConfiguredRelationalPersister<SRC, SRCID> rootPersister,
-	                     ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> relationPawn,
-	                     AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE> assemblyPawn) {
-		
-		ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> relation = relationPawn;
-		Holder<AssemblyPoint> resultHolder = new Holder<>();
-		oneToOneResolver.resolve(
-				relation,
-				assemblyPawn.getRelationOwnerPersister(),
-				targetPersister -> {
-					resultHolder.set(append(relation, targetPersister, assemblyPawn.getParentJoinPoint(), assemblyPawn.getAccessor(), rootPersister.getEntityJoinTree()));
-				});
-		return resultHolder.get();
-	}
-	
-	public <SRC, SRCID, TRGT, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
-	AssemblyPoint append(ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> relation,
-	                     EntityWriteExecutor<TRGT, Object> targetPersister,
-	                     String mountPoint,
-	                     PropertyAccessor<SRC, TRGT> targetPropertyAccessor,
-	                     EntityJoinTree<SRC, SRCID> aggregateTree) {
+	AssemblyPoint2<TRGT, TRGTID, ?, RIGHTTABLE> append(ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> relation,
+	                                                   EntityReader<TRGT, TRGTID, ?> targetPersister,
+	                                                   String mountPoint,
+	                                                   PropertyAccessor<SRC, TRGT> targetPropertyAccessor,
+	                                                   EntityJoinTree<SRC, SRCID> aggregateTree) {
 		PropertyAccessor<SRC, TRGT> accessor;
 		if (mountPoint.equals(EntityJoinTree.ROOT_JOIN_NAME)) {
 			// this is the very first step (see stack seed) which is the root entity, no relation accessor shifting here
@@ -60,7 +52,7 @@ public class AggregateOneToOneAppender {
 		// we join the relation onto the aggregate root to build the whole select tree
 		String joinName = aggregateTree.addRelationJoin(
 				mountPoint,
-				new EntityInflater.EntityMappingAdapter<>(targetPersister.<RIGHTTABLE>getMapping()),
+				new EntityInflater.EntityMappingAdapter<>(targetPersister.getMapping()),
 				accessor,
 				relation.getJoin().getLeftKey(),
 				relation.getJoin().getRightKey(),
@@ -69,6 +61,6 @@ public class AggregateOneToOneAppender {
 				relation.getRelationFixer(),
 				Collections.emptySet());
 		
-		return new AssemblyPoint(relation.getTargetEntity(), targetPersister, joinName, accessor);
+		return new AssemblyPoint2(relation.getTargetEntity(), targetPersister, joinName, accessor);
 	}
 }

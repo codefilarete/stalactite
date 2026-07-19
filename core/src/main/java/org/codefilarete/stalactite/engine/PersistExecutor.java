@@ -42,14 +42,18 @@ public interface PersistExecutor<C> {
 	}
 	
 	static <C, I> PersistExecutor<C> forPersister(ConfiguredPersister<C, I> persister) {
-		IdentifierInsertionManager<C, I> identifierInsertionManager = persister.getMapping().getIdMapping().getIdentifierInsertionManager();
+		return forPersister(persister, persister);
+	}
+	
+	static <C, I> PersistExecutor<C> forPersister(EntityWriteExecutor<C, I> writer, EntityReadExecutor<C, I> reader) {
+		IdentifierInsertionManager<C, I> identifierInsertionManager = writer.getMapping().getIdMapping().getIdentifierInsertionManager();
 		if (identifierInsertionManager instanceof AlreadyAssignedIdentifierManager
 				&& ((AlreadyAssignedIdentifierManager<C, I>) identifierInsertionManager).getIsPersistedFunction() == null) {
 			// if the "IsPersistedFunction" is not null, we'll produce a DefaultPersistExecutor because it bases
 			// its algorithm on persister::isNew which is supplied by the IsPersistedFunction
-			return new AlreadyAssignedIdentifierPersistExecutor<>(persister);
+			return new AlreadyAssignedIdentifierPersistExecutor<>(writer, reader);
 		} else {
-			return new DefaultPersistExecutor<>(persister);
+			return new DefaultPersistExecutor<>(writer, reader);
 		}
 	}
 	
@@ -63,10 +67,12 @@ public interface PersistExecutor<C> {
 	 */
 	class AlreadyAssignedIdentifierPersistExecutor<C, I> implements PersistExecutor<C> {
 		
-		protected final EntityPersister<C, I> persister;
+		private final EntityWriteExecutor<C, I> writer;
+		private final EntityReadExecutor<C, I> reader;
 		
-		public AlreadyAssignedIdentifierPersistExecutor(EntityPersister<C, I> persister) {
-			this.persister = persister;
+		public AlreadyAssignedIdentifierPersistExecutor(EntityWriteExecutor<C, I> writer, EntityReadExecutor<C, I> reader) {
+			this.writer = writer;
+			this.reader = reader;
 		}
 		
 		/**
@@ -77,38 +83,20 @@ public interface PersistExecutor<C> {
 		 */
 		@Override
 		public void persist(Iterable<? extends C> entities) {
-			persist(entities, persister, persister, persister, persister::getId);
-		}
-		
-		/**
-		 * Persists given entities by choosing if they should be inserted or updated according to a database query
-		 * that retrieved already persisted entities.
-		 *
-		 * @param entities entities to be saved in the database
-		 * @param selector used for entity update: loads entities from the database so they can be compared to given ones and therefore compute their differences
-		 * @param updater executor of the update order
-		 * @param inserter executor of the insert order
-		 * @param idProvider used as a comparator between given entities and those found in the database, hence it avoids to rely on equals/hashcode mechanism of entities
-		 */
-		protected void persist(Iterable<? extends C> entities,
-							   SelectExecutor<C, I> selector,
-							   UpdateExecutor<C> updater,
-							   InsertExecutor<C> inserter,
-							   Function<C, I> idProvider) {
 			if (Iterables.isEmpty(entities)) {
 				return;
 			}
 			// determine insert or update operation
-			Map<I, C> existingEntitiesPerId = Iterables.map(selector.select(Iterables.collect(entities, idProvider, HashSet::new)), idProvider);
+			Map<I, C> existingEntitiesPerId = Iterables.map(reader.select(Iterables.collect(entities, writer::getId, HashSet::new)), writer::getId);
 			Map<I, C> modifiedEntitiesPerId = Iterables.stream(entities)
-					.filter(c -> existingEntitiesPerId.containsKey(idProvider.apply(c)))
-					.collect(Collectors.toMap(idProvider, Function.identity(), (k1, k2) -> k1));
+					.filter(c -> existingEntitiesPerId.containsKey(writer.getId(c)))
+					.collect(Collectors.toMap(writer::getId, Function.identity(), (k1, k2) -> k1));
 			Collection<C> toUpdate = modifiedEntitiesPerId.values();
 			Collection<C> toInsert = Iterables.stream(entities)
-					.filter(c -> !existingEntitiesPerId.containsKey(idProvider.apply(c)))
+					.filter(c -> !existingEntitiesPerId.containsKey(writer.getId(c)))
 					.collect(Collectors.toSet());
 			if (!toInsert.isEmpty()) {
-				inserter.insert(toInsert);
+				writer.insert(toInsert);
 			}
 			if (!toUpdate.isEmpty()) {
 				// creating couples of modified and unmodified entities
@@ -116,7 +104,7 @@ public interface PersistExecutor<C> {
 				Set<Duo<C, C>> updateArg = Iterables.collect(modifiedVSunmodified.entrySet(),
 						entry -> new Duo<>(entry.getKey(), entry.getValue()),
 						LinkedHashSet::new);
-				updater.update(updateArg, true);
+				writer.update(updateArg, true);
 			}
 		}
 	}
@@ -133,12 +121,14 @@ public interface PersistExecutor<C> {
 	class DefaultPersistExecutor<C, I> implements PersistExecutor<C> {
 		
 		/**
-		 * The {@link EntityPersister} to delegate SQL operations to.
+		 * The {@link EntityWriteExecutor} to delegate SQL operations to.
 		 */
-		protected final EntityPersister<C, I> persister;
+		private final EntityWriteExecutor<C, I> writer;
+		private final EntityReadExecutor<C, I> reader;
 		
-		public DefaultPersistExecutor(EntityPersister<C, I> persister) {
-			this.persister = persister;
+		public DefaultPersistExecutor(EntityWriteExecutor<C, I> writer, EntityReadExecutor<C, I> reader) {
+			this.writer = writer;
+			this.reader = reader;
 		}
 		
 		/**
@@ -149,77 +139,25 @@ public interface PersistExecutor<C> {
 		 */
 		@Override
 		public void persist(Iterable<? extends C> entities) {
-			persist(entities, new DefaultIsNewDeterminer<C>() {
-				@Override
-				public boolean isNew(C c) {
-					return persister.isNew(c);
-				}
-			}, persister, persister, persister, persister::getId);
-		}
-		
-		/**
-		 * Persists given entities by choosing if they should be inserted or updated according to the given {@code isNewProvider} argument.
-		 *
-		 * @param entities entities to be saved in the database
-		 * @param isNewProvider determines SQL operation to proceed
-		 * @param selector used for entity update: loads entities from the database so they can be compared to given ones and therefore compute their differences
-		 * @param updater executor of the update order
-		 * @param inserter executor of the insert order
-		 * @param idProvider used as a comparator between given entities and those found in the database, hence it avoids to rely on equals/hashcode mechanism of entities
-		 */
-		protected void persist(Iterable<? extends C> entities,
-							   NewEntitiesCollector<C> isNewProvider,
-							   SelectExecutor<C, I> selector,
-							   UpdateExecutor<C> updater,
-							   InsertExecutor<C> inserter,
-							   Function<C, I> idProvider) {
 			if (Iterables.isEmpty(entities)) {
 				return;
 			}
 			// determine insert or update operation
-			Set<C> toInsert = isNewProvider.collectNewEntities(entities);
+			Set<C> toInsert = Iterables.collect(entities, writer::isNew, Function.identity(), HashSet::new);
 			Set<C> toUpdate = Iterables.minus(Iterables.asList(entities), toInsert);
 			if (!toInsert.isEmpty()) {
-				inserter.insert(toInsert);
+				writer.insert(toInsert);
 			}
 			if (!toUpdate.isEmpty()) {
 				// creating couples of modified and unmodified entities
-				Map<I, C> existingEntitiesPerId = Iterables.map(selector.select(Iterables.collect(toUpdate, idProvider, HashSet::new)), idProvider);
-				Map<I, C> modifiedEntitiesPerId = Iterables.map(toUpdate, idProvider);
+				Map<I, C> existingEntitiesPerId = Iterables.map(reader.select(Iterables.collect(toUpdate, writer::getId, HashSet::new)), writer::getId);
+				Map<I, C> modifiedEntitiesPerId = Iterables.map(toUpdate, writer::getId);
 				Map<C, C> modifiedVSunmodified = Maps.innerJoin(modifiedEntitiesPerId, existingEntitiesPerId);
 				Set<Duo<C, C>> updateArg = Iterables.collect(modifiedVSunmodified.entrySet(),
 						entry -> new Duo<>(entry.getKey(), entry.getValue()),
 						LinkedHashSet::new);
-				updater.update(updateArg, true);
+				writer.update(updateArg, true);
 			}
-		}
-		
-		/**
-		 * Small contract to determine if an entity is persisted or not
-		 * @param <T>
-		 */
-		public interface NewEntitiesCollector<T> {
-			
-			Set<T> collectNewEntities(Iterable<? extends T> entities);
-		}
-		
-		/**
-		 * Implementation of {@link NewEntitiesCollector} that delegates to {@link #isNew(Object)} for each entity
-		 * 
-		 * @param <T>
-		 * @author Guillaume Mary
-		 */
-		public abstract static class DefaultIsNewDeterminer<T> implements NewEntitiesCollector<T> {
-			
-			public Set<T> collectNewEntities(Iterable<? extends T> entities) {
-				return Iterables.stream(entities).filter(this::isNew).collect(Collectors.toSet());
-			}
-			
-			/**
-			 * @param t an entity
-			 * @return true if the entity doesn't exist in database
-			 */
-			public abstract boolean isNew(T t);
 		}
 	}
 }

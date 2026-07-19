@@ -177,8 +177,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	
 	@Override
 	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<SelectAdapter<C>> selectAdapter) {
-		ProjectionQueryCriteriaSupport<C, I> projectionSupport = new ProjectionQueryCriteriaSupport<>(entityFinder, selectAdapter);
-		return projectionSupport.wrapIntoExecutable();
+		return newProjectionCriteriaSupport(selectAdapter).wrapIntoExecutable();
 	}
 	
 	/**

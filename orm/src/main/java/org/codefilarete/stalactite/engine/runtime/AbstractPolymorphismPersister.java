@@ -107,6 +107,7 @@ public abstract class AbstractPolymorphismPersister<C, I>
 		return entityFinder.newCriteriaSupport();
 	}
 	
+	@Override
 	public ProjectionQueryCriteriaSupport<C, I> newProjectionCriteriaSupport(Consumer<SelectAdapter<C>> selectAdapter) {
 		return new ProjectionQueryCriteriaSupport<>(entityFinder, newCriteriaSupport().getEntityCriteriaSupport(), selectAdapter);
 	}

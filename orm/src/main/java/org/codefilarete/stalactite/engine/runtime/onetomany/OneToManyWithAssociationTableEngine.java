@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.codefilarete.reflection.Accessor;
-import org.codefilarete.stalactite.engine.EntityWriteExecutor;
+import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.configurer.onetomany.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
@@ -309,7 +309,7 @@ public class OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C ext
 		
 		private final Accessor<I, ? extends Collection<O>> collectionGetter;
 		
-		public TargetInstancesInsertCascader(EntityWriteExecutor<O, J> targetPersister, Accessor<I, ? extends Collection<O>> collectionGetter) {
+		public TargetInstancesInsertCascader(EntityReadWriteExecutor<O, J> targetPersister, Accessor<I, ? extends Collection<O>> collectionGetter) {
 			super(targetPersister);
 			this.collectionGetter = collectionGetter;
 		}

@@ -3,7 +3,6 @@ package org.codefilarete.stalactite.mapping;
 import java.util.function.Function;
 
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
-import org.codefilarete.stalactite.engine.PersistExecutor.DefaultPersistExecutor.DefaultIsNewDeterminer;
 import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
@@ -22,7 +21,7 @@ public class SimpleIdMapping<C, I> implements IdMapping<C, I> {
 	
 	private final IdentifierInsertionManager<C, I> identifierInsertionManager;
 	
-	private final DefaultIsNewDeterminer<C> isNewDeterminer;
+	private final IsNewDeterminer<C> isNewDeterminer;
 	
 	private final SingleIdentifierAssembler<I, ?> identifierMarshaller;
 	
@@ -74,10 +73,24 @@ public class SimpleIdMapping<C, I> implements IdMapping<C, I> {
 		return (SingleIdentifierAssembler<I, T>) identifierMarshaller;
 	}
 	
+	
+	/**
+	 * Small contract to determine if an entity is persisted or not
+	 * @param <T>
+	 */
+	public interface IsNewDeterminer<T> {
+		
+		/**
+		 * @param t an entity
+		 * @return true if the entity doesn't exist in database
+		 */
+		boolean isNew(T t);
+	}
+	
 	/**
 	 * For case where the identifier is a basic type (String, Long, ...)
 	 */
-	private class NullableIdDeterminer extends DefaultIsNewDeterminer<C> {
+	private class NullableIdDeterminer implements IsNewDeterminer<C> {
 		
 		@Override
 		public boolean isNew(C entity) {
@@ -88,7 +101,7 @@ public class SimpleIdMapping<C, I> implements IdMapping<C, I> {
 	/**
 	 * For case where the identifier is a primitive type (long, int, ...)
 	 */
-	private class PrimitiveIdDeterminer extends DefaultIsNewDeterminer<C> {
+	private class PrimitiveIdDeterminer implements IsNewDeterminer<C> {
 		
 		@Override
 		public boolean isNew(C entity) {
@@ -99,7 +112,7 @@ public class SimpleIdMapping<C, I> implements IdMapping<C, I> {
 	/**
 	 * For case where the identifier is already assigned : we have to delegate determination to a function
 	 */
-	private class AlreadyAssignedIdDeterminer extends DefaultIsNewDeterminer<C> {
+	private class AlreadyAssignedIdDeterminer implements IsNewDeterminer<C> {
 		
 		private final Function<C, Boolean> isPersistedFunction;
 		

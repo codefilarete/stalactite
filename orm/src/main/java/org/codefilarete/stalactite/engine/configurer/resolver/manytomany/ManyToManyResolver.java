@@ -1,13 +1,14 @@
 package org.codefilarete.stalactite.engine.configurer.resolver.manytomany;
 
 import java.util.Collection;
-import java.util.function.Consumer;
 
+import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.configurer.AssociationRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.IndexedAssociationRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToManyRelation;
+import org.codefilarete.stalactite.engine.configurer.resolver.CreatedPersisterCollector;
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.AbstractOneToManyEngine;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.IndexedAssociationTableManyRelationDescriptor;
@@ -17,7 +18,6 @@ import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.OneToMan
 import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecordPersister;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
@@ -61,18 +61,17 @@ public class ManyToManyResolver {
 	 *
 	 * @param resolvedRelation      the resolved model relation carrying the join structure and cascade options
 	 * @param sourcePersister       the persister that owns the collection
-	 * @param createdPersisterConsumer a consumer that receives the freshly built target persister
+	 * @param persisterCollector callback notified of every persister created by {@link SkeletonAggregateResolver} while building the target entity subtree
 	 */
 	public <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>,
 			LEFTTABLE extends Table<LEFTTABLE>,
 			RIGHTTABLE extends Table<RIGHTTABLE>>
 	void resolve(ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> resolvedRelation,
-	             ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-	             Consumer<EntityWriteExecutor<TRGT, TRGTID>> createdPersisterConsumer) {
+	             EntityWriteExecutor<SRC, SRCID> sourcePersister,
+	             CreatedPersisterCollector<TRGT, TRGTID> persisterCollector) {
 		
-		EntityWriteExecutor<TRGT, TRGTID> targetPersister =
-				skeletonAggregateResolver.buildPersister(resolvedRelation.getTargetEntity());
-		createdPersisterConsumer.accept(targetPersister);
+		EntityReadWriteExecutor<TRGT, TRGTID> targetPersister =
+				skeletonAggregateResolver.buildPersister(resolvedRelation.getTargetEntity(), persisterCollector);
 		
 		AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, S> engine;
 		if (resolvedRelation.isOrdered()) {
@@ -102,7 +101,7 @@ public class ManyToManyResolver {
 	AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, S>
 	buildAssociationTableEngine(EntityWriteExecutor<SRC, SRCID> sourcePersister,
 	                            ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> resolvedRelation,
-	                            EntityWriteExecutor<TRGT, TRGTID> targetPersister) {
+	                            EntityReadWriteExecutor<TRGT, TRGTID> targetPersister) {
 		
 		IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID> join =
 				(IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID>) resolvedRelation.getJoin();
@@ -143,7 +142,7 @@ public class ManyToManyResolver {
 	AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, S>
 	buildIndexedAssociationTableEngine(EntityWriteExecutor<SRC, SRCID> sourcePersister,
 	                                   ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> resolvedRelation,
-	                                   EntityWriteExecutor<TRGT, TRGTID> targetPersister) {
+	                                   EntityReadWriteExecutor<TRGT, TRGTID> targetPersister) {
 		
 		IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID> join =
 				(IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID>) resolvedRelation.getJoin();

@@ -9,18 +9,18 @@ import java.util.stream.Stream;
 
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.PropertyAccessor;
-import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.configurer.IndexedAssociationRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToManyRelation;
-import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.AssemblyPoint;
+import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.AssemblyPoint2;
+import org.codefilarete.stalactite.engine.configurer.resolver.EntityReader;
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
+import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.load.JoinNode;
 import org.codefilarete.stalactite.engine.runtime.onetomany.IndexedAssociationTableManyRelationDescriptor.InMemoryRelationHolder;
@@ -69,74 +69,68 @@ public class AggregateManyToManyAppender {
 	 *   <li>Forwarding SELECT lifecycle events from the source persister to the target persister.</li>
 	 * </ol>
 	 *
-	 * @return an {@link AssemblyPoint} for the target entity, ready to be pushed onto the assembly queue
-	 *         so that deeper relations are also resolved
+	 * @return an {@link AssemblyPoint2} for the target entity, ready to be pushed onto the assembly queue
+	 * so that deeper relations are also resolved
 	 */
 	public <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>,
 			LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
-	AssemblyPoint<?, ?, ?, ?> append(ConfiguredRelationalPersister<SRC, SRCID> rootPersister,
-	                                 ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
-	                                 AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE> assemblyPawn) {
+	AssemblyPoint2<TRGT, TRGTID, S, RIGHTTABLE> append(ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
+	                                                   EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
+	                                                   EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
+	                                                   String mountPoint,
+	                                                   PropertyAccessor<SRC, S> targetPropertyAccessor,
+	                                                   EntityJoinTree<SRC, SRCID> aggregateTree) {
 		
-		Holder<AssemblyPoint> resultHolder = new Holder<>();
-		manyToManyResolver.resolve(
-				relation,
-				assemblyPawn.getRelationOwnerPersister(),
-				targetPersister -> {
-					
-					PropertyAccessor<SRC, S> accessor;
-					if (assemblyPawn.getParentJoinPoint().equals(ROOT_JOIN_NAME)) {
-						accessor = relation.getAccessor();
-					} else {
-						AccessorChain<SRC, S> shifter = new AccessorChain<>(assemblyPawn.getAccessor(), relation.getAccessor());
-						shifter.setNullValueHandler(AccessorChain.RETURN_NULL);
-						accessor = shifter;
-					}
-					
-					@SuppressWarnings("unchecked")
-					IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ?, SRCID, TRGTID> join =
-							(IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ?, SRCID, TRGTID>) relation.getJoin();
-					
-					String manyJoinName;
-					if (relation.isOrdered()) {
-						manyJoinName = appendIndexedAssociation(rootPersister, targetPersister, relation, assemblyPawn, join, accessor);
-					} else {
-						manyJoinName = appendAssociation(rootPersister, targetPersister, relation, assemblyPawn, join, accessor);
-					}
-					
-					// Forward SELECT lifecycle events from the source entity's persister down to the target persister
-					SelectListener<TRGT, TRGTID> targetSelectListener = targetPersister.getPersisterListener().getSelectListener();
-					assemblyPawn.getRelationOwnerPersister().addSelectListener(new SelectListener<SRC, SRCID>() {
-						@Override
-						public void beforeSelect(Iterable<SRCID> ids) {
-							targetSelectListener.beforeSelect(Collections.emptyList());
-						}
-						
-						@Override
-						public void afterSelect(Set<? extends SRC> result) {
-							Set<TRGT> targets = Nullable.nullable(result)
-									.map(r -> r.stream()
-											.flatMap(src -> Nullable.nullable(relation.getAccessor().get(src))
-													.map(Collection::stream)
-													.getOr(Stream.empty()))
-											.collect(Collectors.toSet()))
-									.getOr(Collections.emptySet());
-							targetSelectListener.afterSelect(targets);
-						}
-						
-						@Override
-						public void onSelectError(Iterable<SRCID> ids, RuntimeException exception) {
-							targetSelectListener.onSelectError(Collections.emptyList(), exception);
-						}
-					});
-					
-					// Preparing for next iteration
-					// Note that we can't set the correct generics types to the AssemblyPoint instance
-					// because we go a step further in the relation by shifting the types from SRC to TRGT
-					resultHolder.set(new AssemblyPoint(relation.getTargetEntity(), targetPersister, manyJoinName, accessor));
-				});
+		PropertyAccessor<SRC, S> accessor;
+		if (mountPoint.equals(ROOT_JOIN_NAME)) {
+			accessor = relation.getAccessor();
+		} else {
+			AccessorChain<SRC, S> shifter = new AccessorChain<>(targetPropertyAccessor, relation.getAccessor());
+			shifter.setNullValueHandler(AccessorChain.RETURN_NULL);
+			accessor = shifter;
+		}
 		
-		return resultHolder.get();
+		@SuppressWarnings("unchecked")
+		IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ?, SRCID, TRGTID> join =
+				(IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ?, SRCID, TRGTID>) relation.getJoin();
+		
+		String manyJoinName;
+		if (relation.isOrdered()) {
+			manyJoinName = appendIndexedAssociation(sourcePersister, targetPersister, relation, accessor, aggregateTree, mountPoint);
+		} else {
+			manyJoinName = appendAssociation(targetPersister, relation, accessor, aggregateTree, mountPoint);
+		}
+		
+		// Forward SELECT lifecycle events from the source entity's persister down to the target persister
+		SelectListener<TRGT, TRGTID> targetSelectListener = targetPersister.getSelectListener();
+		sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
+			@Override
+			public void beforeSelect(Iterable<SRCID> ids) {
+				targetSelectListener.beforeSelect(Collections.emptyList());
+			}
+			
+			@Override
+			public void afterSelect(Set<? extends SRC> result) {
+				Set<TRGT> targets = Nullable.nullable(result)
+						.map(r -> r.stream()
+								.flatMap(src -> Nullable.nullable(relation.getAccessor().get(src))
+										.map(Collection::stream)
+										.getOr(Stream.empty()))
+								.collect(Collectors.toSet()))
+						.getOr(Collections.emptySet());
+				targetSelectListener.afterSelect(targets);
+			}
+			
+			@Override
+			public void onSelectError(Iterable<SRCID> ids, RuntimeException exception) {
+				targetSelectListener.onSelectError(Collections.emptyList(), exception);
+			}
+		});
+		
+		// Preparing for next iteration
+		// Note that we can't set the correct generics types to the AssemblyPoint2 instance
+		// because we go a step further in the relation by shifting the types from SRC to TRGT
+		return new AssemblyPoint2(relation.getTargetEntity(), targetPersister, manyJoinName, accessor);
 	}
 	
 	/**
@@ -152,24 +146,23 @@ public class AggregateManyToManyAppender {
 			LEFTTABLE extends Table<LEFTTABLE>,
 			RIGHTTABLE extends Table<RIGHTTABLE>,
 			ASSOCIATIONTABLE extends AssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
-	String appendAssociation(ConfiguredRelationalPersister<SRC, SRCID> rootPersister,
-	                         ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
+	String appendAssociation(EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
 	                         ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
-	                         AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE> assemblyPawn,
-	                         IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ?, SRCID, TRGTID> rawJoin,
-	                         PropertyAccessor<SRC, S> accessor) {
+	                         PropertyAccessor<SRC, S> accessor,
+	                         EntityJoinTree<SRC, SRCID> entityJoinTree,
+	                         String mountPoint) {
 		
 		IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID> join =
-				(IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID>) rawJoin;
+				(IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID>) relation.getJoin();
 		
-		String associationTableJoinName = rootPersister.getEntityJoinTree().addPassiveJoin(
-				assemblyPawn.getParentJoinPoint(),
+		String associationTableJoinName = entityJoinTree.addPassiveJoin(
+				mountPoint,
 				join.getLeftKey(),
 				join.getLeftAssociationKey(),
 				OUTER,
 				Collections.emptySet());
 		
-		return rootPersister.getEntityJoinTree().addRelationJoin(
+		return entityJoinTree.addRelationJoin(
 				associationTableJoinName,
 				new EntityInflater.EntityMappingAdapter<>(targetPersister.<RIGHTTABLE>getMapping()),
 				accessor,
@@ -192,22 +185,22 @@ public class AggregateManyToManyAppender {
 			LEFTTABLE extends Table<LEFTTABLE>,
 			RIGHTTABLE extends Table<RIGHTTABLE>,
 			ASSOCIATIONTABLE extends IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
-	String appendIndexedAssociation(EntityWriteExecutor<SRC, SRCID> rootPersister,
-	                                EntityWriteExecutor<TRGT, TRGTID> targetPersister,
+	String appendIndexedAssociation(EntityReader<SRC, SRCID, LEFTTABLE> rootPersister,
+	                                EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
 	                                ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
-	                                AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE> assemblyPawn,
-	                                IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ?, SRCID, TRGTID> rawJoin,
-	                                PropertyAccessor<SRC, S> accessor) {
+	                                PropertyAccessor<SRC, S> accessor,
+	                                EntityJoinTree<SRC, SRCID> entityJoinTree,
+	                                String mountPoint) {
 		
 		IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID> join =
-				(IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID>) rawJoin;
+				(IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID>) relation.getJoin();
 		Column<ASSOCIATIONTABLE, Integer> indexingColumn = join.getJoinTable().getIndexColumn();
 		
 		Holder<String> associationTableJoinNodeNameHolder = new Holder<>();
 		Function<ColumnedRow, Object> duplicateIdentifierProvider = columnedRow -> {
 			TRGTID identifier = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(columnedRow);
 			JoinNode<IndexedAssociationRecord, Fromable> joinNode =
-					(JoinNode<IndexedAssociationRecord, Fromable>) rootPersister.getEntityJoinTree()
+					(JoinNode<IndexedAssociationRecord, Fromable>) entityJoinTree
 							.getJoin(associationTableJoinNodeNameHolder.get());
 			ColumnedRow rowDecoder = EntityTreeInflater.currentContext().getDecoder(joinNode);
 			Integer targetEntityIndex = rowDecoder.get(indexingColumn);
@@ -215,8 +208,8 @@ public class AggregateManyToManyAppender {
 		};
 		
 		// Passive join: source table → association table (include all columns for index decoding)
-		String associationTableJoinName = rootPersister.getEntityJoinTree().addPassiveJoin(
-				assemblyPawn.getParentJoinPoint(),
+		String associationTableJoinName = entityJoinTree.addPassiveJoin(
+				mountPoint,
 				join.getLeftKey(),
 				join.getLeftAssociationKey(),
 				OUTER,
@@ -227,7 +220,7 @@ public class AggregateManyToManyAppender {
 		// Note: getMappedByAccessor() is null in model.ManyToManyRelation; bidirectionality on the read path is a
 		// known limitation for indexed M2M (consistent with indexed OneToMany with association table).
 		InMemoryRelationHolder<SRC, SRCID, TRGT, S> inMemoryRelationFixer = new InMemoryRelationHolder<>(
-				assemblyPawn.getRelationOwnerPersister()::getId,
+				rootPersister.getMapping()::getId,
 				relation.getAccessor(),
 				relation.getComponentFactory(),
 				null);
@@ -251,7 +244,7 @@ public class AggregateManyToManyAppender {
 		});
 		
 		// Relation join: association table → target table
-		String manyJoinName = rootPersister.getEntityJoinTree().addRelationJoin(
+		String manyJoinName = entityJoinTree.addRelationJoin(
 				associationTableJoinName,
 				new EntityInflater.EntityMappingAdapter<>(targetPersister.<RIGHTTABLE>getMapping()),
 				accessor,
@@ -264,12 +257,12 @@ public class AggregateManyToManyAppender {
 				duplicateIdentifierProvider);
 		
 		// Attach a consumption listener: each time a target row is consumed, record its position from the association table row
-		JoinNode<TRGT, Fromable> joinNode = (JoinNode<TRGT, Fromable>) rootPersister.getEntityJoinTree().getJoin(manyJoinName);
-		JoinNode<?, Fromable> associationJoinNode = rootPersister.getEntityJoinTree().getJoin(associationTableJoinName);
+		JoinNode<TRGT, Fromable> joinNode = (JoinNode<TRGT, Fromable>) entityJoinTree.getJoin(manyJoinName);
+		JoinNode<?, Fromable> associationJoinNode = entityJoinTree.getJoin(associationTableJoinName);
 		IndexedAssociationRecordMapping<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID> associationRecordMapping =
 				new IndexedAssociationRecordMapping<>(
 						join.getJoinTable(),
-						assemblyPawn.getRelationOwnerPersister().getMapping().getIdMapping().getIdentifierAssembler(),
+						rootPersister.getMapping().getIdMapping().getIdentifierAssembler(),
 						targetPersister.getMapping().getIdMapping().getIdentifierAssembler(),
 						join.getJoinTable().getLeftIdentifierColumnMapping(),
 						join.getJoinTable().getRightIdentifierColumnMapping());

@@ -14,6 +14,7 @@ import javax.annotation.Nullable;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
+import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.diff.IndexedDiff;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
@@ -34,7 +35,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		extends OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S, LEFTTABLE, RIGHTTABLE> {
 	
 	
-	public OneToManyWithIndexedMappedAssociationEngine(EntityWriteExecutor<TRGT, TRGTID> targetPersister,
+	public OneToManyWithIndexedMappedAssociationEngine(EntityReadWriteExecutor<TRGT, TRGTID> targetPersister,
 	                                                   IndexedMappedManyRelationDescriptor<SRC, TRGT, S, SRCID, TRGTID, RIGHTTABLE> manyRelationDefinition,
 	                                                   EntityWriteExecutor<SRC, SRCID> sourcePersister,
 	                                                   Set<Column<RIGHTTABLE, ?>> mappedReverseColumns,
@@ -48,7 +49,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	}
 	
 	@Override
-	public void addInsertCascade(EntityWriteExecutor<TRGT, TRGTID> targetPersister) {
+	public void addInsertCascade(EntityReadWriteExecutor<TRGT, TRGTID> targetPersister) {
 		// For a List and a given manner to get its owner (so we can deduce index value), we configure persistence to keep index value in database
 		addIndexInsertion();
 		super.addInsertCascade(targetPersister);
@@ -170,7 +171,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		private final Column<TARGETTABLE, Integer> indexingColumn;
 		
 		private ListCollectionUpdater(Accessor<SRC, C> collectionGetter,
-		                              EntityWriteExecutor<TRGT, ID> targetPersister,
+		                              EntityReadWriteExecutor<TRGT, ID> targetPersister,
 									  @Nullable Mutator<TRGT, SRC> reverseSetter,
 									  boolean shouldDeleteRemoved,
 									  Accessor<TRGT, ?> idProvider,

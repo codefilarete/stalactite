@@ -1,15 +1,16 @@
 package org.codefilarete.stalactite.engine.configurer.resolver.manytoone;
 
 import java.util.Collection;
-import java.util.function.Consumer;
 
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions;
+import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneConfigurer.MandatoryRelationAssertBeforeInsertListener;
 import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneConfigurer.MandatoryRelationAssertBeforeUpdateListener;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToOneRelation;
+import org.codefilarete.stalactite.engine.configurer.resolver.CreatedPersisterCollector;
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.manytomany.AggregateManyToManyAppender;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
@@ -44,19 +45,18 @@ public class ManyToOneResolver {
 	 *
 	 * @param resolvedRelation the resolved model relation carrying the join structure and cascade options
 	 * @param sourcePersister the persister that owns the collection
-	 * @param createdPersisterConsumer a consumer that receives the freshly built target persister
+	 * @param persisterCollector callback notified of every persister created by {@link SkeletonAggregateResolver} while building the target entity subtree
 	 */
 	public <SRC, SRCID, TRGT, TRGTID, S extends Collection<SRC>,
 			LEFTTABLE extends Table<LEFTTABLE>,
 			RIGHTTABLE extends Table<RIGHTTABLE>>
 	void resolve(ResolvedManyToOneRelation<SRC, TRGT, TRGTID, LEFTTABLE, RIGHTTABLE> resolvedRelation,
 	             EntityWriteExecutor<SRC, SRCID> sourcePersister,
-	             Consumer<EntityWriteExecutor<TRGT, TRGTID>> createdPersisterConsumer) {
+	             CreatedPersisterCollector<TRGT, TRGTID> persisterCollector) {
 		
 		assertConfigurationIsSupported(resolvedRelation.getRelationMode());
 		
-		EntityWriteExecutor<TRGT, TRGTID> targetPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getTargetEntity());
-		createdPersisterConsumer.accept(targetPersister);
+		EntityReadWriteExecutor<TRGT, TRGTID> targetPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getTargetEntity(), persisterCollector);
 		
 		ManyToOneEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> engine = new ManyToOneEngine<>(
 				sourcePersister,

@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
+import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.cascade.AfterDeleteByIdSupport;
 import org.codefilarete.stalactite.engine.cascade.AfterDeleteSupport;
 import org.codefilarete.stalactite.engine.cascade.BeforeInsertSupport;
@@ -31,7 +32,7 @@ public class OneToOneOwnedBySourceEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 	private final ShadowColumnValueProvider<SRC, LEFTTABLE> foreignKeyValueProvider;
 	
 	public OneToOneOwnedBySourceEngine(EntityWriteExecutor<SRC, SRCID> sourcePersister,
-	                                   EntityWriteExecutor<TRGT, TRGTID> targetPersister,
+	                                   EntityReadWriteExecutor<TRGT, TRGTID> targetPersister,
 	                                   Accessor<SRC, TRGT> targetAccessor,
 	                                   Map<Column<LEFTTABLE, ?>, Column<RIGHTTABLE, ?>> keyColumnsMapping) {
 		super(sourcePersister, targetPersister, targetAccessor, keyColumnsMapping);

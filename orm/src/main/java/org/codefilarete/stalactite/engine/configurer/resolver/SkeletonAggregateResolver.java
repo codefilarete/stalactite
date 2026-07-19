@@ -8,6 +8,7 @@ import org.codefilarete.reflection.PropertyMutator;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.PersistenceContext;
+import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.configurer.DefaultComposedIdentifierAssembler;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.AssignedByAnotherIdentifierMapping;
@@ -54,11 +55,10 @@ public class SkeletonAggregateResolver {
 	}
 	
 	public <B, C extends B, I, T extends Table<T>>
-	EntityWriteExecutor<C, I> buildPersister(Entity<C, I, T> rootEntity) {
+	EntityReadWriteExecutor<C, I> buildPersister(Entity<C, I, T> rootEntity, CreatedPersisterCollector<C, I> persisterCollector) {
 		// TODO: check for ealready existing persister in the persistence context
 		// TODO: wrap result in an OptimizedUpdatePersister
 		// TODO: be inspired from DefaultPersisterBuilder.build()
-		// TODO: merge the created persisters (for ancestors and extra tables) into the global aggregate: maybe make it through a listener ?
 		
 		IdMapping<C, I> idMapping = createIdMapping(rootEntity);
 		
@@ -72,11 +72,18 @@ public class SkeletonAggregateResolver {
 				false
 		);
 		
-		EntityWriter<C, I, T> rootPersister = new EntityWriter<>(
+		// we create a ReadWriteEntityExecutor that has the persist() capability because insert() cascade will
+		// trigger the persist(..) method, thus, the persister shall have the select ability to determine if the entity is new or not.
+		// However, the read ability is not one of the aggregate, it only focuses on the direct properties.
+		EntityReadWriteExecutor<C, I> rootPersister = new DelegatingReadWriteEntityExecutor<>(new EntityWriter<>(
 				entityMapping,
 				persistenceContext.getDialect(),
 				persistenceContext.getConnectionConfiguration()
-		);
+		), new EntityReader<>(
+				entityMapping,
+				persistenceContext.getConnectionProvider(),
+				persistenceContext.getDialect()
+		));
 		
 		// when identifier policy is already-assigned one, we must ensure that entity is marked as persisted when it comes back from database
 		// because user may forget to / can't mark it as such
@@ -84,25 +91,28 @@ public class SkeletonAggregateResolver {
 		if (identifierInsertionManager instanceof AlreadyAssignedIdentifierManager) {
 			// Transferring identifier manager InsertListener to here
 			rootPersister.addInsertListener(((AlreadyAssignedIdentifierManager<C, I>) identifierInsertionManager).getInsertListener());
-//			rootPersister.addSelectListener(((AlreadyAssignedIdentifierManager<C, I>) identifierInsertionManager).getSelectListener());
 		}
 		
-		appendInheritance(rootEntity, rootPersister);
+		persisterCollector.setPersister(rootPersister);
+		
+		appendInheritance(rootEntity, rootPersister, persisterCollector);
 		
 		return rootPersister;
 	}
 	
 	private <B, C extends B, I, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
-	void appendInheritance(Entity<C, I, LEFTTABLE> entity, EntityWriter<C, I, LEFTTABLE> rootPersister) {
+	void appendInheritance(Entity<C, I, LEFTTABLE> entity, EntityWriteExecutor<C, I> rootPersister, CreatedPersisterCollector<C, I> persisterCollector) {
 		// looking for extra tables: they are stored as ExtraTableJoin in the entity relations 
 		entity.getRelations().stream()
 				.filter(ExtraTableJoin.class::isInstance).map(ExtraTableJoin.class::cast).forEach(extraTableJoin -> {
-					buildExtraTablePersister(extraTableJoin, rootPersister, entity);
+					EntityWriter<C, I, LEFTTABLE> extraTablePersister = buildExtraTablePersister(extraTableJoin, rootPersister, entity);
+					persisterCollector.addExtraTablePersister(rootPersister, extraTablePersister);
 				});
 		
 		AncestorJoin<B, LEFTTABLE, RIGHTTABLE, I> parent = (AncestorJoin<B, LEFTTABLE, RIGHTTABLE, I>) entity.getParent();
 		while (parent != null) {
 			EntityWriter<B, I, RIGHTTABLE> parentPersister = sewParentEntity(parent, rootPersister);
+			persisterCollector.addAncestorPersister(parentPersister);
 			
 			Entity<B, I, RIGHTTABLE> ancestorEntity = parent.getAncestor();
 			ancestorEntity.getRelations().stream()
@@ -111,7 +121,8 @@ public class SkeletonAggregateResolver {
 						// we join the extra table persister to the result persister, not to the ancestor one, to create
 						// a single complete aggregate query instead of multiple partial ones that would need to be
 						// reconciled later
-						buildExtraTablePersister(extraTableJoin, parentPersister, ancestorEntity);
+						EntityWriter<C, I, LEFTTABLE> extraTablePersister = buildExtraTablePersister(extraTableJoin, parentPersister, ancestorEntity);
+						persisterCollector.addExtraTablePersister(parentPersister, extraTablePersister);
 					});
 			
 			// preparing next iteration
@@ -178,7 +189,7 @@ public class SkeletonAggregateResolver {
 	
 	private <C, I, LEFTTABLE extends Table<LEFTTABLE>, EXTRATABLE extends Table<EXTRATABLE>>
 	EntityWriter<C, I, EXTRATABLE> buildExtraTablePersister(ExtraTableJoin<C, LEFTTABLE, EXTRATABLE, I> extraTableJoin,
-	                                                        EntityWriter<C, I, LEFTTABLE> owningPersister,
+	                                                        EntityWriteExecutor<C, I> owningPersister,
 	                                                        Entity<C, I, LEFTTABLE> identifierDefiner) {
 		EXTRATABLE extratable = extraTableJoin.getJoin().getRightKey().getTable();
 		IdMapping<C, I> idMapping = mimicIdMapping(identifierDefiner.getIdentifierMapping(), extratable);
@@ -223,7 +234,7 @@ public class SkeletonAggregateResolver {
 	}
 	
 	private <B, C extends B, I, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
-	EntityWriter<B, I, RIGHTTABLE> sewParentEntity(AncestorJoin<B, LEFTTABLE, RIGHTTABLE, I> parent, EntityWriter<C, I, LEFTTABLE> child) {
+	EntityWriter<B, I, RIGHTTABLE> sewParentEntity(AncestorJoin<B, LEFTTABLE, RIGHTTABLE, I> parent, EntityWriteExecutor<C, I> child) {
 		Map<ReadWritePropertyAccessPoint<B, ?>, Column<RIGHTTABLE, ?>> writablePropertyToColumn = new HashMap<>();
 		parent.getAncestor().getPropertyMappingHolder().getWritablePropertyToColumn().forEach(propertyMapping -> {
 			writablePropertyToColumn.put(propertyMapping.getAccessPoint(), propertyMapping.getColumn());
@@ -251,7 +262,6 @@ public class SkeletonAggregateResolver {
 				persistenceContext.getConnectionConfiguration()
 		);
 
-//		persisterRegistry.addPersister(ancestorPersister);
 		child.addInsertListener(new InsertListener<C>() {
 			@Override
 			public void beforeInsert(Iterable<? extends C> entities) {

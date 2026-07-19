@@ -7,6 +7,7 @@ import java.util.Set;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
+import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.diff.IndexedDiff;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecordPersister;
@@ -41,7 +42,7 @@ public class OneToManyWithIndexedAssociationTableEngine<
 		extends OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, S, IndexedAssociationRecord, ASSOCIATIONTABLE> {
 
 	public OneToManyWithIndexedAssociationTableEngine(EntityWriteExecutor<SRC, SRCID> sourcePersister,
-	                                                  EntityWriteExecutor<TRGT, TRGTID> targetPersister,
+	                                                  EntityReadWriteExecutor<TRGT, TRGTID> targetPersister,
 													  IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, S, SRCID> manyRelationDescriptor,
 													  AssociationRecordPersister<IndexedAssociationRecord, ASSOCIATIONTABLE> associationPersister,
 													  WriteOperationFactory writeOperationFactory,
@@ -55,7 +56,7 @@ public class OneToManyWithIndexedAssociationTableEngine<
 	}
 	
 	@Override
-	public void addUpdateCascade(EntityWriteExecutor<TRGT, TRGTID> targetPersister) {
+	public void addUpdateCascade(EntityReadWriteExecutor<TRGT, TRGTID> targetPersister) {
 		
 		// NB: we don't have any reverseSetter (for applying source entity to reverse side (target entity)), because this is only relevant
 		// when association is mapped without intermediary table (owned by "many-side" entity)

@@ -1,10 +1,12 @@
 package org.codefilarete.stalactite.engine.configurer.resolver.map;
 
 import java.util.Map;
-import java.util.function.Consumer;
 
+import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation;
+import org.codefilarete.stalactite.engine.configurer.resolver.CreatedPersisterCollector;
+import org.codefilarete.stalactite.engine.configurer.resolver.MapCreatedPersisterCollector;
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.map.EntryMapResolver.KeyValueRecordPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
@@ -28,25 +30,25 @@ public class MapResolver {
 			MAPTABLE extends Table<MAPTABLE>,
 			KTABLE extends Table<KTABLE>,
 			VTABLE extends Table<VTABLE>>
-	KeyValueRecordPersister<?, ?, SRCID, MAPTABLE> resolve(ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, LEFTTABLE, MAPTABLE, KTABLE, VTABLE> resolvedRelation,
+	void resolve(ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, LEFTTABLE, MAPTABLE, KTABLE, VTABLE> resolvedRelation,
 	                                                       EntityWriteExecutor<SRC, SRCID> sourcePersister,
-	                                                       Consumer<EntityWriteExecutor<K, KID>> createdKeyPersisterConsumer,
-	                                                       Consumer<EntityWriteExecutor<V, VID>> createdValuePersisterConsumer) {
+	                                                       MapCreatedPersisterCollector<SRCID, K, KID, V, VID, MAPTABLE, Object, Object> mapCreatedPersisterCollector) {
 		
-		EntityWriteExecutor<K, KID> keyEntityPersister = null;
+		EntityReadWriteExecutor<K, KID> keyEntityPersister = null;
 		if (resolvedRelation.getKeyEntityDefinition() != null) {
-			keyEntityPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getKeyEntityDefinition().getEntity());
-			createdKeyPersisterConsumer.accept(keyEntityPersister);
+			mapCreatedPersisterCollector.setKeyPersisterCollector(new CreatedPersisterCollector<>());
+			keyEntityPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getKeyEntityDefinition().getEntity(), mapCreatedPersisterCollector.getKeyPersisterCollector());
 		}
 		
-		EntityWriteExecutor<V, VID> valueEntityPersister = null;
+		EntityReadWriteExecutor<V, VID> valueEntityPersister = null;
 		if (resolvedRelation.getValueEntityDefinition() != null) {
-			valueEntityPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getValueEntityDefinition().getEntity());
-			createdValuePersisterConsumer.accept(valueEntityPersister);
+			mapCreatedPersisterCollector.setValuePersisterCollector(new CreatedPersisterCollector<>());
+			valueEntityPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getValueEntityDefinition().getEntity(), mapCreatedPersisterCollector.getValuePersisterCollector());
 		}
 		
 		EntryMapResolver keyEntityMapResolver = new EntryMapResolver(dialect, connectionConfiguration);
-		return keyEntityMapResolver.resolve(resolvedRelation, sourcePersister, keyEntityPersister, valueEntityPersister);
+		KeyValueRecordPersister<Object, Object, SRCID, MAPTABLE> result = keyEntityMapResolver.resolve(resolvedRelation, sourcePersister, keyEntityPersister, valueEntityPersister);
+		mapCreatedPersisterCollector.setKeyValueRecordPersister(result);
 	}
 }
 

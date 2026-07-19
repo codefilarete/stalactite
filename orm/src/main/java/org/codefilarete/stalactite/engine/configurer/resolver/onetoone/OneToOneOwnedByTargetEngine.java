@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.dsl.idpolicy.GeneratedKeysPolicy;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
+import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteByIdSupport;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteSupport;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
@@ -69,7 +70,7 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 	}
 	
 	public OneToOneOwnedByTargetEngine(EntityWriteExecutor<SRC, SRCID> sourcePersister,
-	                                   EntityWriteExecutor<TRGT, TRGTID> targetPersister,
+	                                   EntityReadWriteExecutor<TRGT, TRGTID> targetPersister,
 	                                   Accessor<SRC, TRGT> targetAccessor,
 	                                   Map<Column<LEFTTABLE, ?>, Column<RIGHTTABLE, ?>> keyColumnsMapping) {
 		super(sourcePersister, targetPersister, targetAccessor, keyColumnsMapping);

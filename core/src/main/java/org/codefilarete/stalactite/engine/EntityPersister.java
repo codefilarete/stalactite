@@ -6,7 +6,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.codefilarete.stalactite.engine.listener.PersisterListener;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.tool.Duo;
@@ -23,8 +22,7 @@ import org.codefilarete.tool.collection.PairIterator;
  * 
  * @author Guillaume Mary
  */
-public interface EntityPersister<C, I>
-		extends PersistExecutor<C>, InsertExecutor<C>, UpdateExecutor<C>, SelectExecutor<C, I>, DeleteExecutor<C, I>, PersisterListener<C, I>, EntitySelector<C> {
+public interface EntityPersister<C, I> extends EntityReadWriteExecutor<C, I>, EntitySelector<C> {
 	
 	/**
 	 * Persists an instance either it is already persisted or not (insert or update).
@@ -159,9 +157,7 @@ public interface EntityPersister<C, I>
 	
 	Set<C> selectAll();
 	
-	boolean isNew(C entity);
-	
-	I getId(C entity);
+//	I getId(C entity);
 	
 	Class<C> getClassToPersist();
 	

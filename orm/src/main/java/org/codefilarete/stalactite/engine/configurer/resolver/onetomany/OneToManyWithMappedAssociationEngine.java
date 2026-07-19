@@ -12,6 +12,7 @@ import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.stalactite.dsl.idpolicy.GeneratedKeysPolicy;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
+import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteByIdCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteCollectionCascader;
@@ -71,7 +72,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S ex
 	
 	protected final ShadowColumnValueProvider<TRGT, RIGHTTABLE> foreignKeyValueProvider;
 	
-	public OneToManyWithMappedAssociationEngine(EntityWriteExecutor<TRGT, TRGTID> targetPersister,
+	public OneToManyWithMappedAssociationEngine(EntityReadWriteExecutor<TRGT, TRGTID> targetPersister,
 	                                            MappedManyRelationDescriptor<SRC, TRGT, S, SRCID, RIGHTTABLE> manyRelationDescriptor,
 	                                            EntityWriteExecutor<SRC, SRCID> sourcePersister,
 	                                            Set<Column<RIGHTTABLE, ?>> mappedReverseColumns,
@@ -122,13 +123,13 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S ex
 	}
 	
 	@Override
-	public void addInsertCascade(EntityWriteExecutor<TRGT, TRGTID> targetPersister) {
+	public void addInsertCascade(EntityReadWriteExecutor<TRGT, TRGTID> targetPersister) {
 		sourcePersister.addInsertListener(
 				new TargetInstancesInsertCascader(targetPersister, manyRelationDescriptor.getCollectionAccessPoint()));
 	}
 	
 	@Override
-	public void addUpdateCascade(EntityWriteExecutor<TRGT, TRGTID> targetPersister) {
+	public void addUpdateCascade(EntityReadWriteExecutor<TRGT, TRGTID> targetPersister) {
 		sourcePersister.addUpdateListener(new UpdateListener<SRC>() {
 			
 			/**
@@ -238,7 +239,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S ex
 		
 		private final Accessor<SRC, ? extends Collection<TRGT>> collectionGetter;
 		
-		public TargetInstancesInsertCascader(EntityWriteExecutor<TRGT, TRGTID> targetPersister, Accessor<SRC, ? extends Collection<TRGT>> collectionGetter) {
+		public TargetInstancesInsertCascader(EntityReadWriteExecutor<TRGT, TRGTID> targetPersister, Accessor<SRC, ? extends Collection<TRGT>> collectionGetter) {
 			super(targetPersister);
 			this.collectionGetter = collectionGetter;
 		}

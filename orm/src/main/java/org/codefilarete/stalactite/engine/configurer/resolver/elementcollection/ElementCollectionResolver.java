@@ -8,6 +8,7 @@ import java.util.function.Function;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.Mutator;
+import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRecord;
@@ -15,6 +16,7 @@ import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRe
 import org.codefilarete.stalactite.engine.configurer.elementcollection.IndexedElementRecord;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.IndexedElementRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedElementCollectionRelation;
+import org.codefilarete.stalactite.engine.configurer.resolver.CreatedPersisterCollector;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.AfterUpdateTrigger;
@@ -45,15 +47,18 @@ public class ElementCollectionResolver {
 	
 	public <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>,
 			ER extends ElementRecord<TRGT, SRCID>>
-	ElementRecordPersister<TRGT, SRCID, COLLECTIONTABLE, ER> resolve(
+	void resolve(
 			ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, LEFTTABLE, COLLECTIONTABLE, ER> resolvedRelation,
-			EntityWriteExecutor<SRC, SRCID> sourcePersister) {
+			EntityWriteExecutor<SRC, SRCID> sourcePersister,
+			CreatedPersisterCollector<ER, ER> createdPersisterCollector) {
 		
 		ElementCollectionMapping<SRC, SRCID, TRGT, S, LEFTTABLE, COLLECTIONTABLE, ER> elementCollectionMapping = (ElementCollectionMapping<SRC, SRCID, TRGT, S, LEFTTABLE, COLLECTIONTABLE, ER>) buildCollectionMapping(resolvedRelation, sourcePersister);
 		
 		// Note that table will be added to schema thanks to select cascade because join is added to source persister
 		ElementRecordPersister<TRGT, SRCID, COLLECTIONTABLE, ER> collectionPersister =
 				new ElementRecordPersister<>(elementCollectionMapping.elementRecordMapping, dialect, connectionConfiguration);
+		
+		createdPersisterCollector.setPersister(collectionPersister);
 		
 		Accessor<SRC, Collection<ER>> collectionProviderForInsert = elementCollectionMapping.collectionProvider(resolvedRelation.getAccessor(), sourcePersister.getMapping(), false);
 		sourcePersister.addInsertListener(new TargetInstancesInsertCascader<>(collectionPersister, collectionProviderForInsert));
@@ -82,8 +87,6 @@ public class ElementCollectionResolver {
 		
 		// delete management (we provide persisted instances so they are perceived as deletable)
 		sourcePersister.addDeleteListener(new DeleteTargetEntitiesBeforeDeleteCascader<>(collectionPersister, elementCollectionMapping.collectionProvider(resolvedRelation.getAccessor(), sourcePersister.getMapping(), true)));
-		
-		return collectionPersister;
 	}
 	
 	private <SRC, SRCID, TRGT, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>, ER extends ElementRecord<TRGT, SRCID>>
@@ -188,7 +191,7 @@ public class ElementCollectionResolver {
 		
 		private final Accessor<SRC, ? extends Collection<ER>> collectionGetter;
 		
-		public TargetInstancesInsertCascader(EntityWriteExecutor<ER, ER> targetPersister, Accessor<SRC, ? extends Collection<ER>> collectionGetter) {
+		public TargetInstancesInsertCascader(EntityReadWriteExecutor<ER, ER> targetPersister, Accessor<SRC, ? extends Collection<ER>> collectionGetter) {
 			super(targetPersister);
 			this.collectionGetter = collectionGetter;
 		}

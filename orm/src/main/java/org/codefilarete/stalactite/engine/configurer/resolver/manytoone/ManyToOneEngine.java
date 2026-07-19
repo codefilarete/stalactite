@@ -16,6 +16,7 @@ import org.codefilarete.stalactite.engine.cascade.AfterDeleteByIdSupport;
 import org.codefilarete.stalactite.engine.cascade.AfterDeleteSupport;
 import org.codefilarete.stalactite.engine.cascade.BeforeInsertSupport;
 import org.codefilarete.stalactite.engine.configurer.resolver.OrphanRemovalOnUpdate;
+import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -32,14 +33,14 @@ public class ManyToOneEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<L
 	
 	private final EntityWriteExecutor<SRC, SRCID> sourcePersister;
 	
-	private final EntityWriteExecutor<TRGT, TRGTID> targetPersister;
+	private final EntityReadWriteExecutor<TRGT, TRGTID> targetPersister;
 	
 	private final Accessor<SRC, TRGT> targetAccessor;
 	
 	private final ShadowColumnValueProvider<SRC, LEFTTABLE> foreignKeyValueProvider;
 	
 	public ManyToOneEngine(EntityWriteExecutor<SRC, SRCID> sourcePersister,
-	                       EntityWriteExecutor<TRGT, TRGTID> targetPersister,
+	                       EntityReadWriteExecutor<TRGT, TRGTID> targetPersister,
 	                       Accessor<SRC, TRGT> targetAccessor,
 	                       Map<Column<LEFTTABLE, ?>, Column<RIGHTTABLE, ?>> keyColumnsMapping) {
 		this.sourcePersister = sourcePersister;

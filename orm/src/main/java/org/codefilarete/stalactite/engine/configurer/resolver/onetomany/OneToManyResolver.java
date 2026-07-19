@@ -3,15 +3,16 @@ package org.codefilarete.stalactite.engine.configurer.resolver.onetomany;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.configurer.AssociationRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.IndexedAssociationRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
+import org.codefilarete.stalactite.engine.configurer.resolver.CreatedPersisterCollector;
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecordPersister;
@@ -47,8 +48,7 @@ public class OneToManyResolver {
 	 * Appends the direct one-to-many relations to given {@link ConfiguredRelationalPersister}
 	 * @param resolvedRelation the entity to collect one-to-manys from
 	 * @param sourcePersister the persister to append one-to-many relations to
-	 * @param createdPersisterConsumer a consumer that processes the resolved one-to-many relationship along with the configured persister
-	 *                                  for the target entity after it has been created.
+	 * @param persisterCollector callback notified of every persister created by {@link SkeletonAggregateResolver} while building the target entity subtree
 	 * @param <SRC> type of the source entity
 	 * @param <SRCID> type of the source entity identifier
 	 * @param <TRGT> type of the target entity
@@ -61,9 +61,8 @@ public class OneToManyResolver {
 	public <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
 	void resolve(ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> resolvedRelation,
 	             EntityWriteExecutor<SRC, SRCID> sourcePersister,
-	             Consumer<EntityWriteExecutor<TRGT, TRGTID>> createdPersisterConsumer) {
-		EntityWriteExecutor<TRGT, TRGTID> targetPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getTargetEntity());
-		createdPersisterConsumer.accept(targetPersister);
+	             CreatedPersisterCollector<TRGT, TRGTID> persisterCollector) {
+		EntityReadWriteExecutor<TRGT, TRGTID> targetPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getTargetEntity(), persisterCollector);
 		
 		AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, S> oneToManyEngine;
 		if (resolvedRelation.isOwnedByReverseSide()) {
@@ -134,7 +133,7 @@ public class OneToManyResolver {
 			RIGHTTABLE extends Table<RIGHTTABLE>,
 			ASSOCIATIONTABLE extends AssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
 	AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, S>
-	buildAssociationTableEngine(EntityWriteExecutor<SRC, SRCID> result, ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> resolvedRelation, EntityWriteExecutor<TRGT, TRGTID> targetPersister) {
+	buildAssociationTableEngine(EntityWriteExecutor<SRC, SRCID> result, ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> resolvedRelation, EntityReadWriteExecutor<TRGT, TRGTID> targetPersister) {
 		
 		IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID> join = (IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID>) resolvedRelation.getJoin();
 		ManyRelationDescriptor<SRC, TRGT, S> manyRelationDescriptor = new ManyRelationDescriptor<>(
@@ -168,7 +167,7 @@ public class OneToManyResolver {
 			ASSOCIATIONTABLE extends IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
 	AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, S> buildIndexedAssociationTableEngine(EntityWriteExecutor<SRC, SRCID> sourcePersister,
 	                                                                                        ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> resolvedRelation,
-	                                                                                        EntityWriteExecutor<TRGT, TRGTID> targetPersister) {
+	                                                                                        EntityReadWriteExecutor<TRGT, TRGTID> targetPersister) {
 		
 		IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID> join = (IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID>) resolvedRelation.getJoin();
 		IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, S, SRCID> manyRelationDescriptor = new IndexedAssociationTableManyRelationDescriptor<>(

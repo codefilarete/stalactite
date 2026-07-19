@@ -6,9 +6,11 @@ import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
+import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneConfigurer.MandatoryRelationAssertBeforeUpdateListener;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneConfigurerTemplate.MandatoryRelationAssertBeforeInsertListener;
+import org.codefilarete.stalactite.engine.configurer.resolver.CreatedPersisterCollector;
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
 import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -28,7 +30,8 @@ public class OneToOneResolver {
 	 * 
 	 * @param relationDefinition the one-to-one object that defines the relation to append
 	 * @param sourcePersister the persister having the one-to-one relation
-	 * @param createdPersisterConsumer a consumer to handle the created persister
+	 * @param persisterCollector callback notified of every persister created by {@link SkeletonAggregateResolver} while building the target entity subtree
+	 * @param targetAccessor
 	 * @param <SRC> type of the source entity
 	 * @param <SRCID> type of the source entity's identifier
 	 * @param <TRGT> type of the target entity
@@ -40,14 +43,13 @@ public class OneToOneResolver {
 	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
 	void resolve(ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> relationDefinition,
 	             EntityWriteExecutor<SRC, SRCID> sourcePersister,
-	             Consumer<EntityWriteExecutor<TRGT, TRGTID>> createdPersisterConsumer) {
+	             CreatedPersisterCollector<TRGT, TRGTID> persisterCollector,
+	             ReadWritePropertyAccessPoint<SRC, TRGT> targetAccessor) {
 		
 		assertConfigurationIsSupported(relationDefinition.getRelationMode());
 		
-		EntityWriteExecutor<TRGT, TRGTID> targetPersister = skeletonAggregateResolver.buildPersister(relationDefinition.getTargetEntity());
-		createdPersisterConsumer.accept(targetPersister);
+		EntityReadWriteExecutor<TRGT, TRGTID> targetPersister = skeletonAggregateResolver.buildPersister(relationDefinition.getTargetEntity(), persisterCollector);
 		
-		ReadWritePropertyAccessPoint<SRC, TRGT> targetAccessor = relationDefinition.getAccessor();
 		KeyMapping<LEFTTABLE, RIGHTTABLE, JOINID> foreignKeyColumnsMapping = relationDefinition.getJoin().getLeftKey().reference(relationDefinition.getJoin().getRightKey());
 		
 		AbstractOneToOneEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> oneToOneEngine;
