@@ -7,12 +7,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.engine.configurer.IndexedAssociationRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToManyRelation;
-import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.AssemblyPoint2;
+import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
 import org.codefilarete.stalactite.engine.configurer.resolver.EntityReader;
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
@@ -34,7 +33,6 @@ import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.function.Hanger.Holder;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType.OUTER;
-import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
 
 /**
  * Handles SELECT-path join-tree wiring for a {@link ResolvedManyToManyRelation}.
@@ -69,36 +67,22 @@ public class AggregateManyToManyAppender {
 	 *   <li>Forwarding SELECT lifecycle events from the source persister to the target persister.</li>
 	 * </ol>
 	 *
-	 * @return an {@link AssemblyPoint2} for the target entity, ready to be pushed onto the assembly queue
+	 * @return an {@link GraftPoint} for the target entity, ready to be pushed onto the assembly queue
 	 * so that deeper relations are also resolved
 	 */
 	public <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>,
 			LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
-	AssemblyPoint2<TRGT, TRGTID, S, RIGHTTABLE> append(ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
-	                                                   EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
-	                                                   EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
-	                                                   String mountPoint,
-	                                                   PropertyAccessor<SRC, S> targetPropertyAccessor,
-	                                                   EntityJoinTree<SRC, SRCID> aggregateTree) {
-		
-		PropertyAccessor<SRC, S> accessor;
-		if (mountPoint.equals(ROOT_JOIN_NAME)) {
-			accessor = relation.getAccessor();
-		} else {
-			AccessorChain<SRC, S> shifter = new AccessorChain<>(targetPropertyAccessor, relation.getAccessor());
-			shifter.setNullValueHandler(AccessorChain.RETURN_NULL);
-			accessor = shifter;
-		}
-		
-		@SuppressWarnings("unchecked")
-		IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ?, SRCID, TRGTID> join =
-				(IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ?, SRCID, TRGTID>) relation.getJoin();
+	GraftPoint<TRGT, TRGTID, RIGHTTABLE> append(ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
+	                                            EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
+	                                            EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
+	                                            String mountPoint,
+	                                            EntityJoinTree<SRC, SRCID> aggregateTree) {
 		
 		String manyJoinName;
 		if (relation.isOrdered()) {
-			manyJoinName = appendIndexedAssociation(sourcePersister, targetPersister, relation, accessor, aggregateTree, mountPoint);
+			manyJoinName = appendIndexedAssociation(sourcePersister, targetPersister, relation, relation.getAccessor(), aggregateTree, mountPoint);
 		} else {
-			manyJoinName = appendAssociation(targetPersister, relation, accessor, aggregateTree, mountPoint);
+			manyJoinName = appendAssociation(targetPersister, relation, relation.getAccessor(), aggregateTree, mountPoint);
 		}
 		
 		// Forward SELECT lifecycle events from the source entity's persister down to the target persister
@@ -128,9 +112,9 @@ public class AggregateManyToManyAppender {
 		});
 		
 		// Preparing for next iteration
-		// Note that we can't set the correct generics types to the AssemblyPoint2 instance
+		// Note that we can't set the correct generics types to the GraftPoint instance
 		// because we go a step further in the relation by shifting the types from SRC to TRGT
-		return new AssemblyPoint2(relation.getTargetEntity(), targetPersister, manyJoinName, accessor);
+		return new GraftPoint(relation.getTargetEntity(), targetPersister, manyJoinName);
 	}
 	
 	/**
@@ -164,7 +148,7 @@ public class AggregateManyToManyAppender {
 		
 		return entityJoinTree.addRelationJoin(
 				associationTableJoinName,
-				new EntityInflater.EntityMappingAdapter<>(targetPersister.<RIGHTTABLE>getMapping()),
+				new EntityInflater.EntityMappingAdapter<>(targetPersister.getMapping()),
 				accessor,
 				join.getRightAssociationKey(),
 				join.getRightKey(),
@@ -246,7 +230,7 @@ public class AggregateManyToManyAppender {
 		// Relation join: association table → target table
 		String manyJoinName = entityJoinTree.addRelationJoin(
 				associationTableJoinName,
-				new EntityInflater.EntityMappingAdapter<>(targetPersister.<RIGHTTABLE>getMapping()),
+				new EntityInflater.EntityMappingAdapter<>(targetPersister.getMapping()),
 				accessor,
 				join.getRightAssociationKey(),
 				join.getRightKey(),

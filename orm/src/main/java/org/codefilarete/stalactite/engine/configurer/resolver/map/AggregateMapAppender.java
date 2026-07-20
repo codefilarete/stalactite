@@ -13,6 +13,8 @@ import java.util.stream.Collectors;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation;
+import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation.MapMemberAsEntity;
+import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
 import org.codefilarete.stalactite.engine.configurer.resolver.EntityReader;
 import org.codefilarete.stalactite.engine.configurer.resolver.map.EntryMapResolver.KeyValueRecordPersister;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
@@ -31,13 +33,15 @@ import static org.codefilarete.tool.Nullable.nullable;
 public class AggregateMapAppender {
 	
 	public <X, Y, SRC, SRCID, K, KID, V, VID, M extends Map<K, V>, LEFTTABLE extends Table<LEFTTABLE>, MAPTABLE extends Table<MAPTABLE>, KTABLE extends Table<KTABLE>, VTABLE extends Table<VTABLE>>
-	void append(ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, LEFTTABLE, MAPTABLE, KTABLE, VTABLE> resolvedRelation,
-	            EntityJoinTree<SRC, SRCID> aggregateTree,
-	            EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
-	            String mountPoint,
-	            KeyValueRecordPersister<X, Y, SRCID, MAPTABLE> keyValueRecordPersister,
-	            EntityReader<K, KID, KTABLE> keyEntityReader,
-				EntityReader<V, VID, VTABLE> valueEntityReader) {
+	Duo<GraftPoint /* key assembly point */, GraftPoint /* value assembly point */> append(ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, LEFTTABLE, MAPTABLE, KTABLE, VTABLE> resolvedRelation,
+	                                                                                       EntityJoinTree<SRC, SRCID> aggregateTree,
+	                                                                                       EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
+	                                                                                       String mountPoint,
+	                                                                                       KeyValueRecordPersister<X, Y, SRCID, MAPTABLE> keyValueRecordPersister,
+	                                                                                       EntityReader<K, KID, KTABLE> keyEntityReader,
+	                                                                                       EntityReader<V, VID, VTABLE> valueEntityReader) {
+		
+		Duo<GraftPoint, GraftPoint> result = new Duo<>();
 		
 		ReadWritePropertyAccessPoint<SRC, M> mapAccessor = resolvedRelation.getAccessor();
 		
@@ -71,7 +75,8 @@ public class AggregateMapAppender {
 		BiFunction<SRCID, X, K> keyAdapter;
 		BiFunction<SRCID, Y, V> valueAdapter;
 		
-		if (resolvedRelation.getKeyEntityDefinition() != null) {
+		MapMemberAsEntity<K, KID, MAPTABLE, KTABLE, ?> keyEntityDefinition = resolvedRelation.getKeyEntityDefinition();
+		if (keyEntityDefinition != null) {
 			// we keep the link between id and entity found through the join and then use it to build the final map
 			InMemoryRelationHolder<SRCID, KID, K> inMemoryKeyRelationHolder = new InMemoryRelationHolder<>();
 			
@@ -100,15 +105,17 @@ public class AggregateMapAppender {
 				}
 			});
 			
-			ForeignKey<MAPTABLE, KTABLE, KID> keyEntityReferenceMapping = resolvedRelation.getKeyEntityDefinition().getForeignKey();
+			ForeignKey<MAPTABLE, KTABLE, KID> keyEntityReferenceMapping = keyEntityDefinition.getForeignKey();
 			
-			appendEntityJoin(aggregateTree, mapJoinNodeName, mapAccessor, keyEntityReader, keyEntityReferenceMapping, inMemoryKeyRelationHolder, record -> (KID) record.getKey());
+			String keyEntityJoinNodeName = appendEntityJoin(aggregateTree, mapJoinNodeName, mapAccessor, keyEntityReader, keyEntityReferenceMapping, inMemoryKeyRelationHolder, record -> (KID) record.getKey());
+			result.setLeft(new GraftPoint(keyEntityDefinition.getEntity(), keyEntityReader, keyEntityJoinNodeName));
 		} else {
 			// since there's no key entity, a simple cast is enough
 			keyAdapter = (srcid, leftRawValue) -> (K) leftRawValue;
 		}
 		
-		if (resolvedRelation.getValueEntityDefinition() != null) {
+		MapMemberAsEntity<V, VID, MAPTABLE, VTABLE, ?> valueEntityDefinition = resolvedRelation.getValueEntityDefinition();
+		if (valueEntityDefinition != null) {
 			// we keep the link between id and entity found through the join and then use it to build the final map
 			InMemoryRelationHolder<SRCID, VID, V> inMemoryValueRelationHolder = new InMemoryRelationHolder<>();
 			
@@ -137,9 +144,10 @@ public class AggregateMapAppender {
 				}
 			});
 			
-			ForeignKey<MAPTABLE, VTABLE, VID> keyEntityReferenceMapping = resolvedRelation.getValueEntityDefinition().getForeignKey();
+			ForeignKey<MAPTABLE, VTABLE, VID> keyEntityReferenceMapping = valueEntityDefinition.getForeignKey();
 			
-			appendEntityJoin(aggregateTree, mapJoinNodeName, mapAccessor, valueEntityReader, keyEntityReferenceMapping, inMemoryValueRelationHolder, record -> (VID) record.getValue());
+			String valueEntityJoinNodeName = appendEntityJoin(aggregateTree, mapJoinNodeName, mapAccessor, valueEntityReader, keyEntityReferenceMapping, inMemoryValueRelationHolder, record -> (VID) record.getValue());
+			result.setLeft(new GraftPoint(valueEntityDefinition.getEntity(), valueEntityReader, valueEntityJoinNodeName));
 		} else {
 			// since there's no value entity, a simple cast is enough
 			valueAdapter = (srcid, rightRawValue) -> (V) rightRawValue;
@@ -173,6 +181,8 @@ public class AggregateMapAppender {
 						});
 					}
 				}).then(inMemoryRelationHolderClearer));
+		
+		return result;
 	}
 	
 	private <X, Y, SRC, SRCID, K, KID, V, VID, M extends Map<K, V>,
@@ -208,7 +218,7 @@ public class AggregateMapAppender {
 	}
 	
 	private <SRC, SRCID, K, V, ENTITY, ENTITY_ID, M extends Map<K, V>, MAPTABLE extends Table<MAPTABLE>, ENTITYTABLE extends Table<ENTITYTABLE>>
-	void appendEntityJoin(EntityJoinTree<SRC, SRCID> aggregateTree,
+	String appendEntityJoin(EntityJoinTree<SRC, SRCID> aggregateTree,
 	                      String mapJoinNodeName,
 	                      ReadWritePropertyAccessPoint<SRC, M> mapAccessor,
 	                      EntityReader<ENTITY, ENTITY_ID, ENTITYTABLE> entityPersister,
@@ -216,7 +226,7 @@ public class AggregateMapAppender {
 	                      InMemoryRelationHolder<SRCID, ENTITY_ID, ENTITY> inMemoryRelationHolder,
 						  Function<KeyValueRecord<?, ?, SRCID>, ENTITY_ID> entityIdExtractor) {
 		
-		aggregateTree.addRelationJoin(
+		return aggregateTree.addRelationJoin(
 				mapJoinNodeName,
 				new EntityMappingAdapter<>(entityPersister.getMapping()),
 				mapAccessor,

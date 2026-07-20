@@ -19,9 +19,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.tool.Duo;
 
-public class DelegatingReadWriteEntityExecutor<C, I>
-		implements EntityPersister<C, I> {
-//		implements ReadWriteEntityExecutor<C, I>, EntitySelector<C>, PersistExecutor<C>, PersisterListener<C, I> {
+public class DelegatingReadWriteEntityExecutor<C, I> implements EntityPersister<C, I> {
 	
 	private final EntityWriteExecutor<C, I> writer;
 	private final EntityReader<C, I, ?> reader;

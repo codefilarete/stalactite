@@ -8,13 +8,12 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.engine.configurer.IndexedAssociationRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
-import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.AssemblyPoint2;
+import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
 import org.codefilarete.stalactite.engine.configurer.resolver.EntityReader;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
@@ -38,25 +37,13 @@ import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.Joi
 public class AggregateOneToManyAppender {
 	
 	public <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
-	AssemblyPoint2<TRGT, TRGTID, ?, RIGHTTABLE> append(ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
-	                                                   EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
-	                                                   EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
-	                                                   String mountPoint,
-	                                                   PropertyAccessor<SRC, S> targetPropertyAccessor,
-	                                                   EntityJoinTree<SRC, SRCID> aggregateTree) {
+	GraftPoint<TRGT, TRGTID, RIGHTTABLE> append(ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
+	                                            EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
+	                                            EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
+	                                            String mountPoint,
+	                                            EntityJoinTree<SRC, SRCID> aggregateTree) {
 		
-		Holder<AssemblyPoint2<TRGT, TRGTID, ?, RIGHTTABLE>> resultHolder = new Holder<>();
-		
-		PropertyAccessor<SRC, S> accessor;
-		if (mountPoint.equals(EntityJoinTree.ROOT_JOIN_NAME)) {
-			// this is the very first step (see stack seed) which is the root entity, no relation accessor shifting here
-			accessor = relation.getAccessor();
-		} else {
-			// we need to shift the relation accessor by the parent accessor
-			AccessorChain<SRC, S> shifter = new AccessorChain<>(targetPropertyAccessor, relation.getAccessor());
-			shifter.setNullValueHandler(AccessorChain.RETURN_NULL);
-			accessor = shifter;
-		}
+		Holder<GraftPoint<TRGT, TRGTID, RIGHTTABLE>> resultHolder = new Holder<>();
 		
 		if (relation.isOwnedByReverseSide()) {
 			Set<Column<RIGHTTABLE, ?>> columnsToSelect;
@@ -80,7 +67,7 @@ public class AggregateOneToManyAppender {
 			String manyJoinName = aggregateTree.addRelationJoin(
 					mountPoint,
 					new EntityMappingAdapter<>(targetPersister.getMapping()),
-					accessor,
+					relation.getAccessor(),
 					join.getLeftKey(),
 					join.getRightKey(),
 					null,
@@ -90,21 +77,21 @@ public class AggregateOneToManyAppender {
 					duplicateIdentifierProvider);
 			
 			// Preparing for next iteration
-			// Note that we can't set the correct generics types to the AssemblyPoint instance
+			// Note that we can't set the correct generics types to the GraftPoint instance
 			// because we go a step further in the relation by shifting the types from SRC to TRGT 
-			resultHolder.set(new AssemblyPoint2(relation.getTargetEntity(), targetPersister, manyJoinName, accessor));
+			resultHolder.set(new GraftPoint(relation.getTargetEntity(), targetPersister, manyJoinName));
 		} else {
 			String manyJoinName;
 			if (relation.isOrdered()) {
-				manyJoinName = appendIndexedAssociation(sourcePersister, targetPersister, relation, accessor, aggregateTree, mountPoint);
+				manyJoinName = appendIndexedAssociation(sourcePersister, targetPersister, relation, relation.getAccessor(), aggregateTree, mountPoint);
 			} else {
-				manyJoinName = appendAssociation(targetPersister, relation, accessor, aggregateTree, mountPoint);
+				manyJoinName = appendAssociation(targetPersister, relation, relation.getAccessor(), aggregateTree, mountPoint);
 			}
 			
 			// Preparing for next iteration
-			// Note that we can't set the correct generics types to the AssemblyPoint instance
+			// Note that we can't set the correct generics types to the GraftPoint instance
 			// because we go a step further in the relation by shifting the types from SRC to TRGT 
-			resultHolder.set(new AssemblyPoint2(relation.getTargetEntity(), targetPersister, manyJoinName, accessor));
+			resultHolder.set(new GraftPoint(relation.getTargetEntity(), targetPersister, manyJoinName));
 		}
 		
 		SelectListener<TRGT, TRGTID> targetSelectListener = targetPersister.getSelectListener();

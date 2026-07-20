@@ -4,25 +4,14 @@ import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-import java.util.function.Consumer;
 
-import org.codefilarete.reflection.AccessorChain;
-import org.codefilarete.reflection.PropertyAccessor;
-import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
-import org.codefilarete.reflection.SerializablePropertyAccessor;
-import org.codefilarete.reflection.SerializablePropertyMutator;
-import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
-import org.codefilarete.stalactite.engine.EntityCriteria;
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.engine.EntityReadExecutor;
 import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
-import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListener;
@@ -55,22 +44,10 @@ import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.Aggregat
 import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.OneToManyResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetoone.AggregateOneToOneAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetoone.OneToOneResolver;
-import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
-import org.codefilarete.stalactite.engine.listener.DeleteListener;
-import org.codefilarete.stalactite.engine.listener.InsertListener;
-import org.codefilarete.stalactite.engine.listener.PersistListener;
-import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
-import org.codefilarete.stalactite.engine.listener.SelectListener;
-import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
-import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
-import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
-import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.Experimental;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
 
@@ -193,19 +170,19 @@ public class AggregateResolver {
 		
 		// Iterating over all the one-to-many relations of the tree (starting from given root entity).
 		// It's made by a breadth-first algorithm with node stacking, no recursion here.
-		// Bread-first principle shouldn't be important because we maintain some AssemblyPoints to keep track of the
+		// Bread-first principle shouldn't be important because we maintain some CascadePoints to keep track of the
 		// depth and the necessary information for the next iteration.
-		Queue<AssemblyPoint<?, ?, ?, ?>> relationStack = new ArrayDeque<>();
+		Queue<CascadePoint<?, ?, ?>> relationStack = new ArrayDeque<>();
 		// We start by a kind of fake seed, without relation, because we don't have any for the root entity
-		relationStack.add(new AssemblyPoint<>(rootEntity, aggregatePersister, null, null));
+		relationStack.add(new CascadePoint<>(rootEntity, aggregatePersister));
 		
 		Map<MappingJoin<LEFTTABLE, RIGHTTABLE, ?>, Object> result = new HashMap<>();
 		
 		while (!relationStack.isEmpty()) {
-			AssemblyPoint<?, ?, ?, ?> assemblyPawn = relationStack.poll();
+			CascadePoint<?, ?, ?> assemblyPawn = relationStack.poll();
+			EntityWriteExecutor<SRC, SRCID> relationOwnerPersister = (EntityWriteExecutor<SRC, SRCID>) assemblyPawn.getRelationOwnerPersister();
 			assemblyPawn.getRelationOwnerEntity().getRelations()
 					.forEach(relationPawn -> {
-						EntityWriteExecutor<SRC, SRCID> relationOwnerPersister = (EntityWriteExecutor<SRC, SRCID>) assemblyPawn.getRelationOwnerPersister();
 						if (relationPawn instanceof ResolvedOneToOneRelation) {
 							ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> localRelation = (ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>) relationPawn;
 							CreatedPersisterCollector<TRGT, TRGTID> createdPersisterCollector = new CreatedPersisterCollector<>();
@@ -215,7 +192,7 @@ public class AggregateResolver {
 									createdPersisterCollector,
 									localRelation.getAccessor());
 							result.put(localRelation, createdPersisterCollector);
-							relationStack.add(new AssemblyPoint(localRelation.getTargetEntity(), createdPersisterCollector.getPersister(), null, null));
+							relationStack.add(new CascadePoint(localRelation.getTargetEntity(), createdPersisterCollector.getPersister()));
 						}
 						if (relationPawn instanceof ResolvedOneToManyRelation) {
 							ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> localRelation = (ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>) relationPawn;
@@ -225,7 +202,7 @@ public class AggregateResolver {
 									relationOwnerPersister,
 									createdPersisterCollector);
 							result.put(localRelation, createdPersisterCollector);
-							relationStack.add(new AssemblyPoint(localRelation.getTargetEntity(), createdPersisterCollector.getPersister(), null, null));
+							relationStack.add(new CascadePoint(localRelation.getTargetEntity(), createdPersisterCollector.getPersister()));
 						}
 						if (relationPawn instanceof ResolvedManyToManyRelation) {
 							ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> localRelation = (ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>) relationPawn;
@@ -235,7 +212,7 @@ public class AggregateResolver {
 									relationOwnerPersister,
 									createdPersisterCollector);
 							result.put(localRelation, createdPersisterCollector);
-							relationStack.add(new AssemblyPoint(localRelation.getTargetEntity(), createdPersisterCollector.getPersister(), null, null));
+							relationStack.add(new CascadePoint(localRelation.getTargetEntity(), createdPersisterCollector.getPersister()));
 						}
 						if (relationPawn instanceof ResolvedManyToOneRelation) {
 							ResolvedManyToOneRelation<SRC, TRGT, TRGTID, LEFTTABLE, RIGHTTABLE> localRelation = (ResolvedManyToOneRelation<SRC, TRGT, TRGTID, LEFTTABLE, RIGHTTABLE>) relationPawn;
@@ -245,7 +222,7 @@ public class AggregateResolver {
 									relationOwnerPersister,
 									createdPersisterCollector);
 							result.put(localRelation, createdPersisterCollector);
-							relationStack.add(new AssemblyPoint(localRelation.getTargetEntity(), createdPersisterCollector.getPersister(), null, null));
+							relationStack.add(new CascadePoint(localRelation.getTargetEntity(), createdPersisterCollector.getPersister()));
 						}
 						if (relationPawn instanceof ResolvedElementCollectionRelation) {
 							CreatedPersisterCollector<ElementRecord<TRGT, SRCID>, ElementRecord<TRGT, SRCID>> createdPersisterCollector = new CreatedPersisterCollector<>();
@@ -265,10 +242,10 @@ public class AggregateResolver {
 									mapCreatedPersisterCollector);
 							result.put(localRelation, mapCreatedPersisterCollector);
 							if (localRelation.getKeyEntityDefinition() != null) {
-								relationStack.add(new AssemblyPoint(localRelation.getKeyEntityDefinition().getEntity(), mapCreatedPersisterCollector.getKeyPersisterCollector().getPersister(), null, null));
+								relationStack.add(new CascadePoint(localRelation.getKeyEntityDefinition().getEntity(), mapCreatedPersisterCollector.getKeyPersisterCollector().getPersister()));
 							}
 							if (localRelation.getValueEntityDefinition() != null) {
-								relationStack.add(new AssemblyPoint(localRelation.getValueEntityDefinition().getEntity(), mapCreatedPersisterCollector.getValuePersisterCollector().getPersister(), null, null));
+								relationStack.add(new CascadePoint(localRelation.getValueEntityDefinition().getEntity(), mapCreatedPersisterCollector.getValuePersisterCollector().getPersister()));
 							}
 						}
 					});
@@ -282,13 +259,13 @@ public class AggregateResolver {
 	                     EntityReader<SRC, SRCID, ?> aggregatePersister,
 	                     Map<MappingJoin<?, ?, ?>, Object> createdPersisters) {
 		
-		Queue<AssemblyPoint2<?, ?, ?, ?>> relationStack2 = new ArrayDeque<>();
-		relationStack2.add(new AssemblyPoint2<>(rootEntity, aggregatePersister, ROOT_JOIN_NAME, null));
+		Queue<GraftPoint<?, ?, ?>> relationStack2 = new ArrayDeque<>();
+		relationStack2.add(new GraftPoint<>(rootEntity, aggregatePersister, ROOT_JOIN_NAME));
 		new SkeletonAggregateAppender()
 				.appendInheritance((CreatedPersisterCollector<SRC, SRCID>) createdPersisters.get(null), aggregatePersister.getEntityJoinTree());
 		
 		while (!relationStack2.isEmpty()) {
-			AssemblyPoint2<?, ?, ?, ?> assemblyPawn = relationStack2.poll();
+			GraftPoint<?, ?, ?> assemblyPawn = relationStack2.poll();
 			EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister = (EntityReader<SRC, SRCID, LEFTTABLE>) assemblyPawn.getRelationOwnerPersister();
 			assemblyPawn.getRelationOwnerEntity().getRelations()
 					.forEach(relationPawn -> {
@@ -297,35 +274,33 @@ public class AggregateResolver {
 							ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> localRelation = (ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>) relationPawn;
 							EntityReader<TRGT, TRGTID, ?> targetPersister = new EntityReader<>(
 									localCreatedPersistor.getPersister().<RIGHTTABLE>getMapping(), persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
-							AssemblyPoint2<TRGT, TRGTID, ?, RIGHTTABLE> assemblyPoint2 = oneToOneAppender.append(
+							GraftPoint<TRGT, TRGTID, RIGHTTABLE> graftPoint = oneToOneAppender.append(
 									localRelation,
 									targetPersister,
 									assemblyPawn.getParentJoinPoint(),
-									localRelation.getAccessor(),
 									aggregatePersister.getEntityJoinTree());
 							
 							new SkeletonAggregateAppender()
 									.appendInheritance(localCreatedPersistor, aggregatePersister.getEntityJoinTree());
 							
-							relationStack2.add(assemblyPoint2);
+							relationStack2.add(graftPoint);
 						}
 						if (relationPawn instanceof ResolvedOneToManyRelation) {
 							CreatedPersisterCollector<TRGT, TRGTID> localCreatedPersistor = (CreatedPersisterCollector<TRGT, TRGTID>) createdPersisters.get(relationPawn);
 							ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> localRelation = (ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>) relationPawn;
 							EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister = new EntityReader<>(
 									localCreatedPersistor.getPersister().<RIGHTTABLE>getMapping(), persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
-							AssemblyPoint2<TRGT, TRGTID, ?, RIGHTTABLE> assemblyPoint2 = oneToManyAppender.append(
+							GraftPoint<TRGT, TRGTID, RIGHTTABLE> graftPoint = oneToManyAppender.append(
 									localRelation,
 									sourcePersister,
 									targetPersister,
 									assemblyPawn.getParentJoinPoint(),
-									localRelation.getAccessor(),
 									aggregatePersister.getEntityJoinTree());
 							
 							new SkeletonAggregateAppender()
 									.appendInheritance(localCreatedPersistor, aggregatePersister.getEntityJoinTree());
 							
-							relationStack2.add(assemblyPoint2);
+							relationStack2.add(graftPoint);
 						}
 						if (relationPawn instanceof ResolvedManyToManyRelation) {
 							CreatedPersisterCollector<TRGT, TRGTID> localCreatedPersistor = (CreatedPersisterCollector<TRGT, TRGTID>) createdPersisters.get(relationPawn);
@@ -333,32 +308,30 @@ public class AggregateResolver {
 							EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister = new EntityReader<>(
 									localCreatedPersistor.getPersister().<RIGHTTABLE>getMapping(), persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
 							
-							AssemblyPoint2<TRGT, TRGTID, ?, RIGHTTABLE> assemblyPoint2 = manyToManyAppender.append(
+							GraftPoint<TRGT, TRGTID, RIGHTTABLE> graftPoint = manyToManyAppender.append(
 									localRelation,
 									sourcePersister,
 									targetPersister,
 									assemblyPawn.getParentJoinPoint(),
-									localRelation.getAccessor(),
 									aggregatePersister.getEntityJoinTree());
 							new SkeletonAggregateAppender()
 									.appendInheritance(localCreatedPersistor, aggregatePersister.getEntityJoinTree());
 							
-							relationStack2.add(assemblyPoint2);
+							relationStack2.add(graftPoint);
 						}
 						if (relationPawn instanceof ResolvedManyToOneRelation) {
 							CreatedPersisterCollector<TRGT, TRGTID> localCreatedPersistor = (CreatedPersisterCollector<TRGT, TRGTID>) createdPersisters.get(relationPawn);
 							ResolvedManyToOneRelation<SRC, TRGT, TRGTID, LEFTTABLE, RIGHTTABLE> localRelation = (ResolvedManyToOneRelation<SRC, TRGT, TRGTID, LEFTTABLE, RIGHTTABLE>) relationPawn;
 							EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister = new EntityReader<>(
 									localCreatedPersistor.getPersister().<RIGHTTABLE>getMapping(), persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
-							AssemblyPoint2<TRGT, TRGTID, ?, RIGHTTABLE> assemblyPoint2 = manyToOneAppender.append(
+							GraftPoint<TRGT, TRGTID, RIGHTTABLE> graftPoint = manyToOneAppender.append(
 									localRelation,
 									targetPersister,
 									assemblyPawn.getParentJoinPoint(),
-									localRelation.getAccessor(),
 									aggregatePersister.getEntityJoinTree());
 							new SkeletonAggregateAppender()
 									.appendInheritance(localCreatedPersistor, aggregatePersister.getEntityJoinTree());
-							relationStack2.add(assemblyPoint2);
+							relationStack2.add(graftPoint);
 						}
 						if (relationPawn instanceof ResolvedElementCollectionRelation) {
 							CreatedPersisterCollector<TRGT, TRGTID> localCreatedPersistor = (CreatedPersisterCollector<TRGT, TRGTID>) createdPersisters.get(relationPawn);
@@ -373,18 +346,25 @@ public class AggregateResolver {
 						if (relationPawn instanceof ResolvedMapRelation) {
 							MapCreatedPersisterCollector mapCreatedPersisterCollector = (MapCreatedPersisterCollector) createdPersisters.get(relationPawn);
 							ResolvedMapRelation localRelation = (ResolvedMapRelation) relationPawn;
-							graftMapRelation(localRelation, aggregatePersister.getEntityJoinTree(), assemblyPawn.getParentJoinPoint(), (EntityReader<SRC, SRCID, LEFTTABLE>) assemblyPawn.getRelationOwnerPersister(), mapCreatedPersisterCollector);
+							Duo<GraftPoint, GraftPoint> keyValueGraftPoints = graftMapRelation(localRelation, aggregatePersister.getEntityJoinTree(), assemblyPawn.getParentJoinPoint(), sourcePersister, mapCreatedPersisterCollector);
+							
+							if (keyValueGraftPoints.getLeft() != null) {
+								relationStack2.add(keyValueGraftPoints.getLeft());
+							}
+							if (keyValueGraftPoints.getRight() != null) {
+								relationStack2.add(keyValueGraftPoints.getRight());
+							}
 						}
 					});
 		}
 	}
 	
 	private <X, Y, SRC, SRCID, K, KID, V, VID, M extends Map<K, V>, LEFTTABLE extends Table<LEFTTABLE>, MAPTABLE extends Table<MAPTABLE>, KTABLE extends Table<KTABLE>, VTABLE extends Table<VTABLE>>
-	void graftMapRelation(ResolvedMapRelation relation,
-	                      EntityJoinTree<SRC, SRCID> aggregateTree,
-	                      String mountPoint,
-	                      EntityReader<SRC, SRCID, LEFTTABLE> relationOwnerPersister,
-	                      MapCreatedPersisterCollector collectedPersisters) {
+	Duo<GraftPoint, GraftPoint> graftMapRelation(ResolvedMapRelation relation,
+	                                             EntityJoinTree<SRC, SRCID> aggregateTree,
+	                                             String mountPoint,
+	                                             EntityReader<SRC, SRCID, LEFTTABLE> relationOwnerPersister,
+	                                             MapCreatedPersisterCollector collectedPersisters) {
 		MapCreatedPersisterCollector<SRCID, K, KID, V, VID, MAPTABLE, X, Y> typedMapCreatedPersisterCollector = (MapCreatedPersisterCollector<SRCID, K, KID, V, VID, MAPTABLE, X, Y>) collectedPersisters;
 		ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, LEFTTABLE, MAPTABLE, KTABLE, VTABLE> typedRelation = (ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, LEFTTABLE, MAPTABLE, KTABLE, VTABLE>) relation;
 		EntityReader<K, KID, KTABLE> keyEntityReader = null;
@@ -397,7 +377,7 @@ public class AggregateResolver {
 			valueEntityReader = new EntityReader<>(
 					typedMapCreatedPersisterCollector.getValuePersisterCollector().getPersister().<VTABLE>getMapping(), persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
 		}
-		mapAppender.append(
+		return mapAppender.append(
 				typedRelation,
 				aggregateTree,
 				relationOwnerPersister,
@@ -451,55 +431,38 @@ public class AggregateResolver {
 		return tables;
 	}
 	
-	public static class AssemblyPoint<SRC, SRCID, TRGT, LEFTTABLE extends Table<LEFTTABLE>> {
+	public static class CascadePoint<SRC, SRCID, LEFTTABLE extends Table<LEFTTABLE>> {
 		
 		private final AbstractEntity<SRC, SRCID, LEFTTABLE> relationOwnerEntity;
 		private final EntityWriteExecutor<SRC, SRCID> relationOwnerPersister;
-		private final String parentJoinPoint;
-		private final ReadWritePropertyAccessPoint<SRC, TRGT> accessor;
 		
-		public AssemblyPoint(AbstractEntity<SRC, SRCID, LEFTTABLE> relationOwnerEntity,
-		                     EntityWriteExecutor<SRC, SRCID> relationOwnerPersister,
-		                     String parentJoinPoint,
-		                     ReadWritePropertyAccessPoint<SRC, TRGT> accessor) {
+		public CascadePoint(AbstractEntity<SRC, SRCID, LEFTTABLE> relationOwnerEntity,
+		                    EntityWriteExecutor<SRC, SRCID> relationOwnerPersister) {
 			this.relationOwnerEntity = relationOwnerEntity;
 			this.relationOwnerPersister = relationOwnerPersister;
-			this.parentJoinPoint = parentJoinPoint;
-			this.accessor = accessor;
 		}
 		
 		public EntityWriteExecutor<SRC, SRCID> getRelationOwnerPersister() {
 			return relationOwnerPersister;
 		}
 		
-		public String getParentJoinPoint() {
-			return parentJoinPoint;
-		}
-		
 		public AbstractEntity<SRC, SRCID, LEFTTABLE> getRelationOwnerEntity() {
 			return relationOwnerEntity;
 		}
-		
-		public ReadWritePropertyAccessPoint<SRC, TRGT> getAccessor() {
-			return accessor;
-		}
 	}
 	
-	public static class AssemblyPoint2<SRC, SRCID, TRGT, LEFTTABLE extends Table<LEFTTABLE>> {
+	public static class GraftPoint<SRC, SRCID, LEFTTABLE extends Table<LEFTTABLE>> {
 		
 		private final AbstractEntity<SRC, SRCID, LEFTTABLE> relationOwnerEntity;
 		private final EntityReader<SRC, SRCID, ?> relationOwnerPersister;
 		private final String parentJoinPoint;
-		private final PropertyAccessor<SRC, TRGT> accessor;
 		
-		public AssemblyPoint2(AbstractEntity<SRC, SRCID, LEFTTABLE> relationOwnerEntity,
-		                      EntityReader<SRC, SRCID, ?> relationOwnerPersister,
-		                      String parentJoinPoint,
-		                      PropertyAccessor<SRC, TRGT> accessor) {
+		public GraftPoint(AbstractEntity<SRC, SRCID, LEFTTABLE> relationOwnerEntity,
+		                  EntityReader<SRC, SRCID, ?> relationOwnerPersister,
+		                  String parentJoinPoint) {
 			this.relationOwnerEntity = relationOwnerEntity;
 			this.relationOwnerPersister = relationOwnerPersister;
 			this.parentJoinPoint = parentJoinPoint;
-			this.accessor = accessor;
 		}
 		
 		public EntityReader<SRC, SRCID, ?> getRelationOwnerPersister() {
@@ -512,281 +475,6 @@ public class AggregateResolver {
 		
 		public AbstractEntity<SRC, SRCID, LEFTTABLE> getRelationOwnerEntity() {
 			return relationOwnerEntity;
-		}
-		
-		public PropertyAccessor<SRC, TRGT> getAccessor() {
-			return accessor;
-		}
-	}
-	
-	private static class DelegatingConfiguredPersister<C, I> implements ConfiguredPersister<C, I> {
-		
-		private final DelegatingReadWriteEntityExecutor<C, I> delegate;
-		private final Set<Table<?>> tables;
-		
-		public DelegatingConfiguredPersister(DelegatingReadWriteEntityExecutor<C, I> delegate, Set<? extends Table<?>> tables) {
-			this.delegate = delegate;
-			this.tables = new HashSet<>(tables);
-		}
-		
-		@Override
-		public Collection<Table<?>> giveImpliedTables() {
-			return tables;
-		}
-		
-		@Override
-		public PersisterListenerCollection<C, I> getPersisterListener() {
-			return null;
-		}
-		
-		@Override
-		public Set<C> select(Iterable<I> ids) {
-			return delegate.select(ids);
-		}
-		
-		@Override
-		public RelationalEntityPersister.ExecutableEntityQueryCriteria<C, ?> selectWhere() {
-			return delegate.selectWhere();
-		}
-		
-		@Override
-		public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<SelectAdapter<C>> selectAdapter) {
-			return delegate.selectProjectionWhere(selectAdapter);
-		}
-		
-		@Override
-		public void addSelectListener(SelectListener<? extends C, I> selectListener) {
-			delegate.addSelectListener(selectListener);
-		}
-		
-		@Override
-		public void persist(Iterable<? extends C> entities) {
-			delegate.persist(entities);
-		}
-		
-		@Override
-		public <T extends Table<T>> EntityMapping<C, I, T> getMapping() {
-			return delegate.getMapping();
-		}
-		
-		@Override
-		public Set<C> selectAll() {
-			return delegate.selectAll();
-		}
-		
-		@Override
-		public boolean isNew(C entity) {
-			return delegate.isNew(entity);
-		}
-		
-		@Override
-		public I getId(C entity) {
-			return delegate.getId(entity);
-		}
-		
-		@Override
-		public Class<C> getClassToPersist() {
-			return delegate.getClassToPersist();
-		}
-		
-		@Override
-		public void delete(Iterable<? extends C> entities) {
-			delegate.delete(entities);
-		}
-		
-		@Override
-		public void deleteById(Iterable<? extends C> entities) {
-			delegate.deleteById(entities);
-		}
-		
-		@Override
-		public void insert(Iterable<? extends C> entities) {
-			delegate.insert(entities);
-		}
-		
-		@Override
-		public void updateById(Iterable<? extends C> entities) {
-			delegate.updateById(entities);
-		}
-		
-		@Override
-		public void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
-			delegate.update(differencesIterable, allColumnsStatement);
-		}
-		
-		@Override
-		public void addPersistListener(PersistListener<? extends C> persistListener) {
-			delegate.addPersistListener(persistListener);
-		}
-		
-		@Override
-		public void addInsertListener(InsertListener<? extends C> insertListener) {
-			delegate.addInsertListener(insertListener);
-		}
-		
-		@Override
-		public void addUpdateListener(UpdateListener<? extends C> updateListener) {
-			delegate.addUpdateListener(updateListener);
-		}
-		
-		@Override
-		public void addUpdateByIdListener(UpdateByIdListener<? extends C> updateByIdListener) {
-			delegate.addUpdateByIdListener(updateByIdListener);
-		}
-		
-		@Override
-		public void addDeleteListener(DeleteListener<? extends C> deleteListener) {
-			delegate.addDeleteListener(deleteListener);
-		}
-		
-		@Override
-		public void addDeleteByIdListener(DeleteByIdListener<? extends C> deleteListener) {
-			delegate.addDeleteByIdListener(deleteListener);
-		}
-		
-		@Override
-		public void persist(C entity) {
-			delegate.persist(entity);
-		}
-		
-		@Override
-		public void insert(C entity) {
-			delegate.insert(entity);
-		}
-		
-		@Override
-		public void update(C modified, C unmodified, boolean allColumnsStatement) {
-			delegate.update(modified, unmodified, allColumnsStatement);
-		}
-		
-		@Override
-		public void update(C entity) {
-			delegate.update(entity);
-		}
-		
-		@Override
-		public void update(C entity, boolean allColumnsStatement) {
-			delegate.update(entity, allColumnsStatement);
-		}
-		
-		@Override
-		public void update(Iterable<C> entities) {
-			delegate.update(entities);
-		}
-		
-		@Experimental
-		@Override
-		public void update(I id, Consumer<C> entityConsumer) {
-			delegate.update(id, entityConsumer);
-		}
-		
-		@Experimental
-		@Override
-		public void update(Iterable<I> ids, Consumer<C> entityConsumer) {
-			delegate.update(ids, entityConsumer);
-		}
-		
-		@Override
-		public void delete(C entity) {
-			delegate.delete(entity);
-		}
-		
-		@Override
-		public void deleteById(C entity) {
-			delegate.deleteById(entity);
-		}
-		
-		@Override
-		public C select(I id) {
-			return delegate.select(id);
-		}
-		
-		@Override
-		public Set<C> select(I... ids) {
-			return delegate.select(ids);
-		}
-		
-		@Override
-		public void updateById(C entity) {
-			delegate.updateById(entity);
-		}
-		
-		@Override
-		public void persist(C... entities) {
-			delegate.persist(entities);
-		}
-		
-		public static <C1, I> PersistExecutor<C1> forPersister(ConfiguredPersister<C1, I> persister) {
-			return PersistExecutor.forPersister(persister);
-		}
-		
-		public static <C1, I> PersistExecutor<C1> forPersister(EntityWriteExecutor<C1, I> writer, EntityReadExecutor<C1, I> reader) {
-			return PersistExecutor.forPersister(writer, reader);
-		}
-		
-		@Override
-		public <O> ExecutableEntityQuery<C, ?> selectWhere(SerializablePropertyAccessor<C, O> getter, ConditionalOperator<O, ?> operator) {
-			return delegate.selectWhere(getter, operator);
-		}
-		
-		@Override
-		public <O> ExecutableEntityQuery<C, ?> selectWhere(SerializablePropertyMutator<C, O> setter, ConditionalOperator<O, ?> operator) {
-			return delegate.selectWhere(setter, operator);
-		}
-		
-		@Override
-		public <O, A> ExecutableEntityQuery<C, ?> selectWhere(SerializablePropertyAccessor<C, A> getter1, SerializablePropertyAccessor<A, O> getter2, ConditionalOperator<O, ?> operator) {
-			return delegate.selectWhere(getter1, getter2, operator);
-		}
-		
-		@Override
-		public <O> ExecutableEntityQuery<C, ?> selectWhere(List<? extends ValueAccessPoint<?>> accessorChain, ConditionalOperator<O, ?> operator) {
-			return delegate.selectWhere(accessorChain, operator);
-		}
-		
-		@Override
-		public <O> ExecutableEntityQuery<C, ?> selectWhere(AccessorChain<C, ?> accessorChain, ConditionalOperator<O, ?> operator) {
-			return delegate.selectWhere(accessorChain, operator);
-		}
-		
-		@Override
-		public <O> ExecutableEntityQuery<C, ?> selectWhere(EntityCriteria.CriteriaPath<C, ?> accessorChain, ConditionalOperator<O, ?> operator) {
-			return delegate.selectWhere(accessorChain, operator);
-		}
-		
-		@Override
-		public <O, S extends Collection<O>, NEXT> ExecutableEntityQuery<C, ?> selectWhere(EntityCriteria.SerializableCollectionFunction<C, S, O> accessor1, SerializablePropertyAccessor<O, NEXT> accessor2, ConditionalOperator<NEXT, ?> operator) {
-			return delegate.selectWhere(accessor1, accessor2, operator);
-		}
-		
-		@Override
-		public <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<SelectAdapter<C>> selectAdapter, SerializablePropertyAccessor<C, O> getter, ConditionalOperator<O, ?> operator) {
-			return delegate.selectProjectionWhere(selectAdapter, getter, operator);
-		}
-		
-		@Override
-		public <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<SelectAdapter<C>> selectAdapter, SerializablePropertyMutator<C, O> setter, ConditionalOperator<O, ?> operator) {
-			return delegate.selectProjectionWhere(selectAdapter, setter, operator);
-		}
-		
-		@Override
-		public <O, A> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<SelectAdapter<C>> selectAdapter, SerializablePropertyAccessor<C, A> getter1, SerializablePropertyAccessor<A, O> getter2, ConditionalOperator<O, ?> operator) {
-			return delegate.selectProjectionWhere(selectAdapter, getter1, getter2, operator);
-		}
-		
-		@Override
-		public <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<SelectAdapter<C>> selectAdapter, List<? extends ValueAccessPoint<?>> accessorChain, ConditionalOperator<O, ?> operator) {
-			return delegate.selectProjectionWhere(selectAdapter, accessorChain, operator);
-		}
-		
-		@Override
-		public <O> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<SelectAdapter<C>> selectAdapter, EntityCriteria.CriteriaPath<C, ?> accessorChain, ConditionalOperator<O, ?> operator) {
-			return delegate.selectProjectionWhere(selectAdapter, accessorChain, operator);
-		}
-		
-		@Override
-		public <O, S extends Collection<O>, NEXT> ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<SelectAdapter<C>> selectAdapter, EntityCriteria.SerializableCollectionFunction<C, S, O> accessor1, SerializablePropertyAccessor<O, NEXT> accessor2, ConditionalOperator<O, ?> operator) {
-			return delegate.selectProjectionWhere(selectAdapter, accessor1, accessor2, operator);
 		}
 	}
 }
