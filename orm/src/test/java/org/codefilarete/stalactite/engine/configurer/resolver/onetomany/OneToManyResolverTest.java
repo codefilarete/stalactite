@@ -3,8 +3,12 @@ package org.codefilarete.stalactite.engine.configurer.resolver.onetomany;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import javax.sql.DataSource;
 
@@ -27,12 +31,16 @@ import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.State;
 import org.codefilarete.stalactite.id.AbstractIdentifier;
+import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
+import org.codefilarete.stalactite.id.StatefulIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.sql.result.Accumulators;
@@ -62,6 +70,7 @@ import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 import static org.codefilarete.tool.collection.Iterables.first;
+import static org.codefilarete.tool.function.Functions.chain;
 
 public class OneToManyResolverTest {
 	
@@ -374,6 +383,69 @@ public class OneToManyResolverTest {
 			Set<Long> loadedAin = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(first(loadedAin)).isNotNull();
 		}
+		
+		@Test
+		void select_indexed() {
+			FluentEntityMappingBuilder<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
+					.mapKey(Choice::getId, ALREADY_ASSIGNED)
+					.map(Choice::getLabel);
+			
+			FluentEntityMappingBuilder<Question, Identifier<Long>> questionPersisterConfiguration = entityBuilder(Question.class, LONG_TYPE)
+					.mapKey(Question::getId, ALREADY_ASSIGNED)
+					.mapOneToMany(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::setQuestion)
+					.indexed()
+					.cascading(ALL);
+			
+			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+			EntityPersister<Question, Identifier<Long>> questionPersister = testInstance.resolve(questionPersisterConfiguration.getConfiguration());
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Question newQuestion = new Question(1L);
+			Choice choice1 = new Choice(10L);
+			Choice choice2 = new Choice(20L);
+			Choice choice3 = new Choice(30L);
+			List<Choice> list = Arrays.asList(choice1, choice2, choice3);
+			Collections.shuffle(list);
+			newQuestion.setChoices(list);
+			questionPersister.insert(newQuestion);
+			
+			Question select = questionPersister.select(new PersistedIdentifier<>(1L));
+			assertThat(select.getChoices()).extracting(chain(Choice::getId, StatefulIdentifier::getDelegate)).containsExactlyElementsOf(Iterables.collectToList(list, chain(Choice::getId, StatefulIdentifier::getDelegate)));
+		}
+		
+		@Test
+		void select_indexed_fetchSeparately() {
+			FluentEntityMappingBuilder<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
+					.mapKey(Choice::getId, ALREADY_ASSIGNED)
+					.map(Choice::getLabel);
+			
+			FluentEntityMappingBuilder<Question, Identifier<Long>> questionPersisterConfiguration = entityBuilder(Question.class, LONG_TYPE)
+					.mapKey(Question::getId, ALREADY_ASSIGNED)
+					.mapOneToMany(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::setQuestion)
+					.fetchSeparately()
+					.indexed()
+					.cascading(ALL);
+			
+			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+			EntityPersister<Question, Identifier<Long>> questionPersister = testInstance.resolve(questionPersisterConfiguration.getConfiguration());
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Question newQuestion = new Question(1L);
+			Choice choice1 = new Choice(10L);
+			Choice choice2 = new Choice(20L);
+			Choice choice3 = new Choice(30L);
+			List<Choice> list = Arrays.asList(choice1, choice2, choice3);
+			Collections.shuffle(list);
+			newQuestion.setChoices(list);
+			questionPersister.insert(newQuestion);
+			
+			Question select = questionPersister.select(new PersistedIdentifier<>(1L));
+			assertThat(select.getChoices()).extracting(chain(Choice::getId, StatefulIdentifier::getDelegate)).containsExactlyElementsOf(Iterables.collectToList(list, chain(Choice::getId, StatefulIdentifier::getDelegate)));
+		}
 	}
 	
 	@Nested
@@ -541,7 +613,159 @@ public class OneToManyResolverTest {
 			Set<Long> loadedAin = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(first(loadedAin)).isNotNull();
 		}
-	
+		
+		@Test
+		void select_fetchSeparately() {
+			Table choiceTable = new Table("Choice");
+			// we declare the column that will store our List index
+			Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
+			Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
+			
+			FluentEntityMappingBuilder<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
+					.mapKey(Choice::getId, ALREADY_ASSIGNED)
+					.map(Choice::getLabel);
+			
+			FluentEntityMappingBuilder<Question, Identifier<Long>> questionPersisterConfiguration = entityBuilder(Question.class, LONG_TYPE)
+					.mapKey(Question::getId, ALREADY_ASSIGNED)
+					.mapOneToMany(Question::getChoices, choiceMappingConfiguration)
+					.fetchSeparately()
+					.indexedBy(idx).cascading(ALL);
+			
+			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+			EntityPersister<Question, Identifier<Long>> questionPersister = testInstance.resolve(questionPersisterConfiguration.getConfiguration());
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Question newQuestion = new Question(1L);
+			Choice choice1 = new Choice(10L);
+			Choice choice2 = new Choice(20L);
+			Choice choice3 = new Choice(30L);
+			List<Choice> list = Arrays.asList(choice1, choice2, choice3);
+			Collections.shuffle(list);
+			newQuestion.setChoices(list);
+			questionPersister.insert(newQuestion);
+			
+			Question select = questionPersister.select(new PersistedIdentifier<>(1L));
+			assertThat(select.getChoices()).extracting(chain(Choice::getId, StatefulIdentifier::getDelegate)).containsExactlyElementsOf(Iterables.collectToList(list, chain(Choice::getId, StatefulIdentifier::getDelegate)));
+		}
 	}
 	
+	private static class Question implements Identified<Long> {
+		
+		private Identifier<Long> id;
+		
+		private String label;
+		
+		private List<Choice> choices = new ArrayList<>();
+		
+		private Question() {
+		}
+		
+		private Question(Long id) {
+			this(new PersistableIdentifier<>(id));
+		}
+		
+		private Question(Identifier<Long> id) {
+			this.id = id;
+		}
+		
+		@Override
+		public Identifier<Long> getId() {
+			return id;
+		}
+		
+		public String getLabel() {
+			return label;
+		}
+		
+		public void setLabel(String label) {
+			this.label = label;
+		}
+		
+		public List<Choice> getChoices() {
+			return choices;
+		}
+		
+		public void setChoices(List<Choice> choices) {
+			this.choices = choices;
+			choices.forEach(choice -> choice.setQuestion(this));
+		}
+		
+		public void addChoice(Choice choice) {
+			choice.setQuestion(this);
+			choices.add(choice);
+		}
+		
+		public void removeChoice(Choice choice) {
+			choices.remove(choice);
+			choice.setQuestion(null);
+		}
+	}
+	
+	private static class Choice implements Identified<Long> {
+		
+		private Identifier<Long> id;
+		
+		private Question question;
+		
+		private Question questionWithNoGetter;
+		
+		private String label;
+		
+		public Choice() {
+		}
+		
+		private Choice(long id) {
+			this.id = new PersistableIdentifier<>(id);
+		}
+		
+		public Choice(Identifier<Long> id) {
+			this.id = id;
+		}
+		
+		@Override
+		public Identifier<Long> getId() {
+			return id;
+		}
+		
+		public Question getQuestion() {
+			return question;
+		}
+		
+		public Choice setQuestion(Question question) {
+			this.question = question;
+			return this;
+		}
+		
+		public void setQuestionWithNoGetter(Question question) {
+			questionWithNoGetter = question;
+		}
+		
+		public String getLabel() {
+			return label;
+		}
+		
+		public void setLabel(String label) {
+			this.label = label;
+		}
+		
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (!(o instanceof Choice)) return false;
+			Choice choice = (Choice) o;
+			return Objects.equals(id, choice.id);
+		}
+		
+		@Override
+		public int hashCode() {
+			return Objects.hash(id);
+		}
+		
+		@Override
+		public String toString() {
+			return "Choice{id=" + id.getDelegate() + ", question=" + question + ", label='" + label + '\'' + '}';
+		}
+	}
 }

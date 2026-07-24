@@ -262,7 +262,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 			
 			
 			// adding second phase loader
-			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
+			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, (ThreadLocal<Queue<Set<RelationIds<SRC, C, I>>>>) (ThreadLocal) DIFFERED_ENTITY_LOADER));
 			
 			return createdJoinNodeName;
 		} else {
@@ -303,7 +303,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 					leftColumn, rightColumn, JoinType.OUTER);
 			
 			// adding second phase loader
-			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
+			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, (ThreadLocal<Queue<Set<RelationIds<SRC, C, I>>>>) (ThreadLocal) DIFFERED_ENTITY_LOADER));
 			
 			return createdJoinNodeName;
 		} else {

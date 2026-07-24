@@ -82,7 +82,7 @@ public class AggregateResolver {
 		this.skeletonAggregateResolver = new SkeletonAggregateResolver(persistenceContext);
 		this.oneToOneAppender = new AggregateOneToOneAppender();
 		this.oneToManyAppender = new AggregateOneToManyAppender();
-		this.manyToManyAppender = new AggregateManyToManyAppender(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
+		this.manyToManyAppender = new AggregateManyToManyAppender();
 		this.manyToOneAppender = new AggregateManyToOneAppender();
 		this.elementCollectionAppender = new AggregateElementCollectionAppender();
 		this.mapAppender = new AggregateMapAppender();
@@ -259,48 +259,49 @@ public class AggregateResolver {
 	                     EntityReader<SRC, SRCID, ?> aggregatePersister,
 	                     Map<MappingJoin<?, ?, ?>, Object> createdPersisters) {
 		
-		Queue<GraftPoint<?, ?, ?>> relationStack2 = new ArrayDeque<>();
-		relationStack2.add(new GraftPoint<>(rootEntity, aggregatePersister, ROOT_JOIN_NAME));
+		Queue<GraftPoint<?, ?, ?, ?, ?>> relationStack = new ArrayDeque<>();
+		relationStack.add(new GraftPoint<>(rootEntity, aggregatePersister, ROOT_JOIN_NAME, aggregatePersister.getEntityJoinTree()));
 		new SkeletonAggregateAppender()
 				.appendInheritance((CreatedPersisterCollector<SRC, SRCID>) createdPersisters.get(null), aggregatePersister.getEntityJoinTree());
 		
-		while (!relationStack2.isEmpty()) {
-			GraftPoint<?, ?, ?> assemblyPawn = relationStack2.poll();
+		while (!relationStack.isEmpty()) {
+			GraftPoint<SRC, SRCID, LEFTTABLE, SRC, SRCID> assemblyPawn = (GraftPoint<SRC, SRCID, LEFTTABLE, SRC, SRCID>) relationStack.poll();
 			EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister = (EntityReader<SRC, SRCID, LEFTTABLE>) assemblyPawn.getRelationOwnerPersister();
 			assemblyPawn.getRelationOwnerEntity().getRelations()
 					.forEach(relationPawn -> {
 						if (relationPawn instanceof ResolvedOneToOneRelation) {
 							CreatedPersisterCollector<TRGT, TRGTID> localCreatedPersistor = (CreatedPersisterCollector<TRGT, TRGTID>) createdPersisters.get(relationPawn);
 							ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> localRelation = (ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>) relationPawn;
-							EntityReader<TRGT, TRGTID, ?> targetPersister = new EntityReader<>(
+							EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister = new EntityReader<>(
 									localCreatedPersistor.getPersister().<RIGHTTABLE>getMapping(), persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
-							GraftPoint<TRGT, TRGTID, RIGHTTABLE> graftPoint = oneToOneAppender.append(
+							GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> graftPoint = oneToOneAppender.append(
 									localRelation,
+									sourcePersister,
 									targetPersister,
 									assemblyPawn.getParentJoinPoint(),
-									aggregatePersister.getEntityJoinTree());
+									assemblyPawn.getAggregateTree());
 							
 							new SkeletonAggregateAppender()
 									.appendInheritance(localCreatedPersistor, aggregatePersister.getEntityJoinTree());
 							
-							relationStack2.add(graftPoint);
+							relationStack.add(graftPoint);
 						}
 						if (relationPawn instanceof ResolvedOneToManyRelation) {
 							CreatedPersisterCollector<TRGT, TRGTID> localCreatedPersistor = (CreatedPersisterCollector<TRGT, TRGTID>) createdPersisters.get(relationPawn);
 							ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> localRelation = (ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>) relationPawn;
 							EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister = new EntityReader<>(
 									localCreatedPersistor.getPersister().<RIGHTTABLE>getMapping(), persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
-							GraftPoint<TRGT, TRGTID, RIGHTTABLE> graftPoint = oneToManyAppender.append(
+							GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> graftPoint = oneToManyAppender.append(
 									localRelation,
 									sourcePersister,
 									targetPersister,
 									assemblyPawn.getParentJoinPoint(),
-									aggregatePersister.getEntityJoinTree());
+									assemblyPawn.getAggregateTree());
 							
 							new SkeletonAggregateAppender()
 									.appendInheritance(localCreatedPersistor, aggregatePersister.getEntityJoinTree());
 							
-							relationStack2.add(graftPoint);
+							relationStack.add(graftPoint);
 						}
 						if (relationPawn instanceof ResolvedManyToManyRelation) {
 							CreatedPersisterCollector<TRGT, TRGTID> localCreatedPersistor = (CreatedPersisterCollector<TRGT, TRGTID>) createdPersisters.get(relationPawn);
@@ -308,37 +309,38 @@ public class AggregateResolver {
 							EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister = new EntityReader<>(
 									localCreatedPersistor.getPersister().<RIGHTTABLE>getMapping(), persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
 							
-							GraftPoint<TRGT, TRGTID, RIGHTTABLE> graftPoint = manyToManyAppender.append(
+							GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> graftPoint = manyToManyAppender.append(
 									localRelation,
 									sourcePersister,
 									targetPersister,
 									assemblyPawn.getParentJoinPoint(),
-									aggregatePersister.getEntityJoinTree());
+									assemblyPawn.getAggregateTree());
 							new SkeletonAggregateAppender()
 									.appendInheritance(localCreatedPersistor, aggregatePersister.getEntityJoinTree());
 							
-							relationStack2.add(graftPoint);
+							relationStack.add(graftPoint);
 						}
 						if (relationPawn instanceof ResolvedManyToOneRelation) {
 							CreatedPersisterCollector<TRGT, TRGTID> localCreatedPersistor = (CreatedPersisterCollector<TRGT, TRGTID>) createdPersisters.get(relationPawn);
 							ResolvedManyToOneRelation<SRC, TRGT, TRGTID, LEFTTABLE, RIGHTTABLE> localRelation = (ResolvedManyToOneRelation<SRC, TRGT, TRGTID, LEFTTABLE, RIGHTTABLE>) relationPawn;
 							EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister = new EntityReader<>(
 									localCreatedPersistor.getPersister().<RIGHTTABLE>getMapping(), persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
-							GraftPoint<TRGT, TRGTID, RIGHTTABLE> graftPoint = manyToOneAppender.append(
+							GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> graftPoint = manyToOneAppender.append(
 									localRelation,
+									sourcePersister,
 									targetPersister,
 									assemblyPawn.getParentJoinPoint(),
-									aggregatePersister.getEntityJoinTree());
+									assemblyPawn.getAggregateTree());
 							new SkeletonAggregateAppender()
 									.appendInheritance(localCreatedPersistor, aggregatePersister.getEntityJoinTree());
-							relationStack2.add(graftPoint);
+							relationStack.add(graftPoint);
 						}
 						if (relationPawn instanceof ResolvedElementCollectionRelation) {
 							CreatedPersisterCollector<TRGT, TRGTID> localCreatedPersistor = (CreatedPersisterCollector<TRGT, TRGTID>) createdPersisters.get(relationPawn);
 							EntityReadWriteExecutor<TRGT, TRGTID> persister = localCreatedPersistor.getPersister();
 							elementCollectionAppender.append(
 									(ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, LEFTTABLE, RIGHTTABLE, ElementRecord<TRGT, SRCID>>) relationPawn,
-									aggregatePersister.getEntityJoinTree(),
+									assemblyPawn.getAggregateTree(),
 									(ElementCollectionResolver.ElementRecordPersister<TRGT, SRCID, RIGHTTABLE, ElementRecord<TRGT, SRCID>>) persister,
 									assemblyPawn.getParentJoinPoint()
 							);
@@ -346,13 +348,13 @@ public class AggregateResolver {
 						if (relationPawn instanceof ResolvedMapRelation) {
 							MapCreatedPersisterCollector mapCreatedPersisterCollector = (MapCreatedPersisterCollector) createdPersisters.get(relationPawn);
 							ResolvedMapRelation localRelation = (ResolvedMapRelation) relationPawn;
-							Duo<GraftPoint, GraftPoint> keyValueGraftPoints = graftMapRelation(localRelation, aggregatePersister.getEntityJoinTree(), assemblyPawn.getParentJoinPoint(), sourcePersister, mapCreatedPersisterCollector);
+							Duo<GraftPoint, GraftPoint> keyValueGraftPoints = graftMapRelation(localRelation, assemblyPawn.getAggregateTree(), assemblyPawn.getParentJoinPoint(), sourcePersister, mapCreatedPersisterCollector);
 							
 							if (keyValueGraftPoints.getLeft() != null) {
-								relationStack2.add(keyValueGraftPoints.getLeft());
+								relationStack.add(keyValueGraftPoints.getLeft());
 							}
 							if (keyValueGraftPoints.getRight() != null) {
-								relationStack2.add(keyValueGraftPoints.getRight());
+								relationStack.add(keyValueGraftPoints.getRight());
 							}
 						}
 					});
@@ -377,6 +379,7 @@ public class AggregateResolver {
 			valueEntityReader = new EntityReader<>(
 					typedMapCreatedPersisterCollector.getValuePersisterCollector().getPersister().<VTABLE>getMapping(), persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
 		}
+		
 		return mapAppender.append(
 				typedRelation,
 				aggregateTree,
@@ -384,7 +387,9 @@ public class AggregateResolver {
 				mountPoint,
 				typedMapCreatedPersisterCollector.getKeyValueRecordPersister(),
 				keyEntityReader,
-				valueEntityReader
+				valueEntityReader,
+				persistenceContext.getDialect(),
+				persistenceContext.getConnectionProvider()
 		);
 	}
 	
@@ -451,11 +456,12 @@ public class AggregateResolver {
 		}
 	}
 	
-	public static class GraftPoint<SRC, SRCID, LEFTTABLE extends Table<LEFTTABLE>> {
+	public static class GraftPoint<SRC, SRCID, LEFTTABLE extends Table<LEFTTABLE>, ROOT, ROOTID> {
 		
 		private final AbstractEntity<SRC, SRCID, LEFTTABLE> relationOwnerEntity;
 		private final EntityReader<SRC, SRCID, ?> relationOwnerPersister;
 		private final String parentJoinPoint;
+		private EntityJoinTree<ROOT, ROOTID> aggregateTree;
 		
 		public GraftPoint(AbstractEntity<SRC, SRCID, LEFTTABLE> relationOwnerEntity,
 		                  EntityReader<SRC, SRCID, ?> relationOwnerPersister,
@@ -463,6 +469,16 @@ public class AggregateResolver {
 			this.relationOwnerEntity = relationOwnerEntity;
 			this.relationOwnerPersister = relationOwnerPersister;
 			this.parentJoinPoint = parentJoinPoint;
+		}
+		
+		public GraftPoint(AbstractEntity<SRC, SRCID, LEFTTABLE> relationOwnerEntity,
+		                  EntityReader<SRC, SRCID, ?> relationOwnerPersister,
+		                  String parentJoinPoint,
+		                  EntityJoinTree<ROOT, ROOTID> aggregateTree) {
+			this.relationOwnerEntity = relationOwnerEntity;
+			this.relationOwnerPersister = relationOwnerPersister;
+			this.parentJoinPoint = parentJoinPoint;
+			this.aggregateTree = aggregateTree;
 		}
 		
 		public EntityReader<SRC, SRCID, ?> getRelationOwnerPersister() {
@@ -475,6 +491,10 @@ public class AggregateResolver {
 		
 		public AbstractEntity<SRC, SRCID, LEFTTABLE> getRelationOwnerEntity() {
 			return relationOwnerEntity;
+		}
+		
+		public EntityJoinTree<ROOT, ROOTID> getAggregateTree() {
+			return aggregateTree;
 		}
 	}
 }

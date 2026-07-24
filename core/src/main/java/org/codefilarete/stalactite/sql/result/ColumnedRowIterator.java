@@ -89,7 +89,7 @@ public class ColumnedRowIterator extends ResultSetIterator<ColumnedRow> {
 					alias = aliases.get(column);
 					if (alias == null) {
 						// This is more for debugging purpose than for a real production goal, may be removed later
-						throw new IllegalArgumentException("Can't find alias for " + column.getExpression() + " in row entries " + aliases.keySet() + "."
+						throw new IllegalArgumentException("Can't find alias for column '" + column.getExpression() + "' in row entries " + aliases.keySet() + "."
 						+ " Please ensure your declared the column in the select clause.");
 					}
 				}

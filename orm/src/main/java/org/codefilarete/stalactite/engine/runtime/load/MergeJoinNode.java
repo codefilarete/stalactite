@@ -1,9 +1,8 @@
 package org.codefilarete.stalactite.engine.runtime.load;
 
-import javax.annotation.Nullable;
-
 import java.util.IdentityHashMap;
 import java.util.Set;
+import javax.annotation.Nullable;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.PassiveJoinNode.PassiveJoinRowConsumer;
@@ -62,7 +61,7 @@ public class MergeJoinNode<C, T1 extends Fromable, T2 extends Fromable, I> exten
 	
 	@Override
 	public MergeJoinRowConsumer<C> toConsumer(JoinNode<C, T2> joinNode) {
-		return new MergeJoinRowConsumer<>((MergeJoinNode<C, ?, ?, ?>) joinNode, merger.getRowTransformer());
+		return new MergeJoinRowConsumer<>((MergeJoinNode<C, ?, ?, ?>) joinNode, merger.getRowTransformer(), getConsumptionListener());
 	}
 	
 	/**
@@ -74,10 +73,20 @@ public class MergeJoinNode<C, T1 extends Fromable, T2 extends Fromable, I> exten
 		
 		private final MergeJoinNode<C, ?, ?, ?> node;
 		protected final RowTransformer<C> merger;
+		/** Optional listener of ResultSet decoding */
+		@Nullable
+		private final EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
 		
 		public MergeJoinRowConsumer(MergeJoinNode<C, ?, ?, ?> node, RowTransformer<C> merger) {
 			this.node = node;
 			this.merger = merger;
+			this.consumptionListener = null;
+		}
+		
+		public MergeJoinRowConsumer(MergeJoinNode<C, ?, ?, ?> node, RowTransformer<C> merger, @Nullable EntityTreeJoinNodeConsumptionListener<C> consumptionListener) {
+			this.node = node;
+			this.merger = merger;
+			this.consumptionListener = consumptionListener;
 		}
 		
 		@Override
@@ -87,6 +96,9 @@ public class MergeJoinNode<C, T1 extends Fromable, T2 extends Fromable, I> exten
 		
 		void mergeProperties(C parentJoinEntity, ColumnedRow row) {
 			this.merger.applyRowToBean(row, parentJoinEntity);
+			if (this.consumptionListener != null) {
+				this.consumptionListener.onNodeConsumption(parentJoinEntity, row);
+			}
 		}
 		
 		/**

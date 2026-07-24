@@ -154,6 +154,65 @@ class OneToOneResolverTest {
 	}
 	
 	@Test
+	void multiple_oneToOne_fetchSeparately() {
+		
+		DataSource inMemoryDataSource = new HSQLDBInMemoryDataSource();
+		PersistenceContext persistenceContext = new PersistenceContext(inMemoryDataSource);
+		
+		persistenceContext.getDialect().getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
+		persistenceContext.getDialect().getSqlTypeRegistry().put(Identifier.class, "int");
+		
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personMappingBuilder = entityBuilder(Person.class, Identifier.LONG_TYPE)
+				.mapKey(Person::getId, ALREADY_ASSIGNED)
+				.map(Person::getName);
+		
+		FluentEntityMappingBuilder<City, Identifier<Long>> cityMappingBuilder = entityBuilder(City.class, Identifier.LONG_TYPE)
+				.mapKey(City::getId, ALREADY_ASSIGNED)
+				.mapOneToOne(City::getState, entityBuilder(State.class, Identifier.LONG_TYPE)
+						.mapKey(State::getId, ALREADY_ASSIGNED)
+						.map(State::getName))
+				.map(City::getName);
+		
+		FluentEntityMappingBuilder<Country, Identifier<Long>> countryPersisterConfiguration = entityBuilder(Country.class, Identifier.LONG_TYPE)
+				.mapKey(Country::getId, ALREADY_ASSIGNED)
+				.map(Country::getDescription)
+				.mapOneToOne(Country::getPresident, personMappingBuilder).cascading(ALL).fetchSeparately()
+				.mapOneToOne(Country::getCapital, cityMappingBuilder).cascading(ALL).fetchSeparately().mappedBy(City::getCountry)
+				;
+		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Country, Identifier<Long>> countryPersister = testInstance.resolve(countryPersisterConfiguration.getConfiguration());
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		LongProvider countryIdProvider = new LongProvider();
+		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+		dummyCountry.setName("France");
+		dummyCountry.setDescription("Smelly cheese !");
+		
+		Person person = new Person(new LongProvider().giveNewIdentifier());
+		person.setName("French president");
+		dummyCountry.setPresident(person);
+		
+		City capital = new City(new LongProvider().giveNewIdentifier());
+		capital.setName("Paris");
+		State state = new State(new LongProvider().giveNewIdentifier());
+		state.setName("Ile de France");
+		capital.setState(state);
+		dummyCountry.setCapital(capital);
+		
+		countryPersister.insert(dummyCountry);
+		// relations must be loaded
+		Country persistedCountry = countryPersister.select(dummyCountry.getId());
+		assertThat(persistedCountry.getPresident().getName()).isEqualTo("French president");
+		assertThat(persistedCountry.getCapital().getName()).isEqualTo("Paris");
+		// because we defined the bi-directionality, we check it
+		assertThat(persistedCountry.getCapital().getCountry()).isSameAs(persistedCountry);
+		assertThat(persistedCountry.getCapital().getState().getName()).isEqualTo("Ile de France");
+	}
+	
+	@Test
 	void multiple_oneToOne_inDepth() throws SQLException {
 		
 		DataSource inMemoryDataSource = new HSQLDBInMemoryDataSource();

@@ -3,7 +3,9 @@ package org.codefilarete.stalactite.engine.configurer.resolver.manytomany;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import javax.sql.DataSource;
 
@@ -17,12 +19,15 @@ import org.codefilarete.stalactite.engine.model.survey.Answer;
 import org.codefilarete.stalactite.engine.model.survey.Choice;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
+import org.codefilarete.stalactite.id.StatefulIdentifier;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -34,6 +39,7 @@ import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
+import static org.codefilarete.tool.function.Functions.chain;
 
 /**
  * Integration tests for {@link ManyToManyResolver} and {@link AggregateManyToManyAppender} exercised
@@ -260,13 +266,56 @@ public class ManyToManyResolverTest {
 		lyon.setLabel("Lyon");
 		Choice grenoble = new Choice(new PersistableIdentifier<>(13L));
 		grenoble.setLabel("Grenoble");
-		// insertion order: lyon first, then grenoble
+		
 		answer1.addChoices(lyon, grenoble);
+		List<Choice> list = Arrays.asList(lyon, grenoble);
+		Collections.shuffle(list);
+		answer1.setChoices(new KeepOrderSet<>(list));
 		answerPersister.insert(answer1);
 		
 		Answer loaded = answerPersister.select(answer1.getId());
 		assertThat(loaded.getChoices()).isInstanceOf(KeepOrderSet.class);
-		assertThat(loaded.getChoices()).containsExactly(lyon, grenoble);
+		assertThat(loaded.getChoices()).extracting(chain(Choice::getId, StatefulIdentifier::getDelegate)).containsExactlyElementsOf(Iterables.collectToList(list, chain(Choice::getId, StatefulIdentifier::getDelegate)));
+	}
+	
+	@Test
+	void crud_indexedCollection_fetchSeparately_orderIsPreserved() {
+		FluentEntityMappingBuilder<Answer, Identifier<Long>> answerBuilder = entityBuilder(Answer.class, LONG_TYPE)
+				.mapKey(Answer::getId, ALREADY_ASSIGNED)
+				.mapManyToMany(Answer::getChoices, choiceConfiguration)
+				.indexedBy("myIdx")
+				.initializeWith(KeepOrderSet::new)
+				.fetchSeparately()
+				.cascading(RelationMode.ALL);
+		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Answer, Identifier<Long>> answerPersister = testInstance.resolve(answerBuilder.getConfiguration());
+		
+		new DDLDeployer(persistenceContext).deployDDL();
+		
+		// Verify the index column was created
+		Long idxColumnCount = persistenceContext.newQuery(
+						"select count(*) as cnt from information_schema.columns "
+								+ "where table_name='ANSWER_CHOICES' and column_name='MYIDX'",
+						Long.class)
+				.mapKey("cnt", Long.class)
+				.execute(Accumulators.getFirst());
+		assertThat(idxColumnCount).isEqualTo(1L);
+		
+		Answer answer1 = new Answer(new PersistableIdentifier<>(1L));
+		Choice lyon = new Choice(new PersistableIdentifier<>(17L));
+		lyon.setLabel("Lyon");
+		Choice grenoble = new Choice(new PersistableIdentifier<>(13L));
+		grenoble.setLabel("Grenoble");
+		
+		List<Choice> list = Arrays.asList(lyon, grenoble);
+		Collections.shuffle(list);
+		answer1.setChoices(new KeepOrderSet<>(list));
+		answerPersister.insert(answer1);
+		
+		Answer loaded = answerPersister.select(answer1.getId());
+		assertThat(loaded.getChoices()).isInstanceOf(KeepOrderSet.class);
+		assertThat(loaded.getChoices()).extracting(chain(Choice::getId, StatefulIdentifier::getDelegate)).containsExactlyElementsOf(Iterables.collectToList(list, chain(Choice::getId, StatefulIdentifier::getDelegate)));
 	}
 	
 	// -------------------------------------------------------------------------

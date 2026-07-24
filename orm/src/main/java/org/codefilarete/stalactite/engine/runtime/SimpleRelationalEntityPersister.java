@@ -224,7 +224,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 					rightColumn,
 					JoinType.OUTER);
 			// adding second phase loader
-			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, CURRENT_2PHASES_LOAD_CONTEXT));
+			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, (ThreadLocal<Queue<Set<RelationIds<SRC, C, I>>>>) (ThreadLocal)  CURRENT_2PHASES_LOAD_CONTEXT));
 			return mainTableJoinName;
 		} else {
 			// We use our own select system since SelectListener is not aimed at joining table
@@ -271,7 +271,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 					rightColumn,
 					JoinType.OUTER);
 			// adding second phase loader
-			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, CURRENT_2PHASES_LOAD_CONTEXT));
+			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, (ThreadLocal<Queue<Set<RelationIds<SRC, C, I>>>>) (ThreadLocal) CURRENT_2PHASES_LOAD_CONTEXT));
 			return mainTableJoinName;
 		} else {
 			String createdJoinNodeName = sourcePersister.getEntityJoinTree().addRelationJoin(

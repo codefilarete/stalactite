@@ -16,15 +16,15 @@ import org.codefilarete.stalactite.sql.result.ColumnedRow;
 public class FirstPhaseRelationLoader<C, I> implements EntityMerger<C> {
 	
 	protected final IdMapping<C, I> idMapping;
-	private final SelectExecutor<C, I> selectExecutor;
+	protected final SelectExecutor<C, I> selectExecutor;
 	protected final ThreadLocal<Queue<Set<RelationIds<Object, C, I>>>> relationIdsHolder;
 	
 	public FirstPhaseRelationLoader(IdMapping<C, I> subEntityIdMapping,
 									SelectExecutor<C, I> selectExecutor,
-									ThreadLocal<Queue<Set<RelationIds<Object, C, I>>>> relationIdsHolder) {
+									ThreadLocal<? extends Queue<? extends Set<? extends RelationIds<?, C, I>>>> relationIdsHolder) {
 		this.idMapping = subEntityIdMapping;
 		this.selectExecutor = selectExecutor;
-		this.relationIdsHolder = relationIdsHolder;
+		this.relationIdsHolder = (ThreadLocal) relationIdsHolder;
 	}
 	
 	@Override

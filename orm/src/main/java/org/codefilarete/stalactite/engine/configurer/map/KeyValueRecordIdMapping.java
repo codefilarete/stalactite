@@ -25,7 +25,7 @@ import org.codefilarete.tool.collection.Maps;
  */
 public class KeyValueRecordIdMapping<K, I, T extends Table<T>> extends ComposedIdMapping<KeyValueRecord<K, ?, I>, RecordId<K, I>> {
 	
-	private KeyValueRecordIdMapping(
+	public KeyValueRecordIdMapping(
 			RecordIdAssembler recordIdAssembler) {
 		super(new KeyValueRecordIdAccessor<>(),
 				new AlreadyAssignedIdentifierManager<>((Class<RecordId<K, I>>) (Class) RecordId.class,

@@ -12,7 +12,4 @@ public interface JoinLink<T extends Fromable, O> extends Selectable<O> {
 	
 	T getOwner();
 	
-	String getExpression();
-	
-	Class<O> getJavaType();
 }

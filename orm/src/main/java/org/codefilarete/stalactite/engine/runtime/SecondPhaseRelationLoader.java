@@ -3,7 +3,6 @@ package org.codefilarete.stalactite.engine.runtime;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -19,19 +18,19 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 /**
  * @author Guillaume Mary
  */
-public class SecondPhaseRelationLoader<SRC, TRGT, ID> implements SelectListener<SRC, ID> {
+public class SecondPhaseRelationLoader<SRC, SRCID, TRGT, TRGTID> implements SelectListener<SRC, SRCID> {
 	
 	private final BeanRelationFixer<SRC, TRGT> beanRelationFixer;
-	private final ThreadLocal<Queue<Set<RelationIds<Object, Object, Object>>>> relationIdsHolder;
+	private final ThreadLocal<Queue<Set<RelationIds<SRC, TRGT, TRGTID>>>> relationIdsHolder;
 	
-	public SecondPhaseRelationLoader(BeanRelationFixer<SRC, TRGT> beanRelationFixer, ThreadLocal<Queue<Set<RelationIds<Object, Object, Object>>>> relationIdsHolder) {
+	public SecondPhaseRelationLoader(BeanRelationFixer<SRC, TRGT> beanRelationFixer, ThreadLocal<? extends Queue<? extends Set<? extends RelationIds<SRC, TRGT, TRGTID>>>> relationIdsHolder) {
 		this.beanRelationFixer = beanRelationFixer;
-		this.relationIdsHolder = relationIdsHolder;
+		this.relationIdsHolder = (ThreadLocal<Queue<Set<RelationIds<SRC, TRGT, TRGTID>>>>) relationIdsHolder;
 	}
 	
 	@Override
-	public void beforeSelect(Iterable<ID> ids) {
-		Queue<Set<RelationIds<Object, Object, Object>>> existingSet = relationIdsHolder.get();
+	public void beforeSelect(Iterable<SRCID> ids) {
+		Queue<Set<RelationIds<SRC, TRGT, TRGTID>>> existingSet = relationIdsHolder.get();
 		if (existingSet == null) {
 			existingSet = new ArrayDeque<>();
 			relationIdsHolder.set(existingSet);
@@ -49,13 +48,12 @@ public class SecondPhaseRelationLoader<SRC, TRGT, ID> implements SelectListener<
 	 * Mainly created to clarify types with TRGTID as parameter
 	 *
 	 * @param sourceEntities main entities, those that have the relation
-	 * @param <TRGTID> target identifier type
 	 */
-	private <TRGTID> void selectTargetEntities(Iterable<? extends SRC> sourceEntities) {
+	private void selectTargetEntities(Iterable<? extends SRC> sourceEntities) {
 		Map<SelectExecutor<TRGT, TRGTID>, Set<TRGTID>> selectsToExecute = new HashMap<>();
 		Map<SelectExecutor<TRGT, TRGTID>, Function<TRGT, TRGTID>> idAccessors = new HashMap<>();
 		Map<SRC, Set<TRGTID>> targetIdPerSource = new HashMap<>();
-		Set<RelationIds<SRC, TRGT, TRGTID>> relationIds = ((Queue<Set<RelationIds<SRC, TRGT, TRGTID>>>) (Queue) relationIdsHolder.get()).poll();
+		Set<RelationIds<SRC, TRGT, TRGTID>> relationIds = relationIdsHolder.get().peek();
 		// we remove null targetIds (Target Ids may be null if relation is nullified) because
 		// - selecting entities with null id is nonsense
 		// - it prevents from generating SQL "in ()" which is invalid
@@ -81,7 +79,7 @@ public class SecondPhaseRelationLoader<SRC, TRGT, ID> implements SelectListener<
 	}
 	
 	@Override
-	public void onSelectError(Iterable<ID> ids, RuntimeException exception) {
+	public void onSelectError(Iterable<SRCID> ids, RuntimeException exception) {
 		relationIdsHolder.remove();
 	}
 }

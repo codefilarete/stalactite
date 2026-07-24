@@ -685,6 +685,41 @@ public class ManyToOneResolverTest {
 	}
 	
 	@Test
+	void multiple_manyToOne_fetchSeparately() {
+		FluentEntityMappingBuilder<Device, Identifier<Long>> mappingBuilder = entityBuilder(Device.class, Identifier.LONG_TYPE)
+				.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(Device::getName)
+				.mapManyToOne(Device::setManufacturer, companyConfiguration).cascading(ALL).fetchSeparately()
+				.mapManyToOne(Device::setLocation, addressConfiguration).cascading(ALL).fetchSeparately()
+				;
+		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Device, Identifier<Long>> devicePersister = testInstance.resolve(mappingBuilder.getConfiguration());
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		LongProvider deviceIdProvider = new LongProvider();
+		Device dummyDevice = new Device(deviceIdProvider.giveNewIdentifier());
+		dummyDevice.setName("UPS");
+		
+		Company company = new Company(new LongProvider().giveNewIdentifier());
+		company.setName("World Company");
+		dummyDevice.setManufacturer(company);
+		
+		Address somewhere = new Address(new LongProvider().giveNewIdentifier());
+		somewhere.setStreet("somewhere");
+		dummyDevice.setLocation(somewhere);
+		
+		// testing insert cascade
+		devicePersister.insert(dummyDevice);
+		// relations must be loaded
+		Device persistedDevice = devicePersister.select(dummyDevice.getId());
+		assertThat(persistedDevice.getManufacturer().getName()).isEqualTo("World Company");
+		assertThat(((Address) persistedDevice.getLocation()).getStreet()).isEqualTo("somewhere");
+	}
+	
+	@Test
 	void multiple_manyToOne_partialOrphanRemoval() throws SQLException {
 		FluentEntityMappingBuilder<Device, Identifier<Long>> mappingBuilder = entityBuilder(Device.class, Identifier.LONG_TYPE)
 				.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)

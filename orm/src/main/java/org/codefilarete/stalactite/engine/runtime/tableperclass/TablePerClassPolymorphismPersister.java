@@ -276,7 +276,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 					rightColumn,
 					(Set<? extends ConfiguredRelationalPersister<C, I>>) (Set) new HashSet<>(this.subEntitiesPersisters.values()));
 
-			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
+			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, (ThreadLocal<Queue<Set<RelationIds<SRC, C, I>>>>) (ThreadLocal)  DIFFERED_ENTITY_LOADER));
 			
 			return createdJoinNodeName;
 		} else {
@@ -331,7 +331,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			});
 			
 			// adding second phase loader
-			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
+			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, (ThreadLocal<Queue<Set<RelationIds<SRC, C, I>>>>) (ThreadLocal) DIFFERED_ENTITY_LOADER));
 			
 			// FIXME : we shouldn't return null here but a created join node name: which one since we have several table to join ? see joinAsOne(..) maybe ?
 			return null;

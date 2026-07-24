@@ -64,7 +64,7 @@ public class ResolvedOneToManyRelation<SRC, TRGT, S extends Collection<TRGT>, SR
 	}
 	
 	public boolean isOrdered() {
-		return indexColumn != null;
+		return getIndexingMappedColumn() != null || (getJoin() instanceof IntermediaryRelationJoin && ((IntermediaryRelationJoin<?, ?, ?, ?, ?>) getJoin()).getJoinTable() instanceof IndexedAssociationTable);
 	}
 	
 	/**

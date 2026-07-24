@@ -256,7 +256,7 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 			});
 			
 			// adding second phase loader
-			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, CURRENT_2PHASES_LOAD_CONTEXT));
+			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, (ThreadLocal<Queue<Set<RelationIds<SRC, C, I>>>>) (ThreadLocal) CURRENT_2PHASES_LOAD_CONTEXT));
 			
 			return mainTableJoinName;
 		} else {
@@ -305,7 +305,7 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 			});
 			
 			// adding second phase loader
-			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, CURRENT_2PHASES_LOAD_CONTEXT));
+			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, (ThreadLocal<Queue<Set<RelationIds<SRC, C, I>>>>) (ThreadLocal) CURRENT_2PHASES_LOAD_CONTEXT));
 			
 			return createdJoinName;
 		} else {

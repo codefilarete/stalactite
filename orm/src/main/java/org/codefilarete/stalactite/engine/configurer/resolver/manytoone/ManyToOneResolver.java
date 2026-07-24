@@ -12,7 +12,6 @@ import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToManyRel
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.CreatedPersisterCollector;
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
-import org.codefilarete.stalactite.engine.configurer.resolver.manytomany.AggregateManyToManyAppender;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -27,7 +26,6 @@ import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMo
  *   <li>Non-indexed: {@link AssociationTable} + {@link org.codefilarete.stalactite.engine.configurer.resolver.onetomany.OneToManyWithAssociationTableEngine}</li>
  *   <li>Indexed: {@link IndexedAssociationTable} + {@link org.codefilarete.stalactite.engine.configurer.resolver.onetomany.OneToManyWithIndexedAssociationTableEngine}</li>
  * </ul>
- * The SELECT join-tree wiring is handled separately by {@link AggregateManyToManyAppender}.
  *
  * @author Guillaume Mary
  */
