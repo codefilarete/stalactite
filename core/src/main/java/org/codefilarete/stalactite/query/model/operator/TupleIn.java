@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.codefilarete.stalactite.query.api.Variable;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
-import org.codefilarete.stalactite.query.api.Variable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**
@@ -25,24 +25,29 @@ public class TupleIn extends ConditionalOperator<Object[], List<Object[]>> {
 	 * @return a new {@link TupleIn} filled with bean values
 	 */
 	public static TupleIn transformBeanColumnValuesToTupleInValues(int inSize, Map<? extends Column<?, ?>, ?> values) {
-		List<Object[]> resultValues = new ArrayList<>(inSize);
-		
 		Column<?, ?>[] columns = new ArrayList<>(values.keySet()).toArray(new Column[0]);
+		
+		List<Object[]> resultValues = toTupleInValues(inSize, values, columns);
+		
+		return new TupleIn(columns, resultValues);
+	}
+	
+	public static List<Object[]> toTupleInValues(int inSize, Map<? extends Column<?, ?>, ?> values, Column<?, ?>[] columns) {
+		List<Object[]> resultValues = new ArrayList<>(inSize);
 		for (int i = 0; i < inSize; i++) {
-			List<Object> beanValues = new ArrayList<>(columns.length);
-			for (Column<?, ?> column: columns) {
-				Object value = values.get(column);
+			List<Object> beanValues = new ArrayList<>(values.size());
+			int finalI = i;
+			values.forEach((key, value) -> {
 				// we respect initial will as well as ExpandableStatement.doApplyValue(..) algorithm
 				if (value instanceof List) {
-					beanValues.add(((List) value).get(i));
+					beanValues.add(((List) value).get(finalI));
 				} else {
 					beanValues.add(value);
 				}
-			}
+			});
 			resultValues.add(beanValues.toArray());
 		}
-		
-		return new TupleIn(columns, resultValues);
+		return resultValues;
 	}
 	
 	private final Column[] columns;

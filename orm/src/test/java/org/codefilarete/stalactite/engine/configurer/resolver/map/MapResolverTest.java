@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.configurer.resolver.map;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -18,6 +19,7 @@ import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.Timestamp;
+import org.codefilarete.stalactite.engine.model.compositekey.House;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
@@ -25,8 +27,8 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
-import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.stalactite.sql.h2.H2DialectBuilder;
+import org.codefilarete.stalactite.sql.h2.test.H2InMemoryDataSource;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
@@ -34,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.codefilarete.stalactite.dsl.FluentMappings.compositeKeyBuilder;
 import static org.codefilarete.stalactite.dsl.FluentMappings.embeddableBuilder;
 import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
@@ -44,8 +47,9 @@ import static org.codefilarete.tool.collection.Iterables.map;
 
 class MapResolverTest {
 	
-	private final Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
-	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
+	// We use H2 because it supports foreign key creation separately from table creation (not SQLite) and tupled-in (not SQLite)
+	private final Dialect dialect = H2DialectBuilder.defaultH2Dialect();
+	private final DataSource dataSource = new H2InMemoryDataSource();
 	private PersistenceContext persistenceContext;
 	
 	@BeforeEach
@@ -626,6 +630,44 @@ class MapResolverTest {
 	}
 	
 	@Test
+	void select_entityAsKeyMap_complexType_fetchSeparately() {
+		Set<org.codefilarete.stalactite.engine.model.compositekey.Person.PersonId> persistedPersons = new HashSet<>();
+		FluentEntityMappingBuilder<org.codefilarete.stalactite.engine.model.compositekey.Person, org.codefilarete.stalactite.engine.model.compositekey.Person.PersonId> personBuilder = entityBuilder(org.codefilarete.stalactite.engine.model.compositekey.Person.class, org.codefilarete.stalactite.engine.model.compositekey.Person.PersonId.class)
+				.mapKey(org.codefilarete.stalactite.engine.model.compositekey.Person::getId, compositeKeyBuilder(org.codefilarete.stalactite.engine.model.compositekey.Person.PersonId.class)
+						.map(org.codefilarete.stalactite.engine.model.compositekey.Person.PersonId::getFirstName)
+						.map(org.codefilarete.stalactite.engine.model.compositekey.Person.PersonId::getLastName)
+						.map(org.codefilarete.stalactite.engine.model.compositekey.Person.PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
+				.mapMap(org.codefilarete.stalactite.engine.model.compositekey.Person::getMapPropertyMadeOfCompositeIdEntityAsKey, House.class, String.class)
+				.withKeyMapping(entityBuilder(House.class, House.HouseId.class)
+						.mapKey(House::getHouseId, compositeKeyBuilder(House.HouseId.class)
+								.map(House.HouseId::getNumber)
+								.map(House.HouseId::getStreet)
+								.map(House.HouseId::getZipCode)
+								.map(House.HouseId::getCity)))
+				.fetchSeparately();
+		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<org.codefilarete.stalactite.engine.model.compositekey.Person, org.codefilarete.stalactite.engine.model.compositekey.Person.PersonId> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+		
+		new DDLDeployer(persistenceContext).deployDDL();
+		
+		org.codefilarete.stalactite.engine.model.compositekey.Person person = new org.codefilarete.stalactite.engine.model.compositekey.Person(new org.codefilarete.stalactite.engine.model.compositekey.Person.PersonId("John", "Do", "nowhere"));
+		person.setMapPropertyMadeOfCompositeIdEntityAsKey(new LinkedHashMap<>());
+		person.getMapPropertyMadeOfCompositeIdEntityAsKey().put(new House(new House.HouseId(42, "Stalactite street", "888", "CodeFilarete City")), "home");
+		person.getMapPropertyMadeOfCompositeIdEntityAsKey().put(new House(new House.HouseId(43, "Another street", "999", "Another City")), "work");
+		personPersister.insert(person);
+		
+		org.codefilarete.stalactite.engine.model.compositekey.Person loaded = personPersister.select(person.getId());
+		// we extract the identifier from the map because it is comparable with equals() (by contract of Stalactite)
+		// which allows AssertJ to check equality on it, else (with House instances) AssertJ won't be able to check
+		// equality, except if with implement equals(..) on it, which we don't want to keep close to Stalactite philosophy
+		Map<House.HouseId, String> houseIdStringMap = map(loaded.getMapPropertyMadeOfCompositeIdEntityAsKey().entrySet(), e -> e.getKey().getHouseId(), Map.Entry::getValue);
+		assertThat(houseIdStringMap)
+				.containsEntry(new House.HouseId(42, "Stalactite street", "888", "CodeFilarete City"), "home")
+				.containsEntry(new House.HouseId(43, "Another street", "999", "Another City"), "work");
+	}
+	
+	@Test
 	void crud_entityAsValueMap() {
 		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
 				.mapKey(Person::getId, ALREADY_ASSIGNED)
@@ -688,16 +730,24 @@ class MapResolverTest {
 		
 		new DDLDeployer(persistenceContext).deployDDL();
 		
-		Person person = new Person(new PersistableIdentifier<>(1L));
-		person.setMapPropertyMadeOfEntityAsValue(new LinkedHashMap<>());
-		person.getMapPropertyMadeOfEntityAsValue().put("home", new Country(1));
-		person.getMapPropertyMadeOfEntityAsValue().put("office", new Country(2));
-		personPersister.insert(person);
+		Person person1 = new Person(new PersistableIdentifier<>(1L));
+		person1.setMapPropertyMadeOfEntityAsValue(new LinkedHashMap<>());
+		person1.getMapPropertyMadeOfEntityAsValue().put("home", new Country(1));
+		person1.getMapPropertyMadeOfEntityAsValue().put("office", new Country(2));
+		Person person2 = new Person(new PersistableIdentifier<>(2L));
+		person2.setMapPropertyMadeOfEntityAsValue(new LinkedHashMap<>());
+		person2.getMapPropertyMadeOfEntityAsValue().put("home", new Country(3));
+		person2.getMapPropertyMadeOfEntityAsValue().put("office", new Country(4));
+		personPersister.insert(Arrays.asList(person1, person2));
 		
-		Person loaded = personPersister.select(person.getId());
-		assertThat(loaded.getMapPropertyMadeOfEntityAsValue())
+		Set<Person> loaded = personPersister.select(person1.getId(), person2.getId());
+		Map<Identifier<Long>, Person> personMap = map(loaded, Person::getId);
+		assertThat(personMap.get(person1.getId()).getMapPropertyMadeOfEntityAsValue())
 				.containsEntry("home", new Country(1))
 				.containsEntry("office", new Country(2));
+		assertThat(personMap.get(person2.getId()).getMapPropertyMadeOfEntityAsValue())
+				.containsEntry("home", new Country(3))
+				.containsEntry("office", new Country(4));
 	}
 	
 	@Test

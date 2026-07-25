@@ -27,19 +27,21 @@ class TupleInTest {
 		Toto bean1 = new Toto("John", "Doe", 40);
 		Toto bean2 = new Toto("Jane", "Doe", 41);
 		Toto bean3 = new Toto("Paul", "Smith", 35);
+		Toto bean4 = new Toto("John", "Smith", 36);
 		
-		List<Toto> beans = Arrays.asList(bean1, bean2, bean3);
+		List<Toto> beans = Arrays.asList(bean1, bean2, bean3, bean4);
 		beans.forEach(bean -> {
 			columnValues.computeIfAbsent(firstNameColumn, k -> new ArrayList<>()).add(bean.getFirstName());
 			columnValues.computeIfAbsent(lastNameColumn, k -> new ArrayList<>()).add(bean.getLastName());
 			columnValues.computeIfAbsent(ageColumn, k -> new ArrayList<>()).add(bean.getAge());
 		});
 		
-		TupleIn tupleIn = TupleIn.transformBeanColumnValuesToTupleInValues(3, columnValues);
+		TupleIn tupleIn = TupleIn.transformBeanColumnValuesToTupleInValues(4, columnValues);
 		assertThat(tupleIn.getColumns()).containsExactly(firstNameColumn, lastNameColumn, ageColumn);
 		assertThat(((ValuedVariable<List<Object[]>>) tupleIn.getValue()).getValue().get(0)).containsExactly("John", "Doe", 40);
 		assertThat(((ValuedVariable<List<Object[]>>) tupleIn.getValue()).getValue().get(1)).containsExactly("Jane", "Doe", 41);
 		assertThat(((ValuedVariable<List<Object[]>>) tupleIn.getValue()).getValue().get(2)).containsExactly("Paul", "Smith", 35);
+		assertThat(((ValuedVariable<List<Object[]>>) tupleIn.getValue()).getValue().get(3)).containsExactly("John", "Smith", 36);
 		
 	}
 	

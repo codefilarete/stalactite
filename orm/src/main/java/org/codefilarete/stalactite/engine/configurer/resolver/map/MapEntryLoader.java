@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -11,43 +12,46 @@ import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord;
 import org.codefilarete.stalactite.engine.configurer.map.RecordId;
 import org.codefilarete.stalactite.engine.configurer.resolver.map.EntryMapResolver.KeyValueRecordPersister;
-import org.codefilarete.stalactite.engine.listener.SelectListener;
-import org.codefilarete.stalactite.engine.listener.SelectListenerCollection;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
+import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.IdentityLinkedMap;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
+import org.codefilarete.stalactite.mapping.IdMapping;
+import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.query.api.JoinLink;
 import org.codefilarete.stalactite.query.api.Selectable;
+import org.codefilarete.stalactite.query.builder.ExpandableSQLAppender;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
 import org.codefilarete.stalactite.query.model.GroupBy;
 import org.codefilarete.stalactite.query.model.Having;
 import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.query.model.operator.In;
+import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Accumulator;
-import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.stalactite.sql.result.ColumnedRowIterator;
-import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.statement.SQLStatement;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.Maps;
+
+import static org.codefilarete.tool.collection.Iterables.first;
 
 /**
  * Particular {@link SelectExecutor} that loads {@link KeyValueRecord} from a map table by the source identifier.
  * Made for the separate loading of a {@link Map} entry values (as {@link KeyValueRecord}) by the source identifier : we
- * could have done it through the {@link KeyValueRecordPersister}, but its select is made through {@link RecordId} 
+ * could have done it through the {@link KeyValueRecordPersister}, but its select is made through {@link RecordId}
  * which we don't have on separate loading since we only have the left entity identifiers available, whereas
  * {@link RecordId} is made of the left entity identifier and the key value.
  * 
@@ -62,24 +66,26 @@ import org.codefilarete.tool.collection.Iterables;
 public class MapEntryLoader<SRC, SRCID, K, V, LEFTTABLE extends Table<LEFTTABLE>, MAPTABLE extends Table<MAPTABLE>> implements SelectExecutor<KeyValueRecord<K, V, SRCID>, SRCID> {
 	
 	private final EntityJoinTree<KeyValueRecord<K, V, SRCID>, RecordId<K, SRCID>> entityJoinTree;
-	private EntityTreeQuery<KeyValueRecord<K, V, SRCID>> entityTreeQuery;
-	private final Map<JoinLink<LEFTTABLE, ?>, JoinLink<MAPTABLE, ?>> joinLinkJoinLinkMap;
+	private final IdMapping<SRC, SRCID> sourceIdMapping;
+	private final Map<JoinLink<LEFTTABLE, ?>, JoinLink<MAPTABLE, ?>> reverseForeignKey;
 	private final Dialect dialect;
 	private final ConnectionProvider connectionProvider;
 	
-	SelectListenerCollection<KeyValueRecord<K, V, SRCID>, SRCID> selectListenerCollection = new SelectListenerCollection<>();
+	private InternalExecutor<KeyValueRecord<K, V, SRCID>> internalExecutor;
 	
-	public MapEntryLoader(KeyValueRecordPersister<K, V, SRCID, MAPTABLE> keyValueRecordPersister,
-	                      Map<JoinLink<LEFTTABLE, ?>, JoinLink<MAPTABLE, ?>> joinLinkJoinLinkMap,
+	public MapEntryLoader(IdMapping<SRC, SRCID> sourceIdMapping,
+	                      KeyValueRecordPersister<K, V, SRCID, MAPTABLE> keyValueRecordPersister,
+	                      Map<JoinLink<LEFTTABLE, ?>, JoinLink<MAPTABLE, ?>> reverseForeignKey,
 	                      Dialect dialect,
 	                      ConnectionProvider connectionProvider) {
-		this.joinLinkJoinLinkMap = joinLinkJoinLinkMap;
+		this.sourceIdMapping = sourceIdMapping;
+		this.reverseForeignKey = reverseForeignKey;
 		this.dialect = dialect;
 		this.connectionProvider = connectionProvider;
 		DefaultEntityMapping<KeyValueRecord<K, V, SRCID>, RecordId<K, SRCID>, MAPTABLE> mapping = new DefaultEntityMapping<>(
 				(Class) KeyValueRecord.class,
 				keyValueRecordPersister.getMainTable(),
-				keyValueRecordPersister.getMapping().getPropertyToColumn(), 
+				keyValueRecordPersister.getMapping().getPropertyToColumn(),
 				keyValueRecordPersister.getMapping().getIdMapping());
 		this.entityJoinTree = new EntityJoinTree<>(mapping);
 	}
@@ -90,68 +96,54 @@ public class MapEntryLoader<SRC, SRCID, K, V, LEFTTABLE extends Table<LEFTTABLE>
 	
 	@Override
 	public Set<KeyValueRecord<K, V, SRCID>> select(Iterable<SRCID> ids) {
-		
-		// Note that executor emits select listener events
 		int estimatedResultSize = Iterables.size(ids);
-		// we avoiding relying on Entity equals/Hashcode by using a Map based on System.identityHashCode(..)
-		Set<KeyValueRecord<K, V, SRCID>> result = Collections.newSetFromMap(new EntityTreeInflater.IdentityLinkedMap<>(estimatedResultSize));
-		Accumulator<KeyValueRecord<K, V, SRCID>, Set<KeyValueRecord<K, V, SRCID>>, Set<KeyValueRecord<K, V, SRCID>>> resultAccumulator = Accumulators.toCollection(() -> result);
-//		if (sourceIdMapping.getIdentifierAssembler() instanceof ComposedIdentifierAssembler) {
-//			// && dialect.supportTupleIn
-//			Map<? extends Column<?, ?>, ?> columnValues = ((ComposedIdentifierAssembler<SRCID, ?>) sourceIdMapping.getIdentifierAssembler()).getColumnValues(ids);
-//			TupleIn tupleIn = TupleIn.transformBeanColumnValuesToTupleInValues(estimatedResultSize, columnValues);
-//			EntityQueryCriteriaSupport<C, I> newCriteriaSupport = newCriteriaSupport();
-//			newCriteriaSupport.getEntityCriteriaSupport().getCriteria().and(tupleIn);
-//			return newCriteriaSupport.wrapIntoExecutable().execute(resultAccumulator);
-//		} else {
-//			ReadWritePropertyAccessPoint<SRC, SRCID> criteriaAccessor;
-//			if (idMapping.getIdAccessor() instanceof AccessorWrapperIdAccessor) {
-//				criteriaAccessor = ((AccessorWrapperIdAccessor<SRC, SRCID>) idMapping.getIdAccessor()).getIdAccessor();
-//			} else if (idMapping.getIdAccessor() instanceof KeyValueRecordIdMapping.KeyValueRecordIdAccessor) {
-//				ReadWritePropertyAccessPoint<RecordId, ?> accessor = Accessors.readWriteAccessPoint(RecordId::getId);
-//				criteriaAccessor = (ReadWritePropertyAccessPoint<SRC, SRCID>) accessor;
-//			} else {
-//				throw new UnsupportedOperationException("Unsupported id accessor type: " + idMapping.getIdAccessor().getClass());
-//			}
-		
-		this.entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
-		In<SRCID> in = new In<>();
-		
-		Column<MAPTABLE, ?> first = (Column<MAPTABLE, ?>) Iterables.first(joinLinkJoinLinkMap.values());
-		
+		// we avoid relying on Entity equals/Hashcode by using a Map based on System.identityHashCode(..)
+		Set<KeyValueRecord<K, V, SRCID>> result = Collections.newSetFromMap(new IdentityLinkedMap<>(estimatedResultSize));
+		EntityTreeQuery<KeyValueRecord<K, V, SRCID>> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
+		this.internalExecutor = new InternalExecutor<>(entityTreeQuery, dialect, connectionProvider);
 		Query queryClone = new Query(
-				new Select(entityTreeQuery.getQuery().getSelect()),
+				entityTreeQuery.getQuery().getSelect(),
 				entityTreeQuery.getQuery().getFrom(),
-				new Where().and(first, in),
+				new Where(),
 				new GroupBy(),
 				new Having(),
 				new OrderBy(),
 				new Limit());
-		
-		QuerySQLBuilderFactory.QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone);
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>());
-		InternalExecutor<KeyValueRecord<K, V, SRCID>> internalExecutor = new InternalExecutor<>(entityTreeQuery, dialect, connectionProvider);
-		
 		Iterables.forEachChunk(
 				ids,
 				dialect.getInOperatorMaxSize(),
 				chunks -> {},
 				chunkSize -> null,    // no particular initialization to do
 				(context, chunk) -> {
-					preparedSQL.setValue(1, Iterables.first(chunk));
-					Set<KeyValueRecord<K, V, SRCID>> recordSet = internalExecutor.execute(preparedSQL);
-					result.addAll(recordSet);
+					result.addAll(selectChunk(queryClone, chunk, estimatedResultSize));
 				},
 				context -> {}
 		);
 		
-		selectListenerCollection.afterSelect(result);
-		
 		return result;
 	}
 	
-	public void addSelectListener(SelectListener<KeyValueRecord<K, V, SRCID>, SRCID> selectListener) {
-		selectListenerCollection.add(selectListener);
+	private Set<KeyValueRecord<K, V, SRCID>> selectChunk(Query queryClone, List<SRCID> chunk, int estimatedResultSize) {
+		if (sourceIdMapping.getIdentifierAssembler() instanceof ComposedIdentifierAssembler) {
+			if (!dialect.supportsTupleCondition()) {
+				throw new UnsupportedOperationException("Tuple condition is not supported by the database dialect but composite identifier requires it for 2-phases loading :"
+						+ Reflections.toString(sourceIdMapping.getIdentifierInsertionManager().getIdentifierType()));
+			}
+			Map<Column<LEFTTABLE, ?>, ?> identifierValues = ((ComposedIdentifierAssembler<SRCID, LEFTTABLE>) sourceIdMapping.getIdentifierAssembler()).getColumnValues(chunk);
+			Map<Column<LEFTTABLE, ?>, Column<MAPTABLE, ?>> typedReverseForeignKey = (Map) reverseForeignKey;
+			Map<Column<MAPTABLE, ?>, ?> columnValues = Maps.innerJoin(typedReverseForeignKey, identifierValues);
+			TupleIn in = TupleIn.transformBeanColumnValuesToTupleInValues(estimatedResultSize, columnValues);
+			queryClone.getWhere().and(in);
+		} else {
+			Column<MAPTABLE, ?> pkColumn = (Column<MAPTABLE, ?>) first(reverseForeignKey.values());
+			In<?> in = new In<>(chunk);
+			queryClone.getWhere().and(pkColumn, in);
+		}
+		
+		QuerySQLBuilderFactory.QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(queryClone);
+		ExpandableSQLAppender preparableSQL = sqlQueryBuilder.toPreparableSQL();
+		
+		return internalExecutor.execute(preparableSQL.toPreparedSQL(new HashMap<>()));
 	}
 	
 	/**

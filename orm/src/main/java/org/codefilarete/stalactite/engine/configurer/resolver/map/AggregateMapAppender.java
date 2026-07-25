@@ -62,6 +62,7 @@ public class AggregateMapAppender {
 			KeepOrderMap<JoinLink<LEFTTABLE, ?>, JoinLink<MAPTABLE, ?>> targetPkToAssociationTableKey = targetPkToRightKey.getMapping();
 			
 			MapEntryLoader<SRC, SRCID, X, Y, LEFTTABLE, MAPTABLE> mapEntryLoader = new MapEntryLoader<>(
+					sourcePersister.getMapping().getIdMapping(),
 					keyValueRecordPersister,
 					targetPkToAssociationTableKey,
 					dialect,

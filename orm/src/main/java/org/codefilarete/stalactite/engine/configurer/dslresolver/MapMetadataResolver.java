@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.engine.configurer.dslresolver;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -114,6 +113,7 @@ public class MapMetadataResolver {
 		MAPTABLE targetTable = determineMapTable(mapRelation, mapAccessorDefinition, namingConfiguration.getMapTableNamingStrategy());
 		Map<Column<SRCTABLE, ?>, Column<MAPTABLE, ?>> primaryKeyForeignKeyColumnMapping = buildPrimaryKeyForeignKeyColumnMapping(
 				mapRelation,
+				mapAccessorDefinition,
 				targetTable,
 				sourcePK,
 				namingConfiguration.getColumnNamingStrategy(),
@@ -299,26 +299,39 @@ public class MapMetadataResolver {
 	
 	private <SRC, SRCID, K, V, M extends Map<K, V>, SRCTABLE extends Table<SRCTABLE>, MAPTABLE extends Table<MAPTABLE>>
 	Map<Column<SRCTABLE, ?>, Column<MAPTABLE, ?>> buildPrimaryKeyForeignKeyColumnMapping(MapRelation<SRC, K, V, M> mapRelation,
-	                                                                                     MAPTABLE targetTable,
+	                                                                                     AccessorDefinition mapAccessorDefinition,
+	                                                                                     MAPTABLE mapTable,
 	                                                                                     PrimaryKey<SRCTABLE, SRCID> sourcePK,
 	                                                                                     ColumnNamingStrategy columnNamingStrategy,
 	                                                                                     ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
-		Map<Column<SRCTABLE, ?>, Column<MAPTABLE, ?>> primaryKeyForeignColumnMapping = new HashMap<>();
-		if (!sourcePK.isComposed() && mapRelation.getReverseColumn() != null) {
-			primaryKeyForeignColumnMapping.put(first(sourcePK.getColumns()), (Column) mapRelation.getReverseColumn());
+		Map<Column<SRCTABLE, ?>, Column<MAPTABLE, ?>> primaryKeyForeignColumnMapping = new KeepOrderMap<>();
+		if (!sourcePK.isComposed()) {
+			Column<SRCTABLE, ?> sourcePKColumn = first(sourcePK.getColumns());
+			if (mapRelation.getReverseColumn() != null) {
+				mapRelation.getReverseColumn().primaryKey();
+				primaryKeyForeignColumnMapping.put(sourcePKColumn, (Column) mapRelation.getReverseColumn());
+			} else if (mapRelation.getReverseColumnName() != null) {
+				Column<MAPTABLE, ?> reverseCol = mapTable.addColumn(mapRelation.getReverseColumnName(), sourcePKColumn.getJavaType(), sourcePKColumn.getSize())
+						.primaryKey();
+				primaryKeyForeignColumnMapping.put(sourcePKColumn, reverseCol);
+			} else {
+				String effectiveColumnName = columnNamingStrategy.giveName(RECORD_ID_ACCESSOR_DEFINITION);
+				Column<MAPTABLE, ?> reverseCol = mapTable.addColumn(effectiveColumnName, sourcePKColumn.getJavaType(), sourcePKColumn.getSize())
+						.primaryKey();
+				primaryKeyForeignColumnMapping.put(sourcePKColumn, reverseCol);
+			}
 		} else {
 			sourcePK.getColumns().forEach(col -> {
-				String reverseColumnName = nullable(mapRelation.getReverseColumnName()).getOr(
-						() -> columnNamingStrategy.giveName(RECORD_ID_ACCESSOR_DEFINITION));
-				Column<MAPTABLE, ?> reverseCol = targetTable.addColumn(reverseColumnName, col.getJavaType(), col.getSize())
+				// we project the primary key onto the map table
+				Column<MAPTABLE, ?> reverseCol = mapTable.addColumn(col.getName(), col.getJavaType(), col.getSize())
 						.primaryKey();
 				primaryKeyForeignColumnMapping.put(col, reverseCol);
 			});
 		}
-		KeyBuilder<MAPTABLE, SRCID> keyBuilder = Key.from(targetTable);
+		KeyBuilder<MAPTABLE, SRCID> keyBuilder = Key.from(mapTable);
 		keyBuilder.addAllColumns(primaryKeyForeignColumnMapping.values());
 		Key<MAPTABLE, SRCID> reverseKey = keyBuilder.build();
-		targetTable.addForeignKey(foreignKeyNamingStrategy::giveName, reverseKey, sourcePK);
+		mapTable.addForeignKey(foreignKeyNamingStrategy::giveName, reverseKey, sourcePK);
 		return primaryKeyForeignColumnMapping;
 	}
 	

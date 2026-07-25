@@ -121,7 +121,7 @@ public class HSQLDBDatabaseSettings extends DatabaseVendorSettings {
 				sqlOperationsFactoriesBuilder,
 				new DefaultGeneratedKeysReaderFactory(parameterBinderRegistry),
 				1000,
-				true);
+				false);
 	}
 	
 	private static class HSQLDBSQLOperationsFactoriesBuilder implements SQLOperationsFactoriesBuilder {

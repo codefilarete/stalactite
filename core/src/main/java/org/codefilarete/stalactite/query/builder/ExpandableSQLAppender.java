@@ -1,16 +1,17 @@
 package org.codefilarete.stalactite.query.builder;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
-import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.api.Fromable;
-import org.codefilarete.stalactite.query.model.Placeholder;
 import org.codefilarete.stalactite.query.api.Selectable;
+import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.query.model.Placeholder;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.statement.ExpandableSQL;
@@ -29,7 +30,7 @@ import org.codefilarete.tool.trace.MutableInt;
  * already-set ones.
  * - Set values are those made of {@link ValuedVariable} and a numeric (incremental) placeholder is affected to them
  * - Not-yet-set values are placeholder ones made of {@link Placeholder} and the variable name is affected to them
- * Final result can be converted to a {@link PreparedSQL} with given values, see {@link #toPreparedSQL(Map)} 
+ * Final result can be converted to a {@link PreparedSQL} with given values, see {@link #toPreparedSQL(Map)}.
  * 
  * @see #toPreparedSQL(Map)
  * @author Guillaume Mary
@@ -97,8 +98,15 @@ public class ExpandableSQLAppender implements SQLAppender {
 		return sqlSnippets;
 	}
 	
+	/**
+	 * Returns the found values during the invocations of {@link #catValue(Object)} or {@link #catValue(Selectable, Object)}.
+	 * Since those values are collected, they are not expected to be modified, this the returned instance is not modifiable.
+	 * However, the real values can be given while using {@link #toPreparedSQL(Map)}.
+	 * 
+	 * @return a non-modifiable view of the found values
+	 */
 	public Map<String, Object> getValues() {
-		return values;
+		return Collections.unmodifiableMap(values);
 	}
 	
 	@Override

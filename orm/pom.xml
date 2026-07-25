@@ -44,6 +44,28 @@
 			<version>${project.version}</version>
 			<scope>test</scope>
 		</dependency>
+		<!-- for HSQLDBTypeMapping to do IT tests -->
+		<dependency>
+			<groupId>org.codefilarete.stalactite</groupId>
+			<artifactId>sql-h2-adapter</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- for HSQLDBInMemoryDataSource to do IT tests -->
+		<dependency>
+			<groupId>org.codefilarete.stalactite</groupId>
+			<artifactId>sql-h2-adapter</artifactId>
+			<type>test-jar</type>
+			<version>${project.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- for HSQLDB Dialect to do IT tests -->
+		<dependency>
+			<groupId>org.codefilarete.stalactite</groupId>
+			<artifactId>core-h2-adapter</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+		</dependency>
 		<!-- for test tools -->
 		<dependency>
 			<groupId>org.codefilarete.stalactite</groupId>

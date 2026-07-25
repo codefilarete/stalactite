@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine.model.compositekey;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -12,6 +13,8 @@ public class Person {
 	private int age;
 	
 	private House house;
+	
+	private Map<House, String> mapPropertyMadeOfCompositeIdEntityAsKey;
 	
 	private Set<Pet> pets = new KeepOrderSet<>();
 	
@@ -54,6 +57,14 @@ public class Person {
 	
 	public void setHouse(House house) {
 		this.house = house;
+	}
+	
+	public Map<House, String> getMapPropertyMadeOfCompositeIdEntityAsKey() {
+		return mapPropertyMadeOfCompositeIdEntityAsKey;
+	}
+	
+	public void setMapPropertyMadeOfCompositeIdEntityAsKey(Map<House, String> mapPropertyMadeOfCompositeIdEntityAsKey) {
+		this.mapPropertyMadeOfCompositeIdEntityAsKey = mapPropertyMadeOfCompositeIdEntityAsKey;
 	}
 	
 	public Set<Pet> getPets() {

@@ -242,11 +242,10 @@ public class EntryMapResolver {
 			CompositeMemberMapping<Y, MAPTABLE> compositeMemberMapping = (CompositeMemberMapping<Y, MAPTABLE>) valueEntityIdentifierMapping;
 			Map<ReadWritePropertyAccessPoint<Y, ?>, Column<MAPTABLE, ?>> mapping = compositeMemberMapping.getMapping();
 			
-			Map<ReadWritePropertyAccessPoint<KeyValueRecord<X, Y, SRCID>, ?>, Column<MAPTABLE, ?>> x = chainWithRecordMemberAccessor(
+			propertiesMapping.putAll(chainWithRecordMemberAccessor(
 					mapping,
 					(ReadWritePropertyAccessPoint<KeyValueRecord<X, Y, SRCID>, Y>) (ReadWritePropertyAccessPoint) KeyValueRecord.VALUE_ACCESSOR,
-					compositeMemberMapping.getBeanType());
-			propertiesMapping.putAll(x);
+					compositeMemberMapping.getBeanType()));
 		}
 		
 		

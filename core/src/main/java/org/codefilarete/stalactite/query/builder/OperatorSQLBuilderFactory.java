@@ -1,19 +1,19 @@
 package org.codefilarete.stalactite.query.builder;
 
-import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import javax.annotation.Nullable;
 
-import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.FunctionSQLBuilder;
-import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.api.Fromable;
-import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.api.QueryStatement;
 import org.codefilarete.stalactite.query.api.Selectable;
+import org.codefilarete.stalactite.query.api.Variable;
+import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.FunctionSQLBuilder;
+import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.query.model.ValuedVariable;
-import org.codefilarete.stalactite.query.api.Variable;
 import org.codefilarete.stalactite.query.model.operator.Between;
 import org.codefilarete.stalactite.query.model.operator.Between.Interval;
 import org.codefilarete.stalactite.query.model.operator.Equals;
