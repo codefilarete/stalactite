@@ -689,6 +689,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					}
 					
 					@Override
+					public EmbeddableCollectionOptions<C, O, S> fetchSeparately() {
+						elementCollectionRelation.setFetchSeparately(true);
+						return null;
+					}
+					
+					@Override
 					public EmbeddableCollectionOptions<C, O, S> indexed() {
 						elementCollectionRelation.ordered();
 						return null;
@@ -740,6 +746,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 			@Override
 			public FluentMappingBuilderElementCollectionOptions<C, I, O, S> reverseJoinColumn(String name) {
 				elementCollectionRelation.setReverseColumnName(name);
+				return null;
+			}
+			
+			@Override
+			public FluentMappingBuilderElementCollectionOptions<C, I, O, S> fetchSeparately() {
+				elementCollectionRelation.setFetchSeparately(true);
 				return null;
 			}
 			

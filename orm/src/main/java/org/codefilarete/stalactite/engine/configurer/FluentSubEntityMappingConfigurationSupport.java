@@ -248,6 +248,12 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 					}
 					
 					@Override
+					public EmbeddableCollectionOptions<C, O, S> fetchSeparately() {
+						elementCollectionRelation.setFetchSeparately(true);
+						return null;
+					}
+					
+					@Override
 					public EmbeddableCollectionOptions<C, O, S> indexed() {
 						elementCollectionRelation.ordered();
 						return null;
@@ -299,6 +305,12 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 			@Override
 			public FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> reverseJoinColumn(String name) {
 				elementCollectionRelation.setReverseColumnName(name);
+				return null;
+			}
+			
+			@Override
+			public FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> fetchSeparately() {
+				elementCollectionRelation.setFetchSeparately(true);
 				return null;
 			}
 			

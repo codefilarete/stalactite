@@ -34,6 +34,7 @@ import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRela
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.elementcollection.AggregateElementCollectionAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.elementcollection.ElementCollectionResolver;
+import org.codefilarete.stalactite.engine.configurer.resolver.elementcollection.ElementCollectionResolver.ElementRecordPersister;
 import org.codefilarete.stalactite.engine.configurer.resolver.manytomany.AggregateManyToManyAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.manytomany.ManyToManyResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.manytoone.AggregateManyToOneAppender;
@@ -338,12 +339,15 @@ public class AggregateResolver {
 						if (relationPawn instanceof ResolvedElementCollectionRelation) {
 							CreatedPersisterCollector<TRGT, TRGTID> localCreatedPersistor = (CreatedPersisterCollector<TRGT, TRGTID>) createdPersisters.get(relationPawn);
 							EntityReadWriteExecutor<TRGT, TRGTID> persister = localCreatedPersistor.getPersister();
+							ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, LEFTTABLE, RIGHTTABLE, ElementRecord<TRGT, SRCID>> localRelation = (ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, LEFTTABLE, RIGHTTABLE, ElementRecord<TRGT, SRCID>>) relationPawn;
 							elementCollectionAppender.append(
-									(ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, LEFTTABLE, RIGHTTABLE, ElementRecord<TRGT, SRCID>>) relationPawn,
+									localRelation,
+									sourcePersister,
+									(ElementRecordPersister<TRGT, SRCID, RIGHTTABLE, ElementRecord<TRGT, SRCID>>) persister,
+									assemblyPawn.getParentJoinPoint(),
 									assemblyPawn.getAggregateTree(),
-									(ElementCollectionResolver.ElementRecordPersister<TRGT, SRCID, RIGHTTABLE, ElementRecord<TRGT, SRCID>>) persister,
-									assemblyPawn.getParentJoinPoint()
-							);
+									persistenceContext.getDialect(),
+									persistenceContext.getConnectionProvider());
 						}
 						if (relationPawn instanceof ResolvedMapRelation) {
 							MapCreatedPersisterCollector mapCreatedPersisterCollector = (MapCreatedPersisterCollector) createdPersisters.get(relationPawn);

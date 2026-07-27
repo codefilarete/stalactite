@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.sql.DataSource;
@@ -37,6 +38,7 @@ import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
 import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Functions;
 import org.codefilarete.trace.ObjectPrinterBuilder;
 import org.codefilarete.trace.ObjectPrinterBuilder.ObjectPrinter;
@@ -80,6 +82,44 @@ class ElementCollectionResolverTest {
 				.mapKey(City::getId, ALREADY_ASSIGNED)
 				.map(City::getName);
 		cityConfiguration = cityMappingBuilder;
+	}
+	
+	@Test
+	void select_fetchSeparately() {
+		FluentEntityMappingBuilder<Person, Identifier<Long>> totoPersisterConfiguration = entityBuilder(Person.class, LONG_TYPE)
+				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(Person::getName)
+				.mapCollection(Person::getNicknames, String.class)
+				.fetchSeparately();
+		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(totoPersisterConfiguration.getConfiguration());
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Person person1 = new Person(new PersistableIdentifier<>(1L));
+		person1.setName("toto");
+		person1.initNicknames();
+		person1.addNickname("tonton");
+		person1.addNickname("tintin");
+		Person person2 = new Person(new PersistableIdentifier<>(2L));
+		person2.setName("tata");
+		person2.initNicknames();
+		person2.addNickname("tutu");
+		person2.addNickname("titi");
+		
+		personPersister.insert(person1);
+		personPersister.insert(person2);
+		
+		Set<Person> loadedPersons = personPersister.select(person1.getId(), person2.getId());
+		Map<Identifier<Long>, Person> personMap = Iterables.map(loadedPersons, Person::getId);
+		
+		Person loadedPerson1 = personMap.get(person1.getId());
+		assertThat(loadedPerson1.getNicknames()).containsExactlyInAnyOrder("tintin", "tonton");
+		
+		Person loadedPerson2 = personMap.get(person2.getId());
+		assertThat(loadedPerson2.getNicknames()).containsExactlyInAnyOrder("tutu", "titi");
 	}
 	
 	@Nested
@@ -145,6 +185,42 @@ class ElementCollectionResolverTest {
 			personPersister.insert(person);
 			
 			Toto loadedPerson = personPersister.select(person.getId());
+			assertThat(loadedPerson.getTimes()).usingRecursiveFieldByFieldElementComparator().containsExactlyInAnyOrder(timestamp1, timestamp2);
+		}
+		
+		@Test
+		void crudComplexType_fetchSeparately() {
+			Table totoTable = new Table("Toto");
+			Column idColumn = totoTable.addColumn("identifier", UUID_TYPE);
+			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
+			
+			FluentEntityMappingBuilder<Toto, Identifier<UUID>> totoPersisterConfiguration = entityBuilder(Toto.class, UUID_TYPE)
+					.onTable(totoTable)
+					.mapKey(Toto::getIdentifier, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+					.map(Toto::getName)
+					.mapCollection(Toto::getTimes, Timestamp.class, embeddableBuilder(Timestamp.class)
+							.map(Timestamp::getCreationDate)
+							.map(Timestamp::getModificationDate))
+					.reverseJoinColumn("identifier")
+					.fetchSeparately();
+			
+			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+			EntityPersister<Toto, Identifier<UUID>> personPersister = testInstance.resolve(totoPersisterConfiguration.getConfiguration());
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto person = new Toto();
+			person.setIdentifier(new PersistableIdentifier<>(UUID.randomUUID()));
+			person.setName("toto");
+			Timestamp timestamp1 = new Timestamp(LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(1));
+			Timestamp timestamp2 = new Timestamp(LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(2));
+			person.setTimes(Arrays.asSet(timestamp1, timestamp2));
+			
+			personPersister.insert(person);
+			
+			Toto loadedPerson = personPersister.select(person.getIdentifier());
 			assertThat(loadedPerson.getTimes()).usingRecursiveFieldByFieldElementComparator().containsExactlyInAnyOrder(timestamp1, timestamp2);
 		}
 		

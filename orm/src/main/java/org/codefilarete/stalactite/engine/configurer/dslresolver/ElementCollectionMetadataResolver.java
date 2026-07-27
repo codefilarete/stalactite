@@ -20,7 +20,6 @@ import org.codefilarete.stalactite.dsl.embeddable.EmbeddableMappingConfiguration
 import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.dsl.property.CascadeOptions;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableLinkage;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
@@ -45,6 +44,7 @@ import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.PairIterator;
 
+import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
 import static org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRecord.IDENTIFIER_ACCESSOR;
 import static org.codefilarete.stalactite.engine.configurer.elementcollection.IndexedElementRecord.INDEX_ACCESSOR;
 import static org.codefilarete.tool.Nullable.nullable;
@@ -141,11 +141,11 @@ public class ElementCollectionMetadataResolver {
 		targetKeyBuilder.addAllColumns(primaryKeyForeignKeyColumnMapping.values());
 		DirectRelationJoin<SRCTABLE, COLLECTIONTABLE, SRCID> join = new DirectRelationJoin<>(sourcePK, targetKeyBuilder.build());
 		return new ResolvedElementCollectionRelation<>(collectionRelation.getCollectionAccessor(),
-				CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL,
-				false,
+				ALL_ORPHAN_REMOVAL,
+				collectionRelation.isFetchSeparately(),
 				join,
 				relationFixer,
-				collectionRelation.getCollectionFactory(),
+				collectionFactory,
 				targetColumnMapping,
 				primaryKeyForeignKeyColumnMapping,
 				indexColumn);

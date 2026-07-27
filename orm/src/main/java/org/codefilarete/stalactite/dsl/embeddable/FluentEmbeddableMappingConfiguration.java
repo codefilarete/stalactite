@@ -413,6 +413,9 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 		FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> reverseJoinColumn(String name);
 		
 		@Override
+		FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> fetchSeparately();
+		
+		@Override
 		FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> indexed();
 		
 		@Override
@@ -446,6 +449,9 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 		
 		@Override
 		FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> reverseJoinColumn(String name);
+		
+		@Override
+		FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> fetchSeparately();
 		
 		@Override
 		FluentEmbeddableMappingConfigurationElementCollectionImportEmbedOptions<C, O, S> indexed();

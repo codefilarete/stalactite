@@ -39,6 +39,11 @@ public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 	/** Optional provider of collection instance to be used if collection value is null */
 	private Supplier<S> collectionFactory;
 	
+	/**
+	 * Indicates that relation must be loaded in same main query (through join) or in some separate query
+	 */
+	private boolean fetchSeparately;
+	
 	private Table targetTable;
 	private String targetTableName;
 	private Column<Table, ?> reverseColumn;
@@ -186,6 +191,14 @@ public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 	public ElementCollectionRelation<SRC, TRGT, S> setReverseColumnName(String reverseColumnName) {
 		this.reverseColumnName = reverseColumnName;
 		return this;
+	}
+	
+	public boolean isFetchSeparately() {
+		return fetchSeparately;
+	}
+	
+	public void setFetchSeparately(boolean fetchSeparately) {
+		this.fetchSeparately = fetchSeparately;
 	}
 	
 	public Class<TRGT> getComponentType() {

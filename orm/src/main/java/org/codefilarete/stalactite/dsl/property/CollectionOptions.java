@@ -27,6 +27,8 @@ public interface CollectionOptions<C, O, S extends Collection<O>> {
 	 */
 	CollectionOptions<C, O, S> reverseJoinColumn(String name);
 	
+	CollectionOptions<C, O, S> fetchSeparately();
+	
 	/**
 	 * Asks to persist the collection elements index.
 	 * By default, the column name that keeps track of it is named {@value org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy#DEFAULT_INDEX_COLUMN_NAME}.

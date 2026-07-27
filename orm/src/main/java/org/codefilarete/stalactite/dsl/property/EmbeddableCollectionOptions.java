@@ -32,6 +32,9 @@ public interface EmbeddableCollectionOptions<C, O, S extends Collection<O>> exte
 	EmbeddableCollectionOptions<C, O, S> reverseJoinColumn(String name);
 	
 	@Override
+	EmbeddableCollectionOptions<C, O, S> fetchSeparately();
+	
+	@Override
 	EmbeddableCollectionOptions<C, O, S> indexed();
 	
 	@Override

@@ -696,6 +696,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					}
 					
 					@Override
+					public EmbeddableCollectionOptions<C, O, S> fetchSeparately() {
+						elementCollectionRelation.setFetchSeparately(true);
+						return null;
+					}
+					
+					@Override
 					public EmbeddableCollectionOptions<C, O, S> indexed() {
 						elementCollectionRelation.ordered();
 						return null;
@@ -747,6 +753,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 			@Override
 			public FluentEmbeddableMappingConfigurationElementCollectionOptions<C, O, S> reverseJoinColumn(String name) {
 				elementCollectionRelation.setReverseColumnName(name);
+				return null;
+			}
+			
+			@Override
+			public ElementCollectionOptions<C, O, S> fetchSeparately() {
+				elementCollectionRelation.setFetchSeparately(true);
 				return null;
 			}
 			
