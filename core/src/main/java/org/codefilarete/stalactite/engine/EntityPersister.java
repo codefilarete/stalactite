@@ -41,10 +41,6 @@ public interface EntityPersister<C, I> extends EntityReadWriteExecutor<C, I>, En
 		persist(Collections.singleton(entity));
 	}
 	
-	default void insert(C entity) {
-		insert(Collections.singletonList(entity));
-	}
-	
 	/**
 	 * Updates an instance that may have changes.
 	 * Groups statements to benefit from JDBC batch. Useful overall when allColumnsStatement

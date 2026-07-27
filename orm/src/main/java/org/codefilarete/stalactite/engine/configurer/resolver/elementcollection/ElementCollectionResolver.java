@@ -127,7 +127,9 @@ public class ElementCollectionResolver {
 				sourcePersister.getMapping().getIdMapping().getIdentifierAssembler(),
 				resolvedRelation.getPrimaryKeyForeignKeyColumnMapping());
 		
-		ElementCollectionMapping<SRC, SRCID, TRGT, S, LEFTTABLE, COLLECTIONTABLE, ER> elementCollectionMapping = new ElementCollectionMapping<>(resolvedRelation.getJoin().getKeyMapping(), elementRecordMapping);
+		ElementCollectionMapping<SRC, SRCID, TRGT, S, LEFTTABLE, COLLECTIONTABLE, ER> elementCollectionMapping = new ElementCollectionMapping<>(
+				resolvedRelation.getJoin().getKeyMapping(),
+				elementRecordMapping);
 		return (ElementCollectionMapping<SRC, SRCID, TRGT, S, LEFTTABLE, COLLECTIONTABLE, ElementRecord<TRGT, SRCID>>) elementCollectionMapping;
 	}
 	

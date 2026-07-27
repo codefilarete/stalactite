@@ -17,7 +17,6 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.IdentityLinkedMap;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
-import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.query.api.JoinLink;
@@ -81,16 +80,7 @@ public class ElementCollectionLoader<SRC, SRCID, TRGT, LEFTTABLE extends Table<L
 		this.reverseForeignKey = reverseForeignKey;
 		this.dialect = dialect;
 		this.connectionProvider = connectionProvider;
-		DefaultEntityMapping<ElementRecord<TRGT, SRCID>, ElementRecord<TRGT, SRCID>, COLLECTIONTABLE> mapping = new DefaultEntityMapping<>(
-				(Class) ElementRecord.class,
-				collectionPersister.getMainTable(),
-				collectionPersister.getMapping().getPropertyToColumn(),
-				collectionPersister.getMapping().getIdMapping());
-		this.entityJoinTree = new EntityJoinTree<>(mapping);
-	}
-	
-	public EntityJoinTree<ElementRecord<TRGT, SRCID>, ElementRecord<TRGT, SRCID>> getEntityJoinTree() {
-		return entityJoinTree;
+		this.entityJoinTree = new EntityJoinTree<>(collectionPersister.getMapping());
 	}
 	
 	@Override

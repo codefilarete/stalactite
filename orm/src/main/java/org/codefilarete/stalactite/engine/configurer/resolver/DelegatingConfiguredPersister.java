@@ -11,9 +11,6 @@ import org.codefilarete.reflection.SerializablePropertyAccessor;
 import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.EntityCriteria;
-import org.codefilarete.stalactite.engine.EntityReadExecutor;
-import org.codefilarete.stalactite.engine.EntityWriteExecutor;
-import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
@@ -171,7 +168,7 @@ class DelegatingConfiguredPersister<C, I> implements ConfiguredPersister<C, I> {
 	}
 	
 	@Override
-	public void insert(C entity) {
+	public void insert(C...	 entity) {
 		delegate.insert(entity);
 	}
 	
@@ -235,14 +232,6 @@ class DelegatingConfiguredPersister<C, I> implements ConfiguredPersister<C, I> {
 	@Override
 	public void persist(C... entities) {
 		delegate.persist(entities);
-	}
-	
-	public static <C1, I> PersistExecutor<C1> forPersister(ConfiguredPersister<C1, I> persister) {
-		return PersistExecutor.forPersister(persister);
-	}
-	
-	public static <C1, I> PersistExecutor<C1> forPersister(EntityWriteExecutor<C1, I> writer, EntityReadExecutor<C1, I> reader) {
-		return PersistExecutor.forPersister(writer, reader);
 	}
 	
 	@Override

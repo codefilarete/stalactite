@@ -161,7 +161,7 @@ public class AggregateMapAppender {
 					
 					Set<KeyValueRecord<X, Y, SRCID>> select = eventuallyRearrangingMapEntrySelectExecutor.select(srcIds);
 					
-					// we sow the relations
+					// we sew the relations
 					ReadWritePropertyAccessPoint<SRC, M> mapAccessPoint = relation.getAccessor();
 					result.forEach(src -> {
 						// filling final collection with a sorted collection
@@ -171,7 +171,7 @@ public class AggregateMapAppender {
 							mapAccessPoint.set(src, relationCollection);
 						}
 						// the values() are sorted thanks to the Map with Integer as key
-						relationCollection.putAll((Map<? extends K, ? extends V>) select.stream().filter(record -> Objects.equals(record.getId().getId(), sourcePersister.getMapping().getId(src)))
+						relationCollection.putAll((Map<? extends K, ? extends V>) select.stream().filter(record -> record.getId().getId().equals(sourcePersister.getMapping().getId(src)))
 								.collect(Collectors.toMap(KeyValueRecord::getKey, KeyValueRecord::getValue)));
 					});
 				}

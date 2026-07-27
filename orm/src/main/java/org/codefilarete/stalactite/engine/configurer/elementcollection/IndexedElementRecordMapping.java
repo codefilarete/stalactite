@@ -185,12 +185,12 @@ public class IndexedElementRecordMapping<C, I, T extends Table<T>, ER extends In
 			private final EmbeddedClassMapping<ER, T> elementMapping;
 			private final IdentifierAssembler<SRCID, ?> sourceIdentifierAssembler;
 			private final Map<Column<?, ?>, Column<T, ?>> foreignKeyColumnMapping;
-			private Column<T, ?> indexColumn;
+			private final Column<T, Integer> indexColumn;
 			
 			private <LEFTTABLE extends Table<LEFTTABLE>> IndexedElementRecordIdentifierAssembler(
 					T targetTable,
 					EmbeddedClassMapping<ER, T> elementMapping,
-					Column<T, ?> indexColumn,
+					Column<T, Integer> indexColumn,
 					IdentifierAssembler<SRCID, LEFTTABLE> sourceIdentifierAssembler,
 					Map<Column<LEFTTABLE, ?>, Column<T, ?>> foreignKeyColumnMapping) {
 				super(targetTable);
@@ -205,8 +205,22 @@ public class IndexedElementRecordMapping<C, I, T extends Table<T>, ER extends In
 			}
 			
 			@Override
-			public ER assemble(ColumnedRow row) {
-				return elementMapping.transform(row);
+			public ER assemble(ColumnedRow columnValueProvider) {
+				ER result = elementMapping.transform(new ColumnedRow() {
+					@Override
+					public <E> E get(Selectable<E> column) {
+						Selectable<E> columnToRead = column;
+						// we take the identifier values by the columns of the Collection table, not the left one
+						// (source one) because it might have a different name if user specified one with columnName(..)
+						if (sourceIdentifierAssembler.getColumns().contains(column)) {
+							columnToRead = (Selectable<E>) foreignKeyColumnMapping.get(column);
+						}
+						return columnValueProvider.get(columnToRead);
+					}
+				});
+				result.setIndex(columnValueProvider.get(indexColumn));
+				result.setId(sourceIdentifierAssembler.assemble(columnValueProvider));
+				return result;
 			}
 			
 			@Override

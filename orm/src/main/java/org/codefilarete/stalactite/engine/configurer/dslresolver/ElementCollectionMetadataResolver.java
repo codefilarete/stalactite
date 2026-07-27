@@ -117,7 +117,6 @@ public class ElementCollectionMetadataResolver {
 			indexColumn = targetTable.addColumn(indexingColumnName, Integer.class);
 			// adding a constraint on the index column, not on the element one (like for Set), to allow duplicates
 			indexColumn.primaryKey();
-			targetColumnMapping.put((ReadWritePropertyAccessPoint) INDEX_ACCESSOR, indexColumn);
 		} else {
 			// adding a constraint on the element column because Sets don't allow duplicates
 			targetColumnMapping.values().forEach(Column::primaryKey);

@@ -1,9 +1,12 @@
 package org.codefilarete.stalactite.engine.configurer.resolver.elementcollection;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -61,8 +64,6 @@ class ElementCollectionResolverTest {
 	
 	private final Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
-	private FluentEntityMappingBuilder<Person, Identifier<Long>> personConfiguration;
-	private FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration;
 	private PersistenceContext persistenceContext;
 	
 	@BeforeEach
@@ -72,16 +73,6 @@ class ElementCollectionResolverTest {
 		dialect.getColumnBinderRegistry().register(Color.class, new NullAwareParameterBinder<>(new LambdaParameterBinder<>(INTEGER_PRIMITIVE_BINDER, Color::new, Color::getRgb)));
 		dialect.getSqlTypeRegistry().put(Color.class, "int");
 		persistenceContext = new PersistenceContext(dataSource, dialect);
-		
-		FluentEntityMappingBuilder<Person, Identifier<Long>> personMappingBuilder = entityBuilder(Person.class, LONG_TYPE)
-				.mapKey(Person::getId, ALREADY_ASSIGNED)
-				.map(Person::getName);
-		personConfiguration = personMappingBuilder;
-		
-		FluentEntityMappingBuilder<City, Identifier<Long>> cityMappingBuilder = entityBuilder(City.class, LONG_TYPE)
-				.mapKey(City::getId, ALREADY_ASSIGNED)
-				.map(City::getName);
-		cityConfiguration = cityMappingBuilder;
 	}
 	
 	@Test
@@ -109,8 +100,7 @@ class ElementCollectionResolverTest {
 		person2.addNickname("tutu");
 		person2.addNickname("titi");
 		
-		personPersister.insert(person1);
-		personPersister.insert(person2);
+		personPersister.insert(person1, person2);
 		
 		Set<Person> loadedPersons = personPersister.select(person1.getId(), person2.getId());
 		Map<Identifier<Long>, Person> personMap = Iterables.map(loadedPersons, Person::getId);
@@ -120,6 +110,47 @@ class ElementCollectionResolverTest {
 		
 		Person loadedPerson2 = personMap.get(person2.getId());
 		assertThat(loadedPerson2.getNicknames()).containsExactlyInAnyOrder("tutu", "titi");
+	}
+	
+	@Test
+	void select_indexed_fetchSeparately() {
+		FluentEntityMappingBuilder<Person, Identifier<Long>> totoPersisterConfiguration = entityBuilder(Person.class, LONG_TYPE)
+				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(Person::getName)
+				.mapCollection(Person::getNicknames, String.class)
+				.initializeWith(LinkedHashSet::new)
+				.indexed()
+				.fetchSeparately();
+		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(totoPersisterConfiguration.getConfiguration());
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Person person1 = new Person(new PersistableIdentifier<>(1L));
+		person1.setName("toto");
+		person1.setNicknames(new LinkedHashSet<>());
+		List<String> nicknames1 = Arrays.asList("tonton", "tintin");
+		Collections.shuffle(nicknames1);
+		nicknames1.forEach(person1::addNickname);
+		Person person2 = new Person(new PersistableIdentifier<>(2L));
+		person2.setName("tata");
+		person2.setNicknames(new LinkedHashSet<>());
+		List<String> nicknames2 = Arrays.asList("tutu", "titi");
+		Collections.shuffle(nicknames2);
+		nicknames2.forEach(person2::addNickname);
+		
+		personPersister.insert(person1, person2);
+		
+		Set<Person> loadedPersons = personPersister.select(person1.getId(), person2.getId());
+		Map<Identifier<Long>, Person> personMap = Iterables.map(loadedPersons, Person::getId);
+		
+		Person loadedPerson1 = personMap.get(person1.getId());
+		assertThat(loadedPerson1.getNicknames()).containsExactlyElementsOf(nicknames1);
+		
+		Person loadedPerson2 = personMap.get(person2.getId());
+		assertThat(loadedPerson2.getNicknames()).containsExactlyElementsOf(nicknames2);
 	}
 	
 	@Nested
