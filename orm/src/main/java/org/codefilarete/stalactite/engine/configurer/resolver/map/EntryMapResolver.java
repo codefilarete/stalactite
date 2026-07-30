@@ -19,8 +19,8 @@ import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReadWriteAccessorChain;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions;
-import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
+import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord;
@@ -49,6 +49,7 @@ import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.function.Functions.NullProofFunction;
+import org.codefilarete.tool.function.TriFunction;
 
 import static org.codefilarete.tool.Nullable.nullable;
 
@@ -248,9 +249,9 @@ public class EntryMapResolver {
 					compositeMemberMapping.getBeanType()));
 		}
 		
-		
-		if (resolvedRelation.getKeyMapping() instanceof ScalarMemberMapping) {
-			Column<MAPTABLE, K> keyColumn = (Column<MAPTABLE, K>) ((ScalarMemberMapping<X, MAPTABLE>) resolvedRelation.getKeyMapping()).getColumn();
+		EntryMemberMapping<K, MAPTABLE> keyMapping = resolvedRelation.getKeyMapping();
+		if (keyMapping instanceof ScalarMemberMapping) {
+			Column<MAPTABLE, K> keyColumn = (Column<MAPTABLE, K>) ((ScalarMemberMapping<X, MAPTABLE>) keyMapping).getColumn();
 			KeyValueRecordIdMapping<K, SRCID, MAPTABLE> scalarMapping = new KeyValueRecordIdMapping<>(
 					mapTable,
 					columnedRow -> columnedRow.get(keyColumn),
@@ -261,8 +262,8 @@ public class EntryMapResolver {
 			idMapping = (KeyValueRecordIdMapping<X, SRCID, MAPTABLE>) scalarMapping;
 			
 			propertiesMapping.put((ReadWritePropertyAccessPoint) KeyValueRecord.KEY_ACCESSOR, keyColumn);
-		} else if (resolvedRelation.getKeyMapping() instanceof CompositeMemberMapping) {
-			CompositeMemberMapping<KID, MAPTABLE> keyEntityIdentifierMapping = (CompositeMemberMapping<KID, MAPTABLE>) resolvedRelation.<KID>getKeyMapping();
+		} else if (keyMapping instanceof CompositeMemberMapping) {
+			CompositeMemberMapping<KID, MAPTABLE> keyEntityIdentifierMapping = (CompositeMemberMapping<KID, MAPTABLE>) keyMapping;
 			Class<KID> identifierType = keyEntityIdentifierMapping.getBeanType();
 			EmbeddedClassMapping<KID, MAPTABLE> entityKeyMapping = new EmbeddedClassMapping<>(identifierType, mapTable, keyEntityIdentifierMapping.getMapping());
 			KeyValueRecordIdMapping<KID, SRCID, MAPTABLE> compositeMapping = new KeyValueRecordIdMapping<>(
@@ -279,27 +280,57 @@ public class EntryMapResolver {
 					keyEntityIdentifierMapping.getBeanType()));
 			
 		} else {
-			throw new IllegalArgumentException("Unsupported key entity identifier mapping : " + resolvedRelation.getKeyMapping());
+			throw new IllegalArgumentException("Unsupported key entity identifier mapping : " + keyMapping);
 		}
-		return new KeyValueRecordMapping<>(
-				resolvedRelation.getJoin().getRightKey().getTable(),
-				propertiesMapping,
-				idMapping);
+		
+		if (resolvedRelation.isOrdered()) {
+			propertiesMapping.put((ReadWritePropertyAccessPoint) KeyValueRecord.INDEX_ACCESSOR, resolvedRelation.getIndexingColumn());
+			return new KeyValueRecordMapping<>(
+					resolvedRelation.getJoin().getRightKey().getTable(),
+					propertiesMapping,
+					idMapping);
+		} else {
+			return new KeyValueRecordMapping<>(
+					resolvedRelation.getJoin().getRightKey().getTable(),
+					propertiesMapping,
+					idMapping);
+		}
 		
 	}
 	
 	private static <SRC, SRCID, K, KK, V, VV, M extends Map<K, V>, LEFTTABLE extends Table<LEFTTABLE>, MAPTABLE extends Table<MAPTABLE>>
-	Accessor<SRC, Collection<KeyValueRecord<KK, VV, SRCID>>> toRecordCollectionProvider(ResolvedMapRelation<SRC, SRCID, K, ?, V, ?, M, LEFTTABLE, MAPTABLE, ?, ?> resolvedRelation,
+	Accessor<SRC, Collection<KeyValueRecord<KK, VV, SRCID>>> toRecordCollectionProvider(ResolvedMapRelation<SRC, SRCID, K, ?, V, ?, M, LEFTTABLE, MAPTABLE, ?, ?> mapRelation,
 	                                                                                    IdAccessor<SRC, SRCID> idAccessor,
 	                                                                                    Function<K, KK> keyAdapter,
 	                                                                                    Function<V, VV> valueAdapter,
 	                                                                                    boolean markAsPersisted) {
-		
-		return src -> Iterables.collect(
-				nullable(resolvedRelation.getAccessor().get(src)).getOr(() -> (M) Collections.emptyMap()).entrySet(),
-				// for now we consider X as K
-				entry -> new KeyValueRecord<>(idAccessor.getId(src), keyAdapter.apply(entry.getKey()), valueAdapter.apply(entry.getValue())).setPersisted(markAsPersisted),
-				HashSet::new);
+		// The default record factory is the one that creates a KeyValueRecord without index
+		BiFunction<SRC, Entry<K, V>, KeyValueRecord<KK, VV, SRCID>> defaultRecordFactory = (src, entry) -> {
+			KeyValueRecord<KK, VV, SRCID> result = new KeyValueRecord<>(idAccessor.getId(src), keyAdapter.apply(entry.getKey()), valueAdapter.apply(entry.getValue()));
+			result.setPersisted(markAsPersisted);
+			return result;
+		};
+		// The real record factory is either the default one, or one that amends it with the index
+		TriFunction<SRC, Entry<K, V>, Integer, KeyValueRecord<KK, VV, SRCID>> effectiveRecordFactory;
+		if (mapRelation.isOrdered()) {
+			effectiveRecordFactory = (src, entry, index) -> {
+				KeyValueRecord<KK, VV, SRCID> result = defaultRecordFactory.apply(src, entry);
+				result.setIndex(index);
+				return result;
+			};
+		} else {
+			effectiveRecordFactory = (src, entry, index) -> defaultRecordFactory.apply(src, entry);
+		}
+		// The result converts the initial source-Map couple into a Set of KeyValueRecord to be persisted
+		return src -> {
+			Collection<Entry<K, V>> entries = nullable(mapRelation.getAccessor().get(src)).getOr(() -> (M) Collections.emptyMap()).entrySet();
+			Set<KeyValueRecord<KK, VV, SRCID>> records = new HashSet<>();
+			int index = 0;
+			for (Entry<K, V> entry : entries) {
+				records.add(effectiveRecordFactory.apply(src, entry, index++));
+			}
+			return records;
+		};
 	}
 	
 	private static class TargetInstancesInsertCascader<SRC, K, V, SRCID> extends AfterInsertCollectionCascader<SRC, KeyValueRecord<K, V, SRCID>> {

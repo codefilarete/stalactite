@@ -2,9 +2,12 @@ package org.codefilarete.stalactite.engine.configurer.resolver.map;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -30,7 +33,6 @@ import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 
@@ -93,7 +95,7 @@ public class AggregateMapAppender {
 						// rearranging the previous result which contains only raw keyId by replacing it by the final K entity
 						// tempering with this allows not to change the final relation sewing
 						select.forEach(record -> {
-							Collection<Duo<KID, K>> duos = inMemoryKeyEntityHolder.get(record.getId().getId());
+							Collection<MapEntry<KID, K>> duos = inMemoryKeyEntityHolder.giveEntityEntries(record.getId().getId());
 							duos.forEach(duo -> {
 								if (duo.getLeft().equals(record.getKey())) {
 									record.setKey((X) duo.getRight());
@@ -123,7 +125,7 @@ public class AggregateMapAppender {
 						// rearranging the previous result which contains only raw valueId by replacing it by the final V entity
 						// tempering with this allows not to change the final relation sewing
 						select.forEach(record -> {
-							Collection<Duo<VID, V>> duos = inMemoryValueEntityHolder.get(record.getId().getId());
+							Collection<MapEntry<VID, V>> duos = inMemoryValueEntityHolder.giveEntityEntries(record.getId().getId());
 							duos.forEach(duo -> {
 								if (duo.getLeft().equals(record.getValue())) {
 									record.setValue((Y) duo.getRight());
@@ -152,33 +154,41 @@ public class AggregateMapAppender {
 			SelectExecutor<KeyValueRecord<X, Y, SRCID>, SRCID> eventuallyRearrangingMapEntrySelectExecutor = mapEntrySelectExecutor;
 			// Adding a listener that loads the entries after the main entities
 			// Note that the selector may be a wrapper that combine the initial raw results (entities identifiers) with the real entities kept in memory
+			ReadWritePropertyAccessPoint<SRC, M> mapAccessor = relation.getAccessor();
+			BeanRelationFixer<SRC, KeyValueRecord<K, V, SRCID>> originalRelationFixer = BeanRelationFixer.ofMapAdapter(
+					mapAccessor,
+					mapAccessor,
+					relation.getComponentFactory(),
+					(bean, duo, map) -> map.put(duo.getKey(), duo.getValue()));
+			Function<Collection<KeyValueRecord<X, Y, SRCID>>, Collection<KeyValueRecord<X, Y, SRCID>>> finalInMemoryRelationAdapterWithOrdering = entries -> {
+				if (relation.isOrdered()) {
+					return entries.stream()
+							.sorted(Comparator.comparingInt(KeyValueRecord::getIndex))
+							.collect(Collectors.toList());
+				} else {
+					return entries;
+				}
+			};
 			sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
 				
 				@Override
 				public void afterSelect(Set<? extends SRC> result) {
 					// we load all the target entities (of all sources, for efficiency)
 					Set<SRCID> srcIds = Iterables.collect(result, sourcePersister.getMapping()::getId, HashSet::new);
-					
 					Set<KeyValueRecord<X, Y, SRCID>> select = eventuallyRearrangingMapEntrySelectExecutor.select(srcIds);
 					
 					// we sew the relations
-					ReadWritePropertyAccessPoint<SRC, M> mapAccessPoint = relation.getAccessor();
 					result.forEach(src -> {
 						// filling final collection with a sorted collection
-						M relationCollection = mapAccessPoint.get(src);
-						if (relationCollection == null) {
-							relationCollection = relation.getComponentFactory().get();
-							mapAccessPoint.set(src, relationCollection);
-						}
-						// the values() are sorted thanks to the Map with Integer as key
-						relationCollection.putAll((Map<? extends K, ? extends V>) select.stream().filter(record -> record.getId().getId().equals(sourcePersister.getMapping().getId(src)))
-								.collect(Collectors.toMap(KeyValueRecord::getKey, KeyValueRecord::getValue)));
+						LinkedHashSet<KeyValueRecord<X, Y, SRCID>> collect = select.stream()
+								.filter(record -> record.getId().getId().equals(sourcePersister.getMapping().getId(src)))
+								.collect(Collectors.toCollection(LinkedHashSet::new));
+						finalInMemoryRelationAdapterWithOrdering.apply(collect)
+								.forEach(entry -> originalRelationFixer.apply(src, (KeyValueRecord<K, V, SRCID>) entry));
 					});
 				}
 			});
-			
 			return result;
-			
 		} else {
 			result = append2(relation, aggregateTree, sourcePersister, mountPoint, keyValueRecordPersister, keyEntityReader, valueEntityReader);
 		}
@@ -235,10 +245,8 @@ public class AggregateMapAppender {
 			InMemoryRelationHolder<SRCID, KID, K> inMemoryKeyRelationHolder = new InMemoryRelationHolder<>();
 			
 			// the final map is made of the entities found in the in-memory relation holder
-			keyAdapter = (srcid, leftRawValue) -> {
-				Map<KID, K> entities = Iterables.map(inMemoryKeyRelationHolder.get(srcid), Duo::getLeft, Duo::getRight);
-				return entities.get((K) leftRawValue);
-			};
+			keyAdapter = (srcid, leftRawValue) ->
+				nullable(Iterables.find(inMemoryKeyRelationHolder.giveEntityEntries(srcid), duo -> duo.getLeft().equals(leftRawValue))).map(MapEntry::getRight).get();
 			// we ask for our own relation holder to be initialized and cleared
 			inMemoryRelationHolderInitializer = inMemoryRelationHolderInitializer.then(new SelectListener<SRC, SRCID>() {
 				@Override
@@ -272,10 +280,8 @@ public class AggregateMapAppender {
 			InMemoryRelationHolder<SRCID, VID, V> inMemoryValueRelationHolder = new InMemoryRelationHolder<>();
 			
 			// the final map is made of the entities found in the in-memory relation holder
-			valueAdapter = (srcid, rightRawValue) -> {
-				Map<VID, V> entities = Iterables.map(inMemoryValueRelationHolder.get(srcid), Duo::getLeft, Duo::getRight);
-				return entities.get((V) rightRawValue);
-			};
+			valueAdapter = (srcid, rightRawValue) ->
+				nullable(Iterables.find(inMemoryValueRelationHolder.giveEntityEntries(srcid), duo -> duo.getLeft().equals(rightRawValue))).map(MapEntry::getRight).get();
 			// we ask for our own relation holder to be initialized and cleared
 			inMemoryRelationHolderInitializer = inMemoryRelationHolderInitializer.then(new SelectListener<SRC, SRCID>() {
 				@Override
@@ -305,12 +311,35 @@ public class AggregateMapAppender {
 			valueAdapter = (srcid, rightRawValue) -> (V) rightRawValue;
 		}
 		
-		Function<SRCID, Set<Duo<K, V>>> finalInMemoryRelationAdapter = srcid -> {
-			Collection<Duo<X, Y>> duos = inMemoryRelationHolder.get(srcid);
+		Function<SRCID, Set<MapEntry<K, V>>> finalInMemoryRelationAdapter = srcid -> {
+			Collection<MapEntry<X, Y>> duos = inMemoryRelationHolder.giveEntityEntries(srcid);
 			if (duos != null) {
-				return Iterables.collect(duos, duo -> new Duo<>(keyAdapter.apply(srcid, duo.getLeft()), valueAdapter.apply(srcid, duo.getRight())), HashSet::new);
+				return Iterables.collect(duos, duo -> {
+					// We change Duo values by replacing them by the adapters value
+					// Note that we could have recreated a new IndexedDuo instance with those values, it would have been
+					// clearer, but it's kind of superflous and would consume some more memory, and also may require
+					// some more code maintenance if we change MemoryHolder internal storage type : the right one must
+					// be instanciated again here.
+					((MapEntry<K, V>) duo).setLeft(keyAdapter.apply(srcid, duo.getLeft()));
+					((MapEntry<K, V>) duo).setRight(valueAdapter.apply(srcid, duo.getRight()));
+					return (MapEntry<K, V>) duo;
+				}, HashSet::new);
 			} else {
 				return null;
+			}
+		};
+		BeanRelationFixer<SRC, MapEntry<K, V>> originalRelationFixer = BeanRelationFixer.ofMapAdapter(
+				mapAccessor,
+				mapAccessor,
+				relation.getComponentFactory(),
+				(bean, entry, map) -> map.put(entry.getLeft(), entry.getRight()));
+		Function<Collection<MapEntry<K, V>>, Collection<MapEntry<K, V>>> finalInMemoryRelationAdapterWithOrdering = entries -> {
+			if (relation.isOrdered()) {
+				return entries.stream()
+						.sorted(Comparator.comparingInt(MapEntry::getIndex))
+						.collect(Collectors.toList());
+			} else {
+				return entries;
 			}
 		};
 		sourcePersister.addSelectListener(inMemoryRelationHolderInitializer.then(
@@ -318,15 +347,12 @@ public class AggregateMapAppender {
 					
 					@Override
 					public void afterSelect(Set<? extends SRC> result) {
-						BeanRelationFixer<SRC, Duo<K, V>> originalRelationFixer = BeanRelationFixer.ofMapAdapter(
-								mapAccessor,
-								mapAccessor,
-								relation.getComponentFactory(),
-								(bean, duo, map) -> map.put(duo.getLeft(), duo.getRight()));
 						result.forEach(bean -> {
-							Collection<Duo<K, V>> keyValuePairs = finalInMemoryRelationAdapter.apply(sourcePersister.getMapping().getId(bean));
+							Collection<MapEntry<K, V>> keyValuePairs = finalInMemoryRelationAdapter.apply(sourcePersister.getMapping().getId(bean));
+							
 							if (keyValuePairs != null) {
-								keyValuePairs.forEach(duo -> originalRelationFixer.apply(bean, duo));
+								keyValuePairs = finalInMemoryRelationAdapterWithOrdering.apply(keyValuePairs);
+								keyValuePairs.forEach(entry -> originalRelationFixer.apply(bean, entry));
 							} // else : no association record
 						});
 					}
@@ -350,8 +376,8 @@ public class AggregateMapAppender {
 				mapAccessor,
 				mapAccessor,
 				resolvedRelation.getComponentFactory(),
-				(bean, input, map) -> {
-					inMemoryRelationHolder.storeRelation(input.getId().getId(), input.getKey(), input.getValue());
+				(bean, record, map) -> {
+					inMemoryRelationHolder.storeRelation(record.getId().getId(), record.getKey(), record.getValue(), record.getIndex());
 				});
 		
 		return aggregateTree.addRelationJoin(
@@ -384,37 +410,44 @@ public class AggregateMapAppender {
 				foreignKey.getReferencedKey(),
 				null,
 				OUTER,
-				(bean, input) -> {
+				(bean, entity) -> {
 					// because we joined with the map association table and KeyValueRecordPersister, we know that the given object is a KeyValueRecord
 					KeyValueRecord<?, ?, SRCID> record = (KeyValueRecord<?, ?, SRCID>) bean;
-					inMemoryRelationHolder.storeRelation(record.getId().getId(), entityIdExtractor.apply(record), input);
+					// We only store the link between source entity and related entity, here we don't care about the index
+					// since that's not the goal of the current logic, and, anyway not possible. Index is the responsibility
+					// of the association table join.
+					inMemoryRelationHolder.storeRelation(record.getId().getId(), entityIdExtractor.apply(record), entity);
 				},
 				Collections.emptySet(),
 				null);
 	}
 	
-	public static class InMemoryRelationHolder<I, K, V> {
+	static class InMemoryRelationHolder<I, K, V> {
 		
 		/**
 		 * In memory and temporary Map storage.
 		 */
-		private final ThreadLocal<Map<I, Set<Duo<K, V>>>> relationCollectionPerEntity = new ThreadLocal<>();
+		private final ThreadLocal<Map<I, Set<MapEntry<K, V>>>> relationCollectionPerEntity = new ThreadLocal<>();
 		
-		
-		public void storeRelation(I source, K key, V value) {
-			Map<I, Set<Duo<K, V>>> srcidcMap = relationCollectionPerEntity.get();
-			Set<Duo<K, V>> relatedDuos = srcidcMap.computeIfAbsent(source, id -> new HashSet<>());
-			Duo<K, V> duo = relatedDuos.stream().filter(pawn -> Objects.equals(pawn.getLeft(), key)).findAny().orElseGet(() -> {
-				Duo<K, V> result = new Duo<>();
-				relatedDuos.add(result);
-				return result;
-			});
-			duo.setLeft(key);
-			duo.setRight(value);
+		void storeRelation(I source, K key, V value) {
+			Set<MapEntry<K, V>> relatedDuos = giveRelatedDuos(source);
+			MapEntry<K, V> result = new MapEntry<>(key, value);
+			relatedDuos.add(result);
 		}
 		
-		public Collection<Duo<K, V>> get(I src) {
-			Map<I, Set<Duo<K, V>>> currentMap = relationCollectionPerEntity.get();
+		void storeRelation(I source, K key, V value, Integer index) {
+			Set<MapEntry<K, V>> relatedDuos = giveRelatedDuos(source);
+			MapEntry<K, V> result = new MapEntry<>(key, value, index);
+			relatedDuos.add(result);
+		}
+		
+		private Set<MapEntry<K, V>> giveRelatedDuos(I source) {
+			Map<I, Set<MapEntry<K, V>>> srcidcMap = relationCollectionPerEntity.get();
+			return srcidcMap.computeIfAbsent(source, id -> new HashSet<>());
+		}
+		
+		Collection<MapEntry<K, V>> giveEntityEntries(I src) {
+			Map<I, Set<MapEntry<K, V>>> currentMap = relationCollectionPerEntity.get();
 			return nullable(currentMap)
 					.map(map -> map.get(src))
 					.get();
@@ -426,6 +459,55 @@ public class AggregateMapAppender {
 		
 		public void clear() {
 			this.relationCollectionPerEntity.remove();
+		}
+	}
+	
+	private static class MapEntry<K, V> {
+		
+		private K left;
+		private V right;
+		private Integer index;
+		
+		public MapEntry(K left, V right) {
+			this.left = left;
+			this.right = right;
+		}
+		
+		public MapEntry(K left, V right, Integer index) {
+			this(left, right);
+			this.index = index;
+		}
+		
+		public void setLeft(K left) {
+			this.left = left;
+		}
+		
+		public K getLeft() {
+			return left;
+		}
+		
+		public void setRight(V right) {
+			this.right = right;
+		}
+		
+		public V getRight() {
+			return right;
+		}
+		
+		public Integer getIndex() {
+			return index;
+		}
+		
+		@Override
+		public boolean equals(Object o) {
+			if (o == null || getClass() != o.getClass()) return false;
+			MapEntry<?, ?> mapEntry = (MapEntry<?, ?>) o;
+			return Objects.equals(left, mapEntry.left);
+		}
+		
+		@Override
+		public int hashCode() {
+			return Objects.hashCode(left);
 		}
 	}
 }

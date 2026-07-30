@@ -7,7 +7,6 @@ import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.tool.VisibleForTesting;
 
 /**
  * Mapping strategy dedicated to {@link KeyValueRecord}. Very close to {@link org.codefilarete.stalactite.engine.configurer.AssociationRecordMapping}
@@ -21,7 +20,6 @@ import org.codefilarete.tool.VisibleForTesting;
  */
 public class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends DefaultEntityMapping<KeyValueRecord<K, V, I>, RecordId<K, I>, T> {
 	
-	@VisibleForTesting
 	public KeyValueRecordMapping(T targetTable,
 	                             Map<? extends ReadWritePropertyAccessPoint<KeyValueRecord<K, V, I>, ?>, Column<T, ?>> propertyToColumn,
 	                             KeyValueRecordIdMapping<K, I, T> idMapping) {

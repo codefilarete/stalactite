@@ -38,6 +38,11 @@ public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 	private final Class<V> valueType;
 	/** Optional provider of {@link Map} instance to be used if collection value is null */
 	private Supplier<M> mapFactory;
+	/** Indicator to store entries indices in the database, retrieve them, and sort the collection while loading the entities */
+	private boolean ordered = false;
+	/** Column name to store entries indices in the database */
+	@Nullable
+	private String indexingColumnName;
 	
 	private Table targetTable;
 	private String targetTableName;
@@ -307,5 +312,27 @@ public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 	
 	public void fetchSeparately() {
 		this.fetchSeparately = true;
+	}
+	
+	public boolean isOrdered() {
+		return this.ordered;
+	}
+	
+	public void setOrdered(boolean ordered) {
+		this.ordered = ordered;
+	}
+	
+	public void ordered() {
+		this.ordered = true;
+	}
+	
+	public void setIndexingColumnName(String columnName) {
+		ordered();
+		this.indexingColumnName = columnName;
+	}
+	
+	@Nullable
+	public String getIndexingColumnName() {
+		return indexingColumnName;
 	}
 }

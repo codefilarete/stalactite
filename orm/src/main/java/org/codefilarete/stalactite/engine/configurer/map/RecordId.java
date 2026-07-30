@@ -11,12 +11,12 @@ import org.codefilarete.stalactite.engine.diff.CollectionDiffer;
  * - identifier of source entity
  * 
  * @param <K>
- * @param <ID>
+ * @param <SRCID>
  * @author Guillaume Mary
  */
-public class RecordId<K, ID> {
+public class RecordId<K, SRCID> {
 	
-	private ID id;
+	private SRCID srcId;
 	private K key;
 	
 	/**
@@ -25,17 +25,17 @@ public class RecordId<K, ID> {
 	public RecordId() {
 	}
 	
-	public RecordId(ID id, K key) {
-		setId(id);
+	public RecordId(SRCID srcId, K key) {
+		setId(srcId);
 		this.key = key;
 	}
 	
-	public ID getId() {
-		return id;
+	public SRCID getId() {
+		return srcId;
 	}
 	
-	public void setId(ID id) {
-		this.id = id;
+	public void setId(SRCID srcId) {
+		this.srcId = srcId;
 	}
 	
 	public K getKey() {
@@ -51,12 +51,12 @@ public class RecordId<K, ID> {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		RecordId<?, ?> recordId = (RecordId<?, ?>) o;
-		return Objects.equals(id, recordId.id) && Objects.equals(key, recordId.key);
+		return Objects.equals(srcId, recordId.srcId) && Objects.equals(key, recordId.key);
 	}
 	
 	@Override
 	public int hashCode() {
-		int result = id.hashCode();
+		int result = srcId.hashCode();
 		result = 31 * result + key.hashCode();
 		return result;
 	}

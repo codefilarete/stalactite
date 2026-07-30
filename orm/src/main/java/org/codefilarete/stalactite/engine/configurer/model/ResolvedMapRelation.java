@@ -28,6 +28,8 @@ public class ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M extends Map<K, V>
 	private final MapMemberAsEntity<K, KID, MAPTABLE, KTABLE, ?> keyEntityDefinition;
 	@Nullable
 	private final MapMemberAsEntity<V, VID, MAPTABLE, VTABLE, ?> valueEntityDefinition;
+	@Nullable
+	private final Column<MAPTABLE, Integer> indexingColumn;
 	
 	public <X, Y> ResolvedMapRelation(ReadWritePropertyAccessPoint<SRC, M> accessor,
 	                                  boolean fetchSeparately,
@@ -38,7 +40,8 @@ public class ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M extends Map<K, V>
 	                                  @Nullable EntryMemberMapping<X, MAPTABLE> keyMapping,
 	                                  @Nullable EntryMemberMapping<Y, MAPTABLE> valueMapping,
 	                                  @Nullable MapMemberAsEntity<K, KID, MAPTABLE, KTABLE, X> keyEntityDefinition,
-	                                  @Nullable MapMemberAsEntity<V, VID, MAPTABLE, VTABLE, Y> valueEntityDefinition) {
+	                                  @Nullable MapMemberAsEntity<V, VID, MAPTABLE, VTABLE, Y> valueEntityDefinition,
+	                                  @Nullable Column<MAPTABLE, Integer> indexingColumn) {
 		// TODO: ALL shouldn't be used for RelationMode : we should extend another class or make the RelationMode not available by default in the super class
 		super(accessor, RelationMode.ALL, fetchSeparately, join, beanRelationFixer, componentFactory);
 		this.primaryKeyForeignKeyColumnMapping = primaryKeyForeignKeyColumnMapping;
@@ -46,6 +49,7 @@ public class ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M extends Map<K, V>
 		this.valueMapping = (EntryMemberMapping<V, MAPTABLE>) valueMapping;
 		this.keyEntityDefinition = keyEntityDefinition;
 		this.valueEntityDefinition = valueEntityDefinition;
+		this.indexingColumn = indexingColumn;
 	}
 	
 	@Override
@@ -75,6 +79,15 @@ public class ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M extends Map<K, V>
 	@Nullable
 	public MapMemberAsEntity<V, VID, MAPTABLE, VTABLE, ?> getValueEntityDefinition() {
 		return valueEntityDefinition;
+	}
+	
+	public boolean isOrdered() {
+		return indexingColumn != null;
+	}
+	
+	@Nullable
+	public Column<MAPTABLE, Integer> getIndexingColumn() {
+		return indexingColumn;
 	}
 	
 	public interface EntryMemberMapping<X, MAPTABLE extends Table<MAPTABLE>> {

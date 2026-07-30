@@ -1,8 +1,10 @@
 package org.codefilarete.stalactite.engine.configurer.resolver.map;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.sql.DataSource;
@@ -102,6 +104,36 @@ class MapResolverTest {
 	}
 	
 	@Test
+	void crud_scalarMap_indexed() {
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
+				.mapKey(Person::getId, ALREADY_ASSIGNED)
+				.map(Person::getName)
+				.mapMap(Person::getPhoneNumbers, String.class, String.class)
+				.initializeWith(LinkedHashMap::new)
+				.indexed();
+		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+		
+		new DDLDeployer(persistenceContext).deployDDL();
+		
+		Person person = new Person(new PersistableIdentifier<>(1L));
+		person.setName("john");
+		List<String> expectedKeys = Arrays.asList("home", "mobile", "pro", "home2");
+		Collections.shuffle(expectedKeys);
+		Map<String, String> phoneNumbers = new LinkedHashMap<>();
+		expectedKeys.forEach(expectedKey -> {
+			// no matter if the value is the same for all keys since we don't check the Map content, but its keys order
+			phoneNumbers.put(expectedKey, "01 23 45 67 89");
+		});
+		person.setPhoneNumbers(phoneNumbers);
+		personPersister.insert(person);
+		
+		Person loaded = personPersister.select(person.getId());
+		assertThat(loaded.getPhoneNumbers().keySet()).containsExactlyElementsOf(expectedKeys);
+	}
+	
+	@Test
 	void crud_scalarMap_fetchSeparately() {
 		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
 				.mapKey(Person::getId, ALREADY_ASSIGNED)
@@ -125,6 +157,37 @@ class MapResolverTest {
 		assertThat(loaded.getPhoneNumbers())
 				.containsEntry("home", "01 11 11 11 11")
 				.containsEntry("mobile", "03 33 33 33 33");
+	}
+	
+	@Test
+	void crud_scalarMap_fetchSeparately_indexed() {
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
+				.mapKey(Person::getId, ALREADY_ASSIGNED)
+				.map(Person::getName)
+				.mapMap(Person::getPhoneNumbers, String.class, String.class)
+				.fetchSeparately()
+				.initializeWith(LinkedHashMap::new)
+				.indexed();
+		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+		
+		new DDLDeployer(persistenceContext).deployDDL();
+		
+		Person person = new Person(new PersistableIdentifier<>(1L));
+		person.setName("john");
+		List<String> expectedKeys = Arrays.asList("home", "mobile", "pro", "home2");
+		Collections.shuffle(expectedKeys);
+		Map<String, String> phoneNumbers = new LinkedHashMap<>();
+		expectedKeys.forEach(expectedKey -> {
+			// no matter if the value is the same for all keys since we don't check the Map content, but its keys order
+			phoneNumbers.put(expectedKey, "01 23 45 67 89");
+		});
+		person.setPhoneNumbers(phoneNumbers);
+		personPersister.insert(person);
+		
+		Person loaded = personPersister.select(person.getId());
+		assertThat(loaded.getPhoneNumbers().keySet()).containsExactlyElementsOf(expectedKeys);
 	}
 	
 	@Test

@@ -55,6 +55,23 @@ public interface MapOptions<K, V, M extends Map<K, V>> {
 	
 	MapOptions<K, V, M> fetchSeparately();
 	
+	/**
+	 * Asks to persist the collection elements index.
+	 * By default, the column name that keeps track of it is named {@value org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy#DEFAULT_INDEX_COLUMN_NAME}.
+	 *
+	 * @see #indexedBy(String)
+	 * @return the current instance for method chaining
+	 */
+	MapOptions<K, V, M> indexed();
+	
+	/**
+	 * Asks to persist the collection elements index by specifying the column name.
+	 *
+	 * @see #indexed()
+	 * @return the current instance for method chaining
+	 */
+	MapOptions<K, V, M> indexedBy(String columnName);
+	
 	interface EntityInMapOptions<K, V, M extends Map<K, V>> extends CascadeOptions {
 		
 		/**

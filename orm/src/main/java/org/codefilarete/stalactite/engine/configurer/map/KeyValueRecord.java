@@ -10,10 +10,10 @@ import org.codefilarete.stalactite.engine.diff.CollectionDiffer;
  *
  * @param <K> Map entry key type
  * @param <V> Map entry value type
- * @param <ID> source bean identifier type
+ * @param <SRCID> source bean identifier type
  */
 // Made public due to protected methods in MapRelationConfigurer expecting arguments to be accessible from any overriding class
-public class KeyValueRecord<K, V, ID> {
+public class KeyValueRecord<K, V, SRCID> {
 	
 	public static final ReadWritePropertyAccessPoint<KeyValueRecord<Object, Object, Object>, Object> KEY_ACCESSOR = DefaultReadWritePropertyAccessPoint.fromMethodReference(
 			KeyValueRecord::getKey,
@@ -23,9 +23,15 @@ public class KeyValueRecord<K, V, ID> {
 			KeyValueRecord::getValue,
 			KeyValueRecord::setValue);
 	
-	private RecordId<K, ID> id;
+	public static final ReadWritePropertyAccessPoint<KeyValueRecord<Object, Object, Object>, Integer> INDEX_ACCESSOR = DefaultReadWritePropertyAccessPoint.fromMethodReference(
+			KeyValueRecord::getIndex,
+			KeyValueRecord::setIndex);
+	
+	
+	private RecordId<K, SRCID> id;
 	private K key;
 	private V value;
+	private Integer index;
 	private boolean persisted = false;
 	
 	/**
@@ -34,10 +40,17 @@ public class KeyValueRecord<K, V, ID> {
 	public KeyValueRecord() {
 	}
 	
-	public KeyValueRecord(ID id, K key, V value) {
-		this.id = new RecordId<>(id, key);
+	public KeyValueRecord(SRCID srcId, K key, V value) {
+		this.id = new RecordId<>(srcId, key);
 		this.key = key;
 		this.value = value;
+	}
+	
+	public KeyValueRecord(SRCID srcId, K key, V value, int index) {
+		this.id = new RecordId<>(srcId, key);
+		this.key = key;
+		this.value = value;
+		this.index = index;
 	}
 	
 	public boolean isNew() {
@@ -52,16 +65,16 @@ public class KeyValueRecord<K, V, ID> {
 		this.persisted = true;
 	}
 	
-	public KeyValueRecord<K, V, ID> setPersisted(boolean persisted) {
+	public KeyValueRecord<K, V, SRCID> setPersisted(boolean persisted) {
 		this.persisted = persisted;
 		return this;
 	}
 	
-	public RecordId<K, ID> getId() {
+	public RecordId<K, SRCID> getId() {
 		return id;
 	}
 	
-	public void setId(RecordId<K, ID> id) {
+	public void setId(RecordId<K, SRCID> id) {
 		this.id = id;
 		this.persisted = true;
 	}
@@ -80,6 +93,14 @@ public class KeyValueRecord<K, V, ID> {
 	
 	public void setValue(V value) {
 		this.value = value;
+	}
+	
+	public Integer getIndex() {
+		return index;
+	}
+	
+	public void setIndex(int index) {
+		this.index = index;
 	}
 	
 	/**

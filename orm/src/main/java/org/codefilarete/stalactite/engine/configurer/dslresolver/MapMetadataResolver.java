@@ -62,6 +62,8 @@ public class MapMetadataResolver {
 	
 	private static final AccessorDefinition RECORD_ID_ACCESSOR_DEFINITION = AccessorDefinition.giveDefinition(
 			new AccessorByMethodReference<>(KeyValueRecord<Object, Object, Object>::getId));
+	private static final AccessorDefinition RECORD_INDEX_ACCESSOR_DEFINITION = AccessorDefinition.giveDefinition(
+			new AccessorByMethodReference<>(KeyValueRecord<Object, Object, Object>::getIndex));
 	private static final AccessorDefinition MAP_ENTRY_KEY_ACCESSOR_DEFINITION = AccessorDefinition.giveDefinition(
 			new AccessorByMethodReference<Map.Entry<Object, Object>, Object>(Map.Entry::getKey));
 	private static final AccessorDefinition MAP_ENTRY_VALUE_ACCESSOR_DEFINITION = AccessorDefinition.giveDefinition(
@@ -212,6 +214,14 @@ public class MapMetadataResolver {
 					mapRelation.getValueColumnSize());
 		}
 		
+		// managing primary key
+		Column<MAPTABLE, Integer> indexColumn = null;
+		if (mapRelation.isOrdered()) {
+			String indexingColumnName = nullable(mapRelation.getIndexingColumnName())
+					.getOr(() -> namingConfiguration.getIndexColumnNamingStrategy().giveName(RECORD_INDEX_ACCESSOR_DEFINITION));
+			indexColumn = targetTable.addColumn(indexingColumnName, Integer.class);
+		}
+		
 		ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, SRCTABLE, MAPTABLE, KTABLE, VTABLE> relation = new ResolvedMapRelation<>(
 				mapRelation.getMapProvider(),
 				mapRelation.isFetchSeparately(),
@@ -222,7 +232,8 @@ public class MapMetadataResolver {
 				keyMapping,
 				valueMapping,
 				keyEntityDefinition,
-				valueEntityDefinition
+				valueEntityDefinition,
+				indexColumn
 		);
 		source.addRelation(relation);
 		

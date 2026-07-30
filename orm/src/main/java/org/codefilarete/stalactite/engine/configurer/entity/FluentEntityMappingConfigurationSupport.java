@@ -506,6 +506,18 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 						mapRelation.fetchSeparately();
 						return null;
 					}
+					
+					@Override
+					public MapOptions<K, V, M> indexed() {
+						mapRelation.ordered();
+						return null;
+					}
+					
+					@Override
+					public MapOptions<K, V, M> indexedBy(String columnName) {
+						mapRelation.setIndexingColumnName(columnName);
+						return null;
+					}
 				}, true)
 				// This will overwrite withKeyMapping(EntityMappingConfigurationProvider) capture to return a proxy
 				// that will let us configure cascading of the relation

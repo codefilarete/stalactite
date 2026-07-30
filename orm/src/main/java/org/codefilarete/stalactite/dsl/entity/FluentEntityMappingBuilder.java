@@ -37,6 +37,8 @@ import org.codefilarete.stalactite.dsl.property.ElementCollectionOptions;
 import org.codefilarete.stalactite.dsl.property.EmbeddableCollectionOptions;
 import org.codefilarete.stalactite.dsl.property.EnumOptions;
 import org.codefilarete.stalactite.dsl.property.MapOptions;
+import org.codefilarete.stalactite.dsl.property.MapOptions.EmbeddableInMapOptions;
+import org.codefilarete.stalactite.dsl.property.MapOptions.EntityInMapOptions;
 import org.codefilarete.stalactite.dsl.relation.ManyToManyOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyOptions;
 import org.codefilarete.stalactite.engine.PersistenceContext;
@@ -783,17 +785,29 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		
 		@Override
 		FluentMappingBuilderMapOptions<C, I, K, V, M> fetchSeparately();
+		
+		@Override
+		FluentMappingBuilderMapOptions<C, I, K, V, M> indexed();
+		
+		@Override
+		FluentMappingBuilderMapOptions<C, I, K, V, M> indexedBy(String columnName);
 	}
 	
 	interface FluentMappingBuilderEntityInMapOptions<C, I, K, V, M extends Map<K, V>>
-			extends FluentMappingBuilderMapOptions<C, I, K, V, M>, MapOptions.EntityInMapOptions<K, V, M> {
+			extends FluentMappingBuilderMapOptions<C, I, K, V, M>, EntityInMapOptions<K, V, M> {
 		
 		@Override
 		FluentMappingBuilderEntityInMapOptions<C, I, K, V, M> cascading(RelationMode relationMode);
+		
+		@Override
+		FluentMappingBuilderEntityInMapOptions<C, I, K, V, M> indexed();
+		
+		@Override
+		FluentMappingBuilderEntityInMapOptions<C, I, K, V, M> indexedBy(String columnName);
 	}
 	
 	interface FluentMappingBuilderEmbeddableInMapOptions<C, I, K, V, M extends Map<K, V>, E>
-			extends FluentMappingBuilderMapOptions<C, I, K, V, M>, MapOptions.EmbeddableInMapOptions<E> {
+			extends FluentMappingBuilderMapOptions<C, I, K, V, M>, EmbeddableInMapOptions<E> {
 		
 		@Override
 		FluentMappingBuilderEmbeddableInMapOptions<C, I, K, V, M, E> overrideName(SerializablePropertyAccessor<E, ?> getter, String columnName);
@@ -806,6 +820,12 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 
 		@Override
 		FluentMappingBuilderEmbeddableInMapOptions<C, I, K, V, M, E> overrideSize(SerializablePropertyMutator<E, ?> setter, Size columnSize);
+		
+		@Override
+		FluentMappingBuilderEmbeddableInMapOptions<C, I, K, V, M, E> indexed();
+		
+		@Override
+		FluentMappingBuilderEmbeddableInMapOptions<C, I, K, V, M, E> indexedBy(String columnName);
 	}
 	
 	interface FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S extends Collection<O>>
