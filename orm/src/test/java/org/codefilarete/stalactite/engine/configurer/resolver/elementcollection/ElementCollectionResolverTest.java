@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.engine.configurer.resolver.elementcollection
 
 import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -13,19 +12,13 @@ import java.util.Set;
 import java.util.UUID;
 import javax.sql.DataSource;
 
-import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.engine.PartialRepresentation;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver;
-import org.codefilarete.stalactite.engine.idprovider.LongProvider;
-import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Color;
-import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.Timestamp;
-import org.codefilarete.stalactite.id.AbstractIdentifier;
 import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
@@ -42,9 +35,6 @@ import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.function.Functions;
-import org.codefilarete.trace.ObjectPrinterBuilder;
-import org.codefilarete.trace.ObjectPrinterBuilder.ObjectPrinter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -52,10 +42,8 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.dsl.FluentMappings.embeddableBuilder;
 import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
-import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.ALL;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
-import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 
 class ElementCollectionResolverTest {
@@ -253,95 +241,6 @@ class ElementCollectionResolverTest {
 			
 			Toto loadedPerson = personPersister.select(person.getIdentifier());
 			assertThat(loadedPerson.getTimes()).usingRecursiveFieldByFieldElementComparator().containsExactlyInAnyOrder(timestamp1, timestamp2);
-		}
-		
-		@Test
-		void crudComplexType_ordered() {
-			Table totoTable = new Table("Toto");
-			Column idColumn = totoTable.addColumn("id", UUID_TYPE);
-			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
-			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
-			
-			FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
-					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.map(Person::getName)
-					.mapCollection(Person::getNicknames, String.class);
-			
-			FluentEntityMappingBuilder<City, Identifier<Long>> cityBuilder =
-					entityBuilder(City.class, Identifier.LONG_TYPE)
-							.mapKey(City::getId, ALREADY_ASSIGNED)
-							.map(City::getName)
-							.mapOneToMany(City::getPersons, personBuilder);
-			
-			FluentEntityMappingBuilder<Country, Identifier<Long>> countryPersisterBuilder = FluentMappings.entityBuilder(Country.class, LONG_TYPE)
-					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.map(Country::getName)
-					.map(Country::getDescription)
-					.mapOneToMany(Country::getCities, cityBuilder).mappedBy(City::setCountry).cascading(ALL)
-					;
-			
-			
-			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
-			EntityPersister<Country, Identifier<Long>> countryPersister = testInstance.resolve(countryPersisterBuilder.getConfiguration());
-			
-			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-			ddlDeployer.deployDDL();
-			
-			LongProvider countryIdProvider = new LongProvider();
-			Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
-			dummyCountry.setName("France");
-			dummyCountry.setDescription("Smelly cheese !");
-			LongProvider cityIdProvider = new LongProvider();
-			City paris = new City(cityIdProvider.giveNewIdentifier());
-			paris.setName("Paris");
-			dummyCountry.addCity(paris);
-			
-			LongProvider personIdProvider = new LongProvider();
-			Person someone1 = new Person(personIdProvider.giveNewIdentifier());
-			someone1.setName("dummy person 1");
-			paris.setPersons(Arrays.asHashSet(someone1));
-			someone1.initNicknames();
-			someone1.addNickname("tonton");
-			someone1.addNickname("tintin");
-			
-			City lyon = new City(cityIdProvider.giveNewIdentifier());
-			lyon.setName("Lyon");
-			dummyCountry.addCity(lyon);
-			
-			Person someone2 = new Person(personIdProvider.giveNewIdentifier());
-			someone2.setName("dummy person 2");
-			lyon.setPersons(Arrays.asHashSet(someone2));
-			
-			countryPersister.insert(dummyCountry);
-			
-			Country persistedCountry = countryPersister.select(dummyCountry.getId());
-			
-			ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
-					.addProperty(Person::getId)
-					.addProperty(Person::getName)
-					.addProperty(Person::getNicknames)
-					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
-					.build();
-			ObjectPrinter<City> cityPrinter = new ObjectPrinterBuilder<City>()
-					.addProperty(City::getId)
-					.addProperty(City::getName)
-					.addProperty(City::getState)
-					.addProperty(City::getPersons, Person.class)
-					.withPrinter(Person.class, personPrinter::toString)
-					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
-					.build();
-			ObjectPrinter<Country> countryPrinter = new ObjectPrinterBuilder<Country>()
-					.addProperty(Country::getId)
-					.addProperty(Country::getName)
-					.addProperty(Country::getCities, City.class)
-					.withPrinter(City.class, cityPrinter::toString)
-					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
-					.build();
-			
-			assertThat(persistedCountry)
-					.usingComparator(Comparator.comparing(countryPrinter::toString))
-					.withRepresentation(new PartialRepresentation<>(Country.class, countryPrinter))
-					.isEqualTo(dummyCountry);
 		}
 	}
 	

@@ -32,6 +32,8 @@ import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.Joi
 
 public class AggregateElementCollectionAppender {
 	
+	public static final Comparator<ElementRecord<?, ?>> INDEXED_RECORD_COMPARATOR = Comparator.comparing(o -> ((IndexedElementRecord) o).getIndex());
+	
 	public <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>>
 	void append(ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, LEFTTABLE, COLLECTIONTABLE, ElementRecord<TRGT, SRCID>> relation,
 	            EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
@@ -62,7 +64,6 @@ public class AggregateElementCollectionAppender {
 				public void afterSelect(Set<? extends SRC> result) {
 					// we load all the target entities (of all sources, for efficiency)
 					Set<SRCID> srcIds = Iterables.collect(result, sourcePersister.getMapping()::getId, HashSet::new);
-					
 					Set<ElementRecord<TRGT, SRCID>> collectionsRecords = elementCollectionLoader.select(srcIds);
 					
 					Map<SRCID, Collection<TRGT>> collectionBySourceId = new HashMap<>();
@@ -71,9 +72,7 @@ public class AggregateElementCollectionAppender {
 						// we sort all the retrieved records by their position, mixing source identifiers, it doesn't
 						// matter since collectionBySourceId is built by iterating over them in this order
 						elementRecordStream = collectionsRecords.stream()
-								.map(IndexedElementRecord.class::cast)
-								.sorted(Comparator.comparing(IndexedElementRecord::getIndex))
-								.map(ElementRecord.class::cast);
+								.sorted(INDEXED_RECORD_COMPARATOR);
 					} else {
 						elementRecordStream = collectionsRecords.stream();
 					}
