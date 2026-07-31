@@ -11,6 +11,8 @@ import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.
 import org.codefilarete.stalactite.engine.configurer.resolver.EntityReader;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.collection.Iterables;
@@ -27,7 +29,9 @@ public class AggregateOneToManyAppender {
 	                  EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
 	                  EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
 	                  String mountPoint,
-	                  EntityJoinTree<SRC, SRCID> aggregateTree) {
+	                  EntityJoinTree<SRC, SRCID> aggregateTree,
+	                  Dialect dialect,
+	                  ConnectionProvider connectionProvider) {
 		
 		// we dispatch the logic to dedicated classes due to their own complexity (especially the indexed ones) and to avoid long and complex methods
 		GraftPoint result;
@@ -39,9 +43,9 @@ public class AggregateOneToManyAppender {
 			}
 		} else {
 			if (relation.isOrdered()) {
-				result = indexedAssociationTableGrafter.append(relation, sourcePersister, targetPersister, mountPoint, aggregateTree);
+				result = indexedAssociationTableGrafter.append(relation, sourcePersister, targetPersister, mountPoint, aggregateTree, dialect, connectionProvider);
 			} else {
-				result = associationTableGrafter.append(relation, sourcePersister, targetPersister, mountPoint, aggregateTree);
+				result = associationTableGrafter.append(relation, sourcePersister, targetPersister, mountPoint, aggregateTree, dialect, connectionProvider);
 			}
 		}
 		
