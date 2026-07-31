@@ -2,8 +2,6 @@ package org.codefilarete.stalactite.engine.configurer.resolver.onetomany;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -15,6 +13,7 @@ import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJ
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
 import org.codefilarete.stalactite.engine.configurer.resolver.EntityReader;
+import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.RelationStorage;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
@@ -27,7 +26,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
-import org.codefilarete.tool.collection.KeepOrderMap;
+import org.codefilarete.tool.collection.Iterables;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType.OUTER;
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
@@ -164,8 +163,7 @@ public class AggregateOneToManyWithAssociationTableAppender {
 				try {
 					targetEntityHolder.init();
 					
-					Map<SRCID, SRC> sourcePerId = new KeepOrderMap<>();
-					result.forEach(src -> sourcePerId.put(sourcePersister.getMapping().getId(src), src));
+					Map<SRCID, ? extends SRC> sourcePerId = Iterables.map(result, sourcePersister.getMapping()::getId);
 					
 					// loading the association records: target entities are collected in memory by the join relation fixer
 					associationRecordLoader.select(sourcePerId.keySet());
@@ -198,10 +196,10 @@ public class AggregateOneToManyWithAssociationTableAppender {
 	 */
 	private static class InMemoryRelationHolder<SRCID, TRGT> {
 		
-		private final ThreadLocal<Map<SRCID, Collection<TRGT>>> relationCollectionPerEntity = new ThreadLocal<>();
+		private final ThreadLocal<RelationStorage<SRCID, TRGT>> relationCollectionPerEntity = new ThreadLocal<>();
 		
 		void storeRelation(SRCID source, TRGT target) {
-			relationCollectionPerEntity.get().computeIfAbsent(source, id -> new HashSet<>()).add(target);
+			relationCollectionPerEntity.get().add(source, target);
 		}
 		
 		Collection<TRGT> giveRelatedEntities(SRCID source) {
@@ -209,7 +207,7 @@ public class AggregateOneToManyWithAssociationTableAppender {
 		}
 		
 		void init() {
-			this.relationCollectionPerEntity.set(new HashMap<>());
+			this.relationCollectionPerEntity.set(new RelationStorage<>());
 		}
 		
 		void clear() {

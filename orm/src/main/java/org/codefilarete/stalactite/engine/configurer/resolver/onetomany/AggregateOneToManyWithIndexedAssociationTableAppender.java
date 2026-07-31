@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.engine.configurer.resolver.onetomany;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -14,6 +13,7 @@ import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJ
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
 import org.codefilarete.stalactite.engine.configurer.resolver.EntityReader;
+import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.IndexedRelationStorage;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
@@ -31,7 +31,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
-import org.codefilarete.tool.collection.KeepOrderMap;
+import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Hanger.Holder;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType.OUTER;
@@ -218,8 +218,7 @@ public class AggregateOneToManyWithIndexedAssociationTableAppender {
 				try {
 					targetEntityHolder.init();
 					
-					Map<SRCID, SRC> sourcePerId = new KeepOrderMap<>();
-					result.forEach(src -> sourcePerId.put(sourcePersister.getMapping().getId(src), src));
+					Map<SRCID, ? extends SRC> sourcePerId = Iterables.map(result, sourcePersister.getMapping()::getId);
 					
 					// loading the association records: target entities are collected in memory by the join relation fixer
 					associationRecordLoader.select(sourcePerId.keySet());
@@ -260,10 +259,10 @@ public class AggregateOneToManyWithIndexedAssociationTableAppender {
 	 */
 	private static class InMemoryIndexedRelationHolder<SRCID, TRGT> {
 		
-		private final ThreadLocal<Map<SRCID, Map<Integer, TRGT>>> relationCollectionPerEntity = new ThreadLocal<>();
+		private final ThreadLocal<IndexedRelationStorage<SRCID, TRGT>> relationCollectionPerEntity = new ThreadLocal<>();
 		
 		void storeRelation(SRCID source, int index, TRGT target) {
-			relationCollectionPerEntity.get().computeIfAbsent(source, id -> new HashMap<>()).put(index, target);
+			relationCollectionPerEntity.get().add(source, target, index);
 		}
 		
 		Map<Integer, TRGT> giveRelatedEntities(SRCID source) {
@@ -271,7 +270,7 @@ public class AggregateOneToManyWithIndexedAssociationTableAppender {
 		}
 		
 		void init() {
-			this.relationCollectionPerEntity.set(new HashMap<>());
+			this.relationCollectionPerEntity.set(new IndexedRelationStorage<>());
 		}
 		
 		void clear() {
