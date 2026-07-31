@@ -12,12 +12,15 @@ import java.util.Map;
  * @author Guillaume Mary
  * @see AssociationTableLoader
  */
-public class ThreadLocalIndexedRelationStorage<SRCID, TRGT> {
+public class ThreadLocalIndexedRelationStorage<SRCID, TRGT> extends ThreadLocalStorage<IndexedRelationStorage<SRCID, TRGT>> {
 	
-	private final ThreadLocal<IndexedRelationStorage<SRCID, TRGT>> storage = new ThreadLocal<>();
+	@Override
+	protected IndexedRelationStorage<SRCID, TRGT> newStorage() {
+		return new IndexedRelationStorage<>();
+	}
 	
 	public void storeRelation(SRCID source, int index, TRGT target) {
-		storage.get().add(source, target, index);
+		getStorage().add(source, target, index);
 	}
 	
 	/**
@@ -25,14 +28,6 @@ public class ThreadLocalIndexedRelationStorage<SRCID, TRGT> {
 	 * @return the entities found for the given source, sorted by their index, null if none was found
 	 */
 	public Map<Integer, TRGT> giveRelatedEntities(SRCID source) {
-		return storage.get().get(source);
-	}
-	
-	public void init() {
-		this.storage.set(new IndexedRelationStorage<>());
-	}
-	
-	public void clear() {
-		this.storage.remove();
+		return getStorage().get(source);
 	}
 }

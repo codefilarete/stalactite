@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRecord;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.IndexedElementRecord;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
@@ -66,7 +65,7 @@ public class AggregateElementCollectionAppender {
 					Set<SRCID> srcIds = Iterables.collect(result, sourcePersister.getMapping()::getId, HashSet::new);
 					Set<ElementRecord<TRGT, SRCID>> collectionsRecords = elementCollectionLoader.select(srcIds);
 					
-					Map<SRCID, Collection<TRGT>> collectionBySourceId = new HashMap<>();
+					Map<SRCID, Collection<ElementRecord<TRGT, SRCID>>> collectionBySourceId = new HashMap<>();
 					Stream<ElementRecord<TRGT, SRCID>> elementRecordStream;
 					if (relation.isOrdered()) {
 						// we sort all the retrieved records by their position, mixing source identifiers, it doesn't
@@ -80,20 +79,17 @@ public class AggregateElementCollectionAppender {
 						collectionBySourceId.computeIfAbsent(record.getId(),
 										// let's keep track of addition order in case of sorted collection
 										k -> new LinkedHashSet<>())
-								.add(record.getElement())
+								.add(record)
 					);
 					
 					// we sew the relations
-					ReadWritePropertyAccessPoint<SRC, S> collectionAccessPoint = relation.getAccessor();
 					result.forEach(src -> {
 						// filling final collection with a sorted collection
-						S relationCollection = collectionAccessPoint.get(src);
-						if (relationCollection == null) {
-							relationCollection = relation.getComponentFactory().get();
-							collectionAccessPoint.set(src, relationCollection);
+						Collection<ElementRecord<TRGT, SRCID>> trgtCollection = collectionBySourceId.get(sourcePersister.getMapping().getId(src));
+						if (trgtCollection != null) {
+							// the trgtCollection is sorted thanks to the elementRecordStream
+							trgtCollection.forEach(target -> relation.getRelationFixer().apply(src, target));
 						}
-						// the values are sorted thanks to the Map with Integer as key
-						relationCollection.addAll(collectionBySourceId.get(sourcePersister.getMapping().getId(src)));
 					});
 				}
 			});

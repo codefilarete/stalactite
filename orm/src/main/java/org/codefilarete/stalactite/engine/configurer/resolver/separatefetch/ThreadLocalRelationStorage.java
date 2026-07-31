@@ -12,12 +12,15 @@ import java.util.Collection;
  * @author Guillaume Mary
  * @see AssociationTableLoader
  */
-public class ThreadLocalRelationStorage<SRCID, TRGT> {
+public class ThreadLocalRelationStorage<SRCID, TRGT> extends ThreadLocalStorage<RelationStorage<SRCID, TRGT>> {
 	
-	private final ThreadLocal<RelationStorage<SRCID, TRGT>> storage = new ThreadLocal<>();
+	@Override
+	protected RelationStorage<SRCID, TRGT> newStorage() {
+		return new RelationStorage<>();
+	}
 	
 	public void storeRelation(SRCID source, TRGT target) {
-		storage.get().add(source, target);
+		getStorage().add(source, target);
 	}
 	
 	/**
@@ -25,14 +28,6 @@ public class ThreadLocalRelationStorage<SRCID, TRGT> {
 	 * @return the entities found for the given source, null if none was found
 	 */
 	public Collection<TRGT> giveRelatedEntities(SRCID source) {
-		return storage.get().get(source);
-	}
-	
-	public void init() {
-		this.storage.set(new RelationStorage<>());
-	}
-	
-	public void clear() {
-		this.storage.remove();
+		return getStorage().get(source);
 	}
 }

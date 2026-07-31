@@ -229,13 +229,8 @@ public class AggregateOneToManyWithIndexedAssociationTableAppender {
 						// targetPerIndex can be null if there's no associated entity in the database
 						Map<Integer, TRGT> targetPerIndex = targetEntityHolder.giveRelatedEntities(srcId);
 						if (targetPerIndex != null) {
-							S relationCollection = collectionAccessPoint.get(src);
-							if (relationCollection == null) {
-								relationCollection = relation.getComponentFactory().get();
-								collectionAccessPoint.set(src, relationCollection);
-							}
 							// the values() are sorted thanks to the Map sorted on the index
-							relationCollection.addAll(targetPerIndex.values());
+							targetPerIndex.values().forEach(target -> relation.getRelationFixer().apply(src, target));
 						}
 					});
 				} finally {

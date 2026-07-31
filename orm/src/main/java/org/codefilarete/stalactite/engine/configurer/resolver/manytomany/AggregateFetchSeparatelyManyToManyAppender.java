@@ -3,7 +3,6 @@ package org.codefilarete.stalactite.engine.configurer.resolver.manytomany;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 
 import org.codefilarete.reflection.PropertyAccessPoint;
 import org.codefilarete.stalactite.engine.configurer.AssociationRecordMapping;
@@ -12,8 +11,8 @@ import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToManyRel
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
 import org.codefilarete.stalactite.engine.configurer.resolver.EntityReader;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.AssociationTableLoader;
+import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.SecondPhaseSelectListener;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.ThreadLocalRelationStorage;
-import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
@@ -24,7 +23,6 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
-import org.codefilarete.tool.collection.Iterables;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType.OUTER;
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
@@ -99,31 +97,17 @@ public class AggregateFetchSeparatelyManyToManyAppender {
 				Collections.emptySet(),
 				null);
 		
-		sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
-			
-			@Override
-			public void afterSelect(Set<? extends SRC> result) {
-				try {
-					targetEntityHolder.init();
-					
-					Map<SRCID, ? extends SRC> sourcePerId = Iterables.map(result, sourcePersister.getMapping()::getId);
-					
-					// loading the association records: target entities are collected in memory by the join relation fixer
-					associationRecordLoader.select(sourcePerId.keySet());
-					
-					// we sew the relations
-					sourcePerId.forEach((srcId, src) -> {
-						Collection<TRGT> targets = targetEntityHolder.giveRelatedEntities(srcId);
-						if (targets != null) {
-							targets.forEach(target -> relation.getRelationFixer().apply(src, target));
-						}
-					});
-				} finally {
-					// we remove the internal ThreadLocal
-					targetEntityHolder.clear();
-				}
-			}
-		});
+		sourcePersister.addSelectListener(new SecondPhaseSelectListener<>(
+				sourcePersister.getMapping()::getId,
+				associationRecordLoader,
+				targetEntityHolder,
+				(srcId, src) -> {
+					// targets can be null if there's no associated entity in the database
+					Collection<TRGT> targets = targetEntityHolder.giveRelatedEntities(srcId);
+					if (targets != null) {
+						targets.forEach(target -> relation.getRelationFixer().apply(src, target));
+					}
+				}));
 		
 		// Note that because the relation is loaded separately, next joins should be appended to the loader's join tree,
 		// not the aggregate one, so that the target entity relations are loaded by the second-phase query too
