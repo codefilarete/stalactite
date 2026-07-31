@@ -317,7 +317,9 @@ public class AggregateResolver {
 									sourcePersister,
 									targetPersister,
 									assemblyPawn.getParentJoinPoint(),
-									assemblyPawn.getAggregateTree());
+									assemblyPawn.getAggregateTree(),
+									persistenceContext.getDialect(),
+									persistenceContext.getConnectionProvider());
 							new SkeletonAggregateAppender()
 									.appendInheritance(localCreatedPersistor, aggregatePersister.getEntityJoinTree());
 							

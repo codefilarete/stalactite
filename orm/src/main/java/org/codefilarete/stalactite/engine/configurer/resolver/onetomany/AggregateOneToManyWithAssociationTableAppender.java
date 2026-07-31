@@ -13,7 +13,8 @@ import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJ
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
 import org.codefilarete.stalactite.engine.configurer.resolver.EntityReader;
-import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.RelationStorage;
+import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.AssociationTableLoader;
+import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.ThreadLocalRelationStorage;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
@@ -143,8 +144,7 @@ public class AggregateOneToManyWithAssociationTableAppender {
 		// the target entity is joined onto the loader's tree so that association records and target entities are
 		// loaded by one and only one query. Entities are gathered in memory to be sewn onto their owner afterward,
 		// since the owner is not part of that query.
-		InMemoryRelationHolder<SRCID, TRGT> targetEntityHolder = new InMemoryRelationHolder<>();
-		String targetJoinName = associationRecordLoader.getEntityJoinTree().addRelationJoin(
+		ThreadLocalRelationStorage<SRCID, TRGT> targetEntityHolder = new ThreadLocalRelationStorage<>();		String targetJoinName = associationRecordLoader.getEntityJoinTree().addRelationJoin(
 				ROOT_JOIN_NAME,
 				new EntityMappingAdapter<>(targetPersister.getMapping()),
 				(PropertyAccessPoint) relation.getAccessor(),
@@ -185,33 +185,5 @@ public class AggregateOneToManyWithAssociationTableAppender {
 		// Note that because the relation is loaded separately, next joins should be appended to the loader's join tree,
 		// not the given as argument one, so that the target entity relations are loaded by the second-phase query too
 		return new GraftPoint(relation.getTargetEntity(), targetPersister, targetJoinName, associationRecordLoader.getEntityJoinTree());
-	}
-	
-	/**
-	 * In-memory and temporary storage of the entities loaded by the second-phase query, indexed by the identifier of
-	 * the entity that owns the relation. Made as a {@link ThreadLocal} to support concurrent selects.
-	 *
-	 * @param <SRCID> identifier type of the entity that owns the relation
-	 * @param <TRGT> type of the entities of the relation
-	 */
-	private static class InMemoryRelationHolder<SRCID, TRGT> {
-		
-		private final ThreadLocal<RelationStorage<SRCID, TRGT>> relationCollectionPerEntity = new ThreadLocal<>();
-		
-		void storeRelation(SRCID source, TRGT target) {
-			relationCollectionPerEntity.get().add(source, target);
-		}
-		
-		Collection<TRGT> giveRelatedEntities(SRCID source) {
-			return relationCollectionPerEntity.get().get(source);
-		}
-		
-		void init() {
-			this.relationCollectionPerEntity.set(new RelationStorage<>());
-		}
-		
-		void clear() {
-			this.relationCollectionPerEntity.remove();
-		}
 	}
 }

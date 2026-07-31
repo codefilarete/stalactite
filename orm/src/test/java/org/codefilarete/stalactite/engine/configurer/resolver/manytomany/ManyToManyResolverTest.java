@@ -239,7 +239,7 @@ public class ManyToManyResolverTest {
 	// -------------------------------------------------------------------------
 	
 	@Test
-	void crud_indexedCollection_orderIsPreserved() {
+	void select_indexedCollection_orderIsPreserved() {
 		FluentEntityMappingBuilder<Answer, Identifier<Long>> answerBuilder = entityBuilder(Answer.class, LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
 				.mapManyToMany(Answer::getChoices, choiceConfiguration)
@@ -275,11 +275,12 @@ public class ManyToManyResolverTest {
 		
 		Answer loaded = answerPersister.select(answer1.getId());
 		assertThat(loaded.getChoices()).isInstanceOf(KeepOrderSet.class);
-		assertThat(loaded.getChoices()).extracting(chain(Choice::getId, StatefulIdentifier::getDelegate)).containsExactlyElementsOf(Iterables.collectToList(list, chain(Choice::getId, StatefulIdentifier::getDelegate)));
+		assertThat(loaded.getChoices()).extracting(chain(Choice::getId, StatefulIdentifier::getDelegate))
+				.containsExactlyElementsOf(Iterables.collectToList(list, chain(Choice::getId, StatefulIdentifier::getDelegate)));
 	}
 	
 	@Test
-	void crud_indexedCollection_fetchSeparately_orderIsPreserved() {
+	void select_indexedCollection_fetchSeparately_orderIsPreserved() {
 		FluentEntityMappingBuilder<Answer, Identifier<Long>> answerBuilder = entityBuilder(Answer.class, LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
 				.mapManyToMany(Answer::getChoices, choiceConfiguration)
@@ -315,7 +316,8 @@ public class ManyToManyResolverTest {
 		
 		Answer loaded = answerPersister.select(answer1.getId());
 		assertThat(loaded.getChoices()).isInstanceOf(KeepOrderSet.class);
-		assertThat(loaded.getChoices()).extracting(chain(Choice::getId, StatefulIdentifier::getDelegate)).containsExactlyElementsOf(Iterables.collectToList(list, chain(Choice::getId, StatefulIdentifier::getDelegate)));
+		assertThat(loaded.getChoices()).extracting(chain(Choice::getId, StatefulIdentifier::getDelegate))
+				.containsExactlyElementsOf(Iterables.collectToList(list, chain(Choice::getId, StatefulIdentifier::getDelegate)));
 	}
 	
 	// -------------------------------------------------------------------------

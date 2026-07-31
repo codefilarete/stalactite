@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.configurer.resolver.onetomany;
+package org.codefilarete.stalactite.engine.configurer.resolver.separatefetch;
 
 import java.sql.ResultSet;
 import java.util.Collections;
