@@ -9,6 +9,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -74,81 +75,31 @@ public class AggregateMapAppender {
 			
 			SelectExecutor<KeyValueRecord<X, Y, SRCID>, SRCID> mapEntrySelectExecutor = mapEntryLoader;
 			if (relation.getKeyEntityDefinition() != null) {
-				InMemoryRelationHolder<SRCID, KID, K> inMemoryKeyEntityHolder = new InMemoryRelationHolder<>();
-				// We add a join on the MapEntryLoader to collect the key entity in-memory, then we rearrange the result
-				String keyEntityJoinNodeName = appendEntityJoin((EntityJoinTree<SRC, SRCID>) mapEntryLoader.getEntityJoinTree(),
-						ROOT_JOIN_NAME,
+				Duo<SelectExecutor<KeyValueRecord<X, Y, SRCID>, SRCID>, GraftPoint> keyJoinResult = appendSeparatelyFetchedEntityJoin(
+						mapEntryLoader,
 						relation.getAccessor(),
 						keyEntityReader,
-						relation.getKeyEntityDefinition().getForeignKey(),
-						inMemoryKeyEntityHolder,
-						record -> (KID) record.getKey());
-				
-				SelectExecutor<KeyValueRecord<X, Y, SRCID>, SRCID> finalSelectExecutor = mapEntrySelectExecutor;
-				// we wrap the entry loader by some code that rearrange its result by getting the key entities from the in-memory relation holder
-				mapEntrySelectExecutor = ids -> {
-					try {
-						inMemoryKeyEntityHolder.init();
-						
-						Set<KeyValueRecord<X, Y, SRCID>> select = finalSelectExecutor.select(ids);
-						
-						// rearranging the previous result which contains only raw keyId by replacing it by the final K entity
-						// tempering with this allows not to change the final relation sewing
-						select.forEach(record -> {
-							Collection<MapEntry<KID, K>> duos = inMemoryKeyEntityHolder.giveEntityEntries(record.getId().getId());
-							duos.forEach(duo -> {
-								if (duo.getLeft().equals(record.getKey())) {
-									record.setKey((X) duo.getRight());
-								}
-							});
-						});
-						return select;
-					} finally {
-						// we remove the internal ThreadLocal
-						inMemoryKeyEntityHolder.clear();
-					}
-				};
-				
-				result.setLeft(new GraftPoint(relation.getKeyEntityDefinition().getEntity(), keyEntityReader, keyEntityJoinNodeName));
+						relation.getKeyEntityDefinition(),
+						mapEntrySelectExecutor,
+						KeyValueRecord::getKey,
+						KeyValueRecord::setKey);
+				mapEntrySelectExecutor = keyJoinResult.getLeft();
+				result.setLeft(keyJoinResult.getRight());
 			}
 			
 			if (relation.getValueEntityDefinition() != null) {
-				InMemoryRelationHolder<SRCID, VID, V> inMemoryValueEntityHolder = new InMemoryRelationHolder<>();
-				SelectExecutor<KeyValueRecord<X, Y, SRCID>, SRCID> finalSelectExecutor = mapEntrySelectExecutor;
-				// we wrap the entry loader by some code that rearrange its result by getting the value entities from the in-memory relation holder
-				mapEntrySelectExecutor = ids -> {
-					try {
-						inMemoryValueEntityHolder.init();
-						
-						Set<KeyValueRecord<X, Y, SRCID>> select = finalSelectExecutor.select(ids);
-						
-						// rearranging the previous result which contains only raw valueId by replacing it by the final V entity
-						// tempering with this allows not to change the final relation sewing
-						select.forEach(record -> {
-							Collection<MapEntry<VID, V>> duos = inMemoryValueEntityHolder.giveEntityEntries(record.getId().getId());
-							duos.forEach(duo -> {
-								if (duo.getLeft().equals(record.getValue())) {
-									record.setValue((Y) duo.getRight());
-								}
-							});
-						});
-						return select;
-					} finally {
-						// we remove the internal ThreadLocal
-						inMemoryValueEntityHolder.clear();
-					}
-				};
-				
 				// Note that because the relation is loaded separately, next joins should be appended to the second-phase entity join tree,
 				// not the given as argument one, so we return a GraftPoint with the target persister and its join tree. And it should be grafted on ROOT_JOIN_NAME
-				String keyEntityJoinNodeName = appendEntityJoin((EntityJoinTree<SRC, SRCID>) mapEntryLoader.getEntityJoinTree(),
-						ROOT_JOIN_NAME,
+				Duo<SelectExecutor<KeyValueRecord<X, Y, SRCID>, SRCID>, GraftPoint> valueJoinResult = appendSeparatelyFetchedEntityJoin(
+						mapEntryLoader,
 						relation.getAccessor(),
 						valueEntityReader,
-						relation.getValueEntityDefinition().getForeignKey(),
-						inMemoryValueEntityHolder,
-						record -> (VID) record.getValue());
-				result.setRight(new GraftPoint(relation.getValueEntityDefinition().getEntity(), valueEntityReader, keyEntityJoinNodeName));
+						relation.getValueEntityDefinition(),
+						mapEntrySelectExecutor,
+						KeyValueRecord::getValue,
+						KeyValueRecord::setValue);
+				mapEntrySelectExecutor = valueJoinResult.getLeft();
+				result.setRight(valueJoinResult.getRight());
 			}
 						
 			SelectExecutor<KeyValueRecord<X, Y, SRCID>, SRCID> eventuallyRearrangingMapEntrySelectExecutor = mapEntrySelectExecutor;
@@ -193,6 +144,60 @@ public class AggregateMapAppender {
 			result = append2(relation, aggregateTree, sourcePersister, mountPoint, keyValueRecordPersister, keyEntityReader, valueEntityReader);
 		}
 		return result;
+	}
+	
+	/**
+	 * Factorizes the logic shared by key and value entities when a map relation is fetched separately: adds a join
+	 * on the {@link MapEntryLoader} entity join tree to collect the entity in-memory, then wraps the given select
+	 * executor so it rearranges its result by replacing the raw identifier with the found entity.
+	 */
+	private <X, Y, SRC, SRCID, ENTITY_ID, ENTITY, RAW, LEFTTABLE extends Table<LEFTTABLE>, MAPTABLE extends Table<MAPTABLE>, ENTITYTABLE extends Table<ENTITYTABLE>>
+	Duo<SelectExecutor<KeyValueRecord<X, Y, SRCID>, SRCID>, GraftPoint> appendSeparatelyFetchedEntityJoin(
+			MapEntryLoader<SRC, SRCID, X, Y, LEFTTABLE, MAPTABLE> mapEntryLoader,
+			ReadWritePropertyAccessPoint<SRC, ?> mapAccessor,
+			EntityReader<ENTITY, ENTITY_ID, ENTITYTABLE> entityReader,
+			MapMemberAsEntity<ENTITY, ENTITY_ID, MAPTABLE, ENTITYTABLE, ?> entityDefinition,
+			SelectExecutor<KeyValueRecord<X, Y, SRCID>, SRCID> currentSelectExecutor,
+			Function<KeyValueRecord<X, Y, SRCID>, RAW> rawValueGetter,
+			BiConsumer<KeyValueRecord<X, Y, SRCID>, RAW> rawValueSetter) {
+		
+		InMemoryRelationHolder<SRCID, ENTITY_ID, ENTITY> inMemoryEntityHolder = new InMemoryRelationHolder<>();
+		
+		// We add a join on the MapEntryLoader to collect the entity in-memory, then we rearrange the result
+		String entityJoinNodeName = appendEntityJoin(
+				(EntityJoinTree<SRC, SRCID>) mapEntryLoader.getEntityJoinTree(),
+				ROOT_JOIN_NAME,
+				(ReadWritePropertyAccessPoint) mapAccessor,
+				entityReader,
+				entityDefinition.getForeignKey(),
+				inMemoryEntityHolder,
+				record -> (ENTITY_ID) rawValueGetter.apply((KeyValueRecord<X, Y, SRCID>) record));
+		
+		// we wrap the entry loader by some code that rearranges its result by getting the entities from the in-memory relation holder
+		SelectExecutor<KeyValueRecord<X, Y, SRCID>, SRCID> wrappedSelectExecutor = ids -> {
+			try {
+				inMemoryEntityHolder.init();
+				
+				Set<KeyValueRecord<X, Y, SRCID>> select = currentSelectExecutor.select(ids);
+				
+				// rearranging the previous result which contains only the raw identifier by replacing it with the final entity
+				// tempering with this allows not to change the final relation sewing
+				select.forEach(record -> {
+					Collection<MapEntry<ENTITY_ID, ENTITY>> duos = inMemoryEntityHolder.giveEntityEntries(record.getId().getId());
+					duos.forEach(duo -> {
+						if (duo.getLeft().equals(rawValueGetter.apply(record))) {
+							rawValueSetter.accept(record, (RAW) duo.getRight());
+						}
+					});
+				});
+				return select;
+			} finally {
+				// we remove the internal ThreadLocal
+				inMemoryEntityHolder.clear();
+			}
+		};
+		
+		return new Duo<>(wrappedSelectExecutor, new GraftPoint(entityDefinition.getEntity(), entityReader, entityJoinNodeName));
 	}
 	
 	
