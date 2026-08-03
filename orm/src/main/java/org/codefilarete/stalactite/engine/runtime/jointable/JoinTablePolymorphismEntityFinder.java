@@ -9,9 +9,11 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
+import org.codefilarete.stalactite.engine.EntityReadExecutor;
 import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListener;
+import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphicEntityFinder;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
@@ -24,13 +26,13 @@ import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRo
 import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.GroupBy;
 import org.codefilarete.stalactite.query.model.Having;
 import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -101,7 +103,7 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 		return new EntityQueryCriteriaSupport<>(this, criteriaSupport.copy());
 	}
 	
-	private SingleLoadEntityJoinTree<C, I> buildSingleLoadEntityJoinTree(ConfiguredRelationalPersister<C, I> mainPersister) {
+	private SingleLoadEntityJoinTree<C, I> buildSingleLoadEntityJoinTree(EntityReadExecutor<C, I> mainPersister) {
 		SingleLoadEntityJoinTree<C, I> result = new SingleLoadEntityJoinTree<>(
 				mainPersister,
 				new HashSet<>(persisterPerSubclass.values())
@@ -182,10 +184,10 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 				
 				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the 
 				// right one
-				Set<Entry<Class<C>, ConfiguredRelationalPersister<C, I>>> entries = persisterPerSubclass.entrySet();
+				Set<Entry<Class<C>, ConfiguredEntityReader<C, I>>> entries = persisterPerSubclass.entrySet();
 				Duo<Class, I> duo = null;
 				I identifier;
-				for (Entry<Class<C>, ConfiguredRelationalPersister<C, I>> entry : entries) {
+				for (Entry<Class<C>, ConfiguredEntityReader<C, I>> entry : entries) {
 					identifier = entry.getValue().getMapping().getIdMapping().getIdentifierAssembler().assemble(row);
 					if (identifier != null) {
 						duo = new Duo<>(entry.getKey(), identifier);
@@ -208,8 +210,8 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 	 */
 	private static class SingleLoadEntityJoinTree<C, I> extends EntityJoinTree<C, I> {
 		
-		public <T extends Table<T>> SingleLoadEntityJoinTree(ConfiguredRelationalPersister<C, I> mainPersister,
-															 Set<? extends ConfiguredRelationalPersister<C, I>> subPersisters) {
+		public <T extends Table<T>> SingleLoadEntityJoinTree(EntityReadExecutor<C, I> mainPersister,
+															 Set<? extends ConfiguredEntityReader<C, I>> subPersisters) {
 			super(tree -> new JoinTableRootJoinNode<>(
 					tree,
 					mainPersister,

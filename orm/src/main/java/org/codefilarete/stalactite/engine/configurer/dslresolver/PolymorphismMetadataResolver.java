@@ -9,12 +9,14 @@ import org.codefilarete.stalactite.dsl.PolymorphismPolicy.SingleTablePolymorphis
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.codefilarete.stalactite.dsl.subentity.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
+import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.EntityPolymorphism;
 import org.codefilarete.stalactite.engine.configurer.model.Mapping;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.InheritanceConfigurationResolver.ResolvedConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.collection.KeepOrderSet;
 
 import static org.codefilarete.tool.Nullable.nullable;
 
@@ -41,7 +43,8 @@ public class PolymorphismMetadataResolver {
 		return result;
 	}
 	
-	private <C, D extends C, I, DTYPE, T extends Table<T>> org.codefilarete.stalactite.engine.configurer.model.SingleTablePolymorphism<D, I, DTYPE, T>
+	private <C, D extends C, I, DTYPE, T extends Table<T>>
+	org.codefilarete.stalactite.engine.configurer.model.SingleTablePolymorphism<D, I, DTYPE, T>
 	buildSingleTablePolymorphism(ResolvedConfiguration<C, I> configuration,
 	                             SingleTablePolymorphism<C, DTYPE> policy) {
 		// The discriminator column lives on the entity's own table
@@ -58,19 +61,21 @@ public class PolymorphismMetadataResolver {
 			Mapping<D, T> mapping = createMapping(configuration, subEntityConfig, (T) configuration.getTable(), propertyMappingResolver);
 			
 			DTYPE discriminatorValue = policy.getDiscriminatorValue(subConfig.getEntityType());
-			result.addSubEntity(discriminatorValue, mapping);
+			Entity<D, I, T> subEntity = new Entity<>(configuration.getIdentifierMapping(), mapping);
+			result.addSubEntity(discriminatorValue, subEntity);
 		});
 		
 		return result;
 	}
 	
-	private <C, D extends C, I, T extends Table<T>, SUBTABLE extends Table<SUBTABLE>> org.codefilarete.stalactite.engine.configurer.model.JoinTablePolymorphism<C, I, T>
+	private <C, D extends C, I, T extends Table<T>, SUBTABLE extends Table<SUBTABLE>>
+	org.codefilarete.stalactite.engine.configurer.model.JoinTablePolymorphism<C, I, T>
 	buildJoinTablePolymorphism(ResolvedConfiguration<C, I> configuration,
 	                           JoinTablePolymorphism<C> policy) {
 		org.codefilarete.stalactite.engine.configurer.model.JoinTablePolymorphism<C, I, T> result =
 				new org.codefilarete.stalactite.engine.configurer.model.JoinTablePolymorphism<>();
 		
-		PropertyMappingResolver<D, T> propertyMappingResolver = new PropertyMappingResolver<>(dialect.getColumnBinderRegistry());
+		PropertyMappingResolver<D, SUBTABLE> propertyMappingResolver = new PropertyMappingResolver<>(dialect.getColumnBinderRegistry());
 		
 		policy.getSubClasses().forEach(subConfig -> {
 			SubEntityMappingConfiguration<D> subEntityConfig = (SubEntityMappingConfiguration<D>) subConfig;
@@ -86,24 +91,33 @@ public class PolymorphismMetadataResolver {
 					configuration.getTable().getPrimaryKey(),
 					subTable.<I>getPrimaryKey());
 			Mapping<D, SUBTABLE> mapping = createMapping(configuration, subEntityConfig, subTable, propertyMappingResolver);
-			result.addSubEntity(subEntityConfig.getEntityType(), mapping, join);
+			Entity<D, I, SUBTABLE> subEntity = new Entity<>(configuration.getIdentifierMapping(), mapping);
+			result.addSubEntity(subEntityConfig.getEntityType(), subEntity, join);
 		});
 		
 		return result;
 	}
 	
-	private <C, D extends C, I, T extends Table<T>, SUBTABLE extends Table<SUBTABLE>> org.codefilarete.stalactite.engine.configurer.model.TablePerClassPolymorphism<C, I>
+	private <C, D extends C, I, SUBTABLE extends Table<SUBTABLE>> org.codefilarete.stalactite.engine.configurer.model.TablePerClassPolymorphism<C, I>
 	buildTablePerClassPolymorphism(ResolvedConfiguration<C, I> configuration,
 	                               TablePerClassPolymorphism<C> policy) {
-		Map<Class<? extends C>, Mapping<? extends C, ?>> subEntities = new LinkedHashMap<>();
-		PropertyMappingResolver<D, T> propertyMappingResolver = new PropertyMappingResolver<>(dialect.getColumnBinderRegistry());
+		Map<Class<? extends C>, Entity<? extends C, I, ?>> subEntities = new LinkedHashMap<>();
+		PropertyMappingResolver<D, SUBTABLE> propertyMappingResolver = new PropertyMappingResolver<>(dialect.getColumnBinderRegistry());
 		
 		policy.getSubClasses().forEach(subConfig -> {
 			SubEntityMappingConfiguration<D> subEntityConfig = (SubEntityMappingConfiguration<D>) subConfig;
 			SUBTABLE subTable = (SUBTABLE) nullable(policy.giveTable(subEntityConfig))
 					.getOr(() -> new Table<>(configuration.getNamingConfiguration().getTableNamingStrategy().giveName(subEntityConfig.getEntityType())));
+			// propagating parent class primaryKey to the subTable
+			KeepOrderSet<Column<SUBTABLE, ?>> columns = configuration.getTable().<I>getPrimaryKey().getColumns();
+			columns.forEach(column -> {
+				subTable.addColumn(column.getName(), column.getJavaType(), column.getSize(), column.isNullable())
+						.primaryKey();
+			});
 			Mapping<D, SUBTABLE> mapping = createMapping(configuration, subEntityConfig, subTable, propertyMappingResolver);
-			subEntities.put(subConfig.getEntityType(), mapping);
+			Entity<D, I, SUBTABLE> subEntity = new Entity<>(configuration.getIdentifierMapping(), mapping);
+			subEntities.put(subConfig.getEntityType(), subEntity);
+			
 		});
 		
 		return new org.codefilarete.stalactite.engine.configurer.model.TablePerClassPolymorphism<>(subEntities);
@@ -112,9 +126,9 @@ public class PolymorphismMetadataResolver {
 	private <C, D extends C, I, T extends Table<T>, SUBTABLE extends Table<SUBTABLE>> Mapping<D, SUBTABLE> createMapping(ResolvedConfiguration<C, I> configuration,
 	                                                                                                                     SubEntityMappingConfiguration<D> subEntityConfig,
 	                                                                                                                     SUBTABLE subTable,
-	                                                                                                                     PropertyMappingResolver<D, T> propertyMappingResolver) {
+	                                                                                                                     PropertyMappingResolver<D, SUBTABLE> propertyMappingResolver) {
 		Mapping<D, SUBTABLE> mapping = new Mapping<>(subEntityConfig.getEntityType(), subTable);
-		mapping.getPropertyMappingHolder().addMapping(propertyMappingResolver.resolve(subEntityConfig.getPropertiesMapping(), (T) configuration.getTable(), configuration.getNamingConfiguration().getColumnNamingStrategy()));
+		mapping.getPropertyMappingHolder().addMapping(propertyMappingResolver.resolve(subEntityConfig.getPropertiesMapping(), subTable, configuration.getNamingConfiguration().getColumnNamingStrategy()));
 		return mapping;
 	}
 }

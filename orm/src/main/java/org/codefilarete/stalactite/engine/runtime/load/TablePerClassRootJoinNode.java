@@ -1,13 +1,13 @@
 package org.codefilarete.stalactite.engine.runtime.load;
 
-import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.EntityReadExecutor;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.ExcludingJoinRowConsumer;
@@ -18,7 +18,6 @@ import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.query.api.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.api.Selectable.SimpleSelectable;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Iterables;
@@ -40,16 +39,16 @@ import static org.codefilarete.tool.Nullable.nullable;
  */
 public class TablePerClassRootJoinNode<C, I> extends JoinRoot<C, I, PseudoTable> {
 
-	private final Map<String, ConfiguredRelationalPersister<C, I>> subPersisters;
+	private final Map<String, EntityReadExecutor<C, I>> subPersisters;
 	private final SimpleSelectable<String> discriminatorColumn;
 	private TablePerClassPolymorphicJoinRootRowConsumer<C, I> rootConsumer;
 	
 	public TablePerClassRootJoinNode(EntityJoinTree<C, I> tree,
-									 ConfiguredRelationalPersister<C, I> mainPersister,
-									 Map<String, ConfiguredRelationalPersister<C, I>> subPersisters,
+									 EntityMapping<C, I, ?> mainMapping,
+									 Map<String, EntityReadExecutor<C, I>> subPersisters,
 									 PseudoTable union,
 									 SimpleSelectable<String> discriminatorColumn) {
-		super(tree, new EntityMappingAdapter<>(mainPersister.<Table>getMapping()), union);
+		super(tree, new EntityMappingAdapter<>(mainMapping), union);
 		this.subPersisters = subPersisters;
 		this.discriminatorColumn = discriminatorColumn;
 	}
@@ -78,7 +77,7 @@ public class TablePerClassRootJoinNode<C, I> extends JoinRoot<C, I, PseudoTable>
 		return rootConsumer;
 	}
 	
-	public void addSubPersister(ConfiguredRelationalPersister<C, I> persister, MergeJoinRowConsumer<? extends C> subConsumer, String discriminatorValue) {
+	public void addSubPersister(EntityReadExecutor<C, I> persister, MergeJoinRowConsumer<? extends C> subConsumer, String discriminatorValue) {
 		rootConsumer.subConsumers.forEach(pawnConsumer -> {
 			if (pawnConsumer.subEntityType == persister.getClassToPersist()) {
 				pawnConsumer.subPropertiesApplier = subConsumer;

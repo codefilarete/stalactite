@@ -1,12 +1,13 @@
 package org.codefilarete.stalactite.engine.runtime.load;
 
-import javax.annotation.Nullable;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.EntityReadExecutor;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.ExcludingJoinRowConsumer;
@@ -36,13 +37,13 @@ import org.slf4j.LoggerFactory;
  */
 public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C, I, T> {
 	
-	private final Set<? extends ConfiguredRelationalPersister<C, I>> subPersisters;
+	private final Set<? extends ConfiguredEntityReader<C, I>> subPersisters;
 	private final Set<Column<T, ?>> selectableColumns;
 	private JoinTablePolymorphicJoinRootRowConsumer<C, I> rootConsumer;
 	
 	public JoinTableRootJoinNode(EntityJoinTree<C, I> tree,
-								 ConfiguredRelationalPersister<C, I> mainPersister,
-								 Set<? extends ConfiguredRelationalPersister<C, I>> subPersisters,
+	                             EntityReadExecutor<C, I> mainPersister,
+								 Set<? extends ConfiguredEntityReader<C, I>> subPersisters,
 								 Set<? extends Column<T, ?>> selectableColumns,
 								 T mainTable) {
 		super(tree, new EntityMappingAdapter<>(mainPersister.<T>getMapping()), mainTable);
@@ -70,7 +71,7 @@ public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C,
 		return rootConsumer;
 	}
 	
-	public void addSubPersister(ConfiguredRelationalPersister<C, I> persister, MergeJoinRowConsumer<C> subConsumer) {
+	public void addSubPersister(ConfiguredEntityReader<C, I> persister, MergeJoinRowConsumer<C> subConsumer) {
 		rootConsumer.subConsumers.forEach(pawnConsumer -> {
 			if (pawnConsumer.subEntityType == persister.getClassToPersist()) {
 				pawnConsumer.subPropertiesApplier = subConsumer;

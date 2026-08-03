@@ -19,6 +19,10 @@ public interface EntityWriteExecutor<C, I> extends InsertExecutor<C>, UpdateExec
 	
 	<T extends Table<T>> EntityMapping<C, I, T> getMapping();
 	
+	default Class<C> getClassToPersist() {
+		return getMapping().getClassToPersist();
+	}
+	
 	default boolean isNew(C entity) {
 		return getMapping().isNew(entity);
 	}

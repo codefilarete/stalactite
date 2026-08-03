@@ -19,14 +19,14 @@ public class TablePerClassPolymorphism<C, I> implements EntityPolymorphism<C, I>
 	 * needed nor possible.
 	 * The table type is per subclass, hence the wildcard.
 	 */
-	private final Map<Class<? extends C>, Mapping<? extends C, ?>> subEntities;
+	private final Map<Class<? extends C>, Entity<? extends C, I, ?>> subEntities;
 	
-	public TablePerClassPolymorphism(Map<Class<? extends C>, Mapping<? extends C, ?>> subEntities) {
+	public TablePerClassPolymorphism(Map<Class<? extends C>, Entity<? extends C, I, ?>> subEntities) {
 		this.subEntities = subEntities;
 	}
 	
 	@Override
-	public Set<Mapping<? extends C, ?>> getSubEntities() {
+	public Set<Entity<? extends C, I, ?>> getSubEntities() {
 		return new KeepOrderSet<>(subEntities.values());
 	}
 }

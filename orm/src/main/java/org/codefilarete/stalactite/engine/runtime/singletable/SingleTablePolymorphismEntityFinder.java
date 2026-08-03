@@ -9,9 +9,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy.SingleTablePolymorphism;
+import org.codefilarete.stalactite.engine.EntityReadExecutor;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListener;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphicEntityFinder;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
@@ -20,6 +22,7 @@ import org.codefilarete.stalactite.engine.runtime.load.JoinTableRootJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.SingleTableRootJoinNode;
 import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
@@ -69,11 +72,27 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 											   SingleTablePolymorphism<C, DTYPE> polymorphismPolicy,
 											   ConnectionProvider connectionProvider,
 											   Dialect dialect) {
-		super(mainPersister, persisterPerSubclass, connectionProvider, dialect);
-		this.identifierAssembler = mainPersister.getMapping().getIdMapping().getIdentifierAssembler();
+		this(mainPersister.getEntityJoinTree(),
+				mainPersister.getMapping(),
+				persisterPerSubclass,
+				discriminatorColumn,
+				polymorphismPolicy,
+				connectionProvider,
+				dialect);
+	}
+	
+	public SingleTablePolymorphismEntityFinder(EntityJoinTree<C, I> mainEntityJoinTree,
+	                                           ConfiguredEntityReader<C, I> mainReader,
+											   Map<? extends Class<C>, ? extends ConfiguredEntityReader<C, I>> persisterPerSubclass,
+											   Column<T, DTYPE> discriminatorColumn,
+											   SingleTablePolymorphism<C, DTYPE> polymorphismPolicy,
+											   ConnectionProvider connectionProvider,
+											   Dialect dialect) {
+		super(mainEntityJoinTree, mainReader, persisterPerSubclass, connectionProvider, dialect);
+		this.identifierAssembler = mainReader.getMapping().getIdMapping().getIdentifierAssembler();
 		this.discriminatorColumn = discriminatorColumn;
 		this.polymorphismPolicy = polymorphismPolicy;
-		this.singleLoadEntityJoinTree = buildSingleLoadEntityJoinTree(mainPersister, persisterPerSubclass);
+		this.singleLoadEntityJoinTree = buildSingleLoadEntityJoinTree(mainReader, persisterPerSubclass);
 		this.criteriaSupport = new EntityCriteriaSupport<>(singleLoadEntityJoinTree);
 		
 		// made for optimization (to avoid creating multiple times the query) but also to avoid adding several times the polymorphic JoinNode consumers
@@ -111,9 +130,9 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 		return new EntityQueryCriteriaSupport<>(this, criteriaSupport.copy());
 	}
 	
-	private SingleLoadEntityJoinTree<C, I, DTYPE> buildSingleLoadEntityJoinTree(ConfiguredRelationalPersister<C, I> mainPersister, Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass) {
+	private SingleLoadEntityJoinTree<C, I, DTYPE> buildSingleLoadEntityJoinTree(ConfiguredEntityReader<C, I> mainPersister, Map<? extends Class<C>, ? extends ConfiguredEntityReader<C, I>> persisterPerSubclass) {
 		SingleLoadEntityJoinTree<C, I, DTYPE> result = new SingleLoadEntityJoinTree<>(
-				mainPersister,
+				mainMapping,
 				new HashSet<>(persisterPerSubclass.values()),
 				discriminatorColumn,
 				polymorphismPolicy
@@ -205,13 +224,13 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 	 */
 	private static class SingleLoadEntityJoinTree<C, I, DTYPE> extends EntityJoinTree<C, I> {
 		
-		public <T extends Table<T>> SingleLoadEntityJoinTree(ConfiguredRelationalPersister<C, I> mainPersister,
-															 Set<? extends ConfiguredRelationalPersister<C, I>> subPersisters,
+		public <T extends Table<T>> SingleLoadEntityJoinTree(EntityMapping<C, I, T> mainMapping,
+															 Set<? extends ConfiguredEntityReader<C, I>> subPersisters,
 															 Column<T, DTYPE> discriminatorColumn,
 															 SingleTablePolymorphism<C, DTYPE> polymorphismPolicy) {
 			super(self -> new SingleTableRootJoinNode<>(
 					self,
-					mainPersister,
+					mainMapping,
 					subPersisters,
 					discriminatorColumn,
 					polymorphismPolicy)

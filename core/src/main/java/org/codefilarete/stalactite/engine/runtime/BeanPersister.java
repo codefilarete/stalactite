@@ -37,7 +37,8 @@ public class BeanPersister<C, I, T extends Table<T>>
 	 * Property mapping on which SQL executors will refer to build their SQL operation
 	 */
 	private final EntityMapping<C, I, T> mappingStrategy;
-
+	
+	private final Dialect dialect;
 	/**
 	 * Connection on which SQL operations will be run
 	 */
@@ -60,6 +61,7 @@ public class BeanPersister<C, I, T extends Table<T>>
 	
 	public BeanPersister(EntityMapping<C, I, T> mappingStrategy, Dialect dialect, ConnectionConfiguration connectionConfiguration) {
 		this.mappingStrategy = mappingStrategy;
+		this.dialect = dialect;
 		this.connectionConfiguration = connectionConfiguration;
 		this.dmlGenerator = dialect.getDmlGenerator();
 		this.persistExecutor = newPersistExecutor();
@@ -70,6 +72,14 @@ public class BeanPersister<C, I, T extends Table<T>>
 		this.deleteExecutor = newDeleteExecutor(this.mappingStrategy, this.connectionConfiguration, dmlGenerator,
 				dialect.getWriteOperationFactory(), dialect.getInOperatorMaxSize());
 		this.selectExecutor = newSelectExecutor(this.mappingStrategy, this.connectionConfiguration, dialect);
+	}
+	
+	public Dialect getDialect() {
+		return dialect;
+	}
+	
+	public ConnectionConfiguration getConnectionConfiguration() {
+		return connectionConfiguration;
 	}
 	
 	protected PersistExecutor<C> newPersistExecutor() {

@@ -22,7 +22,7 @@ public class SingleTablePolymorphism<C, I, D, T extends Table<T>> implements Ent
     private final Column<T, D> discriminatorColumn;
 	
 	/** Sub-entities keyed by their discriminator value. Insertion order is preserved for test stability. */
-	private final Map<D, Mapping<? extends C, T>> subEntitiesPerDiscriminator = new KeepOrderMap<>();
+	private final Map<D, Entity<? extends C, I, T>> subEntitiesPerDiscriminator = new KeepOrderMap<>();
 	
 	public SingleTablePolymorphism(Column<T, D> discriminatorColumn) {
 		this.discriminatorColumn = discriminatorColumn;
@@ -32,11 +32,11 @@ public class SingleTablePolymorphism<C, I, D, T extends Table<T>> implements Ent
 		return discriminatorColumn;
 	}
 	
-	public void addSubEntity(D discriminatorValue, Mapping<? extends C, T> subEntity) {
+	public void addSubEntity(D discriminatorValue, Entity<? extends C, I, T> subEntity) {
 		subEntitiesPerDiscriminator.put(discriminatorValue, subEntity);
 	}
 	
-	public Map<D, Mapping<? extends C, T>> getSubEntitiesPerDiscriminator() {
+	public Map<D, Entity<? extends C, I, T>> getSubEntitiesPerDiscriminator() {
 		return subEntitiesPerDiscriminator;
 	}
 	
@@ -50,7 +50,7 @@ public class SingleTablePolymorphism<C, I, D, T extends Table<T>> implements Ent
 	}
 	
 	@Override
-	public Set<Mapping<? extends C, ?>> getSubEntities() {
+	public Set<Entity<? extends C, I, ?>> getSubEntities() {
 		return new KeepOrderSet<>(subEntitiesPerDiscriminator.values());
 	}
 }

@@ -16,12 +16,11 @@ import org.codefilarete.stalactite.engine.configurer.DefaultComposedIdentifierAs
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRecord;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord;
-import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecordIdMapping;
+import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.map.RecordId;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.compositekey.House;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
@@ -50,7 +49,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.reflection.AccessorChain.fromMethodReference;
-import static org.codefilarete.reflection.Accessors.accessor;
 import static org.codefilarete.reflection.Accessors.accessorByMethodReference;
 import static org.codefilarete.reflection.Accessors.mutatorByMethodReference;
 import static org.codefilarete.tool.collection.Arrays.asList;
@@ -164,12 +162,10 @@ class AggregateAccessPointToColumnMappingTest {
 		when(idMapping.getIdAccessor()).thenReturn(new AccessorWrapperIdAccessor<>(Accessors.readWriteAccessPoint(Person::getId)));
 		
 		PseudoTable pseudoTable = new PseudoTable(FluentQueries.select(idColumn, nameColumn, versionColumn).from(personTable).getQuery(), "dummyUnion");
-		ConfiguredRelationalPersister<Person, Identifier<Long>> rootPersisterMock = mock(ConfiguredRelationalPersister.class);
-		when(rootPersisterMock.<T>getMapping()).thenReturn(entityMappingMock);
 		
 		// When
 		EntityJoinTree<Person, Identifier<Long>> personTree = new EntityJoinTree<>(tree -> new TablePerClassRootJoinNode<>(tree,
-				rootPersisterMock,
+				entityMappingMock,
 				Collections.emptyMap(),    // sub-persisters are not necessary for our test case
 				pseudoTable,
 				new SimpleSelectable<>("discriminatorColumn", String.class)));

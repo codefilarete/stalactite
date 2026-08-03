@@ -9,6 +9,8 @@ import java.util.Set;
  */
 public interface EntityPolymorphism<C, I> {
 	
-	/** Returns all sub-entities registered under this polymorphism */
-	Set<Mapping<? extends C, ?>> getSubEntities();
+	/**
+	 * Returns all sub-entities registered under this polymorphism
+	 */
+	Set<Entity<? extends C, I, ?>> getSubEntities();
 }

@@ -13,4 +13,10 @@ package org.codefilarete.stalactite.engine;
  * @param <I>
  */
 public interface EntityReadWriteExecutor<C, I> extends EntityWriteExecutor<C, I>, EntityReadExecutor<C, I>, PersistExecutor<C> {
+	
+	// Mandatory override to overwrite both default implementation in parent interfaces EntityWriteExecutor and EntityReadExecutor
+	@Override
+	default Class<C> getClassToPersist() {
+		return getMapping().getClassToPersist();
+	}
 }

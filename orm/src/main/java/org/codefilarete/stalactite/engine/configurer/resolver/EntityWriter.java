@@ -9,7 +9,6 @@ import org.codefilarete.stalactite.engine.runtime.DeleteExecutor;
 import org.codefilarete.stalactite.engine.runtime.InsertExecutor;
 import org.codefilarete.stalactite.engine.runtime.UpdateExecutor;
 import org.codefilarete.stalactite.engine.runtime.WriteListenerWrapper;
-import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -27,26 +26,31 @@ public class EntityWriter<C, I, T extends Table<T>>
 		implements EntityWriteExecutor<C, I> {
 	
 	private final BeanPersister<C, I, T> persister;
-	protected final Dialect dialect;
 	
-	public EntityWriter(DefaultEntityMapping<C, I, T> mainMappingStrategy,
+	public EntityWriter(EntityMapping<C, I, T> entityMapping,
 	                    Dialect dialect,
 	                    ConnectionConfiguration connectionConfiguration) {
-		this.persister = new BeanPersister<>(mainMappingStrategy, dialect, connectionConfiguration);
-		this.dialect = dialect;
+		this.persister = new BeanPersister<>(entityMapping, dialect, connectionConfiguration);
 	}
 	
-	public EntityWriter(DefaultEntityMapping<C, I, T> mainMappingStrategy,
+	public EntityWriter(EntityMapping<C, I, T> entityMapping,
 	                    @Nullable VersioningStrategy<C, ?> versioningStrategy,
 	                    Dialect dialect,
 	                    ConnectionConfiguration connectionConfiguration) {
-		this.persister = new BeanPersister<>(mainMappingStrategy, dialect, connectionConfiguration);
-		this.dialect = dialect;
+		this.persister = new BeanPersister<>(entityMapping, dialect, connectionConfiguration);
 		
 		if (versioningStrategy != null) {
 			getUpdateExecutor().setVersioningStrategy(versioningStrategy);
 			getInsertExecutor().setVersioningStrategy(versioningStrategy);
 		}
+	}
+	
+	public Dialect getDialect() {
+		return persister.getDialect();
+	}
+	
+	public ConnectionConfiguration getConnectionConfiguration() {
+		return persister.getConnectionConfiguration();
 	}
 	
 	@Override

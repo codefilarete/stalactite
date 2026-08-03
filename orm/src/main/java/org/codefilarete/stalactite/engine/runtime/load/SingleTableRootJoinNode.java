@@ -1,14 +1,16 @@
 package org.codefilarete.stalactite.engine.runtime.load;
 
-import javax.annotation.Nullable;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy.SingleTablePolymorphism;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.EntityReadExecutor;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.RootJoinRowConsumer;
@@ -20,8 +22,6 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 
@@ -33,22 +33,24 @@ import org.codefilarete.tool.collection.KeepOrderSet;
  */
 public class SingleTableRootJoinNode<C, I, T extends Table<T>, DTYPE> extends JoinRoot<C, I, T> {
 	
-	private final Set<? extends ConfiguredRelationalPersister<C, I>> subPersisters;
+	private final Set<? extends ConfiguredEntityReader<C, I>> subPersisters;
 	private final Set<Column<T, ?>> allColumnsInHierarchy;
 	private final Column<T, DTYPE> discriminatorColumn;
 	private final SingleTablePolymorphism<C, DTYPE> polymorphismPolicy;
 	
 	public SingleTableRootJoinNode(EntityJoinTree<C, I> tree,
-								   ConfiguredRelationalPersister<C, I> mainPersister,
-								   Set<? extends ConfiguredRelationalPersister<C, I>> subPersisters,
+								   EntityMapping<C, I, T> mainMapping,
+								   Set<? extends ConfiguredEntityReader<C, I>> subPersisters,
 								   Column<T, DTYPE> discriminatorColumn,
 								   SingleTablePolymorphism<C, DTYPE> polymorphismPolicy) {
-		super(tree, new EntityMappingAdapter<>(mainPersister.<T>getMapping()), (T) mainPersister.getMainTable());
+		super(tree, new EntityMappingAdapter<>(mainMapping), (T) mainMapping.getTargetTable());
 		this.subPersisters = subPersisters;
 		this.discriminatorColumn = discriminatorColumn;
 		this.polymorphismPolicy = polymorphismPolicy;
-		this.allColumnsInHierarchy = Collections.cat(Arrays.asList(mainPersister), subPersisters)
-				.stream().flatMap(persister -> ((T) persister.getMainTable()).getColumns().stream())
+		Set<T> subTables = Iterables.collect(subPersisters, EntityReadExecutor::getMainTable, HashSet::new);
+		subTables.add(mainMapping.getTargetTable());
+		this.allColumnsInHierarchy = subTables
+				.stream().flatMap(table -> ((T) table).getColumns().stream())
 				.collect(Collectors.toCollection(KeepOrderSet::new));
 	}
 	

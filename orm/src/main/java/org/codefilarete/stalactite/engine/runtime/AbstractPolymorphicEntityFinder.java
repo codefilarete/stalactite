@@ -14,19 +14,19 @@ import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
+import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
-import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.EntityFinder;
+import org.codefilarete.stalactite.query.Operators;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.GroupBy;
 import org.codefilarete.stalactite.query.model.Having;
 import org.codefilarete.stalactite.query.model.Limit;
-import org.codefilarete.stalactite.query.Operators;
 import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Select;
-import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -57,7 +57,8 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 	protected final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 	
 	protected final EntityJoinTree<C, I> mainEntityJoinTree;
-	protected final Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass;
+	protected final ConfiguredEntityReader<C, I> mainReader;
+	protected final Map<Class<C>, ConfiguredEntityReader<C, I>> persisterPerSubclass;
 	protected final ConnectionProvider connectionProvider;
 	protected final Dialect dialect;
 	protected final boolean hasSubPolymorphicPersister;
@@ -70,12 +71,22 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 			Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
 			ConnectionProvider connectionProvider,
 			Dialect dialect) {
-		this.mainEntityJoinTree = mainPersister.getEntityJoinTree();
-		this.persisterPerSubclass = (Map<Class<C>, ConfiguredRelationalPersister<C, I>>) persisterPerSubclass;
+		this(mainPersister.getEntityJoinTree(), mainPersister, persisterPerSubclass, connectionProvider, dialect);
+	}
+	
+	protected AbstractPolymorphicEntityFinder(
+			EntityJoinTree<C, I> mainEntityJoinTree,
+			ConfiguredEntityReader<C, I> mainReader,
+			Map<? extends Class<C>, ? extends ConfiguredEntityReader<C, I>> persisterPerSubclass,
+			ConnectionProvider connectionProvider,
+			Dialect dialect) {
+		this.mainEntityJoinTree = mainEntityJoinTree;
+		this.mainReader = mainReader;
+		this.persisterPerSubclass = (Map<Class<C>, ConfiguredEntityReader<C, I>>) persisterPerSubclass;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
 		this.hasSubPolymorphicPersister = Iterables.find(persisterPerSubclass.values(), subPersister -> subPersister instanceof AbstractPolymorphismPersister) != null;
-		AccessorWrapperIdAccessor<C, I> idAccessor = (AccessorWrapperIdAccessor<C, I>) mainPersister.<T>getMapping().getIdMapping().getIdAccessor();
+		AccessorWrapperIdAccessor<C, I> idAccessor = (AccessorWrapperIdAccessor<C, I>) mainReader.getMapping().getIdMapping().getIdAccessor();
 		this.entityIdAccessor = new AccessorChain<>(idAccessor.getIdAccessor());
 	}
 	

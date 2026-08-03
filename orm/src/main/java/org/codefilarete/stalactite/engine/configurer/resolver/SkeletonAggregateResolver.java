@@ -2,18 +2,18 @@ package org.codefilarete.stalactite.engine.configurer.resolver;
 
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.PropertyMutator;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
+import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.PersistenceContext;
-import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.configurer.DefaultComposedIdentifierAssembler;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.AssignedByAnotherIdentifierMapping;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.CompositeIdentifierMapping;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.SingleIdentifierMapping;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity;
 import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity.Versioning;
 import org.codefilarete.stalactite.engine.configurer.model.AncestorJoin;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
@@ -55,17 +55,17 @@ public class SkeletonAggregateResolver {
 	}
 	
 	public <B, C extends B, I, T extends Table<T>>
-	EntityReadWriteExecutor<C, I> buildPersister(Entity<C, I, T> rootEntity, CreatedPersisterCollector<C, I> persisterCollector) {
+	EntityReadWriteExecutor<C, I> buildPersister(AbstractEntity<C, I, T> entity, CreatedPersisterCollector<C, I> persisterCollector) {
 		// TODO: check for ealready existing persister in the persistence context
 		// TODO: wrap result in an OptimizedUpdatePersister
 		// TODO: be inspired from DefaultPersisterBuilder.build()
 		
-		IdMapping<C, I> idMapping = createIdMapping(rootEntity);
+		IdMapping<C, I> idMapping = createIdMapping(entity);
 		
-		Versioning<C, ?, T> versioning = rootEntity.getVersioning();
+		Versioning<C, ?, T> versioning = entity.getVersioning();
 		DefaultEntityMapping<C, I, T> entityMapping = new DefaultEntityMapping<>(
-				rootEntity.getEntityType(), rootEntity.getTable(),
-				rootEntity.getPropertyMappingHolder().getWritablePropertiesPerAccessor(), rootEntity.getPropertyMappingHolder().getReadonlyPropertiesPerAccessor(),
+				entity.getEntityType(), entity.getTable(),
+				entity.getPropertyMappingHolder().getWritablePropertiesPerAccessor(), entity.getPropertyMappingHolder().getReadonlyPropertiesPerAccessor(),
 				versioning == null ? null : new Duo<>(versioning.getVersioningAccessor(), versioning.getVersioningColumn()),
 				idMapping,
 				null,
@@ -95,13 +95,13 @@ public class SkeletonAggregateResolver {
 		
 		persisterCollector.setPersister(rootPersister);
 		
-		appendInheritance(rootEntity, rootPersister, persisterCollector);
+		appendInheritance(entity, rootPersister, persisterCollector);
 		
 		return rootPersister;
 	}
 	
 	private <B, C extends B, I, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
-	void appendInheritance(Entity<C, I, LEFTTABLE> entity, EntityWriteExecutor<C, I> rootPersister, CreatedPersisterCollector<C, I> persisterCollector) {
+	void appendInheritance(AbstractEntity<C, I, LEFTTABLE> entity, EntityWriteExecutor<C, I> rootPersister, CreatedPersisterCollector<C, I> persisterCollector) {
 		// looking for extra tables: they are stored as ExtraTableJoin in the entity relations 
 		entity.getRelations().stream()
 				.filter(ExtraTableJoin.class::isInstance).map(ExtraTableJoin.class::cast).forEach(extraTableJoin -> {
@@ -114,7 +114,7 @@ public class SkeletonAggregateResolver {
 			EntityWriter<B, I, RIGHTTABLE> parentPersister = sewParentEntity(parent, rootPersister);
 			persisterCollector.addAncestorPersister(parentPersister);
 			
-			Entity<B, I, RIGHTTABLE> ancestorEntity = parent.getAncestor();
+			AbstractEntity<B, I, RIGHTTABLE> ancestorEntity = parent.getAncestor();
 			ancestorEntity.getRelations().stream()
 					.filter(ExtraTableJoin.class::isInstance).map(ExtraTableJoin.class::cast).forEach(extraTableJoin -> {
 						
@@ -130,8 +130,19 @@ public class SkeletonAggregateResolver {
 		}
 	}
 	
-	@Nullable
-	private <B, C extends B, I, T extends Table<T>> IdMapping<C, I> createIdMapping(Entity<C, I, T> entity) {
+	/**
+	 * Creates the appropriate type of {@link IdMapping} based on the structure of the identifier mapping present in
+	 * the given entity (e.g., single, composite, or externally assigned identifiers).
+	 *
+	 * @param <C> the base type of the entity
+	 * @param <I> the entity identifier type
+	 * @param <T> the entity persistence table type
+	 * @param entity the entity for which the {@link IdMapping} is to be created. This includes metadata
+	 *  about the entity's identifier mapping and its associated table.
+	 * @return an {@link IdMapping} instance configured for the specified entity. This maps the entity's 
+	 *  identifier to its underlying relational representation, supporting insertion and retrieval operations.
+	 */
+	public <C, I, T extends Table<T>> IdMapping<C, I> createIdMapping(AbstractEntity<C,I,T> entity) {
 		IdMapping<C, I> idMapping = null;
 		IdentifierMapping<C, I> identifierMapping = entity.getIdentifierMapping();
 		if (identifierMapping instanceof SingleIdentifierMapping<?, ?>) {
@@ -190,7 +201,7 @@ public class SkeletonAggregateResolver {
 	private <C, I, LEFTTABLE extends Table<LEFTTABLE>, EXTRATABLE extends Table<EXTRATABLE>>
 	EntityWriter<C, I, EXTRATABLE> buildExtraTablePersister(ExtraTableJoin<C, LEFTTABLE, EXTRATABLE, I> extraTableJoin,
 	                                                        EntityWriteExecutor<C, I> owningPersister,
-	                                                        Entity<C, I, LEFTTABLE> identifierDefiner) {
+	                                                        AbstractEntity<C, I, LEFTTABLE> identifierDefiner) {
 		EXTRATABLE extratable = extraTableJoin.getJoin().getRightKey().getTable();
 		IdMapping<C, I> idMapping = mimicIdMapping(identifierDefiner.getIdentifierMapping(), extratable);
 		

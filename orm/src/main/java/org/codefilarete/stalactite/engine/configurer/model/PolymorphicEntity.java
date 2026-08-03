@@ -11,6 +11,10 @@ public class PolymorphicEntity<C, I, T extends Table<T>> extends AbstractEntity<
 		this.polymorphism = polymorphism;
 	}
 	
+	public EntityPolymorphism<C, I> getPolymorphism() {
+		return polymorphism;
+	}
+	
 	@Override
 	public boolean isTablePerClass() {
 		return this.polymorphism instanceof TablePerClassPolymorphism;

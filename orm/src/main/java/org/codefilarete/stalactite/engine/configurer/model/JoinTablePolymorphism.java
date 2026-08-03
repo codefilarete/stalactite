@@ -23,12 +23,12 @@ public class JoinTablePolymorphism<C, I, T extends Table<T>> implements EntityPo
 	
 	public <D extends C, SUBTABLE extends Table<SUBTABLE>> void addSubEntity(
 			Class<D> subType,
-			Mapping<D, SUBTABLE> subEntity, DirectRelationJoin<T, SUBTABLE, I> join) {
+			Entity<D, I, SUBTABLE> subEntity, DirectRelationJoin<T, SUBTABLE, I> join) {
 		subEntities.put(subType, new JoinedSubEntity<>(subEntity, join));
 	}
 	
 	@Override
-	public Set<Mapping<? extends C, ?>> getSubEntities() {
+	public Set<Entity<? extends C, I, ?>> getSubEntities() {
 		return subEntities.values().stream().map(JoinedSubEntity::getSubEntity).collect(Collectors.toCollection(KeepOrderSet::new));
 	}
 	
@@ -40,17 +40,17 @@ public class JoinTablePolymorphism<C, I, T extends Table<T>> implements EntityPo
 	 */
 	public class JoinedSubEntity<D extends C, SUBTABLE extends Table<SUBTABLE>> {
 	
-		private final Mapping<D, SUBTABLE> subEntity;
+		private final Entity<D, I, SUBTABLE> subEntity;
 	
 		/** Join: subTable.FK → parentTable.PK */
 		private final DirectRelationJoin<T, SUBTABLE, I> join;
 		
-		public JoinedSubEntity(Mapping<D, SUBTABLE> subEntity, DirectRelationJoin<T, SUBTABLE, I> join) {
+		public JoinedSubEntity(Entity<D, I, SUBTABLE> subEntity, DirectRelationJoin<T, SUBTABLE, I> join) {
 			this.subEntity = subEntity;
 			this.join = join;
 		}
 		
-		public Mapping<D, SUBTABLE> getSubEntity() {
+		public Entity<D, I, SUBTABLE> getSubEntity() {
 			return subEntity;
 		}
 		
