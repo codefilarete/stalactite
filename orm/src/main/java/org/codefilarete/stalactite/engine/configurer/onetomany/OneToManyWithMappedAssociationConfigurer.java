@@ -16,7 +16,7 @@ import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.onetomany.IndexedMappedManyRelationDescriptor;
 import org.codefilarete.stalactite.engine.runtime.onetomany.MappedManyRelationDescriptor;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithIndexedMappedAssociationEngine;
@@ -39,7 +39,7 @@ import static org.codefilarete.tool.Nullable.nullable;
  */
 class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, S extends Collection<TRGT>,
 		LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
-		extends OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, S, LEFTTABLE> {
+		extends OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, S, LEFTTABLE, RIGHTTABLE> {
 	
 	private OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S, LEFTTABLE, RIGHTTABLE> mappedAssociationEngine;
 	
@@ -55,33 +55,33 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, S exten
 	}
 	
 	@Override
-	protected String configure(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	protected String configure(ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister) {
 		determineForeignKeyColumns(targetPersister);
 		assignAssociationEngine(targetPersister);
 		propagateMappedAssociationToSubTables(targetPersister);
 		
 		String relationJoinNodeName = mappedAssociationEngine.addSelectCascade(loadSeparately);
-		addWriteCascades(mappedAssociationEngine, targetPersister);
+		addWriteCascades(mappedAssociationEngine, (ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE>) targetPersister);
 		return relationJoinNodeName;
 	}
 	
-	public void propagateMappedAssociationToSubTables(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	public void propagateMappedAssociationToSubTables(ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister) {
 		ForeignKeyNamingStrategy foreignKeyNamingStrategy = associationConfiguration.getForeignKeyNamingStrategy();
 		// adding foreign key constraint
 		// When source persister is table-per-class, adding a FK from right side (owner) to the several left sides is not possible
 		if (!associationConfiguration.getOneToManyRelation().isSourceTablePerClassPolymorphic()) {
 			// NB: we ask to add FK to targetPersister because it may be polymorphic (ie contains several tables) so it knows better how to do it
-			AbstractPolymorphismPersister<?, ?> targetPersisterAsPolymorphic = AbstractPolymorphismPersister.lookupForPolymorphicPersister(targetPersister);
+			AbstractPolymorphismPersister<?, ?, ?> targetPersisterAsPolymorphic = AbstractPolymorphismPersister.lookupForPolymorphicPersister(targetPersister);
 			if (targetPersisterAsPolymorphic == null) {
-				targetPersister.<RIGHTTABLE>getMainTable().addForeignKey(foreignKeyNamingStrategy::giveName,
-						foreignKey, associationConfiguration.getSrcPersister().<RIGHTTABLE>getMainTable().getPrimaryKey());
+				targetPersister.getMainTable().addForeignKey(foreignKeyNamingStrategy::giveName,
+						foreignKey, associationConfiguration.getSrcPersister().getMainTable().getPrimaryKey());
 			} else {
 				targetPersisterAsPolymorphic.propagateMappedAssociationToSubTables(foreignKey, associationConfiguration.getSrcPersister().getMainTable().getPrimaryKey(), foreignKeyNamingStrategy::giveName);
 			}
 		}
 	}
 	
-	protected void determineForeignKeyColumns(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	protected void determineForeignKeyColumns(ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister) {
 		RIGHTTABLE mainTargetTable = targetPersister.getMainTable();
 		KeyBuilder<RIGHTTABLE, SRCID> foreignKeyBuilder = Key.from(mainTargetTable);
 		OneToManyRelation<SRC, TRGT, TRGTID, S> relation = associationConfiguration.getOneToManyRelation();
@@ -132,7 +132,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, S exten
 		} else if (relation.getReverseColumnName() != null || relation.getReverseColumn() != null) {
 			Column<RIGHTTABLE, ?> reverseColumn;
 			if (relation.getReverseColumnName() != null) {
-				PrimaryKey<LEFTTABLE, SRCID> srcPrimaryKey = associationConfiguration.getSrcPersister().<LEFTTABLE>getMainTable().getPrimaryKey();
+				PrimaryKey<LEFTTABLE, SRCID> srcPrimaryKey = associationConfiguration.getSrcPersister().getMainTable().getPrimaryKey();
 				// with a reverse column name, the primary key should be a single column key
 				if (srcPrimaryKey.isComposed()) {
 					throw new MappingConfigurationException("Giving reverse column whereas the primary key is composed :"
@@ -181,7 +181,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, S exten
 		}
 	}
 	
-	void assignAssociationEngine(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	void assignAssociationEngine(ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister) {
 		// We're looking for the foreign key (for necessary join) and for getter/setter required to manage the relation 
 		PropertyMutator<TRGT, SRC> reversePropertyAccessor = null;
 		if (associationConfiguration.getOneToManyRelation().giveReverseSetter() != null) {
@@ -198,7 +198,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, S exten
 	
 	@Override
 	public CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(String tableAlias,
-																			  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
+	                                                                          ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister,
 																			  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 		determineForeignKeyColumns(targetPersister);
 		assignAssociationEngine(targetPersister);
@@ -208,7 +208,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, S exten
 	}
 	
 	private void addWriteCascades(OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S, LEFTTABLE, RIGHTTABLE> mappedAssociationEngine,
-								  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	                              ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister) {
 		if (associationConfiguration.isWriteAuthorized()) {
 			mappedAssociationEngine.addInsertCascade(targetPersister);
 			mappedAssociationEngine.addUpdateCascade(targetPersister);
@@ -217,7 +217,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, S exten
 	}
 	
 	private void assignEngineForNonIndexedAssociation(Key<RIGHTTABLE, SRCID> reverseColumn,
-													  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
+													  ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister,
 													  @Nullable PropertyMutator<TRGT, SRC> reverseSetter) {
 		MappedManyRelationDescriptor<SRC, TRGT, S, SRCID, RIGHTTABLE> manyRelationDefinition = new MappedManyRelationDescriptor<>(
 				associationConfiguration.getCollectionGetter(),
@@ -238,7 +238,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, S exten
 	private void assignEngineForIndexedAssociation(@Nullable PropertyMutator<TRGT, SRC> reverseSetter,
 												   Key<RIGHTTABLE, SRCID> reverseColumn,
 												   @Nullable Column<RIGHTTABLE, Integer> indexingColumn,
-												   ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+												   ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister) {
 		if (indexingColumn == null) {
 			String indexingColumnName = nullable(associationConfiguration.getIndexingColumnName()).getOr(() -> associationConfiguration.getIndexColumnNamingStrategy().giveName(accessorDefinitionForTableNaming));
 			Class indexColumnType = this.associationConfiguration.isOrphanRemoval()

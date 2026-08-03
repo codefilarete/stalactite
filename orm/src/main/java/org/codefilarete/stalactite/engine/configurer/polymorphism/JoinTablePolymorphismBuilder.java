@@ -20,7 +20,7 @@ import org.codefilarete.stalactite.engine.configurer.builder.PrimaryKeyPropagati
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.jointable.JoinTablePolymorphismPersister;
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
@@ -46,44 +46,44 @@ public class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends Abst
 	private final PrimaryKey<T, I> mainTablePrimaryKey;
 	
 	public JoinTablePolymorphismBuilder(JoinTablePolymorphism<C> polymorphismPolicy,
-										AbstractIdentification<C, I> identification,
-										ConfiguredRelationalPersister<C, I> mainPersister,
-										ColumnBinderRegistry columnBinderRegistry,
-										NamingConfiguration namingConfiguration,
-										PersisterBuilderContext persisterBuilderContext) {
+	                                    AbstractIdentification<C, I> identification,
+	                                    ConfiguredRelationalEntityPersister<C, I, T> mainPersister,
+	                                    ColumnBinderRegistry columnBinderRegistry,
+	                                    NamingConfiguration namingConfiguration,
+	                                    PersisterBuilderContext persisterBuilderContext) {
 		super(polymorphismPolicy, identification, mainPersister, columnBinderRegistry, namingConfiguration, persisterBuilderContext);
 		this.joinTablePolymorphism = polymorphismPolicy;
-		this.mainTablePrimaryKey = (PrimaryKey<T, I>) this.mainPersister.getMapping().getTargetTable().getPrimaryKey();
+		this.mainTablePrimaryKey = this.mainPersister.getMainTable().getPrimaryKey();
 	}
 	
 	@Override
-	public AbstractPolymorphismPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
-		Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass = collectSubClassPersister(dialect, connectionConfiguration);
+	public AbstractPolymorphismPersister<C, I, T> build(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+		Map<Class<C>, ConfiguredRelationalEntityPersister<C, I, ?>> persisterPerSubclass = collectSubClassPersister(dialect, connectionConfiguration);
 		
 		// Note that registering the cascades to sub-persisters must be done BEFORE the creation of the main persister to make it have all
 		// entities joins and let it build a consistent entity graph load; without it, we miss sub-relations when loading main entities 
 		registerSubEntitiesRelations(persisterPerSubclass, dialect, connectionConfiguration);
 		
-		JoinTablePolymorphismPersister<C, I> result = new JoinTablePolymorphismPersister<>(
+		JoinTablePolymorphismPersister<C, I, T> result = new JoinTablePolymorphismPersister<>(
 				mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(),
 				dialect);
 		
 		return result;
 	}
 	
-	private <D extends C> Map<Class<D>, ConfiguredRelationalPersister<D, I>> collectSubClassPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
-		Map<Class<D>, ConfiguredRelationalPersister<D, I>> persisterPerSubclass = new HashMap<>();
+	private <D extends C> Map<Class<D>, ConfiguredRelationalEntityPersister<D, I, ?>> collectSubClassPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+		Map<Class<D>, ConfiguredRelationalEntityPersister<D, I, ?>> persisterPerSubclass = new HashMap<>();
 		
 		for (SubEntityMappingConfiguration<D> subConfiguration : ((Set<SubEntityMappingConfiguration<D>>) (Set) joinTablePolymorphism.getSubClasses())) {
-			ConfiguredRelationalPersister<D, I> subclassPersister = buildSubclassPersister(dialect, connectionConfiguration, subConfiguration);
+			ConfiguredRelationalEntityPersister<D, I, ?> subclassPersister = buildSubclassPersister(dialect, connectionConfiguration, subConfiguration);
 			persisterPerSubclass.put(subConfiguration.getEntityType(), subclassPersister);
 		}
 		return persisterPerSubclass;
 	}
 	
-	private <D, SUBT extends Table<SUBT>> ConfiguredRelationalPersister<D, I> buildSubclassPersister(Dialect dialect,
-																									 ConnectionConfiguration connectionConfiguration,
-																									 SubEntityMappingConfiguration<D> subConfiguration) {
+	private <D, SUBT extends Table<SUBT>> ConfiguredRelationalEntityPersister<D, I, ?> buildSubclassPersister(Dialect dialect,
+	                                                                                                          ConnectionConfiguration connectionConfiguration,
+	                                                                                                          SubEntityMappingConfiguration<D> subConfiguration) {
 		// first we'll use table of columns defined in embedded override
 		// then the one defined by inheritance
 		// if both are null we'll create a new one
@@ -101,7 +101,7 @@ public class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends Abst
 		Map<PropertyMutator<D, ?>, Column<SUBT, ?>> subEntityReadonlyPropertiesMapping = embeddableMapping.getReadonlyMapping();
 		ValueAccessPointMap<D, Converter<Object, Object>, PropertyAccessPoint<D, ?>> subEntityPropertiesConverters = embeddableMapping.getReadConverters();
 		ValueAccessPointMap<D, Converter<Object, Object>, PropertyAccessPoint<D, ?>> subEntityPropertiesWriteConverters = embeddableMapping.getWriteConverters();
-		addPrimarykey(subTable);
+		addPrimaryKey(subTable);
 		addForeignKey(subTable);
 		DefaultEntityMapping<D, I, SUBT> entityMapping = MainPersisterStep.createEntityMapping(
 				false,
@@ -130,7 +130,7 @@ public class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends Abst
 		}
 	}
 	
-	private void addPrimarykey(Table table) {
+	private void addPrimaryKey(Table table) {
 		PrimaryKeyPropagationStep.propagatePrimaryKey(this.mainTablePrimaryKey, Arrays.asSet(table));
 	}
 	

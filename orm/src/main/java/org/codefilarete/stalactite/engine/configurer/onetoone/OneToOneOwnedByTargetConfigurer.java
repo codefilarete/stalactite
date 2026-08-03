@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.PassiveJoinNode;
@@ -58,13 +58,13 @@ public class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 	 */
 	private Key<RIGHTTABLE, SRCID> rightKey;
 	
-	public OneToOneOwnedByTargetConfigurer(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-										   OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation,
-										   JoinColumnNamingStrategy joinColumnNamingStrategy,
-										   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-										   UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy,
-										   Dialect dialect,
-										   ConnectionConfiguration connectionConfiguration) {
+	public OneToOneOwnedByTargetConfigurer(ConfiguredRelationalEntityPersister<SRC, SRCID, ?> sourcePersister,
+	                                       OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation,
+	                                       JoinColumnNamingStrategy joinColumnNamingStrategy,
+	                                       ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+	                                       UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy,
+	                                       Dialect dialect,
+	                                       ConnectionConfiguration connectionConfiguration) {
 		super(sourcePersister, oneToOneRelation, uniqueConstraintNamingStrategy);
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
@@ -89,7 +89,7 @@ public class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 		// right column depends on relation owner
 		if (reverseColumn != null) {
 			rightKey = Key.ofSingleColumn(reverseColumn);
-			PrimaryKey<LEFTTABLE, SRCID> sourcePrimaryKey = sourcePersister.<LEFTTABLE>getMainTable().getPrimaryKey();
+			PrimaryKey<LEFTTABLE, SRCID> sourcePrimaryKey = ((EntityMapping<SRC, SRCID, LEFTTABLE>) sourcePersister.getMapping()).getTargetTable().getPrimaryKey();
 			if (sourcePrimaryKey.isComposed()) {
 				throw new UnsupportedOperationException("Can't map composite primary key " + sourcePrimaryKey + " on single reverse foreign key : " + reverseColumn);
 			} else {
@@ -150,7 +150,7 @@ public class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 			reverseColumn = (Column<RIGHTTABLE, SRCID>) targetMappingStrategy.getPropertyToColumn().get(reverseGetter);
 			if (reverseColumn == null) {
 				// no column is defined under reverse getter, then we have to create one
-				PrimaryKey<LEFTTABLE, SRCID> sourcePrimaryKey = sourcePersister.<LEFTTABLE>getMainTable().getPrimaryKey();
+				PrimaryKey<LEFTTABLE, SRCID> sourcePrimaryKey = ((EntityMapping<SRC, SRCID, LEFTTABLE>) sourcePersister.getMapping()).getTargetTable().getPrimaryKey();
 				KeyBuilder<RIGHTTABLE, SRCID> result = Key.from(targetMappingStrategy.getTargetTable());
 				sourcePrimaryKey.getColumns().forEach(pkColumn -> {
 					Column<RIGHTTABLE, ?> column = targetMappingStrategy.getTargetTable().addColumn(
@@ -215,12 +215,12 @@ public class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 	@Override
 	protected void addSelectIn2Phases(
 			String tableAlias,
-			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
+			ConfiguredRelationalEntityPersister<TRGT, TRGTID, ?> targetPersister,
 			Key<LEFTTABLE, SRCID> leftKey,
 			Key<RIGHTTABLE, SRCID> rightKey,
 			FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 		
-		RIGHTTABLE targetTable = targetPersister.<RIGHTTABLE>getMapping().getTargetTable();
+		RIGHTTABLE targetTable = (RIGHTTABLE) targetPersister.getMapping().getTargetTable();
 		RIGHTTABLE targetTableClone = (RIGHTTABLE) new Table(targetTable.getName());
 		KeyBuilder<RIGHTTABLE, SRCID> relationOwnerForeignKey = Key.from(targetTableClone);
 		((Set<Column<RIGHTTABLE, ?>>) (Set) rightKey.getColumns()).forEach(column ->

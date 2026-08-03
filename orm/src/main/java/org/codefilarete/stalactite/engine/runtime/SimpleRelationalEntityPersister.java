@@ -16,6 +16,7 @@ import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.VersioningStrategy;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecordIdMapping;
 import org.codefilarete.stalactite.engine.configurer.map.RecordId;
+import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
@@ -67,7 +68,7 @@ import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROO
  */
 public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 		extends PersisterListenerWrapper<C, I>
-		implements ConfiguredRelationalPersister<C, I>, AdvancedEntityPersister<C, I> {
+		implements ConfiguredRelationalEntityPersister<C, I, T>, AdvancedEntityPersister<C, I> {
 	
 	protected final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 	
@@ -116,6 +117,11 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 			getUpdateExecutor().setVersioningStrategy(versioningStrategy);
 			getInsertExecutor().setVersioningStrategy(versioningStrategy);
 		}
+	}
+	
+	@Override
+	public SelectListener<C, I> getSelectListener() {
+		return persisterListener.getSelectListener();
 	}
 	
 	@Override

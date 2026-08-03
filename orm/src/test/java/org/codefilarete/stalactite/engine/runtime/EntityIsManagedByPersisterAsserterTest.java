@@ -61,14 +61,14 @@ class EntityIsManagedByPersisterAsserterTest {
 	@ParameterizedTest
 	@MethodSource
 	void assertMethodIsInvoked(Method invokedMethod, Object[] args) throws InvocationTargetException, IllegalAccessException {
-		ConfiguredRelationalPersister delegateMock = mock(ConfiguredRelationalPersister.class);
+		ConfiguredRelationalEntityPersister delegateMock = mock(ConfiguredRelationalEntityPersister.class);
 		when (delegateMock.getClassToPersist()).thenReturn(Vehicle.class);
 		when (delegateMock.getId(args[0])).thenReturn(42L);
 		EntityMapping mappingStrategyMock = mock(EntityMapping.class);
 		when(mappingStrategyMock.getId(any())).thenReturn(42L);
 		when (delegateMock.getMapping()).thenReturn(mappingStrategyMock);
 		
-		EntityIsManagedByPersisterAsserter<AbstractVehicle, Integer> testInstance = Mockito.spy(new EntityIsManagedByPersisterAsserter<> (delegateMock));
+		EntityIsManagedByPersisterAsserter<AbstractVehicle, Integer, ?> testInstance = Mockito.spy(new EntityIsManagedByPersisterAsserter<>(delegateMock));
 		invokedMethod.invoke(testInstance, args);
 		if (args[0] instanceof Iterable) {
 			Mockito.verify(testInstance, times(1)).assertPersisterManagesEntities(any());
@@ -80,14 +80,14 @@ class EntityIsManagedByPersisterAsserterTest {
 	@ParameterizedTest
 	@MethodSource("assertMethodIsInvoked")
 	void assertMethodIsInvoked_withPolymorphicPersisterAtInit(Method invokedMethod, Object[] args) throws InvocationTargetException, IllegalAccessException {
-		ConfiguredRelationalPersister delegateMock = mock(ConfiguredRelationalPersister.class, withSettings().extraInterfaces(PolymorphicPersister.class));
+		ConfiguredRelationalEntityPersister delegateMock = mock(ConfiguredRelationalEntityPersister.class, withSettings().extraInterfaces(PolymorphicPersister.class));
 		when(((PolymorphicPersister) delegateMock).getSupportedEntityTypes()).thenReturn(Arrays.asSet(Vehicle.class));
 		when (delegateMock.getId(args[0])).thenReturn(42L);
 		EntityMapping mappingStrategyMock = mock(EntityMapping.class);
 		when(mappingStrategyMock.getId(any())).thenReturn(42L);
 		when (delegateMock.getMapping()).thenReturn(mappingStrategyMock);
 		
-		EntityIsManagedByPersisterAsserter<AbstractVehicle, Integer> testInstance = Mockito.spy(new EntityIsManagedByPersisterAsserter<> (delegateMock));
+		EntityIsManagedByPersisterAsserter<AbstractVehicle, Integer, ?> testInstance = Mockito.spy(new EntityIsManagedByPersisterAsserter<>(delegateMock));
 		invokedMethod.invoke(testInstance, args);
 		if (args[0] instanceof Iterable) {
 			Mockito.verify(testInstance, times(1)).assertPersisterManagesEntities(any());

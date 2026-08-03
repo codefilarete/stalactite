@@ -9,7 +9,7 @@ import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.NamingConfigurationCollector;
 import org.codefilarete.stalactite.engine.configurer.builder.InheritanceMappingStep.Mapping;
 import org.codefilarete.stalactite.engine.configurer.builder.InheritanceMappingStep.MappingPerTable;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -56,7 +56,7 @@ public class PersisterBuilderPipeline<C, I> {
 		this.persisterRegistry = persisterRegistry;
 	}
 	
-	public ConfiguredRelationalPersister<C, I> build(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
+	public ConfiguredRelationalEntityPersister<C, I, ?> build(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
 		persisterBuilderContext = PersisterBuilderContext.CURRENT.get();
 		boolean isInitiator = false;
 		if (persisterBuilderContext == null) {
@@ -66,7 +66,7 @@ public class PersisterBuilderPipeline<C, I> {
 		}
 		
 		try {
-			ConfiguredRelationalPersister<C, I> result = doBuild(entityMappingConfiguration);
+			ConfiguredRelationalEntityPersister<C, I, ?> result = doBuild(entityMappingConfiguration);
 			// making aggregate persister available for external usage
 			persisterRegistry.addPersister(result);
 			if (isInitiator) {
@@ -84,7 +84,7 @@ public class PersisterBuilderPipeline<C, I> {
 		}
 	}
 	
-	private ConfiguredRelationalPersister<C, I> doBuild(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
+	private ConfiguredRelationalEntityPersister<C, I, ?> doBuild(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
 		NamingConfigurationCollector namingConfigurationCollector = new NamingConfigurationCollector(entityMappingConfiguration);
 		NamingConfiguration namingConfiguration = namingConfigurationCollector.collect();
 		
@@ -117,10 +117,10 @@ public class PersisterBuilderPipeline<C, I> {
 		
 		relationsStep.configureRelations(mainPersister, inheritanceMappingPerTable, persisterBuilderContext, namingConfiguration, dialect, connectionConfiguration);
 		
-		ConfiguredRelationalPersister<C, I> result = polymorphismStep.eventuallyTransformToPolymorphicPersister(mainPersister,
+		ConfiguredRelationalEntityPersister<C, I, ?> result = polymorphismStep.eventuallyTransformToPolymorphicPersister(mainPersister,
 				entityMappingConfiguration,
 				identification,
-				(Mapping<C, ?>) first(inheritanceMappingPerTable.getMappings()),
+				(Mapping) first(inheritanceMappingPerTable.getMappings()),
 				namingConfiguration,
 				dialect,
 				connectionConfiguration,

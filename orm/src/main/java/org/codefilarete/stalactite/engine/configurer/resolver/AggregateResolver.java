@@ -46,7 +46,6 @@ import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.Aggregat
 import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.OneToManyResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetoone.AggregateOneToOneAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetoone.OneToOneResolver;
-import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.tableperclass.TablePerClassAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.tableperclass.TablePerClassResolver;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
@@ -220,7 +219,7 @@ public class AggregateResolver {
 		// TODO: be inspired from DefaultPersisterBuilder.build()
 		
 		EntityWriteExecutor<C, I> rootWriter = null;
-		ConfiguredEntityReader<C, I> aggregateReader = null;
+		ConfiguredEntityReader<C, I, T> aggregateReader = null;
 		CreatedPersisterCollector<C, I> rootPersisterCollector = new CreatedPersisterCollector<>();
 		if (rootEntity instanceof Entity) {
 			rootWriter = skeletonAggregateResolver.buildPersister(rootEntity, rootPersisterCollector);
@@ -236,7 +235,7 @@ public class AggregateResolver {
 				EntityReader<C, I, T> reader = new EntityReader<>(rootWriter.<T>getMapping(),
 						persistenceContext.getConnectionProvider(),
 						persistenceContext.getDialect());
-				Map<? extends Class<C>, ConfiguredEntityReader<C, I>> map = Iterables.map(tablePerClassPolymorphismWriter.getSubEntitiesPersisters().entrySet(), Map.Entry::getKey, entry -> {
+				Map<? extends Class<C>, ConfiguredEntityReader<C, I, T>> map = Iterables.map(tablePerClassPolymorphismWriter.getSubEntitiesPersisters().entrySet(), Map.Entry::getKey, entry -> {
 							return new EntityReader<>(entry.getValue().<T>getMapping(),
 									persistenceContext.getConnectionProvider(),
 									persistenceContext.getDialect());
@@ -245,8 +244,6 @@ public class AggregateResolver {
 						map,
 						persistenceContext.getConnectionProvider(),
 						persistenceContext.getDialect());
-				TablePerClassAppender tablePerClassAppender = new TablePerClassAppender();
-				tablePerClassAppender.append(aggregateReader.getEntityJoinTree(), null, rootWriter, null);
 			} else {
 				throw new UnsupportedOperationException("Unsupported entity type: " + rootEntity.getClass());
 			}
@@ -391,7 +388,7 @@ public class AggregateResolver {
 	
 	<SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
 	void composeLoadTree(AbstractEntity<SRC, SRCID, LEFTTABLE> rootEntity,
-	                     EntityReader<SRC, SRCID, ?> aggregatePersister,
+	                     ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> aggregatePersister,
 	                     Map<MappingJoin<?, ?, ?>, Object> createdPersisters) {
 		
 		Queue<GraftPoint<?, ?, ?, ?, ?>> relationStack = new ArrayDeque<>();
@@ -401,7 +398,7 @@ public class AggregateResolver {
 		
 		while (!relationStack.isEmpty()) {
 			GraftPoint<SRC, SRCID, LEFTTABLE, SRC, SRCID> assemblyPawn = (GraftPoint<SRC, SRCID, LEFTTABLE, SRC, SRCID>) relationStack.poll();
-			EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister = (EntityReader<SRC, SRCID, LEFTTABLE>) assemblyPawn.getRelationOwnerPersister();
+			ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister = assemblyPawn.getRelationOwnerPersister();
 			assemblyPawn.getRelationOwnerEntity().getRelations()
 					.forEach(relationPawn -> {
 						if (relationPawn instanceof ResolvedOneToOneRelation) {
@@ -424,7 +421,7 @@ public class AggregateResolver {
 						if (relationPawn instanceof ResolvedOneToManyRelation) {
 							CreatedPersisterCollector<TRGT, TRGTID> localCreatedPersistor = (CreatedPersisterCollector<TRGT, TRGTID>) createdPersisters.get(relationPawn);
 							ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> localRelation = (ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>) relationPawn;
-							EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister = new EntityReader<>(
+							ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister = new EntityReader<>(
 									localCreatedPersistor.getPersister().<RIGHTTABLE>getMapping(), persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
 							GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> graftPoint = oneToManyAppender.append(
 									localRelation,
@@ -507,16 +504,16 @@ public class AggregateResolver {
 	Duo<GraftPoint, GraftPoint> graftMapRelation(ResolvedMapRelation relation,
 	                                             EntityJoinTree<SRC, SRCID> aggregateTree,
 	                                             String mountPoint,
-	                                             EntityReader<SRC, SRCID, LEFTTABLE> relationOwnerPersister,
+	                                             ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> relationOwnerPersister,
 	                                             MapCreatedPersisterCollector collectedPersisters) {
 		MapCreatedPersisterCollector<SRCID, K, KID, V, VID, MAPTABLE, X, Y> typedMapCreatedPersisterCollector = (MapCreatedPersisterCollector<SRCID, K, KID, V, VID, MAPTABLE, X, Y>) collectedPersisters;
 		ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, LEFTTABLE, MAPTABLE, KTABLE, VTABLE> typedRelation = (ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, LEFTTABLE, MAPTABLE, KTABLE, VTABLE>) relation;
-		EntityReader<K, KID, KTABLE> keyEntityReader = null;
+		ConfiguredEntityReader<K, KID, KTABLE> keyEntityReader = null;
 		if (typedMapCreatedPersisterCollector.getKeyPersisterCollector() != null) {
 			keyEntityReader = new EntityReader<>(
 					typedMapCreatedPersisterCollector.getKeyPersisterCollector().getPersister().<KTABLE>getMapping(), persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
 		}
-		EntityReader<V, VID, VTABLE> valueEntityReader = null;
+		ConfiguredEntityReader<V, VID, VTABLE> valueEntityReader = null;
 		if (typedMapCreatedPersisterCollector.getValuePersisterCollector() != null) {
 			valueEntityReader = new EntityReader<>(
 					typedMapCreatedPersisterCollector.getValuePersisterCollector().getPersister().<VTABLE>getMapping(), persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
@@ -625,13 +622,13 @@ public class AggregateResolver {
 	public static class GraftPoint<SRC, SRCID, LEFTTABLE extends Table<LEFTTABLE>, ROOT, ROOTID> {
 		
 		private final AbstractEntity<SRC, SRCID, LEFTTABLE> relationOwnerEntity;
-		private final EntityReader<SRC, SRCID, ?> relationOwnerPersister;
+		private final ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> relationOwnerPersister;
 		private final String parentJoinPoint;
 		/** Accessor from the source entity to the related target, used to shift property paths when descending; {@code null} for the root seed. */
 		private EntityJoinTree<ROOT, ROOTID> aggregateTree;
 		
 		public GraftPoint(AbstractEntity<SRC, SRCID, LEFTTABLE> relationOwnerEntity,
-		                  EntityReader<SRC, SRCID, ?> relationOwnerPersister,
+		                  ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> relationOwnerPersister,
 		                  String parentJoinPoint) {
 			this.relationOwnerEntity = relationOwnerEntity;
 			this.relationOwnerPersister = relationOwnerPersister;
@@ -639,7 +636,7 @@ public class AggregateResolver {
 		}
 		
 		public GraftPoint(AbstractEntity<SRC, SRCID, LEFTTABLE> relationOwnerEntity,
-		                  EntityReader<SRC, SRCID, ?> relationOwnerPersister,
+		                  ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> relationOwnerPersister,
 		                  String parentJoinPoint,
 		                  EntityJoinTree<ROOT, ROOTID> aggregateTree) {
 			this.relationOwnerEntity = relationOwnerEntity;
@@ -649,7 +646,7 @@ public class AggregateResolver {
 		}
 		
 		/** @return the persister of the relation-owning entity, onto which child relation joins are attached */
-		public EntityReader<SRC, SRCID, ?> getRelationOwnerPersister() {
+		public ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> getRelationOwnerPersister() {
 			return relationOwnerPersister;
 		}
 		

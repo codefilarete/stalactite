@@ -32,8 +32,8 @@ import static org.codefilarete.tool.function.Predicates.not;
  */
 class MapEntryKeyAndValueEntitiesUpdater<SRC, SRCID, K, V, KK, VV> extends CollectionUpdater<SRC, KeyValueRecord<K, V, SRCID>, Set<KeyValueRecord<K, V, SRCID>>> {
 	
-	private final ConfiguredRelationalPersister<K, ?> keyEntityPersister;
-	private final ConfiguredRelationalPersister<V, ?> valueEntityPersister;
+	private final ConfiguredRelationalPersister<K, ?, ?> keyEntityPersister;
+	private final ConfiguredRelationalPersister<V, ?, ?> valueEntityPersister;
 	private final RelationMode keyEntityMaintenanceMode;
 	private final RelationMode valueEntityMaintenanceMode;
 	private final boolean associationRecordWritable;
@@ -41,8 +41,8 @@ class MapEntryKeyAndValueEntitiesUpdater<SRC, SRCID, K, V, KK, VV> extends Colle
 	public MapEntryKeyAndValueEntitiesUpdater(Accessor<SRC, Set<KeyValueRecord<K, V, SRCID>>> targetEntityGetter,
 											  Accessor<K, KK> keyMapper,
 											  Accessor<V, VV> valueMapper,
-											  ConfiguredRelationalPersister<K, ?> keyEntityPersister,
-											  ConfiguredRelationalPersister<V, ?> valueEntityPersister,
+											  ConfiguredRelationalPersister<K, ?, ?> keyEntityPersister,
+											  ConfiguredRelationalPersister<V, ?, ?> valueEntityPersister,
 											  EntityPersister<KeyValueRecord<KK, VV, SRCID>, RecordId<KK, SRCID>> keyValueRecordPersister,
 											  RelationMode keyMaintenanceMode,
 											  RelationMode valueMaintenanceMode) {

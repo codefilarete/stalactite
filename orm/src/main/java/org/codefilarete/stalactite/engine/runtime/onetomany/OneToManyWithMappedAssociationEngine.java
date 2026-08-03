@@ -14,18 +14,18 @@ import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.stalactite.dsl.idpolicy.GeneratedKeysPolicy;
+import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteByIdCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteCollectionCascader;
 import org.codefilarete.stalactite.engine.configurer.onetomany.FirstPhaseCycleLoadListener;
-import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
@@ -46,8 +46,8 @@ import static org.codefilarete.tool.collection.Iterables.stream;
 /**
  * @author Guillaume Mary
  */
-public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S extends Collection<TRGT>, SRCTABLE extends Table<SRCTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
-	extends AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, S>
+public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S extends Collection<TRGT>, SRCTABLE extends Table<SRCTABLE>, TRGTTABLE extends Table<TRGTTABLE>>
+	extends AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, S, SRCTABLE, TRGTTABLE>
 {
 	
 	/**
@@ -83,23 +83,23 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S ex
 		}
 	}
 	
-	protected final ShadowColumnValueProvider<TRGT, RIGHTTABLE> foreignKeyValueProvider;
+	protected final ShadowColumnValueProvider<TRGT, TRGTTABLE> foreignKeyValueProvider;
 	
-	public OneToManyWithMappedAssociationEngine(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
-												MappedManyRelationDescriptor<SRC, TRGT, S, SRCID, RIGHTTABLE> manyRelationDescriptor,
-												ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-												Set<Column<RIGHTTABLE, ?>> mappedReverseColumns,
-												Function<SRCID, Map<Column<RIGHTTABLE, ?>, ?>> reverseColumnsValueProvider) {
+	public OneToManyWithMappedAssociationEngine(ConfiguredRelationalEntityPersister<TRGT, TRGTID, TRGTTABLE> targetPersister,
+	                                            MappedManyRelationDescriptor<SRC, TRGT, S, SRCID, TRGTTABLE> manyRelationDescriptor,
+	                                            ConfiguredRelationalEntityPersister<SRC, SRCID, SRCTABLE> sourcePersister,
+	                                            Set<Column<TRGTTABLE, ?>> mappedReverseColumns,
+	                                            Function<SRCID, Map<Column<TRGTTABLE, ?>, ?>> reverseColumnsValueProvider) {
 		super(sourcePersister, targetPersister, manyRelationDescriptor);
-		this.foreignKeyValueProvider = new ShadowColumnValueProvider<TRGT, RIGHTTABLE>() {
+		this.foreignKeyValueProvider = new ShadowColumnValueProvider<TRGT, TRGTTABLE>() {
 			@Override
-			public Set<Column<RIGHTTABLE, ?>> getColumns() {
+			public Set<Column<TRGTTABLE, ?>> getColumns() {
 				return mappedReverseColumns;
 			}
 			
 			@Override
-			public Map<Column<RIGHTTABLE, ?>, ?> giveValue(TRGT trgt) {
-				Map<Column<RIGHTTABLE, ?>, Object> result;
+			public Map<Column<TRGTTABLE, ?>, ?> giveValue(TRGT trgt) {
+				Map<Column<TRGTTABLE, ?>, Object> result;
 				if (giveRelationStorageContext() == null) {
 					// case of TRGT is also root (SRC) in a cycling parent -> parent relation : when some root entities are
 					// inserted/updated the insert listener that initializes currentForeignKeyValueProvider on databaseAutoIncrement is not yet called
@@ -107,7 +107,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S ex
 					getColumns().forEach(col -> result.put(col, null));
 				} else {
 					SRCID srcid = giveRelationStorageContext().giveSourceId(trgt);
-					result = (Map<Column<RIGHTTABLE, ?>, Object>) reverseColumnsValueProvider.apply(srcid);
+					result = (Map<Column<TRGTTABLE, ?>, Object>) reverseColumnsValueProvider.apply(srcid);
 				}
 				return result;
 			}
@@ -126,13 +126,13 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S ex
 	}
 	
 	protected void addForeignKeyManager() {
-		targetPersister.<RIGHTTABLE>getMapping().addShadowColumnInsert(foreignKeyValueProvider);
-		targetPersister.<RIGHTTABLE>getMapping().addShadowColumnUpdate(foreignKeyValueProvider);
+		targetPersister.<TRGTTABLE>getMapping().addShadowColumnInsert(foreignKeyValueProvider);
+		targetPersister.<TRGTTABLE>getMapping().addShadowColumnUpdate(foreignKeyValueProvider);
 	}
 	
 	@Override
-	public MappedManyRelationDescriptor<SRC, TRGT, S, SRCID, RIGHTTABLE> getManyRelationDescriptor() {
-		return (MappedManyRelationDescriptor<SRC, TRGT, S, SRCID, RIGHTTABLE>) manyRelationDescriptor;
+	public MappedManyRelationDescriptor<SRC, TRGT, S, SRCID, TRGTTABLE> getManyRelationDescriptor() {
+		return (MappedManyRelationDescriptor<SRC, TRGT, S, SRCID, TRGTTABLE>) manyRelationDescriptor;
 	}
 	
 	@Override
@@ -170,13 +170,13 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S ex
 	}
 	
 	@Override
-	public void addInsertCascade(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	public void addInsertCascade(ConfiguredRelationalEntityPersister<TRGT, TRGTID, TRGTTABLE> targetPersister) {
 		sourcePersister.addInsertListener(
 				new TargetInstancesInsertCascader(targetPersister, manyRelationDescriptor.getCollectionAccessPoint()));
 	}
 	
 	@Override
-	public void addUpdateCascade(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	public void addUpdateCascade(ConfiguredRelationalEntityPersister<TRGT, TRGTID, TRGTTABLE> targetPersister) {
 		sourcePersister.addUpdateListener(new UpdateListener<SRC>() {
 			
 			/**
@@ -227,7 +227,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S ex
 	}
 	
 	@Override
-	public void addDeleteCascade(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	public void addDeleteCascade(ConfiguredRelationalEntityPersister<TRGT, TRGTID, TRGTTABLE> targetPersister) {
 		sourcePersister.addDeleteListener(new DeleteListener<SRC>() {
 			
 			@Override

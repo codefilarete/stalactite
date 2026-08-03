@@ -10,7 +10,7 @@ import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.PassiveJoinNode;
@@ -48,11 +48,11 @@ public class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 	
 	private OneToOneOwnedBySourceEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> engine;
 
-	public OneToOneOwnedBySourceConfigurer(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-										   OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation,
-										   JoinColumnNamingStrategy joinColumnNamingStrategy,
-										   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-										   UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy) {
+	public OneToOneOwnedBySourceConfigurer(ConfiguredRelationalEntityPersister<SRC, SRCID, ?> sourcePersister,
+	                                       OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation,
+	                                       JoinColumnNamingStrategy joinColumnNamingStrategy,
+	                                       ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+	                                       UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy) {
 		super(sourcePersister, oneToOneRelation, uniqueConstraintNamingStrategy);
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
@@ -87,7 +87,7 @@ public class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 		boolean createForeignKey = !oneToOneRelation.isTargetTablePerClassPolymorphic();
 		if (createForeignKey) {
 			String foreignKeyName = foreignKeyNamingStrategy.giveName(leftKey, rightKey);
-			sourcePersister.<LEFTTABLE>getMapping().getTargetTable().addForeignKey(foreignKeyName, leftKey, rightKey);
+			((EntityMapping<SRC, SRCID, LEFTTABLE>) sourcePersister.getMapping()).getTargetTable().addForeignKey(foreignKeyName, leftKey, rightKey);
 		}
 		
 		return new Duo<>(leftKey, rightKey);
@@ -102,7 +102,7 @@ public class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 	@Override
 	protected void addSelectIn2Phases(
 			String tableAlias,
-			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
+			ConfiguredRelationalEntityPersister<TRGT, TRGTID, ?> targetPersister,
 			Key<LEFTTABLE, JOINID> leftKey,
 			Key<RIGHTTABLE, JOINID> rightKey,
 			FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {

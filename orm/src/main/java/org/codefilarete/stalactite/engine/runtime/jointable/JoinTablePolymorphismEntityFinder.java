@@ -9,7 +9,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.codefilarete.stalactite.engine.EntityReadExecutor;
 import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListener;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphicEntityFinder;
@@ -60,12 +59,25 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 	private EntityTreeQuery<C> entityTreeQuery;
 	
 	public JoinTablePolymorphismEntityFinder(
-			ConfiguredRelationalPersister<C, I> mainPersister,
-			Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
+			ConfiguredRelationalPersister<C, I, T> mainPersister,
+			Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<? extends C, I, ?>> persisterPerSubclass,
 			ConnectionProvider connectionProvider,
 			Dialect dialect) {
-		super(mainPersister, persisterPerSubclass, connectionProvider, dialect);
-		this.singleLoadEntityJoinTree = buildSingleLoadEntityJoinTree(mainPersister);
+		this(mainPersister.getEntityJoinTree(),
+				mainPersister,
+				persisterPerSubclass,
+				connectionProvider,
+				dialect);
+	}
+	
+	public JoinTablePolymorphismEntityFinder(
+			EntityJoinTree<C, I> mainEntityJoinTree,
+			ConfiguredEntityReader<C, I, T> mainReader,
+			Map<? extends Class<C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> persisterPerSubclass,
+			ConnectionProvider connectionProvider,
+			Dialect dialect) {
+		super(mainEntityJoinTree, mainReader, persisterPerSubclass, connectionProvider, dialect);
+		this.singleLoadEntityJoinTree = buildSingleLoadEntityJoinTree();
 		this.criteriaSupport = new EntityCriteriaSupport<>(singleLoadEntityJoinTree);
 		
 		// made for optimization (to avoid creating multiple times the query) but also to avoid adding several times the polymorphic JoinNode consumers
@@ -103,9 +115,9 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 		return new EntityQueryCriteriaSupport<>(this, criteriaSupport.copy());
 	}
 	
-	private SingleLoadEntityJoinTree<C, I> buildSingleLoadEntityJoinTree(EntityReadExecutor<C, I> mainPersister) {
+	private SingleLoadEntityJoinTree<C, I> buildSingleLoadEntityJoinTree() {
 		SingleLoadEntityJoinTree<C, I> result = new SingleLoadEntityJoinTree<>(
-				mainPersister,
+				mainReader,
 				new HashSet<>(persisterPerSubclass.values())
 		);
 		// sub entities persisters will be used to create entities
@@ -113,7 +125,7 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 			String mergeJoin = result.addMergeJoin(
                     ROOT_JOIN_NAME,
 					new EntityMergerAdapter<>(persister.<T>getMapping()),
-					mainPersister.getMainTable().getPrimaryKey(),
+					mainReader.getMainTable().getPrimaryKey(),
 					persister.getMainTable().getPrimaryKey(),
 					JoinType.OUTER,
 					joinNode -> {
@@ -184,10 +196,10 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 				
 				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the 
 				// right one
-				Set<Entry<Class<C>, ConfiguredEntityReader<C, I>>> entries = persisterPerSubclass.entrySet();
+				Set<Entry<Class<C>, ConfiguredEntityReader<C, I, ?>>> entries = persisterPerSubclass.entrySet();
 				Duo<Class, I> duo = null;
 				I identifier;
-				for (Entry<Class<C>, ConfiguredEntityReader<C, I>> entry : entries) {
+				for (Entry<Class<C>, ConfiguredEntityReader<C, I, ?>> entry : entries) {
 					identifier = entry.getValue().getMapping().getIdMapping().getIdentifierAssembler().assemble(row);
 					if (identifier != null) {
 						duo = new Duo<>(entry.getKey(), identifier);
@@ -210,14 +222,14 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 	 */
 	private static class SingleLoadEntityJoinTree<C, I> extends EntityJoinTree<C, I> {
 		
-		public <T extends Table<T>> SingleLoadEntityJoinTree(EntityReadExecutor<C, I> mainPersister,
-															 Set<? extends ConfiguredEntityReader<C, I>> subPersisters) {
+		public <T extends Table<T>> SingleLoadEntityJoinTree(ConfiguredEntityReader<C, I, T> mainPersister,
+															 Set<? extends ConfiguredEntityReader<C, I, ?>> subPersisters) {
 			super(tree -> new JoinTableRootJoinNode<>(
 					tree,
 					mainPersister,
 					subPersisters,
-					mainPersister.<T>getMapping().getSelectableColumns(),
-					(T) mainPersister.getMainTable())
+					mainPersister.getMapping().getSelectableColumns(),
+					mainPersister.getMainTable())
 			);
 		}
 		

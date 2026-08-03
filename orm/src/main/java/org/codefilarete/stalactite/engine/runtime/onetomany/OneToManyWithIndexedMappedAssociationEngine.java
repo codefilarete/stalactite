@@ -20,7 +20,7 @@ import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.diff.IndexedDiff;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.AbstractJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.onetomany.IndexedMappedManyRelationDescriptor.InMemoryRelationHolder;
@@ -44,11 +44,11 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		extends OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, S, LEFTTABLE, RIGHTTABLE> {
 	
 	
-	public OneToManyWithIndexedMappedAssociationEngine(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
-													   IndexedMappedManyRelationDescriptor<SRC, TRGT, S, SRCID, TRGTID, RIGHTTABLE> manyRelationDefinition,
-													   ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-													   Set<Column<RIGHTTABLE, ?>> mappedReverseColumns,
-													   Function<SRCID, Map<Column<RIGHTTABLE, ?>, ?>> reverseColumnsValueProvider) {
+	public OneToManyWithIndexedMappedAssociationEngine(ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister,
+	                                                   IndexedMappedManyRelationDescriptor<SRC, TRGT, S, SRCID, TRGTID, RIGHTTABLE> manyRelationDefinition,
+	                                                   ConfiguredRelationalEntityPersister<SRC, SRCID, LEFTTABLE> sourcePersister,
+	                                                   Set<Column<RIGHTTABLE, ?>> mappedReverseColumns,
+	                                                   Function<SRCID, Map<Column<RIGHTTABLE, ?>, ?>> reverseColumnsValueProvider) {
 		super(targetPersister, manyRelationDefinition, sourcePersister, mappedReverseColumns, reverseColumnsValueProvider);
 	}
 	
@@ -157,7 +157,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	}
 	
 	@Override
-	public void addInsertCascade(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	public void addInsertCascade(ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister) {
 		// For a List and a given manner to get its owner (so we can deduce index value), we configure persistence to keep index value in database
 		addIndexInsertion();
 		super.addInsertCascade(targetPersister);
@@ -166,10 +166,10 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	/**
 	 * Adds a "listener" that will amend insertion of the index column filled with its value
 	 */
-	private <TARGETTABLE extends Table<TARGETTABLE>> void addIndexInsertion() {
+	private void addIndexInsertion() {
 		// we declare the indexing column as a silent one, then AfterInsertCollectionCascader will insert it
 		Accessor<SRC, S> collectionGetter = this.manyRelationDescriptor.getCollectionAccessPoint();
-		ShadowColumnValueProvider<TRGT, TARGETTABLE> indexValueProvider = new ShadowColumnValueProvider<TRGT, TARGETTABLE>() {
+		ShadowColumnValueProvider<TRGT, RIGHTTABLE> indexValueProvider = new ShadowColumnValueProvider<TRGT, RIGHTTABLE>() {
 			@Override
 			public boolean accept(TRGT entity) {
 				// NB: source entity must be taken on relation storage context, not through manyRelationDefinition.getReverseGetter()
@@ -192,12 +192,12 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			}
 			
 			@Override
-			public Set<Column<TARGETTABLE, ?>> getColumns() {
-				return Collections.singleton((Column) getManyRelationDescriptor().getIndexingColumn());
+			public Set<Column<RIGHTTABLE, ?>> getColumns() {
+				return Collections.singleton(getManyRelationDescriptor().getIndexingColumn());
 			}
 			
 			@Override
-			public Map<Column<TARGETTABLE, ?>, ?> giveValue(TRGT target) {
+			public Map<Column<RIGHTTABLE, ?>, ?> giveValue(TRGT target) {
 				SRC source = giveRelationStorageContext().get(target);
 				Integer targetEntityIndex;
 				if (source == null) {
@@ -207,8 +207,8 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				} else {
 					targetEntityIndex = computeTargetIndex(source, target);
 				}
-				Map<Column<TARGETTABLE, ?>, Object> result = new HashMap<>();
-				result.put((Column) getManyRelationDescriptor().getIndexingColumn(), targetEntityIndex);
+				Map<Column<RIGHTTABLE, ?>, Object> result = new HashMap<>();
+				result.put(getManyRelationDescriptor().getIndexingColumn(), targetEntityIndex);
 				return result;
 			}
 			
@@ -241,8 +241,8 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			}
 		};
 		
-		targetPersister.<TARGETTABLE>getMapping().addShadowColumnInsert(indexValueProvider);
-		targetPersister.<TARGETTABLE>getMapping().addShadowColumnUpdate(indexValueProvider);
+		targetPersister.<RIGHTTABLE>getMapping().addShadowColumnInsert(indexValueProvider);
+		targetPersister.<RIGHTTABLE>getMapping().addShadowColumnUpdate(indexValueProvider);
 	}
 	
 	@Override
@@ -279,7 +279,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		private final Column<TARGETTABLE, Integer> indexingColumn;
 		
 		private ListCollectionUpdater(Accessor<SRC, C> collectionGetter,
-									  ConfiguredRelationalPersister<TRGT, ID> targetPersister,
+		                              ConfiguredRelationalEntityPersister<TRGT, ID, TARGETTABLE> targetPersister,
 									  @Nullable Mutator<TRGT, SRC> reverseSetter,
 									  boolean shouldDeleteRemoved,
 									  Accessor<TRGT, ?> idProvider,
@@ -291,7 +291,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			
 		}
 		
-		private void addShadowIndexUpdate(ConfiguredRelationalPersister<TRGT, ID> targetPersister) {
+		private void addShadowIndexUpdate(ConfiguredRelationalEntityPersister<TRGT, ID, TARGETTABLE> targetPersister) {
 			targetPersister.<TARGETTABLE>getMapping().addShadowColumnInsert(new ShadowColumnValueProvider<TRGT, TARGETTABLE>() {
 				
 				@Override
@@ -313,7 +313,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			});
 		}
 		
-		private void addShadowIndexInsert(ConfiguredRelationalPersister<TRGT, ID> targetPersister) {
+		private void addShadowIndexInsert(ConfiguredRelationalEntityPersister<TRGT, ID, TARGETTABLE> targetPersister) {
 			// adding index insert/update to strategy
 			targetPersister.<TARGETTABLE>getMapping().addShadowColumnInsert(new ShadowColumnValueProvider<TRGT, TARGETTABLE>() {
 				

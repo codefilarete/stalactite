@@ -14,6 +14,7 @@ import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.
 import org.codefilarete.stalactite.engine.configurer.resolver.EntityReader;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.RelationStorage;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.query.api.JoinLink;
@@ -47,7 +48,7 @@ public class AggregateOneToOneAppender {
 	 */
 	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
 	GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> append(ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> relation,
-															EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
+	                                                        ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
 	                                                        EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
 	                                                        String mountPoint,
 	                                                        EntityJoinTree<SRC, SRCID> aggregateTree) {

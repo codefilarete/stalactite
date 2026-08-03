@@ -11,10 +11,10 @@ import java.util.stream.Collectors;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
-import org.codefilarete.stalactite.engine.configurer.resolver.EntityReader;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.FirstPhaseIndexedRelationLoader;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.IndexedRelationStorage;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
@@ -36,10 +36,10 @@ public class AggregateOneToManyWithIndexedMappedAssociationAppender {
 	
 	public <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
 	GraftPoint append(ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
-	                                            EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
-	                                            EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
-	                                            String mountPoint,
-	                                            EntityJoinTree<SRC, SRCID> aggregateTree) {
+	                  ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
+	                  ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
+	                  String mountPoint,
+	                  EntityJoinTree<SRC, SRCID> aggregateTree) {
 		
 		// Preparing for next iteration
 		// Note that we can't set the correct generics types to the GraftPoint instance
@@ -144,7 +144,7 @@ public class AggregateOneToManyWithIndexedMappedAssociationAppender {
 					inMemoryRelationFixer.clear();
 				}
 			});
-		
+			
 			String manyJoinName = aggregateTree.addRelationJoin(
 					mountPoint,
 					new EntityMappingAdapter<>(targetPersisterMapping),

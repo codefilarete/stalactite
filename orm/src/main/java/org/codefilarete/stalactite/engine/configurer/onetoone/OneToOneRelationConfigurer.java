@@ -9,7 +9,7 @@ import org.codefilarete.stalactite.dsl.naming.UniqueConstraintNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.AbstractRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.EntityMappingConfigurationWithTable;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -35,7 +35,7 @@ public class OneToOneRelationConfigurer<C, I, TRGT, TRGTID> extends AbstractRela
 	
 	public OneToOneRelationConfigurer(Dialect dialect,
 									  ConnectionConfiguration connectionConfiguration,
-									  ConfiguredRelationalPersister<C, I> sourcePersister,
+									  ConfiguredRelationalEntityPersister<C, I, ?> sourcePersister,
 									  TableNamingStrategy tableNamingStrategy,
 									  JoinColumnNamingStrategy joinColumnNamingStrategy,
 									  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
@@ -79,7 +79,7 @@ public class OneToOneRelationConfigurer<C, I, TRGT, TRGTID> extends AbstractRela
 		} else {
 			// please note that even if no table is found in configuration, build(..) will create one
 			Table targetTable = determineTargetTable(oneToOneRelation);
-			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = persisterBuilder.buildOrGiveExisting(new EntityMappingConfigurationWithTable<>(targetMappingConfiguration, targetTable));
+			ConfiguredRelationalEntityPersister<TRGT, TRGTID, ?> targetPersister = persisterBuilder.buildOrGiveExisting(new EntityMappingConfigurationWithTable<>(targetMappingConfiguration, targetTable));
 			// we replace dot character by underscore one to take embedded relation properties into account: their accessor is an AccessorChain
 			// which is printed with dots by AccessorDefinition
 			String tableAlias = relationName.replace('.', '_');

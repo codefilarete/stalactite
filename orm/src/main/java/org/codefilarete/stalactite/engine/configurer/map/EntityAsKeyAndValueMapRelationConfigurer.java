@@ -28,7 +28,7 @@ import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.AfterUpdateTrigger;
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
@@ -70,8 +70,8 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 	
 	private static <SRC, K, KID, V, VID, M extends Map<K, V>, MM extends Map<KID, VID>> MapRelation<SRC, KID, VID, MM> convertEntityMapToIdentifierMap(
 			MapRelation<SRC, K, V, M> mapRelation,
-			ConfiguredRelationalPersister<K, KID> keyEntityPersister,
-			ConfiguredRelationalPersister<V, VID> valueEntityPersister
+			ConfiguredRelationalEntityPersister<K, KID, ?> keyEntityPersister,
+			ConfiguredRelationalEntityPersister<V, VID, ?> valueEntityPersister
 			) {
 		ConvertingMapAccessor<SRC, K, V, KID, VID, M, MM> mapAccessor = new ConvertingMapAccessor<>(mapRelation, (k, v, result) -> result.put(keyEntityPersister.getId(k), valueEntityPersister.getId(v)));
 		ReadWritePropertyAccessPoint<SRC, MM> propertyAccessor = new DefaultReadWritePropertyAccessPoint<>(
@@ -95,8 +95,8 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 	
 	
 	private final MapRelation<SRC, K, V, M> originalMapRelation;
-	private final ConfiguredRelationalPersister<K, KID> keyEntityPersister;
-	private final ConfiguredRelationalPersister<V, VID> valueEntityPersister;
+	private final ConfiguredRelationalEntityPersister<K, KID, ?> keyEntityPersister;
+	private final ConfiguredRelationalEntityPersister<V, VID, ?> valueEntityPersister;
 	private final Accessor<SRC, M> mapGetter;
 	private final InMemoryRelationHolder<SRCID, KID, VID, K, V> inMemoryRelationHolder;
 	private Key<?, KID> keyIdColumnsProjectInAssociationTable;
@@ -107,9 +107,9 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 	
 	public EntityAsKeyAndValueMapRelationConfigurer(
 			MapRelation<SRC, K, V, M> mapRelation,
-			ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-			ConfiguredRelationalPersister<K, KID> keyEntityPersister,
-			ConfiguredRelationalPersister<V, VID> valueEntityPersister,
+			ConfiguredRelationalEntityPersister<SRC, SRCID, ?> sourcePersister,
+			ConfiguredRelationalEntityPersister<K, KID, ?> keyEntityPersister,
+			ConfiguredRelationalEntityPersister<V, VID, ?> valueEntityPersister,
 			ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 			ColumnNamingStrategy columnNamingStrategy,
 			MapTableNamingStrategy tableNamingStrategy,
@@ -243,9 +243,9 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 	}
 	
 	@Override
-	protected void addInsertCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-									EntityPersister<KeyValueRecord<KID, VID, SRCID>, RecordId<KID, SRCID>> relationRecordPersister,
-									Accessor<SRC, MM> mapAccessor) {
+	protected void addInsertCascade(ConfiguredRelationalEntityPersister<SRC, SRCID, ?> sourcePersister,
+	                                EntityPersister<KeyValueRecord<KID, VID, SRCID>, RecordId<KID, SRCID>> relationRecordPersister,
+	                                Accessor<SRC, MM> mapAccessor) {
 		if (keyEntityMaintenanceMode != RelationMode.READ_ONLY) {
 			// key entities must be persisted before association records insertion to satisfy foreign key constraint
 			sourcePersister.addInsertListener(new BeforeInsertCollectionCascader<SRC, K>(keyEntityPersister) {
@@ -273,8 +273,8 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 	}
 	
 	@Override
-	protected void addUpdateCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-									EntityPersister<KeyValueRecord<KID, VID, SRCID>, RecordId<KID, SRCID>> relationRecordPersister) {
+	protected void addUpdateCascade(ConfiguredRelationalEntityPersister<SRC, SRCID, ?> sourcePersister,
+	                                EntityPersister<KeyValueRecord<KID, VID, SRCID>, RecordId<KID, SRCID>> relationRecordPersister) {
 		// No direct cascade handling here because it will be done by MapUpdater
 		Accessor<SRC, Set<KeyValueRecord<K, V, SRCID>>> targetEntitiesGetter = src -> {
 			SRCID srcId = sourcePersister.getId(src);
@@ -291,8 +291,8 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 	}
 	
 	@Override
-	protected void addDeleteCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-									EntityPersister<KeyValueRecord<KID, VID, SRCID>, RecordId<KID, SRCID>> relationRecordPersister) {
+	protected void addDeleteCascade(ConfiguredRelationalEntityPersister<SRC, SRCID, ?> sourcePersister,
+	                                EntityPersister<KeyValueRecord<KID, VID, SRCID>, RecordId<KID, SRCID>> relationRecordPersister) {
 		// association records must be deleted before referenced entities in order to satisfy foreign key constraint
 		if (this.associationRecordWritable) {
 			super.addDeleteCascade(sourcePersister, relationRecordPersister);
@@ -317,13 +317,13 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 	}
 	
 	@Override
-	protected void addSelectCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-									SimpleRelationalEntityPersister<KeyValueRecord<KID, VID, SRCID>, RecordId<KID, SRCID>, ?> relationRecordPersister,
-									PrimaryKey<?, SRCID> sourcePK,
-									ForeignKey<?, ?, SRCID> keyValueRecordToSourceForeignKey,
-									PropertyMutator<SRC, MM> mapSetter,
-									PropertyAccessor<SRC, MM> mapGetter,
-									Supplier<MM> mapFactory) {
+	protected void addSelectCascade(ConfiguredRelationalEntityPersister<SRC, SRCID, ?> sourcePersister,
+	                                SimpleRelationalEntityPersister<KeyValueRecord<KID, VID, SRCID>, RecordId<KID, SRCID>, ?> relationRecordPersister,
+	                                PrimaryKey<?, SRCID> sourcePK,
+	                                ForeignKey<?, ?, SRCID> keyValueRecordToSourceForeignKey,
+	                                PropertyMutator<SRC, MM> mapSetter,
+	                                PropertyAccessor<SRC, MM> mapGetter,
+	                                Supplier<MM> mapFactory) {
 		
 		BeanRelationFixer<SRC, KeyValueRecord<KID, VID, SRCID>> relationFixer = BeanRelationFixer.ofMapAdapter(
 				mapSetter,

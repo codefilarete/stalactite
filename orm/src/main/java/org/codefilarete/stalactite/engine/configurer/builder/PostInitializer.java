@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.engine.configurer.builder;
 
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.tool.Reflections;
 
 /**
@@ -9,7 +9,7 @@ import org.codefilarete.tool.Reflections;
  * Used in particular to deal with bean cycle load.
  *
  * @param <P> entity type to be persisted
- * @see #consume(ConfiguredRelationalPersister)
+ * @see #consume(ConfiguredRelationalEntityPersister)
  */
 public abstract class PostInitializer<P> implements BuildLifeCycleListener {
 	
@@ -29,7 +29,7 @@ public abstract class PostInitializer<P> implements BuildLifeCycleListener {
 	@Override
 	public final void afterBuild() {
 		try {
-			consume((ConfiguredRelationalPersister<P, ?>) PersisterBuilderContext.CURRENT.get().getPersisterRegistry().getPersister(entityType));
+			consume((ConfiguredRelationalEntityPersister<P, ?, ?>) PersisterBuilderContext.CURRENT.get().getPersisterRegistry().getPersister(entityType));
 		} catch (RuntimeException e) {
 			throw new MappingConfigurationException("Error while post processing persister of type "
 					+ Reflections.toString(entityType), e);
@@ -46,5 +46,5 @@ public abstract class PostInitializer<P> implements BuildLifeCycleListener {
 	 *
 	 * @param persister entity type persister
 	 */
-	public abstract void consume(ConfiguredRelationalPersister<P, ?> persister);
+	public abstract void consume(ConfiguredRelationalEntityPersister<P, ?, ?> persister);
 }

@@ -11,8 +11,8 @@ import org.codefilarete.stalactite.engine.configurer.IndexedAssociationRecordMap
 import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
-import org.codefilarete.stalactite.engine.configurer.resolver.EntityReader;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
@@ -53,8 +53,8 @@ public class AggregateJoinedIndexedManyToManyAppender {
 			RIGHTTABLE extends Table<RIGHTTABLE>,
 			ASSOCIATIONTABLE extends IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
 	GraftPoint append(ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
-	                  EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
-	                  EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
+	                  ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
+	                  ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
 	                  PropertyAccessor<SRC, S> accessor,
 	                  String mountPoint,
 	                  EntityJoinTree<SRC, SRCID> aggregateTree) {

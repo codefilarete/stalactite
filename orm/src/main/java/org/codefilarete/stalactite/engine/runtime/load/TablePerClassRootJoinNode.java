@@ -45,11 +45,11 @@ public class TablePerClassRootJoinNode<C, I> extends JoinRoot<C, I, PseudoTable>
 	
 	public TablePerClassRootJoinNode(EntityJoinTree<C, I> tree,
 									 EntityMapping<C, I, ?> mainMapping,
-									 Map<String, EntityReadExecutor<C, I>> subPersisters,
+									 Map<String, ? extends EntityReadExecutor<C, I>> subPersisters,
 									 PseudoTable union,
 									 SimpleSelectable<String> discriminatorColumn) {
 		super(tree, new EntityMappingAdapter<>(mainMapping), union);
-		this.subPersisters = subPersisters;
+		this.subPersisters = (Map<String, EntityReadExecutor<C, I>>) subPersisters;
 		this.discriminatorColumn = discriminatorColumn;
 	}
 	

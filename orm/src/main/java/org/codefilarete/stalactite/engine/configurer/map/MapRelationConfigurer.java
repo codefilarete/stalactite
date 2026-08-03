@@ -28,7 +28,7 @@ import org.codefilarete.stalactite.engine.configurer.builder.embeddable.Embeddab
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.AfterUpdateTrigger;
@@ -67,7 +67,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 	protected static final AccessorDefinition ENTRY_VALUE_ACCESSOR_DEFINITION = AccessorDefinition.giveDefinition(new AccessorByMethodReference<Entry<Object, Object>, Object>(Entry::getValue));
 	
 	protected final MapRelation<SRC, K, V, M> mapRelation;
-	protected final ConfiguredRelationalPersister<SRC, ID> sourcePersister;
+	protected final ConfiguredRelationalEntityPersister<SRC, ID, ?> sourcePersister;
 	protected final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	protected final ColumnNamingStrategy columnNamingStrategy;
 	protected final MapTableNamingStrategy tableNamingStrategy;
@@ -76,7 +76,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 	protected final UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy;
 
 	public MapRelationConfigurer(MapRelation<SRC, K, V, M> mapRelation,
-								 ConfiguredRelationalPersister<SRC, ID> sourcePersister,
+	                             ConfiguredRelationalEntityPersister<SRC, ID, ?> sourcePersister,
 								 ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 								 ColumnNamingStrategy columnNamingStrategy,
 								 MapTableNamingStrategy tableNamingStrategy,
@@ -97,7 +97,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 		
 		AccessorDefinition mapProviderDefinition = AccessorDefinition.giveDefinition(mapRelation.getMapProvider());
 		// schema configuration
-		PrimaryKey<SRCTABLE, ID> sourcePK = sourcePersister.<SRCTABLE>getMapping().getTargetTable().getPrimaryKey();
+		PrimaryKey<SRCTABLE, ID> sourcePK = ((SRCTABLE) sourcePersister.getMapping().getTargetTable()).getPrimaryKey();
 		
 		// Note that the table will participate to DDL due to select cascading and thus its join in the whole entity graph
 		MAPTABLE targetTable = nullable((MAPTABLE) mapRelation.getTargetTable()).getOr(() -> {
@@ -222,9 +222,9 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 		return relationRecordMapping;
 	}
 	
-	protected void addInsertCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,
-									EntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>> relationRecordPersister,
-									Accessor<SRC, M> collectionAccessor) {
+	protected void addInsertCascade(ConfiguredRelationalEntityPersister<SRC, ID, ?> sourcePersister,
+	                                EntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>> relationRecordPersister,
+	                                Accessor<SRC, M> collectionAccessor) {
 		Accessor<SRC, Collection<KeyValueRecord<K, V, ID>>> collectionProviderForInsert = toRecordCollectionProvider(
 				sourcePersister.getMapping(),
 				false);
@@ -232,8 +232,8 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 		sourcePersister.addInsertListener(new TargetInstancesInsertCascader<>(relationRecordPersister, collectionProviderForInsert));
 	}
 	
-	protected void addUpdateCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,
-									EntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>> relationRecordPersister) {
+	protected void addUpdateCascade(ConfiguredRelationalEntityPersister<SRC, ID, ?> sourcePersister,
+	                                EntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>> relationRecordPersister) {
 		Accessor<SRC, Collection<KeyValueRecord<K, V, ID>>> collectionProviderAsPersistedInstances = toRecordCollectionProvider(
 				sourcePersister.getMapping(),
 				true);
@@ -262,8 +262,8 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 		sourcePersister.addUpdateListener(new AfterUpdateTrigger<>(collectionUpdater));
 	}
 	
-	protected void addDeleteCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,
-								  EntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>> relationRecordPersister) {
+	protected void addDeleteCascade(ConfiguredRelationalEntityPersister<SRC, ID, ?> sourcePersister,
+	                                EntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>> relationRecordPersister) {
 		Accessor<SRC, Collection<KeyValueRecord<K, V, ID>>> recordsProviderAsPersistedInstances = toRecordCollectionProvider(
 				sourcePersister.getMapping(),
 				true);
@@ -271,13 +271,13 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 		sourcePersister.addDeleteListener(new DeleteTargetEntitiesBeforeDeleteCascader<>(relationRecordPersister, recordsProviderAsPersistedInstances));
 	}
 	
-	protected void addSelectCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,
-									SimpleRelationalEntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>, ?> relationRecordPersister,
-									PrimaryKey<?, ID> sourcePK,
-									ForeignKey<?, ?, ID> keyValueRecordToSourceForeignKey,
-									PropertyMutator<SRC, M> mapSetter,
-									PropertyAccessor<SRC, M> mapGetter,
-									Supplier<M> mapFactory) {
+	protected void addSelectCascade(ConfiguredRelationalEntityPersister<SRC, ID, ?> sourcePersister,
+	                                SimpleRelationalEntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>, ?> relationRecordPersister,
+	                                PrimaryKey<?, ID> sourcePK,
+	                                ForeignKey<?, ?, ID> keyValueRecordToSourceForeignKey,
+	                                PropertyMutator<SRC, M> mapSetter,
+	                                PropertyAccessor<SRC, M> mapGetter,
+	                                Supplier<M> mapFactory) {
 		// a particular Map fixer that gets raw values (Map entries) from KeyValueRecord
 		// because elementRecordPersister manages KeyValueRecord, so it gives them as input of the relation,
 		// hence an adaption is needed to "convert" it

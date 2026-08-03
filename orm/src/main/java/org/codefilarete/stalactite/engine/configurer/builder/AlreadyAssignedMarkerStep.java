@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.engine.configurer.builder;
 
 import org.codefilarete.stalactite.dsl.idpolicy.AlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 
@@ -15,7 +15,7 @@ import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager
  */
 public class AlreadyAssignedMarkerStep<C, I> {
 	
-	void handleAlreadyAssignedMarker(ConfiguredRelationalPersister<C, I> persister) {
+	void handleAlreadyAssignedMarker(ConfiguredRelationalEntityPersister<C, I, ?> persister) {
 		// when identifier policy is already-assigned one, we must ensure that entity is marked as persisted when it comes back from database
 		// because user may forget to / can't mark it as such
 		IdentifierInsertionManager<C, I> identifierInsertionManager = persister.getMapping().getIdMapping().getIdentifierInsertionManager();

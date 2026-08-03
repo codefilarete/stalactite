@@ -13,7 +13,7 @@ import org.codefilarete.stalactite.engine.listener.PersistListener;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
-import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.ExecutableEntityQueryCriteria;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
@@ -22,16 +22,16 @@ import org.codefilarete.tool.Duo;
 public class DelegatingReadWriteEntityExecutor<C, I> implements EntityPersister<C, I> {
 	
 	private final EntityWriteExecutor<C, I> writer;
-	private final EntityReader<C, I, ?> reader;
+	private final ConfiguredEntityReader<C, I, ?> reader;
 	private final PersistExecutor<C> persister;
 	
-	public DelegatingReadWriteEntityExecutor(EntityWriteExecutor<C, I> writer, EntityReader<C, I, ?> reader) {
+	public DelegatingReadWriteEntityExecutor(EntityWriteExecutor<C, I> writer, ConfiguredEntityReader<C, I, ?> reader) {
 		this.writer = writer;
 		this.reader = reader;
 		this.persister = PersistExecutor.forPersister(this, this);
 	}
 	
-	public EntityReader<C, I, ?> getReader() {
+	public ConfiguredEntityReader<C, I, ?> getReader() {
 		return reader;
 	}
 	
@@ -41,7 +41,7 @@ public class DelegatingReadWriteEntityExecutor<C, I> implements EntityPersister<
 	}
 	
 	@Override
-	public ExecutableEntityQueryCriteria<C, ?> selectWhere() {
+	public ExecutableEntityQuery<C, ?> selectWhere() {
 		return reader.selectWhere();
 	}
 	

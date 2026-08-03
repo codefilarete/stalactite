@@ -38,7 +38,7 @@ import org.codefilarete.tool.collection.KeepOrderSet;
 public class ExtraTableConfigurer<C, I, T extends Table<T>> {
 	
 	private final PrimaryKey<T, I> mainTablePrimaryKey;
-	private final ConfiguredRelationalPersister<C, I> mainPersister;
+	private final ConfiguredRelationalPersister<C, I, T> mainPersister;
 	private final AbstractIdentification<C, I> identification;
 	private final Map<Table, Set<Linkage>> extraTableLinkages;
 	private final ColumnBinderRegistry columnBinderRegistry;
@@ -46,7 +46,7 @@ public class ExtraTableConfigurer<C, I, T extends Table<T>> {
 	private final NamingConfiguration namingConfiguration;
 	
 	public ExtraTableConfigurer(AbstractIdentification<C, I> identification,
-								ConfiguredRelationalPersister<C, I> mainPersister,
+								ConfiguredRelationalPersister<C, I, T> mainPersister,
 								Map<Table, Set<Linkage>> extraTableLinkages,
 								ColumnBinderRegistry columnBinderRegistry,
 								NamingConfiguration namingConfiguration) {

@@ -26,7 +26,7 @@ import org.codefilarete.stalactite.engine.runtime.AssociationRecordPersister;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
 import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
@@ -35,6 +35,7 @@ import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.order.Delete;
 import org.codefilarete.stalactite.sql.order.DeleteCommandBuilder;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
@@ -53,8 +54,9 @@ import static org.codefilarete.tool.collection.Iterables.first;
 /**
  * @author Guillaume Mary
  */
-public class OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>, R extends AssociationRecord, T extends AssociationTable<T, ?, ?, SRCID, TRGTID>>
-		extends AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, C> {
+public class OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>, R extends AssociationRecord,
+		SRCTABLE extends Table<SRCTABLE>, TRGTTABLE extends Table<TRGTTABLE>, T extends AssociationTable<T, ?, ?, SRCID, TRGTID>>
+		extends AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, C, SRCTABLE, TRGTTABLE> {
 	
 	protected final AssociationRecordPersister<R, T> associationPersister;
 	
@@ -65,12 +67,12 @@ public class OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C ext
 	/** necessary to build valid SQL for deleteById action */
 	private final Dialect dialect;
 	
-	public OneToManyWithAssociationTableEngine(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-	                                           ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
+	public OneToManyWithAssociationTableEngine(ConfiguredRelationalEntityPersister<SRC, SRCID, SRCTABLE> sourcePersister,
+	                                           ConfiguredRelationalEntityPersister<TRGT, TRGTID, TRGTTABLE> targetPersister,
 	                                           ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 	                                           AssociationRecordPersister<R, T> associationPersister,
 	                                           WriteOperationFactory writeOperationFactory,
-											   Dialect dialect) {
+	                                           Dialect dialect) {
 		super(sourcePersister, targetPersister, manyRelationDescriptor);
 		this.associationPersister = associationPersister;
 		this.persisterListener = sourcePersister.getPersisterListener();
@@ -122,7 +124,7 @@ public class OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C ext
 	}
 	
 	@Override
-	public void addInsertCascade(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	public void addInsertCascade(ConfiguredRelationalEntityPersister<TRGT, TRGTID, TRGTTABLE> targetPersister) {
 		// Can we cascade insert on target entities ? it depends on relation maintenance mode
 		if (!getManyRelationDescriptor().isMaintainAssociationOnly()) {
 			persisterListener.addInsertListener(new TargetInstancesInsertCascader(targetPersister, manyRelationDescriptor.getCollectionAccessPoint()));
@@ -136,7 +138,7 @@ public class OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C ext
 	}
 	
 	@Override
-	public void addUpdateCascade(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	public void addUpdateCascade(ConfiguredRelationalEntityPersister<TRGT, TRGTID, TRGTTABLE> targetPersister) {
 		// NB: we don't have any reverseSetter (for applying source entity to reverse side (target entity)), because this is only relevant
 		// when association is mapped without intermediary table (owned by "many-side" entity)
 		CollectionUpdater<SRC, TRGT, C> collectionUpdater = new CollectionUpdater<SRC, TRGT, C>(manyRelationDescriptor.getCollectionAccessPoint(), targetPersister, null, getManyRelationDescriptor().isOrphanRemoval()) {
@@ -206,7 +208,7 @@ public class OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C ext
 	 * In case of {@link BeanPersister#deleteById}, association records will be deleted only by source entity keys.
 	 */
 	@Override
-	public void addDeleteCascade(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	public void addDeleteCascade(ConfiguredRelationalEntityPersister<TRGT, TRGTID, TRGTTABLE> targetPersister) {
 		// we delete association records
 		persisterListener.addDeleteListener(new DeleteListener<SRC>() {
 			@Override
@@ -236,15 +238,15 @@ public class OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C ext
 				// entities, only their id)
 				// We do it thanks to a SQL delete order ... not very coherent with beforeDelete(..) !
 				Delete associationTableDelete = new Delete(associationPersister.getMainTable());
-				EntityMapping<SRC, SRCID, T> idMapping = sourcePersister.getMapping();
+				EntityMapping<SRC, SRCID, SRCTABLE> idMapping = sourcePersister.getMapping();
 				Set<SRCID> identifiers = collect(entities, idMapping::getId, HashSet::new);
 				if (associationPersister.getMainTable().getOneSideForeignKey().isComposed()) {
 					if (dialect.supportsTupleCondition()) {
 						// converting ids to tupled-in
-						Set<Column> columns = new HashSet<>();
+						Set<Column<SRCTABLE, ?>> columns = new HashSet<>();
 						List<Object[]> values = new ArrayList<>(identifiers.size());
 						identifiers.forEach(srcid -> {
-							Map<Column<T, ?>, ?> idValues = idMapping.getIdMapping().<T>getIdentifierAssembler().getColumnValues(srcid);
+							Map<Column<SRCTABLE, ?>, ?> idValues = idMapping.getIdMapping().<SRCTABLE>getIdentifierAssembler().getColumnValues(srcid);
 							if (columns.isEmpty()) {	// first time case
 								columns.addAll(idValues.keySet());
 							}

@@ -19,7 +19,7 @@ import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderCon
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.singletable.SingleTablePolymorphismPersister;
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
@@ -44,7 +44,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 	
 	SingleTablePolymorphismBuilder(SingleTablePolymorphism<C, DTYPE> polymorphismPolicy,
 								   AbstractIdentification<C, I> identification,
-								   ConfiguredRelationalPersister<C, I> mainPersister,
+								   ConfiguredRelationalEntityPersister<C, I, T> mainPersister,
 								   Map<? extends PropertyAccessPoint<C, ?>, ? extends Column<T, ?>> mainMapping,
 								   Map<? extends PropertyAccessPoint<C, ?>, ? extends Column<T, ?>> mainReadonlyMapping,
 								   ValueAccessPointMap<C, ? extends Converter<Object, Object>, PropertyAccessPoint<C, ?>> mainReadConverters,
@@ -60,8 +60,8 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 	}
 	
 	@Override
-	public AbstractPolymorphismPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
-		Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass = collectSubClassPersister(dialect, connectionConfiguration);
+	public AbstractPolymorphismPersister<C, I, T> build(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+		Map<Class<C>, ConfiguredRelationalEntityPersister<C, I, ?>> persisterPerSubclass = collectSubClassPersister(dialect, connectionConfiguration);
 		
 		// Note that registering the cascades to sub-persisters must be done BEFORE the creation of the main persister to make it have all
 		// entities joins and let it build a consistent entity graph load; without it, we miss sub-relations when loading main entities 
@@ -70,15 +70,15 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 		Column<T, DTYPE> discriminatorColumn = ensureDiscriminatorColumn();
 		// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
 		// available by PersistenceContext.getPersister(..)) and it is one sure that they are perfect ones (all their features should be tested)
-		SingleTablePolymorphismPersister<C, I, ?, DTYPE> result = new SingleTablePolymorphismPersister<>(
+		SingleTablePolymorphismPersister<C, I, T, DTYPE> result = new SingleTablePolymorphismPersister<>(
 			mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(), dialect,
 			discriminatorColumn, (SingleTablePolymorphism<C, DTYPE>) polymorphismPolicy);
 		
 		return result;
 	}
 	
-	private <D extends C> Map<Class<D>, ConfiguredRelationalPersister<D, I>> collectSubClassPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
-		Map<Class<D>, ConfiguredRelationalPersister<D, I>> persisterPerSubclass = new HashMap<>();
+	private <D extends C> Map<Class<D>, ConfiguredRelationalEntityPersister<D, I, ?>> collectSubClassPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+		Map<Class<D>, ConfiguredRelationalEntityPersister<D, I, ?>> persisterPerSubclass = new HashMap<>();	
 		
 		T mainTable = (T) mainPersister.getMapping().getTargetTable();
 		for (SubEntityMappingConfiguration<D> subConfiguration : ((Set<SubEntityMappingConfiguration<D>>) (Set) polymorphismPolicy.getSubClasses())) {

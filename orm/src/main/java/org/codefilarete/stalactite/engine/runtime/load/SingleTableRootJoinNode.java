@@ -33,24 +33,24 @@ import org.codefilarete.tool.collection.KeepOrderSet;
  */
 public class SingleTableRootJoinNode<C, I, T extends Table<T>, DTYPE> extends JoinRoot<C, I, T> {
 	
-	private final Set<? extends ConfiguredEntityReader<C, I>> subPersisters;
+	private final Set<? extends ConfiguredEntityReader<C, I, ?>> subPersisters;
 	private final Set<Column<T, ?>> allColumnsInHierarchy;
 	private final Column<T, DTYPE> discriminatorColumn;
 	private final SingleTablePolymorphism<C, DTYPE> polymorphismPolicy;
 	
 	public SingleTableRootJoinNode(EntityJoinTree<C, I> tree,
 								   EntityMapping<C, I, T> mainMapping,
-								   Set<? extends ConfiguredEntityReader<C, I>> subPersisters,
+								   Set<? extends ConfiguredEntityReader<C, I, ?>> subPersisters,
 								   Column<T, DTYPE> discriminatorColumn,
 								   SingleTablePolymorphism<C, DTYPE> polymorphismPolicy) {
-		super(tree, new EntityMappingAdapter<>(mainMapping), (T) mainMapping.getTargetTable());
+		super(tree, new EntityMappingAdapter<>(mainMapping), mainMapping.getTargetTable());
 		this.subPersisters = subPersisters;
 		this.discriminatorColumn = discriminatorColumn;
 		this.polymorphismPolicy = polymorphismPolicy;
 		Set<T> subTables = Iterables.collect(subPersisters, EntityReadExecutor::getMainTable, HashSet::new);
 		subTables.add(mainMapping.getTargetTable());
 		this.allColumnsInHierarchy = subTables
-				.stream().flatMap(table -> ((T) table).getColumns().stream())
+				.stream().flatMap(table -> table.getColumns().stream())
 				.collect(Collectors.toCollection(KeepOrderSet::new));
 	}
 	
@@ -65,7 +65,7 @@ public class SingleTableRootJoinNode<C, I, T extends Table<T>, DTYPE> extends Jo
 		// (which is only available when the query is executed, not at build time)
 		Supplier<ColumnedRow> decoderProvider = () -> EntityTreeInflater.currentContext().getDecoder(joinNode);
 		Set<SubPersisterConsumer<C, I>> subEntityConsumer = subPersisters.stream().map(subPersister -> {
-			EntityMapping<C, I, T> mapping = subPersister.getMapping();
+			EntityMapping<C, I, ?> mapping = subPersister.getMapping();
 			return new SubPersisterConsumer<>(
 					row -> mapping.getIdMapping().getIdentifierAssembler().assemble(decoderProvider.get()),
 					mapping.getClassToPersist(),

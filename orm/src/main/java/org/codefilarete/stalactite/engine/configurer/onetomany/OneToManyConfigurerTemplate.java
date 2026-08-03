@@ -4,7 +4,7 @@ import java.util.Collection;
 
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
@@ -18,7 +18,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  * @param <LEFTTABLE> table type of source entity 
  * @author Guillaume Mary
  */
-abstract class OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>> {
+abstract class OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, TRGTTABLE extends Table<TRGTTABLE>> {
 	
 	protected final OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE> associationConfiguration;
 	protected final boolean loadSeparately;
@@ -37,9 +37,9 @@ abstract class OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, C extends C
 				associationConfiguration.getOneToManyRelation().getTargetMappingConfiguration().getEntityType());
 	}
 	
-	protected abstract String configure(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister);
+	protected abstract String configure(ConfiguredRelationalEntityPersister<TRGT, TRGTID, TRGTTABLE> targetPersister);
 	
 	public abstract CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(String tableAlias,
-																					   ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
+																					   ConfiguredRelationalEntityPersister<TRGT, TRGTID, TRGTTABLE> targetPersister,
 																					   FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener);
 }

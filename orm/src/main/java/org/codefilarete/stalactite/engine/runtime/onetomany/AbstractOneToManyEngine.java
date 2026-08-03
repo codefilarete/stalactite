@@ -3,23 +3,24 @@ package org.codefilarete.stalactite.engine.runtime.onetomany;
 import java.util.Collection;
 
 import org.codefilarete.stalactite.engine.configurer.onetomany.FirstPhaseCycleLoadListener;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
  * @author Guillaume Mary
  */
-public abstract class AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>> {
+public abstract class AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>, SRCTABLE extends Table<SRCTABLE>, TRGTTABLE extends Table<TRGTTABLE>> {
 	
 	public static final int INDEXED_COLLECTION_FIRST_INDEX_VALUE = 1;
 	
-	protected final ConfiguredRelationalPersister<SRC, SRCID> sourcePersister;
+	protected final ConfiguredRelationalEntityPersister<SRC, SRCID, SRCTABLE> sourcePersister;
 	
-	protected final ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister;
+	protected final ConfiguredRelationalEntityPersister<TRGT, TRGTID, TRGTTABLE> targetPersister;
 	
 	protected final ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor;
 	
-	public AbstractOneToManyEngine(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-	                               ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
+	public AbstractOneToManyEngine(ConfiguredRelationalEntityPersister<SRC, SRCID, SRCTABLE> sourcePersister,
+	                               ConfiguredRelationalEntityPersister<TRGT, TRGTID, TRGTTABLE> targetPersister,
 	                               ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor) {
 		this.sourcePersister = sourcePersister;
 		this.targetPersister = targetPersister;
@@ -30,11 +31,11 @@ public abstract class AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, C extend
 	
 	public abstract String addSelectCascade(boolean loadSeparately);
 	
-	public abstract void addInsertCascade(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister);
+	public abstract void addInsertCascade(ConfiguredRelationalEntityPersister<TRGT, TRGTID, TRGTTABLE> targetPersister);
 	
-	public abstract void addUpdateCascade(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister);
+	public abstract void addUpdateCascade(ConfiguredRelationalEntityPersister<TRGT, TRGTID, TRGTTABLE> targetPersister);
 	
-	public abstract void addDeleteCascade(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister);
+	public abstract void addDeleteCascade(ConfiguredRelationalEntityPersister<TRGT, TRGTID, TRGTTABLE> targetPersister);
 	
 	public ManyRelationDescriptor<SRC, TRGT, C> getManyRelationDescriptor() {
 		return manyRelationDescriptor;

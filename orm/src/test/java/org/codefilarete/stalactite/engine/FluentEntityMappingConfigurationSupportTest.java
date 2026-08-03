@@ -614,7 +614,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	void map_fieldName_targetedPropertyNameIsTaken() {
-		ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
+		ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map("fieldWithoutAccessor")
 				.build(persistenceContext);
@@ -628,7 +628,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	void map_withoutName_targetedPropertyNameIsTaken() {
-		ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
+		ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(Toto::getName)
 				.build(persistenceContext);
@@ -642,7 +642,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	void map_withColumnName_targetedPropertyNameIsTaken() {
-		ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
+		ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(Toto::getName).columnName("dummyName")
 				.build(persistenceContext);
@@ -656,7 +656,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	void map_withFieldName_targetedPropertyNameIsTaken() {
-		ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
+		ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(Toto::getName).fieldName("firstName")
 				.build(persistenceContext);
@@ -694,7 +694,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	void map_mandatory_columnConstraintIsAdded() {
-		ConfiguredRelationalPersister<Toto, Identifier<UUID>> totoPersister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>)
+		ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?> totoPersister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?>)
 				FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(Toto::getName).mandatory()
@@ -711,7 +711,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 		dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 		
-		ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>)
+		ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?>)
 				FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
 				.onTable(totoTable)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
@@ -1150,7 +1150,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getSqlTypeRegistry().put(Identifier.class, "VARCHAR(255)");
 			
 			Table extraTable = new Table("Tata");
-			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
+			ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
 					.mapKey(Toto::getIdentifier, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(Toto::getName)
 					.extraTable(extraTable)
@@ -1189,7 +1189,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.UUID_BINDER, PersistedIdentifier::new, StatefulIdentifier::getDelegate)));
 			dialect.getSqlTypeRegistry().put(Identifier.class, "VARCHAR(255)");
 			
-			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
+			ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
 					.mapKey(Toto::getIdentifier, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(Toto::getName).columnName("dummyName")
 					.extraTable("Tata")
@@ -1213,7 +1213,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.UUID_BINDER, PersistedIdentifier::new, StatefulIdentifier::getDelegate)));
 			dialect.getSqlTypeRegistry().put(Identifier.class, "VARCHAR(255)");
 			
-			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
+			ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
 					.mapKey(Toto::getIdentifier, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(Toto::getName).columnSize(Size.length(123))
 					.extraTable("Tata")
@@ -1237,7 +1237,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.UUID_BINDER, PersistedIdentifier::new, StatefulIdentifier::getDelegate)));
 			dialect.getSqlTypeRegistry().put(Identifier.class, "VARCHAR(255)");
 			
-			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
+			ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
 					.mapKey(Toto::getIdentifier, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(Toto::getName)
 					.extraTable("Tata")
@@ -1273,7 +1273,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.UUID_BINDER, PersistedIdentifier::new, StatefulIdentifier::getDelegate)));
 			dialect.getSqlTypeRegistry().put(Identifier.class, "VARCHAR(255)");
 			
-			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
+			ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
 					.mapKey(Toto::getIdentifier, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(Toto::getName).extraTable("Tata")
 					.map(Toto::getFirstName).extraTable("Tutu")
@@ -1313,7 +1313,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.UUID_BINDER, PersistedIdentifier::new, StatefulIdentifier::getDelegate)));
 			dialect.getSqlTypeRegistry().put(Identifier.class, "VARCHAR(255)");
 			
-			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
+			ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>, ?>) FluentMappings.entityBuilder(Toto.class, UUID_TYPE)
 					.map(Toto::getName).extraTable("Tata")
 					.map(Toto::getFirstName).extraTable("Tutu")
 					.mapSuperClass(FluentMappings.entityBuilder(AbstractToto.class, UUID_TYPE)

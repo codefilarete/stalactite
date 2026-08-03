@@ -12,9 +12,7 @@ import org.codefilarete.reflection.PropertyAccessPoint;
 import org.codefilarete.reflection.SerializablePropertyAccessor;
 import org.codefilarete.reflection.SerializablePropertyMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
-import org.codefilarete.stalactite.engine.EntityCriteria;
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
@@ -180,11 +178,13 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	ExecutableEntityQueryCriteria<C, ?> selectWhere();
 	
 	/**
-	 * Mashup between {@link EntityCriteria} and {@link ExecutableQuery} to make an {@link EntityCriteria} executable
+	 * Mashup between {@link ExecutableEntityQuery} and {@link RelationalEntityCriteria} to let {@link RelationalEntityCriteria}
+	 * methods being chainable.
+	 * 
 	 * @param <C> type of object returned by query execution
 	 */
 	interface ExecutableEntityQueryCriteria<C, SELF extends ExecutableEntityQueryCriteria<C, SELF>>
-			extends ExecutableEntityQuery<C, SELF>, RelationalEntityCriteria<C, SELF>, EntityCriteria.OrderByChain<C, SELF> {
+			extends ExecutableEntityQuery<C, SELF>, RelationalEntityCriteria<C, SELF> {
 		
 	}
 }

@@ -35,7 +35,7 @@ public class MapUpdater<SRC, SRCID, K, V, ENTITY, KK, VV> extends CollectionUpda
 	
 	private final EntityPersister<KeyValueRecord<KK, VV, SRCID>, RecordId<KK, SRCID>> keyValueRecordPersister;
 	
-	private final ConfiguredRelationalPersister<SRC, SRCID> sourcePersister;
+	private final ConfiguredRelationalPersister<SRC, SRCID, ?> sourcePersister;
 	
 	private final RelationMode maintenanceMode;
 	private final BiFunction<Entry<K, V>, SRCID, KeyValueRecord<KK, VV, SRCID>> recordBuilder;
@@ -45,9 +45,9 @@ public class MapUpdater<SRC, SRCID, K, V, ENTITY, KK, VV> extends CollectionUpda
 	 * the given entity persister into an {@link EntityWriter} and uses the entity id as the diff footprint.
 	 */
 	public MapUpdater(Accessor<SRC, Set<Entry<K, V>>> targetEntitiesGetter,
-					  ConfiguredRelationalPersister<ENTITY, ?> entityPersister,
+					  ConfiguredRelationalPersister<ENTITY, ?, ?> entityPersister,
 					  EntityPersister<KeyValueRecord<KK, VV, SRCID>, RecordId<KK, SRCID>> keyValueRecordPersister,
-					  ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
+					  ConfiguredRelationalPersister<SRC, SRCID, ?> sourcePersister,
 					  RelationMode maintenanceMode,
 					  Function<? super Entry<K, V>, ENTITY> entryBeanExtractor,
 					  BiFunction<Entry<K, V>, SRCID, KeyValueRecord<KK, VV, SRCID>> recordBuilder) {
@@ -67,7 +67,7 @@ public class MapUpdater<SRC, SRCID, K, V, ENTITY, KK, VV> extends CollectionUpda
 	public MapUpdater(Accessor<SRC, Set<Entry<K, V>>> targetEntitiesGetter,
 	                  EntityWriter<Entry<K, V>, ?> entityWriter,
 					  EntityPersister<KeyValueRecord<KK, VV, SRCID>, RecordId<KK, SRCID>> keyValueRecordPersister,
-					  ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
+					  ConfiguredRelationalPersister<SRC, SRCID, ?> sourcePersister,
 					  RelationMode maintenanceMode,
 					  Accessor<Entry<K, V>, ?> idProvider,
 					  BiFunction<Entry<K, V>, SRCID, KeyValueRecord<KK, VV, SRCID>> recordBuilder) {
@@ -150,7 +150,7 @@ public class MapUpdater<SRC, SRCID, K, V, ENTITY, KK, VV> extends CollectionUpda
 	 */
 	public static class RelationalPersisterAsEntityWriter<K, V, ENTITY, ENTITY_ID> implements EntityWriter<Entry<K, V>, ENTITY_ID> {
 		
-		private final ConfiguredRelationalPersister<ENTITY, ENTITY_ID> relatedEntityPersister;
+		private final ConfiguredRelationalPersister<ENTITY, ENTITY_ID, ?> relatedEntityPersister;
 		private final Function<? super Entry<K, V>, ENTITY> mapper;
 		private final RelationMode maintenanceMode;
 		
@@ -163,7 +163,7 @@ public class MapUpdater<SRC, SRCID, K, V, ENTITY, KK, VV> extends CollectionUpda
 		 * @param maintenanceMode the relation mode to use for the given entity persister
 		 */
 		public RelationalPersisterAsEntityWriter(
-				ConfiguredRelationalPersister<ENTITY, ENTITY_ID> relatedEntityPersister,
+				ConfiguredRelationalPersister<ENTITY, ENTITY_ID, ?> relatedEntityPersister,
 				Function<? super Entry<K, V>, ENTITY> mapper,
 				RelationMode maintenanceMode) {
 			this.relatedEntityPersister = relatedEntityPersister;

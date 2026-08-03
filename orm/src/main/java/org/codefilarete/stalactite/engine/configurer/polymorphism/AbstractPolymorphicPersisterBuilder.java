@@ -9,9 +9,9 @@ import org.codefilarete.stalactite.dsl.subentity.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.SingleColumnIdentification;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
-import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.RelationConfigurer;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -23,7 +23,7 @@ import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> implements PolymorphismBuilder<C, I, T> {
 	
 	protected final PolymorphismPolicy<C> polymorphismPolicy;
-	protected final ConfiguredRelationalPersister<C, I> mainPersister;
+	protected final ConfiguredRelationalEntityPersister<C, I, T> mainPersister;
 	protected final AbstractIdentification<C, I> identification;
 	protected final ColumnBinderRegistry columnBinderRegistry;
 	
@@ -31,11 +31,11 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 	protected final PersisterBuilderContext persisterBuilderContext;
 	
 	protected AbstractPolymorphicPersisterBuilder(PolymorphismPolicy<C> polymorphismPolicy,
-												  AbstractIdentification<C, I> identification,
-												  ConfiguredRelationalPersister<C, I> mainPersister,
-												  ColumnBinderRegistry columnBinderRegistry,
-												  NamingConfiguration namingConfiguration,
-												  PersisterBuilderContext persisterBuilderContext) {
+	                                              AbstractIdentification<C, I> identification,
+	                                              ConfiguredRelationalEntityPersister<C, I, T> mainPersister,
+	                                              ColumnBinderRegistry columnBinderRegistry,
+	                                              NamingConfiguration namingConfiguration,
+	                                              PersisterBuilderContext persisterBuilderContext) {
 		this.polymorphismPolicy = polymorphismPolicy;
 		this.identification = identification;
 		this.mainPersister = mainPersister;
@@ -54,15 +54,15 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 	 * @param dialect the {@link Dialect} use for type binding
 	 * @param connectionConfiguration the connection configuration
 	 */
-	protected <D extends C> void registerSubEntitiesRelations(Map<Class<D>, ConfiguredRelationalPersister<D, I>> persisterPerSubclass,
-															  Dialect dialect,
-															  ConnectionConfiguration connectionConfiguration) {
+	protected <D extends C> void registerSubEntitiesRelations(Map<Class<D>, ConfiguredRelationalEntityPersister<D, I, ?>> persisterPerSubclass,
+	                                                          Dialect dialect,
+	                                                          ConnectionConfiguration connectionConfiguration) {
 		// we surround our relation configuration with cycle detection (see registerRelationCascades(..) implementation), this may seem too wide and
 		// could be closer to registerRelationCascades(..) method call (which actually requires it) but as doing such we also cover the case of 2
 		// subconfigurations using same entity in their relation 
 		persisterBuilderContext.runInContext(mainPersister, () -> {
 			for (SubEntityMappingConfiguration<D> subConfiguration : (Set<SubEntityMappingConfiguration<D>>) (Set) this.polymorphismPolicy.getSubClasses()) {
-				ConfiguredRelationalPersister<D, I> subEntityPersister = persisterPerSubclass.get(subConfiguration.getEntityType());
+				ConfiguredRelationalEntityPersister<D, I, ?> subEntityPersister = persisterPerSubclass.get(subConfiguration.getEntityType());
 				
 				if (subConfiguration.getPolymorphismPolicy() != null) {
 					assertSubPolymorphismIsSupported(subConfiguration.getPolymorphismPolicy());
@@ -90,12 +90,12 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 	 * @param dialect the {@link Dialect} use for type binding
 	 * @param connectionConfiguration the connection configuration
 	 */
-	private <D extends C> ConfiguredRelationalPersister<D, I> buildSubPolymorphicPersister(ConfiguredRelationalPersister<D, I> subPersister,
-																						   PolymorphismPolicy<D> subPolymorphismPolicy,
-																						   Dialect dialect,
-																						   ConnectionConfiguration connectionConfiguration) {
+	private <D extends C> ConfiguredRelationalEntityPersister<D, I, ?> buildSubPolymorphicPersister(ConfiguredRelationalEntityPersister<D, I, ?> subPersister,
+	                                                                                                PolymorphismPolicy<D> subPolymorphismPolicy,
+	                                                                                                Dialect dialect,
+	                                                                                                ConnectionConfiguration connectionConfiguration) {
 		// we only have to call a polymorphic builder with given methods arguments, and same configuration values as this instance
-		PolymorphismPersisterBuilder<D, I, T> polymorphismPersisterBuilder = new PolymorphismPersisterBuilder<>(
+		PolymorphismPersisterBuilder<D, I, ?> polymorphismPersisterBuilder = new PolymorphismPersisterBuilder<>(
 				subPolymorphismPolicy,
 				(SingleColumnIdentification<D, I>) identification,
 				subPersister,
@@ -110,9 +110,9 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 	}
 	
 	private <D extends C> void registerRelationCascades(RelationalMappingConfiguration<D> entityMappingConfiguration,
-														Dialect dialect,
-														ConnectionConfiguration connectionConfiguration,
-														ConfiguredRelationalPersister<D, I> subEntityPersister) {
+	                                                    Dialect dialect,
+	                                                    ConnectionConfiguration connectionConfiguration,
+	                                                    ConfiguredRelationalEntityPersister<D, I, ?> subEntityPersister) {
 		// Note that for now polymorphism configuration doesn't support many-to-many nor Map relation
 		RelationConfigurer<D, I> relationConfigurer = new RelationConfigurer<>(dialect,
 				connectionConfiguration,

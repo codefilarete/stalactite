@@ -7,7 +7,6 @@ import java.util.function.Function;
 
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.engine.EntityCriteria;
-import org.codefilarete.stalactite.engine.EntitySelector;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.ReadListenerWrapper;
@@ -34,7 +33,7 @@ import org.codefilarete.tool.collection.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class EntityReader<C, I, T extends Table<T>> extends ReadListenerWrapper<C, I> implements ConfiguredEntityReader<C, I>, EntitySelector<C> {
+public class EntityReader<C, I, T extends Table<T>> extends ReadListenerWrapper<C, I> implements ConfiguredEntityReader<C, I, T> {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(EntityReader.class);
 	
@@ -84,6 +83,7 @@ public class EntityReader<C, I, T extends Table<T>> extends ReadListenerWrapper<
 		return mapping;
 	}
 	
+	@Override
 	public SelectListener<C, I> getSelectListener() {
 		return persisterListener.getSelectListener();
 	}

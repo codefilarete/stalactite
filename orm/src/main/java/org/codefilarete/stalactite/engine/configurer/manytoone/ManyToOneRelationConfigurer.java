@@ -10,7 +10,7 @@ import org.codefilarete.stalactite.dsl.naming.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.AbstractRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.EntityMappingConfigurationWithTable;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -31,7 +31,7 @@ public class ManyToOneRelationConfigurer<C, I, TRGT, TRGTID> extends AbstractRel
 	
 	public ManyToOneRelationConfigurer(Dialect dialect,
 									   ConnectionConfiguration connectionConfiguration,
-									   ConfiguredRelationalPersister<C, I> sourcePersister,
+									   ConfiguredRelationalEntityPersister<C, I, ?> sourcePersister,
 									   TableNamingStrategy tableNamingStrategy,
 									   JoinColumnNamingStrategy joinColumnNamingStrategy,
 									   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
@@ -46,8 +46,8 @@ public class ManyToOneRelationConfigurer<C, I, TRGT, TRGTID> extends AbstractRel
 	 *
 	 * @param manyToOneRelation the relation to be configured
 	 */
-	public void configure(ManyToOneRelation<C, TRGT, TRGTID, Collection<C>> manyToOneRelation) {
-		ManyToOneConfigurer<C, TRGT, I, TRGTID, ?, ?, I> configurer;
+	public <TRGTTABLE extends Table<TRGTTABLE>> void configure(ManyToOneRelation<C, TRGT, TRGTID, Collection<C>> manyToOneRelation) {
+		ManyToOneConfigurer<C, TRGT, I, TRGTID, ?, TRGTTABLE, I> configurer;
 		configurer = new ManyToOneConfigurer<>(sourcePersister, manyToOneRelation, joinColumnNamingStrategy, foreignKeyNamingStrategy);
 		
 		String relationName = AccessorDefinition.giveDefinition(manyToOneRelation.getTargetProvider()).getName();
@@ -69,7 +69,7 @@ public class ManyToOneRelationConfigurer<C, I, TRGT, TRGTID> extends AbstractRel
 		} else {
 			// please note that even if no table is found in configuration, build(..) will create one
 			Table targetTable = determineTargetTable(manyToOneRelation);
-			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = persisterBuilder.buildOrGiveExisting(new EntityMappingConfigurationWithTable<>(targetMappingConfiguration, targetTable));
+			ConfiguredRelationalEntityPersister<TRGT, TRGTID, TRGTTABLE> targetPersister = (ConfiguredRelationalEntityPersister<TRGT, TRGTID, TRGTTABLE>) persisterBuilder.buildOrGiveExisting(new EntityMappingConfigurationWithTable<>(targetMappingConfiguration, targetTable));
 			// we replace dot character by underscore one to take embedded relation properties into account: their accessor is an AccessorChain
 			// which is printed with dots by AccessorDefinition
 			String tableAlias = relationName.replace('.', '_');

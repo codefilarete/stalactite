@@ -18,9 +18,9 @@ import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation.MapMemberAsEntity;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
-import org.codefilarete.stalactite.engine.configurer.resolver.EntityReader;
 import org.codefilarete.stalactite.engine.configurer.resolver.map.EntryMapResolver.KeyValueRecordPersister;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.query.api.JoinLink;
@@ -51,12 +51,10 @@ public class FetchSeparatelyMapAppender {
 	
 	public <X, Y, SRC, SRCID, K, KID, V, VID, M extends Map<K, V>, LEFTTABLE extends Table<LEFTTABLE>, MAPTABLE extends Table<MAPTABLE>, KTABLE extends Table<KTABLE>, VTABLE extends Table<VTABLE>>
 	Duo<GraftPoint /* key assembly point */, GraftPoint /* value assembly point */> append(ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, LEFTTABLE, MAPTABLE, KTABLE, VTABLE> relation,
-	                                                                                       EntityJoinTree<SRC, SRCID> aggregateTree,
-	                                                                                       EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
-	                                                                                       String mountPoint,
+	                                                                                       ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
 	                                                                                       KeyValueRecordPersister<X, Y, SRCID, MAPTABLE> keyValueRecordPersister,
-	                                                                                       EntityReader<K, KID, KTABLE> keyEntityReader,
-	                                                                                       EntityReader<V, VID, VTABLE> valueEntityReader,
+	                                                                                       ConfiguredEntityReader<K, KID, KTABLE> keyEntityReader,
+	                                                                                       ConfiguredEntityReader<V, VID, VTABLE> valueEntityReader,
 	                                                                                       Dialect dialect,
 	                                                                                       ConnectionProvider connectionProvider) {
 		
@@ -153,7 +151,7 @@ public class FetchSeparatelyMapAppender {
 	Duo<SelectExecutor<KeyValueRecord<X, Y, SRCID>, SRCID>, GraftPoint> appendSeparatelyFetchedEntityJoin(
 			MapEntryLoader<SRC, SRCID, X, Y, LEFTTABLE, MAPTABLE> mapEntryLoader,
 			ReadWritePropertyAccessPoint<SRC, ?> mapAccessor,
-			EntityReader<ENTITY, ENTITY_ID, ENTITYTABLE> entityReader,
+			ConfiguredEntityReader<ENTITY, ENTITY_ID, ENTITYTABLE> entityReader,
 			MapMemberAsEntity<ENTITY, ENTITY_ID, MAPTABLE, ENTITYTABLE, ?> entityDefinition,
 			SelectExecutor<KeyValueRecord<X, Y, SRCID>, SRCID> currentSelectExecutor,
 			Function<KeyValueRecord<X, Y, SRCID>, RAW> rawValueGetter,
@@ -200,12 +198,12 @@ public class FetchSeparatelyMapAppender {
 	
 	private <SRC, SRCID, K, V, ENTITY, ENTITY_ID, M extends Map<K, V>, MAPTABLE extends Table<MAPTABLE>, ENTITYTABLE extends Table<ENTITYTABLE>>
 	String appendEntityJoin(EntityJoinTree<SRC, SRCID> aggregateTree,
-	                      String mapJoinNodeName,
-	                      ReadWritePropertyAccessPoint<SRC, M> mapAccessor,
-	                      EntityReader<ENTITY, ENTITY_ID, ENTITYTABLE> entityPersister,
-	                      ForeignKey<MAPTABLE, ENTITYTABLE, ENTITY_ID> foreignKey,
-	                      InMemoryRelationHolder<SRCID, ENTITY_ID, ENTITY> inMemoryRelationHolder,
-						  Function<KeyValueRecord<?, ?, SRCID>, ENTITY_ID> entityIdExtractor) {
+	                        String mapJoinNodeName,
+	                        ReadWritePropertyAccessPoint<SRC, M> mapAccessor,
+	                        ConfiguredEntityReader<ENTITY, ENTITY_ID, ENTITYTABLE> entityPersister,
+	                        ForeignKey<MAPTABLE, ENTITYTABLE, ENTITY_ID> foreignKey,
+	                        InMemoryRelationHolder<SRCID, ENTITY_ID, ENTITY> inMemoryRelationHolder,
+	                        Function<KeyValueRecord<?, ?, SRCID>, ENTITY_ID> entityIdExtractor) {
 		
 		return aggregateTree.addRelationJoin(
 				mapJoinNodeName,

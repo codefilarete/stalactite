@@ -714,7 +714,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void schemaCreation() {
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>, ?> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>, ?>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKey, Country.class, String.class)
@@ -738,7 +738,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void crud() {
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>, ?> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>, ?>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKey, Country.class, String.class)
@@ -800,7 +800,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 					.map(Country::getName)
 					.map(Country::getDescription);
 			EntityPersister<Country, Identifier<Long>> countryPersister = countryPersisterConfiguration.build(persistenceContext);
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>, ?> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>, ?>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKey, Country.class, String.class)
@@ -854,7 +854,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void crud_deleteOrphan() {
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>, ?> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>, ?>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKey, Country.class, String.class)
@@ -913,7 +913,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 					.map(Country::getName)
 					.map(Country::getDescription);
 			EntityPersister<Country, Identifier<Long>> countryPersister = countryPersisterConfiguration.build(persistenceContext);
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>, ?> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>, ?>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKey, Country.class, String.class)
@@ -1000,7 +1000,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void foreignKey_creation() {
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>, ?> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>, ?>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKey, Country.class, String.class)
@@ -1038,7 +1038,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		@Test
 		void compositeId_foreignKey_creation() {
 			Set<HouseId> persistedHouses = new HashSet<>();
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>, ?> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>, ?>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfCompositeIdEntityAsKey, House.class, String.class)
@@ -1094,7 +1094,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void schemaCreation() {
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>, ?> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>, ?>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsValue, String.class, Country.class)
@@ -1118,7 +1118,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void crud() {
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>, ?> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>, ?>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsValue, String.class, Country.class)
@@ -1184,7 +1184,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 					.map(Country::getName)
 					.map(Country::getDescription);
 			EntityPersister<Country, Identifier<Long>> countryPersister = countryPersisterConfiguration.build(persistenceContext);
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>, ?> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>, ?>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsValue, String.class, Country.class)
@@ -1236,7 +1236,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 
 		@Test
 		void crud_deleteOrphan() {
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>, ?> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>, ?>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsValue, String.class, Country.class)
@@ -1295,7 +1295,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 					.map(Country::getName)
 					.map(Country::getDescription);
 			EntityPersister<Country, Identifier<Long>> countryPersister = countryPersisterConfiguration.build(persistenceContext);
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>, ?> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>, ?>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsValue, String.class, Country.class)
@@ -1382,7 +1382,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void foreignKey_creation() {
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>, ?> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>, ?>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsValue, String.class, Country.class)
@@ -1420,7 +1420,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		@Test
 		void compositeId_foreignKey_creation() {
 			Set<HouseId> persistedHouses = new HashSet<>();
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>, ?> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>, ?>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfCompositeIdEntityAsValue, String.class, House.class)
@@ -1473,7 +1473,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		@Test
 		void compositeId_crud_readOnly() throws SQLException {
 			Set<HouseId> persistedHouses = new HashSet<>();
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>, ?> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>, ?>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfCompositeIdEntityAsValue, String.class, House.class)
@@ -1509,7 +1509,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void crud() {
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>, ?> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>, ?>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKeyAndValue, City.class, Country.class)
@@ -1583,7 +1583,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 					.map(Country::getName)
 					.map(Country::getDescription);
 			EntityPersister<Country, Identifier<Long>> countryPersister = countryPersisterConfiguration.build(persistenceContext);
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>, ?> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>, ?>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKeyAndValue, City.class, Country.class)
@@ -1644,7 +1644,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 
 		@Test
 		void crud_deleteOrphan() {
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>, ?> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>, ?>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKeyAndValue, City.class, Country.class)
@@ -1710,7 +1710,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Country::getName);
 			EntityPersister<Country, Identifier<Long>> countryPersister = countryPersisterConfiguration.build(persistenceContext);
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>, ?> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>, ?>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKeyAndValue, City.class, Country.class)
@@ -1806,7 +1806,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void foreignKey_creation() {
-			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			ConfiguredRelationalPersister<Person, Identifier<Long>, ?> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>, ?>) FluentMappings.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapMap(Person::getMapPropertyMadeOfEntityAsKeyAndValue, City.class, Country.class)

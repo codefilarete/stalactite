@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.engine.diff.IndexedDiff;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecordPersister;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationRecordInsertionCascader;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
@@ -53,18 +53,18 @@ public class OneToManyWithIndexedAssociationTableEngine<
 		LEFTTABLE extends Table<LEFTTABLE>,
 		RIGHTTABLE extends Table<RIGHTTABLE>,
 		ASSOCIATIONTABLE extends IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
-		extends OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, S, IndexedAssociationRecord, ASSOCIATIONTABLE> {
+		extends OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, S, IndexedAssociationRecord, LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE> {
 
 	/** Column that stores index value */
 	private final Column<ASSOCIATIONTABLE, Integer> indexColumn;
 	
-	public OneToManyWithIndexedAssociationTableEngine(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-													  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
-													  IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, S, SRCID> manyRelationDescriptor,
-													  AssociationRecordPersister<IndexedAssociationRecord, ASSOCIATIONTABLE> associationPersister,
-													  Column<ASSOCIATIONTABLE, Integer> indexColumn,
-													  WriteOperationFactory writeOperationFactory,
-													  Dialect dialect) {
+	public OneToManyWithIndexedAssociationTableEngine(ConfiguredRelationalEntityPersister<SRC, SRCID, LEFTTABLE> sourcePersister,
+	                                                  ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister,
+	                                                  IndexedAssociationTableManyRelationDescriptor<SRC, TRGT, S, SRCID> manyRelationDescriptor,
+	                                                  AssociationRecordPersister<IndexedAssociationRecord, ASSOCIATIONTABLE> associationPersister,
+	                                                  Column<ASSOCIATIONTABLE, Integer> indexColumn,
+	                                                  WriteOperationFactory writeOperationFactory,
+	                                                  Dialect dialect) {
 		super(sourcePersister, targetPersister, manyRelationDescriptor, associationPersister, writeOperationFactory, dialect);
 		this.indexColumn = indexColumn;
 	}
@@ -108,16 +108,17 @@ public class OneToManyWithIndexedAssociationTableEngine<
 
 	private void addIndexSelection(boolean loadSeparately) {
 		// we join on the association table and add bean association in memory
+		ASSOCIATIONTABLE mainTable = (ASSOCIATIONTABLE) associationPersister.getMainTable();
 		String associationTableJoinNodeName = sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_JOIN_NAME,
-				associationPersister.getMainTable().getOneSideKey(),
-				associationPersister.getMainTable().getOneSideForeignKey(),
+				mainTable.getOneSideKey(),
+				mainTable.getOneSideForeignKey(),
 				JoinType.OUTER,
 				// we must add all the columns to make them available while decoding the row to create an IndexedAssociationRecord
-				associationPersister.getMainTable().getColumns());
+				mainTable.getColumns());
 		
 		// we add target subgraph joins to main persister
 		String rightEntityJoinName = targetPersister.joinAsMany(associationTableJoinNodeName, sourcePersister, manyRelationDescriptor.getCollectionAccessPoint(),
-				associationPersister.getMainTable().getManySideForeignKey(), associationPersister.getMainTable().getManySideKey(),
+				mainTable.getManySideForeignKey(), mainTable.getManySideKey(),
 				manyRelationDescriptor.getRelationFixer(), columnedRow -> {
 					TRGTID identifier = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(columnedRow);
 					// indexColumn column value is took on join of association table, not target table, so we have to grab it
@@ -163,7 +164,7 @@ public class OneToManyWithIndexedAssociationTableEngine<
 	}
 	
 	@Override
-	public void addUpdateCascade(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	public void addUpdateCascade(ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister) {
 		
 		// NB: we don't have any reverseSetter (for applying source entity to reverse side (target entity)), because this is only relevant
 		// when association is mapped without intermediary table (owned by "many-side" entity)

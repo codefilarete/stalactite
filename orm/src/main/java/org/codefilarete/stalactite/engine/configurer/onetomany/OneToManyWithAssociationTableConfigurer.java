@@ -10,7 +10,7 @@ import org.codefilarete.stalactite.engine.configurer.IndexedAssociationRecordMap
 import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecordPersister;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
 import org.codefilarete.stalactite.engine.runtime.onetomany.AbstractOneToManyEngine;
@@ -31,8 +31,8 @@ import static org.codefilarete.tool.Nullable.nullable;
  * @author Guillaume Mary
  */
 class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>,
-		LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
-		extends OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE> {
+		LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, ASSOCIATIONTABLE extends Table<ASSOCIATIONTABLE>>
+		extends OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE, RIGHTTABLE> {
 	
 	private final AssociationTableNamingStrategy associationTableNamingStrategy;
 	private final Dialect dialect;
@@ -50,16 +50,16 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 	}
 	
 	@Override
-	protected String configure(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
-		AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, C> associationTableEngine = prepare(targetPersister);
+	protected String configure(ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister) {
+		AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE, RIGHTTABLE> associationTableEngine = prepare(targetPersister);
 		String relationJoinNodeName = associationTableEngine.addSelectCascade(loadSeparately);
 		addWriteCascades(associationTableEngine, targetPersister);
 		return relationJoinNodeName;
 	}
 	
-	private AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, C> prepare(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	private AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE, RIGHTTABLE> prepare(ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister) {
 		// case : Collection mapping without reverse property : an association table is needed
-		PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey = targetPersister.<RIGHTTABLE>getMapping().getTargetTable().getPrimaryKey();
+		PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey = targetPersister.getMainTable().getPrimaryKey();
 		
 		String associationTableName = nullable(associationConfiguration.getOneToManyRelation().getAssociationTableName()).getOr(() -> associationTableNamingStrategy.giveName(accessorDefinitionForTableNaming,
 				associationConfiguration.getLeftPrimaryKey(), rightPrimaryKey));
@@ -72,16 +72,16 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 	
 	@Override
 	public CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(String tableAlias,
-																			  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
+																			  ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister,
 																			  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
-		AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, C> associationTableEngine = prepare(targetPersister);
+		AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE, RIGHTTABLE> associationTableEngine = prepare(targetPersister);
 		associationTableEngine.addSelectCascadeIn2Phases(firstPhaseCycleLoadListener);
 		addWriteCascades(associationTableEngine, targetPersister);
 		return new CascadeConfigurationResult<>(associationTableEngine.getManyRelationDescriptor().getRelationFixer(), associationConfiguration.getSrcPersister());
 	}
 	
-	private void addWriteCascades(AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, C> oneToManyWithAssociationTableEngine,
-	                              ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	private void addWriteCascades(AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE, RIGHTTABLE> oneToManyWithAssociationTableEngine,
+	                              ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister) {
 		if (associationConfiguration.isWriteAuthorized()) {
 			oneToManyWithAssociationTableEngine.addInsertCascade(targetPersister);
 			oneToManyWithAssociationTableEngine.addUpdateCascade(targetPersister);
@@ -90,10 +90,10 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 	}
 	
 	private <ASSOCIATIONTABLE extends AssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
-	OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, AssociationRecord, ASSOCIATIONTABLE> assignEngineForNonIndexedAssociation(
+	OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, AssociationRecord, LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE> assignEngineForNonIndexedAssociation(
 			PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey,
 			String associationTableName,
-			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+			ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister) {
 		
 		// we don't create foreign key for table-per-class because source columns should reference different tables (the one
 		// per entity) which databases do not allow
@@ -146,7 +146,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 	OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE>
 	assignEngineForIndexedAssociation(PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey,
 									  String associationTableName,
-									  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+									  ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister) {
 		
 		OneToManyRelation<SRC, TRGT, TRGTID, C> relation = associationConfiguration.getOneToManyRelation();
 		

@@ -8,7 +8,7 @@ import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.PropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy.SingleTablePolymorphism;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
@@ -37,11 +37,11 @@ import org.codefilarete.tool.collection.Iterables;
  */
 public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 extends Table<T2>, JOINCOLTYPE, I, DTYPE> extends RelationJoinNode<C, T1, T2, JOINCOLTYPE, I> {
 	
-	private final Set<ConfiguredRelationalPersister<? extends C, I>> subPersisters;
+	private final Set<ConfiguredRelationalEntityPersister<? extends C, I, T2>> subPersisters;
 	
 	private final SingleTablePolymorphism<C, DTYPE> polymorphismPolicy;
 	
-	private final Column<T2, DTYPE> discriminatorColumn;
+	private final Column<T1, DTYPE> discriminatorColumn;
 	
 	public SingleTablePolymorphicRelationJoinNode(JoinNode<?, T1> parent,
 												  PropertyAccessPoint<?, ?> propertyAccessor,
@@ -52,8 +52,8 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 
 												  @Nullable String tableAlias,
 												  EntityInflater<C, I> entityInflater,
 												  BeanRelationFixer<Object, C> beanRelationFixer,
-												  Column<T2, DTYPE> discriminatorColumn,
-												  Set<ConfiguredRelationalPersister<? extends C, I>> subPersisters,
+												  Column<T1, DTYPE> discriminatorColumn,
+												  Set<ConfiguredRelationalEntityPersister<? extends C, I, T2>> subPersisters,
 												  SingleTablePolymorphism<C, DTYPE> polymorphismPolicy) {
 		super(parent, propertyAccessor, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias, entityInflater, beanRelationFixer, null);
 		this.discriminatorColumn = discriminatorColumn;
@@ -141,7 +141,7 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table<T1>, T2 
 			
 			private final RowTransformer<D> entityInflater;
 			
-			public SubEntityDeterminer(ConfiguredRelationalPersister<D, I> subPersister) {
+			public SubEntityDeterminer(ConfiguredRelationalEntityPersister<D, I, ?> subPersister) {
 				this.identifierProvider = row -> subPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(row);
 				this.entityInflater = subPersister.getMapping().getRowTransformer();
 			}

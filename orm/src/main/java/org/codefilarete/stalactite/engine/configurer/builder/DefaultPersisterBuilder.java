@@ -10,9 +10,11 @@ import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.PersisterRegistry.DefaultPersisterRegistry;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.EntityIsManagedByPersisterAsserter;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Reflections;
 
 public class DefaultPersisterBuilder {
@@ -49,7 +51,7 @@ public class DefaultPersisterBuilder {
 	 * @return the constructed {@link ConfiguredRelationalPersister} instance
 	 * @throws IllegalStateException if a persister for the entity type already exists
 	 */
-	public <C, I> ConfiguredRelationalPersister<C, I> build(EntityMappingConfigurationProvider<C, I> entityMappingConfiguration) {
+	public <C, I> ConfiguredRelationalPersister<C, I, ?> build(EntityMappingConfigurationProvider<C, I> entityMappingConfiguration) {
 		return build(entityMappingConfiguration.getConfiguration());
 	}
 	
@@ -64,7 +66,7 @@ public class DefaultPersisterBuilder {
 	 * @return the constructed {@link ConfiguredRelationalPersister} instance for the given configuration
 	 * @throws IllegalStateException if a persister for the entity type already exists
 	 */
-	public <C, I> ConfiguredRelationalPersister<C, I> build(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
+	public <C, I> ConfiguredRelationalPersister<C, I, ?> build(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
 		// If a persister already exists for the type, then we return it to manage the case of graph that declares twice / several times the same mapped type
 		// WARN : this does not take mapping configuration differences into account, so if configuration is different from previous one, since
 		// no check is done, then the very first persister is returned
@@ -86,23 +88,23 @@ public class DefaultPersisterBuilder {
 	 * @param <C> the type of the entity being persisted
 	 * @param <I> the type of the identifier for the entity
 	 * @param entityMappingConfiguration the configuration used to map the entity and construct the persister
-	 * @return the constructed {@link ConfiguredRelationalPersister} instance for the given configuration
+	 * @return the constructed {@link ConfiguredRelationalEntityPersister} instance for the given configuration
 	 */
-	public <C, I> ConfiguredRelationalPersister<C, I> buildOrGiveExisting(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
+	public <C, I> ConfiguredRelationalEntityPersister<C, I, ?> buildOrGiveExisting(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
 		// If a persister already exists for the type, then we return it : case of graph that declares twice / several times same mapped type
 		// WARN : this does not take mapping configuration differences into account, so if configuration is different from previous one, since
 		// no check is done, then the very first persister is returned
 		EntityPersister<C, Object> existingPersister = persisterRegistry.getPersister(entityMappingConfiguration.getEntityType());
 		if (existingPersister != null) {
 			// we can cast because all persisters we registered implement the interface
-			return (ConfiguredRelationalPersister<C, I>) existingPersister;
+			return (ConfiguredRelationalEntityPersister<C, I, ?>) existingPersister;
 		} else {
 			return doBuild(entityMappingConfiguration);
 		}
 	}
 	
-	private <C, I> ConfiguredRelationalPersister<C, I> doBuild(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
-		ConfiguredRelationalPersister<C, I> result;
+	private <C, I> ConfiguredRelationalEntityPersister<C, I, ?> doBuild(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
+		ConfiguredRelationalEntityPersister<C, I, ?> result;
 		result = decorateWithUpdateOptimization((adaptedConnectionConfiguration) -> {
 			PersisterBuilderPipeline<C, I> persisterBuilderPipeline = new PersisterBuilderPipeline<>(dialect, adaptedConnectionConfiguration, persisterRegistry);
 			return persisterBuilderPipeline.build(entityMappingConfiguration);
@@ -111,17 +113,17 @@ public class DefaultPersisterBuilder {
 		return result;
 	}
 	
-	private <C, I> OptimizedUpdatePersister<C, I> decorateWithUpdateOptimization(Function<ConnectionConfiguration, ConfiguredRelationalPersister<C, I>> builderDelegate) {
+	private <C, I, T extends Table<T>> OptimizedUpdatePersister<C, I, T> decorateWithUpdateOptimization(Function<ConnectionConfiguration, ConfiguredRelationalEntityPersister<C, I, T>> builderDelegate) {
 		// we wrap final result with some transversal features
 		// NB: Order of wrap is important due to invocation of instance methods with code like "this.doSomething(..)" in particular with OptimizedUpdatePersister
 		// which internally calls update(C, C, boolean) on update(id, Consumer): the latter method is not listened by EntityIsManagedByPersisterAsserter
 		// (because it has no purpose since entity is not given as argument) but update(C, C, boolean) is and should be, that is not the case if
 		// EntityIsManagedByPersisterAsserter is done first since OptimizedUpdatePersister invokes itself with "this.update(C, C, boolean)"
-		ConfiguredRelationalPersister<C, I> concretePersister = builderDelegate.apply(OptimizedUpdatePersister.wrapWithQueryCache(connectionConfiguration));
+		ConfiguredRelationalEntityPersister<C, I, T> concretePersister = builderDelegate.apply(OptimizedUpdatePersister.wrapWithQueryCache(connectionConfiguration));
 		return new OptimizedUpdatePersister<>(concretePersister);
 	}
 	
-	private <C, I> ConfiguredRelationalPersister<C, I> decorateWithEntityManagementAsserter(ConfiguredRelationalPersister<C, I> concretePersister) {
+	private <C, I, T extends Table<T>> ConfiguredRelationalEntityPersister<C, I, T> decorateWithEntityManagementAsserter(ConfiguredRelationalEntityPersister<C, I, T> concretePersister) {
 		return new EntityIsManagedByPersisterAsserter<>(concretePersister);
 	}
 }

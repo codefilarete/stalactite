@@ -30,15 +30,15 @@ import org.codefilarete.tool.Duo;
  * 
  * @author Guillaume Mary
  */
-public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, I> {
+public class PersisterWrapper<C, I, T extends Table<T>> implements ConfiguredRelationalEntityPersister<C, I, T> {
 	
-	protected final ConfiguredRelationalPersister<C, I> delegate;
+	protected final ConfiguredRelationalEntityPersister<C, I, T> delegate;
 	
-	public PersisterWrapper(ConfiguredRelationalPersister<C, I> delegate) {
+	public PersisterWrapper(ConfiguredRelationalEntityPersister<C, I, T> delegate) {
 		this.delegate = delegate;
 	}
 	
-	public ConfiguredRelationalPersister<C, I> getDelegate() {
+	public ConfiguredRelationalEntityPersister<C, I, T> getDelegate() {
 		return delegate;
 	}
 	
@@ -46,12 +46,17 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	 * Gets the last (in depth) delegate of this potential chain of wrapper
 	 * @return at least the delegate of this instance
 	 */
-	public ConfiguredRelationalPersister<C, I> getDeepestDelegate() {
-		ConfiguredRelationalPersister<C, I> result = this;
-		while(result instanceof PersisterWrapper && ((PersisterWrapper<C, I>) result).getDelegate() != null) {
-			result = ((PersisterWrapper<C, I>) result).getDelegate();
+	public ConfiguredRelationalEntityPersister<C, I, ?> getDeepestDelegate() {
+		ConfiguredRelationalEntityPersister<C, I, ?> result = this;
+		while(result instanceof PersisterWrapper && ((PersisterWrapper<C, I, ?>) result).getDelegate() != null) {
+			result = ((PersisterWrapper<C, I, ?>) result).getDelegate();
 		}
 		return result;
+	}
+	
+	@Override
+	public SelectListener<C, I> getSelectListener() {
+		return delegate.getSelectListener();
 	}
 	
 	@Override
@@ -130,7 +135,7 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	}
 	
 	@Override
-	public EntityMapping<C, I, ?> getMapping() {
+	public EntityMapping<C, I, T> getMapping() {
 		return this.delegate.getMapping();
 	}
 	

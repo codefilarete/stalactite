@@ -84,8 +84,8 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	private EntityTreeQuery<C> entityTreeQuery;
 	
 	public TablePerClassPolymorphismEntityFinder(
-			ConfiguredRelationalPersister<C, I> mainPersister,
-			Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
+			ConfiguredRelationalPersister<C, I, T> mainPersister,
+			Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I, ?>> persisterPerSubclass,
 			ConnectionProvider connectionProvider,
 			Dialect dialect
 	) {
@@ -94,14 +94,14 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	
 	public TablePerClassPolymorphismEntityFinder(
 			EntityJoinTree<C, I> mainEntityJoinTree,
-			ConfiguredEntityReader<C, I> mainReader,
-			Map<? extends Class<C>, ? extends ConfiguredEntityReader<C, I>> persisterPerSubclass,
+			ConfiguredEntityReader<C, I, T> mainReader,
+			Map<? extends Class<C>, ? extends ConfiguredEntityReader<C, I, ?>> persisterPerSubclass,
 			ConnectionProvider connectionProvider,
 			Dialect dialect) {
 		super(mainEntityJoinTree, mainReader, persisterPerSubclass, connectionProvider, dialect);
 		
 		this.identifierAssembler = mainReader.getMapping().getIdMapping().getIdentifierAssembler();
-		this.mainTable = mainReader.<T>getMapping().getTargetTable();
+		this.mainTable = mainReader.getMapping().getTargetTable();
 		// building readers and aliases for union-all query
 		this.discriminatorValues = new HashMap<>();
 		persisterPerSubclass.forEach((subEntityType, subEntityPersister) ->
@@ -148,11 +148,11 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	 * Creates an {@link EntityJoinTree} which main Table is actually a Union clause made of sub-entities tables
 	 * @return an appropriate {@link EntityJoinTree}
 	 */
-	private SingleLoadEntityJoinTree<C, I> buildSingleLoadEntityJoinTree() {
+	private <SUBTABLE extends Table<SUBTABLE>> SingleLoadEntityJoinTree<C, I> buildSingleLoadEntityJoinTree() {
 		Union union = new Union();
 		Set<Column<T, ?>> allColumnsInHierarchy = mainTable.getColumns();
 		
-		Map<String, EntityReadExecutor<C, I>> discriminatorPerSubPersister = new HashMap<>();
+		Map<String, ConfiguredEntityReader<C, I, SUBTABLE>> discriminatorPerSubPersister = new HashMap<>();
 		persisterPerSubclass.forEach((subEntityType, subEntityPersister) -> {
 			String discriminatorValue = subEntityType.getSimpleName();
 			
@@ -172,7 +172,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 					.from(subEntityPersister.getMainTable())
 					.getQuery();
 			union.getQueries().add(subQuery);
-			discriminatorPerSubPersister.put(discriminatorValue, subEntityPersister);
+			discriminatorPerSubPersister.put(discriminatorValue, (ConfiguredEntityReader<C, I, SUBTABLE>) subEntityPersister);
 		});
 		allColumnsInHierarchy.forEach(column -> {
 			union.registerColumn(column.getExpression(), column.getJavaType(), column.getName());
@@ -182,41 +182,41 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 		// Note that it's very important to use main table name to mimic virtual main table else joins (below) won't work
 		PseudoTable pseudoTable = union.asPseudoTable(mainTable.getName());
 		// we add joins to the union clause
-		SingleLoadEntityJoinTree<C, I> result = new SingleLoadEntityJoinTree<>(mainTable, mainMapping, discriminatorPerSubPersister, pseudoTable, DISCRIMINATOR_COLUMN);
+		SingleLoadEntityJoinTree<C, I> result = new SingleLoadEntityJoinTree<>(mainTable, mainReader.getMapping(), discriminatorPerSubPersister, pseudoTable, DISCRIMINATOR_COLUMN);
 		mainEntityJoinTree.projectTo(result, ROOT_JOIN_NAME);
 		
 		addTablePerClassPolymorphicSubPersistersJoins(result, discriminatorPerSubPersister);
 		return result;
 	}
 	
-	private <V extends C, T1 extends Table<T1>, T2 extends Table<T2>> void addTablePerClassPolymorphicSubPersistersJoins(
+	private <V extends C, T2 extends Table<T2>> void addTablePerClassPolymorphicSubPersistersJoins(
 			SingleLoadEntityJoinTree<C, I> entityJoinTree,
-			Map<String, EntityReadExecutor<C, I>> discriminatorPerSubPersister) {
+			Map<String, ConfiguredEntityReader<C, I, T2>> discriminatorPerSubPersister) {
 		
 		discriminatorPerSubPersister.forEach((discriminatorValue, subPersister) -> {
-						EntityReadExecutor<V, I> localSubPersister = (EntityReadExecutor<V, I>) subPersister;
-			String mergeJoinName = entityJoinTree.<V, T1, T2, I>addMergeJoin(EntityJoinTree.ROOT_JOIN_NAME,
-					new EntityMergerAdapter<>(localSubPersister.<T2>getMapping()),
-					((T1) mainTable).getPrimaryKey(),
-					subPersister.<T2>getMainTable().getPrimaryKey(),
+						ConfiguredEntityReader<V, I, T2> localSubPersister = (ConfiguredEntityReader<V, I, T2>) subPersister;
+			String mergeJoinName = entityJoinTree.<V, T, T2, I>addMergeJoin(EntityJoinTree.ROOT_JOIN_NAME,
+					new EntityMergerAdapter<>(localSubPersister.getMapping()),
+					mainTable.getPrimaryKey(),
+					localSubPersister.<T2>getMainTable().getPrimaryKey(),
 					JoinType.OUTER,
 					joinNode -> {
 						MergeJoinRowConsumer<V> joinRowConsumer = new MergeJoinRowConsumer<>(
 								(MergeJoinNode<V, ?, ?, ?>) joinNode,
-                                localSubPersister.<T2>getMapping().getRowTransformer());
+                                localSubPersister.getMapping().getRowTransformer());
 						entityJoinTree.getRoot().addSubPersister(subPersister, joinRowConsumer, discriminatorValue);
 						return joinRowConsumer;
 					}
 			);
 			// we add the joins of the sub-persister to the whole graph to make it load its relations
-//			subPersister.getEntityJoinTree().projectTo(entityJoinTree, mergeJoinName);
+			subPersister.getEntityJoinTree().projectTo(entityJoinTree, mergeJoinName);
 		});
 	}
 	
 	public Set<C> select(Iterable<I> ids) {
 		LOGGER.debug("selecting entities {}", ids);
 		// Note that executor emits select listener events
-		IdMapping<C, I> idMapping = mainMapping.getIdMapping();
+		IdMapping<C, I> idMapping = mainReader.getMapping().getIdMapping();
 		AccessorWrapperIdAccessor<C, I> idAccessor = (AccessorWrapperIdAccessor<C, I>) idMapping.getIdAccessor();
 		if (idMapping.getIdentifierAssembler() instanceof ComposedIdentifierAssembler) {
 			// && dialect.supportTupleIn
@@ -338,7 +338,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 		
 		public <T extends Table<T>> SingleLoadEntityJoinTree(T mainTable,
 															 EntityMapping<C, I, T> mainMapping,
-															 Map<String, EntityReadExecutor<C, I>> subPersisterPerDiscriminator,
+															 Map<String, ? extends EntityReadExecutor<C, I>> subPersisterPerDiscriminator,
 															 PseudoTable pseudoTable,
 															 SimpleSelectable<String> discriminatorColumn) {
 			super(self -> new TablePerClassRootJoinNode<>(self, mainMapping, subPersisterPerDiscriminator, pseudoTable, discriminatorColumn));

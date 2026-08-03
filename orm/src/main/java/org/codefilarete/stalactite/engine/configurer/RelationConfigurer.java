@@ -3,26 +3,26 @@ package org.codefilarete.stalactite.engine.configurer;
 import java.util.Collection;
 import java.util.Map;
 
-import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.RelationalMappingConfiguration;
+import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.builder.DefaultPersisterBuilder;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelationConfigurer;
-import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneRelation;
-import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneRelation;
+import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.map.EntityAsKeyAndValueMapRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.map.EntityAsKeyMapRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.map.EntityAsValueMapRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
 import org.codefilarete.stalactite.engine.configurer.map.MapRelationConfigurer;
-import org.codefilarete.stalactite.engine.configurer.map.EntityAsValueMapRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 
@@ -39,7 +39,7 @@ public class RelationConfigurer<C, I> {
 	
 	private final Dialect dialect;
 	private final ConnectionConfiguration connectionConfiguration;
-	private final ConfiguredRelationalPersister<C, I> sourcePersister;
+	private final ConfiguredRelationalEntityPersister<C, I, ?> sourcePersister;
 	private final NamingConfiguration namingConfiguration;
 	private final OneToOneRelationConfigurer<C, I, ?, ?> oneToOneRelationConfigurer;
 	private final OneToManyRelationConfigurer<C, I, ?, ?> oneToManyRelationConfigurer;
@@ -50,7 +50,7 @@ public class RelationConfigurer<C, I> {
 	
 	public RelationConfigurer(Dialect dialect,
 							  ConnectionConfiguration connectionConfiguration,
-							  ConfiguredRelationalPersister<C, I> sourcePersister,
+							  ConfiguredRelationalEntityPersister<C, I, ?> sourcePersister,
 							  NamingConfiguration namingConfiguration,
 							  PersisterBuilderContext currentBuilderContext) {
 		this.dialect = dialect;
@@ -133,9 +133,9 @@ public class RelationConfigurer<C, I> {
 		for (MapRelation<C, ?, ?, ? extends Map> map : entityMappingConfiguration.getMaps()) {
 			if (map.getKeyEntityConfigurationProvider() != null && map.getValueEntityConfigurationProvider() != null) {
 				EntityMappingConfiguration<Object, Object> keyEntityConfiguration = (EntityMappingConfiguration<Object, Object>) map.getKeyEntityConfigurationProvider().getConfiguration();
-				ConfiguredRelationalPersister<Object, Object> keyEntityPersister = persisterBuilder.buildOrGiveExisting(keyEntityConfiguration);
+				ConfiguredRelationalEntityPersister<Object, Object, ?> keyEntityPersister = persisterBuilder.buildOrGiveExisting(keyEntityConfiguration);
 				EntityMappingConfiguration<Object, Object> valueEntityConfiguration = (EntityMappingConfiguration<Object, Object>) map.getValueEntityConfigurationProvider().getConfiguration();
-				ConfiguredRelationalPersister<Object, Object> valueEntityPersister = persisterBuilder.buildOrGiveExisting(valueEntityConfiguration);
+				ConfiguredRelationalEntityPersister<Object, Object, ?> valueEntityPersister = persisterBuilder.buildOrGiveExisting(valueEntityConfiguration);
 				EntityAsKeyAndValueMapRelationConfigurer entityAsKeyMapRelationConfigurer = new EntityAsKeyAndValueMapRelationConfigurer<>(
 						(MapRelation) map,
 						sourcePersister,
@@ -150,7 +150,7 @@ public class RelationConfigurer<C, I> {
 				entityAsKeyMapRelationConfigurer.configure();
 			} else if (map.getKeyEntityConfigurationProvider() != null) {
 				EntityMappingConfiguration<Object, Object> keyEntityConfiguration = (EntityMappingConfiguration<Object, Object>) map.getKeyEntityConfigurationProvider().getConfiguration();
-				ConfiguredRelationalPersister<Object, Object> keyEntityPersister = persisterBuilder.buildOrGiveExisting(keyEntityConfiguration);
+				ConfiguredRelationalEntityPersister<Object, Object, ?> keyEntityPersister = persisterBuilder.buildOrGiveExisting(keyEntityConfiguration);
 				EntityAsKeyMapRelationConfigurer entityAsKeyMapRelationConfigurer = new EntityAsKeyMapRelationConfigurer<>(
 						(MapRelation) map,
 						sourcePersister,
@@ -164,7 +164,7 @@ public class RelationConfigurer<C, I> {
 				entityAsKeyMapRelationConfigurer.configure();
 			} else if (map.getValueEntityConfigurationProvider() != null) {
 				EntityMappingConfiguration<Object, Object> valueEntityConfiguration = (EntityMappingConfiguration<Object, Object>) map.getValueEntityConfigurationProvider().getConfiguration();
-				ConfiguredRelationalPersister<Object, Object> valueEntityPersister = persisterBuilder.buildOrGiveExisting(valueEntityConfiguration);
+				ConfiguredRelationalEntityPersister<Object, Object, ?> valueEntityPersister = persisterBuilder.buildOrGiveExisting(valueEntityConfiguration);
 				EntityAsValueMapRelationConfigurer entityAsValueMapRelationConfigurer = new EntityAsValueMapRelationConfigurer<>(
 						(MapRelation) map,
 						sourcePersister,

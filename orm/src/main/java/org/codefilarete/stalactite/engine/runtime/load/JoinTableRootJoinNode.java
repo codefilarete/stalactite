@@ -6,7 +6,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
-import org.codefilarete.stalactite.engine.EntityReadExecutor;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
@@ -37,16 +36,16 @@ import org.slf4j.LoggerFactory;
  */
 public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C, I, T> {
 	
-	private final Set<? extends ConfiguredEntityReader<C, I>> subPersisters;
+	private final Set<? extends ConfiguredEntityReader<C, I, ?>> subPersisters;
 	private final Set<Column<T, ?>> selectableColumns;
 	private JoinTablePolymorphicJoinRootRowConsumer<C, I> rootConsumer;
 	
 	public JoinTableRootJoinNode(EntityJoinTree<C, I> tree,
-	                             EntityReadExecutor<C, I> mainPersister,
-								 Set<? extends ConfiguredEntityReader<C, I>> subPersisters,
+	                             ConfiguredEntityReader<C, I, ?> mainPersister,
+								 Set<? extends ConfiguredEntityReader<C, I, ?>> subPersisters,
 								 Set<? extends Column<T, ?>> selectableColumns,
 								 T mainTable) {
-		super(tree, new EntityMappingAdapter<>(mainPersister.<T>getMapping()), mainTable);
+		super(tree, new EntityMappingAdapter<>(mainPersister.getMapping()), mainTable);
 		this.subPersisters = subPersisters;
 		this.selectableColumns = (Set<Column<T, ?>>) selectableColumns;
 	}
@@ -60,7 +59,7 @@ public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C,
 	public RootJoinRowConsumer<C, I> toConsumer(JoinNode<C, T> joinNode) {
 		RowTransformer<C> rootRowTransformer = getEntityInflater().getRowTransformer();
 		Set<SubPersisterConsumer<C, I>> subEntityConsumer = subPersisters.stream().map(subPersister -> {
-			EntityMapping<C, I, T> mapping = subPersister.getMapping();
+			EntityMapping<C, I, ?> mapping = subPersister.getMapping();
 			return new SubPersisterConsumer<>(
 					row -> mapping.getIdMapping().getIdentifierAssembler().assemble(row),
 					mapping.getClassToPersist(),
@@ -71,7 +70,7 @@ public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C,
 		return rootConsumer;
 	}
 	
-	public void addSubPersister(ConfiguredEntityReader<C, I> persister, MergeJoinRowConsumer<C> subConsumer) {
+	public void addSubPersister(ConfiguredEntityReader<C, I, ?> persister, MergeJoinRowConsumer<C> subConsumer) {
 		rootConsumer.subConsumers.forEach(pawnConsumer -> {
 			if (pawnConsumer.subEntityType == persister.getClassToPersist()) {
 				pawnConsumer.subPropertiesApplier = subConsumer;

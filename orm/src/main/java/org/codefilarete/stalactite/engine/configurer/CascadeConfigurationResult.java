@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.engine.configurer;
 
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 
 /**
@@ -24,8 +24,8 @@ public class CascadeConfigurationResult<SRC, TRGT> {
 		return beanRelationFixer;
 	}
 	
-	public <SRCID> ConfiguredRelationalPersister<SRC, SRCID> getSourcePersister() {
-		return (ConfiguredRelationalPersister<SRC, SRCID>) sourcePersister;
+	public <SRCID> ConfiguredRelationalEntityPersister<SRC, SRCID, ?> getSourcePersister() {
+		return (ConfiguredRelationalEntityPersister<SRC, SRCID, ?>) sourcePersister;
 	}
 	
 }

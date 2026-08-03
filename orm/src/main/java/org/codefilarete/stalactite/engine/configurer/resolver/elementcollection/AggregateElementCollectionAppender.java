@@ -14,9 +14,9 @@ import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRe
 import org.codefilarete.stalactite.engine.configurer.elementcollection.IndexedElementRecord;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedElementCollectionRelation;
-import org.codefilarete.stalactite.engine.configurer.resolver.EntityReader;
 import org.codefilarete.stalactite.engine.configurer.resolver.elementcollection.ElementCollectionResolver.ElementRecordPersister;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.query.api.JoinLink;
@@ -35,7 +35,7 @@ public class AggregateElementCollectionAppender {
 	
 	public <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>>
 	void append(ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, LEFTTABLE, COLLECTIONTABLE, ElementRecord<TRGT, SRCID>> relation,
-	            EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
+	            ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
 	            ElementRecordPersister<TRGT, SRCID, COLLECTIONTABLE, ElementRecord<TRGT, SRCID>> collectionPersister,
 	            String mountPoint,
 	            EntityJoinTree<SRC, SRCID> aggregateTree,

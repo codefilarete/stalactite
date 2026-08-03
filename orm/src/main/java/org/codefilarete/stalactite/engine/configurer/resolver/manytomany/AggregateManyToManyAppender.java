@@ -10,6 +10,7 @@ import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToManyRel
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
 import org.codefilarete.stalactite.engine.configurer.resolver.EntityReader;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
@@ -56,8 +57,8 @@ public class AggregateManyToManyAppender {
 	public <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>,
 			LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
 	GraftPoint append(ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
-	                  EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
-	                  EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
+	                  ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
+	                  ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
 	                  String mountPoint,
 	                  EntityJoinTree<SRC, SRCID> aggregateTree,
 	                  Dialect dialect,

@@ -69,16 +69,16 @@ import org.codefilarete.stalactite.dsl.relation.OneToManyEntityOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToManyJoinTableOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToOneEntityOptions;
 import org.codefilarete.stalactite.dsl.relation.OneToOneOptions;
+import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.configurer.builder.DefaultPersisterBuilder;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.embeddable.LinkageSupport;
-import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
+import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -1329,9 +1329,9 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public ConfiguredRelationalPersister<C, I> build(PersistenceContext persistenceContext) {
+	public EntityPersister<C, I> build(PersistenceContext persistenceContext) {
 		DefaultPersisterBuilder persisterBuilder = new DefaultPersisterBuilder(persistenceContext);
-		ConfiguredRelationalPersister<C, I> persister = persisterBuilder.build(this.getConfiguration());
+		EntityPersister<C, I> persister = persisterBuilder.build(this.getConfiguration());
 		persistenceContext.getPersisterRegistry().addPersister(persister);
 		return persister;
 	}

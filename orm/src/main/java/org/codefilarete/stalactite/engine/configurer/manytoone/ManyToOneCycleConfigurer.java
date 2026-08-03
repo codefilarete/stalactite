@@ -6,7 +6,7 @@ import java.util.Set;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.configurer.builder.PostInitializer;
 import org.codefilarete.stalactite.engine.configurer.onetoone.FirstPhaseCycleLoadListener;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.cycle.ManyToOneCycleLoader;
 
 /**
@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.engine.runtime.cycle.ManyToOneCycleLoader;
  * Expected to exist as a one-per-entity-type.
  * 
  * As a {@link PostInitializer}, will invoke every registered {@link ManyToOneRelationConfigurer}
- * {@link ManyToOneConfigurer#configureWithSelectIn2Phases(String, ConfiguredRelationalPersister, FirstPhaseCycleLoadListener, String) configureWithSelectIn2Phases method}
+ * {@link ManyToOneConfigurer#configureWithSelectIn2Phases(String, ConfiguredRelationalEntityPersister, FirstPhaseCycleLoadListener, String) configureWithSelectIn2Phases method}
  * with a {@link ManyToOneCycleLoader}.
  * 
  * @param <TRGT> type of all registered {@link ManyToOneRelationConfigurer}
@@ -36,11 +36,11 @@ public class ManyToOneCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 	}
 	
 	@Override
-	public void consume(ConfiguredRelationalPersister<TRGT, ?> targetPersister) {
+	public void consume(ConfiguredRelationalEntityPersister<TRGT, ?, ?> targetPersister) {
 		registerRelationLoader(targetPersister);
 	}
 	
-	private <SRC, TRGTID> void registerRelationLoader(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	private <SRC, TRGTID> void registerRelationLoader(ConfiguredRelationalEntityPersister<TRGT, TRGTID, ?> targetPersister) {
 		ManyToOneCycleLoader<SRC, TRGT, TRGTID> manyToOneCycleLoader = new ManyToOneCycleLoader<>(targetPersister);
 		targetPersister.addSelectListener(manyToOneCycleLoader);
 		relations.forEach((RelationConfigurer c) -> {

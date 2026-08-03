@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation.MappedByConfiguration;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Nullable;
@@ -30,7 +30,7 @@ class ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1 extends Co
 		LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>> {
 	
 	private final ManyToManyRelation<SRC, TRGT, TRGTID, C1, C2> manyToManyRelation;
-	private final ConfiguredRelationalPersister<SRC, SRCID> srcPersister;
+	private final ConfiguredRelationalEntityPersister<SRC, SRCID, LEFTTABLE> srcPersister;
 	private final PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey;
 	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	private final ColumnNamingStrategy indexColumnNamingStrategy;
@@ -42,12 +42,12 @@ class ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1 extends Co
 	private final Supplier<C1> collectionFactory;
 	
 	ManyToManyAssociationConfiguration(ManyToManyRelation<SRC, TRGT, TRGTID, C1, C2> manyToManyRelation,
-									   ConfiguredRelationalPersister<SRC, SRCID> srcPersister,
-									   PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey,
-									   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-									   ColumnNamingStrategy indexColumnNamingStrategy,
-									   boolean orphanRemoval,
-									   boolean writeAuthorized) {
+	                                   ConfiguredRelationalEntityPersister<SRC, SRCID, LEFTTABLE> srcPersister,
+	                                   PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey,
+	                                   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+	                                   ColumnNamingStrategy indexColumnNamingStrategy,
+	                                   boolean orphanRemoval,
+	                                   boolean writeAuthorized) {
 		this.manyToManyRelation = manyToManyRelation;
 		this.srcPersister = srcPersister;
 		this.leftPrimaryKey = leftPrimaryKey;
@@ -79,7 +79,7 @@ class ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1 extends Co
 		return indexColumnNamingStrategy;
 	}
 	
-	public ConfiguredRelationalPersister<SRC, SRCID> getSrcPersister() {
+	public ConfiguredRelationalEntityPersister<SRC, SRCID, LEFTTABLE> getSrcPersister() {
 		return srcPersister;
 	}
 	

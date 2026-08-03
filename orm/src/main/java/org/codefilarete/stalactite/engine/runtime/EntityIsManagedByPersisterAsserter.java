@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.VisibleForTesting;
@@ -20,12 +21,12 @@ import org.codefilarete.tool.collection.Iterables;
  * 
  * @author Guillaume Mary
  */
-public class EntityIsManagedByPersisterAsserter<C, I> extends PersisterWrapper<C, I> {
+public class EntityIsManagedByPersisterAsserter<C, I, T extends Table<T>> extends PersisterWrapper<C, I, T> {
 	
 	private final Consumer<C> asserter;
 	
 	
-	public EntityIsManagedByPersisterAsserter(ConfiguredRelationalPersister<C, I> delegate) {
+	public EntityIsManagedByPersisterAsserter(ConfiguredRelationalEntityPersister<C, I, T> delegate) {
 		super(delegate);
 		if (getDeepestDelegate() instanceof PolymorphicPersister) {
 			Set<Class<? extends C>> supportedEntityTypes = ((PolymorphicPersister<C>) getDeepestDelegate()).getSupportedEntityTypes();

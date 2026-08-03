@@ -25,7 +25,7 @@ import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableLinkage;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
@@ -65,7 +65,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, S extends Collect
 	private static final AccessorDefinition ELEMENT_RECORD_ID_ACCESSOR_DEFINITION = AccessorDefinition.giveDefinition(new AccessorByMethodReference<>(ElementRecord<Object, Object>::getId));
 	private static final AccessorDefinition ELEMENT_RECORD_INDEX_ACCESSOR_DEFINITION = AccessorDefinition.giveDefinition(IndexedElementRecord.INDEX_ACCESSOR);
 	
-	private final ConfiguredRelationalPersister<SRC, I> sourcePersister;
+	private final ConfiguredRelationalEntityPersister<SRC, I, ?> sourcePersister;
 	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	private final ColumnNamingStrategy columnNamingStrategy;
 	private final ColumnNamingStrategy indexColumnNamingStrategy;
@@ -74,14 +74,14 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, S extends Collect
 	private final ConnectionConfiguration connectionConfiguration;
 	private final UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy;
 	
-	public ElementCollectionRelationConfigurer(ConfiguredRelationalPersister<SRC, I> sourcePersister,
-											   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-											   ColumnNamingStrategy columnNamingStrategy,
-											   ColumnNamingStrategy indexColumnNamingStrategy,
-											   ElementCollectionTableNamingStrategy tableNamingStrategy,
-											   Dialect dialect,
-											   ConnectionConfiguration connectionConfiguration,
-											   UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy) {
+	public ElementCollectionRelationConfigurer(ConfiguredRelationalEntityPersister<SRC, I, ?> sourcePersister,
+	                                           ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+	                                           ColumnNamingStrategy columnNamingStrategy,
+	                                           ColumnNamingStrategy indexColumnNamingStrategy,
+	                                           ElementCollectionTableNamingStrategy tableNamingStrategy,
+	                                           Dialect dialect,
+	                                           ConnectionConfiguration connectionConfiguration,
+	                                           UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy) {
 		this.sourcePersister = sourcePersister;
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 		this.columnNamingStrategy = columnNamingStrategy;
@@ -96,7 +96,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, S extends Collect
 	configure(ElementCollectionRelation<SRC, TRGT, S> elementCollectionRelation) {
 		AccessorDefinition collectionProviderDefinition = AccessorDefinition.giveDefinition(elementCollectionRelation.getCollectionAccessor());
 		// schema configuration
-		PrimaryKey<SRCTABLE, I> sourcePK = sourcePersister.<SRCTABLE>getMapping().getTargetTable().getPrimaryKey();
+		PrimaryKey<SRCTABLE, I> sourcePK = ((Table) sourcePersister.getMapping().getTargetTable()).getPrimaryKey();
 		
 		ElementCollectionMapping<SRCTABLE, COLLECTIONTABLE, ElementRecord<TRGT, I>> elementCollectionMapping = buildCollectionTableMapping(elementCollectionRelation, collectionProviderDefinition, sourcePK);
 		
@@ -271,15 +271,15 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, S extends Collect
 		});
 	}
 	
-	private void addInsertCascade(ConfiguredRelationalPersister<SRC, I> sourcePersister,
-								  EntityPersister<ElementRecord<TRGT, I>, ElementRecord<TRGT, I>> wrapperPersister,
-								  Accessor<SRC, Collection<ElementRecord<TRGT, I>>> collectionProviderForInsert) {
+	private void addInsertCascade(ConfiguredRelationalEntityPersister<SRC, I, ?> sourcePersister,
+	                              EntityPersister<ElementRecord<TRGT, I>, ElementRecord<TRGT, I>> wrapperPersister,
+	                              Accessor<SRC, Collection<ElementRecord<TRGT, I>>> collectionProviderForInsert) {
 		sourcePersister.addInsertListener(new TargetInstancesInsertCascader<>(wrapperPersister, collectionProviderForInsert));
 	}
 	
-	private void addUpdateCascade(ConfiguredRelationalPersister<SRC, I> sourcePersister,
-								  EntityPersister<ElementRecord<TRGT, I>, ElementRecord<TRGT, I>> elementRecordPersister,
-								  Accessor<SRC, Collection<ElementRecord<TRGT, I>>> collectionProviderAsPersistedInstances) {
+	private void addUpdateCascade(ConfiguredRelationalEntityPersister<SRC, I, ?> sourcePersister,
+	                              EntityPersister<ElementRecord<TRGT, I>, ElementRecord<TRGT, I>> elementRecordPersister,
+	                              Accessor<SRC, Collection<ElementRecord<TRGT, I>>> collectionProviderAsPersistedInstances) {
 		Mutator<Duo<SRC, SRC>, Boolean> collectionUpdater = new CollectionUpdater<SRC, ElementRecord<TRGT, I>, Collection<ElementRecord<TRGT, I>>>(
 				collectionProviderAsPersistedInstances,
 				elementRecordPersister,
@@ -304,9 +304,9 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, I, S extends Collect
 		sourcePersister.addUpdateListener(new AfterUpdateTrigger<>(collectionUpdater));
 	}
 	
-	private void addDeleteCascade(ConfiguredRelationalPersister<SRC, I> sourcePersister,
-								  EntityPersister<ElementRecord<TRGT, I>, ElementRecord<TRGT, I>> wrapperPersister,
-								  Accessor<SRC, Collection<ElementRecord<TRGT, I>>> collectionProviderAsPersistedInstances) {
+	private void addDeleteCascade(ConfiguredRelationalEntityPersister<SRC, I, ?> sourcePersister,
+	                              EntityPersister<ElementRecord<TRGT, I>, ElementRecord<TRGT, I>> wrapperPersister,
+	                              Accessor<SRC, Collection<ElementRecord<TRGT, I>>> collectionProviderAsPersistedInstances) {
 		sourcePersister.addDeleteListener(new DeleteTargetEntitiesBeforeDeleteCascader<>(wrapperPersister, collectionProviderAsPersistedInstances));
 	}
 	

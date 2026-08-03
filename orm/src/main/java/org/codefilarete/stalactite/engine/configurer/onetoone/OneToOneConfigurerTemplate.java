@@ -18,7 +18,7 @@ import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -42,28 +42,28 @@ import org.codefilarete.tool.collection.Iterables;
  */
 public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID> {
 	
-	protected final ConfiguredRelationalPersister<SRC, SRCID> sourcePersister;
+	protected final ConfiguredRelationalEntityPersister<SRC, SRCID, ?> sourcePersister;
 	
 	protected final OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation;
 	
 	protected final UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy;
 	
-	protected OneToOneConfigurerTemplate(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-										 OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation,
-										 UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy) {
+	protected OneToOneConfigurerTemplate(ConfiguredRelationalEntityPersister<SRC, SRCID, ?> sourcePersister,
+	                                     OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation,
+	                                     UniqueConstraintNamingStrategy uniqueConstraintNamingStrategy) {
 		this.sourcePersister = sourcePersister;
 		this.oneToOneRelation = oneToOneRelation;
 		this.uniqueConstraintNamingStrategy = uniqueConstraintNamingStrategy;
 	}
 	
 	public String configure(@Nullable String tableAlias,
-							ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
+							ConfiguredRelationalEntityPersister<TRGT, TRGTID, ?> targetPersister,
 							boolean loadSeparately) {
 		assertConfigurationIsSupported();
 		
 		// Finding joined columns
-		EntityMapping<TRGT, TRGTID, RIGHTTABLE> targetMappingStrategy = targetPersister.getMapping();
-		Duo<Key<LEFTTABLE, JOINID>, Key<RIGHTTABLE, JOINID>> foreignKeyColumns = determineForeignKeyColumns(sourcePersister.getMapping(), targetMappingStrategy);
+		EntityMapping<TRGT, TRGTID, RIGHTTABLE> targetMappingStrategy = (EntityMapping<TRGT, TRGTID, RIGHTTABLE>) targetPersister.getMapping();
+		Duo<Key<LEFTTABLE, JOINID>, Key<RIGHTTABLE, JOINID>> foreignKeyColumns = determineForeignKeyColumns((EntityMapping<SRC, SRCID, LEFTTABLE>) sourcePersister.getMapping(), targetMappingStrategy);
 		
 		eventuallyAddIndex(foreignKeyColumns);
 		
@@ -75,13 +75,13 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 	}
 	
 	public CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(String tableAlias,
-																			  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
+	                                                                          ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister,
 																			  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 		assertConfigurationIsSupported();
 		
 		// Finding joined columns
 		EntityMapping<TRGT, TRGTID, RIGHTTABLE> targetMappingStrategy = targetPersister.getMapping();
-		Duo<Key<LEFTTABLE, JOINID>, Key<RIGHTTABLE, JOINID>> foreignKeyColumns = determineForeignKeyColumns(sourcePersister.getMapping(), targetMappingStrategy);
+		Duo<Key<LEFTTABLE, JOINID>, Key<RIGHTTABLE, JOINID>> foreignKeyColumns = determineForeignKeyColumns((EntityMapping<SRC, SRCID, LEFTTABLE>) sourcePersister.getMapping(), targetMappingStrategy);
 		
 		eventuallyAddIndex(foreignKeyColumns);
 		
@@ -147,7 +147,7 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 	
 	protected String addSelectJoin(
 			@Nullable String tableAlias,
-			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
+			ConfiguredRelationalEntityPersister<TRGT, TRGTID, ?> targetPersister,
 			Key<LEFTTABLE, JOINID> leftKey,
 			Key<RIGHTTABLE, JOINID> rightKey,
 			BeanRelationFixer<SRC, TRGT> beanRelationFixer,
@@ -184,7 +184,7 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 	
 	abstract protected void addSelectIn2Phases(
 			String tableAlias,
-			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
+			ConfiguredRelationalEntityPersister<TRGT, TRGTID, ?> targetPersister,
 			Key<LEFTTABLE, JOINID> leftKey,
 			Key<RIGHTTABLE, JOINID> rightKey,
 			FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener);

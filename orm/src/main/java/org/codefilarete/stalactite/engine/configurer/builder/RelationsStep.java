@@ -9,18 +9,18 @@ import java.util.stream.Collectors;
 import org.codefilarete.stalactite.dsl.RelationalMappingConfiguration;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.engine.configurer.embeddable.Inset;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.RelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.builder.InheritanceMappingStep.Mapping;
 import org.codefilarete.stalactite.engine.configurer.builder.InheritanceMappingStep.MappingPerTable;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
-import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneRelation;
+import org.codefilarete.stalactite.engine.configurer.embeddable.Inset;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
+import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
-import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.tool.collection.Iterables;
@@ -36,12 +36,12 @@ import org.codefilarete.tool.collection.Iterables;
  */
 public class RelationsStep<C, I> {
 	
-	void configureRelations(SimpleRelationalEntityPersister<C, I, ?> mainPersister,
-							MappingPerTable<C> inheritanceMappingPerTable,
-							PersisterBuilderContext persisterBuilderContext,
-							NamingConfiguration namingConfiguration,
-							Dialect dialect,
-							ConnectionConfiguration connectionConfiguration) {
+	void configureRelations(ConfiguredRelationalEntityPersister<C, I, ?> mainPersister,
+	                        MappingPerTable<C> inheritanceMappingPerTable,
+	                        PersisterBuilderContext persisterBuilderContext,
+	                        NamingConfiguration namingConfiguration,
+	                        Dialect dialect,
+	                        ConnectionConfiguration connectionConfiguration) {
 		RelationConfigurer<C, I> relationConfigurer = new RelationConfigurer<>(dialect, connectionConfiguration, mainPersister,
 				namingConfiguration, persisterBuilderContext);
 		

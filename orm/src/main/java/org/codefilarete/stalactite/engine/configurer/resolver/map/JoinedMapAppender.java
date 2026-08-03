@@ -15,9 +15,9 @@ import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation.MapMemberAsEntity;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
-import org.codefilarete.stalactite.engine.configurer.resolver.EntityReader;
 import org.codefilarete.stalactite.engine.configurer.resolver.map.EntryMapResolver.KeyValueRecordPersister;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
@@ -43,11 +43,11 @@ public class JoinedMapAppender {
 	public <X, Y, SRC, SRCID, K, KID, V, VID, M extends Map<K, V>, LEFTTABLE extends Table<LEFTTABLE>, MAPTABLE extends Table<MAPTABLE>, KTABLE extends Table<KTABLE>, VTABLE extends Table<VTABLE>>
 	Duo<GraftPoint /* key assembly point */, GraftPoint /* value assembly point */> append(ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, LEFTTABLE, MAPTABLE, KTABLE, VTABLE> relation,
 	                                                                                       EntityJoinTree<SRC, SRCID> aggregateTree,
-	                                                                                       EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
+	                                                                                       ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
 	                                                                                       String mountPoint,
 	                                                                                       KeyValueRecordPersister<X, Y, SRCID, MAPTABLE> keyValueRecordPersister,
-	                                                                                       EntityReader<K, KID, KTABLE> keyEntityReader,
-	                                                                                       EntityReader<V, VID, VTABLE> valueEntityReader) {
+	                                                                                       ConfiguredEntityReader<K, KID, KTABLE> keyEntityReader,
+	                                                                                       ConfiguredEntityReader<V, VID, VTABLE> valueEntityReader) {
 		
 		Duo<GraftPoint, GraftPoint> result = new Duo<>();
 		
@@ -179,9 +179,9 @@ public class JoinedMapAppender {
 			EntityJoinTree<SRC, SRCID> aggregateTree,
 			String mapJoinNodeName,
 			ReadWritePropertyAccessPoint<SRC, ?> mapAccessor,
-			EntityReader<ENTITY, ENTITY_ID, ENTITYTABLE> entityReader,
+			ConfiguredEntityReader<ENTITY, ENTITY_ID, ENTITYTABLE> entityReader,
 			MapMemberAsEntity<ENTITY, ENTITY_ID, MAPTABLE, ENTITYTABLE, ?> entityDefinition,
-			EntityReader<SRC, SRCID, ?> sourcePersister,
+			ConfiguredEntityReader<SRC, SRCID, ?> sourcePersister,
 			Function<KeyValueRecord<?, ?, SRCID>, ENTITY_ID> rawIdExtractor) {
 		
 		// we keep the link between id and entity found through the join and then use it to build the final map
@@ -254,7 +254,7 @@ public class JoinedMapAppender {
 	String appendEntityJoin(EntityJoinTree<SRC, SRCID> aggregateTree,
 	                        String mapJoinNodeName,
 	                        ReadWritePropertyAccessPoint<SRC, M> mapAccessor,
-	                        EntityReader<ENTITY, ENTITY_ID, ENTITYTABLE> entityPersister,
+	                        ConfiguredEntityReader<ENTITY, ENTITY_ID, ENTITYTABLE> entityPersister,
 	                        ForeignKey<MAPTABLE, ENTITYTABLE, ENTITY_ID> foreignKey,
 	                        InMemoryRelationHolder<SRCID, ENTITY_ID, ENTITY> inMemoryRelationHolder,
 	                        Function<KeyValueRecord<?, ?, SRCID>, ENTITY_ID> entityIdExtractor) {

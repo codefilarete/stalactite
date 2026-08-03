@@ -10,7 +10,7 @@ import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Reflections;
@@ -21,7 +21,7 @@ import org.codefilarete.tool.Reflections;
 class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>> {
 	
 	private final OneToManyRelation<SRC, TRGT, TRGTID, C> oneToManyRelation;
-	private final ConfiguredRelationalPersister<SRC, SRCID> srcPersister;
+	private final ConfiguredRelationalEntityPersister<SRC, SRCID, LEFTTABLE> srcPersister;
 	private final PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey;
 	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	private final JoinColumnNamingStrategy joinColumnNamingStrategy;
@@ -35,7 +35,7 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 	private final Supplier<C> collectionFactory;
 	
 	OneToManyAssociationConfiguration(OneToManyRelation<SRC, TRGT, TRGTID, C> oneToManyRelation,
-									  ConfiguredRelationalPersister<SRC, SRCID> srcPersister,
+	                                  ConfiguredRelationalEntityPersister<SRC, SRCID, LEFTTABLE> srcPersister,
 									  PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey,
 									  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 									  JoinColumnNamingStrategy joinColumnNamingStrategy,
@@ -70,7 +70,7 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 		return oneToManyRelation;
 	}
 	
-	public ConfiguredRelationalPersister<SRC, SRCID> getSrcPersister() {
+	public ConfiguredRelationalEntityPersister<SRC, SRCID, LEFTTABLE> getSrcPersister() {
 		return srcPersister;
 	}
 	

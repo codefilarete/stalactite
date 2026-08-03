@@ -18,6 +18,7 @@ import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.Thre
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.query.api.JoinLink;
@@ -56,12 +57,12 @@ public class AggregateOneToManyWithAssociationTableAppender {
 	
 	public <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
 	GraftPoint append(ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
-	                                            EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
-	                                            EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
-	                                            String mountPoint,
-	                                            EntityJoinTree<SRC, SRCID> aggregateTree,
-	                                            Dialect dialect,
-	                                            ConnectionProvider connectionProvider) {
+	                  ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
+	                  ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
+	                  String mountPoint,
+	                  EntityJoinTree<SRC, SRCID> aggregateTree,
+	                  Dialect dialect,
+	                  ConnectionProvider connectionProvider) {
 		
 		// Preparing for next iteration
 		// Note that we can't set the correct generics types to the GraftPoint instance
@@ -70,8 +71,8 @@ public class AggregateOneToManyWithAssociationTableAppender {
 	}
 	
 	private <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, ASSOCIATIONTABLE extends AssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
-	GraftPoint appendAssociation(EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
-	                             EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
+	GraftPoint appendAssociation(ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
+	                             ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
 	                             ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
 	                             PropertyAccessor<SRC, S> accessor,
 	                             EntityJoinTree<SRC, SRCID> entityJoinTree,
@@ -95,7 +96,7 @@ public class AggregateOneToManyWithAssociationTableAppender {
 					Collections.emptySet());
 			String manyJoinName = entityJoinTree.addRelationJoin(
 					associationTableJoinName,
-					new EntityMappingAdapter<>(targetPersister.getMapping()),
+					new EntityMappingAdapter<>(targetPersister.<RIGHTTABLE>getMapping()),
 					accessor,
 					join.getRightAssociationKey(),
 					join.getRightKey(),
@@ -115,11 +116,11 @@ public class AggregateOneToManyWithAssociationTableAppender {
 	 * entities are gathered in memory while the result set is read, then sewn onto their owner.
 	 *
 	 * @return the graft point of the target entity : the loader's tree, so that the relations of the target entity are
-	 * 		   loaded by that very same second-phase query
+	 * loaded by that very same second-phase query
 	 */
 	private <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, ASSOCIATIONTABLE extends AssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
-	GraftPoint appendSeparatelyFetchedAssociation(EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
-	                                              EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
+	GraftPoint appendSeparatelyFetchedAssociation(ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
+	                                              ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
 	                                              ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
 	                                              IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID> join,
 	                                              Dialect dialect,
@@ -144,7 +145,8 @@ public class AggregateOneToManyWithAssociationTableAppender {
 		// the target entity is joined onto the loader's tree so that association records and target entities are
 		// loaded by one and only one query. Entities are gathered in memory to be sewn onto their owner afterward,
 		// since the owner is not part of that query.
-		ThreadLocalRelationStorage<SRCID, TRGT> targetEntityHolder = new ThreadLocalRelationStorage<>();		String targetJoinName = associationRecordLoader.getEntityJoinTree().addRelationJoin(
+		ThreadLocalRelationStorage<SRCID, TRGT> targetEntityHolder = new ThreadLocalRelationStorage<>();
+		String targetJoinName = associationRecordLoader.getEntityJoinTree().addRelationJoin(
 				ROOT_JOIN_NAME,
 				new EntityMappingAdapter<>(targetPersister.getMapping()),
 				(PropertyAccessPoint) relation.getAccessor(),

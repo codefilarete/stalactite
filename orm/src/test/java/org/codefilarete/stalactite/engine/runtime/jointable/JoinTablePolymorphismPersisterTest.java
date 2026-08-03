@@ -32,8 +32,8 @@ import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Engine;
 import org.codefilarete.stalactite.engine.model.Truck;
 import org.codefilarete.stalactite.engine.model.Vehicle;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.EmptySubEntityMappingConfiguration;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.ExecutableEntityQueryCriteria;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.id.Identified;
@@ -96,7 +96,7 @@ import static org.mockito.Mockito.when;
 
 class JoinTablePolymorphismPersisterTest {
 	
-	private JoinTablePolymorphismPersister<AbstractToto, Identifier<Integer>> testInstance;
+	private JoinTablePolymorphismPersister<AbstractToto, Identifier<Integer>, ?> testInstance;
 	private PreparedStatement preparedStatement;
 	private ArgumentCaptor<Integer> valueCaptor;
 	private ArgumentCaptor<Integer> indexCaptor;
@@ -136,7 +136,7 @@ class JoinTablePolymorphismPersisterTest {
 		}
 	}
 	
-	protected ConfiguredRelationalPersister<TotoA, Identifier<Integer>> initMappingTotoA(Table table) {
+	protected ConfiguredRelationalEntityPersister<TotoA, Identifier<Integer>, ?> initMappingTotoA(Table table) {
 		Map<ReadWritePropertyAccessPoint<TotoA, Object>, Column<Table, Object>> mappedFields = new KeepOrderMap<>();
 		mappedFields.put(Accessors.propertyAccessor(TotoA.class, "a"), table.addColumn("a", Integer.class));
 		ReadWritePropertyAccessPoint<TotoA, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(TotoA.class, "id");
@@ -152,7 +152,7 @@ class JoinTablePolymorphismPersisterTest {
 				identifierManager), dialect, new ConnectionConfigurationSupport(() -> connection, 3));
 	}
 	
-	protected ConfiguredRelationalPersister<TotoB, Identifier<Integer>> initMappingTotoB(Table table) {
+	protected ConfiguredRelationalEntityPersister<TotoB, Identifier<Integer>, ?> initMappingTotoB(Table table) {
 		Map<ReadWritePropertyAccessPoint<TotoB, Object>, Column<Table, Object>> mappedFields = new KeepOrderMap<>();
 		mappedFields.put(Accessors.propertyAccessor(TotoB.class, "b"), table.addColumn("b", Integer.class));
 		ReadWritePropertyAccessPoint<TotoB, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(TotoB.class, "id");
@@ -265,13 +265,13 @@ class JoinTablePolymorphismPersisterTest {
 		DataSource dataSource = mock(DataSource.class);
 		when(dataSource.getConnection()).thenReturn(connection);
 		
-		ConfiguredRelationalPersister<AbstractToto, Identifier<Integer>> mainPersister = new SimpleRelationalEntityPersister<>(totoEntityMapping, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
+		ConfiguredRelationalEntityPersister<AbstractToto, Identifier<Integer>, T> mainPersister = new SimpleRelationalEntityPersister<>((DefaultEntityMapping<AbstractToto, Identifier<Integer>, T>) totoEntityMapping, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
 		Table<?> totoATable = new Table<>("TotoA");
 		Table<?> totoBTable = new Table<>("TotoB");
-		ConfiguredRelationalPersister<TotoA, Identifier<Integer>> totoAIdentifierConfiguredPersister = initMappingTotoA(totoATable);
-		ConfiguredRelationalPersister<TotoB, Identifier<Integer>> totoBIdentifierConfiguredPersister = initMappingTotoB(totoBTable);
+		ConfiguredRelationalEntityPersister<TotoA, Identifier<Integer>, ?> totoAIdentifierConfiguredPersister = initMappingTotoA(totoATable);
+		ConfiguredRelationalEntityPersister<TotoB, Identifier<Integer>, ?> totoBIdentifierConfiguredPersister = initMappingTotoB(totoBTable);
 		// We keep order of subclasses to get steady unit tests, code has also been adapted to keep it
-		Map<Class<? extends AbstractToto>, ConfiguredRelationalPersister<? extends AbstractToto, Identifier<Integer>>> subclasses = new KeepOrderMap<>();
+		Map<Class<? extends AbstractToto>, ConfiguredRelationalEntityPersister<? extends AbstractToto, Identifier<Integer>, ?>> subclasses = new KeepOrderMap<>();
 		subclasses.put(TotoA.class, totoAIdentifierConfiguredPersister);
 		subclasses.put(TotoB.class, totoBIdentifierConfiguredPersister);
 		// We specify discriminator as an Integer because it's the same type as other tested columns and simplify data capture and comparison

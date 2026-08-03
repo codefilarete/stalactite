@@ -20,7 +20,6 @@ import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
-import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -63,7 +62,7 @@ class DelegatingConfiguredPersister<C, I> implements ConfiguredPersister<C, I> {
 	}
 	
 	@Override
-	public RelationalEntityPersister.ExecutableEntityQueryCriteria<C, ?> selectWhere() {
+	public ExecutableEntityQuery<C, ?> selectWhere() {
 		return delegate.selectWhere();
 	}
 	

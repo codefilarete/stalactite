@@ -21,6 +21,7 @@ import org.codefilarete.stalactite.engine.UpdateExecutor;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.EntityMappingWrapper;
 import org.codefilarete.stalactite.engine.runtime.FirstPhaseRelationLoader;
@@ -73,18 +74,18 @@ import static org.codefilarete.stalactite.query.Operators.cast;
 /**
  * @author Guillaume Mary
  */
-public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extends AbstractPolymorphismPersister<C, I> {
+public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extends AbstractPolymorphismPersister<C, I, T> {
 	
 	@SuppressWarnings("java:S5164" /* remove() is called by SecondPhaseRelationLoader.afterSelect() */)
 	private static final ThreadLocal<Queue<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */>>>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
-	public TablePerClassPolymorphismPersister(ConfiguredRelationalPersister<C, I> mainPersister,
-											  Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> subEntitiesPersisters,
-											  ConnectionProvider connectionProvider,
-											  Dialect dialect) {
+	public TablePerClassPolymorphismPersister(ConfiguredRelationalEntityPersister<C, I, T> mainPersister,
+	                                          Map<? extends Class<C>, ? extends ConfiguredRelationalEntityPersister<C, I, ?>> subEntitiesPersisters,
+	                                          ConnectionProvider connectionProvider,
+	                                          Dialect dialect) {
 		super(mainPersister,
 				subEntitiesPersisters,
-				new TablePerClassPolymorphismEntityFinder<C, I, T>(
+				new TablePerClassPolymorphismEntityFinder<>(
 						mainPersister,
 						subEntitiesPersisters,
 						connectionProvider,
@@ -101,7 +102,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			Key<SUBTABLE, JOINTYPE> foreignKey,
 			PrimaryKey<LEFTTABLE, JOINTYPE> leftPrimaryKey, BiFunction<Key<SUBTABLE, JOINTYPE>, PrimaryKey<LEFTTABLE, JOINTYPE>, String> foreignKeyNamingFunction) {
 		subEntitiesPersisters.values().stream().forEach(subPersister -> {
-			SUBTABLE subTable = subPersister.getMainTable();
+			SUBTABLE subTable = (SUBTABLE) subPersister.getMainTable();
 			KeyBuilder<SUBTABLE, JOINTYPE> projectedKeyBuilder = Key.from(subTable);
 			foreignKey.<Column<SUBTABLE, ?>>getColumns().forEach(column -> {
 				Column<SUBTABLE, ?> subtableColumn = subTable.addColumn(column.getName(), column.getJavaType(), column.getSize(), column.isNullable());
@@ -123,7 +124,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		this.subEntitiesPersisters.forEach((c, p) -> {
 			if (p instanceof PolymorphicPersister) {
 				result.addAll((Collection) ((PolymorphicPersister<?>) p).getSupportedEntityTypes());
-			} else if (p instanceof PersisterWrapper && ((PersisterWrapper<C, I>) p).getDeepestDelegate() instanceof PolymorphicPersister) {
+			} else if (p instanceof PersisterWrapper && ((PersisterWrapper<C, I, ?>) p).getDeepestDelegate() instanceof PolymorphicPersister) {
 				result.addAll(((PolymorphicPersister) ((PersisterWrapper) p).getDeepestDelegate()).getSupportedEntityTypes());
 			} else {
 				result.add(c);
@@ -215,31 +216,31 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		return new EntityMappingWrapper<C, I, T>(mainPersister.getMapping()) {
 			@Override
 			public void addTransformerListener(TransformerListener<C> listener) {
-				Collection<? extends ConfiguredRelationalPersister<C, I>> subPersisters = subEntitiesPersisters.values();
+				Collection<? extends ConfiguredRelationalPersister<C, I, ?>> subPersisters = subEntitiesPersisters.values();
 				subPersisters.forEach(persister -> persister.getMapping().addTransformerListener(listener));
 			}
 			
 			@Override
 			public void addShadowColumnInsert(ShadowColumnValueProvider<C, T> provider) {
 				subEntitiesPersisters.values().forEach(p -> {
-					p.<Table>getMapping().addShadowColumnInsert(projectShadowColumnProvider(provider, p));
+					p.getMapping().addShadowColumnInsert(projectShadowColumnProvider(provider, p));
 				});
 			}
 			
 			@Override
 			public void addShadowColumnUpdate(ShadowColumnValueProvider<C, T> provider) {
 				subEntitiesPersisters.values().forEach(p -> {
-					p.<Table>getMapping().addShadowColumnUpdate(projectShadowColumnProvider(provider, p));
+					p.getMapping().addShadowColumnUpdate(projectShadowColumnProvider(provider, p));
 				});
 			}
 			
 			private <D extends C, SUBENTITYTABLE extends Table<SUBENTITYTABLE>>
 			ShadowColumnValueProvider<D, SUBENTITYTABLE>
-			projectShadowColumnProvider(ShadowColumnValueProvider<C, T> provider, ConfiguredRelationalPersister<D, I> subEntityPersister) {
+			projectShadowColumnProvider(ShadowColumnValueProvider<C, T> provider, ConfiguredRelationalPersister<D, I, ?> subEntityPersister) {
 				
 				Map<Column<T, ?>, Column<SUBENTITYTABLE, ?>> projectedColumnMap = new HashMap<>(provider.getColumns().size());
 				provider.getColumns().forEach(c -> {
-					Column<SUBENTITYTABLE, ?> projectedColumn = subEntityPersister.<SUBENTITYTABLE>getMapping().getTargetTable().addColumn(c.getName(), c.getJavaType(), c.getSize(), c.isNullable());
+					Column<SUBENTITYTABLE, ?> projectedColumn = ((SUBENTITYTABLE) subEntityPersister.getMapping().getTargetTable()).addColumn(c.getName(), c.getJavaType(), c.getSize(), c.isNullable());
 					projectedColumnMap.put(c, projectedColumn);
 				});
 				return new ShadowColumnValueProvider<D, SUBENTITYTABLE>() {
@@ -274,7 +275,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			String createdJoinNodeName = this.joinAsOneWithSeparateLoading(sourcePersister.getEntityJoinTree(), ROOT_JOIN_NAME,
 					leftColumn,
 					rightColumn,
-					(Set<? extends ConfiguredRelationalPersister<C, I>>) (Set) new HashSet<>(this.subEntitiesPersisters.values()));
+					new HashSet<>(this.subEntitiesPersisters.values()));
 
 			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, (ThreadLocal<Queue<Set<RelationIds<SRC, C, I>>>>) (ThreadLocal)  DIFFERED_ENTITY_LOADER));
 			
@@ -347,7 +348,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 	}
 	
 	private <MAINTABLE extends Table<MAINTABLE>, SUBTABLE extends Table<SUBTABLE>, JOINID> KeyBuilder<SUBTABLE, Object>
-	projectPrimaryKey(Key<MAINTABLE, JOINID> rightColumn, ConfiguredRelationalPersister<? extends C, I> subPersister) {
+	projectPrimaryKey(Key<MAINTABLE, JOINID> rightColumn, ConfiguredRelationalPersister<? extends C, I, SUBTABLE> subPersister) {
 		EntityMapping<? extends C, I, SUBTABLE> subTypeMapping = subPersister.getMapping();
 		KeyBuilder<SUBTABLE, Object> reverseKey = Key.from(subTypeMapping.getTargetTable());
 		rightColumn.getColumns().forEach(col -> {
@@ -376,7 +377,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		
 		Set<String> commonColumnsNames = commonColumns.stream().map(JoinLink::getExpression).collect(Collectors.toSet());
 		
-		Set<ConfiguredRelationalPersister<? extends C, I>> subPersisters = new HashSet<>(this.subEntitiesPersisters.values());
+		Set<ConfiguredRelationalEntityPersister<? extends C, I, ?>> subPersisters = new HashSet<>(this.subEntitiesPersisters.values());
 		
 		KeepOrderSet<Column<?, ?>> nonCommonColumns = new KeepOrderSet<>();
 		subPersisters.forEach(subPersister -> {
@@ -440,7 +441,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			EntityJoinTree<SRC, SRCID> entityJoinTree,
 			String mainPolymorphicJoinNodeName,
 			TablePerClassPolymorphicRelationJoinNode<C, T1, ?, I> mainPersisterJoin,
-			Set<ConfiguredRelationalPersister<? extends C, I>> subPersisters) {
+			Set<ConfiguredRelationalEntityPersister<? extends C, I, ?>> subPersisters) {
 		
 		// The join is made on the Union as left table, and the column we must get is mainPersister's primaryKey (which table is not in the tree since
 		// we are the table-per-class case), so we have to create an equivalent of the primary key, based on the columns of the union
@@ -451,11 +452,11 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		});
 		MutableInt discriminatorComputer = new MutableInt();
 		subPersisters.forEach(subPersister -> {
-			ConfiguredRelationalPersister<V, I> localSubPersister = (ConfiguredRelationalPersister<V, I>) subPersister;
+			ConfiguredRelationalPersister<V, I, ?> localSubPersister = (ConfiguredRelationalPersister<V, I, ?>) subPersister;
 			entityJoinTree.addMergeJoin(mainPolymorphicJoinNodeName,
-					new EntityMergerAdapter<>(localSubPersister.<T2>getMapping()),
+					new EntityMergerAdapter<>(localSubPersister.<T1>getMapping()),
 					leftKey.build(),
-					subPersister.<T2>getMainTable().getPrimaryKey(),
+					localSubPersister.getMainTable().getPrimaryKey(),
 					JoinType.OUTER,
 					joinNode -> {
 						PolymorphicMergeJoinRowConsumer<V, I> joinRowConsumer = new PolymorphicMergeJoinRowConsumer<>(
@@ -477,7 +478,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			String leftStrategyName,
 			Key<T1, JOINID> leftJoinColumn,
 			Key<T2, JOINID> rightJoinColumn,
-			Set<? extends ConfiguredRelationalPersister<C, I>> subPersisters) {
+			Set<? extends ConfiguredRelationalEntityPersister<C, I, ?>> subPersisters) {
 		
 		Union subPersistersUnion = new Union();
 		// Union will contain only 3 columns :

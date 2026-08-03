@@ -23,7 +23,7 @@ import org.codefilarete.stalactite.engine.configurer.builder.PrimaryKeyPropagati
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMapping;
 import org.codefilarete.stalactite.engine.configurer.builder.embeddable.EmbeddableMappingBuilder;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.tableperclass.TablePerClassPolymorphismPersister;
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
@@ -72,7 +72,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 	
 	TablePerClassPolymorphismBuilder(TablePerClassPolymorphism<C> polymorphismPolicy,
 									 AbstractIdentification<C, I> identification,
-									 ConfiguredRelationalPersister<C, I> mainPersister,
+									 ConfiguredRelationalEntityPersister<C, I, T> mainPersister,
 									 Map<? extends PropertyAccessPoint<C, ?>, Column<T, ?>> mainMapping,
 									 Map<? extends PropertyAccessPoint<C, ?>, ? extends Column<T, ?>> mainReadonlyMapping,
 									 ValueAccessPointMap<C, ? extends Converter<Object, Object>, PropertyAccessPoint<C, ?>> mainReadConverters,
@@ -88,11 +88,11 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 	}
 	
 	@Override
-	public AbstractPolymorphismPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+	public AbstractPolymorphismPersister<C, I, T> build(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
 		if (this.identification instanceof AbstractIdentification.SingleColumnIdentification && ((SingleColumnIdentification<C, I>) this.identification).getIdentifierPolicy() instanceof GeneratedKeysPolicy) {
 			throw new UnsupportedOperationException("Table-per-class polymorphism is not compatible with auto-incremented primary key");
 		}
-		Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass = collectSubClassPersister(dialect, connectionConfiguration);
+		Map<Class<C>, ConfiguredRelationalEntityPersister<C, I, ?>> persisterPerSubclass = collectSubClassPersister(dialect, connectionConfiguration);
 		
 		// Note that registering the cascades to sub-persisters must be done BEFORE the creation of the main persister to make it have all
 		// entities joins and let it build a consistent entity graph load; without it, we miss sub-relations when loading main entities 
@@ -113,8 +113,8 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 		return result;
 	}
 		
-	private <D extends C> Map<Class<D>, ConfiguredRelationalPersister<D, I>> collectSubClassPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
-		Map<Class<D>, ConfiguredRelationalPersister<D, I>> persisterPerSubclass = new HashMap<>();
+	private <D extends C> Map<Class<D>, ConfiguredRelationalEntityPersister<D, I, ?>> collectSubClassPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+		Map<Class<D>, ConfiguredRelationalEntityPersister<D, I, ?>> persisterPerSubclass = new HashMap<>();
 		
 		for (SubEntityMappingConfiguration<D> subConfiguration : ((Set<SubEntityMappingConfiguration<D>>) (Set) polymorphismPolicy.getSubClasses())) {
 			SimpleRelationalEntityPersister<D, I, ?> subclassPersister = buildSubclassPersister(dialect, connectionConfiguration, subConfiguration);

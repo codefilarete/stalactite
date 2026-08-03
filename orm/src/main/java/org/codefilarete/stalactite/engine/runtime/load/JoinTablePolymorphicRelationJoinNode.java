@@ -40,7 +40,7 @@ public class JoinTablePolymorphicRelationJoinNode<C, T1 extends Table, T2 extend
 												Key<T1, JOINTYPE> leftJoinColumn,
 												Key<T2, JOINTYPE> rightJoinColumn,
 												JoinType joinType,
-												Set<Column<T2, ?>> columnsToSelect,
+												Set<? extends Column<T1, ?>> columnsToSelect,
 												@Nullable String tableAlias,
 												EntityInflater<C, I> entityInflater,
 												BeanRelationFixer<Object, C> beanRelationFixer,

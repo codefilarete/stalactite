@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.configurer.AbstractRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.EntityMappingConfigurationWithTable;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -41,15 +41,15 @@ public class OneToManyRelationConfigurer<SRC, SRCID, TRGT, TRGTID> extends Abstr
 	private final ColumnNamingStrategy indexColumnNamingStrategy;
 	private final PrimaryKey<?, SRCID> leftPrimaryKey;
 	
-	public OneToManyRelationConfigurer(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-									   Dialect dialect,
-									   ConnectionConfiguration connectionConfiguration,
-									   TableNamingStrategy tableNamingStrategy,
-									   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-									   JoinColumnNamingStrategy joinColumnNamingStrategy,
-									   AssociationTableNamingStrategy associationTableNamingStrategy,
-									   ColumnNamingStrategy indexColumnNamingStrategy,
-									   PersisterBuilderContext currentBuilderContext) {
+	public OneToManyRelationConfigurer(ConfiguredRelationalEntityPersister<SRC, SRCID, ?> sourcePersister,
+	                                   Dialect dialect,
+	                                   ConnectionConfiguration connectionConfiguration,
+	                                   TableNamingStrategy tableNamingStrategy,
+	                                   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+	                                   JoinColumnNamingStrategy joinColumnNamingStrategy,
+	                                   AssociationTableNamingStrategy associationTableNamingStrategy,
+	                                   ColumnNamingStrategy indexColumnNamingStrategy,
+	                                   PersisterBuilderContext currentBuilderContext) {
 		super(dialect, connectionConfiguration, sourcePersister, tableNamingStrategy, currentBuilderContext);
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
@@ -59,7 +59,7 @@ public class OneToManyRelationConfigurer<SRC, SRCID, TRGT, TRGTID> extends Abstr
 		this.leftPrimaryKey = sourcePersister.getMapping().getTargetTable().getPrimaryKey();
 	}
 	
-	public void configure(OneToManyRelation<SRC, TRGT, TRGTID, ? extends Collection<TRGT>> oneToManyRelation) {
+	public <LEFTABLE extends Table<LEFTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>> void configure(OneToManyRelation<SRC, TRGT, TRGTID, ? extends Collection<TRGT>> oneToManyRelation) {
 		
 		RelationMode maintenanceMode = oneToManyRelation.getRelationMode();
 		// selection is always present (else configuration is nonsense !)
@@ -67,11 +67,11 @@ public class OneToManyRelationConfigurer<SRC, SRCID, TRGT, TRGTID> extends Abstr
 		boolean writeAuthorized = maintenanceMode != RelationMode.READ_ONLY;
 		String indexingColumnName = oneToManyRelation.getIndexingColumnName();
 		
-		OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, ?, ?> associationConfiguration = new OneToManyAssociationConfiguration<>(oneToManyRelation,
-				sourcePersister, leftPrimaryKey,
+		OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, ?, LEFTABLE> associationConfiguration = new OneToManyAssociationConfiguration<>(oneToManyRelation,
+				(ConfiguredRelationalEntityPersister<SRC, SRCID, LEFTABLE>) sourcePersister, (PrimaryKey<LEFTABLE, SRCID>) leftPrimaryKey,
 				foreignKeyNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy, indexingColumnName,
 				orphanRemoval, writeAuthorized);
-		OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, ?, ?> configurer;
+		OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, ?, ?, RIGHTTABLE> configurer;
 		if (oneToManyRelation.isOwnedByReverseSide()) {
 			// case : reverse property is defined through one of the setter, getter or column on the reverse side
 			if (maintenanceMode == RelationMode.ASSOCIATION_ONLY) {
@@ -103,7 +103,7 @@ public class OneToManyRelationConfigurer<SRC, SRCID, TRGT, TRGTID> extends Abstr
 			cycleSolver.addCycleSolver(relationName, configurer);
 		} else {
 			Table targetTable = determineTargetTable(oneToManyRelation);
-			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = persisterBuilder.buildOrGiveExisting(new EntityMappingConfigurationWithTable<>(targetMappingConfiguration, targetTable));
+			ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister = (ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE>) persisterBuilder.buildOrGiveExisting(new EntityMappingConfigurationWithTable<>(targetMappingConfiguration, targetTable));
 			configurer.configure(targetPersister);
 		}
 	}

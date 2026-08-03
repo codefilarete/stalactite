@@ -15,7 +15,7 @@ import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -32,10 +32,10 @@ import org.codefilarete.tool.function.Converter;
  * 
  * @author Guillaume Mary
  */
-public class PolymorphismPersisterBuilder<C, I, T extends Table> implements PolymorphismBuilder<C, I, T> {
+public class PolymorphismPersisterBuilder<C, I, T extends Table<T>> implements PolymorphismBuilder<C, I, T> {
 	
 	private final PolymorphismPolicy<C> polymorphismPolicy;
-	private final ConfiguredRelationalPersister<C, I> mainPersister;
+	private final ConfiguredRelationalEntityPersister<C, I, T> mainPersister;
 	private final AbstractIdentification<C, I> identification;
 	private final ColumnBinderRegistry columnBinderRegistry;
 	
@@ -48,7 +48,7 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 	
 	public PolymorphismPersisterBuilder(PolymorphismPolicy<C> polymorphismPolicy,
 										AbstractIdentification<C, I> identification,
-										ConfiguredRelationalPersister<C, I> mainPersister,
+										ConfiguredRelationalEntityPersister<C, I, T> mainPersister,
 										ColumnBinderRegistry columnBinderRegistry,
 										Map<? extends PropertyAccessPoint<C, ?>, Column<T, ?>> mainMapping,
 										Map<? extends PropertyAccessPoint<C, ?>, Column<T, ?>> mainReadonlyMapping,
@@ -69,7 +69,7 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 	}
 	
 	@Override
-	public AbstractPolymorphismPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+	public AbstractPolymorphismPersister<C, I, T> build(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
 		PolymorphismBuilder<C, I, T> polymorphismBuilder;
 		if (polymorphismPolicy instanceof PolymorphismPolicy.SingleTablePolymorphism) {
 			polymorphismBuilder = new SingleTablePolymorphismBuilder<>((SingleTablePolymorphism<C, ?>) polymorphismPolicy,
@@ -94,7 +94,7 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 			// this exception is more to satisfy Sonar than for real case
 			throw new NotImplementedException("Given policy is not implemented : " + polymorphismPolicy);
 		}
-		AbstractPolymorphismPersister<C, I> result = polymorphismBuilder.build(dialect, connectionConfiguration);
+		AbstractPolymorphismPersister<C, I, T> result = polymorphismBuilder.build(dialect, connectionConfiguration);
 		// We transfer listeners so that all actions are made in the same "event listener context" : all listeners are aggregated in a top level one.
 		// Made in particular for relation cascade triggering.
 		// TODO: move main persister selectListener propagation to sub-persisters here ? see JoinTablePolymorphismBuilder 
@@ -109,9 +109,9 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 	
 	private static class SelectListenerPropagator<C, I> implements SelectListener<C, I> {
 		
-		private final AbstractPolymorphismPersister<C, I> parentPersister;
+		private final AbstractPolymorphismPersister<C, I, ?> parentPersister;
 		
-		private SelectListenerPropagator(AbstractPolymorphismPersister<C, I> parentPersister) {
+		private SelectListenerPropagator(AbstractPolymorphismPersister<C, I, ?> parentPersister) {
 			this.parentPersister = parentPersister;
 		}
 		

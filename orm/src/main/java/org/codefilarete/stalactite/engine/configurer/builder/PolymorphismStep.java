@@ -7,6 +7,7 @@ import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.builder.InheritanceMappingStep.Mapping;
 import org.codefilarete.stalactite.engine.configurer.polymorphism.PolymorphismPersisterBuilder;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -21,15 +22,15 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  */
 public class PolymorphismStep<C, I> {
 	
-	<T extends Table<T>> ConfiguredRelationalPersister<C, I> eventuallyTransformToPolymorphicPersister(ConfiguredRelationalPersister<C, I> mainPersister,
-																									   EntityMappingConfiguration<C, I> entityMappingConfiguration,
-																									   AbstractIdentification<C, I> identification,
-																									   Mapping<C, T> mainMapping,
-																									   NamingConfiguration namingConfiguration,
-																									   Dialect dialect,
-																									   ConnectionConfiguration connectionConfiguration,
-																									   PersisterBuilderContext persisterBuilderContext) {
-		ConfiguredRelationalPersister<C, I> result = mainPersister;
+	<T extends Table<T>> ConfiguredRelationalEntityPersister<C, I, T> eventuallyTransformToPolymorphicPersister(ConfiguredRelationalEntityPersister<C, I, T> mainPersister,
+	                                                                                                            EntityMappingConfiguration<C, I> entityMappingConfiguration,
+	                                                                                                            AbstractIdentification<C, I> identification,
+	                                                                                                            Mapping<C, T> mainMapping,
+	                                                                                                            NamingConfiguration namingConfiguration,
+	                                                                                                            Dialect dialect,
+	                                                                                                            ConnectionConfiguration connectionConfiguration,
+	                                                                                                            PersisterBuilderContext persisterBuilderContext) {
+		ConfiguredRelationalEntityPersister<C, I, T> result = mainPersister;
 		// polymorphism handling
 		PolymorphismPolicy<C> polymorphismPolicy = entityMappingConfiguration.getPolymorphismPolicy();
 		if (polymorphismPolicy != null) {

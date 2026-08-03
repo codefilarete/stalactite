@@ -14,6 +14,7 @@ import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRela
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
 import org.codefilarete.stalactite.engine.configurer.resolver.EntityReader;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.FirstPhaseRelationLoader;
 import org.codefilarete.stalactite.engine.runtime.RelationIds;
 import org.codefilarete.stalactite.engine.runtime.SecondPhaseRelationLoader;
@@ -32,10 +33,10 @@ public class AggregateOneToManyWithMappedAssociationAppender {
 	
 	public <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
 	GraftPoint append(ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
-	                                            EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
-	                                            EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
-	                                            String mountPoint,
-	                                            EntityJoinTree<SRC, SRCID> aggregateTree) {
+	                  ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
+	                  ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
+	                  String mountPoint,
+	                  EntityJoinTree<SRC, SRCID> aggregateTree) {
 		
 		// Preparing for next iteration
 		// Note that we can't set the correct generics types to the GraftPoint instance
@@ -44,7 +45,7 @@ public class AggregateOneToManyWithMappedAssociationAppender {
 		
 		DirectRelationJoin<LEFTTABLE, RIGHTTABLE, SRCID> join = (DirectRelationJoin<LEFTTABLE, RIGHTTABLE, SRCID>) relation.getJoin();
 		if (relation.isFetchSeparately()) {
-			ThreadLocal<Queue<Set<RelationIds<SRC /* E */, TRGT /* target */, TRGTID /* target identifier */ >>>> CURRENT_2PHASES_LOAD_CONTEXT = new ThreadLocal<>();
+			ThreadLocal<Queue<Set<RelationIds<SRC /* E */, TRGT /* target */, TRGTID /* target identifier */>>>> CURRENT_2PHASES_LOAD_CONTEXT = new ThreadLocal<>();
 			aggregateTree.addMergeJoin(mountPoint,
 					new FirstPhaseRelationLoader<>(targetPersister.getMapping().getIdMapping(), targetPersister,
 							(ThreadLocal<Queue<Set<RelationIds<Object, TRGT, TRGTID>>>>) (ThreadLocal) CURRENT_2PHASES_LOAD_CONTEXT),
@@ -71,7 +72,7 @@ public class AggregateOneToManyWithMappedAssociationAppender {
 				columnsToSelect = Collections.emptySet();
 				duplicateIdentifierProvider = targetPersister.getMapping().getIdMapping().getIdentifierAssembler()::assemble;
 			}
-		
+			
 			String manyJoinName = aggregateTree.addRelationJoin(
 					mountPoint,
 					new EntityMappingAdapter<>(targetPersister.getMapping()),

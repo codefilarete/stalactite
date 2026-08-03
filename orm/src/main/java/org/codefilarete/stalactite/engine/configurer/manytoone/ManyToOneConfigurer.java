@@ -33,7 +33,7 @@ import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.PassiveJoinNode;
@@ -67,7 +67,7 @@ import static org.codefilarete.tool.Nullable.nullable;
  */
 public class ManyToOneConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID> {
 	
-	private final ConfiguredRelationalPersister<SRC, SRCID> sourcePersister;
+	private final ConfiguredRelationalEntityPersister<SRC, SRCID, LEFTTABLE> sourcePersister;
 	
 	private final ManyToOneRelation<SRC, TRGT, TRGTID, Collection<SRC>> manyToOneRelation;
 	
@@ -79,7 +79,7 @@ public class ManyToOneConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Tab
 	
 	private ManyToOneEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> engine;
 	
-	public ManyToOneConfigurer(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
+	public ManyToOneConfigurer(ConfiguredRelationalEntityPersister<SRC, SRCID, LEFTTABLE> sourcePersister,
 	                           ManyToOneRelation<SRC, TRGT, TRGTID, ? extends Collection<SRC>> manyToOneRelation,
 	                           JoinColumnNamingStrategy joinColumnNamingStrategy,
 	                           ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
@@ -90,7 +90,7 @@ public class ManyToOneConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Tab
 	}
 	
 	public String configure(String tableAlias,
-							ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
+							ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister,
 							ManyToOneRelation<SRC, TRGT, TRGTID, ?> manyToOneRelation) {
 		assertConfigurationIsSupported();
 		
@@ -106,7 +106,7 @@ public class ManyToOneConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Tab
 	}
 	
 	public CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(String tableAlias,
-																			  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
+																			  ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister,
 																			  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener,
 																			  @javax.annotation.Nullable String leftColumnName) {
 		assertConfigurationIsSupported();
@@ -226,7 +226,7 @@ public class ManyToOneConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Tab
 		return new Duo<>(leftKey, rightKey);
 	}
 	
-	protected BeanRelationFixer<SRC, TRGT> determineRelationFixer(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
+	protected BeanRelationFixer<SRC, TRGT> determineRelationFixer(ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister) {
 		Mutator<SRC, TRGT> targetSetter = manyToOneRelation.getTargetProvider();
 		SerializableMutator<TRGT, SRC> reverseCombiner = buildReverseCombiner(targetPersister.getClassToPersist());
 		
@@ -277,7 +277,7 @@ public class ManyToOneConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Tab
 	
 	protected String addSelectJoin(
 			String tableAlias,
-			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
+			ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister,
 			Key<LEFTTABLE, JOINID> leftKey,
 			Key<RIGHTTABLE, JOINID> rightKey,
 			BeanRelationFixer<SRC, TRGT> beanRelationFixer,
@@ -314,7 +314,7 @@ public class ManyToOneConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Tab
 	
 	protected void addSelectIn2Phases(
 			String tableAlias,
-			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
+			ConfiguredRelationalEntityPersister<TRGT, TRGTID, RIGHTTABLE> targetPersister,
 			Key<LEFTTABLE, JOINID> leftKey,
 			Key<RIGHTTABLE, JOINID> rightKey,
 			FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {

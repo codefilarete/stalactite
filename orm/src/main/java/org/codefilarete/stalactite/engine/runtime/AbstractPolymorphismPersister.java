@@ -7,6 +7,7 @@ import java.util.function.Consumer;
 
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.engine.PersistExecutor;
+import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.projection.ProjectionQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
@@ -32,17 +33,17 @@ import org.slf4j.LoggerFactory;
  * @param <I>
  * @author Guillaume Mary
  */
-public abstract class AbstractPolymorphismPersister<C, I>
+public abstract class AbstractPolymorphismPersister<C, I, T extends Table<T>>
 		extends PersisterListenerWrapper<C, I>
-		implements ConfiguredRelationalPersister<C, I>, PolymorphicPersister<C>, AdvancedEntityPersister<C, I> {
+		implements ConfiguredRelationalEntityPersister<C, I, T>, PolymorphicPersister<C>, AdvancedEntityPersister<C, I> {
 	
-	public static AbstractPolymorphismPersister<?, ?> lookupForPolymorphicPersister(ConfiguredRelationalPersister<?, ?> targetPersister) {
+	public static AbstractPolymorphismPersister<?, ?, ?> lookupForPolymorphicPersister(ConfiguredRelationalEntityPersister<?, ?, ?> targetPersister) {
 		if (targetPersister instanceof AbstractPolymorphismPersister) {
-			return (AbstractPolymorphismPersister<?, ?>) targetPersister;
+			return (AbstractPolymorphismPersister<?, ?, ?>) targetPersister;
 		} else if (targetPersister instanceof PersisterWrapper) {
-			ConfiguredRelationalPersister<?, ?> deepestDelegate = ((PersisterWrapper<?, ?>) targetPersister).getDeepestDelegate();
+			RelationalEntityPersister<?, ?> deepestDelegate = ((PersisterWrapper<?, ?, ?>) targetPersister).getDeepestDelegate();
 			if (deepestDelegate instanceof AbstractPolymorphismPersister) {
-				return (AbstractPolymorphismPersister<?, ?>) deepestDelegate;
+				return (AbstractPolymorphismPersister<?, ?, ?>) deepestDelegate;
 			} else {
 				return null;
 			}
@@ -53,16 +54,16 @@ public abstract class AbstractPolymorphismPersister<C, I>
 	
 	protected final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 	
-	protected final Map<Class<C>, ConfiguredRelationalPersister<C, I>> subEntitiesPersisters;
-	protected final ConfiguredRelationalPersister<C, I> mainPersister;
+	protected final Map<Class<C>, ConfiguredRelationalEntityPersister<C, I, ?>> subEntitiesPersisters;
+	protected final ConfiguredRelationalEntityPersister<C, I, T> mainPersister;
 	protected final EntityFinder<C, I> entityFinder;
 	protected final PersistExecutor<C> persistExecutor;
 	
-	protected AbstractPolymorphismPersister(ConfiguredRelationalPersister<C, I> mainPersister,
-											Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> subEntitiesPersisters,
-											EntityFinder<C, I> entityFinder) {
+	protected AbstractPolymorphismPersister(ConfiguredRelationalEntityPersister<C, I, T> mainPersister,
+	                                        Map<? extends Class<C>, ? extends ConfiguredRelationalEntityPersister<? extends C, I, ?>> subEntitiesPersisters,
+	                                        EntityFinder<C, I> entityFinder) {
 		this.mainPersister = mainPersister;
-		this.subEntitiesPersisters = (Map<Class<C>, ConfiguredRelationalPersister<C, I>>) subEntitiesPersisters;
+		this.subEntitiesPersisters = (Map<Class<C>, ConfiguredRelationalEntityPersister<C, I, ?>>) subEntitiesPersisters;
 		this.entityFinder = entityFinder;
 		this.persistExecutor = PersistExecutor.forPersister(this);
 	}
@@ -72,7 +73,12 @@ public abstract class AbstractPolymorphismPersister<C, I>
 		return entityFinder;
 	}
 	
-	public Map<Class<C>, ConfiguredRelationalPersister<C, I>> getSubEntitiesPersisters() {
+	@Override
+	public SelectListener<C, I> getSelectListener() {
+		return persisterListener.getSelectListener();
+	}
+	
+	public Map<Class<C>, ConfiguredRelationalEntityPersister<C, I, ?>> getSubEntitiesPersisters() {
 		return subEntitiesPersisters;
 	}
 

@@ -35,6 +35,7 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.RollbackListener;
 import org.codefilarete.stalactite.sql.RollbackObserver;
 import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.codefilarete.stalactite.sql.result.NoopPreparedStatement;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
@@ -62,7 +63,7 @@ import org.codefilarete.tool.sql.ResultSetWrapper;
  * 
  * @author Guillaume Mary
  */
-public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
+public class OptimizedUpdatePersister<C, I, T extends Table<T>> extends PersisterWrapper<C, I, T> {
 	
 	@VisibleForTesting
 	static final ThreadLocal<Map<ResultSetCacheKey, ResultSet>> CURRENT_QUERY = new ThreadLocal<>();
@@ -92,7 +93,7 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 		return new ConnectionConfigurationSupport(connectionProvider, connectionConfiguration.getBatchSize());
 	}
 	
-	public OptimizedUpdatePersister(ConfiguredRelationalPersister<C, I> delegate) {
+	public OptimizedUpdatePersister(ConfiguredRelationalEntityPersister<C, I, T> delegate) {
 		super(delegate);
 	}
 	
