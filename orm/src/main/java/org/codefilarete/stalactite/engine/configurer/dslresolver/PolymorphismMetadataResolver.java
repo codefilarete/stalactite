@@ -86,6 +86,13 @@ public class PolymorphismMetadataResolver {
 //					.elseSet(subTable)
 //					.getOr(() -> new Table<>(configuration.getNamingConfiguration().getTableNamingStrategy().giveName(subEntityConfig.getEntityType())));
 			
+			// propagating parent class primaryKey to the subTable
+			KeepOrderSet<Column<SUBTABLE, ?>> columns = configuration.getTable().<I>getPrimaryKey().getColumns();
+			columns.forEach(column -> {
+				subTable.addColumn(column.getName(), column.getJavaType(), column.getSize(), column.isNullable())
+						.primaryKey();
+			});
+			
 			// The join is from the sub-entity table FK → parent entity table PK
 			DirectRelationJoin<T, SUBTABLE, I> join = new DirectRelationJoin<>(
 					configuration.getTable().getPrimaryKey(),

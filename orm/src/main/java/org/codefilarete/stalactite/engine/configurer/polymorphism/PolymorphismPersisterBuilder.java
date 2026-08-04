@@ -131,7 +131,7 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table<T>> implements P
 			parentPersister.getSubEntitiesPersisters().forEach((type, subPersister) -> {
 				Set<D> subEntities = entitiesPerType.get(type);
 				if (subEntities != null) {
-					((AbstractPolymorphismPersister<D, I, ?>) subPersister).getPersisterListener().getSelectListener().afterSelect(subEntities);
+					((ConfiguredRelationalEntityPersister<D, I, ?>) subPersister).getPersisterListener().getSelectListener().afterSelect(subEntities);
 				}
 			});
 		}

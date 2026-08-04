@@ -24,6 +24,7 @@ import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.EntityRelation;
 import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
+import org.codefilarete.stalactite.engine.configurer.model.JoinTablePolymorphism;
 import org.codefilarete.stalactite.engine.configurer.model.MappingJoin;
 import org.codefilarete.stalactite.engine.configurer.model.PolymorphicEntity;
 import org.codefilarete.stalactite.engine.configurer.model.RelationJoin;
@@ -33,6 +34,7 @@ import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToOneRela
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
+import org.codefilarete.stalactite.engine.configurer.model.TablePerClassPolymorphism;
 import org.codefilarete.stalactite.engine.configurer.resolver.elementcollection.AggregateElementCollectionAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.elementcollection.ElementCollectionResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.elementcollection.ElementCollectionResolver.ElementRecordPersister;
@@ -46,10 +48,13 @@ import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.Aggregat
 import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.OneToManyResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetoone.AggregateOneToOneAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetoone.OneToOneResolver;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.jointable.JoinTableResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.tableperclass.TablePerClassResolver;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.jointable.JoinTablePolymorphismReader;
+import org.codefilarete.stalactite.engine.runtime.jointable.JoinTablePolymorphismWriter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.tableperclass.TablePerClassPolymorphismReader;
 import org.codefilarete.stalactite.engine.runtime.tableperclass.TablePerClassPolymorphismWriter;
@@ -230,21 +235,40 @@ public class AggregateResolver {
 		} else {
 			if (rootEntity instanceof PolymorphicEntity) {
 				PolymorphicEntity<C, I, T> polymorphicEntity = (PolymorphicEntity<C, I, T>) rootEntity;
-				TablePerClassResolver tablePerClassResolver = new TablePerClassResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
-				TablePerClassPolymorphismWriter<C, I, T, C> tablePerClassPolymorphismWriter = tablePerClassResolver.resolve(polymorphicEntity, rootPersisterCollector);
-				rootWriter = tablePerClassPolymorphismWriter;
-				EntityReader<C, I, T> reader = new EntityReader<>(rootWriter.<T>getMapping(),
-						persistenceContext.getConnectionProvider(),
-						persistenceContext.getDialect());
 				
-				Set<EntityMapping<C, I, T>> subEntitiesMappings = Iterables.collect(tablePerClassPolymorphismWriter.getSubEntitiesPersisters().entrySet(), entry -> entry.getValue().getMapping(), HashSet::new);
-				Map<Class<? extends C>, EntityReader<? extends C, I, ?>> subReaderPerEntityType = Iterables.map(subEntitiesMappings, EntityMapping::getClassToPersist, mapping -> new EntityReader<>(mapping,
-						persistenceContext.getConnectionProvider(),
-						persistenceContext.getDialect()));
-				aggregateReader = new TablePerClassPolymorphismReader<>(reader,
-						subReaderPerEntityType,
-						persistenceContext.getConnectionProvider(),
-						persistenceContext.getDialect());
+				if (polymorphicEntity.getPolymorphism() instanceof TablePerClassPolymorphism) {
+					TablePerClassResolver tablePerClassResolver = new TablePerClassResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
+					TablePerClassPolymorphismWriter<C, I, T, C> tablePerClassPolymorphismWriter = tablePerClassResolver.resolve(polymorphicEntity, rootPersisterCollector);
+					rootWriter = tablePerClassPolymorphismWriter;
+					EntityReader<C, I, T> reader = new EntityReader<>(rootWriter.<T>getMapping(),
+							persistenceContext.getConnectionProvider(),
+							persistenceContext.getDialect());
+					
+					Set<EntityMapping<C, I, T>> subEntitiesMappings = Iterables.collect(tablePerClassPolymorphismWriter.getSubEntitiesPersisters().entrySet(), entry -> entry.getValue().getMapping(), HashSet::new);
+					Map<Class<? extends C>, EntityReader<? extends C, I, ?>> subReaderPerEntityType = Iterables.map(subEntitiesMappings, EntityMapping::getClassToPersist, mapping -> new EntityReader<>(mapping,
+							persistenceContext.getConnectionProvider(),
+							persistenceContext.getDialect()));
+					aggregateReader = new TablePerClassPolymorphismReader<>(reader,
+							subReaderPerEntityType,
+							persistenceContext.getConnectionProvider(),
+							persistenceContext.getDialect());
+				} else if (polymorphicEntity.getPolymorphism() instanceof JoinTablePolymorphism) {
+					JoinTableResolver joinTableResolver = new JoinTableResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
+					JoinTablePolymorphismWriter<C, I, T, C> joinTablePolymorphismWriter = joinTableResolver.resolve(polymorphicEntity, rootPersisterCollector);
+					rootWriter = joinTablePolymorphismWriter;
+					EntityReader<C, I, T> reader = new EntityReader<>(rootWriter.<T>getMapping(),
+							persistenceContext.getConnectionProvider(),
+							persistenceContext.getDialect());
+					
+					Set<EntityMapping<C, I, T>> subEntitiesMappings = Iterables.collect(joinTablePolymorphismWriter.getSubEntitiesPersisters().entrySet(), entry -> entry.getValue().getMapping(), HashSet::new);
+					Map<Class<? extends C>, EntityReader<? extends C, I, ?>> subReaderPerEntityType = Iterables.map(subEntitiesMappings, EntityMapping::getClassToPersist, mapping -> new EntityReader<>(mapping,
+							persistenceContext.getConnectionProvider(),
+							persistenceContext.getDialect()));
+					aggregateReader = new JoinTablePolymorphismReader<>(reader,
+							subReaderPerEntityType,
+							persistenceContext.getConnectionProvider(),
+							persistenceContext.getDialect());
+				}
 			} else {
 				throw new UnsupportedOperationException("Unsupported entity type: " + rootEntity.getClass());
 			}
