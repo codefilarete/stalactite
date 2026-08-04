@@ -130,7 +130,7 @@ public interface Mapping<C, T extends Table<T>> {
 	 * Adds a transformer listener, optional operation
 	 * @param listener the listener to be notified of transformation
 	 */
-	default void addTransformerListener(TransformerListener<C> listener) {
+	default void addTransformerListener(TransformerListener<? super C> listener) {
 		// does nothing by default
 	}
 	

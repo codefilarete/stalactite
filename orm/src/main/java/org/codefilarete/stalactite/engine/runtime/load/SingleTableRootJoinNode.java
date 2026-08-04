@@ -16,6 +16,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeIn
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.RootJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer;
+import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -33,14 +34,14 @@ import org.codefilarete.tool.collection.KeepOrderSet;
  */
 public class SingleTableRootJoinNode<C, I, T extends Table<T>, DTYPE> extends JoinRoot<C, I, T> {
 	
-	private final Set<? extends ConfiguredEntityReader<C, I, ?>> subPersisters;
+	private final Set<? extends ConfiguredEntityReader<? extends C, I, ?>> subPersisters;
 	private final Set<Column<T, ?>> allColumnsInHierarchy;
 	private final Column<T, DTYPE> discriminatorColumn;
 	private final SingleTablePolymorphism<C, DTYPE> polymorphismPolicy;
 	
 	public SingleTableRootJoinNode(EntityJoinTree<C, I> tree,
 								   EntityMapping<C, I, T> mainMapping,
-								   Set<? extends ConfiguredEntityReader<C, I, ?>> subPersisters,
+								   Set<? extends ConfiguredEntityReader<? extends C, I, ?>> subPersisters,
 								   Column<T, DTYPE> discriminatorColumn,
 								   SingleTablePolymorphism<C, DTYPE> polymorphismPolicy) {
 		super(tree, new EntityMappingAdapter<>(mainMapping), mainMapping.getTargetTable());
@@ -64,20 +65,23 @@ public class SingleTableRootJoinNode<C, I, T extends Table<T>, DTYPE> extends Jo
 		// the decoder can't be a usual variable because it can't be computed now since we lack the EntityTreeInflater context
 		// (which is only available when the query is executed, not at build time)
 		Supplier<ColumnedRow> decoderProvider = () -> EntityTreeInflater.currentContext().getDecoder(joinNode);
-		Set<SubPersisterConsumer<C, I>> subEntityConsumer = subPersisters.stream().map(subPersister -> {
-			EntityMapping<C, I, ?> mapping = subPersister.getMapping();
-			return new SubPersisterConsumer<>(
-					row -> mapping.getIdMapping().getIdentifierAssembler().assemble(decoderProvider.get()),
-					mapping.getClassToPersist(),
-					mapping.getRowTransformer());
-		}).collect(Collectors.toSet());
+		Set<SubPersisterConsumer<? extends C, I>> subEntityConsumer = subPersisters.stream().map(this::buildSubPersisterConsumer).collect(Collectors.toSet());
 		BiConsumer<C, ColumnedRow> rowConsumptionListener = getConsumptionListener() == null
 				? null
 				: (rootEntity, row) -> getConsumptionListener().onNodeConsumption(rootEntity, decoderProvider.get());
 		return new SingleTablePolymorphicJoinRootRowConsumer<>(joinNode, subEntityConsumer,
 				rowConsumptionListener, polymorphismPolicy, row -> decoderProvider.get().get(discriminatorColumn));
 	}
-
+	
+	private <D extends C> SubPersisterConsumer<D, I> buildSubPersisterConsumer(ConfiguredEntityReader<D, I, ?> subPersister) {
+		EntityMapping<D, I, ?> mapping = subPersister.getMapping();
+		IdentifierAssembler<I, T> identifierAssembler = mapping.getIdMapping().getIdentifierAssembler();
+		return new SubPersisterConsumer<>(
+				identifierAssembler::assemble,
+				mapping.getClassToPersist(),
+				mapping.getRowTransformer());
+	}
+	
 	static class SubPersisterConsumer<C, I> {
 		private final Function<ColumnedRow, I> identifierAssembler;
 		private final Class<C> subEntityType;
@@ -92,9 +96,9 @@ public class SingleTableRootJoinNode<C, I, T extends Table<T>, DTYPE> extends Jo
 		}
 	}
 	
-	static class SingleTablePolymorphicJoinRootRowConsumer<C, I, DTYPE> implements RootJoinRowConsumer<C, I> {
+	static class SingleTablePolymorphicJoinRootRowConsumer<C, I, DTYPE, D extends C> implements RootJoinRowConsumer<C, I> {
 		
-		private final Set<SubPersisterConsumer<C, I>> subConsumers;
+		private final Set<SubPersisterConsumer<D, I>> subConsumers;
 		
 		private final JoinNode<C, ?> joinNode;
 		/**
@@ -107,11 +111,11 @@ public class SingleTableRootJoinNode<C, I, T extends Table<T>, DTYPE> extends Jo
 		private final Function<ColumnedRow, DTYPE> discriminatorValueReader;
 		
 		private SingleTablePolymorphicJoinRootRowConsumer(JoinNode<C, ?> node,
-														  Set<SubPersisterConsumer<C, I>> subConsumers,
+														  Set<SubPersisterConsumer<? extends C, I>> subConsumers,
 														  @Nullable BiConsumer<C, ColumnedRow> consumptionListener,
 														  SingleTablePolymorphism<C, DTYPE> polymorphismPolicy,
 														  Function<ColumnedRow, DTYPE> discriminatorValueReader) {
-			this.subConsumers = subConsumers;
+			this.subConsumers = (Set) subConsumers;
 			this.joinNode = node;
 			this.consumptionListener = consumptionListener;
 			this.polymorphismPolicy = polymorphismPolicy;
@@ -125,7 +129,7 @@ public class SingleTableRootJoinNode<C, I, T extends Table<T>, DTYPE> extends Jo
 
 		@Override
 		public EntityReference<C, I> createRootInstance(ColumnedRow row, TreeInflationContext context) {
-			Duo<I, SubPersisterConsumer<C, I>> subInflater = findSubInflater(row);
+			Duo<I, SubPersisterConsumer<D, I>> subInflater = findSubInflater(row);
 			EntityReference<C, I> result;
 			if (subInflater == null) {
 				result = null;
@@ -143,10 +147,10 @@ public class SingleTableRootJoinNode<C, I, T extends Table<T>, DTYPE> extends Jo
 		}
 		
 		@Nullable
-		public Duo<I, SubPersisterConsumer<C, I>> findSubInflater(ColumnedRow row) {
-			Class<? extends C> subEntityClass = polymorphismPolicy.getClass(discriminatorValueReader.apply(row));
-			Duo<SubPersisterConsumer<C, I>, Class<C>> subClassRowConsumer = Iterables.find(subConsumers, subConsumer -> subConsumer.subEntityType, subEntityClass::equals);
-			SubPersisterConsumer<C, I> subIdentifierConsumer = subClassRowConsumer.getLeft();
+		public Duo<I, SubPersisterConsumer<D, I>> findSubInflater(ColumnedRow row) {
+			Class<D> subEntityClass = (Class<D>) polymorphismPolicy.getClass(discriminatorValueReader.apply(row));
+			Duo<SubPersisterConsumer<D, I>, Class<D>> subClassRowConsumer = Iterables.find(subConsumers, subConsumer -> subConsumer.subEntityType, subEntityClass::equals);
+			SubPersisterConsumer<D, I> subIdentifierConsumer = subClassRowConsumer.getLeft();
 			return new Duo<>(subIdentifierConsumer.identifierAssembler.apply(row), subIdentifierConsumer);
 		}
 		

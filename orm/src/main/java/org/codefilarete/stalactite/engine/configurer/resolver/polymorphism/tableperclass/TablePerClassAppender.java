@@ -40,7 +40,6 @@ public class TablePerClassAppender {
 	                  String mountPoint) {
 		
 		Holder<GraftPoint> resultHolder = new Holder<>();
-//		tablePerClassResolver.<TRGT, TRGTID, RIGHTTABLE, SUBTRGT>resolve(relationPawn.getTargetEntity(), targetPersister -> {
 		Map<Class<SUBTRGT>, EntityReader<SUBTRGT, TRGTID, ?>> subEntitiesPersisters = null;// = targetPersister.getSubEntitiesPersisters();
 		DirectRelationJoin<LEFTTABLE, RIGHTTABLE, JOINID> join = relationPawn.getJoin();
 		TablePerClassUnion union = buildUnion(

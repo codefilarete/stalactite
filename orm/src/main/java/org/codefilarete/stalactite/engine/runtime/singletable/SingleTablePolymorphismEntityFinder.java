@@ -67,7 +67,7 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 	
 	public SingleTablePolymorphismEntityFinder(
 			ConfiguredRelationalPersister<C, I, T> mainPersister,
-			Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I, ?>> persisterPerSubclass,
+			Map<Class<? extends C>, ? extends ConfiguredRelationalPersister<? extends C, I, ?>> persisterPerSubclass,
 			Column<T, DTYPE> discriminatorColumn,
 			SingleTablePolymorphism<C, DTYPE> polymorphismPolicy,
 			ConnectionProvider connectionProvider,
@@ -84,7 +84,7 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 	public SingleTablePolymorphismEntityFinder(
 			EntityJoinTree<C, I> mainEntityJoinTree,
 			ConfiguredEntityReader<C, I, T> mainReader,
-			Map<? extends Class<C>, ? extends ConfiguredEntityReader<C, I, ?>> persisterPerSubclass,
+			Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> persisterPerSubclass,
 			Column<T, DTYPE> discriminatorColumn,
 			SingleTablePolymorphism<C, DTYPE> polymorphismPolicy,
 			ConnectionProvider connectionProvider,
@@ -131,7 +131,7 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 		return new EntityQueryCriteriaSupport<>(this, criteriaSupport.copy());
 	}
 	
-	private SingleLoadEntityJoinTree<C, I, DTYPE> buildSingleLoadEntityJoinTree(ConfiguredEntityReader<C, I, T> mainPersister, Map<? extends Class<C>, ? extends ConfiguredEntityReader<C, I, ?>> persisterPerSubclass) {
+	private SingleLoadEntityJoinTree<C, I, DTYPE> buildSingleLoadEntityJoinTree(ConfiguredEntityReader<C, I, T> mainPersister, Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> persisterPerSubclass) {
 		SingleLoadEntityJoinTree<C, I, DTYPE> result = new SingleLoadEntityJoinTree<>(
 				mainPersister.getMapping(),
 				new HashSet<>(persisterPerSubclass.values()),
@@ -226,7 +226,7 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 	private static class SingleLoadEntityJoinTree<C, I, DTYPE> extends EntityJoinTree<C, I> {
 		
 		public <T extends Table<T>> SingleLoadEntityJoinTree(EntityMapping<C, I, T> mainMapping,
-															 Set<? extends ConfiguredEntityReader<C, I, ?>> subPersisters,
+															 Set<? extends ConfiguredEntityReader<? extends C, I, ?>> subPersisters,
 															 Column<T, DTYPE> discriminatorColumn,
 															 SingleTablePolymorphism<C, DTYPE> polymorphismPolicy) {
 			super(self -> new SingleTableRootJoinNode<>(

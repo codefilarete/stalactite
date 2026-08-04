@@ -60,7 +60,7 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 	
 	public JoinTablePolymorphismEntityFinder(
 			ConfiguredRelationalPersister<C, I, T> mainPersister,
-			Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<? extends C, I, ?>> persisterPerSubclass,
+			Map<Class<? extends C>, ? extends ConfiguredRelationalPersister<? extends C, I, ?>> persisterPerSubclass,
 			ConnectionProvider connectionProvider,
 			Dialect dialect) {
 		this(mainPersister.getEntityJoinTree(),
@@ -73,7 +73,7 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 	public JoinTablePolymorphismEntityFinder(
 			EntityJoinTree<C, I> mainEntityJoinTree,
 			ConfiguredEntityReader<C, I, T> mainReader,
-			Map<? extends Class<C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> persisterPerSubclass,
+			Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> persisterPerSubclass,
 			ConnectionProvider connectionProvider,
 			Dialect dialect) {
 		super(mainEntityJoinTree, mainReader, persisterPerSubclass, connectionProvider, dialect);
@@ -115,13 +115,13 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 		return new EntityQueryCriteriaSupport<>(this, criteriaSupport.copy());
 	}
 	
-	private SingleLoadEntityJoinTree<C, I> buildSingleLoadEntityJoinTree() {
+	private <D extends C> SingleLoadEntityJoinTree<C, I> buildSingleLoadEntityJoinTree() {
 		SingleLoadEntityJoinTree<C, I> result = new SingleLoadEntityJoinTree<>(
 				mainReader,
 				new HashSet<>(persisterPerSubclass.values())
 		);
 		// sub entities persisters will be used to create entities
-		persisterPerSubclass.forEach((type, persister) -> {
+		((Map<Class<D>, ConfiguredEntityReader<D, I, ?>>) (Map) persisterPerSubclass).forEach((type, persister) -> {
 			String mergeJoin = result.addMergeJoin(
                     ROOT_JOIN_NAME,
 					new EntityMergerAdapter<>(persister.<T>getMapping()),
@@ -130,7 +130,7 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 					JoinType.OUTER,
 					joinNode -> {
 						// implemented to add newly created sub consumer to root one, therefore it will be able to create the right sub-instance
-						MergeJoinRowConsumer<C> subEntityConsumer = new MergeJoinRowConsumer<>((MergeJoinNode<C, ?, ?, ?>) joinNode, persister.getMapping().getRowTransformer());
+						MergeJoinRowConsumer<D> subEntityConsumer = new MergeJoinRowConsumer<>((MergeJoinNode<D, ?, ?, ?>) joinNode, persister.getMapping().getRowTransformer());
 						result.getRoot().addSubPersister(persister, subEntityConsumer);
 						return subEntityConsumer;
 					}
@@ -196,10 +196,10 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 				
 				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the 
 				// right one
-				Set<Entry<Class<C>, ConfiguredEntityReader<C, I, ?>>> entries = persisterPerSubclass.entrySet();
+				Set<Entry<Class<? extends C>, ConfiguredEntityReader<? extends C, I, ?>>> entries = persisterPerSubclass.entrySet();
 				Duo<Class, I> duo = null;
 				I identifier;
-				for (Entry<Class<C>, ConfiguredEntityReader<C, I, ?>> entry : entries) {
+				for (Entry<Class<? extends C>, ConfiguredEntityReader<? extends C, I, ?>> entry : entries) {
 					identifier = entry.getValue().getMapping().getIdMapping().getIdentifierAssembler().assemble(row);
 					if (identifier != null) {
 						duo = new Duo<>(entry.getKey(), identifier);
@@ -223,7 +223,7 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 	private static class SingleLoadEntityJoinTree<C, I> extends EntityJoinTree<C, I> {
 		
 		public <T extends Table<T>> SingleLoadEntityJoinTree(ConfiguredEntityReader<C, I, T> mainPersister,
-															 Set<? extends ConfiguredEntityReader<C, I, ?>> subPersisters) {
+															 Set<? extends ConfiguredEntityReader<? extends C, I, ?>> subPersisters) {
 			super(tree -> new JoinTableRootJoinNode<>(
 					tree,
 					mainPersister,

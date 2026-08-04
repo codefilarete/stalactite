@@ -54,16 +54,16 @@ public abstract class AbstractPolymorphismPersister<C, I, T extends Table<T>>
 	
 	protected final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
 	
-	protected final Map<Class<C>, ConfiguredRelationalEntityPersister<C, I, ?>> subEntitiesPersisters;
+	protected final Map<Class<? extends C>, ConfiguredRelationalEntityPersister<? extends C, I, ?>> subEntitiesPersisters;
 	protected final ConfiguredRelationalEntityPersister<C, I, T> mainPersister;
 	protected final EntityFinder<C, I> entityFinder;
 	protected final PersistExecutor<C> persistExecutor;
 	
 	protected AbstractPolymorphismPersister(ConfiguredRelationalEntityPersister<C, I, T> mainPersister,
-	                                        Map<? extends Class<C>, ? extends ConfiguredRelationalEntityPersister<? extends C, I, ?>> subEntitiesPersisters,
+	                                        Map<Class<? extends C>, ? extends ConfiguredRelationalEntityPersister<? extends C, I, ?>> subEntitiesPersisters,
 	                                        EntityFinder<C, I> entityFinder) {
 		this.mainPersister = mainPersister;
-		this.subEntitiesPersisters = (Map<Class<C>, ConfiguredRelationalEntityPersister<C, I, ?>>) subEntitiesPersisters;
+		this.subEntitiesPersisters = (Map<Class<? extends C>, ConfiguredRelationalEntityPersister<? extends C, I, ?>>) subEntitiesPersisters;
 		this.entityFinder = entityFinder;
 		this.persistExecutor = PersistExecutor.forPersister(this);
 	}
@@ -78,7 +78,7 @@ public abstract class AbstractPolymorphismPersister<C, I, T extends Table<T>>
 		return persisterListener.getSelectListener();
 	}
 	
-	public Map<Class<C>, ConfiguredRelationalEntityPersister<C, I, ?>> getSubEntitiesPersisters() {
+	public Map<Class<? extends C>, ConfiguredRelationalEntityPersister<? extends C, I, ?>> getSubEntitiesPersisters() {
 		return subEntitiesPersisters;
 	}
 

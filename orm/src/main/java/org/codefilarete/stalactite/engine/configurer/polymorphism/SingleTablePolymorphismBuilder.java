@@ -61,20 +61,19 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 	
 	@Override
 	public AbstractPolymorphismPersister<C, I, T> build(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
-		Map<Class<C>, ConfiguredRelationalEntityPersister<C, I, ?>> persisterPerSubclass = collectSubClassPersister(dialect, connectionConfiguration);
+		return buildPersister(dialect, connectionConfiguration);
+	}
+	
+	private <D extends C> SingleTablePolymorphismPersister<C, I, T, DTYPE> buildPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+		Map<Class<D>, ConfiguredRelationalEntityPersister<D, I, ?>> persisterPerSubclass = collectSubClassPersister(dialect, connectionConfiguration);
 		
 		// Note that registering the cascades to sub-persisters must be done BEFORE the creation of the main persister to make it have all
 		// entities joins and let it build a consistent entity graph load; without it, we miss sub-relations when loading main entities 
 		registerSubEntitiesRelations(persisterPerSubclass, dialect, connectionConfiguration);
 		
-		Column<T, DTYPE> discriminatorColumn = ensureDiscriminatorColumn();
-		// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
-		// available by PersistenceContext.getPersister(..)) and it is one sure that they are perfect ones (all their features should be tested)
-		SingleTablePolymorphismPersister<C, I, T, DTYPE> result = new SingleTablePolymorphismPersister<>(
-			mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(), dialect,
-			discriminatorColumn, (SingleTablePolymorphism<C, DTYPE>) polymorphismPolicy);
-		
-		return result;
+		return new SingleTablePolymorphismPersister<>(
+				mainPersister, new HashMap<>(persisterPerSubclass), connectionConfiguration.getConnectionProvider(), dialect,
+				ensureDiscriminatorColumn(), (SingleTablePolymorphism<C, DTYPE>) polymorphismPolicy);
 	}
 	
 	private <D extends C> Map<Class<D>, ConfiguredRelationalEntityPersister<D, I, ?>> collectSubClassPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {

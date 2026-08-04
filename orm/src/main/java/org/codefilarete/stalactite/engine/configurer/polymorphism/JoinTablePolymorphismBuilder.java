@@ -58,17 +58,18 @@ public class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends Abst
 	
 	@Override
 	public AbstractPolymorphismPersister<C, I, T> build(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
-		Map<Class<C>, ConfiguredRelationalEntityPersister<C, I, ?>> persisterPerSubclass = collectSubClassPersister(dialect, connectionConfiguration);
+		return buildPersister(dialect, connectionConfiguration);
+	}
+	
+	private <D extends C> JoinTablePolymorphismPersister<C, I, T> buildPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+		Map<Class<D>, ConfiguredRelationalEntityPersister<D, I, ?>> persisterPerSubclass = collectSubClassPersister(dialect, connectionConfiguration);
 		
 		// Note that registering the cascades to sub-persisters must be done BEFORE the creation of the main persister to make it have all
 		// entities joins and let it build a consistent entity graph load; without it, we miss sub-relations when loading main entities 
 		registerSubEntitiesRelations(persisterPerSubclass, dialect, connectionConfiguration);
 		
-		JoinTablePolymorphismPersister<C, I, T> result = new JoinTablePolymorphismPersister<>(
-				mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(),
-				dialect);
-		
-		return result;
+		return new JoinTablePolymorphismPersister<>(
+				mainPersister, new HashMap<>(persisterPerSubclass), connectionConfiguration.getConnectionProvider(), dialect);
 	}
 	
 	private <D extends C> Map<Class<D>, ConfiguredRelationalEntityPersister<D, I, ?>> collectSubClassPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {

@@ -38,8 +38,6 @@ public class TablePerClassPolymorphismWriter<C, I, T extends Table<T>, SUBENTITY
 	
 	private final EntityWriteExecutor<C, I> templatePersister;
 	private final Map<Class<SUBENTITY>, EntityWriteExecutor<SUBENTITY, I>> subEntitiesPersisters;
-//	private final PersistExecutor<C> persistExecutor;
-//	private final TablePerClassPolymorphismEntityFinder<C, I, T> entityFinder;
 	
 	public TablePerClassPolymorphismWriter(EntityWriteExecutor<C, I> templatePersister,
 	                                       Map<Class<SUBENTITY>, ? extends EntityWriteExecutor<SUBENTITY, I>> subEntitiesPersisters,
@@ -151,8 +149,8 @@ public class TablePerClassPolymorphismWriter<C, I, T extends Table<T>, SUBENTITY
 	public EntityMapping<C, I, T> getMapping() {
 		return new EntityMappingWrapper<C, I, T>(templatePersister.getMapping()) {
 			@Override
-			public void addTransformerListener(TransformerListener<C> listener) {
-				forEachSubPersister(p -> p.getMapping().addTransformerListener((TransformerListener<SUBENTITY>) listener));
+			public void addTransformerListener(TransformerListener<? super C> listener) {
+				forEachSubPersister(p -> p.getMapping().addTransformerListener(listener));
 			}
 			
 			@Override

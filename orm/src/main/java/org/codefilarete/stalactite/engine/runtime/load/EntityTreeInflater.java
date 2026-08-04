@@ -387,7 +387,7 @@ public class EntityTreeInflater<C> {
 		 * @param fallbackFactory the "method" that will be called to create the entity when the entity is not in the cache
 		 * @return the existing instance in the cache or a new object
 		 */
-		public <E> E giveEntityFromCache(Class<E> clazz, Object identifier, Supplier<E> fallbackFactory) {
+		public <E, F extends E> E giveEntityFromCache(Class<F> clazz, Object identifier, Supplier<F> fallbackFactory) {
 			return this.entityCache.computeIfAbsent(clazz, identifier, fallbackFactory);
 		}
 	}

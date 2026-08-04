@@ -68,7 +68,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 	private final SingleTablePolymorphism<C, DTYPE> polymorphismPolicy;
 	
 	public SingleTablePolymorphismPersister(ConfiguredRelationalEntityPersister<C, I, T> mainPersister,
-	                                        Map<? extends Class<C>, ? extends ConfiguredRelationalEntityPersister<C, I, ?>> subEntitiesPersisters,
+	                                        Map<Class<? extends C>, ? extends ConfiguredRelationalEntityPersister<? extends C, I, ?>> subEntitiesPersisters,
 	                                        ConnectionProvider connectionProvider,
 	                                        Dialect dialect,
 	                                        Column<T, DTYPE> discriminatorColumn,
@@ -165,14 +165,19 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 	
 	@Override
 	public void doUpdate(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
+		doUpdateWithGenerics(differencesIterable, allColumnsStatement);
+	}
+	
+	private <D extends C> void doUpdateWithGenerics(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		// Below we keep the order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
 		// impacts but it's very difficult to measure
-		Map<UpdateExecutor<C>, Set<Duo<C, C>>> entitiesPerType = new KeepOrderMap<>();
+		Map<UpdateExecutor<D>, Set<Duo<D, D>>> entitiesPerType = new KeepOrderMap<>();
 		differencesIterable.forEach(payload ->
 				this.subEntitiesPersisters.values().forEach(persister -> {
 					C entity = Objects.preventNull(payload.getLeft(), payload.getRight());
 					if (persister.getClassToPersist().isInstance(entity)) {
-						entitiesPerType.computeIfAbsent(persister, p -> new KeepOrderSet<>()).add(payload);
+						entitiesPerType.computeIfAbsent((UpdateExecutor<D>) persister, p -> new KeepOrderSet<>())
+								.add((Duo<D, D>) payload);
 					}
 				})
 		);
@@ -192,12 +197,14 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 		entitiesPerType.forEach(DeleteExecutor::deleteById);
 	}
 	
-	private Map<EntityPersister<C, I>, Set<C>> computeEntitiesPerPersister(Iterable<? extends C> entities) {
-		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = new KeepOrderMap<>();
+	private <D extends C> Map<EntityPersister<D, I>, Set<D>> computeEntitiesPerPersister(Iterable<? extends C> entities) {
+		// Below we keep the order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
+		// impacts but it's very difficult to measure
+		Map<EntityPersister<D, I>, Set<D>> entitiesPerType = new KeepOrderMap<>();
 		entities.forEach(entity ->
 				this.subEntitiesPersisters.values().forEach(persister -> {
 					if (persister.getClassToPersist().isInstance(entity)) {
-						entitiesPerType.computeIfAbsent(persister, p -> new KeepOrderSet<>()).add(entity);
+						entitiesPerType.computeIfAbsent((EntityPersister<D, I>) persister, p -> new KeepOrderSet<>()).add((D) entity);
 					}
 				})
 		);
@@ -225,7 +232,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 	public EntityMapping<C, I, T> getMapping() {
 		return new EntityMappingWrapper<C, I, T>(mainPersister.getMapping()) {
 			@Override
-			public void addTransformerListener(TransformerListener<C> listener) {
+			public void addTransformerListener(TransformerListener<? super C> listener) {
 				subEntitiesPersisters.values().forEach(p -> ((EntityMapping) p.getMapping()).addTransformerListener(listener));
 			}
 			

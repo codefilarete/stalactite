@@ -14,6 +14,7 @@ import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.RootJoinR
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer;
+import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -36,13 +37,13 @@ import org.slf4j.LoggerFactory;
  */
 public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C, I, T> {
 	
-	private final Set<? extends ConfiguredEntityReader<C, I, ?>> subPersisters;
+	private final Set<? extends ConfiguredEntityReader<? extends C, I, ?>> subPersisters;
 	private final Set<Column<T, ?>> selectableColumns;
 	private JoinTablePolymorphicJoinRootRowConsumer<C, I> rootConsumer;
 	
 	public JoinTableRootJoinNode(EntityJoinTree<C, I> tree,
 	                             ConfiguredEntityReader<C, I, ?> mainPersister,
-								 Set<? extends ConfiguredEntityReader<C, I, ?>> subPersisters,
+								 Set<? extends ConfiguredEntityReader<? extends C, I, ?>> subPersisters,
 								 Set<? extends Column<T, ?>> selectableColumns,
 								 T mainTable) {
 		super(tree, new EntityMappingAdapter<>(mainPersister.getMapping()), mainTable);
@@ -58,23 +59,27 @@ public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C,
 	@Override
 	public RootJoinRowConsumer<C, I> toConsumer(JoinNode<C, T> joinNode) {
 		RowTransformer<C> rootRowTransformer = getEntityInflater().getRowTransformer();
-		Set<SubPersisterConsumer<C, I>> subEntityConsumer = subPersisters.stream().map(subPersister -> {
-			EntityMapping<C, I, ?> mapping = subPersister.getMapping();
-			return new SubPersisterConsumer<>(
-					row -> mapping.getIdMapping().getIdentifierAssembler().assemble(row),
-					mapping.getClassToPersist(),
-					mapping.getRowTransformer());
-		}).collect(Collectors.toSet());
+		Set<SubPersisterConsumer<? extends C, I>> subEntityConsumer = subPersisters.stream().map(this::buildSubPersisterConsumer).collect(Collectors.toSet());
 		rootConsumer = new JoinTablePolymorphicJoinRootRowConsumer<>(joinNode, rootRowTransformer, subEntityConsumer,
 				getConsumptionListener() == null ? null : (rootEntity, row) -> getConsumptionListener().onNodeConsumption(rootEntity, EntityTreeInflater.currentContext().getDecoder(joinNode)));
 		return rootConsumer;
 	}
 	
-	public void addSubPersister(ConfiguredEntityReader<C, I, ?> persister, MergeJoinRowConsumer<C> subConsumer) {
+	private <D extends C> SubPersisterConsumer<D, I> buildSubPersisterConsumer(ConfiguredEntityReader<D, I, ?> subPersister) {
+		EntityMapping<D, I, ?> mapping = subPersister.getMapping();
+		IdentifierAssembler<I, T> identifierAssembler = mapping.getIdMapping().getIdentifierAssembler();
+		return new SubPersisterConsumer<>(
+				identifierAssembler::assemble,
+				mapping.getClassToPersist(),
+				mapping.getRowTransformer());
+	}
+	
+	public <D extends C> void addSubPersister(ConfiguredEntityReader<D, I, ?> persister, MergeJoinRowConsumer<D> subMerger) {
 		rootConsumer.subConsumers.forEach(pawnConsumer -> {
 			if (pawnConsumer.subEntityType == persister.getClassToPersist()) {
-				pawnConsumer.subPropertiesApplier = subConsumer;
-				pawnConsumer.identifierAssembler = row -> persister.getMapping().getIdMapping().getIdentifierAssembler().assemble(row);
+				SubPersisterConsumer<D, I> subConsumer = (SubPersisterConsumer<D, I>) pawnConsumer;
+				subConsumer.subPropertiesApplier = subMerger;
+				subConsumer.identifierAssembler = row -> persister.getMapping().getIdMapping().getIdentifierAssembler().assemble(row);
 			}
 		});
 	}
@@ -102,7 +107,7 @@ public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C,
 		
 		private final JoinNode<C, ?> node;
 		private final RowTransformer<C> rootRowTransformer;
-		private final Set<SubPersisterConsumer<C, I>> subConsumers;
+		private final Set<SubPersisterConsumer<? extends C, I>> subConsumers;
 		
 		/** Optional listener of ResultSet decoding */
 		@Nullable
@@ -110,7 +115,7 @@ public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C,
 		
 		private JoinTablePolymorphicJoinRootRowConsumer(JoinNode<C, ?> node,
 														RowTransformer<C> rootRowTransformer,
-														Set<SubPersisterConsumer<C, I>> subConsumers,
+														Set<SubPersisterConsumer<? extends C, I>> subConsumers,
 														@Nullable BiConsumer<C, ColumnedRow> consumptionListener) {
 			this.node = node;
 			this.rootRowTransformer = rootRowTransformer;
@@ -125,7 +130,12 @@ public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C,
 
 		@Override
 		public EntityReference<C, I> createRootInstance(ColumnedRow row, TreeInflationContext context) {
-			Duo<I, SubPersisterConsumer<C, I>> subInflater = findSubInflater(row);
+			return createRootInstanceWithGenerics(row, context);
+		}
+		
+		@Nullable
+		private <D extends C> EntityReference<C, I> createRootInstanceWithGenerics(ColumnedRow row, TreeInflationContext context) {
+			Duo<I, SubPersisterConsumer<D, I>> subInflater = findSubInflater(row);
 			EntityReference<C, I> result = null;
 			if (subInflater == null) {
 				CURRENTLY_FOUND_CONSUMER.remove();
@@ -148,14 +158,13 @@ public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C,
 		}
 		
 		@Nullable
-		/* Optimized, from 530 000 nanos to 65 000 nanos at 1st exec, from 40 000 nanos to 12 000 nanos on usual run */
-		public Duo<I, SubPersisterConsumer<C, I>> findSubInflater(ColumnedRow row) {
+		public <D extends C> Duo<I, SubPersisterConsumer<D, I>> findSubInflater(ColumnedRow row) {
 			// @Optimized : use for & return instead of stream().map().filter(notNull).findFirst()
-			for (SubPersisterConsumer<C, I> pawn : subConsumers) {
+			for (SubPersisterConsumer<? extends C, I> pawn : subConsumers) {
 				ColumnedRow subInflaterRow = EntityTreeInflater.currentContext().getDecoder(pawn.subPropertiesApplier.getNode());
 				I assemble = pawn.identifierAssembler.apply(subInflaterRow);
 				if (assemble != null) {
-					return new Duo<>(assemble, pawn);
+					return new Duo<>(assemble, (SubPersisterConsumer<D, I>) pawn);
 				}
 			}
 			return null;

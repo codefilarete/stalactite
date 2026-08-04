@@ -67,6 +67,8 @@ import org.codefilarete.tool.collection.KeepOrderMap;
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
 
 /**
+ * 
+ * 
  * @author Guillaume Mary
  */
 public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> extends AbstractPolymorphicEntityFinder<C, I, T> {
@@ -85,7 +87,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	
 	public TablePerClassPolymorphismEntityFinder(
 			ConfiguredRelationalPersister<C, I, T> mainPersister,
-			Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I, ?>> persisterPerSubclass,
+			Map<Class<? extends C>, ? extends ConfiguredRelationalPersister<? extends C, I, ?>> persisterPerSubclass,
 			ConnectionProvider connectionProvider,
 			Dialect dialect
 	) {
@@ -95,7 +97,7 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	public TablePerClassPolymorphismEntityFinder(
 			EntityJoinTree<C, I> mainEntityJoinTree,
 			ConfiguredEntityReader<C, I, T> mainReader,
-			Map<? extends Class<C>, ? extends ConfiguredEntityReader<C, I, ?>> persisterPerSubclass,
+			Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> persisterPerSubclass,
 			ConnectionProvider connectionProvider,
 			Dialect dialect) {
 		super(mainEntityJoinTree, mainReader, persisterPerSubclass, connectionProvider, dialect);

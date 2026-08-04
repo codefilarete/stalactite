@@ -77,7 +77,7 @@ public class JoinTablePolymorphismPersister<C, I, T extends Table<T>> extends Ab
 	private final PrimaryKey<?, I> mainTablePrimaryKey;
 	
 	public JoinTablePolymorphismPersister(ConfiguredRelationalEntityPersister<C, I, T> mainPersister,
-	                                      Map<? extends Class<C>, ? extends ConfiguredRelationalEntityPersister<? extends C, I, ?>> subEntitiesPersisters,
+	                                      Map<Class<? extends C>, ? extends ConfiguredRelationalEntityPersister<? extends C, I, ?>> subEntitiesPersisters,
 	                                      ConnectionProvider connectionProvider,
 	                                      Dialect dialect) {
 		super(mainPersister,
@@ -90,7 +90,7 @@ public class JoinTablePolymorphismPersister<C, I, T extends Table<T>> extends Ab
 		Table<?> mainTable = mainPersister.getMapping().getTargetTable();
 		this.mainTablePrimaryKey = mainTable.getPrimaryKey();
 		
-		Set<? extends Entry<? extends Class<C>, ? extends ConfiguredRelationalPersister<? extends C, I, ?>>> subPersisterPerSubEntityType = subEntitiesPersisters.entrySet();
+		Set<? extends Entry<Class<? extends C>, ? extends ConfiguredRelationalPersister<? extends C, I, ?>>> subPersisterPerSubEntityType = subEntitiesPersisters.entrySet();
 		// Below we keep the order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
 		// impacts but it's very difficult to measure
 		this.subclassIdMappingStrategies = Iterables.map(subPersisterPerSubEntityType, Entry::getKey, e -> (IdMapping<C, I>) e.getValue().getMapping().getIdMapping());
@@ -157,14 +157,19 @@ public class JoinTablePolymorphismPersister<C, I, T extends Table<T>> extends Ab
 	public void doUpdate(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		mainPersister.update(differencesIterable, allColumnsStatement);
 		
+		doUpdateWithGenerics(differencesIterable, allColumnsStatement);
+	}
+	
+	private <D extends C> void doUpdateWithGenerics(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		// Below we keep the order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
 		// impacts but it's very difficult to measure
-		Map<UpdateExecutor<C>, Set<Duo<C, C>>> entitiesPerType = new KeepOrderMap<>();
+		Map<UpdateExecutor<D>, Set<Duo<D, D>>> entitiesPerType = new KeepOrderMap<>();
 		differencesIterable.forEach(payload ->
 				this.subEntitiesPersisters.values().forEach(persister -> {
 					C entity = Objects.preventNull(payload.getLeft(), payload.getRight());
 					if (persister.getClassToPersist().isInstance(entity)) {
-						entitiesPerType.computeIfAbsent(persister, p -> new KeepOrderSet<>()).add(payload);
+						entitiesPerType.computeIfAbsent((UpdateExecutor<D>) persister, p -> new KeepOrderSet<>())
+								.add((Duo<D, D>) payload);
 					}
 				})
 		);
@@ -186,12 +191,14 @@ public class JoinTablePolymorphismPersister<C, I, T extends Table<T>> extends Ab
 		mainPersister.deleteById(entities);
 	}
 	
-	private Map<EntityPersister<C, I>, Set<C>> computeEntitiesPerPersister(Iterable<? extends C> entities) {
-		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = new KeepOrderMap<>();
+	private <D extends C> Map<EntityPersister<D, I>, Set<D>> computeEntitiesPerPersister(Iterable<? extends C> entities) {
+		// Below we keep the order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
+		// impacts but it's very difficult to measure
+		Map<EntityPersister<D, I>, Set<D>> entitiesPerType = new KeepOrderMap<>();
 		entities.forEach(entity ->
 				this.subEntitiesPersisters.values().forEach(persister -> {
 					if (persister.getClassToPersist().isInstance(entity)) {
-						entitiesPerType.computeIfAbsent(persister, p -> new KeepOrderSet<>()).add(entity);
+						entitiesPerType.computeIfAbsent((EntityPersister<D, I>) persister, p -> new KeepOrderSet<>()).add((D) entity);
 					}
 				})
 		);
@@ -218,7 +225,7 @@ public class JoinTablePolymorphismPersister<C, I, T extends Table<T>> extends Ab
 	public EntityMapping<C, I, T> getMapping() {
 		return new EntityMappingWrapper<C, I, T>(mainPersister.getMapping()) {
 			@Override
-			public void addTransformerListener(TransformerListener<C> listener) {
+			public void addTransformerListener(TransformerListener<? super C> listener) {
 				super.addTransformerListener(listener);
 				subEntitiesPersisters.values().forEach(persister -> persister.getMapping().addTransformerListener(listener));
 			}

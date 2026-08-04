@@ -123,11 +123,15 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table<T>> implements P
 		
 		@Override
 		public void afterSelect(Set<? extends C> entities) {
-			Map<Class<C>, Set<C>> entitiesPerType = computeEntitiesPerType(entities);
+			afterSelectWithGenerics(entities);
+		}
+		
+		private <D extends C> void afterSelectWithGenerics(Set<? extends C> entities) {
+			Map<Class<D>, Set<D>> entitiesPerType = computeEntitiesPerType(entities);
 			parentPersister.getSubEntitiesPersisters().forEach((type, subPersister) -> {
-				Set<C> subEntities = entitiesPerType.get(type);
+				Set<D> subEntities = entitiesPerType.get(type);
 				if (subEntities != null) {
-					subPersister.getPersisterListener().getSelectListener().afterSelect(subEntities);
+					((AbstractPolymorphismPersister<D, I, ?>) subPersister).getPersisterListener().getSelectListener().afterSelect(subEntities);
 				}
 			});
 		}
@@ -139,10 +143,10 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table<T>> implements P
 					.forEach(subPersister -> subPersister.getPersisterListener().getSelectListener().onSelectError(ids, exception));
 		}
 		
-		private Map<Class<C>, Set<C>> computeEntitiesPerType(Iterable<? extends C> entities) {
-			Map<Class<C>, Set<C>> entitiesPerType = new HashMap<>();
+		private <D extends C> Map<Class<D>, Set<D>> computeEntitiesPerType(Iterable<? extends C> entities) {
+			Map<Class<D>, Set<D>> entitiesPerType = new HashMap<>();
 			entities.forEach(entity ->
-					entitiesPerType.computeIfAbsent((Class<C>) entity.getClass(), p -> new KeepOrderSet<>()).add(entity)
+					entitiesPerType.computeIfAbsent((Class<D>) entity.getClass(), p -> new KeepOrderSet<>()).add((D) entity)
 			);
 			return entitiesPerType;
 		}

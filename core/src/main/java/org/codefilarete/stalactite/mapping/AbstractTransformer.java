@@ -6,9 +6,8 @@ import java.util.Collections;
 import java.util.function.Function;
 
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
-import org.codefilarete.tool.Reflections;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.Reflections;
 
 /**
  * A very general frame to transform {@link Row}s
@@ -50,7 +49,7 @@ public abstract class AbstractTransformer<C> implements RowTransformer<C> {
 	}
 	
 	@Override
-	public void addTransformerListener(TransformerListener<? extends C> listener) {
+	public void addTransformerListener(TransformerListener<? super C> listener) {
 		this.rowTransformerListeners.add((TransformerListener<C>) listener);
 	}
 	

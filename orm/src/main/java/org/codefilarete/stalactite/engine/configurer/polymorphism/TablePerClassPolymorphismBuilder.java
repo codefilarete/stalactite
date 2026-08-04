@@ -92,14 +92,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 		if (this.identification instanceof AbstractIdentification.SingleColumnIdentification && ((SingleColumnIdentification<C, I>) this.identification).getIdentifierPolicy() instanceof GeneratedKeysPolicy) {
 			throw new UnsupportedOperationException("Table-per-class polymorphism is not compatible with auto-incremented primary key");
 		}
-		Map<Class<C>, ConfiguredRelationalEntityPersister<C, I, ?>> persisterPerSubclass = collectSubClassPersister(dialect, connectionConfiguration);
-		
-		// Note that registering the cascades to sub-persisters must be done BEFORE the creation of the main persister to make it have all
-		// entities joins and let it build a consistent entity graph load; without it, we miss sub-relations when loading main entities 
-		registerSubEntitiesRelations(persisterPerSubclass, dialect, connectionConfiguration);
-		
-		TablePerClassPolymorphismPersister<C, I, T> result = new TablePerClassPolymorphismPersister<>(
-				mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(), dialect);
+		TablePerClassPolymorphismPersister<C, I, T> result = buildPersister(dialect, connectionConfiguration);
 		
 		// we propagate shadow columns through TablePerClassPolymorphismPersister.getMapping() because it has a
 		// mechanism that projects them to sub-persisters (but columns were added in buildSubclassPersister()
@@ -112,7 +105,18 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 		});
 		return result;
 	}
+	
+	private <D extends C> TablePerClassPolymorphismPersister<C, I, T> buildPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+		Map<Class<D>, ConfiguredRelationalEntityPersister<D, I, ?>> persisterPerSubclass = collectSubClassPersister(dialect, connectionConfiguration);
 		
+		// Note that registering the cascades to sub-persisters must be done BEFORE the creation of the main persister to make it have all
+		// entities joins and let it build a consistent entity graph load; without it, we miss sub-relations when loading main entities 
+		registerSubEntitiesRelations(persisterPerSubclass, dialect, connectionConfiguration);
+		
+		return new TablePerClassPolymorphismPersister<>(
+				mainPersister, new HashMap<>(persisterPerSubclass), connectionConfiguration.getConnectionProvider(), dialect);
+	}
+	
 	private <D extends C> Map<Class<D>, ConfiguredRelationalEntityPersister<D, I, ?>> collectSubClassPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
 		Map<Class<D>, ConfiguredRelationalEntityPersister<D, I, ?>> persisterPerSubclass = new HashMap<>();
 		

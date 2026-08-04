@@ -144,7 +144,7 @@ public class EntityMappingWrapper<C, I, T extends Table<T>> implements EntityMap
 	}
 	
 	@Override
-	public void addTransformerListener(TransformerListener<C> listener) {
+	public void addTransformerListener(TransformerListener<? super C> listener) {
 		delegate.addTransformerListener(listener);
 	}
 	

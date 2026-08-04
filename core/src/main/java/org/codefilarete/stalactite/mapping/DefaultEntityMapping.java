@@ -428,14 +428,14 @@ public class DefaultEntityMapping<C, I, T extends Table<T>> implements EntityMap
 			}
 
 			@Override
-			public void addTransformerListener(TransformerListener<? extends C> listener) {
-				mapping.addTransformerListener((TransformerListener<C>) listener);
+			public void addTransformerListener(TransformerListener<? super C> listener) {
+				mapping.addTransformerListener(listener);
 			}
 		};
 	}
 	
 	@Override
-	public void addTransformerListener(TransformerListener<C> listener) {
+	public void addTransformerListener(TransformerListener<? super C> listener) {
 		getRowTransformer().addTransformerListener(listener);
 	}
 }

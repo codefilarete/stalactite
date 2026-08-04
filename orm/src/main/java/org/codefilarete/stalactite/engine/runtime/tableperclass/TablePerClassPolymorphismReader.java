@@ -26,7 +26,7 @@ public class TablePerClassPolymorphismReader<C, I, T extends Table<T>> extends R
 	private final ConfiguredEntityReader<C, I, T> mainReader;
 	
 	public TablePerClassPolymorphismReader(ConfiguredEntityReader<C, I, T> mainReader,
-	                                       Map<? extends Class<C>, ? extends ConfiguredEntityReader<C, I, ?>> subEntitiesPersisters,
+	                                       Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> subEntitiesPersisters,
 	                                       ConnectionProvider connectionProvider,
 	                                       Dialect dialect) {
 		this.mainReader = mainReader;

@@ -80,7 +80,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 	private static final ThreadLocal<Queue<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */>>>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
 	public TablePerClassPolymorphismPersister(ConfiguredRelationalEntityPersister<C, I, T> mainPersister,
-	                                          Map<? extends Class<C>, ? extends ConfiguredRelationalEntityPersister<C, I, ?>> subEntitiesPersisters,
+	                                          Map<Class<? extends C>, ? extends ConfiguredRelationalEntityPersister<? extends C, I, ?>> subEntitiesPersisters,
 	                                          ConnectionProvider connectionProvider,
 	                                          Dialect dialect) {
 		super(mainPersister,
@@ -153,14 +153,19 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 	
 	@Override
 	public void doUpdate(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
+		doUpdateWithGenerics(differencesIterable, allColumnsStatement);
+	}
+	
+	private <D extends C> void doUpdateWithGenerics(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		// Below we keep the order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
 		// impacts but it's very difficult to measure
-		Map<UpdateExecutor<C>, Set<Duo<C, C>>> entitiesPerType = new KeepOrderMap<>();
+		Map<UpdateExecutor<D>, Set<Duo<D, D>>> entitiesPerType = new KeepOrderMap<>();
 		differencesIterable.forEach(payload ->
 				this.subEntitiesPersisters.values().forEach(persister -> {
 					C entity = Objects.preventNull(payload.getLeft(), payload.getRight());
 					if (persister.getClassToPersist().isInstance(entity)) {
-						entitiesPerType.computeIfAbsent(persister, p -> new KeepOrderSet<>()).add(payload);
+						entitiesPerType.computeIfAbsent((UpdateExecutor<D>) persister, p -> new KeepOrderSet<>())
+								.add((Duo<D, D>) payload);
 					}
 				})
 		);
@@ -214,23 +219,38 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 	@Override
 	public EntityMapping<C, I, T> getMapping() {
 		return new EntityMappingWrapper<C, I, T>(mainPersister.getMapping()) {
+			
 			@Override
-			public void addTransformerListener(TransformerListener<C> listener) {
-				Collection<? extends ConfiguredRelationalPersister<C, I, ?>> subPersisters = subEntitiesPersisters.values();
-				subPersisters.forEach(persister -> persister.getMapping().addTransformerListener(listener));
+			public void addTransformerListener(TransformerListener<? super C> listener) {
+				addTransformerListenerWithGenerics(listener);
+			}
+			
+			private <D extends C> void addTransformerListenerWithGenerics(TransformerListener<? super C> listener) {
+				subEntitiesPersisters.values().forEach(persister
+						-> persister.getMapping().addTransformerListener(listener));
 			}
 			
 			@Override
 			public void addShadowColumnInsert(ShadowColumnValueProvider<C, T> provider) {
+				addShadowColumnInsertWithGenerics(provider);
+			}
+			
+			private <D extends C> void addShadowColumnInsertWithGenerics(ShadowColumnValueProvider<C, T> provider) {
 				subEntitiesPersisters.values().forEach(p -> {
-					p.getMapping().addShadowColumnInsert(projectShadowColumnProvider(provider, p));
+					ConfiguredRelationalEntityPersister<D, I, ?> subPersister = (ConfiguredRelationalEntityPersister<D, I, ?>) p;
+					subPersister.getMapping().addShadowColumnInsert(projectShadowColumnProvider(provider, subPersister));
 				});
 			}
 			
 			@Override
 			public void addShadowColumnUpdate(ShadowColumnValueProvider<C, T> provider) {
+				addShadowColumnUpdateWithGenerics(provider);
+			}
+			
+			private <D extends C> void addShadowColumnUpdateWithGenerics(ShadowColumnValueProvider<C, T> provider) {
 				subEntitiesPersisters.values().forEach(p -> {
-					p.getMapping().addShadowColumnUpdate(projectShadowColumnProvider(provider, p));
+					ConfiguredRelationalEntityPersister<D, I, ?> subPersister = (ConfiguredRelationalEntityPersister<D, I, ?>) p;
+					subPersister.getMapping().addShadowColumnUpdate(projectShadowColumnProvider(provider, subPersister));
 				});
 			}
 			
@@ -325,7 +345,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 				sourcePersister.getEntityJoinTree().addMergeJoin(
 						joinName,
 						// need to be cast to C instead of "? extends C" because selectExecutor is C-typed
-						new FirstPhaseRelationLoader<>(subPersister.getMapping().getIdMapping(), this, (ThreadLocal) DIFFERED_ENTITY_LOADER),
+						new FirstPhaseRelationLoader<>((IdMapping<C, I>) subPersister.getMapping().getIdMapping(), this, (ThreadLocal) DIFFERED_ENTITY_LOADER),
 						leftColumn,
 						joinColumnPerSubPersister.get(subPersister),
 						JoinType.OUTER);
@@ -478,7 +498,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			String leftStrategyName,
 			Key<T1, JOINID> leftJoinColumn,
 			Key<T2, JOINID> rightJoinColumn,
-			Set<? extends ConfiguredRelationalEntityPersister<C, I, ?>> subPersisters) {
+			Set<? extends ConfiguredRelationalEntityPersister<? extends C, I, ?>> subPersisters) {
 		
 		Union subPersistersUnion = new Union();
 		// Union will contain only 3 columns :
@@ -552,8 +572,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		// Because sub-entities are part of the union and not in the tree as a join node, there are not seen as some DDL participant,
 		// hence we add them to it. That's a bit ugly, but I didn't find a better way to do it.
 		subPersisters.forEach(subPersister -> {
-			EntityJoinTree<C, I> subEntityJoinTree = subPersister.getEntityJoinTree();
-			subEntityJoinTree.giveTables().forEach(table -> {
+			subPersister.getEntityJoinTree().giveTables().forEach(table -> {
 				PersisterBuilderContext.CURRENT.get();
 				entityJoinTree.addTableToIncludeToDDL(table);
 			});

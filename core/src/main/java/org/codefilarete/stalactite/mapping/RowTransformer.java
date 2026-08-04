@@ -19,7 +19,7 @@ public interface RowTransformer<C> {
 	
 	void applyRowToBean(ColumnedRow row, C bean);
 	
-	void addTransformerListener(TransformerListener<? extends C> listener);
+	void addTransformerListener(TransformerListener<? super C> listener);
 	
 	/**
 	 * Small interface which instances will be invoked after row transformation, such as one can add any post-treatment to the bean row

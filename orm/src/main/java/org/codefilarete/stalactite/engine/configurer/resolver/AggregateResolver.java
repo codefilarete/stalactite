@@ -53,6 +53,7 @@ import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.tableperclass.TablePerClassPolymorphismReader;
 import org.codefilarete.stalactite.engine.runtime.tableperclass.TablePerClassPolymorphismWriter;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
@@ -235,13 +236,13 @@ public class AggregateResolver {
 				EntityReader<C, I, T> reader = new EntityReader<>(rootWriter.<T>getMapping(),
 						persistenceContext.getConnectionProvider(),
 						persistenceContext.getDialect());
-				Map<? extends Class<C>, ConfiguredEntityReader<C, I, T>> map = Iterables.map(tablePerClassPolymorphismWriter.getSubEntitiesPersisters().entrySet(), Map.Entry::getKey, entry -> {
-							return new EntityReader<>(entry.getValue().<T>getMapping(),
-									persistenceContext.getConnectionProvider(),
-									persistenceContext.getDialect());
-						});
-				aggregateReader = new TablePerClassPolymorphismReader<C, I, T>(reader,
-						map,
+				
+				Set<EntityMapping<C, I, T>> subEntitiesMappings = Iterables.collect(tablePerClassPolymorphismWriter.getSubEntitiesPersisters().entrySet(), entry -> entry.getValue().getMapping(), HashSet::new);
+				Map<Class<? extends C>, EntityReader<? extends C, I, ?>> subReaderPerEntityType = Iterables.map(subEntitiesMappings, EntityMapping::getClassToPersist, mapping -> new EntityReader<>(mapping,
+						persistenceContext.getConnectionProvider(),
+						persistenceContext.getDialect()));
+				aggregateReader = new TablePerClassPolymorphismReader<>(reader,
+						subReaderPerEntityType,
 						persistenceContext.getConnectionProvider(),
 						persistenceContext.getDialect());
 			} else {

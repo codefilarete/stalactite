@@ -58,7 +58,7 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 	
 	protected final EntityJoinTree<C, I> mainEntityJoinTree;
 	protected final ConfiguredEntityReader<C, I, T> mainReader;
-	protected final Map<Class<C>, ConfiguredEntityReader<C, I, ?>> persisterPerSubclass;
+	protected final Map<Class<? extends C>, ConfiguredEntityReader<? extends C, I, ?>> persisterPerSubclass;
 	protected final ConnectionProvider connectionProvider;
 	protected final Dialect dialect;
 	protected final boolean hasSubPolymorphicPersister;
@@ -68,7 +68,7 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 	
 	protected AbstractPolymorphicEntityFinder(
 			ConfiguredRelationalPersister<C, I, T> mainPersister,
-			Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<? extends C, I, ?>> persisterPerSubclass,
+			Map<Class<? extends C>, ? extends ConfiguredRelationalPersister<? extends C, I, ?>> persisterPerSubclass,
 			ConnectionProvider connectionProvider,
 			Dialect dialect) {
 		this(mainPersister.getEntityJoinTree(), mainPersister, persisterPerSubclass, connectionProvider, dialect);
@@ -77,12 +77,12 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 	protected AbstractPolymorphicEntityFinder(
 			EntityJoinTree<C, I> mainEntityJoinTree,
 			ConfiguredEntityReader<C, I, T> mainReader,
-			Map<? extends Class<C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> persisterPerSubclass,
+			Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> persisterPerSubclass,
 			ConnectionProvider connectionProvider,
 			Dialect dialect) {
 		this.mainEntityJoinTree = mainEntityJoinTree;
 		this.mainReader = mainReader;
-		this.persisterPerSubclass = (Map<Class<C>, ConfiguredEntityReader<C, I, ?>>) persisterPerSubclass;
+		this.persisterPerSubclass = (Map<Class<? extends C>, ConfiguredEntityReader<? extends C, I, ?>>) persisterPerSubclass;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
 		this.hasSubPolymorphicPersister = Iterables.find(persisterPerSubclass.values(), subPersister -> subPersister instanceof AbstractPolymorphismPersister) != null;

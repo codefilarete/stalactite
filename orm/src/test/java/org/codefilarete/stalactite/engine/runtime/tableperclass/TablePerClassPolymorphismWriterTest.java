@@ -95,11 +95,9 @@ class TablePerClassPolymorphismWriterTest {
 		
 		connectionProvider.giveConnection().rollback();
 		
-		// TODO : implement select
 		assertThat(persister.select(dummyTruck.getId())).isEqualTo(dummyTruckModified);
 		assertThat(persister.select(dummyCar.getId())).isEqualTo(dummyCarModified);
 		assertThat(new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruck.getId())))).isEqualTo(Arrays.asSet(dummyCarModified,
 				dummyTruckModified));
 	}
-	
 }
