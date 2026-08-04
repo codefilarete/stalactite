@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.engine.EntityReadExecutor;
 import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListener;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
@@ -28,10 +27,7 @@ import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRo
 import org.codefilarete.stalactite.engine.runtime.load.TablePerClassRootJoinNode;
 import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
-import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.codefilarete.stalactite.mapping.IdMapping;
-import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.Operators;
@@ -48,12 +44,10 @@ import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.query.model.Where;
-import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.stalactite.sql.result.ColumnedRowIterator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
@@ -61,7 +55,6 @@ import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.VisibleForTesting;
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
@@ -213,23 +206,6 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 			// we add the joins of the sub-persister to the whole graph to make it load its relations
 			subPersister.getEntityJoinTree().projectTo(entityJoinTree, mergeJoinName);
 		});
-	}
-	
-	public Set<C> select(Iterable<I> ids) {
-		LOGGER.debug("selecting entities {}", ids);
-		// Note that executor emits select listener events
-		IdMapping<C, I> idMapping = mainReader.getMapping().getIdMapping();
-		AccessorWrapperIdAccessor<C, I> idAccessor = (AccessorWrapperIdAccessor<C, I>) idMapping.getIdAccessor();
-		if (idMapping.getIdentifierAssembler() instanceof ComposedIdentifierAssembler) {
-			// && dialect.supportTupleIn
-			Map<? extends Column<?, ?>, ?> columnValues = ((ComposedIdentifierAssembler<I, ?>) idMapping.getIdentifierAssembler()).getColumnValues(ids);
-			TupleIn tupleIn = TupleIn.transformBeanColumnValuesToTupleInValues((int) Iterables.size(ids), columnValues);
-			EntityQueryCriteriaSupport<C, I> newCriteriaSupport = newCriteriaSupport();
-			newCriteriaSupport.getEntityCriteriaSupport().getCriteria().and(tupleIn);
-			return newCriteriaSupport.wrapIntoExecutable().execute(Accumulators.toSet());
-		} else {
-			return newCriteriaSupport().wrapIntoExecutable().and(new AccessorChain<>(idAccessor.getIdAccessor()), Operators.in(ids)).execute(Accumulators.toSet());
-		}
 	}
 	
 	@Override

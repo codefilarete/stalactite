@@ -34,6 +34,7 @@ import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToOneRela
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
+import org.codefilarete.stalactite.engine.configurer.model.SingleTablePolymorphism;
 import org.codefilarete.stalactite.engine.configurer.model.TablePerClassPolymorphism;
 import org.codefilarete.stalactite.engine.configurer.resolver.elementcollection.AggregateElementCollectionAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.elementcollection.ElementCollectionResolver;
@@ -49,6 +50,7 @@ import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.OneToMan
 import org.codefilarete.stalactite.engine.configurer.resolver.onetoone.AggregateOneToOneAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetoone.OneToOneResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.jointable.JoinTableResolver;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.singletable.SingleTableResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.tableperclass.TablePerClassResolver;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
@@ -56,6 +58,8 @@ import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.jointable.JoinTablePolymorphismReader;
 import org.codefilarete.stalactite.engine.runtime.jointable.JoinTablePolymorphismWriter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.engine.runtime.singletable.SingleTablePolymorphismReader;
+import org.codefilarete.stalactite.engine.runtime.singletable.SingleTablePolymorphismWriter;
 import org.codefilarete.stalactite.engine.runtime.tableperclass.TablePerClassPolymorphismReader;
 import org.codefilarete.stalactite.engine.runtime.tableperclass.TablePerClassPolymorphismWriter;
 import org.codefilarete.stalactite.mapping.EntityMapping;
@@ -266,6 +270,24 @@ public class AggregateResolver {
 							persistenceContext.getDialect()));
 					aggregateReader = new JoinTablePolymorphismReader<>(reader,
 							subReaderPerEntityType,
+							persistenceContext.getConnectionProvider(),
+							persistenceContext.getDialect());
+				} else if (polymorphicEntity.getPolymorphism() instanceof SingleTablePolymorphism) {
+					SingleTableResolver singleTableResolver = new SingleTableResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
+					SingleTablePolymorphismWriter<C, I, T, C, ?> singleTablePolymorphismWriter = singleTableResolver.resolve(polymorphicEntity, rootPersisterCollector);
+					rootWriter = singleTablePolymorphismWriter;
+					EntityReader<C, I, T> reader = new EntityReader<>(rootWriter.<T>getMapping(),
+							persistenceContext.getConnectionProvider(),
+							persistenceContext.getDialect());
+					
+					Set<EntityMapping<C, I, T>> subEntitiesMappings = Iterables.collect(singleTablePolymorphismWriter.getSubEntitiesPersisters().entrySet(), entry -> entry.getValue().getMapping(), HashSet::new);
+					Map<Class<? extends C>, EntityReader<? extends C, I, ?>> subReaderPerEntityType = Iterables.map(subEntitiesMappings, EntityMapping::getClassToPersist, mapping -> new EntityReader<>(mapping,
+							persistenceContext.getConnectionProvider(),
+							persistenceContext.getDialect()));
+					SingleTablePolymorphism<C, I, ?, T> polymorphism = (SingleTablePolymorphism<C, I, ?, T>) polymorphicEntity.getPolymorphism();
+					aggregateReader = new SingleTablePolymorphismReader<>(reader,
+							subReaderPerEntityType,
+							polymorphism,
 							persistenceContext.getConnectionProvider(),
 							persistenceContext.getDialect());
 				}

@@ -1,8 +1,8 @@
 package org.codefilarete.stalactite.dsl;
 
-import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nullable;
 
 import org.codefilarete.stalactite.dsl.subentity.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.subentity.SubEntityMappingConfigurationProvider;
@@ -325,7 +325,7 @@ public interface PolymorphismPolicy<C> {
 			return discriminatorColumn;
 		}
 		
-		public Class<D> getDiscrimintorType() {
+		public Class<D> getDiscriminatorType() {
 			return discriminatorType;
 		}
 		

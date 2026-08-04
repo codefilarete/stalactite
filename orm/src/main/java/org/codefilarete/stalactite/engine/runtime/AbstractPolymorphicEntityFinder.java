@@ -11,11 +11,15 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.ExecutableEntityQueryCriteria;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.engine.runtime.query.EntityCriteriaSupport;
+import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
+import org.codefilarete.stalactite.mapping.IdMapping;
+import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.EntityFinder;
 import org.codefilarete.stalactite.query.Operators;
@@ -28,10 +32,13 @@ import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Where;
+import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulator;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.stalactite.sql.result.ColumnedRowIterator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
@@ -39,6 +46,7 @@ import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,6 +101,32 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 	@Override
 	public void setOperationListener(SQLOperationListener<?> operationListener) {
 		this.operationListener = operationListener;
+	}
+	
+	public Set<C> select(Iterable<I> ids) {
+		// TODO : chunk the load by dialect.getInOperatorMaxSize() as done in MapEntryLoader and ElementCollectionLoader
+		LOGGER.debug("selecting entities {}", ids);
+		// Note that executor emits select listener events
+		IdMapping<C, I> idMapping = mainReader.getMapping().getIdMapping();
+		AccessorWrapperIdAccessor<C, I> idAccessor = (AccessorWrapperIdAccessor<C, I>) idMapping.getIdAccessor();
+		ExecutableEntityQueryCriteria<C, ?> executableEntityQueryCriteria;
+		if (idMapping.getIdentifierAssembler() instanceof ComposedIdentifierAssembler) {
+			if (!dialect.supportsTupleCondition()) {
+				throw new UnsupportedOperationException("Tuple condition is not supported by the database dialect" +
+						" whereas it is required for select :"
+						+ Reflections.toString(idMapping.getIdentifierAssembler().getClass()));
+			}
+			Map<? extends Column<?, ?>, ?> columnValues = ((ComposedIdentifierAssembler<I, ?>) idMapping.getIdentifierAssembler()).getColumnValues(ids);
+			TupleIn tupleIn = TupleIn.transformBeanColumnValuesToTupleInValues(Iterables.size(ids), columnValues);
+			EntityQueryCriteriaSupport<C, I> newCriteriaSupport = newCriteriaSupport();
+			newCriteriaSupport.getEntityCriteriaSupport().getCriteria().and(tupleIn);
+			executableEntityQueryCriteria = newCriteriaSupport.wrapIntoExecutable();
+		} else {
+			executableEntityQueryCriteria = newCriteriaSupport().wrapIntoExecutable()
+					.and(new AccessorChain<>(idAccessor.getIdAccessor()), Operators.in(ids));
+		}
+		return executableEntityQueryCriteria
+				.execute(Accumulators.toSet());
 	}
 	
 	@Override

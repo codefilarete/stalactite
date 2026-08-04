@@ -1,9 +1,10 @@
-package org.codefilarete.stalactite.engine.runtime.tableperclass;
+package org.codefilarete.stalactite.engine.runtime.singletable;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import org.codefilarete.stalactite.engine.configurer.model.SingleTablePolymorphism;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.ReadListenerWrapper;
@@ -15,21 +16,26 @@ import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.collection.Iterables;
 
-public class TablePerClassPolymorphismReader<C, I, T extends Table<T>> extends ReadListenerWrapper<C, I> implements ConfiguredEntityReader<C, I, T> {
+public class SingleTablePolymorphismReader<C, I, T extends Table<T>, DTYPE> extends ReadListenerWrapper<C, I> implements ConfiguredEntityReader<C, I, T> {
 	
-	private final TablePerClassPolymorphismEntityFinder<C, I, T> entityFinder;
+	private final SingleTablePolymorphismEntityFinder<C, I, T, DTYPE> entityFinder;
 	private final ConfiguredEntityReader<C, I, T> mainReader;
 	
-	public TablePerClassPolymorphismReader(ConfiguredEntityReader<C, I, T> mainReader,
-	                                       Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> subEntitiesPersisters,
-	                                       ConnectionProvider connectionProvider,
-	                                       Dialect dialect) {
+	public SingleTablePolymorphismReader(ConfiguredEntityReader<C, I, T> mainReader,
+	                                     Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> subEntitiesPersisters,
+	                                     SingleTablePolymorphism<C, I, DTYPE, T> polymorphism,
+										 ConnectionProvider connectionProvider,
+	                                     Dialect dialect) {
 		this.mainReader = mainReader;
-		this.entityFinder = new TablePerClassPolymorphismEntityFinder<>(
+		Map<DTYPE, Class<? extends C>> subTypePerDiscriminatorValue = Iterables.map(polymorphism.getSubEntitiesPerDiscriminator().entrySet(), Map.Entry::getKey, entry -> entry.getValue().getEntityType());
+		this.entityFinder = new SingleTablePolymorphismEntityFinder<>(
 				mainReader.getEntityJoinTree(),
 				mainReader,
 				subEntitiesPersisters,
+				polymorphism.getDiscriminatorColumn(),
+				subTypePerDiscriminatorValue::get,
 				connectionProvider,
 				dialect);
 	}

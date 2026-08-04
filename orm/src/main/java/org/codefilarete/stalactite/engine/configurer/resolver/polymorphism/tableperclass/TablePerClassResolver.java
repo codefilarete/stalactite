@@ -43,15 +43,14 @@ public class TablePerClassResolver {
 			return buildSubPersister((Entity<SUBTRGT, TRGTID, ?>) subEntity);
 		}).collect(Collectors.toSet());
 		
-		Map<Class<SUBTRGT>, EntityReadWriteExecutor<SUBTRGT, TRGTID>> map = Iterables.map(subPersisters, EntityReadWriteExecutor::getClassToPersist);
-		TablePerClassPolymorphismWriter<TRGT, TRGTID, RIGHTTABLE, SUBTRGT> result = new TablePerClassPolymorphismWriter<>(
+		Map<Class<SUBTRGT>, EntityReadWriteExecutor<SUBTRGT, TRGTID>> persisterPerSubType = Iterables.map(subPersisters, EntityReadWriteExecutor::getClassToPersist);
+		
+		return new TablePerClassPolymorphismWriter<>(
 				templateWriter,
-				map,
+				persisterPerSubType,
 				dialect,
 				connectionConfiguration
 		);
-		
-		return result;
 	}
 	
 	private <SUBENTITY, SUB_ENTITYID, SUBTABLE extends Table<SUBTABLE>>

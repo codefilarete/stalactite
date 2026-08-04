@@ -148,7 +148,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 	private Column<T, DTYPE> ensureDiscriminatorColumn() {
 		Column<T, DTYPE> result = mainPersister.<T>getMapping().getTargetTable().addColumn(
 				((SingleTablePolymorphism<C, DTYPE>) polymorphismPolicy).getDiscriminatorColumn(),
-				((SingleTablePolymorphism<C, DTYPE>) polymorphismPolicy).getDiscrimintorType());
+				((SingleTablePolymorphism<C, DTYPE>) polymorphismPolicy).getDiscriminatorType());
 		result.setNullable(false);
 		return result;
 	}

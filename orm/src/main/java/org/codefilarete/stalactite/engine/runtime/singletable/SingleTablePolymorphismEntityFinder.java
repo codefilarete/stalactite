@@ -6,9 +6,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.codefilarete.stalactite.dsl.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListener;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphicEntityFinder;
@@ -59,7 +59,7 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 	
 	private final IdentifierAssembler<I, T> identifierAssembler;
 	private final Column<T, DTYPE> discriminatorColumn;
-	private final SingleTablePolymorphism<C, DTYPE> polymorphismPolicy;
+	private final Function<DTYPE, Class<? extends C>> subEntityTypeProvider;
 	private final EntityJoinTree<C, I> singleLoadEntityJoinTree;
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	private Query query;
@@ -69,14 +69,14 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 			ConfiguredRelationalPersister<C, I, T> mainPersister,
 			Map<Class<? extends C>, ? extends ConfiguredRelationalPersister<? extends C, I, ?>> persisterPerSubclass,
 			Column<T, DTYPE> discriminatorColumn,
-			SingleTablePolymorphism<C, DTYPE> polymorphismPolicy,
+			Function<DTYPE, Class<? extends C>> subEntityTypeProvider,
 			ConnectionProvider connectionProvider,
 			Dialect dialect) {
 		this(mainPersister.getEntityJoinTree(),
 				mainPersister,
 				persisterPerSubclass,
 				discriminatorColumn,
-				polymorphismPolicy,
+				subEntityTypeProvider,
 				connectionProvider,
 				dialect);
 	}
@@ -86,13 +86,13 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 			ConfiguredEntityReader<C, I, T> mainReader,
 			Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> persisterPerSubclass,
 			Column<T, DTYPE> discriminatorColumn,
-			SingleTablePolymorphism<C, DTYPE> polymorphismPolicy,
+			Function<DTYPE, Class<? extends C>> subEntityTypeProvider,
 			ConnectionProvider connectionProvider,
 			Dialect dialect) {
 		super(mainEntityJoinTree, mainReader, persisterPerSubclass, connectionProvider, dialect);
 		this.identifierAssembler = mainReader.getMapping().getIdMapping().getIdentifierAssembler();
 		this.discriminatorColumn = discriminatorColumn;
-		this.polymorphismPolicy = polymorphismPolicy;
+		this.subEntityTypeProvider = subEntityTypeProvider;
 		this.singleLoadEntityJoinTree = buildSingleLoadEntityJoinTree(mainReader, persisterPerSubclass);
 		this.criteriaSupport = new EntityCriteriaSupport<>(singleLoadEntityJoinTree);
 		
@@ -136,7 +136,7 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 				mainPersister.getMapping(),
 				new HashSet<>(persisterPerSubclass.values()),
 				discriminatorColumn,
-				polymorphismPolicy
+				subEntityTypeProvider
 		);
 		// we project main persister tree to keep its relations
 		mainPersister.getEntityJoinTree().projectTo(result, ROOT_JOIN_NAME);
@@ -209,7 +209,7 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 			rowIterator.forEachRemaining(row -> {
 				DTYPE dtype = (DTYPE) row.get(discriminatorColumn);
 				I id = identifierAssembler.assemble(row);
-				result.computeIfAbsent(polymorphismPolicy.getClass(dtype), k -> new KeepOrderSet<>()).add(id);
+				result.computeIfAbsent(subEntityTypeProvider.apply(dtype), k -> new KeepOrderSet<>()).add(id);
 			});
 			return result;
 		} catch (RuntimeException e) {
@@ -228,13 +228,13 @@ public class SingleTablePolymorphismEntityFinder<C, I, T extends Table<T>, DTYPE
 		public <T extends Table<T>> SingleLoadEntityJoinTree(EntityMapping<C, I, T> mainMapping,
 															 Set<? extends ConfiguredEntityReader<? extends C, I, ?>> subPersisters,
 															 Column<T, DTYPE> discriminatorColumn,
-															 SingleTablePolymorphism<C, DTYPE> polymorphismPolicy) {
+															 Function<DTYPE, Class<? extends C>> subEntityTypeProvider) {
 			super(self -> new SingleTableRootJoinNode<>(
 					self,
 					mainMapping,
 					subPersisters,
 					discriminatorColumn,
-					polymorphismPolicy)
+					subEntityTypeProvider)
 			);
 		}
 	}

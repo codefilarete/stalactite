@@ -8,7 +8,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
-import org.codefilarete.stalactite.dsl.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.engine.EntityReadExecutor;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
@@ -37,17 +36,17 @@ public class SingleTableRootJoinNode<C, I, T extends Table<T>, DTYPE> extends Jo
 	private final Set<? extends ConfiguredEntityReader<? extends C, I, ?>> subPersisters;
 	private final Set<Column<T, ?>> allColumnsInHierarchy;
 	private final Column<T, DTYPE> discriminatorColumn;
-	private final SingleTablePolymorphism<C, DTYPE> polymorphismPolicy;
+	private final Function<DTYPE, Class<? extends C>> subEntityTypeProvider;
 	
 	public SingleTableRootJoinNode(EntityJoinTree<C, I> tree,
 								   EntityMapping<C, I, T> mainMapping,
 								   Set<? extends ConfiguredEntityReader<? extends C, I, ?>> subPersisters,
 								   Column<T, DTYPE> discriminatorColumn,
-								   SingleTablePolymorphism<C, DTYPE> polymorphismPolicy) {
+								   Function<DTYPE, Class<? extends C>> subEntityTypeProvider) {
 		super(tree, new EntityMappingAdapter<>(mainMapping), mainMapping.getTargetTable());
 		this.subPersisters = subPersisters;
 		this.discriminatorColumn = discriminatorColumn;
-		this.polymorphismPolicy = polymorphismPolicy;
+		this.subEntityTypeProvider = subEntityTypeProvider;
 		Set<T> subTables = Iterables.collect(subPersisters, EntityReadExecutor::getMainTable, HashSet::new);
 		subTables.add(mainMapping.getTargetTable());
 		this.allColumnsInHierarchy = subTables
@@ -70,7 +69,7 @@ public class SingleTableRootJoinNode<C, I, T extends Table<T>, DTYPE> extends Jo
 				? null
 				: (rootEntity, row) -> getConsumptionListener().onNodeConsumption(rootEntity, decoderProvider.get());
 		return new SingleTablePolymorphicJoinRootRowConsumer<>(joinNode, subEntityConsumer,
-				rowConsumptionListener, polymorphismPolicy, row -> decoderProvider.get().get(discriminatorColumn));
+				rowConsumptionListener, subEntityTypeProvider, row -> decoderProvider.get().get(discriminatorColumn));
 	}
 	
 	private <D extends C> SubPersisterConsumer<D, I> buildSubPersisterConsumer(ConfiguredEntityReader<D, I, ?> subPersister) {
@@ -107,18 +106,18 @@ public class SingleTableRootJoinNode<C, I, T extends Table<T>, DTYPE> extends Jo
 		@Nullable
 		private final BiConsumer<C, ColumnedRow> consumptionListener;
 		
-		private final SingleTablePolymorphism<C, DTYPE> polymorphismPolicy;
+		private final Function<DTYPE, Class<D>> subEntityTypeProvider;
 		private final Function<ColumnedRow, DTYPE> discriminatorValueReader;
 		
 		private SingleTablePolymorphicJoinRootRowConsumer(JoinNode<C, ?> node,
 														  Set<SubPersisterConsumer<? extends C, I>> subConsumers,
 														  @Nullable BiConsumer<C, ColumnedRow> consumptionListener,
-														  SingleTablePolymorphism<C, DTYPE> polymorphismPolicy,
+														  Function<DTYPE, Class<? extends C>> subEntityTypeProvider,
 														  Function<ColumnedRow, DTYPE> discriminatorValueReader) {
 			this.subConsumers = (Set) subConsumers;
 			this.joinNode = node;
 			this.consumptionListener = consumptionListener;
-			this.polymorphismPolicy = polymorphismPolicy;
+			this.subEntityTypeProvider = (Function<DTYPE, Class<D>>) (Function) subEntityTypeProvider;
 			this.discriminatorValueReader = discriminatorValueReader;
 		}
 
@@ -148,7 +147,7 @@ public class SingleTableRootJoinNode<C, I, T extends Table<T>, DTYPE> extends Jo
 		
 		@Nullable
 		public Duo<I, SubPersisterConsumer<D, I>> findSubInflater(ColumnedRow row) {
-			Class<D> subEntityClass = (Class<D>) polymorphismPolicy.getClass(discriminatorValueReader.apply(row));
+			Class<D> subEntityClass = subEntityTypeProvider.apply(discriminatorValueReader.apply(row));
 			Duo<SubPersisterConsumer<D, I>, Class<D>> subClassRowConsumer = Iterables.find(subConsumers, subConsumer -> subConsumer.subEntityType, subEntityClass::equals);
 			SubPersisterConsumer<D, I> subIdentifierConsumer = subClassRowConsumer.getLeft();
 			return new Duo<>(subIdentifierConsumer.identifierAssembler.apply(row), subIdentifierConsumer);

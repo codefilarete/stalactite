@@ -78,7 +78,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 				new SingleTablePolymorphismEntityFinder<>(mainPersister,
 						subEntitiesPersisters,
 						discriminatorColumn,
-						polymorphismPolicy,
+						polymorphismPolicy::getClass,
 						connectionProvider,
 						dialect));
 		this.discriminatorColumn = discriminatorColumn;

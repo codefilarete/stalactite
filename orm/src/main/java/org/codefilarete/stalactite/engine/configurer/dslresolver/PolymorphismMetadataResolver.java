@@ -49,7 +49,7 @@ public class PolymorphismMetadataResolver {
 	                             SingleTablePolymorphism<C, DTYPE> policy) {
 		// The discriminator column lives on the entity's own table
 		String discriminatorColumnName = policy.getDiscriminatorColumn();
-		Column<T, DTYPE> discriminatorColumn = configuration.getTable().addColumn(discriminatorColumnName, policy.getDiscrimintorType());
+		Column<T, DTYPE> discriminatorColumn = configuration.getTable().addColumn(discriminatorColumnName, policy.getDiscriminatorType());
 		
 		org.codefilarete.stalactite.engine.configurer.model.SingleTablePolymorphism<D, I, DTYPE, T> result =
 				new org.codefilarete.stalactite.engine.configurer.model.SingleTablePolymorphism<>(discriminatorColumn);
