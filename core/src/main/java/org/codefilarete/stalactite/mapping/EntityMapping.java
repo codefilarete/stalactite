@@ -30,6 +30,15 @@ public interface EntityMapping<C, I, T extends Table<T>> extends Mapping<C, T>, 
 	
 	IdMapping<C, I> getIdMapping();
 	
+	/**
+	 * Shortcut to {@code getIdMapping().getIdentifierType()}.
+	 *
+	 * @return the identifier type
+	 */
+	default Class<I> getIdentifierType() {
+		return getIdMapping().getIdentifierType();
+	}
+	
 	Set<Column<T, ?>> getInsertableColumns();
 	
 	Set<Column<T, ?>> getSelectableColumns();

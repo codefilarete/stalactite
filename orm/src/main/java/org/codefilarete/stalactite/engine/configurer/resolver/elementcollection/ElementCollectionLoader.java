@@ -116,7 +116,7 @@ public class ElementCollectionLoader<SRC, SRCID, TRGT, LEFTTABLE extends Table<L
 		if (sourceIdMapping.getIdentifierAssembler() instanceof ComposedIdentifierAssembler) {
 			if (!dialect.supportsTupleCondition()) {
 				throw new UnsupportedOperationException("Tuple condition is not supported by the database dialect but composite identifier requires it for 2-phases loading :"
-						+ Reflections.toString(sourceIdMapping.getIdentifierInsertionManager().getIdentifierType()));
+						+ Reflections.toString(sourceIdMapping.getIdentifierType()));
 			}
 			Map<Column<LEFTTABLE, ?>, ?> identifierValues = ((ComposedIdentifierAssembler<SRCID, LEFTTABLE>) sourceIdMapping.getIdentifierAssembler()).getColumnValues(chunk);
 			Map<Column<LEFTTABLE, ?>, Column<COLLECTIONTABLE, ?>> typedReverseForeignKey = (Map) reverseForeignKey;

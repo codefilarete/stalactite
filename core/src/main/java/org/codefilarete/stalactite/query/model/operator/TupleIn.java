@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
  *
  * @author Guillaume Mary
  */
-public class TupleIn extends ConditionalOperator<Object[], List<Object[]>> {
+public class TupleIn extends ConditionalOperator<Object[], Iterable<Object[]>> {
 	
 	/**
 	 * Constructs a {@link TupleIn} object from the given map of columns that represents the properties values of a bean.
@@ -52,14 +52,14 @@ public class TupleIn extends ConditionalOperator<Object[], List<Object[]>> {
 	
 	private final Column[] columns;
 	
-	private Variable<List<Object[]>> values;
+	private Variable<Iterable<Object[]>> values;
 	
-	public TupleIn(Column[] columns, Variable<List<Object[]>> values) {
+	public TupleIn(Column[] columns, Variable<? extends Iterable<Object[]>> values) {
 		this.columns = columns;
-		this.values = values;
+		this.values = (Variable<Iterable<Object[]>>) values;
 	}
 	
-	public TupleIn(Column[] columns, List<Object[]> values) {
+	public TupleIn(Column[] columns, Iterable<Object[]> values) {
 		this(columns, new ValuedVariable<>(values));
 	}
 	
@@ -67,12 +67,12 @@ public class TupleIn extends ConditionalOperator<Object[], List<Object[]>> {
 		return columns;
 	}
 	
-	public Variable<List<Object[]>> getValue() {
+	public Variable<Iterable<Object[]>> getValue() {
 		return values;
 	}
 	
 	@Override
-	public void setValue(Variable<List<Object[]>> value) {
+	public void setValue(Variable<Iterable<Object[]>> value) {
 		this.values = value;
 	}
 	

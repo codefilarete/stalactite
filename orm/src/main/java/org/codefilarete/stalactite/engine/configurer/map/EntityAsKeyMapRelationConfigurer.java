@@ -88,7 +88,7 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 		);
 		MapRelation<SRC, KID, V, MM> result = new MapRelation<>(
 				propertyAccessor,
-				keyEntityPersister.getMapping().getIdMapping().getIdentifierInsertionManager().getIdentifierType(),
+				keyEntityPersister.getMapping().getIdentifierType(),
 				mapRelation.getValueType());
 		result.setTargetTable(mapRelation.getTargetTable());
 		result.setTargetTableName(mapRelation.getTargetTableName());

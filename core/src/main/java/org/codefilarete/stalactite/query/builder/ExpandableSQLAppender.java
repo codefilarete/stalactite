@@ -20,6 +20,7 @@ import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.SQLParameterParser.ParsedSQL;
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.sql.statement.binder.CompositeTypeBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.tool.Reflections;
@@ -52,7 +53,7 @@ public class ExpandableSQLAppender implements SQLAppender {
 	/**
 	 * Collected {@link ParameterBinder} per variable name
 	 */
-	private final Map<String, ParameterBinder> parameterBinders;
+	private final Map<String, PreparedStatementWriter> parameterBinders;
 	/**
 	 * Collected values per variable name
 	 */
@@ -83,7 +84,7 @@ public class ExpandableSQLAppender implements SQLAppender {
 	private ExpandableSQLAppender(
 			DMLNameProvider dmlNameProvider,
 			ColumnBinderRegistry parameterBinderRegistry,
-			Map<String, ParameterBinder> parameterBinders,
+			Map<String, PreparedStatementWriter> parameterBinders,
 			Map<String, Object> values,
 			MutableInt paramCounter) {
 		this.dmlNameProvider = dmlNameProvider;
@@ -305,7 +306,15 @@ public class ExpandableSQLAppender implements SQLAppender {
 		
 		new ParsedSQLHelper().add(this);
 		
-		ExpandableSQL expandableSQL = new ExpandableSQL(parsedSQL, valuesSizes);
+		Map<String, Integer> componentTypeSizes = new HashMap<>();
+		mergedValues.keySet().forEach(paramName -> {
+			PreparedStatementWriter parameterBinder = parameterBinders.get(paramName);
+			if (parameterBinder instanceof CompositeTypeBinder) {
+				componentTypeSizes.put(paramName, ((CompositeTypeBinder<?>) parameterBinder).getComponentTypeSize());
+			}
+		});
+		
+		ExpandableSQL expandableSQL = new ExpandableSQL(parsedSQL, valuesSizes, componentTypeSizes);
 		String placeholderSql = expandableSQL.getPreparedSQL();
 		
 		// Computing parameter binders for each "?" index

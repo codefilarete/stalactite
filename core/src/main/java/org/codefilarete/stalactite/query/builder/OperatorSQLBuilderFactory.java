@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.query.builder;
 
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
 import javax.annotation.Nullable;
 
 import org.codefilarete.stalactite.query.api.Fromable;
@@ -148,9 +147,9 @@ public class OperatorSQLBuilderFactory {
 			sql.cat(")");
 			
 			sql.cat(" in (");
-			Variable<List<Object[]>> value = in.getValue();
+			Variable<Iterable<Object[]>> value = in.getValue();
 			if (value instanceof ValuedVariable<?>) {
-				List<Object[]> values = ((ValuedVariable<List<Object[]>>) value).getValue();
+				Iterable<Object[]> values = ((ValuedVariable<Iterable<Object[]>>) value).getValue();
 				if (values == null) {
 					for (int i = 0, columnCount = columns.length; i < columnCount; i++) {
 						sql.catValue(columns[i], null).catIf(i < columnCount - 1, ", ");
@@ -166,6 +165,8 @@ public class OperatorSQLBuilderFactory {
 						sql.cat(")").catIf(valuesIterator.hasNext(), ", ");
 					}
 				}
+			} else {
+				sql.catValue(value);
 			}
 			sql.cat(")");
 		}

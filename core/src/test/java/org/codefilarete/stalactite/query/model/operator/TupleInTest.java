@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.query.model.operator;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,10 +39,11 @@ class TupleInTest {
 		
 		TupleIn tupleIn = TupleIn.transformBeanColumnValuesToTupleInValues(4, columnValues);
 		assertThat(tupleIn.getColumns()).containsExactly(firstNameColumn, lastNameColumn, ageColumn);
-		assertThat(((ValuedVariable<List<Object[]>>) tupleIn.getValue()).getValue().get(0)).containsExactly("John", "Doe", 40);
-		assertThat(((ValuedVariable<List<Object[]>>) tupleIn.getValue()).getValue().get(1)).containsExactly("Jane", "Doe", 41);
-		assertThat(((ValuedVariable<List<Object[]>>) tupleIn.getValue()).getValue().get(2)).containsExactly("Paul", "Smith", 35);
-		assertThat(((ValuedVariable<List<Object[]>>) tupleIn.getValue()).getValue().get(3)).containsExactly("John", "Smith", 36);
+		Iterator<Object[]> tupleValuesIterator = ((ValuedVariable<Iterable<Object[]>>) tupleIn.getValue()).getValue().iterator();
+		assertThat(tupleValuesIterator.next()).containsExactly("John", "Doe", 40);
+		assertThat(tupleValuesIterator.next()).containsExactly("Jane", "Doe", 41);
+		assertThat(tupleValuesIterator.next()).containsExactly("Paul", "Smith", 35);
+		assertThat(tupleValuesIterator.next()).containsExactly("John", "Smith", 36);
 		
 	}
 	

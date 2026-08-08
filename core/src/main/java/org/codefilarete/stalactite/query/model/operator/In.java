@@ -17,8 +17,8 @@ public class In<O> extends ConditionalOperator<O, Iterable<O>> {
 	public In() {
 	}
 	
-	public In(Variable<Iterable<O>> value) {
-		this.value = value;
+	public In(Variable<? extends Iterable<O>> value) {
+		this.value = (Variable<Iterable<O>>) value;
 	}
 	
 	public In(Iterable<O> value) {

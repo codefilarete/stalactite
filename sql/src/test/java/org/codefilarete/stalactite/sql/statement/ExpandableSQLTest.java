@@ -22,7 +22,7 @@ public class ExpandableSQLTest {
 	private static Parameter paramB = new Parameter("B");
 	private static Parameter paramC = new Parameter("C");
 	
-	public static Object[][] testExpandableParameters_data() {
+	public static Object[][] getExpandableParameters_data() {
 		return new Object[][] {
 				{ Arrays.asList("select a from Toto where b = ", paramB, " and c = ", paramC),
 						Maps.asMap("B", 18).add("C", 23),
@@ -54,8 +54,8 @@ public class ExpandableSQLTest {
 	}
 	
 	@ParameterizedTest
-	@MethodSource("testExpandableParameters_data")
-	public void testExpandableParameters(List<Object> sqlSnippets, Map<String, Object> values,
+	@MethodSource("getExpandableParameters_data")
+	public void getExpandableParameters(List<Object> sqlSnippets, Map<String, Object> values,
 										 String expectedPreparedSql, Map<String, Iterable<Integer>> expectedIndexedValues) {
 		Map<String, Parameter> params = new HashMap<>();
 		for (Object sqlSnippet : sqlSnippets) {

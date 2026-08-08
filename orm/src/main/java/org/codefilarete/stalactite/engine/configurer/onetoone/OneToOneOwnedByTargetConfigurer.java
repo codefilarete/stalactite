@@ -82,7 +82,7 @@ public class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE
 		if (reverseColumn == null) {
 			String reverseColumnName = oneToOneRelation.getReverseColumnName();
 			if (reverseColumnName != null) {
-				reverseColumn = targetMappingStrategy.getTargetTable().addColumn(reverseColumnName, mappingStrategy.getIdMapping().getIdentifierInsertionManager().getIdentifierType());
+				reverseColumn = targetMappingStrategy.getTargetTable().addColumn(reverseColumnName, mappingStrategy.getIdentifierType());
 			}
 		}
 		

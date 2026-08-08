@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.sql.DataSource;
 
 import org.codefilarete.stalactite.dsl.FluentMappings;
@@ -22,6 +23,8 @@ import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.engine.model.compositekey.House;
+import org.codefilarete.stalactite.engine.model.compositekey.House.HouseId;
+import org.codefilarete.stalactite.engine.model.compositekey.Person.PersonId;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
@@ -145,18 +148,28 @@ class MapResolverTest {
 		
 		new DDLDeployer(persistenceContext).deployDDL();
 		
-		Person person = new Person(new PersistableIdentifier<>(1L));
-		person.setName("john");
-		Map<String, String> phoneNumbers = new LinkedHashMap<>();
-		phoneNumbers.put("home", "01 11 11 11 11");
-		phoneNumbers.put("mobile", "03 33 33 33 33");
-		person.setPhoneNumbers(phoneNumbers);
-		personPersister.insert(person);
+		Person person1 = new Person(new PersistableIdentifier<>(1L));
+		person1.setName("john");
+		Map<String, String> phoneNumbers1 = new LinkedHashMap<>();
+		phoneNumbers1.put("home", "01 11 11 11 11");
+		phoneNumbers1.put("mobile", "02 22 22 22 22");
+		person1.setPhoneNumbers(phoneNumbers1);
 		
-		Person loaded = personPersister.select(person.getId());
-		assertThat(loaded.getPhoneNumbers())
-				.containsEntry("home", "01 11 11 11 11")
-				.containsEntry("mobile", "03 33 33 33 33");
+		Person person2 = new Person(new PersistableIdentifier<>(2L));
+		person2.setName("john");
+		Map<String, String> phoneNumbers2 = new LinkedHashMap<>();
+		phoneNumbers2.put("home", "03 33 33 33 33");
+		phoneNumbers2.put("mobile", "04 44 44 44 44");
+		person2.setPhoneNumbers(phoneNumbers2);
+		
+		personPersister.insert(person1, person2);
+		
+		Set<Person> loaded = personPersister.select(person1.getId(), person2.getId());
+		Map<String, String> phoneNumbers = loaded.stream().flatMap(person -> person.getPhoneNumbers().entrySet().stream())
+				.collect(Collectors.groupingBy(Map.Entry::getKey, LinkedHashMap::new, Collectors.mapping(Map.Entry::getValue, Collectors.joining(", "))));
+		assertThat(phoneNumbers)
+				.containsEntry("home", "01 11 11 11 11, 03 33 33 33 33")
+				.containsEntry("mobile", "02 22 22 22 22, 04 44 44 44 44");
 	}
 	
 	@Test
@@ -694,40 +707,58 @@ class MapResolverTest {
 	
 	@Test
 	void select_entityAsKeyMap_complexType_fetchSeparately() {
-		Set<org.codefilarete.stalactite.engine.model.compositekey.Person.PersonId> persistedPersons = new HashSet<>();
-		FluentEntityMappingBuilder<org.codefilarete.stalactite.engine.model.compositekey.Person, org.codefilarete.stalactite.engine.model.compositekey.Person.PersonId> personBuilder = entityBuilder(org.codefilarete.stalactite.engine.model.compositekey.Person.class, org.codefilarete.stalactite.engine.model.compositekey.Person.PersonId.class)
-				.mapKey(org.codefilarete.stalactite.engine.model.compositekey.Person::getId, compositeKeyBuilder(org.codefilarete.stalactite.engine.model.compositekey.Person.PersonId.class)
-						.map(org.codefilarete.stalactite.engine.model.compositekey.Person.PersonId::getFirstName)
-						.map(org.codefilarete.stalactite.engine.model.compositekey.Person.PersonId::getLastName)
-						.map(org.codefilarete.stalactite.engine.model.compositekey.Person.PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
+		Set<PersonId> persistedPersons = new HashSet<>();
+		FluentEntityMappingBuilder<org.codefilarete.stalactite.engine.model.compositekey.Person, PersonId> personBuilder = entityBuilder(org.codefilarete.stalactite.engine.model.compositekey.Person.class, PersonId.class)
+				.mapKey(org.codefilarete.stalactite.engine.model.compositekey.Person::getId, compositeKeyBuilder(PersonId.class)
+						.map(PersonId::getFirstName)
+						.map(PersonId::getLastName)
+						.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
 				.mapMap(org.codefilarete.stalactite.engine.model.compositekey.Person::getMapPropertyMadeOfCompositeIdEntityAsKey, House.class, String.class)
-				.withKeyMapping(entityBuilder(House.class, House.HouseId.class)
-						.mapKey(House::getHouseId, compositeKeyBuilder(House.HouseId.class)
-								.map(House.HouseId::getNumber)
-								.map(House.HouseId::getStreet)
-								.map(House.HouseId::getZipCode)
-								.map(House.HouseId::getCity)))
+				.withKeyMapping(entityBuilder(House.class, HouseId.class)
+						.mapKey(House::getHouseId, compositeKeyBuilder(HouseId.class)
+								.map(HouseId::getNumber)
+								.map(HouseId::getStreet)
+								.map(HouseId::getZipCode)
+								.map(HouseId::getCity)))
 				.fetchSeparately();
 		
 		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
-		EntityPersister<org.codefilarete.stalactite.engine.model.compositekey.Person, org.codefilarete.stalactite.engine.model.compositekey.Person.PersonId> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+		EntityPersister<org.codefilarete.stalactite.engine.model.compositekey.Person, PersonId> personPersister = testInstance.resolve(personBuilder.getConfiguration());
 		
 		new DDLDeployer(persistenceContext).deployDDL();
 		
-		org.codefilarete.stalactite.engine.model.compositekey.Person person = new org.codefilarete.stalactite.engine.model.compositekey.Person(new org.codefilarete.stalactite.engine.model.compositekey.Person.PersonId("John", "Do", "nowhere"));
-		person.setMapPropertyMadeOfCompositeIdEntityAsKey(new LinkedHashMap<>());
-		person.getMapPropertyMadeOfCompositeIdEntityAsKey().put(new House(new House.HouseId(42, "Stalactite street", "888", "CodeFilarete City")), "home");
-		person.getMapPropertyMadeOfCompositeIdEntityAsKey().put(new House(new House.HouseId(43, "Another street", "999", "Another City")), "work");
-		personPersister.insert(person);
+		org.codefilarete.stalactite.engine.model.compositekey.Person person1 = new org.codefilarete.stalactite.engine.model.compositekey.Person(new PersonId("John", "Do", "nowhere"));
+		person1.setMapPropertyMadeOfCompositeIdEntityAsKey(new LinkedHashMap<>());
+		person1.getMapPropertyMadeOfCompositeIdEntityAsKey().put(new House(new HouseId(42, "Stalactite street", "142", "CodeFilarete City")), "home");
+		person1.getMapPropertyMadeOfCompositeIdEntityAsKey().put(new House(new HouseId(43, "Another street", "143", "Another City")), "work");
+		org.codefilarete.stalactite.engine.model.compositekey.Person person2 = new org.codefilarete.stalactite.engine.model.compositekey.Person(new PersonId("Jane", "Do", "nowhere"));
+		person2.setMapPropertyMadeOfCompositeIdEntityAsKey(new LinkedHashMap<>());
+		person2.getMapPropertyMadeOfCompositeIdEntityAsKey().put(new House(new HouseId(52, "Stalactite street", "242", "CodeFilarete City")), "home");
+		person2.getMapPropertyMadeOfCompositeIdEntityAsKey().put(new House(new HouseId(53, "Another street", "243", "Another City")), "work");
+		personPersister.insert(person1, person2);
 		
-		org.codefilarete.stalactite.engine.model.compositekey.Person loaded = personPersister.select(person.getId());
+		org.codefilarete.stalactite.engine.model.compositekey.Person loadedPerson1 = personPersister.select(person1.getId());
 		// we extract the identifier from the map because it is comparable with equals() (by contract of Stalactite)
 		// which allows AssertJ to check equality on it, else (with House instances) AssertJ won't be able to check
 		// equality, except if with implement equals(..) on it, which we don't want to keep close to Stalactite philosophy
-		Map<House.HouseId, String> houseIdStringMap = map(loaded.getMapPropertyMadeOfCompositeIdEntityAsKey().entrySet(), e -> e.getKey().getHouseId(), Map.Entry::getValue);
-		assertThat(houseIdStringMap)
-				.containsEntry(new House.HouseId(42, "Stalactite street", "888", "CodeFilarete City"), "home")
-				.containsEntry(new House.HouseId(43, "Another street", "999", "Another City"), "work");
+		Map<HouseId, String> homeTypePerAddress = map(loadedPerson1.getMapPropertyMadeOfCompositeIdEntityAsKey().entrySet(), e -> e.getKey().getHouseId(), Map.Entry::getValue);
+		assertThat(homeTypePerAddress)
+				.containsEntry(new HouseId(42, "Stalactite street", "142", "CodeFilarete City"), "home")
+				.containsEntry(new HouseId(43, "Another street", "143", "Another City"), "work");
+		
+		
+		Set<org.codefilarete.stalactite.engine.model.compositekey.Person> loadedPersons = personPersister.select(person1.getId(), person2.getId());
+		// we extract the identifier from the map because it is comparable with equals() (by contract of Stalactite)
+		// which allows AssertJ to check equality on it, else (with House instances) AssertJ won't be able to check
+		// equality, except if with implement equals(..) on it, which we don't want to keep close to Stalactite philosophy
+		Set<Map.Entry<House, String>> entries = loadedPersons.stream().flatMap(p -> p.getMapPropertyMadeOfCompositeIdEntityAsKey().entrySet().stream())
+				.collect(Collectors.toSet());
+		Map<HouseId, String> homeTypePerAddresses = map(entries, e -> e.getKey().getHouseId(), Map.Entry::getValue);
+		assertThat(homeTypePerAddresses)
+				.containsEntry(new HouseId(42, "Stalactite street", "142", "CodeFilarete City"), "home")
+				.containsEntry(new HouseId(43, "Another street", "143", "Another City"), "work")
+				.containsEntry(new HouseId(52, "Stalactite street", "242", "CodeFilarete City"), "home")
+				.containsEntry(new HouseId(53, "Another street", "243", "Another City"), "work");
 	}
 	
 	@Test
