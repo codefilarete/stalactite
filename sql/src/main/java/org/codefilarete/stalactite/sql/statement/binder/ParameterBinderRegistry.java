@@ -65,8 +65,8 @@ public class ParameterBinderRegistry {
 		registerParameterBinders();
 	}
 	
-	public Map<Class<?>, ParameterBinder<?>> getBinderPerType() {
-		return binderPerType;
+	public <T> Map<Class<T>, ParameterBinder<T>> getBinderPerType() {
+		return (Map) binderPerType;
 	}
 	
 	public <T> void register(Class<T> clazz, ParameterBinder<T> parameterBinder) {

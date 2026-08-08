@@ -33,6 +33,7 @@ import org.codefilarete.stalactite.query.model.operator.In;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.QuerySQLBuilderFactoryBuilder;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
@@ -40,6 +41,7 @@ import org.codefilarete.stalactite.sql.result.ColumnedRowIterator;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.statement.SQLStatement;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.CompositeTypeBinder;
 import org.codefilarete.stalactite.sql.statement.binder.DelegatingCompositeTypeBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
@@ -57,7 +59,7 @@ import static org.codefilarete.tool.collection.Iterables.first;
  * could have done it through the {@link KeyValueRecordPersister}, but its select is made through {@link RecordId}
  * which we don't have on separate loading since we only have the left entity identifiers available, whereas
  * {@link RecordId} is made of the left entity identifier and the key value.
- * 
+ *
  * @param <SRC>
  * @param <SRCID>
  * @param <K>
@@ -125,6 +127,7 @@ public class MapEntryLoader<SRC, SRCID, K, V, LEFTTABLE extends Table<LEFTTABLE>
 		private final Map<Selectable<?>, ResultSetReader<?>> selectParameterBinders;
 		private final Map<Selectable<?>, String> columnAliases;
 		private final ConnectionProvider connectionProvider;
+		private final QuerySQLBuilderFactory querySQLBuilderFactory;
 		
 		private InternalExecutor(EntityTreeQuery<ROW> entityTreeQuery, ConnectionProvider connectionProvider) {
 			this(entityTreeQuery.getQuery(), entityTreeQuery.getInflater(), entityTreeQuery.getSelectParameterBinders(), entityTreeQuery.getColumnAliases(), connectionProvider);
@@ -139,6 +142,50 @@ public class MapEntryLoader<SRC, SRCID, K, V, LEFTTABLE extends Table<LEFTTABLE>
 			this.selectParameterBinders = (Map<Selectable<?>, ResultSetReader<?>>) selectParameterBinders;
 			this.columnAliases = columnAliases;
 			this.connectionProvider = connectionProvider;
+			
+			// We create a local registry to avoid polluting dialect's one
+			ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry(dialect.getColumnBinderRegistry());
+			this.querySQLBuilderFactory = new QuerySQLBuilderFactoryBuilder(
+					dialect.getDmlNameProviderFactory(),
+					columnBinderRegistry,
+					dialect.getSqlTypeRegistry().getJavaTypeToSqlTypeMapping())
+					.build();
+			
+			if (sourceIdMapping.getIdentifierAssembler() instanceof ComposedIdentifierAssembler) {
+				Map<Column<LEFTTABLE, ?>, Column<MAPTABLE, ?>> typedReverseForeignKey = (Map) reverseForeignKey;
+				Map<Column<MAPTABLE, ?>, Integer> columnIndexes = new HashMap<>();
+				Map<Integer, PreparedStatementWriter<?>> psWriters = new HashMap<>();
+				int i = 0;
+				for (Column<MAPTABLE, ?> mapTableKeyColumn : typedReverseForeignKey.values()) {
+					columnIndexes.put(mapTableKeyColumn, i);
+					psWriters.put(i, columnBinderRegistry.getBinder(mapTableKeyColumn));
+					i++;
+				}
+				
+				DelegatingCompositeTypeBinder<SRCID> compositeTypeBinder = new DelegatingCompositeTypeBinder<>(
+						sourceIdMapping.getIdentifierType(),
+						psWriters,
+						new Function<SRCID, Object[]>() {
+							@Override
+							public Object[] apply(SRCID srcid) {
+								Map<Column<LEFTTABLE, ?>, ?> identifierValues = ((ComposedIdentifierAssembler<SRCID, LEFTTABLE>) sourceIdMapping.getIdentifierAssembler()).getColumnValues(srcid);
+								Map<Column<MAPTABLE, ?>, ?> columnValues = Maps.innerJoin(typedReverseForeignKey, identifierValues);
+								
+								Object[] objects = new Object[columnIndexes.size()];
+								columnValues.forEach((column, columnValue) -> {
+									objects[columnIndexes.get(column)] = columnValue;
+								});
+								return objects;
+							}
+						}
+				);
+				
+				SmartListCompositeParameterBinder<SRCID> smartListBinder = new SmartListCompositeParameterBinder<>(compositeTypeBinder);
+				columnBinderRegistry.register(sourceIdMapping.getIdentifierType(), (ParameterBinder<SRCID>) smartListBinder);
+			} else {
+				SmartListParameterBinder<SRCID> smartListBinder = new SmartListParameterBinder<>(columnBinderRegistry.getBinder(sourceIdMapping.getIdentifierType()));
+				columnBinderRegistry.register(sourceIdMapping.getIdentifierType(), (ParameterBinder<SRCID>) smartListBinder);
+			}
 		}
 		
 		private Set<ROW> select(List<SRCID> srcIds) {
@@ -151,47 +198,15 @@ public class MapEntryLoader<SRC, SRCID, K, V, LEFTTABLE extends Table<LEFTTABLE>
 				Column<MAPTABLE, ?>[] array = reverseForeignKey.values().<Column<MAPTABLE, ?>>toArray(new Column[0]);
 				Placeholder<SRCID, List<Object[]>> placeholder = new Placeholder<>(idsParameterName, sourceIdMapping.getIdentifierType());
 				TupleIn in = new TupleIn(array, placeholder);
-				Map<Column<MAPTABLE, ?>, Integer> columnIndexes = new HashMap<>();
-				Map<Integer, PreparedStatementWriter<?>> psWriters = new HashMap<>();
-				for (int i = 0; i < array.length; i++) {
-					columnIndexes.put(array[i], i);
-					psWriters.put(i, dialect.getColumnBinderRegistry().getBinder(array[i]));
-				}
-				
 				query.getWhere().and(in);
-				
-				DelegatingCompositeTypeBinder<SRCID> compositeTypeBinder = new DelegatingCompositeTypeBinder<>(
-						sourceIdMapping.getIdentifierType(),
-						psWriters,
-						new Function<SRCID, Object[]>() {
-							@Override
-							public Object[] apply(SRCID srcid) {
-								Map<Column<LEFTTABLE, ?>, ?> identifierValues = ((ComposedIdentifierAssembler<SRCID, LEFTTABLE>) sourceIdMapping.getIdentifierAssembler()).getColumnValues(srcid);
-								Map<Column<LEFTTABLE, ?>, Column<MAPTABLE, ?>> typedReverseForeignKey = (Map) reverseForeignKey;
-								Map<Column<MAPTABLE, ?>, ?> columnValues = Maps.innerJoin(typedReverseForeignKey, identifierValues);
-								
-								Object[] objects = new Object[array.length];
-								columnValues.forEach((column, columnValue) -> {
-									objects[columnIndexes.get(column)] = columnValue;
-								});
-								return objects;
-							}
-						}
-				);
-				
-//				dialect.getColumnBinderRegistry().register(sourceIdMapping.getIdentifierType(), compositeTypeBinder);
-				SmartListCompositeParameterBinder<SRCID> smartListBinder = new SmartListCompositeParameterBinder<>(compositeTypeBinder);
-				dialect.getColumnBinderRegistry().register(sourceIdMapping.getIdentifierType(), (ParameterBinder<SRCID>) smartListBinder);
 			} else {
-				SmartListParameterBinder<SRCID> smartListBinder = new SmartListParameterBinder<>(dialect.getColumnBinderRegistry().getBinder(sourceIdMapping.getIdentifierType()));
-				dialect.getColumnBinderRegistry().register(sourceIdMapping.getIdentifierType(), (ParameterBinder<SRCID>) smartListBinder);
 				Column<MAPTABLE, ?> pkColumn = (Column<MAPTABLE, ?>) first(reverseForeignKey.values());
 				Placeholder<SRCID, List<SRCID>> placeholder = new Placeholder<>(idsParameterName, sourceIdMapping.getIdentifierType());
 				In<SRCID> in = new In<>(placeholder);
 				query.getWhere().and(pkColumn, in);
 			}
 			
-			QuerySQLBuilderFactory.QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query);
+			QuerySQLBuilderFactory.QuerySQLBuilder sqlQueryBuilder = querySQLBuilderFactory.queryBuilder(query);
 			ExpandableSQLAppender preparableSQL = sqlQueryBuilder.toPreparableSQL();
 			
 			return execute(preparableSQL.toPreparedSQL(Maps.asMap(idsParameterName, srcIds)));

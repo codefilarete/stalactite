@@ -34,6 +34,12 @@ public class ColumnBinderRegistry
 		this.parameterBinderRegistry = parameterBinderRegistry;
 	}
 	
+	public ColumnBinderRegistry(ColumnBinderRegistry columnBinderRegistry) {
+		this.parameterBinderRegistry = new ParameterBinderRegistry();
+		columnBinderRegistry.parameterBinderRegistry.getBinderPerType().forEach(this.parameterBinderRegistry::register);
+		columnBinderRegistry.all().forEach(entry -> this.bindersPerColumn.put(entry.getKey(), entry.getValue()));
+	}
+	
 	public <T> void register(Class<T> clazz, ParameterBinder<T> parameterBinder) {
 		this.parameterBinderRegistry.register(clazz, parameterBinder);
 	}
