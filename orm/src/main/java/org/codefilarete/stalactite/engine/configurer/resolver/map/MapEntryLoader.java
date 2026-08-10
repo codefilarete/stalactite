@@ -15,6 +15,7 @@ import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord;
 import org.codefilarete.stalactite.engine.configurer.map.RecordId;
 import org.codefilarete.stalactite.engine.configurer.resolver.map.EntryMapResolver.KeyValueRecordPersister;
+import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.SeparateFetchQueryExecutor;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.IdentityLinkedMap;
@@ -103,14 +104,15 @@ public class MapEntryLoader<SRC, SRCID, K, V, LEFTTABLE extends Table<LEFTTABLE>
 		// we avoid relying on Entity equals/Hashcode by using a Map based on System.identityHashCode(..)
 		Set<KeyValueRecord<K, V, SRCID>> result = Collections.newSetFromMap(new IdentityLinkedMap<>(estimatedResultSize));
 		EntityTreeQuery<KeyValueRecord<K, V, SRCID>> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
-		InternalExecutor<KeyValueRecord<K, V, SRCID>> internalExecutor = new InternalExecutor<>(entityTreeQuery, connectionProvider);
+		SeparateFetchQueryExecutor<KeyValueRecord<K, V, SRCID>, SRCID, LEFTTABLE, MAPTABLE> queryExecutor =
+				new SeparateFetchQueryExecutor<>(entityTreeQuery, sourceIdMapping, reverseForeignKey, dialect, connectionProvider);
 		Iterables.forEachChunk(
 				ids,
 				dialect.getInOperatorMaxSize(),
 				chunks -> {},
 				chunkSize -> null,    // no particular initialization to do
 				(context, chunk) -> {
-					result.addAll(internalExecutor.select(chunk));
+					result.addAll(queryExecutor.select(chunk));
 				},
 				context -> {}
 		);
