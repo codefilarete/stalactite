@@ -132,7 +132,10 @@ public class SeparateFetchQueryExecutor<ROW, SRCID, LEFTTABLE extends Table<LEFT
 			SmartListCompositeParameterBinder<SRCID> smartListBinder = new SmartListCompositeParameterBinder<>(compositeTypeBinder);
 			columnBinderRegistry.register(sourceIdMapping.getIdentifierType(), (ParameterBinder<SRCID>) smartListBinder);
 		} else {
-			SmartListParameterBinder<SRCID> smartListBinder = new SmartListParameterBinder<>(columnBinderRegistry.getBinder(sourceIdMapping.getIdentifierType()));
+			// We take the exact primary column type binder, not the sourceIdMapping.getIdentifierType(), because it could be
+			// specifically defined by the user
+			Column<LEFTTABLE, SRCID> pkColumn = (Column<LEFTTABLE, SRCID>) first(sourceIdMapping.getIdentifierAssembler().getColumns());
+			SmartListParameterBinder<SRCID> smartListBinder = new SmartListParameterBinder<>(columnBinderRegistry.getBinder(pkColumn));
 			columnBinderRegistry.register(sourceIdMapping.getIdentifierType(), (ParameterBinder<SRCID>) smartListBinder);
 		}
 	}
