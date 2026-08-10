@@ -7,6 +7,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityPersister;
@@ -49,19 +51,18 @@ import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.Aggregat
 import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.OneToManyResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetoone.AggregateOneToOneAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetoone.OneToOneResolver;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.PolymorphismResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.jointable.JoinTableResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.singletable.SingleTableResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.tableperclass.TablePerClassResolver;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.PolymorphicWriter;
 import org.codefilarete.stalactite.engine.runtime.jointable.JoinTablePolymorphismReader;
-import org.codefilarete.stalactite.engine.runtime.jointable.JoinTablePolymorphismWriter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.singletable.SingleTablePolymorphismReader;
-import org.codefilarete.stalactite.engine.runtime.singletable.SingleTablePolymorphismWriter;
 import org.codefilarete.stalactite.engine.runtime.tableperclass.TablePerClassPolymorphismReader;
-import org.codefilarete.stalactite.engine.runtime.tableperclass.TablePerClassPolymorphismWriter;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Duo;
@@ -240,57 +241,35 @@ public class AggregateResolver {
 			if (rootEntity instanceof PolymorphicEntity) {
 				PolymorphicEntity<C, I, T> polymorphicEntity = (PolymorphicEntity<C, I, T>) rootEntity;
 				
+				Supplier<PolymorphismResolver<?>> polymorphismResolverFactory = null;
+				Function<Duo<EntityReader<C, I, T>, Map<Class<? extends C>, EntityReader<? extends C, I, ?>>>, ConfiguredEntityReader<C, I, T>> aggregateReaderBuilder = null;
 				if (polymorphicEntity.getPolymorphism() instanceof TablePerClassPolymorphism) {
-					TablePerClassResolver tablePerClassResolver = new TablePerClassResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
-					TablePerClassPolymorphismWriter<C, I, T, C> tablePerClassPolymorphismWriter = tablePerClassResolver.resolve(polymorphicEntity, rootPersisterCollector);
-					rootWriter = tablePerClassPolymorphismWriter;
-					EntityReader<C, I, T> reader = new EntityReader<>(rootWriter.<T>getMapping(),
-							persistenceContext.getConnectionProvider(),
-							persistenceContext.getDialect());
-					
-					Set<EntityMapping<C, I, T>> subEntitiesMappings = Iterables.collect(tablePerClassPolymorphismWriter.getSubEntitiesPersisters().entrySet(), entry -> entry.getValue().getMapping(), HashSet::new);
-					Map<Class<? extends C>, EntityReader<? extends C, I, ?>> subReaderPerEntityType = Iterables.map(subEntitiesMappings, EntityMapping::getClassToPersist, mapping -> new EntityReader<>(mapping,
-							persistenceContext.getConnectionProvider(),
-							persistenceContext.getDialect()));
-					aggregateReader = new TablePerClassPolymorphismReader<>(reader,
-							subReaderPerEntityType,
+					polymorphismResolverFactory = () -> new TablePerClassResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
+					aggregateReaderBuilder = (readers) -> new TablePerClassPolymorphismReader<>(readers.getLeft(),
+							readers.getRight(),
 							persistenceContext.getConnectionProvider(),
 							persistenceContext.getDialect());
 				} else if (polymorphicEntity.getPolymorphism() instanceof JoinTablePolymorphism) {
-					JoinTableResolver joinTableResolver = new JoinTableResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
-					JoinTablePolymorphismWriter<C, I, T, C> joinTablePolymorphismWriter = joinTableResolver.resolve(polymorphicEntity, rootPersisterCollector);
-					rootWriter = joinTablePolymorphismWriter;
-					EntityReader<C, I, T> reader = new EntityReader<>(rootWriter.<T>getMapping(),
-							persistenceContext.getConnectionProvider(),
-							persistenceContext.getDialect());
-					
-					Set<EntityMapping<C, I, T>> subEntitiesMappings = Iterables.collect(joinTablePolymorphismWriter.getSubEntitiesPersisters().entrySet(), entry -> entry.getValue().getMapping(), HashSet::new);
-					Map<Class<? extends C>, EntityReader<? extends C, I, ?>> subReaderPerEntityType = Iterables.map(subEntitiesMappings, EntityMapping::getClassToPersist, mapping -> new EntityReader<>(mapping,
-							persistenceContext.getConnectionProvider(),
-							persistenceContext.getDialect()));
-					aggregateReader = new JoinTablePolymorphismReader<>(reader,
-							subReaderPerEntityType,
+					polymorphismResolverFactory = () -> new JoinTableResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
+					aggregateReaderBuilder = (readers) -> new JoinTablePolymorphismReader<>(readers.getLeft(),
+							readers.getRight(),
 							persistenceContext.getConnectionProvider(),
 							persistenceContext.getDialect());
 				} else if (polymorphicEntity.getPolymorphism() instanceof SingleTablePolymorphism) {
-					SingleTableResolver singleTableResolver = new SingleTableResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
-					SingleTablePolymorphismWriter<C, I, T, C, ?> singleTablePolymorphismWriter = singleTableResolver.resolve(polymorphicEntity, rootPersisterCollector);
-					rootWriter = singleTablePolymorphismWriter;
-					EntityReader<C, I, T> reader = new EntityReader<>(rootWriter.<T>getMapping(),
-							persistenceContext.getConnectionProvider(),
-							persistenceContext.getDialect());
-					
-					Set<EntityMapping<C, I, T>> subEntitiesMappings = Iterables.collect(singleTablePolymorphismWriter.getSubEntitiesPersisters().entrySet(), entry -> entry.getValue().getMapping(), HashSet::new);
-					Map<Class<? extends C>, EntityReader<? extends C, I, ?>> subReaderPerEntityType = Iterables.map(subEntitiesMappings, EntityMapping::getClassToPersist, mapping -> new EntityReader<>(mapping,
-							persistenceContext.getConnectionProvider(),
-							persistenceContext.getDialect()));
+					polymorphismResolverFactory = () -> new SingleTableResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 					SingleTablePolymorphism<C, I, ?, T> polymorphism = (SingleTablePolymorphism<C, I, ?, T>) polymorphicEntity.getPolymorphism();
-					aggregateReader = new SingleTablePolymorphismReader<>(reader,
-							subReaderPerEntityType,
+					aggregateReaderBuilder = (readers) -> new SingleTablePolymorphismReader<>(readers.getLeft(),
+							readers.getRight(),
 							polymorphism,
 							persistenceContext.getConnectionProvider(),
 							persistenceContext.getDialect());
 				}
+				PolymorphismResolver<?> polymorphismResolver = polymorphismResolverFactory.get();
+				PolymorphicWriter<C, I, ?> resolve = polymorphismResolver.resolve(polymorphicEntity, rootPersisterCollector);
+				rootWriter = resolve;
+				Duo<EntityReader<C, I, T>, Map<Class<? extends C>, EntityReader<? extends C, I, ?>>> readers =
+						buildPolymorphismReaders(rootWriter, resolve.getSubEntitiesPersisters());
+				aggregateReader = aggregateReaderBuilder.apply(readers);
 			} else {
 				throw new UnsupportedOperationException("Unsupported entity type: " + rootEntity.getClass());
 			}
@@ -311,6 +290,30 @@ public class AggregateResolver {
 	
 	private <C, I> ConfiguredPersister<C, I> wrapToConfiguredPersister(DelegatingReadWriteEntityExecutor<C, I> almostResult, Set<? extends Table<?>> tables) {
 		return new DelegatingConfiguredPersister<>(almostResult, tables);
+	}
+	
+	/**
+	 * Builds the entity readers required by a polymorphic aggregate reader: one reader for the root/parent mapping,
+	 * and one reader per sub-entity type, both created from the mappings exposed by the given polymorphism writer.
+	 * This factorizes the identical reader-building logic shared by table-per-class, join-table and single-table
+	 * polymorphism resolution.
+	 * 
+	 * @param rootWriter the writer holding the root entity mapping
+	 * @param subEntitiesPersisters the writers of each sub-entity, keyed by their persisted class
+	 * @return a {@link Duo} composed of the root entity reader and the sub-entity readers per class
+	 */
+	private <C, I, T extends Table<T>, SUBENTITY extends C>
+	Duo<EntityReader<C, I, T>, Map<Class<? extends C>, EntityReader<? extends C, I, ?>>> buildPolymorphismReaders(
+			EntityWriteExecutor<C, I> rootWriter,
+			Map<Class<SUBENTITY>, ? extends EntityWriteExecutor<SUBENTITY, I>> subEntitiesPersisters) {
+		EntityReader<C, I, T> reader = new EntityReader<>(rootWriter.<T>getMapping(),
+				persistenceContext.getConnectionProvider(),
+				persistenceContext.getDialect());
+		
+		Set<EntityMapping<SUBENTITY, I, T>> subEntitiesMappings = Iterables.collect(subEntitiesPersisters.entrySet(), entry -> entry.getValue().getMapping(), HashSet::new);
+		Map<Class<? extends C>, EntityReader<? extends C, I, ?>> subReaderPerEntityType = Iterables.map(subEntitiesMappings, EntityMapping::getClassToPersist,
+				mapping -> new EntityReader<>(mapping, persistenceContext.getConnectionProvider(), persistenceContext.getDialect()));
+		return new Duo<>(reader, subReaderPerEntityType);
 	}
 	
 	/**

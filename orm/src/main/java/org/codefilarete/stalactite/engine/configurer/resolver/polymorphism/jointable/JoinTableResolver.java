@@ -10,6 +10,7 @@ import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.PolymorphicEntity;
 import org.codefilarete.stalactite.engine.configurer.resolver.CreatedPersisterCollector;
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.PolymorphismResolver;
 import org.codefilarete.stalactite.engine.runtime.jointable.JoinTablePolymorphismWriter;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
@@ -17,7 +18,7 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Iterables;
 
-public class JoinTableResolver {
+public class JoinTableResolver implements PolymorphismResolver<JoinTablePolymorphismWriter> {
 	
 	private final SkeletonAggregateResolver skeletonAggregateResolver;
 	private final Dialect dialect;
@@ -29,7 +30,7 @@ public class JoinTableResolver {
 		this.connectionConfiguration = connectionConfiguration;
 	}
 	
-	public <TRGT, TRGTID, RIGHTTABLE extends Table<RIGHTTABLE>, SUBTRGT extends TRGT>
+	public <TRGT, TRGTID, RIGHTTABLE extends Table<RIGHTTABLE>, SUBTRGT extends TRGT, DTYPE>
 	JoinTablePolymorphismWriter<TRGT, TRGTID, RIGHTTABLE, SUBTRGT> resolve(PolymorphicEntity<TRGT, TRGTID, RIGHTTABLE> targetEntity,
 	                                                                       CreatedPersisterCollector<TRGT, TRGTID> persisterCollector) {
 		

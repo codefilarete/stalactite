@@ -15,7 +15,7 @@ import org.codefilarete.stalactite.engine.UpdateExecutor;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.resolver.EntityWriter;
 import org.codefilarete.stalactite.engine.runtime.EntityMappingWrapper;
-import org.codefilarete.stalactite.engine.runtime.PolymorphicPersister;
+import org.codefilarete.stalactite.engine.runtime.PolymorphicWriter;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
@@ -34,7 +34,7 @@ import org.codefilarete.tool.collection.Maps;
  * @author Guillaume Mary
  */
 public class TablePerClassPolymorphismWriter<C, I, T extends Table<T>, SUBENTITY extends C> extends EntityWriter<C, I, T>
-		implements PolymorphicPersister<C> {
+		implements PolymorphicWriter<C, I, SUBENTITY> {
 	
 	private final EntityWriteExecutor<C, I> templatePersister;
 	private final Map<Class<SUBENTITY>, EntityWriteExecutor<SUBENTITY, I>> subEntitiesPersisters;

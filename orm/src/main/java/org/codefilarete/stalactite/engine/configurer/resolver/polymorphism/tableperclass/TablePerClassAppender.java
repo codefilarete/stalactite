@@ -51,7 +51,7 @@ public class TablePerClassAppender {
 //			PropertyAccessor<SRC, TRGT> accessor = shift(assemblyPawn, relationPawn.getAccessor());
 
 //			Holder<TablePerClassPolymorphicRelationJoinNode<TRGT, LEFTTABLE, JOINID, TRGTID>> nodeHolder = new Holder<>();
-		String joinName = aggregateTree.<LEFTTABLE>addJoin(
+		String joinName = aggregateTree.addJoin(
 				mountPoint,
 				parent -> {
 //					return null;

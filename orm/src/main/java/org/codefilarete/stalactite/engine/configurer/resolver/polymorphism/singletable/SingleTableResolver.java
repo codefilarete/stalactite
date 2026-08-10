@@ -12,13 +12,14 @@ import org.codefilarete.stalactite.engine.configurer.model.PolymorphicEntity;
 import org.codefilarete.stalactite.engine.configurer.model.SingleTablePolymorphism;
 import org.codefilarete.stalactite.engine.configurer.resolver.CreatedPersisterCollector;
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.PolymorphismResolver;
 import org.codefilarete.stalactite.engine.runtime.singletable.SingleTablePolymorphismWriter;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Iterables;
 
-public class SingleTableResolver {
+public class SingleTableResolver implements PolymorphismResolver<SingleTablePolymorphismWriter> {
 	
 	private final SkeletonAggregateResolver skeletonAggregateResolver;
 	private final Dialect dialect;
