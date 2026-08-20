@@ -42,6 +42,8 @@ public class FirstPhaseRelationLoader<SRC, TRGTID> implements EntityMerger<SRC> 
 	protected void fillCurrentRelationIds(ColumnedRow row, SRC bean) {
 		RelationStorage<SRC, TRGTID> relationIds = relationIdsHolder.get();
 		TRGTID id = idMapping.apply(row);
-		relationIds.add(bean, id);
+		if (id != null) {
+			relationIds.add(bean, id);
+		}
 	}
 }

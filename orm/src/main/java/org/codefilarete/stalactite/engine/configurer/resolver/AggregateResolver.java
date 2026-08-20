@@ -231,14 +231,13 @@ public class AggregateResolver {
 		// TODO: wrap result in an OptimizedUpdatePersister
 		// TODO: be inspired from DefaultPersisterBuilder.build()
 		
-		EntityWriteExecutor<C, I> rootWriter = null;
-		ConfiguredEntityReader<C, I, T> aggregateReader = null;
+		ConfiguredEntityReader<C, I, T> aggregateReader;
+		DelegatingReadWriteEntityExecutor<C, I> almostResult;
 		CreatedPersisterCollector<C, I> rootPersisterCollector = new CreatedPersisterCollector<>();
 		if (rootEntity instanceof Entity) {
-			rootWriter = skeletonAggregateResolver.buildPersister(rootEntity, rootPersisterCollector);
-			aggregateReader = new EntityReader<>(rootWriter.<T>getMapping(),
-					persistenceContext.getConnectionProvider(),
-					persistenceContext.getDialect());
+			DelegatingReadWriteEntityExecutor<C, I> persister = skeletonAggregateResolver.buildPersister(rootEntity, rootPersisterCollector);
+			almostResult = persister;
+			aggregateReader = (ConfiguredEntityReader<C, I, T>) persister.getReader();
 		} else {
 			if (rootEntity instanceof PolymorphicEntity) {
 				PolymorphicEntity<C, I, T> polymorphicEntity = (PolymorphicEntity<C, I, T>) rootEntity;
@@ -267,21 +266,19 @@ public class AggregateResolver {
 							persistenceContext.getDialect());
 				}
 				PolymorphismResolver<?> polymorphismResolver = polymorphismResolverFactory.get();
-				PolymorphicWriter<C, I, ?> resolve = polymorphismResolver.resolve(polymorphicEntity, rootPersisterCollector);
-				rootWriter = resolve;
+				PolymorphicWriter<C, I, ?> polymorphicWriter = polymorphismResolver.resolve(polymorphicEntity, rootPersisterCollector);
 				Duo<EntityReader<C, I, T>, Map<Class<? extends C>, EntityReader<? extends C, I, ?>>> readers =
-						buildPolymorphismReaders(rootWriter, resolve.getSubEntitiesPersisters());
+						buildPolymorphismReaders(polymorphicWriter, polymorphicWriter.getSubEntitiesPersisters());
 				aggregateReader = aggregateReaderBuilder.apply(readers);
+				almostResult = new DelegatingReadWriteEntityExecutor<>(polymorphicWriter, aggregateReader);
 			} else {
 				throw new UnsupportedOperationException("Unsupported entity type: " + rootEntity.getClass());
 			}
 		}
 		// TODO: wrap the result into a selector that redirect the select method and projections to a finder instance
-		Map<MappingJoin<?, ?, ?>, Object> createdPersistersMap = (Map) appendWriteCascades(rootEntity, rootWriter);
+		Map<MappingJoin<?, ?, ?>, Object> createdPersistersMap = (Map) appendWriteCascades(rootEntity, almostResult);
 		createdPersistersMap.put(null, rootPersisterCollector);
 		composeLoadTree(rootEntity, aggregateReader, createdPersistersMap);
-		
-		DelegatingReadWriteEntityExecutor<C, I> almostResult = new DelegatingReadWriteEntityExecutor<>(rootWriter, aggregateReader);
 		
 		Set<Table<?>> tables = collectTables(rootEntity);
 		

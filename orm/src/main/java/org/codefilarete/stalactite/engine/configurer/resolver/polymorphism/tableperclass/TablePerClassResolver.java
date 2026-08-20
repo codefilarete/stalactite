@@ -12,7 +12,6 @@ import org.codefilarete.stalactite.engine.configurer.resolver.CreatedPersisterCo
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.PolymorphismResolver;
 import org.codefilarete.stalactite.engine.runtime.tableperclass.TablePerClassPolymorphismWriter;
-import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -35,7 +34,6 @@ public class TablePerClassResolver implements PolymorphismResolver<TablePerClass
 	                                                                           CreatedPersisterCollector<TRGT, TRGTID> persisterCollector) {
 		
 		EntityWriteExecutor<TRGT, TRGTID> templateWriter = skeletonAggregateResolver.buildPersister(targetEntity, persisterCollector);
-		IdMapping<TRGT, TRGTID> idMapping = skeletonAggregateResolver.createIdMapping(targetEntity);
 		
 		Set<EntityReadWriteExecutor<SUBTRGT, TRGTID>> subPersisters = targetEntity.getPolymorphism().getSubEntities().stream().map(subEntity -> {
 			// we need to build the sub-entities persisters first, so that they are registered in the persister registry

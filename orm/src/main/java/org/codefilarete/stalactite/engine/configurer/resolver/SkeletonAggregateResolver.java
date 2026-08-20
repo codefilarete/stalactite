@@ -5,7 +5,6 @@ import java.util.Map;
 
 import org.codefilarete.reflection.PropertyMutator;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
-import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.configurer.DefaultComposedIdentifierAssembler;
@@ -55,7 +54,7 @@ public class SkeletonAggregateResolver {
 	}
 	
 	public <B, C extends B, I, T extends Table<T>>
-	EntityReadWriteExecutor<C, I> buildPersister(AbstractEntity<C, I, T> entity, CreatedPersisterCollector<C, I> persisterCollector) {
+	DelegatingReadWriteEntityExecutor<C, I> buildPersister(AbstractEntity<C, I, T> entity, CreatedPersisterCollector<C, I> persisterCollector) {
 		// TODO: check for ealready existing persister in the persistence context
 		// TODO: wrap result in an OptimizedUpdatePersister
 		// TODO: be inspired from DefaultPersisterBuilder.build()
@@ -75,7 +74,7 @@ public class SkeletonAggregateResolver {
 		// we create a ReadWriteEntityExecutor that has the persist() capability because insert() cascade will
 		// trigger the persist(..) method, thus, the persister shall have the select ability to determine if the entity is new or not.
 		// However, the read ability is not one of the aggregate, it only focuses on the direct properties.
-		EntityReadWriteExecutor<C, I> rootPersister = new DelegatingReadWriteEntityExecutor<>(new EntityWriter<>(
+		DelegatingReadWriteEntityExecutor<C, I> rootPersister = new DelegatingReadWriteEntityExecutor<>(new EntityWriter<>(
 				entityMapping,
 				persistenceContext.getDialect(),
 				persistenceContext.getConnectionConfiguration()

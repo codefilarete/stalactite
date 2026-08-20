@@ -50,7 +50,7 @@ public class AggregateOneToOneAppender {
 	 * @param <JOINID> either SRCID or TRGTID, depending on the relation owner
 	 * @return
 	 */
-	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID, GRAFTTABLE extends Table<GRAFTTABLE>>
+	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
 	GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> append(ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> relation,
 	                                                        ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
 	                                                        ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
@@ -102,19 +102,21 @@ public class AggregateOneToOneAppender {
 					// we load all the target entities (of all sources, for efficiency)
 					Map<SRC, Set<TRGTID>> targetIdPerSource = current2PhasesLoadContext.get().getTargetIdPerSource();
 					Set<TRGTID> trgtids = targetIdPerSource.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
-					Set<TRGT> targets = targetPersister.select(trgtids);
-					Map<TRGTID, TRGT> targetPerId = new HashMap<>(Iterables.map(targets, targetPersister.getMapping()::getId));
-					
-					// we sow the relations
-					result.forEach(src -> {
-						// filling final collection with a sorted collection
-						Set<TRGTID> targetIdPerIndex = targetIdPerSource.get(src);
-						if (targetIdPerIndex != null) {  // targetIdPerIndex can be null if there's no associated entity in the database
-							TRGTID trgtId = Iterables.first(targetIdPerIndex);
-							TRGT trgt = targetPerId.get(trgtId);
-							relation.getAccessor().set(src, trgt);
-						}
-					});
+					if (!trgtids.isEmpty()) {	// we only avoid some extra work if there's nothing to do
+						Set<TRGT> targets = targetPersister.select(trgtids);
+						Map<TRGTID, TRGT> targetPerId = new HashMap<>(Iterables.map(targets, targetPersister.getMapping()::getId));
+						
+						// we sew the relations
+						result.forEach(src -> {
+							// filling final collection with a sorted collection
+							Set<TRGTID> targetIdPerIndex = targetIdPerSource.get(src);
+							if (targetIdPerIndex != null) {  // targetIdPerIndex can be null if there's no associated entity in the database
+								TRGTID trgtId = Iterables.first(targetIdPerIndex);
+								TRGT trgt = targetPerId.get(trgtId);
+								relation.getAccessor().set(src, trgt);
+							}
+						});
+					}
 					
 					clearContext();
 				}

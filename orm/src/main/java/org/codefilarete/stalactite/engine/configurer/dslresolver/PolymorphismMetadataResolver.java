@@ -166,7 +166,6 @@ public class PolymorphismMetadataResolver {
 			
 			Entity<D, I, SUBTABLE> subEntity = new Entity<>(templateConfiguration.getIdentifierMapping(), mapping);
 			subEntities.put(subConfig.getEntityType(), subEntity);
-			
 		});
 		
 		return new org.codefilarete.stalactite.engine.configurer.model.TablePerClassPolymorphism<>(subEntities);

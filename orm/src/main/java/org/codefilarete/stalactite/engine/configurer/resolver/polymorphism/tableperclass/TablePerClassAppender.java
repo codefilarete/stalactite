@@ -22,6 +22,7 @@ import org.codefilarete.stalactite.engine.runtime.tableperclass.TablePerClassPol
 import org.codefilarete.stalactite.query.api.JoinLink;
 import org.codefilarete.stalactite.query.api.QueryStatement;
 import org.codefilarete.stalactite.query.api.Selectable;
+import org.codefilarete.stalactite.query.api.Selectable.SimpleSelectable;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -133,14 +134,14 @@ public class TablePerClassAppender {
 		
 		KeepOrderSet<Column<?, ?>> nonCommonColumns = new KeepOrderSet<>();
 		subPersisters.forEach(subPersister -> {
-			nonCommonColumns.addAll(subPersister.getMainTable().getColumns());
+			nonCommonColumns.addAll(subPersister.getMapping().getSelectableColumns());
 		});
 		nonCommonColumns.removeIf(c -> commonColumnsNames.contains(c.getName()));
 		
 		MutableInt discriminatorComputer = new MutableInt();
 		
 		subPersisters.forEach(subPersister -> {
-			Query subEntityQuery = new Query(subPersister.getMapping().getTargetTable());
+			Query subEntityQuery = new Query(subPersister.getMainTable());
 			int discriminatorValue = discriminatorComputer.increment();
 			result.getSubtypeSelectorPerDiscriminatorValue().put(discriminatorValue, (SelectExecutor<SUBTRGT, TRGTID>) subPersister);
 			subEntityQuery.select(String.valueOf(discriminatorValue), Integer.class, ENTITY_TYPE_DISCRIMINATOR_NAME);
@@ -154,12 +155,12 @@ public class TablePerClassAppender {
 			nonCommonColumns.forEach(column -> {
 				Selectable<?> expression;
 				if (subPersister.getMapping().getSelectableColumns().contains(column)) {
-					expression = new Selectable.SimpleSelectable<>(column.getName(), column.getJavaType());
+					expression = new SimpleSelectable<>(column.getName(), column.getJavaType());
 				} else {
 					expression = cast((String) null, column.getJavaType());
 				}
 				// we put an alias else cast(..) as no name which makes it doesn't match official-column name, and then
-				// may cause an error since SQL in kind of invalid 
+				// may cause an error since SQL is kind of invalid
 				subEntityQuery.select(expression, column.getName());
 				result.registerColumn(column.getName(), column.getJavaType());
 			});
