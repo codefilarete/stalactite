@@ -60,7 +60,7 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 													Union subPersistersUnion,
 													// First generic type is unknown because it's the relation owning type.
 													// Second generic type should be C, or a type containing C (like a Collection<C>or even Map<K, C>) which makes it
-													// impossible to implement; thus, we have to use the ? wilcard.
+													// impossible to implement; thus, we have to use the ? wildcard.
 													PropertyAccessPoint<?, ?> propertyAccessor,
 													Key<T1, JOINCOLTYPE> leftJoinColumn,
 													Key<?, JOINCOLTYPE> rightJoinColumn,

@@ -23,8 +23,8 @@ import org.codefilarete.stalactite.dsl.property.CascadeOptions;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.InheritanceConfigurationResolver.ResolvedConfiguration;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.MetadataSolvingCache.EntitySource;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
-import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.RelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
@@ -66,7 +66,7 @@ public class OneToManyMetadataResolver {
 		return targetEntities;
 	}
 	
-	private <C, I> Set<EntitySource<?, ?>> resolve(Entity<C, I, ?> entity, EntityMappingConfiguration<C, I> mappingConfiguration) {
+	private <C, I> Set<EntitySource<?, ?>> resolve(AbstractEntity<C, I, ?> entity, EntityMappingConfiguration<C, I> mappingConfiguration) {
 		KeepOrderSet<EntitySource<?, ?>> targetEntities = new KeepOrderSet<>();
 		mappingConfiguration.getOneToManys().forEach(oneToMany -> {
 			EntitySource<Object, Object> resolve = this.resolve(entity, oneToMany);
@@ -83,7 +83,7 @@ public class OneToManyMetadataResolver {
 	}
 	
 	<SRC, TRGT, S extends Collection<TRGT>, SRCID, TRGTID, SRCTABLE extends Table<SRCTABLE>, TRGTTABLE extends Table<TRGTTABLE>>
-	EntitySource<TRGT, TRGTID> resolve(Entity<SRC, SRCID, SRCTABLE> source, OneToManyRelation<SRC, TRGT, TRGTID, S> oneToMany) {
+	EntitySource<TRGT, TRGTID> resolve(AbstractEntity<SRC, SRCID, SRCTABLE> source, OneToManyRelation<SRC, TRGT, TRGTID, S> oneToMany) {
 
 		EntitySource<TRGT, TRGTID> targetEntitySource = buildTargetEntity(oneToMany);
 		NamingConfiguration namingConfiguration = first(targetEntitySource.getResolvedConfigurations()).getNamingConfiguration();
@@ -91,7 +91,7 @@ public class OneToManyMetadataResolver {
 		PropertyMutator<TRGT, SRC> reverseAccessPoint = oneToMany.giveReverseSetter();
 		RelationJoin tablesJoin = null;
 		BeanRelationFixer<SRC, TRGT> relationFixer;
-		Entity<TRGT, TRGTID, TRGTTABLE> targetEntity = targetEntitySource.getEntity();
+		AbstractEntity<TRGT, TRGTID, TRGTTABLE> targetEntity = targetEntitySource.getEntity();
 		AccessorDefinition collectionAccessorDefinition = AccessorDefinition.giveDefinition(oneToMany.getCollectionAccessor());
 		
 		Supplier<S> collectionFactory = oneToMany.getCollectionFactory();

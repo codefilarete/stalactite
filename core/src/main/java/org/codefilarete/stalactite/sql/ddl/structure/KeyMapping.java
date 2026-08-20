@@ -8,6 +8,9 @@ import org.codefilarete.tool.collection.KeepOrderSet;
 import static org.codefilarete.tool.collection.Iterables.pair;
 
 /**
+ * Represents a join key or any kind of reference between two tables, through a single column or a composite key.
+ * Note that as a difference with {@link ForeignKey}, this class is a logical representation, not a concrete one, hence
+ * its instances are not expected to participate to the schema generation.
  * 
  * @param <LEFTTABLE> the left table of the join
  * @param <RIGHTTABLE> the right table of the join

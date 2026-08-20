@@ -5,15 +5,16 @@ import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.configurer.dslresolver.InheritanceConfigurationResolver.ResolvedConfiguration;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.KeepOrderSet;
 
 public class MetadataSolvingCache {
 	
-	private final Map<Entity<?, ?, ?>, EntitySource<?, ?>> entityBuildSources = new HashMap<>();
+	private final Map<AbstractEntity<?, ?, ?>, EntitySource<?, ?>> entityBuildSources = new HashMap<>();
 	
-	public <X, I> void put(Entity<X, I, ?> entity, EntitySource<X, I> entitySource) {
+	public <X, I> void put(AbstractEntity<X, I, ?> entity, EntitySource<X, I> entitySource) {
 		entityBuildSources.put(entity, entitySource);
 	}
 	
@@ -31,31 +32,31 @@ public class MetadataSolvingCache {
 	 */
 	public static class EntitySource<C, I> {
 		
-		private final Entity<C, I, ?> entity;
+		private final AbstractEntity<C, I, ?> entity;
 		
 		private final Set<ResolvedConfiguration<C, I>> resolvedConfigurations = new KeepOrderSet<>();
 		
 		private final Set<EntitySource<?, I>> ancestorSources = new KeepOrderSet<>();
 		
-		EntitySource(Entity<C, I, ?> entity, ResolvedConfiguration<C, I> resolvedConfiguration) {
+		EntitySource(AbstractEntity<C, I, ?> entity, ResolvedConfiguration<C, I> resolvedConfiguration) {
 			this.entity = entity;
 			this.resolvedConfigurations.add(resolvedConfiguration);
 		}
 		
-		public <T extends Table<T>> Entity<C, I, T> getEntity() {
-			return (Entity<C, I, T>) entity;
+		public <T extends Table<T>> AbstractEntity<C, I, T> getEntity() {
+			return (AbstractEntity<C, I, T>) entity;
 		}
 		
 		public Set<ResolvedConfiguration<C, I>> getResolvedConfigurations() {
 			return resolvedConfigurations;
 		}
 		
-		public <X> void addSource(Entity<X, I, ?> entityOrAncestor, ResolvedConfiguration<X, I> ancestorSource) {
+		public <X> void addSource(AbstractEntity<X, I, ?> entityOrAncestor, ResolvedConfiguration<X, I> ancestorSource) {
 			if (entityOrAncestor == entity){
 				resolvedConfigurations.add((ResolvedConfiguration<C, I>) ancestorSource);
 			} else {
 				// looking for the ancestor sources of the given entity
-				EntitySource<X, I> foundAncestorSource = findAncestorSource(entityOrAncestor);
+				EntitySource<X, I> foundAncestorSource = findAncestorSource((Entity) entityOrAncestor);
 				if (foundAncestorSource == null) {
 					ancestorSources.add(new EntitySource<>(entityOrAncestor, ancestorSource));
 				} else {
@@ -68,7 +69,8 @@ public class MetadataSolvingCache {
 			return (Set<EntitySource<X, I>>) (Set) ancestorSources;
 		}
 		
-		public <X /* super C */> EntitySource<X, I> findAncestorSource(Entity<X, I, ?> ancestor) {
+		// Ancestors are only Entity(ies) not PolymorphicEntity(ies) so the signature can't be made of AbstractEntity
+		private <X /* super C */> EntitySource<X, I> findAncestorSource(Entity<X, I, ?> ancestor) {
 			return (EntitySource<X, I>) ancestorSources.stream()
 					.filter(s -> s.entity == ancestor)
 					.findFirst()

@@ -23,6 +23,7 @@ import org.codefilarete.stalactite.engine.configurer.dslresolver.MetadataSolving
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneRelation.MappedByConfiguration;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
@@ -86,7 +87,7 @@ public class ManyToOneMetadataResolver {
 		return targetEntities;
 	}
 	
-	private <C, I> Set<EntitySource<?, ?>> resolve(Entity<C, I, ?> entity, EntityMappingConfiguration<C, I> mappingConfiguration) {
+	private <C, I> Set<EntitySource<?, ?>> resolve(AbstractEntity<C, I, ?> entity, EntityMappingConfiguration<C, I> mappingConfiguration) {
 		KeepOrderSet<EntitySource<?, ?>> targetEntities = new KeepOrderSet<>();
 		mappingConfiguration.getManyToOnes().forEach(manyToOne -> {
 			EntitySource<Object, Object> resolved = this.resolve(entity, manyToOne);
@@ -108,11 +109,11 @@ public class ManyToOneMetadataResolver {
 	 * @return the target {@link EntitySource}, ready to be enqueued for further (recursive) resolution
 	 */
 	<SRC, TRGT, S extends Collection<SRC>, SRCID, TRGTID, SRCTABLE extends Table<SRCTABLE>, TRGTTABLE extends Table<TRGTTABLE>>
-	EntitySource<TRGT, TRGTID> resolve(Entity<SRC, SRCID, SRCTABLE> source, ManyToOneRelation<SRC, TRGT, TRGTID, S> manyToOne) {
+	EntitySource<TRGT, TRGTID> resolve(AbstractEntity<SRC, SRCID, SRCTABLE> source, ManyToOneRelation<SRC, TRGT, TRGTID, S> manyToOne) {
 		
 		EntitySource<TRGT, TRGTID> targetEntitySource = buildTargetEntity(manyToOne);
 		NamingConfiguration namingConfiguration = first(targetEntitySource.getResolvedConfigurations()).getNamingConfiguration();
-		Entity<TRGT, TRGTID, TRGTTABLE> targetEntity = targetEntitySource.getEntity();
+		AbstractEntity<TRGT, TRGTID, TRGTTABLE> targetEntity = targetEntitySource.getEntity();
 		
 		PrimaryKey<TRGTTABLE, TRGTID> rightPrimaryKey = targetEntity.getTable().getPrimaryKey();
 		

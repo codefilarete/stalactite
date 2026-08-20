@@ -18,11 +18,13 @@ import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.InsertExecutor;
 import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.engine.UpdateExecutor;
+import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.EntityMappingWrapper;
 import org.codefilarete.stalactite.engine.runtime.FirstPhaseRelationLoader;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.PersisterWrapper;
 import org.codefilarete.stalactite.engine.runtime.PolymorphicPersister;
 import org.codefilarete.stalactite.engine.runtime.RelationIds;
@@ -249,7 +251,8 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 	}
 	
 	@Override
-	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(String rootJoinName, RelationalEntityPersister<SRC, SRCID> sourcePersister,
+	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(String rootJoinName,
+																							 RelationalEntityPersister<SRC, SRCID> sourcePersister,
 	                                                                                         PropertyAccessPoint<SRC, C> propertyAccessor,
 	                                                                                         Key<T1, JOINID> leftColumn,
 	                                                                                         Key<T2, JOINID> rightColumn,
@@ -278,9 +281,9 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
                     ROOT_JOIN_NAME,
 					mainPersister,
 					propertyAccessor,
-					(Key<T, JOINID>)  leftColumn,
-					rightColumn,
-					(Set<ConfiguredRelationalEntityPersister<? extends C, I, T2>>) (Set<?>) new HashSet<>(this.subEntitiesPersisters.values()),
+					leftColumn,
+					(Key<T, JOINID>) rightColumn,
+					(Set<ConfiguredEntityReader<? extends C, I, ?>>) (Set<?>) new HashSet<>(this.subEntitiesPersisters.values()),
 					beanRelationFixer,
 					polymorphismPolicy,
 					discriminatorColumn);
@@ -319,9 +322,9 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 					joinName,
 					mainPersister,
 					propertyAccessor,
-					(Key<T, JOINID>) leftColumn,
-					rightColumn,
-					(Set<ConfiguredRelationalEntityPersister<? extends C, I, T2>>) (Set<?>) new HashSet<>(this.subEntitiesPersisters.values()),
+					leftColumn,
+					(Key<T, JOINID>) rightColumn,
+					new HashSet<>(this.subEntitiesPersisters.values()),
 					beanRelationFixer,
 					polymorphismPolicy,
 					discriminatorColumn);
@@ -333,15 +336,31 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 			String leftStrategyName,
 			ConfiguredRelationalEntityPersister<C, I, T> mainPersister,
 			PropertyAccessPoint<SRC, S> propertyAccessor,
-			Key<T, JOINCOLTYPE> leftJoinColumn,
-			Key<T2, JOINCOLTYPE> rightJoinColumn,
-			Set<ConfiguredRelationalEntityPersister<? extends C, I, T2>> subPersisters,
+			Key<T2, JOINCOLTYPE> leftJoinColumn,
+			Key<T, JOINCOLTYPE> rightJoinColumn,
+			Set<ConfiguredEntityReader<? extends C, I, ?>> subPersisters,
 			BeanRelationFixer<SRC, C> beanRelationFixer,
 			SingleTablePolymorphism<C, DTYPE> polymorphismPolicy,
 			Column<T, DTYPE> discriminatorColumn) {
 		
-		return entityJoinTree.addJoin(leftStrategyName, parent -> new SingleTablePolymorphicRelationJoinNode<>(
-				(JoinNode<SRC, T>) (JoinNode) parent,
+		// converting the input to the type expected by SingleTablePolymorphicRelationJoinNode
+		org.codefilarete.stalactite.engine.configurer.model.SingleTablePolymorphism<C, I, DTYPE, T> singleTablePolymorphism =
+				new org.codefilarete.stalactite.engine.configurer.model.SingleTablePolymorphism<>(discriminatorColumn);
+		subPersisters.forEach(subPersister
+				-> {
+			Entity<C, I, T> subEntity = new Entity<C, I, T>(null, null) {
+				@Override
+				public Class<C> getEntityType() {
+					return (Class<C>) subPersister.getClassToPersist();
+				}
+			};
+			singleTablePolymorphism.addSubEntity(
+					polymorphismPolicy.getDiscriminatorValue(subPersister.getClassToPersist()),
+					subEntity);
+		});
+		
+		return entityJoinTree.addJoin(leftStrategyName, parent -> new SingleTablePolymorphicRelationJoinNode<C, T2, T, JOINCOLTYPE, I, DTYPE>(
+				(JoinNode<SRC, T2>) (JoinNode) parent,
 				propertyAccessor,
 				leftJoinColumn,
 				rightJoinColumn,
@@ -352,7 +371,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 				(BeanRelationFixer<Object, C>) beanRelationFixer,
 				discriminatorColumn,
 				subPersisters,
-				polymorphismPolicy));
+				singleTablePolymorphism));
 	}
 	
 	private class SingleTableFirstPhaseRelationLoader extends FirstPhaseRelationLoader<C, I> {

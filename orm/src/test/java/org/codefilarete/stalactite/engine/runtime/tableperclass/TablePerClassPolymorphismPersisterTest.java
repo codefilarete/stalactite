@@ -883,7 +883,7 @@ class TablePerClassPolymorphismPersisterTest {
 					.build(persistenceContext);
 			
 			// Schema contains main and children tables
-			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
+			Set<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
 			assertThat(tables).containsExactlyInAnyOrder("Car", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
@@ -950,7 +950,7 @@ class TablePerClassPolymorphismPersisterTest {
 					.build(persistenceContext);
 			
 			// Schema contains main and children tables
-			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
+			Set<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
 			assertThat(tables).containsExactlyInAnyOrder("Car", "Truck", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)

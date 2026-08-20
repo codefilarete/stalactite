@@ -33,9 +33,9 @@ public class ResolvedManyToManyRelation<
 		RIGHTTABLE extends Table<RIGHTTABLE>>
 		extends ComponentRelation<SRC, TRGT, S, LEFTTABLE, RIGHTTABLE, SRCID> {
 	
-	private final Entity<TRGT, TRGTID, RIGHTTABLE> targetEntity;
+	private final AbstractEntity<TRGT, TRGTID, RIGHTTABLE> targetEntity;
 	
-	public ResolvedManyToManyRelation(Entity<TRGT, TRGTID, RIGHTTABLE> targetEntity,
+	public ResolvedManyToManyRelation(AbstractEntity<TRGT, TRGTID, RIGHTTABLE> targetEntity,
 	                                  ReadWritePropertyAccessPoint<SRC, S> accessor,
 	                                  RelationMode relationMode,
 	                                  boolean fetchSeparately,
@@ -46,7 +46,7 @@ public class ResolvedManyToManyRelation<
 		this.targetEntity = targetEntity;
 	}
 	
-	public Entity<TRGT, TRGTID, RIGHTTABLE> getTargetEntity() {
+	public AbstractEntity<TRGT, TRGTID, RIGHTTABLE> getTargetEntity() {
 		return targetEntity;
 	}
 	

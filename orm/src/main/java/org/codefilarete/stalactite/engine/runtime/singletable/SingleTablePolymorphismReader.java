@@ -22,6 +22,7 @@ public class SingleTablePolymorphismReader<C, I, T extends Table<T>, DTYPE> exte
 	
 	private final SingleTablePolymorphismEntityFinder<C, I, T, DTYPE> entityFinder;
 	private final ConfiguredEntityReader<C, I, T> mainReader;
+	private final Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> subEntitiesPersisters;
 	
 	public SingleTablePolymorphismReader(ConfiguredEntityReader<C, I, T> mainReader,
 	                                     Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> subEntitiesPersisters,
@@ -29,6 +30,7 @@ public class SingleTablePolymorphismReader<C, I, T extends Table<T>, DTYPE> exte
 										 ConnectionProvider connectionProvider,
 	                                     Dialect dialect) {
 		this.mainReader = mainReader;
+		this.subEntitiesPersisters = subEntitiesPersisters;
 		Map<DTYPE, Class<? extends C>> subTypePerDiscriminatorValue = Iterables.map(polymorphism.getSubEntitiesPerDiscriminator().entrySet(), Map.Entry::getKey, entry -> entry.getValue().getEntityType());
 		this.entityFinder = new SingleTablePolymorphismEntityFinder<>(
 				mainReader.getEntityJoinTree(),
@@ -38,6 +40,10 @@ public class SingleTablePolymorphismReader<C, I, T extends Table<T>, DTYPE> exte
 				subTypePerDiscriminatorValue::get,
 				connectionProvider,
 				dialect);
+	}
+	
+	public Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> getSubEntitiesPersisters() {
+		return subEntitiesPersisters;
 	}
 	
 	@Override

@@ -24,7 +24,7 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 public class ResolvedOneToManyRelation<SRC, TRGT, S extends Collection<TRGT>, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
 		extends ComponentRelation<SRC, TRGT, S, LEFTTABLE, RIGHTTABLE, SRCID> {
 	
-	private final Entity<TRGT, TRGTID, RIGHTTABLE> targetEntity;
+	private final AbstractEntity<TRGT, TRGTID, RIGHTTABLE> targetEntity;
 	
 	private final boolean ownedByReverseSide;
 	
@@ -33,7 +33,7 @@ public class ResolvedOneToManyRelation<SRC, TRGT, S extends Collection<TRGT>, SR
 	
 	private final Column<RIGHTTABLE, Integer> indexColumn;
 	
-	public ResolvedOneToManyRelation(Entity<TRGT, TRGTID, RIGHTTABLE> targetEntity,
+	public ResolvedOneToManyRelation(AbstractEntity<TRGT, TRGTID, RIGHTTABLE> targetEntity,
 	                                 ReadWritePropertyAccessPoint<SRC, S> accessor,
 	                                 RelationMode relationMode,
 	                                 boolean ownedByReverseSide,
@@ -50,7 +50,7 @@ public class ResolvedOneToManyRelation<SRC, TRGT, S extends Collection<TRGT>, SR
 		this.indexColumn = indexColumn;
 	}
 	
-	public Entity<TRGT, TRGTID, RIGHTTABLE> getTargetEntity() {
+	public AbstractEntity<TRGT, TRGTID, RIGHTTABLE> getTargetEntity() {
 		return targetEntity;
 	}
 	

@@ -27,8 +27,8 @@ import org.codefilarete.stalactite.engine.configurer.dslresolver.InheritanceConf
 import org.codefilarete.stalactite.engine.configurer.dslresolver.MetadataSolvingCache.EntitySource;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRecord;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
-import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedElementCollectionRelation;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.Size;
@@ -71,7 +71,7 @@ public class ElementCollectionMetadataResolver {
 		return targetEntities;
 	}
 	
-	private <C, I> Set<EntitySource<?, ?>> resolve(Entity<C, I, ?> entity, ResolvedConfiguration<C, I> resolvedConfiguration) {
+	private <C, I> Set<EntitySource<?, ?>> resolve(AbstractEntity<C, I, ?> entity, ResolvedConfiguration<C, I> resolvedConfiguration) {
 		KeepOrderSet<EntitySource<?, ?>> targetEntities = new KeepOrderSet<>();
 		resolvedConfiguration.getMappingConfiguration().getElementCollections().forEach(elementCollection -> {
 			resolve(entity, resolvedConfiguration, elementCollection);
@@ -86,7 +86,7 @@ public class ElementCollectionMetadataResolver {
 	}
 	
 	private <SRC, TRGT, SRCID, S extends Collection<TRGT>, SRCTABLE extends Table<SRCTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>, ER extends ElementRecord<TRGT, SRCID>>
-	void resolve(Entity<SRC, SRCID, SRCTABLE> source,
+	void resolve(AbstractEntity<SRC, SRCID, SRCTABLE> source,
 	             ResolvedConfiguration<SRC, SRCID> resolvedConfiguration,
 	             ElementCollectionRelation<SRC, TRGT, S> collectionRelation) {
 		
@@ -95,7 +95,7 @@ public class ElementCollectionMetadataResolver {
 	}
 	
 	private <SRC, TRGT, SRCID, S extends Collection<TRGT>, SRCTABLE extends Table<SRCTABLE>, COLLECTIONTABLE extends Table<COLLECTIONTABLE>, ER extends ElementRecord<TRGT, SRCID>>
-	ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, SRCTABLE, COLLECTIONTABLE, ER> resolveRelation(Entity<SRC, SRCID, SRCTABLE> source,
+	ResolvedElementCollectionRelation<SRC, TRGT, S, SRCID, SRCTABLE, COLLECTIONTABLE, ER> resolveRelation(AbstractEntity<SRC, SRCID, SRCTABLE> source,
 	                                                                                                      ResolvedConfiguration<SRC, SRCID> resolvedConfiguration,
 	                                                                                                      ElementCollectionRelation<SRC, TRGT, S> collectionRelation) {
 		

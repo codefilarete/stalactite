@@ -21,6 +21,7 @@ import org.codefilarete.stalactite.engine.UpdateExecutor;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphismPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.EntityMappingWrapper;
@@ -324,7 +325,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 																							  boolean loadSeparately) {
 		
 		PrimaryKey<T, ?> mainTablePK = mainPersister.<T>getMapping().getTargetTable().getPrimaryKey();
-		Map<ConfiguredRelationalPersister, Key> joinColumnPerSubPersister = new HashMap<>();
+		Map<ConfiguredEntityReader, Key> joinColumnPerSubPersister = new HashMap<>();
 		if (rightColumn.equals(mainTablePK)) {
 			// join is made on primary key => case is association table
 			subEntitiesPersisters.forEach((c, subPersister) -> {
@@ -368,7 +369,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 	}
 	
 	private <MAINTABLE extends Table<MAINTABLE>, SUBTABLE extends Table<SUBTABLE>, JOINID> KeyBuilder<SUBTABLE, Object>
-	projectPrimaryKey(Key<MAINTABLE, JOINID> rightColumn, ConfiguredRelationalPersister<? extends C, I, SUBTABLE> subPersister) {
+	projectPrimaryKey(Key<MAINTABLE, JOINID> rightColumn, ConfiguredEntityReader<? extends C, I, SUBTABLE> subPersister) {
 		EntityMapping<? extends C, I, SUBTABLE> subTypeMapping = subPersister.getMapping();
 		KeyBuilder<SUBTABLE, Object> reverseKey = Key.from(subTypeMapping.getTargetTable());
 		rightColumn.getColumns().forEach(col -> {
@@ -397,7 +398,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		
 		Set<String> commonColumnsNames = commonColumns.stream().map(JoinLink::getExpression).collect(Collectors.toSet());
 		
-		Set<ConfiguredRelationalEntityPersister<? extends C, I, ?>> subPersisters = new HashSet<>(this.subEntitiesPersisters.values());
+		Set<ConfiguredEntityReader<? extends C, I, ?>> subPersisters = new HashSet<>(this.subEntitiesPersisters.values());
 		
 		KeepOrderSet<Column<?, ?>> nonCommonColumns = new KeepOrderSet<>();
 		subPersisters.forEach(subPersister -> {
@@ -461,7 +462,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			EntityJoinTree<SRC, SRCID> entityJoinTree,
 			String mainPolymorphicJoinNodeName,
 			TablePerClassPolymorphicRelationJoinNode<C, T1, ?, I> mainPersisterJoin,
-			Set<ConfiguredRelationalEntityPersister<? extends C, I, ?>> subPersisters) {
+			Set<ConfiguredEntityReader<? extends C, I, ?>> subPersisters) {
 		
 		// The join is made on the Union as left table, and the column we must get is mainPersister's primaryKey (which table is not in the tree since
 		// we are the table-per-class case), so we have to create an equivalent of the primary key, based on the columns of the union
@@ -498,7 +499,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			String leftStrategyName,
 			Key<T1, JOINID> leftJoinColumn,
 			Key<T2, JOINID> rightJoinColumn,
-			Set<? extends ConfiguredRelationalEntityPersister<? extends C, I, ?>> subPersisters) {
+			Set<? extends ConfiguredEntityReader<? extends C, I, ?>> subPersisters) {
 		
 		Union subPersistersUnion = new Union();
 		// Union will contain only 3 columns :

@@ -22,7 +22,7 @@ public class ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE extends Table<LEFTTAB
 	
 	private final boolean mandatory;
 	
-	public ResolvedOneToOneRelation(Entity<TRGT, ?, RIGHTTABLE> targetEntity,
+	public ResolvedOneToOneRelation(AbstractEntity<TRGT, ?, RIGHTTABLE> targetEntity,
 	                                ReadWritePropertyAccessPoint<SRC, TRGT> accessor,
 	                                CascadeOptions.RelationMode relationMode,
 	                                boolean fetchSeparately,

@@ -6,6 +6,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
+import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorChainMutator;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ReadWriteAccessorChain;
@@ -203,11 +204,15 @@ public class PropertyMappingResolver<C, T extends Table<T>> {
 	
 	private <X, Y> ReadOnlyPropertyMapping<C, Y, T> shiftMapping(ReadWritePropertyAccessPoint<C, X> prefix, ReadOnlyPropertyMapping<X, Y, T> mapping) {
 		AccessorChainMutator<C, X, Y> shiftedAccessor = new AccessorChainMutator<>(Arrays.asList(prefix), mapping.getAccessPoint());
+		// to avoid NullPointerExceptions when accessing an unset property in the chain, we set an initializer
+		shiftedAccessor.setNullValueHandler(AccessorChain.INITIALIZE_VALUE);
 		return new ReadOnlyPropertyMapping<>(new ReadWriteAccessorChain<>(shiftedAccessor), mapping.getColumn(), mapping.isSetByConstructor(), mapping.getReadConverter(), mapping.isUnique());
 	}
 	
 	private <X, Y> PropertyMapping<C, Y, T> shiftMapping(ReadWritePropertyAccessPoint<C, X> prefix, PropertyMapping<X, Y, T> mapping) {
 		ReadWriteAccessorChain<C, X, Y> shiftedAccessor = new ReadWriteAccessorChain<>(Arrays.asList(prefix), mapping.getAccessPoint());
+		// to avoid NullPointerExceptions when accessing an unset property in the chain, we set an initializer
+		shiftedAccessor.setNullValueHandler(AccessorChain.INITIALIZE_VALUE);
 		return new PropertyMapping<>(shiftedAccessor, mapping.getColumn(), mapping.isSetByConstructor(), mapping.getReadConverter(), mapping.getWriteConverter(), mapping.isUnique());
 	}
 	

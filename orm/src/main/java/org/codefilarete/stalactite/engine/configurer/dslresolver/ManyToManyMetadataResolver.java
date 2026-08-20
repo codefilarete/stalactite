@@ -29,6 +29,7 @@ import org.codefilarete.stalactite.engine.configurer.dslresolver.MetadataSolving
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation.MappedByConfiguration;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation.ShiftedMappedByConfiguration;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToManyRelation;
@@ -87,7 +88,7 @@ public class ManyToManyMetadataResolver {
 		return targetEntities;
 	}
 	
-	private <C, I> Set<EntitySource<?, ?>> resolve(Entity<C, I, ?> entity, EntityMappingConfiguration<C, I> mappingConfiguration) {
+	private <C, I> Set<EntitySource<?, ?>> resolve(AbstractEntity<C, I, ?> entity, EntityMappingConfiguration<C, I> mappingConfiguration) {
 		KeepOrderSet<EntitySource<?, ?>> targetEntities = new KeepOrderSet<>();
 		mappingConfiguration.getManyToManys().forEach(manyToMany -> {
 			EntitySource<Object, Object> resolved = this.resolve(entity, manyToMany);
@@ -113,11 +114,11 @@ public class ManyToManyMetadataResolver {
 	<SRC, TRGT, S extends Collection<TRGT>, C2 extends Collection<SRC>, SRCID, TRGTID,
 			SRCTABLE extends Table<SRCTABLE>, TRGTTABLE extends Table<TRGTTABLE>,
 			ASSOCIATIONTABLE extends AssociationTable<ASSOCIATIONTABLE, SRCTABLE, TRGTTABLE, SRCID, TRGTID>>
-	EntitySource<TRGT, TRGTID> resolve(Entity<SRC, SRCID, SRCTABLE> source, ManyToManyRelation<SRC, TRGT, TRGTID, S, C2> manyToMany) {
+		EntitySource<TRGT, TRGTID> resolve(AbstractEntity<SRC, SRCID, SRCTABLE> source, ManyToManyRelation<SRC, TRGT, TRGTID, S, C2> manyToMany) {
 		
 		EntitySource<TRGT, TRGTID> targetEntitySource = buildTargetEntity(manyToMany);
 		NamingConfiguration namingConfiguration = first(targetEntitySource.getResolvedConfigurations()).getNamingConfiguration();
-		Entity<TRGT, TRGTID, TRGTTABLE> targetEntity = targetEntitySource.getEntity();
+		AbstractEntity<TRGT, TRGTID, TRGTTABLE> targetEntity = targetEntitySource.getEntity();
 		
 		AccessorDefinition collectionAccessorDefinition = AccessorDefinition.giveDefinition(manyToMany.getCollectionAccessor());
 		// We prefer the target entity type over the raw Collection member type for table/column naming, mirroring OneToMany behaviour
@@ -243,7 +244,7 @@ public class ManyToManyMetadataResolver {
 	 * </ol>
 	 */
 	private <SRC, TRGT, SRCID, C2 extends Collection<SRC>, S extends Collection<TRGT>, SRCTABLE extends Table<SRCTABLE>>
-	PropertyMutator<TRGT, SRC> buildReverseCombiner(ManyToManyRelation<SRC, TRGT, ?, S, C2> manyToMany, Entity<SRC, SRCID, SRCTABLE> source) {
+	PropertyMutator<TRGT, SRC> buildReverseCombiner(ManyToManyRelation<SRC, TRGT, ?, S, C2> manyToMany, AbstractEntity<SRC, SRCID, SRCTABLE> source) {
 		MappedByConfiguration<SRC, TRGT, C2> mappedByConfiguration = manyToMany.getMappedByConfiguration();
 		if (mappedByConfiguration.isEmpty()) {
 			// relation is not bidirectional, and not even set by the reverse link, there's nothing to do

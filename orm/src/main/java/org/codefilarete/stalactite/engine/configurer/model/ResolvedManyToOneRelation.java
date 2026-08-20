@@ -25,7 +25,7 @@ public class ResolvedManyToOneRelation<
 	
 	private final boolean nullable;
 	
-	public ResolvedManyToOneRelation(Entity<TRGT, TRGTID, RIGHTTABLE> targetEntity,
+	public ResolvedManyToOneRelation(AbstractEntity<TRGT, TRGTID, RIGHTTABLE> targetEntity,
 	                                 ReadWritePropertyAccessPoint<SRC, TRGT> accessor,
 	                                 RelationMode relationMode,
 	                                 boolean fetchSeparately,

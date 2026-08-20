@@ -23,8 +23,8 @@ import org.codefilarete.stalactite.engine.configurer.dslresolver.InheritanceConf
 import org.codefilarete.stalactite.engine.configurer.dslresolver.MetadataSolvingCache.EntitySource;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord;
 import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
-import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.IdentifierMapping;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation.CompositeMemberMapping;
@@ -89,7 +89,7 @@ public class MapMetadataResolver {
 		return targetEntities;
 	}
 	
-	private <C, I> Set<EntitySource<?, ?>> resolve(Entity<C, I, ?> entity, ResolvedConfiguration<C, I> resolvedConfiguration) {
+	private <C, I> Set<EntitySource<?, ?>> resolve(AbstractEntity<C, I, ?> entity, ResolvedConfiguration<C, I> resolvedConfiguration) {
 		KeepOrderSet<EntitySource<?, ?>> targetEntities = new KeepOrderSet<>();
 		resolvedConfiguration.getMappingConfiguration().getMaps().forEach(mapRelation ->
 				targetEntities.addAll(resolve(entity, resolvedConfiguration, mapRelation)));
@@ -104,7 +104,7 @@ public class MapMetadataResolver {
 			MAPTABLE extends Table<MAPTABLE>,
 			KTABLE extends Table<KTABLE>,
 			VTABLE extends Table<VTABLE>>
-	Set<EntitySource<?, ?>> resolve(Entity<SRC, SRCID, SRCTABLE> source,
+	Set<EntitySource<?, ?>> resolve(AbstractEntity<SRC, SRCID, SRCTABLE> source,
 	                                ResolvedConfiguration<SRC, SRCID> resolvedConfiguration,
 	                                MapRelation<SRC, K, V, M> mapRelation) {
 		
@@ -140,7 +140,7 @@ public class MapMetadataResolver {
 		EntryMemberMapping<X, MAPTABLE> keyMapping;
 		if (mapRelation.getKeyEntityConfigurationProvider() != null) {
 			EntitySource<K, KID> keyEntitySource = buildEntity((EntityMappingConfigurationProvider<K, KID>) mapRelation.getKeyEntityConfigurationProvider());
-			Entity<K, KID, KTABLE> keyEntity = keyEntitySource.getEntity();
+			AbstractEntity<K, KID, KTABLE> keyEntity = keyEntitySource.getEntity();
 			targetEntities.add(keyEntitySource);
 			ForeignKey<MAPTABLE, KTABLE, KID> keyEntityReferenceMapping = buildForeignEntityColumnMapping(
 					keyEntitySource,
@@ -182,7 +182,7 @@ public class MapMetadataResolver {
 		EntryMemberMapping<Y, MAPTABLE> valueMapping;
 		if (mapRelation.getValueEntityConfigurationProvider() != null) {
 			EntitySource<V, VID> valueEntitySource = buildEntity((EntityMappingConfigurationProvider<V, VID>) mapRelation.getValueEntityConfigurationProvider());
-			Entity<V, VID, VTABLE> valueEntity = valueEntitySource.getEntity();
+			AbstractEntity<V, VID, VTABLE> valueEntity = valueEntitySource.getEntity();
 			targetEntities.add(valueEntitySource);
 			ForeignKey<MAPTABLE, VTABLE, VID> valueEntityReferenceMapping = buildForeignEntityColumnMapping(
 					valueEntitySource,

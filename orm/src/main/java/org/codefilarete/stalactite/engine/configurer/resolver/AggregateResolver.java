@@ -25,6 +25,7 @@ import org.codefilarete.stalactite.engine.configurer.model.AncestorJoin;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.EntityRelation;
+import org.codefilarete.stalactite.engine.configurer.model.ExtraTableJoin;
 import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.JoinTablePolymorphism;
 import org.codefilarete.stalactite.engine.configurer.model.MappingJoin;
@@ -51,6 +52,7 @@ import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.Aggregat
 import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.OneToManyResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetoone.AggregateOneToOneAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetoone.OneToOneResolver;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.PolymorphicSkeletonResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.PolymorphismResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.jointable.JoinTableResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.singletable.SingleTableResolver;
@@ -145,7 +147,7 @@ public class AggregateResolver {
 		this.elementCollectionAppender = new AggregateElementCollectionAppender();
 		this.mapAppender = new AggregateMapAppender();
 		
-		this.oneToOneResolver = new OneToOneResolver(skeletonAggregateResolver);
+		this.oneToOneResolver = new OneToOneResolver(skeletonAggregateResolver, new PolymorphicSkeletonResolver(persistenceContext));
 		this.oneToManyResolver = new OneToManyResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 		this.manyToManyResolver = new ManyToManyResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 		this.manyToOneResolver = new ManyToOneResolver(skeletonAggregateResolver);
@@ -454,12 +456,11 @@ public class AggregateResolver {
 						if (relationPawn instanceof ResolvedOneToOneRelation) {
 							CreatedPersisterCollector<TRGT, TRGTID> localCreatedPersistor = (CreatedPersisterCollector<TRGT, TRGTID>) createdPersisters.get(relationPawn);
 							ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> localRelation = (ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID>) relationPawn;
-							EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister = new EntityReader<>(
-									localCreatedPersistor.getPersister().<RIGHTTABLE>getMapping(), persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
+							DelegatingReadWriteEntityExecutor<TRGT, TRGTID> persister = ((DelegatingReadWriteEntityExecutor<TRGT, TRGTID>) localCreatedPersistor.getPersister());
 							GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> graftPoint = oneToOneAppender.append(
 									localRelation,
 									sourcePersister,
-									targetPersister,
+									(ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE>) persister.getReader(),
 									assemblyPawn.getParentJoinPoint(),
 									assemblyPawn.getAggregateTree());
 							
@@ -583,48 +584,70 @@ public class AggregateResolver {
 	}
 	
 	private <C, I, T extends Table<T>> Set<Table<?>> collectTables(AbstractEntity<C, I, T> rootEntity) {
-		Set<Table<?>> tables = new HashSet<>();
+		
 		Queue<AbstractEntity<?, ?, ?>> relationStack = new ArrayDeque<>();
-		// Initializing the stack
-		// Particular case : we don't want to add the "abstract table" of table-per-class but rather its sub-types ones
-		if (rootEntity.isTablePerClass()) {
-			relationStack.addAll(((PolymorphicEntity<?, ?, ?>) rootEntity).getPolymorphism().getSubEntities());
-		} else {
-			relationStack.add(rootEntity);
-		}
-		while (!relationStack.isEmpty()) {
-			AbstractEntity<?, ?, ?> entity = relationStack.poll();
-			tables.add(entity.getTable());
-			entity.getRelations().forEach(relation -> {
-				RelationJoin relationJoin = relation.getJoin();
-				if (relationJoin instanceof DirectRelationJoin) {
-					DirectRelationJoin directRelationJoin = (DirectRelationJoin) relationJoin;
-					tables.add((Table<?>) directRelationJoin.getLeftKey().getTable());
-					tables.add((Table<?>) directRelationJoin.getRightKey().getTable());
-				} else if (relationJoin instanceof IntermediaryRelationJoin) {
-					IntermediaryRelationJoin intermediaryRelationJoin = (IntermediaryRelationJoin) relationJoin;
-					tables.add((Table<?>) intermediaryRelationJoin.getLeftKey().getTable());
-					tables.add((Table<?>) intermediaryRelationJoin.getRightKey().getTable());
-					tables.add(intermediaryRelationJoin.getJoinTable());
-				}
 				
-				// preparing for next iteration
-				if (relation instanceof EntityRelation) {
-					relationStack.add(((EntityRelation) relation).getTargetEntity());
-				} else if (relation instanceof ResolvedOneToManyRelation) {
-					relationStack.add(((ResolvedOneToManyRelation) relation).getTargetEntity());
-				} else if (relation instanceof ResolvedManyToManyRelation) {
-					relationStack.add(((ResolvedManyToManyRelation) relation).getTargetEntity());
-				} else if (relation instanceof ResolvedMapRelation) {
-					ResolvedMapRelation mapRelation = (ResolvedMapRelation) relation;
+		class TableCollector {
+			private final Set<Table<?>> tables = new HashSet<>();
+			
+			private void add(MappingJoin<?, ?, ?> join) {
+				if (join instanceof EntityRelation) {
+					// *-to-one relations
+					add(((EntityRelation) join).getTargetEntity());
+					// preparing for next iteration
+					relationStack.add(((EntityRelation) join).getTargetEntity());
+				} else if (join instanceof ResolvedOneToManyRelation) {
+					add(((ResolvedOneToManyRelation) join).getTargetEntity());
+					RelationJoin relationJoin = join.getJoin();
+					if (relationJoin instanceof IntermediaryRelationJoin) {
+						IntermediaryRelationJoin intermediaryRelationJoin = (IntermediaryRelationJoin) relationJoin;
+						tables.add(intermediaryRelationJoin.getJoinTable());
+					}
+					// preparing for next iteration
+					relationStack.add(((ResolvedOneToManyRelation) join).getTargetEntity());
+				} else if (join instanceof ResolvedManyToManyRelation) {
+					add(((ResolvedManyToManyRelation) join).getTargetEntity());
+					RelationJoin relationJoin = join.getJoin();
+					if (relationJoin instanceof IntermediaryRelationJoin) {
+						IntermediaryRelationJoin intermediaryRelationJoin = (IntermediaryRelationJoin) relationJoin;
+						tables.add(intermediaryRelationJoin.getJoinTable());
+					}
+					// preparing for next iteration
+					relationStack.add(((ResolvedManyToManyRelation) join).getTargetEntity());
+				} else if (join instanceof ResolvedMapRelation) {
+					ResolvedMapRelation mapRelation = (ResolvedMapRelation) join;
 					if (mapRelation.getKeyEntityDefinition() != null) {
+						add(mapRelation.getKeyEntityDefinition().getEntity());
 						relationStack.add(mapRelation.getKeyEntityDefinition().getEntity());
 					}
 					if (mapRelation.getValueEntityDefinition() != null) {
+						add(mapRelation.getValueEntityDefinition().getEntity());
 						relationStack.add(mapRelation.getValueEntityDefinition().getEntity());
 					}
+					DirectRelationJoin directRelationJoin = (DirectRelationJoin) join.getJoin();
+					tables.add((Table<?>) directRelationJoin.getRightKey().getTable());
+				} else if (join instanceof ResolvedElementCollectionRelation
+						|| join instanceof ExtraTableJoin
+						|| join instanceof AncestorJoin) {
+					DirectRelationJoin directRelationJoin = (DirectRelationJoin) join.getJoin();
+					tables.add((Table<?>) directRelationJoin.getRightKey().getTable());
 				}
-			});
+			}
+			
+			private void add(AbstractEntity<?, ?, ?> entity) {
+				if (!entity.isTablePerClass()) {	// the table-per-class root entity doesn't have its own table
+					tables.add(entity.getTable());
+				}
+			}
+		}
+		
+		TableCollector tables = new TableCollector();
+		// Initializing the stack
+		relationStack.add(rootEntity);
+		while (!relationStack.isEmpty()) {
+			AbstractEntity<?, ?, ?> entity = relationStack.poll();
+			tables.add(entity);
+			entity.getRelations().forEach(tables::add);
 			AncestorJoin<?, ?, ?, ?> parent = entity.getParent();
 			if (parent != null) {
 				relationStack.add(parent.getAncestor());
@@ -633,7 +656,7 @@ public class AggregateResolver {
 				relationStack.addAll(((PolymorphicEntity<?, ?, ?>) entity).getPolymorphism().getSubEntities());
 			}
 		}
-		return tables;
+		return tables.tables;
 	}
 	
 	/**

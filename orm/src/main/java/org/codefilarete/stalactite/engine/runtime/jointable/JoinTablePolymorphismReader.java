@@ -20,12 +20,14 @@ public class JoinTablePolymorphismReader<C, I, T extends Table<T>> extends ReadL
 	
 	private final JoinTablePolymorphismEntityFinder<C, I, T> entityFinder;
 	private final ConfiguredEntityReader<C, I, T> mainReader;
+	private final Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> subEntitiesPersisters;
 	
 	public JoinTablePolymorphismReader(ConfiguredEntityReader<C, I, T> mainReader,
 	                                   Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> subEntitiesPersisters,
 	                                   ConnectionProvider connectionProvider,
 	                                   Dialect dialect) {
 		this.mainReader = mainReader;
+		this.subEntitiesPersisters = subEntitiesPersisters;
 		this.entityFinder = new JoinTablePolymorphismEntityFinder<>(
 				mainReader.getEntityJoinTree(),
 				mainReader,
@@ -34,6 +36,9 @@ public class JoinTablePolymorphismReader<C, I, T extends Table<T>> extends ReadL
 				dialect);
 	}
 	
+	public Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> getSubEntitiesPersisters() {
+		return subEntitiesPersisters;
+	}
 	
 	@Override
 	public EntityJoinTree<C, I> getEntityJoinTree() {

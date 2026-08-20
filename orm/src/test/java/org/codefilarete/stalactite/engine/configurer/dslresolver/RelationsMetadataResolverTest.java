@@ -76,7 +76,7 @@ class RelationsMetadataResolverTest {
 
 		// Depth 2: the target City entity should itself have its relation to State resolved
 		ResolvedOneToOneRelation<?, ?, ?, ?, ?> countryToCityRelation = (ResolvedOneToOneRelation<?, ?, ?, ?, ?>) firstCountryRelation;
-		Entity<?, ?, ?> cityEntity = countryToCityRelation.getTargetEntity();
+		AbstractEntity<?, ?, ?> cityEntity = countryToCityRelation.getTargetEntity();
 		assertThat(cityEntity.getEntityType()).isEqualTo(City.class);
 		
 		Set<MappingJoin<?, ?, ?>> cityRelations = cityEntity.getRelations();
@@ -87,7 +87,7 @@ class RelationsMetadataResolverTest {
 		// Depth 3: the target State entity has no further relations
 		ResolvedOneToOneRelation<?, ?, ?, ?, ?> cityToStateRelation = (ResolvedOneToOneRelation<?, ?, ?, ?, ?>) firstCityRelation;
 		assertThat(cityToStateRelation.getTargetEntity().getEntityType()).isEqualTo(State.class);
-		Entity<?, ?, ?> stateEntity = cityToStateRelation.getTargetEntity();
+		AbstractEntity<?, ?, ?> stateEntity = cityToStateRelation.getTargetEntity();
 		assertThat(stateEntity.getRelations()).isEmpty();
 	}
 
@@ -130,7 +130,7 @@ class RelationsMetadataResolverTest {
 		// Depth 2: the target City entity should itself have its relation to Person resolved
 		ResolvedOneToManyRelation<?, ?, ?, ?, ?, ?, ?> countryToCityRelation =
 				(ResolvedOneToManyRelation<?, ?, ?, ?, ?, ?, ?>) firstCountryRelation;
-		Entity<?, ?, ?> cityEntity = countryToCityRelation.getTargetEntity();
+		AbstractEntity<?, ?, ?> cityEntity = countryToCityRelation.getTargetEntity();
 		assertThat(cityEntity.getEntityType()).isEqualTo(City.class);
 		
 		Set<MappingJoin<?, ?, ?>> cityRelations = cityEntity.getRelations();
@@ -140,7 +140,7 @@ class RelationsMetadataResolverTest {
 
 		// Depth 3: Person has no further relations
 		ResolvedOneToManyRelation<?, ?, ?, ?, ?, ?, ?> cityToPersonRelation = (ResolvedOneToManyRelation<?, ?, ?, ?, ?, ?, ?>) firstCityRelation;
-		Entity<?, ?, ?> personEntity = cityToPersonRelation.getTargetEntity();
+		AbstractEntity<?, ?, ?> personEntity = cityToPersonRelation.getTargetEntity();
 		assertThat(personEntity.getEntityType()).isEqualTo(Person.class);
 		assertThat(personEntity.getRelations()).isEmpty();
 	}
@@ -226,7 +226,7 @@ class RelationsMetadataResolverTest {
 		// a naive (non-traversing) algorithm would miss this level
 		ResolvedOneToManyRelation<?, ?, ?, ?, ?, ?, ?> countryToCityRelation =
 				(ResolvedOneToManyRelation<?, ?, ?, ?, ?, ?, ?>) firstCountryRelation;
-		Entity<?, ?, ?> cityEntity = countryToCityRelation.getTargetEntity();
+		AbstractEntity<?, ?, ?> cityEntity = countryToCityRelation.getTargetEntity();
 		assertThat(cityEntity.getEntityType()).isEqualTo(City.class);
 		Set<MappingJoin<?, ?, ?>> cityRelations = cityEntity.getRelations();
 		assertThat(cityRelations).hasSize(1);
@@ -355,7 +355,7 @@ class RelationsMetadataResolverTest {
 		// Navigate to the City entity produced by resolving Country's one-to-many
 		ResolvedOneToManyRelation<?, ?, ?, ?, ?, ?, ?> countryToCityRelation =
 				(ResolvedOneToManyRelation<?, ?, ?, ?, ?, ?, ?>) firstAncestorRelation;
-		Entity<?, ?, ?> cityEntity = countryToCityRelation.getTargetEntity();
+		AbstractEntity<?, ?, ?> cityEntity = countryToCityRelation.getTargetEntity();
 		
 		// City's own relations (state + persons) must also have been resolved by the traversal:
 		// this is the key assertion — a naive algorithm that does not re-enqueue children

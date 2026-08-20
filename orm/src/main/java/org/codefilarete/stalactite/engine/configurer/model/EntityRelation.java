@@ -18,11 +18,11 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 public abstract class EntityRelation<SRC, TRGT, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINTYPE>
 		extends Relation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINTYPE> {
 	
-	private final Entity<TRGT, ?, RIGHTTABLE> targetEntity;
+	private final AbstractEntity<TRGT, ?, RIGHTTABLE> targetEntity;
 	
 	private final BeanRelationFixer<SRC, TRGT> beanRelationFixer;
 	
-	public EntityRelation(Entity<TRGT, ?, RIGHTTABLE> targetEntity,
+	public EntityRelation(AbstractEntity<TRGT, ?, RIGHTTABLE> targetEntity,
 	                      ReadWritePropertyAccessPoint<SRC, TRGT> accessor,
 						  RelationMode relationMode,
 						  boolean fetchSeparately,
@@ -34,8 +34,8 @@ public abstract class EntityRelation<SRC, TRGT, LEFTTABLE extends Table<LEFTTABL
 		this.beanRelationFixer = beanRelationFixer;
 	}
 	
-	public <TRGTID> Entity<TRGT, TRGTID, RIGHTTABLE> getTargetEntity() {
-		return (Entity<TRGT, TRGTID, RIGHTTABLE>) targetEntity;
+	public <TRGTID> AbstractEntity<TRGT, TRGTID, RIGHTTABLE> getTargetEntity() {
+		return (AbstractEntity<TRGT, TRGTID, RIGHTTABLE>) targetEntity;
 	}
 	
 	@Override

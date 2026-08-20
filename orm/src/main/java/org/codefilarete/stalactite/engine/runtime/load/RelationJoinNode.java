@@ -68,7 +68,7 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 	public RelationJoinNode(JoinNode<?, T1> parent,
 							// First generic type is unknown because it's the relation owning type.
 							// Second generic type should be C, or a type containing C (like a Collection<C>or even Map<K, C>) which makes it
-							// impossible to implement; thus, we have to use the ? wilcard.
+							// impossible to implement; thus, we have to use the ? wildcard.
 							PropertyAccessPoint<?, ?> propertyAccessor,
 							Key<T1, JOINTYPE> leftJoinColumn,
 							Key<T2, JOINTYPE> rightJoinColumn,
@@ -88,7 +88,7 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 	RelationJoinNode(JoinNode<?, T1> parent,
 					 // First generic type is unknown because it's the relation owning type.
 					 // Second generic type should be C, or a type containing C (like a Collection<C>or even Map<K, C>) which makes it
-					 // impossible to implement; thus, we have to use the ? wilcard.
+					 // impossible to implement; thus, we have to use the ? wildcard.
 					 PropertyAccessPoint<?, ?> propertyAccessor,
 					 Key<T1, JOINTYPE> leftJoinColumn,
 					 Key<T2, JOINTYPE> rightJoinColumn,

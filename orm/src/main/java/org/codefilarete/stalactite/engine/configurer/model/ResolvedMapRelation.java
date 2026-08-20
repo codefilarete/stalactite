@@ -130,10 +130,10 @@ public class ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M extends Map<K, V>
 	public static class MapMemberAsEntity<ENTITY, ENTITY_ID, MAPTABLE extends Table<MAPTABLE>, ENTITY_TABLE extends Table<ENTITY_TABLE>, X /* is either ENTITY or ENTITY_ID */> {
 		
 		private final ForeignKey<MAPTABLE, ENTITY_TABLE, ENTITY_ID> foreignKey;
-		private final Entity<ENTITY, ENTITY_ID, ENTITY_TABLE> entity;
+		private final AbstractEntity<ENTITY, ENTITY_ID, ENTITY_TABLE> entity;
 		private final RelationMode relationMode;
 		
-		public MapMemberAsEntity(Entity<ENTITY, ENTITY_ID, ENTITY_TABLE> entity,
+		public MapMemberAsEntity(AbstractEntity<ENTITY, ENTITY_ID, ENTITY_TABLE> entity,
 		                         ForeignKey<MAPTABLE, ENTITY_TABLE, ENTITY_ID> foreignKey,
 		                         RelationMode relationMode) {
 			this.foreignKey = foreignKey;
@@ -145,7 +145,7 @@ public class ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M extends Map<K, V>
 			return foreignKey;
 		}
 		
-		public Entity<ENTITY, ENTITY_ID, ENTITY_TABLE> getEntity() {
+		public AbstractEntity<ENTITY, ENTITY_ID, ENTITY_TABLE> getEntity() {
 			return entity;
 		}
 		

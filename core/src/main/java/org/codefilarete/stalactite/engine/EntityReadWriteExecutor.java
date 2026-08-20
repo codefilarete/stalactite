@@ -5,9 +5,9 @@ package org.codefilarete.stalactite.engine;
  * - write the entity (without cascading the relations if any)
  * - load the entity from the database (without its relations)
  * 
- * Thus, this interface is a mashup of {@link EntityWriteExecutor} and {@link EntityReadExecutor}, which allows to
- * propose also the {@link PersistExecutor#persist(Object[])} ability since this method requires to load the entity
- * from the database to compute the difference between the memory state and the persisted state in update case.
+ * Thus, this interface is a mashup of {@link EntityWriteExecutor} and {@link EntityReadExecutor}, which allows
+ * proposing the {@link PersistExecutor#persist(Object[])} ability since this method requires loading the entity
+ * from the database to compute the difference between the memory state and the persisted state in the update case.
  * 
  * @param <C>
  * @param <I>

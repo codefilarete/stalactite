@@ -4,16 +4,20 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.InheritanceConfigurationResolver.ResolvedConfiguration;
 import org.codefilarete.stalactite.engine.configurer.dslresolver.MetadataSolvingCache.EntitySource;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity.AbstractPropertyMapping;
 import org.codefilarete.stalactite.engine.configurer.model.AncestorJoin;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.Entity;
-import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity.AbstractPropertyMapping;
+import org.codefilarete.stalactite.engine.configurer.model.EntityPolymorphism;
 import org.codefilarete.stalactite.engine.configurer.model.ExtraTableJoin;
 import org.codefilarete.stalactite.engine.configurer.model.Mapping;
+import org.codefilarete.stalactite.engine.configurer.model.PolymorphicEntity;
 import org.codefilarete.stalactite.engine.configurer.model.PropertyMappingHolder;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -22,7 +26,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
-import org.codefilarete.tool.function.Hanger;
+import org.codefilarete.tool.function.Hanger.Holder;
 
 import static org.codefilarete.tool.collection.Iterables.first;
 
@@ -55,7 +59,7 @@ public class InheritanceMetadataResolver<C, I, T extends Table<T>> {
 	 * @param entityConfiguration the configuration to transform into an {@link Entity} instance
 	 * @return an {@link Entity} instance, filled with identifier and ancestors information
 	 */
-	Entity<C, I, T> resolve(EntityMappingConfiguration<C, I> entityConfiguration) {
+	AbstractEntity<C, I, T> resolve(EntityMappingConfiguration<C, I> entityConfiguration) {
 		InheritanceConfigurationResolver<C, I> inheritanceConfigurationResolver = new InheritanceConfigurationResolver<>();
 		KeepOrderSet<ResolvedConfiguration<?, I>> bottomToTopConfigurations = inheritanceConfigurationResolver.resolveConfigurations(entityConfiguration);
 		return resolve(bottomToTopConfigurations).getEntity();
@@ -79,11 +83,11 @@ public class InheritanceMetadataResolver<C, I, T extends Table<T>> {
 		// Handling very first entity as a seed for eventual next iterations on the hierarchy
 		ResolvedConfiguration<C, I> bottomestConfiguration = (ResolvedConfiguration<C, I>) first(bottomToTopConfigurations);
 		T bottomTable = (T) bottomestConfiguration.getTable();
-		Entity<C, I, T> bottomestEntity = this.buildEntity(bottomestConfiguration, bottomTable);
+		AbstractEntity<C, I, T> bottomestEntity = buildMainEntity(bottomestConfiguration, bottomTable);
 		EntitySource<C, I> bottomestEntitySource = new EntitySource<>(bottomestEntity, bottomestConfiguration);
 		
-		final Hanger.Holder<TT> previousTable = new Hanger.Holder<>((TT) bottomTable);
-		final Hanger.Holder<Entity<X, I, TT>> previousEntity = new Hanger.Holder<>((Entity<X, I, TT>) bottomestEntity);
+		final Holder<TT> previousTable = new Holder<>((TT) bottomTable);
+		final Holder<AbstractEntity<X, I, TT>> previousEntity = new Holder<>((AbstractEntity<X, I, TT>) bottomestEntity);
 		bottomToTopConfigurations.stream().skip(1)
 				.map(((Class<ResolvedConfiguration<X, I>>) (Class) ResolvedConfiguration.class)::cast)
 				.forEach(resolvedConfigurationPawn -> {
@@ -111,7 +115,31 @@ public class InheritanceMetadataResolver<C, I, T extends Table<T>> {
 		return result;
 	}
 	
-	private <X, TT extends Table<TT>, EXTRATABLE extends Table<EXTRATABLE>> void addMapping(Entity<X, I, TT> entity,
+	/**
+	 * Build either an {@link Entity} or a {@link PolymorphicEntity} depending on the presence of a polymorphism policy on the
+	 * given configuration.
+	 * 
+	 * @param configuration the configuration to build an entity from
+	 * @param table the table of the configuration
+	 * @return an {@link Entity} or a {@link PolymorphicEntity} depending on the presence of a polymorphism policy on the given configuration
+	 * @param <X> the entity type
+	 * @param <TT> the table type
+	 */
+	private <X, TT extends Table<TT>> AbstractEntity<X, I, TT> buildMainEntity(ResolvedConfiguration<X, I> configuration, TT table) {
+		AbstractEntity<X, I, TT> result = buildEntity(configuration, table);
+		
+		PolymorphismPolicy<X> polymorphismPolicy = configuration.getMappingConfiguration().getPolymorphismPolicy();
+		if (polymorphismPolicy != null) {
+			// we transforme the result to a PolymorphicEntity
+			PolymorphismMetadataResolver polymorphismMetadataResolver = new PolymorphismMetadataResolver(dialect);
+			EntityPolymorphism<X, I> entityPolymorphism = polymorphismMetadataResolver.resolve(configuration, polymorphismPolicy, (Entity<X, I, ?>) result);
+			result = new PolymorphicEntity<>(configuration.getIdentifierMapping(), result.getMapping(), entityPolymorphism);
+		}
+		
+		return result;
+	}
+	
+	private <X, TT extends Table<TT>, EXTRATABLE extends Table<EXTRATABLE>> void addMapping(AbstractEntity<X, I, TT> entity,
 	                                                                                         ResolvedConfiguration<X, I> configuration,
 	                                                                                         TT table) {
 		PropertyMappingResolver<X, TT> propertyMappingResolver = new PropertyMappingResolver<>(dialect.getColumnBinderRegistry());
@@ -132,7 +160,7 @@ public class InheritanceMetadataResolver<C, I, T extends Table<T>> {
 		
 	}
 	
-	private <X, TT extends Table<TT>, EXTRATABLE extends Table<EXTRATABLE>> void addExtraTableProperties(Entity<X, I, TT> result,
+	private <X, TT extends Table<TT>, EXTRATABLE extends Table<EXTRATABLE>> void addExtraTableProperties(AbstractEntity<X, I, TT> result,
 	                                                                                                     Collection<AbstractPropertyMapping<X, ?, EXTRATABLE>> extraTableProperties,
 	                                                                                                     ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
 		Map<EXTRATABLE, KeepOrderSet<AbstractPropertyMapping<X, ?, EXTRATABLE>>> propertiesPerTable = new KeepOrderMap<>();

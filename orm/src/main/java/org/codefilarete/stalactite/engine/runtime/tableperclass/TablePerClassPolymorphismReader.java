@@ -20,18 +20,24 @@ public class TablePerClassPolymorphismReader<C, I, T extends Table<T>> extends R
 	
 	private final TablePerClassPolymorphismEntityFinder<C, I, T> entityFinder;
 	private final ConfiguredEntityReader<C, I, T> mainReader;
+	private final Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> subEntitiesPersisters;
 	
 	public TablePerClassPolymorphismReader(ConfiguredEntityReader<C, I, T> mainReader,
 	                                       Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> subEntitiesPersisters,
 	                                       ConnectionProvider connectionProvider,
 	                                       Dialect dialect) {
 		this.mainReader = mainReader;
+		this.subEntitiesPersisters = subEntitiesPersisters;
 		this.entityFinder = new TablePerClassPolymorphismEntityFinder<>(
 				mainReader.getEntityJoinTree(),
 				mainReader,
 				subEntitiesPersisters,
 				connectionProvider,
 				dialect);
+	}
+	
+	public Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> getSubEntitiesPersisters() {
+		return subEntitiesPersisters;
 	}
 	
 	@Override
