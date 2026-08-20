@@ -11,7 +11,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.Relati
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.ForkJoinRowConsumer;
 import org.codefilarete.stalactite.query.api.JoinLink;
-import org.codefilarete.stalactite.query.api.QueryStatement;
+import org.codefilarete.stalactite.query.api.QueryStatement.PseudoColumn;
 import org.codefilarete.stalactite.query.api.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.model.Union;
@@ -35,6 +35,9 @@ import static org.codefilarete.tool.Nullable.nullable;
  * Finally, {@link TablePerClassPolymorphicRelationJoinRowConsumer} must extend {@link ForkJoinRowConsumer} to give next branch to be consumed by
  * {@link EntityTreeInflater} to avoid "dead" branch to be read : we give it according to the consumer which found the identifier. 
  * 
+ * Caller shall call {@link #addSubPersisterJoin(PolymorphicMergeJoinRowConsumer, int)} for each sub-persister
+ * to make the created instance capable of creating sub-entities.
+ * 
  * @author Guillaume Mary
  */
 public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, JOINCOLTYPE, I> extends RelationJoinNode<C, T1, PseudoTable, JOINCOLTYPE, I> {
@@ -53,7 +56,7 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 	private final Set<SubPersisterAndDiscriminator<? extends C>> subPersisters = new HashSet<>();
 	
 	private final PseudoTable pseudoTable;
-	private final Union.PseudoColumn<Integer> discriminatorColumn;
+	private final PseudoColumn<Integer> discriminatorColumn;
 	private final Key<PseudoTable, JOINCOLTYPE> pseudoRightJoinLink;
 	
 	public TablePerClassPolymorphicRelationJoinNode(JoinNode<?, T1> parent,
@@ -69,7 +72,7 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 													@Nullable String tableAlias,
 													EntityInflater<C, I> entityInflater,
 													BeanRelationFixer<Object, C> beanRelationFixer,
-													Union.PseudoColumn<Integer> discriminatorColumn) {
+													PseudoColumn<Integer> discriminatorColumn) {
 		super(parent, propertyAccessor, leftJoinColumn, (Key) rightJoinColumn, joinType, columnsToSelect, tableAlias, entityInflater, beanRelationFixer, null,
 				collectColumnClones(rightJoinColumn, columnsToSelect));
 		this.pseudoTable = subPersistersUnion.asPseudoTable(getTableAlias());
@@ -81,7 +84,7 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 		Key.KeyBuilder<PseudoTable, JOINCOLTYPE> pseudoRightJoinLinkBuilder = Key.from(pseudoTable);
 		rightJoinColumn.getColumns()
 				.forEach(column -> {
-					QueryStatement.PseudoColumn pseudoColumn1 = Iterables.find(pseudoTable.getColumns(), pseudoColumn -> pseudoColumn.getExpression().equals(column.getExpression()));
+					PseudoColumn pseudoColumn1 = Iterables.find(pseudoTable.getColumns(), pseudoColumn -> pseudoColumn.getExpression().equals(column.getExpression()));
 					pseudoRightJoinLinkBuilder.addColumn(pseudoColumn1);
 				});
 		this.pseudoRightJoinLink = pseudoRightJoinLinkBuilder.build();
@@ -136,10 +139,10 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 		/** Optional listener of ResultSet decoding */
 		@Nullable
 		private final EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
-		private final Union.PseudoColumn<Integer> discriminatorColumn;
+		private final PseudoColumn<Integer> discriminatorColumn;
 
 		private TablePerClassPolymorphicRelationJoinRowConsumer(JoinNode<C, PseudoTable> joinNode,
-																Union.PseudoColumn<Integer> discriminatorColumn,
+																PseudoColumn<Integer> discriminatorColumn,
 																@Nullable EntityTreeJoinNodeConsumptionListener<C> consumptionListener) {
 			this.joinNode = joinNode;
 			this.consumptionListener = consumptionListener;
@@ -183,9 +186,7 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 		}
 		
 		@Nullable
-		/* Optimized, from 530 000 nanos to 65 000 nanos at 1st exec, from 40 000 nanos to 12 000 nanos on usual run */
 		private <D extends C> RowIdentifier<D> giveIdentifier(ColumnedRow row) {
-			// @Optimized : use for & return instead of stream().map().filter(notNull).findFirst()
 			Integer discriminatorValue = row.get(discriminatorColumn);
 			if (discriminatorValue != null) {
 				SubPersisterAndDiscriminator<D> discriminatorConsumer = (SubPersisterAndDiscriminator) Iterables.find(subPersisters, o -> o.discriminatorValue == discriminatorValue);

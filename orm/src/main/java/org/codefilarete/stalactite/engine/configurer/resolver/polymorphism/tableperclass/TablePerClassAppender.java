@@ -1,28 +1,40 @@
 package org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.tableperclass;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
-import org.codefilarete.stalactite.engine.configurer.model.TablePerClassPolymorphism;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
-import org.codefilarete.stalactite.engine.configurer.resolver.EntityReader;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.JoinNode;
+import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode;
+import org.codefilarete.stalactite.engine.runtime.load.PolymorphicMergeJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.TablePerClassPolymorphicRelationJoinNode;
-import org.codefilarete.stalactite.engine.runtime.tableperclass.TablePerClassPolymorphismWriter;
+import org.codefilarete.stalactite.engine.runtime.tableperclass.TablePerClassPolymorphismReader;
+import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QueryStatement;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Union;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
-import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.trace.MutableInt;
+
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType.OUTER;
+import static org.codefilarete.stalactite.query.Operators.cast;
 
 public class TablePerClassAppender {
 	
@@ -31,94 +43,126 @@ public class TablePerClassAppender {
 	public TablePerClassAppender() {
 	}
 	
-	public <SRC, SRCID, TRGT, TRGTID, SUBTRGT extends TRGT, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
+	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
 	GraftPoint append(EntityJoinTree<SRC, SRCID> aggregateTree,
-	                  EntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
-	                  TablePerClassPolymorphismWriter<TRGT, TRGTID, LEFTTABLE, SUBTRGT> targetPersister,
-	                  TablePerClassPolymorphism<SRC, SRCID> polymorphisn,
-					  ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> relationPawn,
+					  TablePerClassPolymorphismReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
+					  ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> relation,
 	                  String mountPoint) {
 		
-		Holder<GraftPoint> resultHolder = new Holder<>();
-		Map<Class<SUBTRGT>, EntityReader<SUBTRGT, TRGTID, ?>> subEntitiesPersisters = null;// = targetPersister.getSubEntitiesPersisters();
-		DirectRelationJoin<LEFTTABLE, RIGHTTABLE, JOINID> join = relationPawn.getJoin();
-		TablePerClassUnion union = buildUnion(
-				subEntitiesPersisters.values(),
-				join.getRightKey());
+		Set<ConfiguredEntityReader<? extends TRGT, TRGTID, ?>> subPersisters = new HashSet<>(targetPersister.getSubEntitiesPersisters().values());
 		
-		// accessor shifting — identical to AggregateOneToOneAppender lines 37-46
-		PropertyAccessor<SRC, TRGT> accessor = relationPawn.getAccessor();
-//			PropertyAccessor<SRC, TRGT> accessor = shift(assemblyPawn, relationPawn.getAccessor());
-
-//			Holder<TablePerClassPolymorphicRelationJoinNode<TRGT, LEFTTABLE, JOINID, TRGTID>> nodeHolder = new Holder<>();
-		String joinName = aggregateTree.addJoin(
-				mountPoint,
-				parent -> {
-//					return null;
-					TablePerClassPolymorphicRelationJoinNode<TRGT, LEFTTABLE, JOINID, TRGTID> node =
-							new TablePerClassPolymorphicRelationJoinNode<TRGT, LEFTTABLE, JOINID, TRGTID>(
-									(JoinNode<SRC, LEFTTABLE>) (JoinNode) parent,
-									union,
-									accessor,
-									join.getLeftKey(),
-									join.getRightKey(),
-									EntityJoinTree.JoinType.OUTER,
-									union.getColumns(),
-									targetPersister.getClassToPersist().getSimpleName(),
-									new EntityInflater.EntityMappingAdapter<>(targetPersister.getMapping()),
-									(BeanRelationFixer<Object, TRGT>) relationPawn.getRelationFixer(),
-									union.getDiscriminatorColumn());
-//					nodeHolder.set(node);
-					return node;
-				});
+		DirectRelationJoin<LEFTTABLE, RIGHTTABLE, JOINID> join = relation.getJoin();
 		
-		// attach the per-sub-persister merge joins (legacy addTablePerClassPolymorphicSubPersistersJoins, lines 439-468)
-//			attachSubPersisterJoins(rootPersister.getEntityJoinTree(), joinName, nodeHolder.get(), union);
+		TablePerClassUnion<?, TRGTID> union = buildUnion(subPersisters, targetPersister.getMapping().getSelectableColumns());
 		
-		// descend further: sub-entities' OWN relations are appended by the existing BFS
-//		resultHolder.set(new GraftPoint(relationPawn.getTargetEntity(), targetPersister, joinName, aggregateTree));
-//		});
-		return resultHolder.get();
+		Holder<TablePerClassPolymorphicRelationJoinNode<TRGT, LEFTTABLE, JOINID, TRGTID>> createdJoinHolder = new Holder<>();
+		String joinName = aggregateTree.addJoin(mountPoint, parent -> {
+			TablePerClassPolymorphicRelationJoinNode<TRGT, LEFTTABLE, JOINID, TRGTID> relationJoinNode = new TablePerClassPolymorphicRelationJoinNode<>(
+					(JoinNode<SRC, LEFTTABLE>) (JoinNode) parent,
+					union,
+					relation.getAccessor(),
+					join.getLeftKey(),
+					join.getRightKey(),
+					OUTER,
+					union.getColumns(),
+					// we set a table alias else it is null which is transformed as "null" into the SQL which works
+					// but is not very clean and may cause problems if we have several table-per-class (all would
+					// be named "null") in the aggregate
+					relation.getTargetEntity().getEntityType().getSimpleName(),
+					new EntityInflater.EntityMappingAdapter<>(targetPersister.getMapping()),
+					(BeanRelationFixer<Object, TRGT>) relation.getRelationFixer(),
+					union.getDiscriminatorColumn());
+			
+			createdJoinHolder.set(relationJoinNode);
+			return relationJoinNode;
+		});
+		
+		addTablePerClassPolymorphicSubPersistersJoins(aggregateTree, relation.getTargetEntity().getTable(), joinName, createdJoinHolder.get(), subPersisters);
+		
+		return new GraftPoint(relation.getTargetEntity(), targetPersister, joinName, aggregateTree);
+		
 	}
 	
-	private <TRGT, TRGTID, RIGHTTABLE extends Table<RIGHTTABLE>, SUBTRGT extends TRGT, JOINTYPE>
-	TablePerClassUnion<SUBTRGT, TRGTID> buildUnion(Iterable<EntityReader<SUBTRGT, TRGTID, ?>> subPersisters,
-	                                               Key<RIGHTTABLE, JOINTYPE> rightJoinColumn) {
+	private <SRC, SRCID, C, I, V extends C, T extends Table<T>> void addTablePerClassPolymorphicSubPersistersJoins(
+			EntityJoinTree<SRC, SRCID> entityJoinTree,
+			Table<?> templateTable,
+			String mainPolymorphicJoinNodeName,
+			TablePerClassPolymorphicRelationJoinNode<C, T, ?, I> mainPersisterJoin,
+			Set<ConfiguredEntityReader<? extends C, I, ?>> subPersisters) {
+		
+		// The join is made on the Union as left table, and the column we must get is mainPersister's primaryKey (which table is not in the tree since
+		// we are the table-per-class case), so we have to create an equivalent of the primary key, based on the columns of the union
+		Key.KeyBuilder<QueryStatement.PseudoTable, I> leftKey = Key.from(mainPersisterJoin.getRightTable());
+		templateTable.getPrimaryKey().getColumns().forEach(pkCol -> {
+			JoinLink<QueryStatement.PseudoTable, ?> selectable = (JoinLink<QueryStatement.PseudoTable, ?>) Iterables.find(mainPersisterJoin.getColumnsToSelect(), selectableColumn -> selectableColumn.getExpression().equals(pkCol.getName()));
+			leftKey.addColumn(selectable);
+		});
+		MutableInt discriminatorComputer = new MutableInt();
+		subPersisters.forEach(subPersister -> {
+			ConfiguredEntityReader<V, I, ?> localSubPersister = (ConfiguredEntityReader<V, I, ?>) subPersister;
+			entityJoinTree.addMergeJoin(mainPolymorphicJoinNodeName,
+					new EntityMergerAdapter<>(localSubPersister.getMapping()),
+					leftKey.build(),
+					localSubPersister.getMainTable().getPrimaryKey(),
+					OUTER,
+					joinNode -> {
+						PolymorphicMergeJoinRowConsumer<V, I> joinRowConsumer = new PolymorphicMergeJoinRowConsumer<>(
+								(MergeJoinNode) joinNode,
+								localSubPersister.getMapping());
+						mainPersisterJoin.addSubPersisterJoin(joinRowConsumer, discriminatorComputer.increment());
+						return joinRowConsumer;
+					});
+		});
+	}
+	
+	private <TRGT, TRGTID, RIGHTTABLE extends Table<RIGHTTABLE>, SUBTRGT extends TRGT>
+	TablePerClassUnion<SUBTRGT, TRGTID> buildUnion(Iterable<? extends ConfiguredEntityReader<? extends TRGT, TRGTID, ?>> subPersisters,
+												   Set<Column<RIGHTTABLE, ?>> persisterColumns) {
 		// Union will contain only 3 columns :
 		// - discriminator
 		// - entity primary key
 		// - join column
 		TablePerClassUnion<SUBTRGT, TRGTID> result = new TablePerClassUnion<>(ENTITY_TYPE_DISCRIMINATOR_NAME);
 		
-		PrimaryKey<RIGHTTABLE, TRGTID> primaryKey = rightJoinColumn.getTable().getPrimaryKey();
-		// adding the pseudo columns for the primary key of the main entity to create the entity identifier
-		primaryKey.getColumns().forEach(column -> {
-			result.registerColumn(column.getExpression(), column.getJavaType(), column.getExpression());
+		// we build a union of all sub queries that will be joined in the main query
+		// To build the union we need the columns that are common to all persisters
+		Set<JoinLink<?, ?>> commonColumns = new KeepOrderSet<>();
+		commonColumns.addAll(persisterColumns);
+
+		Set<String> commonColumnsNames = commonColumns.stream().map(JoinLink::getExpression).collect(Collectors.toSet());
+		
+		KeepOrderSet<Column<?, ?>> nonCommonColumns = new KeepOrderSet<>();
+		subPersisters.forEach(subPersister -> {
+			nonCommonColumns.addAll(subPersister.getMainTable().getColumns());
 		});
+		nonCommonColumns.removeIf(c -> commonColumnsNames.contains(c.getName()));
 		
 		MutableInt discriminatorComputer = new MutableInt();
 		
 		subPersisters.forEach(subPersister -> {
 			Query subEntityQuery = new Query(subPersister.getMapping().getTargetTable());
 			int discriminatorValue = discriminatorComputer.increment();
-			result.getSubtypeSelectorPerDiscriminatorValue().put(discriminatorValue, subPersister);
+			result.getSubtypeSelectorPerDiscriminatorValue().put(discriminatorValue, (SelectExecutor<SUBTRGT, TRGTID>) subPersister);
 			subEntityQuery.select(String.valueOf(discriminatorValue), Integer.class, ENTITY_TYPE_DISCRIMINATOR_NAME);
 			result.unionAll(subEntityQuery);
 			
-			rightJoinColumn.getColumns().forEach(column -> {
+			commonColumns.forEach(column -> {
 				subEntityQuery.select(column.getExpression(), column.getJavaType());
+				result.registerColumn(column.getExpression(), column.getJavaType());
 			});
-			
-			// we add sub primary key columns to make them available to the union, then they can be used to create the entity identifier
-			// through idMapping.getIdentifierAssembler().getColumns()
-			primaryKey.getColumns().forEach(column -> {
-				subEntityQuery.select(column.getName(), column.getJavaType());
+
+			nonCommonColumns.forEach(column -> {
+				Selectable<?> expression;
+				if (subPersister.getMapping().getSelectableColumns().contains(column)) {
+					expression = new Selectable.SimpleSelectable<>(column.getName(), column.getJavaType());
+				} else {
+					expression = cast((String) null, column.getJavaType());
+				}
+				// we put an alias else cast(..) as no name which makes it doesn't match official-column name, and then
+				// may cause an error since SQL in kind of invalid 
+				subEntityQuery.select(expression, column.getName());
+				result.registerColumn(column.getName(), column.getJavaType());
 			});
-		});
-		
-		// adding the join columns as being selectable in the union
-		rightJoinColumn.getColumns().forEach(column -> {
-			result.registerColumn(column.getExpression(), column.getJavaType(), column.getExpression());
 		});
 		return result;
 	}

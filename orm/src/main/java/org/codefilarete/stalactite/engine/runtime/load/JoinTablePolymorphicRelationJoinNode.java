@@ -29,6 +29,9 @@ import static org.codefilarete.tool.Nullable.nullable;
  * Finally, {@link JoinTablePolymorphicRelationJoinRowConsumer} must extend {@link ForkJoinRowConsumer} to give next branch to be consumed by
  * {@link EntityTreeInflater} to avoid "dead" branch to be read : we give it according to the consumer which found the identifier. 
  * 
+ * Caller shall call {@link #addSubPersisterJoin(PolymorphicMergeJoinRowConsumer)} for each sub-persister
+ * to make the created instance capable of creating sub-entities.
+ * 
  * @author Guillaume Mary
  */
 public class JoinTablePolymorphicRelationJoinNode<C, T1 extends Table, T2 extends Table, JOINTYPE, I> extends RelationJoinNode<C, T1, T2, JOINTYPE, I> {
@@ -123,11 +126,10 @@ public class JoinTablePolymorphicRelationJoinNode<C, T1 extends Table, T2 extend
 		}
 		
 		@Nullable
-		/* Optimized, from 530 000 nanos to 65 000 nanos at 1st exec, from 40 000 nanos to 12 000 nanos on usual run */
 		private RowIdentifier<? extends C> giveIdentifier() {
-			// @Optimized : use for & return instead of stream().map().filter(notNull).findFirst()
+			TreeInflationContext currentInflationContext = EntityTreeInflater.currentContext();
 			for (SubPersister<?> pawn : subPersisters) {
-				ColumnedRow subInflaterRow = EntityTreeInflater.currentContext().getDecoder(pawn.subPersisterMergeConsumer.getNode());
+				ColumnedRow subInflaterRow = currentInflationContext.getDecoder(pawn.subPersisterMergeConsumer.getNode());
 				I assemble = pawn.subPersisterMergeConsumer.giveIdentifier(subInflaterRow);
 				if (assemble != null) {
 					return new RowIdentifier<>(assemble, pawn.subPersisterMergeConsumer);
