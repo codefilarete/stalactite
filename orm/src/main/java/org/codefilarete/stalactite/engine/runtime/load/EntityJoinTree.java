@@ -29,7 +29,6 @@ import org.codefilarete.stalactite.query.api.JoinLink;
 import org.codefilarete.stalactite.query.api.QueryStatement.PseudoColumn;
 import org.codefilarete.stalactite.query.api.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.api.Selectable;
-import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
@@ -605,11 +604,12 @@ public class EntityJoinTree<C, I> {
 			return new Duo<>((T) tableClone, columnClones);
 		} else if (fromable instanceof PseudoTable) {
 			PseudoTable pseudoTable = new PseudoTable(((PseudoTable) fromable).getQueryStatement(), fromable.getName());
+			Map<String, PseudoColumn<?>> pseudoColumnClones = pseudoTable.mapColumnsOnName();
 			IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> columnClones = new IdentityHashMap<>(pseudoTable.getColumns().size());
 			(((PseudoTable) fromable).getColumns()).forEach(column -> {
 				// we can only have Union in From clause, no sub-query, because of table-per-class polymorphism, so we can cast to Union
-				PseudoColumn<?> clone = ((Union) pseudoTable.getQueryStatement()).registerColumn(column.getExpression(), column.getJavaType());
-				columnClones.put(column, clone);
+//				SimpleSelectable<?> clone = ((Union) pseudoTable.getQueryStatement()).registerColumn(column.getExpression(), column.getJavaType());
+				columnClones.put(column, pseudoColumnClones.get(column.getExpression()));
 			});
 			return new Duo<>((T) pseudoTable, columnClones);
 		} else {

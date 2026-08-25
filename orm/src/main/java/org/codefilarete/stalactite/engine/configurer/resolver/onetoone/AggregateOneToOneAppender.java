@@ -38,7 +38,7 @@ public class AggregateOneToOneAppender {
 	/**
 	 *
 	 * @param relation
-	 * @param targetPersister
+	 * @param targetReader
 	 * @param mountPoint
 	 * @param aggregateTree
 	 * @param <SRC>
@@ -53,7 +53,7 @@ public class AggregateOneToOneAppender {
 	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
 	GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> append(ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> relation,
 	                                                        ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
-	                                                        ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
+	                                                        ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetReader,
 	                                                        String mountPoint,
 	                                                        EntityJoinTree<SRC, SRCID> aggregateTree) {
 		
@@ -68,27 +68,38 @@ public class AggregateOneToOneAppender {
 				// if we give the targetPersister identifier assembler then the runtime fails : identifier takes its values
 				// from the target table columns which are missins in the join : the join only contains the right
 				// table columns and the association ones (that's separate-load principle)
-				KeyMapping<RIGHTTABLE, LEFTTABLE, TRGTID> targetPkToRightKey = new KeyMapping<>(targetPersister.getMapping().getTargetTable().getPrimaryKey(), (Key<LEFTTABLE, TRGTID>) join.getLeftKey());
+				KeyMapping<RIGHTTABLE, LEFTTABLE, TRGTID> targetPkToRightKey = new KeyMapping<>(targetReader.getMapping().getTargetTable().getPrimaryKey(), (Key<LEFTTABLE, TRGTID>) join.getLeftKey());
 				KeepOrderMap<JoinLink<RIGHTTABLE, ?>, JoinLink<LEFTTABLE, ?>> targetPkToAssociationTableKey = targetPkToRightKey.getMapping();
-				idMapping = columnedRow -> targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(new ColumnedRow() {
+				idMapping = columnedRow -> targetReader.getMapping().getIdMapping().getIdentifierAssembler().assemble(new ColumnedRow() {
 					@Override
 					public <E> E get(Selectable<E> pkColumn) {
 						return (E) columnedRow.get(targetPkToAssociationTableKey.get(pkColumn));
 					}
 				});
 			} else {
-				idMapping = targetPersister.getMapping().getIdMapping().getIdentifierAssembler()::assemble;
+				idMapping = targetReader.getMapping().getIdMapping().getIdentifierAssembler()::assemble;
 			}
 			
 			// here is the logic below :
 			// - we collect the SRC-Index-TRGTID on the association join: see FirstPhaseIndexedRelationLoader usage hereafter
 			// - then we trigger the target entities collect on the afterSelect of the source
 			// - just after, we can apply the relation
-			aggregateTree.addMergeJoin(mountPoint,
-					new org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.FirstPhaseRelationLoader<>(idMapping, (Set) targetPersister.getMapping().getTargetTable().getPrimaryKey().getColumns(), current2PhasesLoadContext),
-					join.getLeftKey(),
-					join.getRightKey(),
-					OUTER);
+			if (relation.getTargetEntity() instanceof PolymorphicEntity) {
+				EntityPolymorphism<TRGT, Object> polymorphism = ((PolymorphicEntity<TRGT, Object, RIGHTTABLE>) relation.getTargetEntity()).getPolymorphism();
+				polymorphicSkeletonAppender.appendForSeparateLoad(
+						aggregateTree,
+						polymorphism,
+						targetReader,
+						relation,
+						mountPoint,
+						current2PhasesLoadContext);
+			} else {
+				aggregateTree.addMergeJoin(mountPoint,
+						new org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.FirstPhaseRelationLoader<>(idMapping, (Set) targetReader.getMapping().getTargetTable().getPrimaryKey().getColumns(), current2PhasesLoadContext),
+						join.getLeftKey(),
+						join.getRightKey(),
+						OUTER);
+			}
 			
 			// adding second phase loader
 			sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
@@ -103,8 +114,8 @@ public class AggregateOneToOneAppender {
 					Map<SRC, Set<TRGTID>> targetIdPerSource = current2PhasesLoadContext.get().getTargetIdPerSource();
 					Set<TRGTID> trgtids = targetIdPerSource.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
 					if (!trgtids.isEmpty()) {	// we only avoid some extra work if there's nothing to do
-						Set<TRGT> targets = targetPersister.select(trgtids);
-						Map<TRGTID, TRGT> targetPerId = new HashMap<>(Iterables.map(targets, targetPersister.getMapping()::getId));
+						Set<TRGT> targets = targetReader.select(trgtids);
+						Map<TRGTID, TRGT> targetPerId = new HashMap<>(Iterables.map(targets, targetReader.getMapping()::getId));
 						
 						// we sew the relations
 						result.forEach(src -> {
@@ -133,7 +144,7 @@ public class AggregateOneToOneAppender {
 			
 			// Note that because the relation is loaded separately, next joins should be appended to the target entity join tree,
 			// not the given as argument one, so we return a GraftPoint with the target persister and its join tree. And it should be grafted on ROOT_JOIN_NAME
-			result = new GraftPoint(relation.getTargetEntity(), targetPersister, ROOT_JOIN_NAME, targetPersister.getEntityJoinTree());
+			result = new GraftPoint(relation.getTargetEntity(), targetReader, ROOT_JOIN_NAME, targetReader.getEntityJoinTree());
 		} else {
 			// we join the relation onto the aggregate root to build the whole select tree
 			
@@ -143,13 +154,13 @@ public class AggregateOneToOneAppender {
 				result = polymorphicSkeletonAppender.append(
 						aggregateTree,
 						polymorphism,
-						targetPersister,
+						targetReader,
 						relation,
 						mountPoint);
 			} else {
 				String joinName = aggregateTree.addRelationJoin(
 						mountPoint,
-						new EntityMappingAdapter<>(targetPersister.getMapping()),
+						new EntityMappingAdapter<>(targetReader.getMapping()),
 						relation.getAccessor(),
 						join.getLeftKey(),
 						join.getRightKey(),
@@ -157,7 +168,7 @@ public class AggregateOneToOneAppender {
 						OUTER,
 						relation.getRelationFixer(),
 						Collections.emptySet());
-				result = new GraftPoint<>(relation.getTargetEntity(), targetPersister, joinName, aggregateTree);
+				result = new GraftPoint<>(relation.getTargetEntity(), targetReader, joinName, aggregateTree);
 			}
 		}
 		return result;

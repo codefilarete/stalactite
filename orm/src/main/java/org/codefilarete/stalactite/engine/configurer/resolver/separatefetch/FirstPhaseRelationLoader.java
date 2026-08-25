@@ -16,7 +16,7 @@ public class FirstPhaseRelationLoader<SRC, TRGTID> implements EntityMerger<SRC> 
 	private final Set<Selectable<?>> selectableColumns;
 	
 	public FirstPhaseRelationLoader(Function<ColumnedRow, TRGTID> idMapping,
-	                                Set<Selectable<?>> idColumns,
+	                                Set<? extends Selectable<?>> idColumns,
 	                                ThreadLocal<RelationStorage<SRC, TRGTID>> relationIdsHolder) {
 		this.idMapping = idMapping;
 		this.relationIdsHolder = relationIdsHolder;

@@ -6,6 +6,8 @@ import java.util.Set;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
+import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.FirstPhaseRelationLoader;
+import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.RelationStorage;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.jointable.JoinTablePolymorphismReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
@@ -80,5 +82,21 @@ public class JoinTableAppender {
 				}
 			});
 		});
+	}
+	
+	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
+	String appendForSeparateLoad(EntityJoinTree<SRC, SRCID> aggregateTree,
+								 JoinTablePolymorphismReader<TRGT, TRGTID, RIGHTTABLE> targetReader,
+								 ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> relation,
+								 String mountPoint,
+								 ThreadLocal<RelationStorage<SRC, TRGTID>> relationIdsHolder) {
+		
+		DirectRelationJoin<LEFTTABLE, RIGHTTABLE, JOINID> join = relation.getJoin();
+		
+		return aggregateTree.addMergeJoin(mountPoint,
+				new FirstPhaseRelationLoader<>(targetReader.getMapping().getIdMapping().getIdentifierAssembler()::assemble, targetReader.getMapping().getSelectableColumns(), relationIdsHolder),
+				join.getLeftKey(),
+				join.getRightKey(),
+				OUTER);
 	}
 }

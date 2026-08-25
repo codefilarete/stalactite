@@ -1,14 +1,18 @@
 package org.codefilarete.stalactite.query.model;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import javax.annotation.Nullable;
 
-import org.codefilarete.stalactite.query.api.*;
+import org.codefilarete.stalactite.query.api.QueryProvider;
+import org.codefilarete.stalactite.query.api.QueryStatement;
+import org.codefilarete.stalactite.query.api.Selectable;
+import org.codefilarete.stalactite.query.api.Selectable.SimpleSelectable;
+import org.codefilarete.stalactite.query.api.UnionAware;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -25,7 +29,7 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 	
 	private final Map<Selectable<?>, String> aliases = new HashMap<>();
 	
-	private final KeepOrderSet<PseudoColumn<Object>> columns = new KeepOrderSet<>();
+	private final KeepOrderSet<SimpleSelectable<Object>> columns = new KeepOrderSet<>();
 	
 	public Union(Collection<Query> queries) {
 		this.queries = new KeepOrderSet<>(queries);
@@ -54,7 +58,7 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 	 * @param <O> column type
 	 * @return the created column or the existing one
 	 */
-	public <O> PseudoColumn<O> addColumn(String expression, Class<O> javaType) {
+	public <O> SimpleSelectable<O> addColumn(String expression, Class<O> javaType) {
 		return addColumn(expression, javaType, null);
 	}
 	
@@ -69,8 +73,8 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 	 * @param <O> column type
 	 * @return the created column or the existing one
 	 */
-	public <O> PseudoColumn<O> addColumn(String expression, Class<O> javaType, @Nullable String alias) {
-		return addertColumn(new PseudoColumn<>(this, expression, javaType), alias);
+	public <O> SimpleSelectable<O> addColumn(String expression, Class<O> javaType, @Nullable String alias) {
+		return addertColumn(new SimpleSelectable<>(expression, javaType), alias);
 	}
 	
 	/**
@@ -81,15 +85,15 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 	 * @param alias column alias (optional)
 	 * @return given column
 	 */
-	private <O> PseudoColumn<O> addertColumn(PseudoColumn<O> column, @Nullable String alias) {
+	private <O> SimpleSelectable<O> addertColumn(SimpleSelectable<O> column, @Nullable String alias) {
 		// Quite close to Table.addertColumn(..)
-		PseudoColumn<O> existingColumn = findColumn(column.getExpression(), alias);
+		SimpleSelectable<O> existingColumn = findColumn(column.getExpression(), alias);
 		if (existingColumn != null && (Objects.equals(alias, aliases.get(existingColumn))) && !existingColumn.getJavaType().equals(column.getJavaType())) {
 			throw new IllegalArgumentException("Trying to add a column '" + existingColumn.getExpression() + "' that already exists with a different type : "
 													   + Reflections.toString(existingColumn.getJavaType()) + " vs " + Reflections.toString(column.getJavaType()));
 		}
 		if (existingColumn == null) {
-			columns.add((PseudoColumn<Object>) column);
+			columns.add((SimpleSelectable<Object>) column);
 			return column;
 		} else {
 			return existingColumn;
@@ -105,7 +109,7 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 			}
 		} else {
 			for (Selectable<?> column : getColumns()) {
-				if (column instanceof JoinLink && column.getExpression().equals(columnName)) {
+				if (column instanceof SimpleSelectable && column.getExpression().equals(columnName)) {
 					return (C) column;
 				}
 			}
@@ -113,16 +117,16 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 		return null;
 	}
 	
-	public <O> PseudoColumn<O> registerColumn(String expression, Class<O> javaType) {
+	public <O> SimpleSelectable<O> registerColumn(String expression, Class<O> javaType) {
 		return addColumn(expression, javaType);
 	}
 	
-	public <O> PseudoColumn<O> registerColumn(String expression, Class<O> javaType, String alias) {
+	public <O> SimpleSelectable<O> registerColumn(String expression, Class<O> javaType, String alias) {
 		return addColumn(expression, javaType, alias);
 	}
 	
 	@Override
-	public Set<PseudoColumn<?>> getColumns() {
+	public Set<SimpleSelectable<?>> getColumns() {
 		return (Set) columns;
 	}
 	
@@ -143,7 +147,7 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 	@Override
 	public Map<String, Selectable<?>> mapColumnsOnName() {
 		Map<String, Selectable<?>> result = new HashMap<>();
-		for (PseudoColumn<?> column : getColumns()) {
+		for (SimpleSelectable<?> column : getColumns()) {
 			result.put(column.getExpression(), column);
 		}
 		for (Entry<? extends Selectable<?>, String> alias : getAliases().entrySet()) {

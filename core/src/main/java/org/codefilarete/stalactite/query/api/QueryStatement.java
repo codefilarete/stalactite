@@ -1,9 +1,9 @@
 package org.codefilarete.stalactite.query.api;
 
-import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nullable;
 
 import org.codefilarete.stalactite.query.model.From;
 import org.codefilarete.stalactite.query.model.Query;
@@ -99,16 +99,16 @@ public interface QueryStatement extends SelectablesPod {
 		}
 	}
 	
-	class PseudoColumn<O> implements JoinLink<Fromable, O> {
+	class PseudoColumn<O> implements JoinLink<PseudoTable, O> {
 		
-		private final SelectablesPod owner;	// Union or Query
+		private final PseudoTable owner;	// Union or Query
 		
 		private final String name;
 		
 		private final Class<O> javaType;
 		
 		
-		public PseudoColumn(SelectablesPod owner, String name, Class<O> javaType) {
+		public PseudoColumn(PseudoTable owner, String name, Class<O> javaType) {
 			this.owner = owner;
 			this.name = name;
 			this.javaType = javaType;
@@ -119,8 +119,8 @@ public interface QueryStatement extends SelectablesPod {
 		 * @return {@link PseudoTable} owning this column
 		 */
 		@Override
-		public Fromable getOwner() {
-			return (Fromable) owner;
+		public PseudoTable getOwner() {
+			return (PseudoTable) owner;
 		}
 		
 		@Override
@@ -131,6 +131,14 @@ public interface QueryStatement extends SelectablesPod {
 		@Override
 		public Class<O> getJavaType() {
 			return javaType;
+		}
+		
+		/**
+		 * Overridden only for simple print (debug or log)
+		 */
+		@Override
+		public String toString() {
+			return ((Fromable) owner).getAbsoluteName() + "." + name;
 		}
 	}
 }

@@ -9,10 +9,10 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.engine.runtime.load.AbstractJoinNode.JoinNodeHierarchyIterator;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.ConsumerNode;
-import org.codefilarete.stalactite.query.model.From;
 import org.codefilarete.stalactite.query.api.Fromable;
-import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.api.Selectable;
+import org.codefilarete.stalactite.query.model.From;
+import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -137,7 +137,13 @@ public class EntityTreeQueryBuilder<C> {
 		private <T1 extends Fromable> void addColumnsToSelectClause(JoinNode<?, T1> joinNode, String tableAlias) {
 			Set<Selectable<?>> selectableColumns = joinNode.getColumnsToSelect();
 			for (Selectable<?> selectableColumn : selectableColumns) {
-				Selectable<?> columnClone = joinNode.getOriginalColumnsToLocalOnes().get(selectableColumn); 
+				Selectable<?> columnClone = joinNode.getOriginalColumnsToLocalOnes().get(selectableColumn);
+				// this "if" is much more a help for troubleshooting problems during project development than a runtime check
+				if (columnClone == null) {
+					throw new IllegalStateException("Column " + selectableColumn + " not found in join " +
+							(joinNode instanceof AbstractJoinNode ? ((AbstractJoinNode) joinNode).getLeftJoinLink().getColumns() + "=" + ((AbstractJoinNode) joinNode).getRightJoinLink().getColumns()
+							: joinNode.getTable().getAbsoluteName()));
+				}
 				String alias = aliasBuilder.buildColumnAlias(tableAlias, selectableColumn);
 				query.select(columnClone, alias);
 				// we link the column alias to the binder so it will be easy to read the ResultSet

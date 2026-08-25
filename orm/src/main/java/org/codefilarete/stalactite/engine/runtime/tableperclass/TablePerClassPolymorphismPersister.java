@@ -408,7 +408,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		
 		Union subPersistersUnion = new Union();
 		String entityTypeDiscriminatorName = "clazz_";
-		PseudoColumn<Integer> discriminatorPseudoColumn = subPersistersUnion.registerColumn(entityTypeDiscriminatorName, Integer.class);
+		SimpleSelectable<Integer> discriminatorColumn = subPersistersUnion.registerColumn(entityTypeDiscriminatorName, Integer.class);
 		MutableInt discriminatorComputer = new MutableInt();
 		
 		subPersisters.forEach(subPersister -> {
@@ -435,6 +435,9 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			});
 		});
 		
+		PseudoTable pseudoTable = subPersistersUnion.asPseudoTable(mainPersister.getClassToPersist().getSimpleName());
+		PseudoColumn<Integer> discriminatorPseudoColumn = pseudoTable.findColumn(discriminatorColumn.getExpression());
+		
 		Holder<TablePerClassPolymorphicRelationJoinNode<C, T1, JOINCOLTYPE, I>> createdJoinHolder = new Holder<>();
 		String relationJoinName = entityJoinTree.addJoin(leftStrategyName, parent -> {
 			TablePerClassPolymorphicRelationJoinNode<C, T1, JOINCOLTYPE, I> relationJoinNode = new TablePerClassPolymorphicRelationJoinNode<>(
@@ -444,7 +447,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 					leftJoinColumn,
 					rightJoinColumn,
 					JoinType.OUTER,
-					subPersistersUnion.getColumns(),
+					pseudoTable.getColumns(),
 					mainPersister.getClassToPersist().getSimpleName(),
 					new EntityMappingAdapter<>(mainPersister.<T1>getMapping()),
 					(BeanRelationFixer<Object, C>) beanRelationFixer,
