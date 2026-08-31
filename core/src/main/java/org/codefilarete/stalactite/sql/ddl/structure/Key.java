@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.sql.ddl.structure;
 import java.util.Collection;
 
 import org.codefilarete.stalactite.query.api.Fromable;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.tool.collection.KeepOrderSet;
 
 import static org.codefilarete.tool.collection.Iterables.first;
@@ -22,7 +22,7 @@ public interface Key<T extends Fromable, ID /* unused in this class, left for cl
 		return new KeyBuilder<>(table);
 	}
 	
-	static <T extends Fromable, ID> Key<T, ID> ofSingleColumn(JoinLink<T, ID> column) {
+	static <T extends Fromable, ID> Key<T, ID> ofSingleColumn(QualifiedSelectable<T, ID> column) {
 		return new KeySupport<T, ID>(column.getOwner(), new KeepOrderSet<>(column)) {
 			@Override
 			public boolean isComposed() {
@@ -33,7 +33,7 @@ public interface Key<T extends Fromable, ID /* unused in this class, left for cl
 	
 	T getTable();
 	
-	<J extends JoinLink<T, ?>> KeepOrderSet<J> getColumns();
+	<J extends QualifiedSelectable<T, ?>> KeepOrderSet<J> getColumns();
 	
 	boolean isComposed();
 	
@@ -49,7 +49,7 @@ public interface Key<T extends Fromable, ID /* unused in this class, left for cl
 			keySupport = new KeySupport<>(table);
 		}
 		
-		public KeyBuilder<T, ID> addColumn(JoinLink<T, ?> column) {
+		public KeyBuilder<T, ID> addColumn(QualifiedSelectable<T, ?> column) {
 			this.keySupport.addColumn(column);
 			return this;
 		}
@@ -58,7 +58,7 @@ public interface Key<T extends Fromable, ID /* unused in this class, left for cl
 			return keySupport;
 		}
 		
-		public void addAllColumns(Collection<? extends JoinLink<T, ?>> columns) {
+		public void addAllColumns(Collection<? extends QualifiedSelectable<T, ?>> columns) {
 			this.keySupport.addAllColumns(columns);
 		}
 	}
@@ -66,19 +66,19 @@ public interface Key<T extends Fromable, ID /* unused in this class, left for cl
 	class KeySupport<T extends Fromable, ID> implements Key<T, ID> {
 		
 		private final T table;
-		private final KeepOrderSet<JoinLink<T, ?>> columns;
+		private final KeepOrderSet<QualifiedSelectable<T, ?>> columns;
 		
 		// left private (as addColumn(..) and addAllColumns(..)) to make it only available from the builder
 		private KeySupport(T table) {
 			this(table, new KeepOrderSet<>());
 		}
 		
-		public KeySupport(T table, KeepOrderSet<? extends JoinLink<T, ?>> columns) {
+		public KeySupport(T table, KeepOrderSet<? extends QualifiedSelectable<T, ?>> columns) {
 			this.table = table;
-			this.columns = (KeepOrderSet<JoinLink<T, ?>>) columns;
+			this.columns = (KeepOrderSet<QualifiedSelectable<T, ?>>) columns;
 		}
 		
-		public KeySupport(KeepOrderSet<? extends JoinLink<T, ?>> columns) {
+		public KeySupport(KeepOrderSet<? extends QualifiedSelectable<T, ?>> columns) {
 			this(first(columns).getOwner(), columns);
 		}
 		
@@ -88,17 +88,17 @@ public interface Key<T extends Fromable, ID /* unused in this class, left for cl
 		}
 		
 		@Override
-		public KeepOrderSet<JoinLink<T, ?>> getColumns() {
+		public KeepOrderSet<QualifiedSelectable<T, ?>> getColumns() {
 			return columns;
 		}
 		
 		// left private (as constructor with Table argument) to make it only available from the builder
-		private void addColumn(JoinLink<T, ?> column) {
+		private void addColumn(QualifiedSelectable<T, ?> column) {
 			this.columns.add(column);
 		}
 		
 		// left private (as constructor with Table argument) to make it only available from the builder
-		private void addAllColumns(Collection<? extends JoinLink<T, ?>> columns) {
+		private void addAllColumns(Collection<? extends QualifiedSelectable<T, ?>> columns) {
 			this.columns.addAll(columns);
 		}
 		

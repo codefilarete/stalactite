@@ -19,7 +19,7 @@ import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
@@ -69,7 +69,7 @@ public class AggregateOneToOneAppender {
 				// from the target table columns which are missins in the join : the join only contains the right
 				// table columns and the association ones (that's separate-load principle)
 				KeyMapping<RIGHTTABLE, LEFTTABLE, TRGTID> targetPkToRightKey = new KeyMapping<>(targetReader.getMapping().getTargetTable().getPrimaryKey(), (Key<LEFTTABLE, TRGTID>) join.getLeftKey());
-				KeepOrderMap<JoinLink<RIGHTTABLE, ?>, JoinLink<LEFTTABLE, ?>> targetPkToAssociationTableKey = targetPkToRightKey.getMapping();
+				KeepOrderMap<QualifiedSelectable<RIGHTTABLE, ?>, QualifiedSelectable<LEFTTABLE, ?>> targetPkToAssociationTableKey = targetPkToRightKey.getMapping();
 				idMapping = columnedRow -> targetReader.getMapping().getIdMapping().getIdentifierAssembler().assemble(new ColumnedRow() {
 					@Override
 					public <E> E get(Selectable<E> pkColumn) {

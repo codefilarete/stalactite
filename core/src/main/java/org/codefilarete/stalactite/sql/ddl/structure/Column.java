@@ -1,11 +1,11 @@
 package org.codefilarete.stalactite.sql.ddl.structure;
 
-import org.codefilarete.stalactite.query.api.JoinLink;
+import javax.annotation.Nullable;
+
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.ddl.DDLAppender;
 import org.codefilarete.stalactite.sql.ddl.Size;
-
-import javax.annotation.Nullable;
 
 /**
  * Column of a table.
@@ -13,7 +13,7 @@ import javax.annotation.Nullable;
  * @param <O> the Java type this columns is mapped to
  * @author Guillaume Mary
  */
-public class Column<T extends Table, O> implements Selectable<O>, JoinLink<T, O> {
+public class Column<T extends Table, O> implements Selectable<O>, QualifiedSelectable<T, O> {
 	
 	private final T table;
 	private final String name;
@@ -76,6 +76,7 @@ public class Column<T extends Table, O> implements Selectable<O>, JoinLink<T, O>
 		return table;
 	}
 	
+	@Override
 	public String getName() {
 		return name;
 	}

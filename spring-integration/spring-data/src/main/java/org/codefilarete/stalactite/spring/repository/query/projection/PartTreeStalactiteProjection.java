@@ -11,7 +11,7 @@ import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.projection.ProjectionQueryCriteriaSupport;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.spring.repository.query.execution.AbstractQueryExecutor;
 import org.codefilarete.stalactite.spring.repository.query.execution.AbstractRepositoryQuery;
 import org.codefilarete.stalactite.spring.repository.query.domain.DomainEntityQueryExecutor;
@@ -101,7 +101,7 @@ public class PartTreeStalactiteProjection<C, R> extends AbstractRepositoryQuery<
 	protected AbstractQueryExecutor<List<Object>, Object> buildQueryExecutor(StalactiteQueryMethodInvocationParameters invocationParameters) {
 		// Extracting the Selectable and PropertyPath from the projection type
 		boolean runProjectionQuery;
-		IdentityHashMap<JoinLink<?, ?>, AccessorChain<C, ?>> propertiesColumns;
+		IdentityHashMap<QualifiedSelectable<?, ?>, AccessorChain<C, ?>> propertiesColumns;
 		if (method.getParameters().hasDynamicProjection()) {
 			propertiesColumns = this.projectionMappingFinder.lookup(invocationParameters.getDynamicProjectionType());
 			runProjectionQuery = factory.getProjectionInformation(invocationParameters.getDynamicProjectionType()).isClosed()

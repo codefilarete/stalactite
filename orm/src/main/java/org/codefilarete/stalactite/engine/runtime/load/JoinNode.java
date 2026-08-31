@@ -5,7 +5,7 @@ import java.util.IdentityHashMap;
 import java.util.Set;
 
 import org.codefilarete.stalactite.query.api.Fromable;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.tool.collection.ReadOnlyList;
 
@@ -18,7 +18,7 @@ public interface JoinNode<C, T extends Fromable> {
 	
 	Set<Selectable<?>> getColumnsToSelect();
 	
-	IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> getOriginalColumnsToLocalOnes();
+	IdentityHashMap<QualifiedSelectable<?, ?>, QualifiedSelectable<?, ?>> getOriginalColumnsToLocalOnes();
 	
 	@Nullable
 	String getTableAlias();

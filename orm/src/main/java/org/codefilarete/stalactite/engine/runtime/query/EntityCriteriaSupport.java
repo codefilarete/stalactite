@@ -21,7 +21,7 @@ import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.api.CriteriaChain;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.model.AbstractCriterion;
 import org.codefilarete.stalactite.query.model.ColumnCriterion;
@@ -226,7 +226,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	 * and equality.
 	 */
 	@VisibleForTesting
-	static class AccessorToColumnMap extends HashedMap<List<? extends ValueAccessPoint<?>>, JoinLink<?, ?>> {
+	static class AccessorToColumnMap extends HashedMap<List<? extends ValueAccessPoint<?>>, QualifiedSelectable<?, ?>> {
 		
 		@Override
 		protected int hash(Object key) {

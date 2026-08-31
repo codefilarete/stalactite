@@ -20,7 +20,7 @@ import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.King;
 import org.codefilarete.stalactite.engine.model.Realm;
 import org.codefilarete.stalactite.engine.model.Timestamp;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
@@ -177,8 +177,8 @@ class InheritanceMetadataResolverTest {
 		Table<?> rightTable = rightKey.getTable();
 		assertThat(rightTable.getName()).isEqualTo("D");
 		// join is made on the propC columns
-		assertThat(new KeepOrderSet<JoinLink<LEFTTABLE, ?>>(leftKey.getColumns())).containsExactly(leftKey.getTable().getColumn("propC"));
-		assertThat(new KeepOrderSet<JoinLink<RIGHTTABLE, ?>>(rightKey.getColumns())).containsExactly(rightKey.getTable().getColumn("propC"));
+		assertThat(new KeepOrderSet<QualifiedSelectable<LEFTTABLE, ?>>(leftKey.getColumns())).containsExactly(leftKey.getTable().getColumn("propC"));
+		assertThat(new KeepOrderSet<QualifiedSelectable<RIGHTTABLE, ?>>(rightKey.getColumns())).containsExactly(rightKey.getTable().getColumn("propC"));
 		
 		assertThat(ancestor.getAncestor().getIdentifierMapping()).isInstanceOf(SingleIdentifierMapping.class);
 		assertThat(ancestor.getAncestor().getPropertyMappingHolder().getWritablePropertyToColumn())
@@ -272,9 +272,9 @@ class InheritanceMetadataResolverTest {
 					.isEqualTo(Arrays.asSet(
 							new PropertyMapping<>(readWriteAccessPoint(B::getPropB), extraTable1.getColumn("propB"), false, null, null, false)
 					));
-			Set<JoinLink<?, ?>> leftColumns1 = new KeepOrderSet<>(mergeJoin1.getJoin().getLeftKey().getColumns());
+			Set<QualifiedSelectable<?, ?>> leftColumns1 = new KeepOrderSet<>(mergeJoin1.getJoin().getLeftKey().getColumns());
 			assertThat(leftColumns1).containsExactlyInAnyOrder(propEColumn);
-			Set<JoinLink<?, ?>> rightColumns1 = new KeepOrderSet<>(mergeJoin1.getJoin().getRightKey().getColumns());
+			Set<QualifiedSelectable<?, ?>> rightColumns1 = new KeepOrderSet<>(mergeJoin1.getJoin().getRightKey().getColumns());
 			assertThat(extraTable1.getColumn("propE").isPrimaryKey()).isTrue();
 			assertThat(rightColumns1).containsExactly(extraTable1.getColumn("propE"));
 			
@@ -285,9 +285,9 @@ class InheritanceMetadataResolverTest {
 					.isEqualTo(Arrays.asSet(
 							new PropertyMapping<>(readWriteAccessPoint(C::getPropC), extraTable2.getColumn("propC"), false, null, null, false)
 					));
-			Set<JoinLink<?, ?>> leftColumns2 = new KeepOrderSet<>(mergeJoin2.getJoin().getLeftKey().getColumns());
+			Set<QualifiedSelectable<?, ?>> leftColumns2 = new KeepOrderSet<>(mergeJoin2.getJoin().getLeftKey().getColumns());
 			assertThat(leftColumns2).containsExactlyInAnyOrder(propEColumn);
-			Set<JoinLink<?, ?>> rightColumns2 = new KeepOrderSet<>(mergeJoin2.getJoin().getRightKey().getColumns());
+			Set<QualifiedSelectable<?, ?>> rightColumns2 = new KeepOrderSet<>(mergeJoin2.getJoin().getRightKey().getColumns());
 			assertThat(extraTable2.getColumn("propE").isPrimaryKey()).isTrue();
 			assertThat(rightColumns2).containsExactly(extraTable2.getColumn("propE"));
 		}
@@ -340,9 +340,9 @@ class InheritanceMetadataResolverTest {
 					.isEqualTo(Arrays.asSet(
 							new PropertyMapping<>(readWriteAccessPoint(E::getPropE), extraTable1.getColumn("propE"), false, null, null, false)
 					));
-			Set<JoinLink<?, ?>> leftColumns1 = new KeepOrderSet<>(mergeJoin1.getJoin().getLeftKey().getColumns());
+			Set<QualifiedSelectable<?, ?>> leftColumns1 = new KeepOrderSet<>(mergeJoin1.getJoin().getLeftKey().getColumns());
 			assertThat(leftColumns1).containsExactlyInAnyOrder(propCColumn);
-			Set<JoinLink<?, ?>> rightColumns1 = new KeepOrderSet<>(mergeJoin1.getJoin().getRightKey().getColumns());
+			Set<QualifiedSelectable<?, ?>> rightColumns1 = new KeepOrderSet<>(mergeJoin1.getJoin().getRightKey().getColumns());
 			assertThat(extraTable1.getColumn("propC").isPrimaryKey()).isTrue();
 			assertThat(rightColumns1).containsExactly(extraTable1.getColumn("propC"));
 			
@@ -360,8 +360,8 @@ class InheritanceMetadataResolverTest {
 			Table<?> rightTable = rightKey.getTable();
 			assertThat(rightTable.getName()).isEqualTo("D");
 			// join is made on the propC columns
-			assertThat(new KeepOrderSet<JoinLink<LEFTTABLE, ?>>(leftKey.getColumns())).containsExactly(leftKey.getTable().getColumn("propC"));
-			assertThat(new KeepOrderSet<JoinLink<RIGHTTABLE, ?>>(rightKey.getColumns())).containsExactly(rightKey.getTable().getColumn("propC"));
+			assertThat(new KeepOrderSet<QualifiedSelectable<LEFTTABLE, ?>>(leftKey.getColumns())).containsExactly(leftKey.getTable().getColumn("propC"));
+			assertThat(new KeepOrderSet<QualifiedSelectable<RIGHTTABLE, ?>>(rightKey.getColumns())).containsExactly(rightKey.getTable().getColumn("propC"));
 			
 			Entity<? super E, Integer, ?> ancestorEntity = ancestor.getAncestor();
 			assertThat(ancestorEntity.getIdentifierMapping()).isInstanceOf(SingleIdentifierMapping.class);
@@ -387,9 +387,9 @@ class InheritanceMetadataResolverTest {
 					.isEqualTo(Arrays.asSet(
 							new PropertyMapping<>(readWriteAccessPoint(B::getPropB), extraTable2.getColumn("propB"), false, null, null, false)
 					));
-			Set<JoinLink<?, ?>> ancestorMergeJoinLeftColumns = new KeepOrderSet<>(ancestorMergeJoin.getJoin().getLeftKey().getColumns());
+			Set<QualifiedSelectable<?, ?>> ancestorMergeJoinLeftColumns = new KeepOrderSet<>(ancestorMergeJoin.getJoin().getLeftKey().getColumns());
 			assertThat(ancestorMergeJoinLeftColumns).containsExactlyInAnyOrder(propEColumn);
-			Set<JoinLink<?, ?>> ancestorMergeRightColumns = new KeepOrderSet<>(ancestorMergeJoin.getJoin().getRightKey().getColumns());
+			Set<QualifiedSelectable<?, ?>> ancestorMergeRightColumns = new KeepOrderSet<>(ancestorMergeJoin.getJoin().getRightKey().getColumns());
 			assertThat(extraTable2.getColumn("propC").isPrimaryKey()).isTrue();
 			assertThat(ancestorMergeRightColumns).containsExactly(extraTable2.getColumn("propC"));
 			

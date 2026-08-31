@@ -18,7 +18,7 @@ import org.codefilarete.stalactite.engine.EntitySelector.ExecutableProjectionQue
 import org.codefilarete.stalactite.engine.ExecutableProjection.ProjectionDataProvider;
 import org.codefilarete.stalactite.engine.runtime.projection.ProjectionQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.projection.ProjectionQueryPageSupport;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
 import org.codefilarete.stalactite.spring.repository.query.execution.AbstractQueryExecutor;
@@ -44,9 +44,9 @@ class ProjectionQueryExecutor<C> extends AbstractQueryExecutor<List<Object>, Obj
 	
 	public ProjectionQueryExecutor(StalactiteQueryMethod method,
 								   ProjectionQueryCriteriaSupport<C, ?> defaultProjectionQueryCriteriaSupport,
-								   IdentityHashMap<JoinLink<?, ?>, AccessorChain<C, ?>> columnToProperties) {
+								   IdentityHashMap<QualifiedSelectable<?, ?>, AccessorChain<C, ?>> columnToProperties) {
 		super(method);
-		IdentityHashMap<JoinLink<?, ?>, String> aliases = buildAliases(columnToProperties);
+		IdentityHashMap<QualifiedSelectable<?, ?>, String> aliases = buildAliases(columnToProperties);
 		// we "clone" the default projection query to make our own, dedicated to the derived query
 		this.projectionQueryCriteriaSupport = defaultProjectionQueryCriteriaSupport.copyFor(select -> {
 			columnToProperties.keySet().forEach(selectable -> {
@@ -101,9 +101,9 @@ class ProjectionQueryExecutor<C> extends AbstractQueryExecutor<List<Object>, Obj
 	}
 	
 	private static class TupleAccumulator<C> implements Accumulator<ProjectionDataProvider, List<Map<String, Object>>, List<Map<String, Object>>> {
-		private final IdentityHashMap<JoinLink<?, ?>, AccessorChain<C, ?>> columnToProperties;
+		private final IdentityHashMap<QualifiedSelectable<?, ?>, AccessorChain<C, ?>> columnToProperties;
 		
-		public TupleAccumulator(IdentityHashMap<JoinLink<?, ?>, AccessorChain<C, ?>> columnToProperties) {
+		public TupleAccumulator(IdentityHashMap<QualifiedSelectable<?, ?>, AccessorChain<C, ?>> columnToProperties) {
 			this.columnToProperties = columnToProperties;
 		}
 		
@@ -117,7 +117,7 @@ class ProjectionQueryExecutor<C> extends AbstractQueryExecutor<List<Object>, Obj
 			return (finalResult, databaseRowDataProvider) -> {
 				Map<String, Object> row = new HashMap<>();
 				finalResult.add(row);
-				for (Entry<JoinLink<?, ?>, AccessorChain<C, ?>> entry : columnToProperties.entrySet()) {
+				for (Entry<QualifiedSelectable<?, ?>, AccessorChain<C, ?>> entry : columnToProperties.entrySet()) {
 					PartTreeStalactiteProjection.buildHierarchicMap(entry.getValue(), databaseRowDataProvider.getValue(entry.getKey()), row);
 				}
 			};

@@ -5,7 +5,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Comparator;
 
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -23,7 +23,7 @@ public interface ForeignKeyNamingStrategy {
 	
 	String DEFAULT_FOREIGNKEY_PREFIX = "FK_";
 	
-	Comparator<JoinLink<?, ?>> COLUMN_COMPARATOR = Comparator.comparing(JoinLink::getExpression);
+	Comparator<QualifiedSelectable<?, ?>> COLUMN_COMPARATOR = Comparator.comparing(QualifiedSelectable::getExpression);
 	
 	<SOURCETABLE extends Table<SOURCETABLE>, TARGETTABLE extends Table<TARGETTABLE>, ID> String giveName(Key<SOURCETABLE, ID> src, Key<TARGETTABLE, ID> target);
 	

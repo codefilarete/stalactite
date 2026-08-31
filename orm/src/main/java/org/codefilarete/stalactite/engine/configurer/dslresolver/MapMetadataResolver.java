@@ -31,7 +31,7 @@ import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation.C
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation.EntryMemberMapping;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation.MapMemberAsEntity;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation.ScalarMemberMapping;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.Size;
@@ -249,7 +249,7 @@ public class MapMetadataResolver {
 	                                                                  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 																	  JoinColumnNamingStrategy joinColumnNamingStrategy) {
 		PrimaryKey<XTABLE, XID> entityPrimaryKey = entitySource.<XTABLE>getEntity().getTable().getPrimaryKey();
-		KeepOrderMap<JoinLink<MAPTABLE, ?>, JoinLink<XTABLE, ?>> mapping = new KeepOrderMap<>();
+		KeepOrderMap<QualifiedSelectable<MAPTABLE, ?>, QualifiedSelectable<XTABLE, ?>> mapping = new KeepOrderMap<>();
 		if (!entityPrimaryKey.isComposed()) {
 			Column<XTABLE, XID> entityKeyColumn = (Column<XTABLE, XID>) first(entityPrimaryKey.getColumns());
 			String effectiveColumnName = nullable(columnName).getOr(() -> joinColumnNamingStrategy.giveName(recordMemberAccessor, entityKeyColumn));

@@ -47,7 +47,7 @@ public interface QueryStatement extends SelectablesPod {
 		
 		private final QueryStatement queryStatement;
 		
-		private final KeepOrderSet<PseudoColumn<Object>> columns = new KeepOrderSet<>();
+		private final KeepOrderSet<PseudoColumn<?>> columns = new KeepOrderSet<>();
 		
 		private final Map<Selectable<?>, String> aliases = new HashMap<>();
 		
@@ -57,7 +57,7 @@ public interface QueryStatement extends SelectablesPod {
 			Map<Selectable<?>, String> unionAliases = queryStatement.getAliases();
 			for (Selectable<?> column : queryStatement.getColumns()) {
 				PseudoColumn<?> newPseudoColumn = new PseudoColumn<>(this, column.getExpression(), column.getJavaType());
-				columns.add((PseudoColumn<Object>) newPseudoColumn);
+				columns.add(newPseudoColumn);
 				String alias = unionAliases.get(column);
 				if (alias != null) {
 					this.aliases.put(newPseudoColumn, alias);
@@ -82,7 +82,7 @@ public interface QueryStatement extends SelectablesPod {
 		
 		@Override
 		public Set<PseudoColumn<?>> getColumns() {
-			return (Set) this.columns;
+			return this.columns;
 		}
 		
 		@Override
@@ -99,14 +99,13 @@ public interface QueryStatement extends SelectablesPod {
 		}
 	}
 	
-	class PseudoColumn<O> implements JoinLink<PseudoTable, O> {
+	class PseudoColumn<O> implements QualifiedSelectable<PseudoTable, O> {
 		
 		private final PseudoTable owner;	// Union or Query
 		
 		private final String name;
 		
 		private final Class<O> javaType;
-		
 		
 		public PseudoColumn(PseudoTable owner, String name, Class<O> javaType) {
 			this.owner = owner;
@@ -120,7 +119,12 @@ public interface QueryStatement extends SelectablesPod {
 		 */
 		@Override
 		public PseudoTable getOwner() {
-			return (PseudoTable) owner;
+			return owner;
+		}
+		
+		@Override
+		public String getName() {
+			return name;
 		}
 		
 		@Override
@@ -138,7 +142,7 @@ public interface QueryStatement extends SelectablesPod {
 		 */
 		@Override
 		public String toString() {
-			return ((Fromable) owner).getAbsoluteName() + "." + name;
+			return owner.getAbsoluteName() + "." + name;
 		}
 	}
 }

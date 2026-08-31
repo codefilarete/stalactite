@@ -10,7 +10,7 @@ import org.codefilarete.stalactite.query.api.GroupByAware;
 import org.codefilarete.stalactite.query.api.GroupByChain;
 import org.codefilarete.stalactite.query.api.HavingAware;
 import org.codefilarete.stalactite.query.api.JoinChain;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.query.api.LimitAware;
 import org.codefilarete.stalactite.query.api.LimitChain;
 import org.codefilarete.stalactite.query.api.OrderByAware;
@@ -268,7 +268,7 @@ public class FluentQuery implements
 	}
 	
 	@Override
-	public <I> FluentFromClause from(JoinLink<?, I> leftColumn, JoinLink<?, I> rightColumn) {
+	public <I> FluentFromClause from(QualifiedSelectable<?, I> leftColumn, QualifiedSelectable<?, I> rightColumn) {
 		return from(leftColumn.getOwner()).innerJoin(leftColumn, rightColumn);
 	}
 	

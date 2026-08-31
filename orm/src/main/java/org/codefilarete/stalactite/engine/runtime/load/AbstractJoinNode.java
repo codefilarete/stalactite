@@ -10,7 +10,7 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.query.api.Fromable;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.tool.collection.ReadOnlyList;
@@ -44,11 +44,11 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 	@Nullable
 	private EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
 
-	private final IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> originalColumnsToLocalOnes;
+	private final IdentityHashMap<QualifiedSelectable<?, ?>, QualifiedSelectable<?, ?>> originalColumnsToLocalOnes;
 
 	protected AbstractJoinNode(JoinNode<?, T1> parent,
-							   JoinLink<T1, JOINTYPE> leftJoinLink,
-							   JoinLink<T2, JOINTYPE> rightJoinLink,
+							   QualifiedSelectable<T1, JOINTYPE> leftJoinLink,
+							   QualifiedSelectable<T2, JOINTYPE> rightJoinLink,
 							   JoinType joinType,
 							   Set<? extends Selectable<?>> columnsToSelect,	// From T2
 							   @Nullable String tableAlias) {
@@ -71,7 +71,7 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 		this.originalColumnsToLocalOnes = new IdentityHashMap<>();
 		rightJoinLink.getTable().getColumns().forEach(column -> {
 			// we clone columns to avoid side effects on the original query
-			this.originalColumnsToLocalOnes.put((JoinLink<?, ?>) column, (JoinLink<?, ?>) column);
+			this.originalColumnsToLocalOnes.put((QualifiedSelectable<?, ?>) column, (QualifiedSelectable<?, ?>) column);
 		});
 	}
 
@@ -92,7 +92,7 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 							   JoinType joinType,
 							   Set<? extends Selectable<?>> columnsToSelect,	// From T2
 							   @Nullable String tableAlias,
-							   IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> originalColumnsToLocalOnes) {
+							   IdentityHashMap<QualifiedSelectable<?, ?>, QualifiedSelectable<?, ?>> originalColumnsToLocalOnes) {
 		this.parent = parent;
 		this.leftJoinLink = leftJoinLink;
 		this.rightJoinLink = rightJoinLink;
@@ -142,7 +142,7 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 	}
 	
 	@Override
-	public IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> getOriginalColumnsToLocalOnes() {
+	public IdentityHashMap<QualifiedSelectable<?, ?>, QualifiedSelectable<?, ?>> getOriginalColumnsToLocalOnes() {
 		return originalColumnsToLocalOnes;
 	}
 

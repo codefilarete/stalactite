@@ -19,7 +19,7 @@ import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
@@ -46,7 +46,7 @@ public class AggregateElementCollectionAppender {
 		if (relation.isFetchSeparately()) {
 			// adding second phase loader
 			KeyMapping<LEFTTABLE, COLLECTIONTABLE, SRCID> targetPkToRightKey = new KeyMapping<>(sourcePersister.getMapping().getTargetTable().getPrimaryKey(), join.getRightKey());
-			KeepOrderMap<JoinLink<LEFTTABLE, ?>, JoinLink<COLLECTIONTABLE, ?>> targetPkToAssociationTableKey = targetPkToRightKey.getMapping();
+			KeepOrderMap<QualifiedSelectable<LEFTTABLE, ?>, QualifiedSelectable<COLLECTIONTABLE, ?>> targetPkToAssociationTableKey = targetPkToRightKey.getMapping();
 			
 			ElementCollectionLoader<SRC, SRCID, TRGT, LEFTTABLE, COLLECTIONTABLE> elementCollectionLoader = new ElementCollectionLoader<>(
 					sourcePersister.getMapping().getIdMapping(),

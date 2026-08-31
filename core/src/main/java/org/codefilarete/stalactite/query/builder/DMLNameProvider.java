@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.codefilarete.stalactite.query.api.Fromable;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.tool.Strings;
 
@@ -32,8 +32,8 @@ public class DMLNameProvider {
 	 * @return the column name prefixed with table name/alias
 	 */
 	public String getName(Selectable<?> column) {
-		if (column instanceof JoinLink) {
-			String tablePrefix = getTablePrefix(((JoinLink<?, ?>) column).getOwner());
+		if (column instanceof QualifiedSelectable) {
+			String tablePrefix = getTablePrefix(((QualifiedSelectable<?, ?>) column).getOwner());
 			return tablePrefix + "." + getSimpleName(column);
 		} else {
 			return getSimpleName(column);

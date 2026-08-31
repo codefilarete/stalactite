@@ -19,7 +19,7 @@ import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.id.Identifier;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.spring.repository.query.projection.ProjectionMappingFinder;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
@@ -91,7 +91,7 @@ class ProjectionMappingFinderTest {
 	void lookup_withClosedProjection() {
 		SpelAwareProxyProjectionFactory projectionFactory = new SpelAwareProxyProjectionFactory();
 		ProjectionMappingFinder<Republic> testInstance = new ProjectionMappingFinder<>(projectionFactory, entityPersister);
-		IdentityHashMap<JoinLink<?, ?>, AccessorChain<Republic, ?>> selectablePaths = testInstance.lookup(NamesOnly.class);
+		IdentityHashMap<QualifiedSelectable<?, ?>, AccessorChain<Republic, ?>> selectablePaths = testInstance.lookup(NamesOnly.class);
 		// we map the result to an ugly structure to be able to assert it easily because PropertyPath can't be created outside of Spring package
 		// and JoinLinks can't be found easily.
 		List<List<Object>> actual = Iterables.collectToList(selectablePaths.entrySet(), entry -> Arrays.asList(
@@ -112,7 +112,7 @@ class ProjectionMappingFinderTest {
 	void lookup_withOpenProjection() {
 		SpelAwareProxyProjectionFactory projectionFactory = new SpelAwareProxyProjectionFactory();
 		ProjectionMappingFinder<Republic> testInstance = new ProjectionMappingFinder<>(projectionFactory, entityPersister);
-		IdentityHashMap<JoinLink<?, ?>, AccessorChain<Republic, ?>> selectablePaths = testInstance.lookup(NamesOnlyWithValue.class);
+		IdentityHashMap<QualifiedSelectable<?, ?>, AccessorChain<Republic, ?>> selectablePaths = testInstance.lookup(NamesOnlyWithValue.class);
 		// we map the result to an ugly structure to be able to assert it easily because PropertyPath can't be created outside of Spring package
 		// and JoinLinks can't be found easily.
 		List<List<Object>> actual = Iterables.collectToList(selectablePaths.entrySet(), entry -> Arrays.asList(

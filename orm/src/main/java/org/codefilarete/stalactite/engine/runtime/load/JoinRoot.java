@@ -11,7 +11,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeIn
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.RootJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.query.api.Fromable;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.Reflections;
@@ -40,7 +40,7 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<C, T> {
 	@Nullable
 	private EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
 
-	private final IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> columnClones;
+	private final IdentityHashMap<QualifiedSelectable<?, ?>, QualifiedSelectable<?, ?>> columnClones;
 	
 	public JoinRoot(EntityJoinTree<C, I> tree, EntityInflater<C, I> entityInflater, T table) {
 		this.tree = tree;
@@ -49,15 +49,15 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<C, T> {
 		this.columnClones = new IdentityHashMap<>();
 		table.getColumns().forEach(column -> {
 			// we clone columns to avoid side effects on the original query
-			this.columnClones.put((JoinLink<?, ?>) column, (JoinLink<?, ?>) column);
+			this.columnClones.put((QualifiedSelectable<?, ?>) column, (QualifiedSelectable<?, ?>) column);
 		});
 	}
 	
-	public JoinRoot(EntityJoinTree<C, I> tree, EntityInflater<C, I> entityInflater, T table, IdentityHashMap<? extends JoinLink<?, ?>, ? extends JoinLink<?, ?>> columnClones) {
+	public JoinRoot(EntityJoinTree<C, I> tree, EntityInflater<C, I> entityInflater, T table, IdentityHashMap<? extends QualifiedSelectable<?, ?>, ? extends QualifiedSelectable<?, ?>> columnClones) {
 		this.tree = tree;
 		this.entityInflater = entityInflater;
 		this.table = table;
-		this.columnClones = (IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>>) columnClones;
+		this.columnClones = (IdentityHashMap<QualifiedSelectable<?, ?>, QualifiedSelectable<?, ?>>) columnClones;
 	}
 	
 	public EntityInflater<C, I> getEntityInflater() {
@@ -76,7 +76,7 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<C, T> {
 	}
 	
 	@Override
-	public IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> getOriginalColumnsToLocalOnes() {
+	public IdentityHashMap<QualifiedSelectable<?, ?>, QualifiedSelectable<?, ?>> getOriginalColumnsToLocalOnes() {
 		return columnClones;
 	}
 

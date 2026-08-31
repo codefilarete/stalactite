@@ -6,7 +6,7 @@ import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.query.AggregateAccessPointToColumnMapping;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.springframework.data.mapping.PropertyPath;
 import org.springframework.data.mapping.context.MappingContext;
@@ -53,22 +53,22 @@ public class ProjectionMappingFinder<C> {
 	}
 	
 	/**
-	 * Extracts the {@link JoinLink} and {@link PropertyPath} from the {@link ProjectionFactory} and {@link AdvancedEntityPersister} of construction time.
+	 * Extracts the {@link QualifiedSelectable} and {@link PropertyPath} from the {@link ProjectionFactory} and {@link AdvancedEntityPersister} of construction time.
 	 * The algorithm is based on Spring property introspection to make us match the way it detects the properties of a projection. Thus, we are much more
 	 * compatible with Spring Data than if we re-invent the wheel. Meanwhile, the will to re-invent it is very tempting because the algorithm is unclear,
 	 * not well-documented, with a lot of closed / private classes.
 	 *
 	 * @param projectionTypeToIntrospect the projection type to introspect
-	 * @return a map of {@link JoinLink} to {@link PropertyPath}
+	 * @return a map of {@link QualifiedSelectable} to {@link PropertyPath}
 	 */
-	public IdentityHashMap<JoinLink<?, ?>, AccessorChain<C, ?>> lookup(Class<?> projectionTypeToIntrospect) {
-		IdentityHashMap<JoinLink<?, ?>, AccessorChain<C, ?>> result = new IdentityHashMap<>();
+	public IdentityHashMap<QualifiedSelectable<?, ?>, AccessorChain<C, ?>> lookup(Class<?> projectionTypeToIntrospect) {
+		IdentityHashMap<QualifiedSelectable<?, ?>, AccessorChain<C, ?>> result = new IdentityHashMap<>();
 		
 		EntityProjection<?, C> projectionTypeIntrospection = entityProjectionIntrospector.introspect(projectionTypeToIntrospect, aggregateType);
 		projectionTypeIntrospection.forEachRecursive(projectionProperty -> {
 			AccessorChain accessorChain = convertToAccessorChain(projectionProperty.getPropertyPath());
 			try {
-				JoinLink<?, ?> selectable = aggregateColumnMapping.giveColumn(accessorChain.getAccessors());
+				QualifiedSelectable<?, ?> selectable = aggregateColumnMapping.giveColumn(accessorChain.getAccessors());
 				result.put(selectable, accessorChain);
 			} catch (RuntimeException e) {
 				// MADE TO AVOID Error while looking for column of o.c.s.e.m.Republic.getPrimeMinister() : it is not declared in mapping of o.c.s.e.m.Republic

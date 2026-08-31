@@ -24,7 +24,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.En
 import org.codefilarete.stalactite.mapping.DefaultEntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.builder.ExpandableSQLAppender;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
@@ -73,13 +73,13 @@ public class MapEntryLoader<SRC, SRCID, K, V, LEFTTABLE extends Table<LEFTTABLE>
 	
 	private final EntityJoinTree<KeyValueRecord<K, V, SRCID>, RecordId<K, SRCID>> entityJoinTree;
 	private final IdMapping<SRC, SRCID> sourceIdMapping;
-	private final Map<JoinLink<LEFTTABLE, ?>, JoinLink<MAPTABLE, ?>> reverseForeignKey;
+	private final Map<QualifiedSelectable<LEFTTABLE, ?>, QualifiedSelectable<MAPTABLE, ?>> reverseForeignKey;
 	private final Dialect dialect;
 	private final ConnectionProvider connectionProvider;
 	
 	public MapEntryLoader(IdMapping<SRC, SRCID> sourceIdMapping,
 	                      KeyValueRecordPersister<K, V, SRCID, MAPTABLE> keyValueRecordPersister,
-	                      Map<JoinLink<LEFTTABLE, ?>, JoinLink<MAPTABLE, ?>> reverseForeignKey,
+	                      Map<QualifiedSelectable<LEFTTABLE, ?>, QualifiedSelectable<MAPTABLE, ?>> reverseForeignKey,
 	                      Dialect dialect,
 	                      ConnectionProvider connectionProvider) {
 		this.sourceIdMapping = sourceIdMapping;

@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.sql.ddl.structure;
 
 import org.codefilarete.stalactite.query.api.Fromable;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
 
@@ -23,7 +23,7 @@ public class KeyMapping<LEFTTABLE extends Fromable, RIGHTTABLE extends Fromable,
 	
 	private final Key<RIGHTTABLE, ID> referencedKey;
 	
-	private final KeepOrderMap<JoinLink<LEFTTABLE, ?>, JoinLink<RIGHTTABLE, ?>> mapping;
+	private final KeepOrderMap<QualifiedSelectable<LEFTTABLE, ?>, QualifiedSelectable<RIGHTTABLE, ?>> mapping;
 	
 	
 	public KeyMapping(Key<LEFTTABLE, ID> sourceKey, Key<RIGHTTABLE, ID> referencedKey) {
@@ -32,7 +32,7 @@ public class KeyMapping<LEFTTABLE extends Fromable, RIGHTTABLE extends Fromable,
 		this.mapping = pair(sourceKey.getColumns(), referencedKey.getColumns(), KeepOrderMap::new);
 	}
 	
-	public KeyMapping(KeepOrderMap<JoinLink<LEFTTABLE, ?>, JoinLink<RIGHTTABLE, ?>> mapping) {
+	public KeyMapping(KeepOrderMap<QualifiedSelectable<LEFTTABLE, ?>, QualifiedSelectable<RIGHTTABLE, ?>> mapping) {
 		this.sourceKey = new KeySupport<>(new KeepOrderSet<>(mapping.keySet()));
 		this.referencedKey = new KeySupport<>(new KeepOrderSet<>(mapping.values()));
 		this.mapping = mapping;
@@ -46,16 +46,16 @@ public class KeyMapping<LEFTTABLE extends Fromable, RIGHTTABLE extends Fromable,
 		return referencedKey;
 	}
 	
-	public <J1 extends JoinLink<LEFTTABLE, ?>, J2 extends JoinLink<RIGHTTABLE, ?>> KeepOrderMap<J1, J2> getMapping() {
+	public <J1 extends QualifiedSelectable<LEFTTABLE, ?>, J2 extends QualifiedSelectable<RIGHTTABLE, ?>> KeepOrderMap<J1, J2> getMapping() {
 		return (KeepOrderMap<J1, J2>) mapping;
 	}
 	
-	public <J extends JoinLink<LEFTTABLE, ?>> KeepOrderSet<J> getSourceColumns() {
+	public <J extends QualifiedSelectable<LEFTTABLE, ?>> KeepOrderSet<J> getSourceColumns() {
 		return (KeepOrderSet<J>) new KeepOrderSet<>(mapping.keySet());
 	}
 	
 	
-	public <J extends JoinLink<RIGHTTABLE, ?>> KeepOrderSet<J> getReferencedColumns() {
+	public <J extends QualifiedSelectable<RIGHTTABLE, ?>> KeepOrderSet<J> getReferencedColumns() {
 		return (KeepOrderSet<J>) new KeepOrderSet<>(mapping.values());
 	}
 	
@@ -65,7 +65,7 @@ public class KeyMapping<LEFTTABLE extends Fromable, RIGHTTABLE extends Fromable,
 	}
 	
 	@Override
-	public <J extends JoinLink<LEFTTABLE, ?>> KeepOrderSet<J> getColumns() {
+	public <J extends QualifiedSelectable<LEFTTABLE, ?>> KeepOrderSet<J> getColumns() {
 		return getSourceColumns();
 	}
 	

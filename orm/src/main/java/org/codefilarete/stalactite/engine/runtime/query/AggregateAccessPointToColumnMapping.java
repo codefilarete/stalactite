@@ -39,7 +39,7 @@ import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.query.api.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -66,7 +66,7 @@ public class AggregateAccessPointToColumnMapping<C> {
 	 * - {@link ReadWriteAccessPoint} (for exemple) whereas getColumn() will get
 	 * - {@link AccessorByMethodReference} which are quite different but should be compared.
 	 */
-	private final Map<List<? extends ValueAccessPoint<?>>, JoinLink<?, ?>> propertyToColumn = new AccessorToColumnMap();
+	private final Map<List<? extends ValueAccessPoint<?>>, QualifiedSelectable<?, ?>> propertyToColumn = new AccessorToColumnMap();
 	
 	private final EntityJoinTree<C, ?> tree;
 	
@@ -97,7 +97,7 @@ public class AggregateAccessPointToColumnMapping<C> {
 	}
 	
 	@VisibleForTesting
-	public Map<List<? extends ValueAccessPoint<?>>, JoinLink<?, ?>> getPropertyToColumn() {
+	public Map<List<? extends ValueAccessPoint<?>>, QualifiedSelectable<?, ?>> getPropertyToColumn() {
 		return propertyToColumn;
 	}
 	
@@ -230,9 +230,9 @@ public class AggregateAccessPointToColumnMapping<C> {
 	 * @param valueAccessPoints chain of accessors to a property that has a matching column
 	 * @return the found column, throws an exception if not found
 	 */
-	public JoinLink<?, ?> giveColumn(List<? extends ValueAccessPoint<?>> valueAccessPoints) {
+	public QualifiedSelectable<?, ?> giveColumn(List<? extends ValueAccessPoint<?>> valueAccessPoints) {
 		// looking among current properties
-		JoinLink<?, ?> column = this.propertyToColumn.get(valueAccessPoints);
+		QualifiedSelectable<?, ?> column = this.propertyToColumn.get(valueAccessPoints);
 		if (column != null) {
 			return column;
 		} else {

@@ -19,5 +19,5 @@ public interface FromAware {
 	
 	FluentFromClause from(Fromable leftTable, String leftTableAlias, Fromable rightTable, String rightTableAlias, String joinCondition);
 	
-	<I> FluentFromClause from(JoinLink<?, I> leftColumn, JoinLink<?, I> rightColumn);
+	<I> FluentFromClause from(QualifiedSelectable<?, I> leftColumn, QualifiedSelectable<?, I> rightColumn);
 }

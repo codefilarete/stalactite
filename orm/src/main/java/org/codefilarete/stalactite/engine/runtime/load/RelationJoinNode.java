@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.Relati
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.query.api.Fromable;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
@@ -49,8 +49,8 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 	
 	RelationJoinNode(JoinNode<?, T1> parent,
 					 PropertyAccessPoint<?, ?> propertyAccessor,
-					 JoinLink<T1, JOINTYPE> leftJoinColumn,
-					 JoinLink<T2, JOINTYPE> rightJoinColumn,
+					 QualifiedSelectable<T1, JOINTYPE> leftJoinColumn,
+					 QualifiedSelectable<T2, JOINTYPE> rightJoinColumn,
 					 JoinType joinType,
 					 Set<? extends Selectable<?>> columnsToSelect,    // Of T2
 					 @Nullable String tableAlias,
@@ -98,7 +98,7 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 					 EntityInflater<C, I> entityInflater,
 					 BeanRelationFixer<?, C> beanRelationFixer,
 					 @Nullable Function<ColumnedRow, ?> relationIdentifierProvider,
-					 IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> columnClones) {
+					 IdentityHashMap<QualifiedSelectable<?, ?>, QualifiedSelectable<?, ?>> columnClones) {
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias, columnClones);
 		this.entityInflater = entityInflater;
 		this.propertyAccessor = propertyAccessor;

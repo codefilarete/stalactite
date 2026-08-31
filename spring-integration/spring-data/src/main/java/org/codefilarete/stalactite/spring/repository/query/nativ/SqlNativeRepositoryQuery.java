@@ -13,7 +13,7 @@ import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityFinder;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.spring.repository.query.execution.AbstractQueryExecutor;
 import org.codefilarete.stalactite.spring.repository.query.execution.AbstractRepositoryQuery;
 import org.codefilarete.stalactite.spring.repository.query.NativeQuery;
@@ -84,10 +84,10 @@ public class SqlNativeRepositoryQuery<C, R> extends AbstractRepositoryQuery<C, R
 			Class<?> projectionType = method.getParameters().hasDynamicProjection()
 					? invocationParameters.getDynamicProjectionType()
 					: method.getReturnedObjectType();
-			IdentityHashMap<JoinLink<?, ?>, AccessorChain<C, ?>> columnToProperties = this.projectionMappingFinder.lookup(projectionType);
+			IdentityHashMap<QualifiedSelectable<?, ?>, AccessorChain<C, ?>> columnToProperties = this.projectionMappingFinder.lookup(projectionType);
 			// Building aliases. The way we build them has no impact on other algorithms, they could be random, but for debugging and clarity purpose
 			// we generate them as closest as possible to the property name
-			IdentityHashMap<JoinLink<?, ?>, String> aliases = buildAliases(columnToProperties);
+			IdentityHashMap<QualifiedSelectable<?, ?>, String> aliases = buildAliases(columnToProperties);
 			
 			queryExecutor = (AbstractQueryExecutor) new TupleNativeQueryExecutor(getQueryMethod(), sql, dialect, connectionProvider, aliases, columnToProperties, invocationParameters::getLimit);
 		} else {

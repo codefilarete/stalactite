@@ -25,7 +25,7 @@ import org.codefilarete.stalactite.mapping.AbstractTransformer;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.query.api.Fromable;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.query.api.QueryStatement.PseudoColumn;
 import org.codefilarete.stalactite.query.api.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.api.Selectable;
@@ -195,13 +195,13 @@ public class EntityJoinTree<C, I> {
 																								Set<? extends Column<T2, ?>> additionalSelectableColumns,
 																								@Nullable Function<ColumnedRow, Object> relationIdentifierProvider) {
 		return this.addJoin(leftStrategyName, parent -> {
-			Duo<T2, IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>>> tableClone = cloneTable(rightJoinColumn.getTable());
+			Duo<T2, IdentityHashMap<QualifiedSelectable<?, ?>, QualifiedSelectable<?, ?>>> tableClone = cloneTable(rightJoinColumn.getTable());
 			// Build a new Key using the cloned table and the corresponding cloned columns
 			KeyBuilder<T2, JOINTYPE> rightJoinLinkBuilder = Key.from(tableClone.getLeft());
-			Set<? extends JoinLink<?, ?>> columns = rightJoinColumn.getColumns();
-			for (JoinLink<?, ?> column : columns) {
+			Set<? extends QualifiedSelectable<?, ?>> columns = rightJoinColumn.getColumns();
+			for (QualifiedSelectable<?, ?> column : columns) {
 				// Note that we can cast to JoinLink because we're already dealing with JoinLink since we are in JoinNode
-				JoinLink<T2, Object> clonedColumn = (JoinLink<T2, Object>) tableClone.getRight().get(column);
+				QualifiedSelectable<T2, Object> clonedColumn = (QualifiedSelectable<T2, Object>) tableClone.getRight().get(column);
 				rightJoinLinkBuilder.addColumn(clonedColumn);
 			}
 			
@@ -209,7 +209,7 @@ public class EntityJoinTree<C, I> {
 			
 			// We create the column mapping from the original node column to the cloned columns, not from the table clone ones.
 			// This allows keeping the original columns in the map (user's one), which is necessary for caller to decode the result set 
-			IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> originalColumnsToClones = tableClone.getRight();
+			IdentityHashMap<QualifiedSelectable<?, ?>, QualifiedSelectable<?, ?>> originalColumnsToClones = tableClone.getRight();
 			
 			return new RelationJoinNode<U, T1, T2, JOINTYPE, ID>(
 					(JoinNode) parent,
@@ -309,7 +309,7 @@ public class EntityJoinTree<C, I> {
 																						Key<T1, JOINTYPE> leftJoinColumn,
 																						Key<T2, JOINTYPE> rightJoinColumn,
 																						JoinType joinType,
-																						Set<? extends JoinLink<T2, ?>> columnsToSelect) {
+																						Set<? extends QualifiedSelectable<T2, ?>> columnsToSelect) {
 		return this.addJoin(leftStrategyName, parent -> {
 			Key<T1, JOINTYPE> projectedLeftKey = mimicKey(leftJoinColumn, (T1) parent.getTable());
 			return new PassiveJoinNode<C, T1, T2, JOINTYPE>((JoinNode<?, T1>) (JoinNode) parent,
@@ -366,7 +366,7 @@ public class EntityJoinTree<C, I> {
 		Key.KeyBuilder<T, JOINTYPE> leftJoinLinkBuilder = Key.from(leftJoinColumn.getTable());
 		Map<String, ? extends Selectable<?>> parentNodeColumnPerName = Iterables.map(table.getColumns(), Selectable::getExpression);
 		leftJoinColumn.getColumns().forEach(column -> {
-			leftJoinLinkBuilder.addColumn((JoinLink<T, ?>) parentNodeColumnPerName.get(column.getExpression()));
+			leftJoinLinkBuilder.addColumn((QualifiedSelectable<T, ?>) parentNodeColumnPerName.get(column.getExpression()));
 		});
 		return leftJoinLinkBuilder.build();
 	}
@@ -581,11 +581,11 @@ public class EntityJoinTree<C, I> {
 	 * @param fromable the table to clone
 	 * @return a copy (on name and columns) of given join table
 	 */
-	static <T extends Fromable> Duo<T, IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>>> cloneTable(T fromable) {
+	static <T extends Fromable> Duo<T, IdentityHashMap<QualifiedSelectable<?, ?>, QualifiedSelectable<?, ?>>> cloneTable(T fromable) {
 		if (fromable instanceof Table) {
 			Table<?> table = (Table<?>) fromable;
 			Table tableClone = new Table(fromable.getName());
-			IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> columnClones = new IdentityHashMap<>(tableClone.getColumns().size());
+			IdentityHashMap<QualifiedSelectable<?, ?>, QualifiedSelectable<?, ?>> columnClones = new IdentityHashMap<>(tableClone.getColumns().size());
 			(((Table<?>) fromable).getColumns()).forEach(column -> {
 				Column<?, ?> clone = tableClone.addColumn(column.getName(), column.getJavaType(), column.getSize(), column.isNullable());
 				columnClones.put(column, clone);
@@ -605,7 +605,7 @@ public class EntityJoinTree<C, I> {
 		} else if (fromable instanceof PseudoTable) {
 			PseudoTable pseudoTable = new PseudoTable(((PseudoTable) fromable).getQueryStatement(), fromable.getName());
 			Map<String, PseudoColumn<?>> pseudoColumnClones = pseudoTable.mapColumnsOnName();
-			IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> columnClones = new IdentityHashMap<>(pseudoTable.getColumns().size());
+			IdentityHashMap<QualifiedSelectable<?, ?>, QualifiedSelectable<?, ?>> columnClones = new IdentityHashMap<>(pseudoTable.getColumns().size());
 			(((PseudoTable) fromable).getColumns()).forEach(column -> {
 				// we can only have Union in From clause, no sub-query, because of table-per-class polymorphism, so we can cast to Union
 //				SimpleSelectable<?> clone = ((Union) pseudoTable.getQueryStatement()).registerColumn(column.getExpression(), column.getJavaType());
@@ -631,7 +631,7 @@ public class EntityJoinTree<C, I> {
 			KeyBuilder<T, JOINTYPE> leftKeyBuilder = (KeyBuilder<T, JOINTYPE>) Key.from(union);
 			leftJoinColumn.getColumns().forEach(column -> {
 				Selectable<?> column1 = union.findColumn(column.getExpression());
-				leftKeyBuilder.addColumn((JoinLink<T, ?>) column1);
+				leftKeyBuilder.addColumn((QualifiedSelectable<T, ?>) column1);
 			});
 			return leftKeyBuilder.build();
 		} else {
@@ -650,18 +650,18 @@ public class EntityJoinTree<C, I> {
 	 * @return a copy of the given node, put as child of parent, using leftColumn
 	 */
 	public static AbstractJoinNode<?, ?, ?, ?> cloneNodeForParent(AbstractJoinNode<?, ?, ?, ?> node, JoinNode parent, Key<?, ?> leftJoinColumn) {
-		Duo<Fromable, IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>>> tableClone = cloneTable(node.getTable());
+		Duo<Fromable, IdentityHashMap<QualifiedSelectable<?, ?>, QualifiedSelectable<?, ?>>> tableClone = cloneTable(node.getTable());
 		// Build a new Key using the cloned table and the corresponding cloned columns
 		KeyBuilder<Fromable, Object> rightJoinLinkBuilder = Key.from(tableClone.getLeft());
-		Set<? extends JoinLink<?, ?>> columns = node.getRightJoinLink().getColumns();
-		for (JoinLink<?, ?> column : columns) {
+		Set<? extends QualifiedSelectable<?, ?>> columns = node.getRightJoinLink().getColumns();
+		for (QualifiedSelectable<?, ?> column : columns) {
 			// Note that we can cast to JoinLink because we're already dealing with JoinLink since we are in JoinNode
-			JoinLink<Fromable, Object> clonedColumn = (JoinLink<Fromable, Object>) tableClone.getRight().get(column);
+			QualifiedSelectable<Fromable, Object> clonedColumn = (QualifiedSelectable<Fromable, Object>) tableClone.getRight().get(column);
 			rightJoinLinkBuilder.addColumn(clonedColumn);
 		}
 		// We create the column mapping from the original node column to the cloned columns, not from the table clone ones.
 		// This allows keeping the original columns in the map (user's one), which is necessary for caller to decode the result set 
-		IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> originalColumnsToClones = Maps.innerJoinOnValuesAndKeys(node.getOriginalColumnsToLocalOnes(), tableClone.getRight(), IdentityHashMap::new);
+		IdentityHashMap<QualifiedSelectable<?, ?>, QualifiedSelectable<?, ?>> originalColumnsToClones = Maps.innerJoinOnValuesAndKeys(node.getOriginalColumnsToLocalOnes(), tableClone.getRight(), IdentityHashMap::new);
 		
 		Key<Fromable, ?> leftJoinLinkBuilder = projectLeftKey(leftJoinColumn, parent.getTable());
 		

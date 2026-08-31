@@ -23,7 +23,7 @@ import org.codefilarete.stalactite.engine.runtime.load.PolymorphicMergeJoinRowCo
 import org.codefilarete.stalactite.engine.runtime.load.TablePerClassPolymorphicRelationJoinNode;
 import org.codefilarete.stalactite.engine.runtime.tableperclass.TablePerClassPolymorphismReader;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.query.api.QueryStatement.PseudoColumn;
 import org.codefilarete.stalactite.query.api.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.api.Selectable;
@@ -103,7 +103,7 @@ public class TablePerClassAppender {
 		// we are the table-per-class case), so we have to create an equivalent of the primary key, based on the columns of the union
 		KeyBuilder<PseudoTable, I> leftKey = Key.from(mainPersisterJoin.getRightTable());
 		templateTable.getPrimaryKey().getColumns().forEach(pkCol -> {
-			JoinLink<PseudoTable, ?> selectable = (JoinLink<PseudoTable, ?>) Iterables.find(mainPersisterJoin.getColumnsToSelect(), selectableColumn -> selectableColumn.getExpression().equals(pkCol.getName()));
+			QualifiedSelectable<PseudoTable, ?> selectable = (QualifiedSelectable<PseudoTable, ?>) Iterables.find(mainPersisterJoin.getColumnsToSelect(), selectableColumn -> selectableColumn.getExpression().equals(pkCol.getName()));
 			leftKey.addColumn(selectable);
 		});
 		MutableInt discriminatorComputer = new MutableInt();
@@ -135,10 +135,10 @@ public class TablePerClassAppender {
 		
 		// we build a union of all sub queries that will be joined in the main query
 		// To build the union we need the columns that are common to all persisters
-		Set<JoinLink<?, ?>> commonColumns = new KeepOrderSet<>();
+		Set<QualifiedSelectable<?, ?>> commonColumns = new KeepOrderSet<>();
 		commonColumns.addAll(persisterColumns);
 
-		Set<String> commonColumnsNames = commonColumns.stream().map(JoinLink::getExpression).collect(Collectors.toSet());
+		Set<String> commonColumnsNames = commonColumns.stream().map(QualifiedSelectable::getExpression).collect(Collectors.toSet());
 		
 		KeepOrderSet<Column<?, ?>> nonCommonColumns = new KeepOrderSet<>();
 		subPersisters.forEach(subPersister -> {
@@ -232,10 +232,10 @@ public class TablePerClassAppender {
 		
 		// we build a union of all sub queries that will be joined in the main query
 		// To build the union we need the columns that are common to all persisters
-		Set<JoinLink<?, ?>> commonColumns = new KeepOrderSet<>();
+		Set<QualifiedSelectable<?, ?>> commonColumns = new KeepOrderSet<>();
 		commonColumns.addAll(persisterColumns);
 		
-		Set<String> commonColumnsNames = commonColumns.stream().map(JoinLink::getExpression).collect(Collectors.toSet());
+		Set<String> commonColumnsNames = commonColumns.stream().map(QualifiedSelectable::getExpression).collect(Collectors.toSet());
 		
 		KeepOrderSet<Column<?, ?>> nonCommonColumns = new KeepOrderSet<>();
 		subPersisters.forEach(subPersister -> {

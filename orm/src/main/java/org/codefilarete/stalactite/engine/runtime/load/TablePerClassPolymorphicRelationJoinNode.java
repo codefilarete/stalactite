@@ -10,7 +10,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.ForkJoinRowConsumer;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.query.api.QueryStatement.PseudoColumn;
 import org.codefilarete.stalactite.query.api.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.api.Selectable;
@@ -42,10 +42,10 @@ import static org.codefilarete.tool.Nullable.nullable;
  */
 public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, JOINCOLTYPE, I> extends RelationJoinNode<C, T1, PseudoTable, JOINCOLTYPE, I> {
 	
-	private static IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> collectColumnClones(Key<?, ?> rightJoinLink, Set<? extends JoinLink<?, ?>> columnsToSelect) {
-		IdentityHashMap<JoinLink<?, ?>, JoinLink<?, ?>> result = new IdentityHashMap<>();
+	private static IdentityHashMap<QualifiedSelectable<?, ?>, QualifiedSelectable<?, ?>> collectColumnClones(Key<?, ?> rightJoinLink, Set<? extends QualifiedSelectable<?, ?>> columnsToSelect) {
+		IdentityHashMap<QualifiedSelectable<?, ?>, QualifiedSelectable<?, ?>> result = new IdentityHashMap<>();
 		rightJoinLink.getTable().getColumns().forEach(column -> {
-			result.put((JoinLink<?, ?>) column, (JoinLink<?, ?>) column);
+			result.put((QualifiedSelectable<?, ?>) column, (QualifiedSelectable<?, ?>) column);
 		});
 		columnsToSelect.forEach(column -> {
 			result.put(column, column);
@@ -68,7 +68,7 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 													Key<T1, JOINCOLTYPE> leftJoinColumn,
 													Key<?, JOINCOLTYPE> rightJoinColumn,
 													JoinType joinType,
-													Set<? extends JoinLink<?, ?>> columnsToSelect,
+													Set<? extends QualifiedSelectable<?, ?>> columnsToSelect,
 													@Nullable String tableAlias,
 													EntityInflater<C, I> entityInflater,
 													BeanRelationFixer<Object, C> beanRelationFixer,

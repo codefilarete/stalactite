@@ -13,7 +13,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.builder.ExpandableSQLAppender;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
@@ -66,14 +66,14 @@ public class SeparateFetchQueryExecutor<ROW, SRCID, LEFTTABLE extends Table<LEFT
 	private final Map<Selectable<?>, ResultSetReader<?>> selectParameterBinders;
 	private final Map<Selectable<?>, String> columnAliases;
 	private final IdMapping<?, SRCID> sourceIdMapping;
-	private final Map<? extends JoinLink<LEFTTABLE, ?>, ? extends JoinLink<TARGETTABLE, ?>> reverseForeignKey;
+	private final Map<? extends QualifiedSelectable<LEFTTABLE, ?>, ? extends QualifiedSelectable<TARGETTABLE, ?>> reverseForeignKey;
 	private final Dialect dialect;
 	private final ConnectionProvider connectionProvider;
 	private final QuerySQLBuilderFactory querySQLBuilderFactory;
 	
 	public SeparateFetchQueryExecutor(EntityTreeQuery<ROW> entityTreeQuery,
 	                                  IdMapping<?, SRCID> sourceIdMapping,
-	                                  Map<? extends JoinLink<LEFTTABLE, ?>, ? extends JoinLink<TARGETTABLE, ?>> reverseForeignKey,
+	                                  Map<? extends QualifiedSelectable<LEFTTABLE, ?>, ? extends QualifiedSelectable<TARGETTABLE, ?>> reverseForeignKey,
 	                                  Dialect dialect,
 	                                  ConnectionProvider connectionProvider) {
 		this(entityTreeQuery.getQuery(), entityTreeQuery.getInflater(), entityTreeQuery.getSelectParameterBinders(), entityTreeQuery.getColumnAliases(),
@@ -85,7 +85,7 @@ public class SeparateFetchQueryExecutor<ROW, SRCID, LEFTTABLE extends Table<LEFT
 	                                  Map<Selectable<?>, ? extends ResultSetReader<?>> selectParameterBinders,
 	                                  Map<Selectable<?>, String> columnAliases,
 	                                  IdMapping<?, SRCID> sourceIdMapping,
-	                                  Map<? extends JoinLink<LEFTTABLE, ?>, ? extends JoinLink<TARGETTABLE, ?>> reverseForeignKey,
+	                                  Map<? extends QualifiedSelectable<LEFTTABLE, ?>, ? extends QualifiedSelectable<TARGETTABLE, ?>> reverseForeignKey,
 	                                  Dialect dialect,
 	                                  ConnectionProvider connectionProvider) {
 		this.query = query;

@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.Identi
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.mapping.IdMapping;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -38,13 +38,13 @@ public class ElementCollectionLoader<SRC, SRCID, TRGT, LEFTTABLE extends Table<L
 	
 	private final EntityJoinTree<ElementRecord<TRGT, SRCID>, ElementRecord<TRGT, SRCID>> entityJoinTree;
 	private final IdMapping<SRC, SRCID> sourceIdMapping;
-	private final Map<JoinLink<LEFTTABLE, ?>, JoinLink<COLLECTIONTABLE, ?>> reverseForeignKey;
+	private final Map<QualifiedSelectable<LEFTTABLE, ?>, QualifiedSelectable<COLLECTIONTABLE, ?>> reverseForeignKey;
 	private final Dialect dialect;
 	private final ConnectionProvider connectionProvider;
 	
 	public ElementCollectionLoader(IdMapping<SRC, SRCID> sourceIdMapping,
 	                               ElementRecordPersister<TRGT, SRCID, COLLECTIONTABLE, ElementRecord<TRGT, SRCID>> collectionPersister,
-	                               Map<JoinLink<LEFTTABLE, ?>, JoinLink<COLLECTIONTABLE, ?>> reverseForeignKey,
+	                               Map<QualifiedSelectable<LEFTTABLE, ?>, QualifiedSelectable<COLLECTIONTABLE, ?>> reverseForeignKey,
 	                               Dialect dialect,
 	                               ConnectionProvider connectionProvider) {
 		this.sourceIdMapping = sourceIdMapping;

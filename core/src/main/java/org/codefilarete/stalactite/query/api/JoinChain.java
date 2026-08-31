@@ -9,15 +9,15 @@ import org.codefilarete.stalactite.sql.ddl.structure.Key;
  */
 public interface JoinChain<T extends JoinChain<T>> {
 	
-	<I> T innerJoin(JoinLink<?, I> leftColumn, JoinLink<?, I> rightColumn);
+	<I> T innerJoin(QualifiedSelectable<?, I> leftColumn, QualifiedSelectable<?, I> rightColumn);
 	
 	<JOINTYPE> T innerJoin(Key<?, JOINTYPE> leftColumns, Key<?, JOINTYPE> rightColumns);
 	
-	<I> T leftOuterJoin(JoinLink<?, I> leftColumn, JoinLink<?, I> rightColumn);
+	<I> T leftOuterJoin(QualifiedSelectable<?, I> leftColumn, QualifiedSelectable<?, I> rightColumn);
 	
 	<JOINTYPE> T leftOuterJoin(Key<?, JOINTYPE> leftColumns, Key<?, JOINTYPE> rightColumns);
 	
-	<I> T rightOuterJoin(JoinLink<?, I> leftColumn, JoinLink<?, I> rightColumn);
+	<I> T rightOuterJoin(QualifiedSelectable<?, I> leftColumn, QualifiedSelectable<?, I> rightColumn);
 	
 	T innerJoin(Fromable rightTable, String joinClause);
 	

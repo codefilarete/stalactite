@@ -44,7 +44,7 @@ import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.query.api.Fromable;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.query.api.QueryStatement.PseudoColumn;
 import org.codefilarete.stalactite.query.api.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.api.Selectable;
@@ -391,12 +391,12 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		
 		// we build a union of all sub queries that will be joined in the main query
 		// To build the union we need columns that are common to all persisters
-		Set<JoinLink<?, ?>> commonColumns = new KeepOrderSet<>();
+		Set<QualifiedSelectable<?, ?>> commonColumns = new KeepOrderSet<>();
 		commonColumns.addAll(mainPersister.getMapping().getSelectableColumns());
 		// TODO : right column is not in selected columns of class mapping : understand why (and if that's normal)
 		commonColumns.addAll(rightJoinColumn.getColumns());
 		
-		Set<String> commonColumnsNames = commonColumns.stream().map(JoinLink::getExpression).collect(Collectors.toSet());
+		Set<String> commonColumnsNames = commonColumns.stream().map(QualifiedSelectable::getExpression).collect(Collectors.toSet());
 		
 		Set<ConfiguredEntityReader<? extends C, I, ?>> subPersisters = new HashSet<>(this.subEntitiesPersisters.values());
 		
@@ -471,7 +471,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		// we are the table-per-class case), so we have to create an equivalent of the primary key, based on the columns of the union
 		KeyBuilder<PseudoTable, I> leftKey = Key.from(mainPersisterJoin.getRightTable());
 		mainPersister.<T1>getMainTable().getPrimaryKey().getColumns().forEach(pkCol -> {
-			JoinLink<PseudoTable, ?> selectable = (JoinLink<PseudoTable, ?>) Iterables.find(mainPersisterJoin.getColumnsToSelect(), selectableColumn -> selectableColumn.getExpression().equals(pkCol.getName()));
+			QualifiedSelectable<PseudoTable, ?> selectable = (QualifiedSelectable<PseudoTable, ?>) Iterables.find(mainPersisterJoin.getColumnsToSelect(), selectableColumn -> selectableColumn.getExpression().equals(pkCol.getName()));
 			leftKey.addColumn(selectable);
 		});
 		MutableInt discriminatorComputer = new MutableInt();

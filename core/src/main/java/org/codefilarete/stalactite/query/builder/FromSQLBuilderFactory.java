@@ -10,7 +10,7 @@ import org.codefilarete.stalactite.query.model.From.CrossJoin;
 import org.codefilarete.stalactite.query.model.From.KeyJoin;
 import org.codefilarete.stalactite.query.model.From.RawTableJoin;
 import org.codefilarete.stalactite.query.api.Fromable;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.api.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -157,7 +157,7 @@ public class FromSQLBuilderFactory {
 					sql.cat(dmlNameProvider.getName(columnJoin.getLeftColumn()), " = ", dmlNameProvider.getName(columnJoin.getRightColumn()));
 				} else if (join instanceof KeyJoin) {
 					KeyJoin keyJoin = (KeyJoin) join;
-					PairIterator<JoinLink<?, ?>, JoinLink<?, ?>> joinColumnsPairs = new PairIterator<>(keyJoin.getLeftKey().getColumns(), keyJoin.getRightKey().getColumns());
+					PairIterator<QualifiedSelectable<?, ?>, QualifiedSelectable<?, ?>> joinColumnsPairs = new PairIterator<>(keyJoin.getLeftKey().getColumns(), keyJoin.getRightKey().getColumns());
 					joinColumnsPairs.forEachRemaining(duo -> {
 						sql.cat(dmlNameProvider.getName(duo.getLeft()), " = ", dmlNameProvider.getName(duo.getRight()), " and ");
 					});

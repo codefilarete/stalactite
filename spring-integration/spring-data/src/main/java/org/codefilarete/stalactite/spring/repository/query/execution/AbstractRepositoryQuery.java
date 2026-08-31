@@ -8,7 +8,7 @@ import java.util.function.Supplier;
 
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.stalactite.query.api.JoinLink;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteQueryMethod;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteRepositoryQuery;
 import org.codefilarete.stalactite.spring.repository.query.execution.reduce.QueryResultCollectioner;
@@ -29,7 +29,7 @@ import org.springframework.data.repository.query.ResultProcessor;
  */
 public abstract class AbstractRepositoryQuery<C, R> implements StalactiteRepositoryQuery<C, R> {
 	
-	public static IdentityHashMap<JoinLink<?, ?>, String> buildAliases(IdentityHashMap<? extends JoinLink<?, ?>, ? extends AccessorChain<?, ?>> columnToProperties) {
+	public static IdentityHashMap<QualifiedSelectable<?, ?>, String> buildAliases(IdentityHashMap<? extends QualifiedSelectable<?, ?>, ? extends AccessorChain<?, ?>> columnToProperties) {
 		return Iterables.map(
 				columnToProperties.entrySet(),
 				Map.Entry::getKey,
