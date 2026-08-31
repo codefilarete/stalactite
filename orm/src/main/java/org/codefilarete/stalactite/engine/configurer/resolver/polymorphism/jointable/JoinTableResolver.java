@@ -34,7 +34,7 @@ public class JoinTableResolver implements PolymorphismResolver<JoinTablePolymorp
 	JoinTablePolymorphismWriter<TRGT, TRGTID, RIGHTTABLE, SUBTRGT> resolve(PolymorphicEntity<TRGT, TRGTID, RIGHTTABLE> targetEntity,
 	                                                                       CreatedPersisterCollector<TRGT, TRGTID> persisterCollector) {
 		
-		EntityWriteExecutor<TRGT, TRGTID> templateWriter = skeletonAggregateResolver.buildPersister(targetEntity, persisterCollector);
+		EntityWriteExecutor<TRGT, TRGTID> templateWriter = skeletonAggregateResolver.resolve(targetEntity, persisterCollector);
 		IdMapping<TRGT, TRGTID> idMapping = skeletonAggregateResolver.createIdMapping(targetEntity);
 		
 		Set<EntityReadWriteExecutor<SUBTRGT, TRGTID>> subPersisters = targetEntity.getPolymorphism().getSubEntities().stream().map(subEntity -> {
@@ -56,6 +56,6 @@ public class JoinTableResolver implements PolymorphismResolver<JoinTablePolymorp
 	
 	private <SUBENTITY, SUB_ENTITYID, SUBTABLE extends Table<SUBTABLE>>
 	EntityReadWriteExecutor<SUBENTITY, SUB_ENTITYID> buildSubPersister(Entity<SUBENTITY, SUB_ENTITYID, SUBTABLE> subEntity) {
-		return skeletonAggregateResolver.buildPersister(subEntity, new CreatedPersisterCollector<>());
+		return skeletonAggregateResolver.resolve(subEntity, new CreatedPersisterCollector<>());
 	}
 }

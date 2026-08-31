@@ -54,7 +54,7 @@ public class ManyToOneResolver {
 		
 		assertConfigurationIsSupported(resolvedRelation.getRelationMode());
 		
-		EntityReadWriteExecutor<TRGT, TRGTID> targetPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getTargetEntity(), persisterCollector);
+		EntityReadWriteExecutor<TRGT, TRGTID> targetPersister = skeletonAggregateResolver.resolve(resolvedRelation.getTargetEntity(), persisterCollector);
 		
 		ManyToOneEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> engine = new ManyToOneEngine<>(
 				sourcePersister,

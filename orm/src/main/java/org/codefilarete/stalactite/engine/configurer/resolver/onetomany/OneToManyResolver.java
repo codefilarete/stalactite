@@ -62,7 +62,7 @@ public class OneToManyResolver {
 	void resolve(ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> resolvedRelation,
 	             EntityWriteExecutor<SRC, SRCID> sourcePersister,
 	             CreatedPersisterCollector<TRGT, TRGTID> persisterCollector) {
-		EntityReadWriteExecutor<TRGT, TRGTID> targetPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getTargetEntity(), persisterCollector);
+		EntityReadWriteExecutor<TRGT, TRGTID> targetPersister = skeletonAggregateResolver.resolve(resolvedRelation.getTargetEntity(), persisterCollector);
 		
 		AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, S> oneToManyEngine;
 		if (resolvedRelation.isOwnedByReverseSide()) {

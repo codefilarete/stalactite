@@ -8,23 +8,20 @@ import org.codefilarete.stalactite.dsl.property.CascadeOptions;
 import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneConfigurer.MandatoryRelationAssertBeforeUpdateListener;
-import org.codefilarete.stalactite.engine.configurer.model.PolymorphicEntity;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneConfigurerTemplate.MandatoryRelationAssertBeforeInsertListener;
 import org.codefilarete.stalactite.engine.configurer.resolver.CreatedPersisterCollector;
+import org.codefilarete.stalactite.engine.configurer.resolver.EntitySkeletonResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
-import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.PolymorphicSkeletonResolver;
 import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 public class OneToOneResolver {
 	
-	private final SkeletonAggregateResolver skeletonAggregateResolver;
-	private final PolymorphicSkeletonResolver polymorphicSkeletonResolver;
+	private final EntitySkeletonResolver entitySkeletonResolver;
 	
-	public OneToOneResolver(SkeletonAggregateResolver skeletonAggregateResolver, PolymorphicSkeletonResolver polymorphicSkeletonResolver) {
-		this.skeletonAggregateResolver = skeletonAggregateResolver;
-		this.polymorphicSkeletonResolver = polymorphicSkeletonResolver;
+	public OneToOneResolver(EntitySkeletonResolver entitySkeletonResolver) {
+		this.entitySkeletonResolver = entitySkeletonResolver;
 	}
 	
 	/**
@@ -52,13 +49,7 @@ public class OneToOneResolver {
 		
 		assertConfigurationIsSupported(relationDefinition.getRelationMode());
 		
-		EntityReadWriteExecutor<TRGT, TRGTID> targetPersister;
-		if (relationDefinition.getTargetEntity() instanceof PolymorphicEntity) {
-			PolymorphicEntity<TRGT, TRGTID, RIGHTTABLE> polymorphicEntity = (PolymorphicEntity<TRGT, TRGTID, RIGHTTABLE>) relationDefinition.getTargetEntity();
-			targetPersister = polymorphicSkeletonResolver.resolve(polymorphicEntity, persisterCollector);
-		} else {
-			targetPersister = skeletonAggregateResolver.buildPersister(relationDefinition.getTargetEntity(), persisterCollector);
-		}
+		EntityReadWriteExecutor<TRGT, TRGTID> targetPersister = entitySkeletonResolver.resolve(relationDefinition.getTargetEntity(), persisterCollector);
 		
 		KeyMapping<LEFTTABLE, RIGHTTABLE, JOINID> foreignKeyColumnsMapping = relationDefinition.getJoin().getLeftKey().reference(relationDefinition.getJoin().getRightKey());
 		

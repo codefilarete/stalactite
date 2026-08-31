@@ -7,8 +7,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityPersister;
@@ -27,7 +25,6 @@ import org.codefilarete.stalactite.engine.configurer.model.Entity;
 import org.codefilarete.stalactite.engine.configurer.model.EntityRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ExtraTableJoin;
 import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
-import org.codefilarete.stalactite.engine.configurer.model.JoinTablePolymorphism;
 import org.codefilarete.stalactite.engine.configurer.model.MappingJoin;
 import org.codefilarete.stalactite.engine.configurer.model.PolymorphicEntity;
 import org.codefilarete.stalactite.engine.configurer.model.RelationJoin;
@@ -37,8 +34,6 @@ import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToOneRela
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
-import org.codefilarete.stalactite.engine.configurer.model.SingleTablePolymorphism;
-import org.codefilarete.stalactite.engine.configurer.model.TablePerClassPolymorphism;
 import org.codefilarete.stalactite.engine.configurer.resolver.elementcollection.AggregateElementCollectionAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.elementcollection.ElementCollectionResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.elementcollection.ElementCollectionResolver.ElementRecordPersister;
@@ -52,19 +47,10 @@ import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.Aggregat
 import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.OneToManyResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetoone.AggregateOneToOneAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetoone.OneToOneResolver;
-import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.PolymorphicSkeletonResolver;
-import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.PolymorphismResolver;
-import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.jointable.JoinTableResolver;
-import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.singletable.SingleTableResolver;
-import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.tableperclass.TablePerClassResolver;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
-import org.codefilarete.stalactite.engine.runtime.PolymorphicWriter;
-import org.codefilarete.stalactite.engine.runtime.jointable.JoinTablePolymorphismReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
-import org.codefilarete.stalactite.engine.runtime.singletable.SingleTablePolymorphismReader;
-import org.codefilarete.stalactite.engine.runtime.tableperclass.TablePerClassPolymorphismReader;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Duo;
@@ -147,7 +133,7 @@ public class AggregateResolver {
 		this.elementCollectionAppender = new AggregateElementCollectionAppender();
 		this.mapAppender = new AggregateMapAppender();
 		
-		this.oneToOneResolver = new OneToOneResolver(skeletonAggregateResolver, new PolymorphicSkeletonResolver(persistenceContext));
+		this.oneToOneResolver = new OneToOneResolver(new EntitySkeletonResolver(persistenceContext));
 		this.oneToManyResolver = new OneToManyResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 		this.manyToManyResolver = new ManyToManyResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 		this.manyToOneResolver = new ManyToOneResolver(skeletonAggregateResolver);
@@ -231,50 +217,10 @@ public class AggregateResolver {
 		// TODO: wrap result in an OptimizedUpdatePersister
 		// TODO: be inspired from DefaultPersisterBuilder.build()
 		
-		ConfiguredEntityReader<C, I, T> aggregateReader;
-		DelegatingReadWriteEntityExecutor<C, I> almostResult;
 		CreatedPersisterCollector<C, I> rootPersisterCollector = new CreatedPersisterCollector<>();
-		if (rootEntity instanceof Entity) {
-			DelegatingReadWriteEntityExecutor<C, I> persister = skeletonAggregateResolver.buildPersister(rootEntity, rootPersisterCollector);
-			almostResult = persister;
-			aggregateReader = (ConfiguredEntityReader<C, I, T>) persister.getReader();
-		} else {
-			if (rootEntity instanceof PolymorphicEntity) {
-				PolymorphicEntity<C, I, T> polymorphicEntity = (PolymorphicEntity<C, I, T>) rootEntity;
-				
-				Supplier<PolymorphismResolver<?>> polymorphismResolverFactory = null;
-				Function<Duo<EntityReader<C, I, T>, Map<Class<? extends C>, EntityReader<? extends C, I, ?>>>, ConfiguredEntityReader<C, I, T>> aggregateReaderBuilder = null;
-				if (polymorphicEntity.getPolymorphism() instanceof TablePerClassPolymorphism) {
-					polymorphismResolverFactory = () -> new TablePerClassResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
-					aggregateReaderBuilder = (readers) -> new TablePerClassPolymorphismReader<>(readers.getLeft(),
-							readers.getRight(),
-							persistenceContext.getConnectionProvider(),
-							persistenceContext.getDialect());
-				} else if (polymorphicEntity.getPolymorphism() instanceof JoinTablePolymorphism) {
-					polymorphismResolverFactory = () -> new JoinTableResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
-					aggregateReaderBuilder = (readers) -> new JoinTablePolymorphismReader<>(readers.getLeft(),
-							readers.getRight(),
-							persistenceContext.getConnectionProvider(),
-							persistenceContext.getDialect());
-				} else if (polymorphicEntity.getPolymorphism() instanceof SingleTablePolymorphism) {
-					polymorphismResolverFactory = () -> new SingleTableResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
-					SingleTablePolymorphism<C, I, ?, T> polymorphism = (SingleTablePolymorphism<C, I, ?, T>) polymorphicEntity.getPolymorphism();
-					aggregateReaderBuilder = (readers) -> new SingleTablePolymorphismReader<>(readers.getLeft(),
-							readers.getRight(),
-							polymorphism,
-							persistenceContext.getConnectionProvider(),
-							persistenceContext.getDialect());
-				}
-				PolymorphismResolver<?> polymorphismResolver = polymorphismResolverFactory.get();
-				PolymorphicWriter<C, I, ?> polymorphicWriter = polymorphismResolver.resolve(polymorphicEntity, rootPersisterCollector);
-				Duo<EntityReader<C, I, T>, Map<Class<? extends C>, EntityReader<? extends C, I, ?>>> readers =
-						buildPolymorphismReaders(polymorphicWriter, polymorphicWriter.getSubEntitiesPersisters());
-				aggregateReader = aggregateReaderBuilder.apply(readers);
-				almostResult = new DelegatingReadWriteEntityExecutor<>(polymorphicWriter, aggregateReader);
-			} else {
-				throw new UnsupportedOperationException("Unsupported entity type: " + rootEntity.getClass());
-			}
-		}
+		EntitySkeletonResolver polymorphicSkeletonResolver = new EntitySkeletonResolver(persistenceContext);
+		DelegatingReadWriteEntityExecutor<C, I> almostResult = polymorphicSkeletonResolver.resolve(rootEntity, rootPersisterCollector);
+		ConfiguredEntityReader<C, I, T> aggregateReader = (ConfiguredEntityReader<C, I, T>) almostResult.getReader();
 		// TODO: wrap the result into a selector that redirect the select method and projections to a finder instance
 		Map<MappingJoin<?, ?, ?>, Object> createdPersistersMap = (Map) appendWriteCascades(rootEntity, almostResult);
 		createdPersistersMap.put(null, rootPersisterCollector);

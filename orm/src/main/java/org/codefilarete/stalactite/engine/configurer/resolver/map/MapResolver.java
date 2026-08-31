@@ -37,13 +37,13 @@ public class MapResolver {
 		EntityReadWriteExecutor<K, KID> keyEntityPersister = null;
 		if (resolvedRelation.getKeyEntityDefinition() != null) {
 			mapCreatedPersisterCollector.setKeyPersisterCollector(new CreatedPersisterCollector<>());
-			keyEntityPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getKeyEntityDefinition().getEntity(), mapCreatedPersisterCollector.getKeyPersisterCollector());
+			keyEntityPersister = skeletonAggregateResolver.resolve(resolvedRelation.getKeyEntityDefinition().getEntity(), mapCreatedPersisterCollector.getKeyPersisterCollector());
 		}
 		
 		EntityReadWriteExecutor<V, VID> valueEntityPersister = null;
 		if (resolvedRelation.getValueEntityDefinition() != null) {
 			mapCreatedPersisterCollector.setValuePersisterCollector(new CreatedPersisterCollector<>());
-			valueEntityPersister = skeletonAggregateResolver.buildPersister(resolvedRelation.getValueEntityDefinition().getEntity(), mapCreatedPersisterCollector.getValuePersisterCollector());
+			valueEntityPersister = skeletonAggregateResolver.resolve(resolvedRelation.getValueEntityDefinition().getEntity(), mapCreatedPersisterCollector.getValuePersisterCollector());
 		}
 		
 		EntryMapResolver keyEntityMapResolver = new EntryMapResolver(dialect, connectionConfiguration);

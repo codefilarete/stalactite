@@ -35,7 +35,7 @@ public class SingleTableResolver implements PolymorphismResolver<SingleTablePoly
 	SingleTablePolymorphismWriter<TRGT, TRGTID, RIGHTTABLE, SUBTRGT, DTYPE> resolve(PolymorphicEntity<TRGT, TRGTID, RIGHTTABLE> targetEntity,
 	                                                                                CreatedPersisterCollector<TRGT, TRGTID> persisterCollector) {
 		
-		EntityWriteExecutor<TRGT, TRGTID> templateWriter = skeletonAggregateResolver.buildPersister(targetEntity, persisterCollector);
+		EntityWriteExecutor<TRGT, TRGTID> templateWriter = skeletonAggregateResolver.resolve(targetEntity, persisterCollector);
 		
 		SingleTablePolymorphism<TRGT, TRGTID, DTYPE, RIGHTTABLE> singleTablePolymorphism = (SingleTablePolymorphism<TRGT, TRGTID, DTYPE, RIGHTTABLE>) targetEntity.getPolymorphism();
 		Set<EntityReadWriteExecutor<SUBTRGT, TRGTID>> subPersisters = singleTablePolymorphism.getSubEntities().stream().map(subEntity -> {
@@ -60,6 +60,6 @@ public class SingleTableResolver implements PolymorphismResolver<SingleTablePoly
 	
 	private <SUBENTITY, SUB_ENTITYID, SUBTABLE extends Table<SUBTABLE>>
 	EntityReadWriteExecutor<SUBENTITY, SUB_ENTITYID> buildSubPersister(Entity<SUBENTITY, SUB_ENTITYID, SUBTABLE> subEntity) {
-		return skeletonAggregateResolver.buildPersister(subEntity, new CreatedPersisterCollector<>());
+		return skeletonAggregateResolver.resolve(subEntity, new CreatedPersisterCollector<>());
 	}
 }

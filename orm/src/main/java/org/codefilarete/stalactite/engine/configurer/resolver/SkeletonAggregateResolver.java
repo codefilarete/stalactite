@@ -54,7 +54,7 @@ public class SkeletonAggregateResolver {
 	}
 	
 	public <B, C extends B, I, T extends Table<T>>
-	DelegatingReadWriteEntityExecutor<C, I> buildPersister(AbstractEntity<C, I, T> entity, CreatedPersisterCollector<C, I> persisterCollector) {
+	DelegatingReadWriteEntityExecutor<C, I> resolve(AbstractEntity<C, I, T> entity, CreatedPersisterCollector<C, I> persisterCollector) {
 		// TODO: check for ealready existing persister in the persistence context
 		// TODO: wrap result in an OptimizedUpdatePersister
 		// TODO: be inspired from DefaultPersisterBuilder.build()

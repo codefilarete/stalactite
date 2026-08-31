@@ -33,7 +33,7 @@ public class TablePerClassResolver implements PolymorphismResolver<TablePerClass
 	TablePerClassPolymorphismWriter<TRGT, TRGTID, RIGHTTABLE, SUBTRGT> resolve(PolymorphicEntity<TRGT, TRGTID, RIGHTTABLE> targetEntity,
 	                                                                           CreatedPersisterCollector<TRGT, TRGTID> persisterCollector) {
 		
-		EntityWriteExecutor<TRGT, TRGTID> templateWriter = skeletonAggregateResolver.buildPersister(targetEntity, persisterCollector);
+		EntityWriteExecutor<TRGT, TRGTID> templateWriter = skeletonAggregateResolver.resolve(targetEntity, persisterCollector);
 		
 		Set<EntityReadWriteExecutor<SUBTRGT, TRGTID>> subPersisters = targetEntity.getPolymorphism().getSubEntities().stream().map(subEntity -> {
 			// we need to build the sub-entities persisters first, so that they are registered in the persister registry
@@ -54,6 +54,6 @@ public class TablePerClassResolver implements PolymorphismResolver<TablePerClass
 	
 	private <SUBENTITY, SUB_ENTITYID, SUBTABLE extends Table<SUBTABLE>>
 	EntityReadWriteExecutor<SUBENTITY, SUB_ENTITYID> buildSubPersister(Entity<SUBENTITY, SUB_ENTITYID, SUBTABLE> subEntity) {
-		return skeletonAggregateResolver.buildPersister(subEntity, new CreatedPersisterCollector<>());
+		return skeletonAggregateResolver.resolve(subEntity, new CreatedPersisterCollector<>());
 	}
 }

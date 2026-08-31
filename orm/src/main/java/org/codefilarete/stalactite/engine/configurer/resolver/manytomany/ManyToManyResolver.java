@@ -71,7 +71,7 @@ public class ManyToManyResolver {
 	             CreatedPersisterCollector<TRGT, TRGTID> persisterCollector) {
 		
 		EntityReadWriteExecutor<TRGT, TRGTID> targetPersister =
-				skeletonAggregateResolver.buildPersister(resolvedRelation.getTargetEntity(), persisterCollector);
+				skeletonAggregateResolver.resolve(resolvedRelation.getTargetEntity(), persisterCollector);
 		
 		AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, S> engine;
 		if (resolvedRelation.isOrdered()) {

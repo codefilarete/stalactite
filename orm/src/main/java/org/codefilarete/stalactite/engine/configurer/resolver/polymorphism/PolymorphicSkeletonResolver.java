@@ -41,7 +41,7 @@ public class PolymorphicSkeletonResolver {
 		this.skeletonAggregateResolver = new SkeletonAggregateResolver(persistenceContext);
 	}
 	
-	public <C, I, T extends Table<T>> EntityReadWriteExecutor<C, I> resolve(PolymorphicEntity<C, I, T> polymorphicEntity, CreatedPersisterCollector<C, I> persisterCollector) {
+	public <C, I, T extends Table<T>> DelegatingReadWriteEntityExecutor<C, I> resolve(PolymorphicEntity<C, I, T> polymorphicEntity, CreatedPersisterCollector<C, I> persisterCollector) {
 		PolymorphismResolver<?> polymorphismResolver = null;
 		BiFunction<EntityReader<C, I, T>, Map<Class<? extends C>, EntityReader<? extends C, I, ?>>, ConfiguredEntityReader<C, I, T>> readerBuilder = null;
 		EntityPolymorphism<C, I> polymorphism = polymorphicEntity.getPolymorphism();
