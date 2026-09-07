@@ -431,7 +431,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	@Override
 	public <O, J, S extends Collection<O>> FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
 			SerializablePropertyAccessor<C, S> getter,
-			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
+			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
 		// we keep close to user demand : we keep its method reference
 		return mapOneToMany(Accessors.readWriteAccessPoint(getter), mappingConfiguration);
 	}
@@ -439,14 +439,14 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	@Override
 	public <O, J, S extends Collection<O>> FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
 			SerializablePropertyMutator<C, S> setter,
-			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
+			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
 		// we keep close to user demand : we keep its method reference
 		return mapOneToMany(Accessors.readWriteAccessPoint(setter), mappingConfiguration);
 	}
 	
 	private <O, J, S extends Collection<O>> FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
 			ReadWritePropertyAccessPoint<C, S> propertyAccessor,
-			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
+			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
 		OneToManyRelation<C, O, J, S> oneToManyRelation = new OneToManyRelation<>(
 				propertyAccessor,
 				() -> polymorphismPolicy instanceof PolymorphismPolicy.TablePerClassPolymorphism,

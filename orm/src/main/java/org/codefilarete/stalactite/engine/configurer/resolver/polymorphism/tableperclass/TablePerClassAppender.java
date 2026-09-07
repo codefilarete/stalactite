@@ -33,6 +33,7 @@ import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
+import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
@@ -177,15 +178,13 @@ public class TablePerClassAppender {
 	}
 	
 	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
-	String appendForSeparateLoad(EntityJoinTree<SRC, SRCID> aggregateTree,
+	String appendForSeparateLoad(EntityJoinTree<?, ?> aggregateTree,
 								 TablePerClassPolymorphismReader<TRGT, TRGTID, RIGHTTABLE> targetReader,
-								 ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> relation,
 								 String mountPoint,
-								 ThreadLocal<RelationStorage<SRC, TRGTID>> relationIdsHolder) {
+								 ThreadLocal<RelationStorage<SRC, TRGTID>> relationIdsHolder,
+								 KeyMapping<LEFTTABLE, RIGHTTABLE, JOINID> join) {
 		
 		Set<ConfiguredEntityReader<? extends TRGT, TRGTID, ?>> subPersisters = new HashSet<>(targetReader.getSubEntitiesPersisters().values());
-		
-		DirectRelationJoin<LEFTTABLE, RIGHTTABLE, JOINID> join = relation.getJoin();
 		
 		TablePerClassUnion<TRGT, TRGTID> union = buildUnionForIdentifierRead(subPersisters, targetReader.getMapping().getSelectableColumns());
 		PseudoTable pseudoTable = union.asPseudoTable(targetReader.getClassToPersist().getSimpleName());
@@ -211,7 +210,7 @@ public class TablePerClassAppender {
 		
 		String joinName = aggregateTree.addMergeJoin(mountPoint,
 				new FirstPhaseRelationLoader<>(idMapping, pseudoTable.getColumns(), relationIdsHolder),
-				join.getLeftKey(),
+				join.getSourceKey(),
 				rightKey.build(),
 				OUTER);
 		

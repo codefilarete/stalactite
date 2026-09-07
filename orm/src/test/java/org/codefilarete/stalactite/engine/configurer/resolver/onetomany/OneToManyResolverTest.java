@@ -105,7 +105,7 @@ public class OneToManyResolverTest {
 		FluentEntityMappingBuilder<Person, Identifier<Long>> personMappingBuilder = entityBuilder(Person.class, LONG_TYPE)
 				.mapKey(Person::getId, ALREADY_ASSIGNED)
 				.map(Person::getName)
-				.mapOneToMany(Person::getBicycles, entityBuilder(Bicycle.class, LONG_TYPE)
+				.mapOneToMany(Person::getVehicles, entityBuilder(Bicycle.class, LONG_TYPE)
 						.mapSuperClass(entityBuilder(AbstractVehicle.class, LONG_TYPE)
 								.mapKey(AbstractVehicle::getId, databaseAutoIncrement()))
 						.map(Bicycle::getColor))
@@ -158,7 +158,7 @@ public class OneToManyResolverTest {
 		paris.setPersons(Arrays.asHashSet(someone1));
 		Bicycle bicycle1 = new Bicycle();
 		bicycle1.setColor(new Color(123456));
-		someone1.setBicycles(Arrays.asHashSet(bicycle1));
+		someone1.setVehicles(Arrays.asHashSet(bicycle1));
 		
 		City lyon = new City(cityIdProvider.giveNewIdentifier());
 		lyon.setName("Lyon");
@@ -170,7 +170,7 @@ public class OneToManyResolverTest {
 		lyon.setPersons(Arrays.asHashSet(someone2));
 		Bicycle bicycle2 = new Bicycle();
 		bicycle2.setColor(new Color(654321));
-		someone2.setBicycles(Arrays.asHashSet(bicycle2));
+		someone2.setVehicles(Arrays.asHashSet(bicycle2));
 		
 		countryPersister.insert(dummyCountry);
 		
@@ -185,7 +185,7 @@ public class OneToManyResolverTest {
 		ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
 				.addProperty(Person::getId)
 				.addProperty(Person::getName)
-				.addProperty(Person::getBicycles, Bicycle.class)
+				.addProperty(Person::getVehicles, AbstractVehicle.class)
 				.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
 				.withPrinter(Bicycle.class, colorPrinter::toString)
 				.build();

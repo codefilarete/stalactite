@@ -64,12 +64,12 @@ public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappi
 	@Override
 	<O, J, S extends Collection<O>>
 	FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S>
-	mapOneToMany(SerializablePropertyAccessor<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	mapOneToMany(SerializablePropertyAccessor<C, S> getter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
 	@Override
 	<O, J, S extends Collection<O>>
 	FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S>
-	mapOneToMany(SerializablePropertyMutator<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	mapOneToMany(SerializablePropertyMutator<C, S> setter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
 	@Override
 	<O, J, S extends Collection<C>>

@@ -57,7 +57,7 @@ public class AggregateOneToOneAppender {
 	                                                        String mountPoint,
 	                                                        EntityJoinTree<SRC, SRCID> aggregateTree) {
 		
-		GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> result = null;
+		GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> result;
 		
 		DirectRelationJoin<LEFTTABLE, RIGHTTABLE, JOINID> join = relation.getJoin();
 		if (relation.isFetchSeparately()) {
@@ -65,8 +65,8 @@ public class AggregateOneToOneAppender {
 			Function<ColumnedRow, TRGTID> idMapping;
 			if (relation.isOwnedByTarget()) {
 				// We build a function capable of building the identifier from the association table columns, because,
-				// if we give the targetPersister identifier assembler then the runtime fails : identifier takes its values
-				// from the target table columns which are missins in the join : the join only contains the right
+				// if we give the targetPersister identifier assembler, then the runtime fails : identifier takes its values
+				// from the target table columns which are missing in the join : the join only contains the right
 				// table columns and the association ones (that's separate-load principle)
 				KeyMapping<RIGHTTABLE, LEFTTABLE, TRGTID> targetPkToRightKey = new KeyMapping<>(targetReader.getMapping().getTargetTable().getPrimaryKey(), (Key<LEFTTABLE, TRGTID>) join.getLeftKey());
 				KeepOrderMap<QualifiedSelectable<RIGHTTABLE, ?>, QualifiedSelectable<LEFTTABLE, ?>> targetPkToAssociationTableKey = targetPkToRightKey.getMapping();
@@ -90,9 +90,9 @@ public class AggregateOneToOneAppender {
 						aggregateTree,
 						polymorphism,
 						targetReader,
-						relation,
 						mountPoint,
-						current2PhasesLoadContext);
+						current2PhasesLoadContext,
+						relation.getJoin().getKeyMapping());
 			} else {
 				aggregateTree.addMergeJoin(mountPoint,
 						new org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.FirstPhaseRelationLoader<>(idMapping, (Set) targetReader.getMapping().getTargetTable().getPrimaryKey().getColumns(), current2PhasesLoadContext),
@@ -124,7 +124,7 @@ public class AggregateOneToOneAppender {
 							if (targetIdPerIndex != null) {  // targetIdPerIndex can be null if there's no associated entity in the database
 								TRGTID trgtId = Iterables.first(targetIdPerIndex);
 								TRGT trgt = targetPerId.get(trgtId);
-								relation.getAccessor().set(src, trgt);
+								relation.getRelationFixer().apply(src, trgt);
 							}
 						});
 					}

@@ -63,7 +63,7 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 	 */
 	public ManyToManyRelation(ReadWritePropertyAccessPoint<SRC, C1> collectionAccessor,
 							  BooleanSupplier sourceTablePerClassPolymorphic,
-							  EntityMappingConfigurationProvider<? super TRGT, TRGTID> targetMappingConfiguration) {
+							  EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration) {
 		this.collectionAccessor = collectionAccessor;
 		this.sourceTablePerClassPolymorphic = sourceTablePerClassPolymorphic;
 		this.targetMappingConfiguration = (EntityMappingConfigurationProvider<TRGT, TRGTID>) targetMappingConfiguration;
@@ -72,7 +72,7 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 	
 	public ManyToManyRelation(ReadWritePropertyAccessPoint<SRC, C1> collectionAccessor,
 							  BooleanSupplier sourceTablePerClassPolymorphic,
-							  EntityMappingConfigurationProvider<? super TRGT, TRGTID> targetMappingConfiguration,
+							  EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration,
 							  MappedByConfiguration<?, TRGT, ?> mappedByConfiguration) {
 		this.collectionAccessor = collectionAccessor;
 		this.sourceTablePerClassPolymorphic = sourceTablePerClassPolymorphic;

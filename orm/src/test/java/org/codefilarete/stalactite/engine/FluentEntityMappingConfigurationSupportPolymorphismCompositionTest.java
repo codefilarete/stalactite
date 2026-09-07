@@ -1,32 +1,35 @@
 package org.codefilarete.stalactite.engine;
 
-import javax.sql.DataSource;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
+import javax.sql.DataSource;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.codefilarete.stalactite.dsl.FluentMappings;
-import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
+import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.engine.FluentEntityMappingConfigurationSupportPolymorphismTest.ElectricCar;
 import org.codefilarete.stalactite.engine.FluentEntityMappingConfigurationSupportPolymorphismTest.ElectricPlug;
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
 import org.codefilarete.stalactite.engine.model.AbstractVehicle;
 import org.codefilarete.stalactite.engine.model.Car;
 import org.codefilarete.stalactite.engine.model.Color;
+import org.codefilarete.stalactite.id.AbstractIdentifier;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
+import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
-import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.exception.Exceptions;
@@ -49,6 +52,10 @@ import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterB
  */
 public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest {
 	
+	private static final RecursiveComparisonConfiguration RECURSIVE_COMPARISON_CONFIGURATION = RecursiveComparisonConfiguration.builder()
+			.withComparatorForType((id1, id2) -> (int) ((long) id2.getDelegate() - (long) id1.getDelegate()), AbstractIdentifier.class)
+			.withComparatorForType(Comparator.nullsLast((c1, c2) -> c2.getRgb() - c1.getRgb()), Color.class)
+			.build();
 	private static final Dialect DIALECT = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private final ConnectionProvider connectionProvider = new CurrentThreadConnectionProvider(dataSource);
@@ -118,7 +125,9 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		
 		// select test
 		AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-		assertThat(loadedCar).isEqualTo(dummyCar);
+		assertThat(loadedCar)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(dummyCar);
 		
 		// delete test
 		abstractVehiclePersister.delete(dummyCar);
@@ -178,7 +187,9 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		
 		// select test
 		AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-		assertThat(loadedCar).isEqualTo(dummyCar);
+		assertThat(loadedCar)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(dummyCar);
 		
 		// delete test
 		abstractVehiclePersister.delete(dummyCar);
@@ -257,7 +268,9 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		
 		// select test
 		AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-		assertThat(loadedCar).isEqualTo(dummyCar);
+		assertThat(loadedCar)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(dummyCar);
 		
 		// delete test
 		abstractVehiclePersister.delete(dummyCar);
@@ -355,7 +368,9 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		
 		// select test
 		AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-		assertThat(loadedCar).isEqualTo(dummyCar);
+		assertThat(loadedCar)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(dummyCar);
 		
 		// delete test
 		abstractVehiclePersister.delete(dummyCar);
@@ -434,7 +449,9 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		
 		// select test
 		AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-		assertThat(loadedCar).isEqualTo(dummyCar);
+		assertThat(loadedCar)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(dummyCar);
 		
 		// delete test
 		abstractVehiclePersister.delete(dummyCar);

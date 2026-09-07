@@ -5,9 +5,11 @@ import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
 
+import org.codefilarete.stalactite.query.api.Selectable.SimpleSelectable;
 import org.codefilarete.stalactite.query.model.From;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Union;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -56,7 +58,9 @@ public interface QueryStatement extends SelectablesPod {
 			this.queryStatement = queryStatement;
 			Map<Selectable<?>, String> unionAliases = queryStatement.getAliases();
 			for (Selectable<?> column : queryStatement.getColumns()) {
-				PseudoColumn<?> newPseudoColumn = new PseudoColumn<>(this, column.getExpression(), column.getJavaType());
+				// we can cas the colum as a QualifiedSelectable because, from the usage of PseudoTable, we expect it to be from a Table or Union, not a Function
+				PseudoColumn<?> newPseudoColumn = new PseudoColumn<>(this, column.getExpression(), column.getJavaType(),
+						column instanceof SimpleSelectable<?> ? ((SimpleSelectable<?>) column).getSize() : ((QualifiedSelectable<?, ?>) column).getSize());
 				columns.add(newPseudoColumn);
 				String alias = unionAliases.get(column);
 				if (alias != null) {
@@ -107,10 +111,14 @@ public interface QueryStatement extends SelectablesPod {
 		
 		private final Class<O> javaType;
 		
-		public PseudoColumn(PseudoTable owner, String name, Class<O> javaType) {
+		@Nullable
+		private final Size size;
+		
+		public PseudoColumn(PseudoTable owner, String name, Class<O> javaType, @Nullable Size size) {
 			this.owner = owner;
 			this.name = name;
 			this.javaType = javaType;
+			this.size = size;
 		}
 		
 		/**
@@ -120,6 +128,12 @@ public interface QueryStatement extends SelectablesPod {
 		@Override
 		public PseudoTable getOwner() {
 			return owner;
+		}
+		
+		@Override
+		@Nullable
+		public Size getSize() {
+			return size;
 		}
 		
 		@Override

@@ -655,7 +655,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		
 		EntityPersister<Country, Identifier<Long>> persister = entityBuilder(Country.class, LONG_TYPE)
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.mapOneToMany(Country::getTowns, cityConfiguration)
+				.mapOneToMany(Country::getCities, cityConfiguration)
 				// we indicate that relation is owned by reverse side
 				.mappedBy(City::getCountry).cascading(ALL)
 				.build(persistenceContext);
@@ -666,10 +666,10 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		Country country = new Country(new PersistableIdentifier<>(1L));
 		Town grenoble = new Town(new PersistableIdentifier<>(13L));
 		grenoble.setName("Grenoble");
-		country.addTown(grenoble);
+		country.addCity(grenoble);
 		Town lyon = new Town(new PersistableIdentifier<>(17L));
 		lyon.setName("Lyon");
-		country.addTown(lyon);
+		country.addCity(lyon);
 		persister.insert(country);
 		
 		ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select countryId from city", Long.class)
@@ -680,13 +680,13 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		
 		// testing select
 		Country loadedCountry = persister.select(country.getId());
-		assertThat(loadedCountry.getTowns()).extracting(City::getName).containsExactlyInAnyOrder("Grenoble", "Lyon");
+		assertThat(loadedCountry.getCities()).extracting(City::getName).containsExactlyInAnyOrder("Grenoble", "Lyon");
 		// ensuring that source is set on reverse side too
-		assertThat(Iterables.first(loadedCountry.getTowns()).getCountry()).isEqualTo(loadedCountry);
+		assertThat(Iterables.first(loadedCountry.getCities()).getCountry()).isEqualTo(loadedCountry);
 		
 		// testing update : removal of a city, reversed column must be set to null
 		Country modifiedCountry = new Country(country.getId());
-		modifiedCountry.addTown(Iterables.first(country.getTowns()));
+		modifiedCountry.addCity(Iterables.first(country.getCities()));
 		
 		persister.update(modifiedCountry, country, false);
 		

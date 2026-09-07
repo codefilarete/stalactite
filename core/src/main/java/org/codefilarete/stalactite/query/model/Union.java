@@ -13,6 +13,7 @@ import org.codefilarete.stalactite.query.api.QueryStatement;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.api.Selectable.SimpleSelectable;
 import org.codefilarete.stalactite.query.api.UnionAware;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -50,8 +51,8 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 	
 	/**
 	 * Declares a column to this union.
-	 * May do nothing if a column already exists with same name and type.
-	 * Will throw an exception if a column with same name but with different type already exists.
+	 * May do nothing if a column already exists with the same name and type.
+	 * Will throw an exception if a column with the same name but with a different type already exists.
 	 *
 	 * @param expression column name
 	 * @param javaType column type
@@ -59,13 +60,13 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 	 * @return the created column or the existing one
 	 */
 	public <O> SimpleSelectable<O> addColumn(String expression, Class<O> javaType) {
-		return addColumn(expression, javaType, null);
+		return addColumn(expression, javaType, (String) null);
 	}
 	
 	/**
 	 * Declares a column to this union with an alias.
-	 * May do nothing if a column already exists with same name and type.
-	 * Will throw an exception if a column with same name but with different type already exists.
+	 * May do nothing if a column already exists with the same name and type.
+	 * Will throw an exception if a column with the same name but with a different type already exists.
 	 *
 	 * @param expression column name
 	 * @param javaType column type
@@ -75,6 +76,14 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 	 */
 	public <O> SimpleSelectable<O> addColumn(String expression, Class<O> javaType, @Nullable String alias) {
 		return addertColumn(new SimpleSelectable<>(expression, javaType), alias);
+	}
+	
+	public <O> SimpleSelectable<O> addColumn(String expression, Class<O> javaType, @Nullable Size size) {
+		return addertColumn(new SimpleSelectable<>(expression, javaType, size), null);
+	}
+	
+	public <O> SimpleSelectable<O> addColumn(String expression, Class<O> javaType, @Nullable Size size, @Nullable String alias) {
+		return addertColumn(new SimpleSelectable<>(expression, javaType, size), alias);
 	}
 	
 	/**
@@ -121,7 +130,11 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 		return addColumn(expression, javaType);
 	}
 	
-	public <O> SimpleSelectable<O> registerColumn(String expression, Class<O> javaType, String alias) {
+	public <O> SimpleSelectable<O> registerColumn(String expression, Class<O> javaType, @Nullable Size size) {
+		return addColumn(expression, javaType, size);
+	}
+	
+	public <O> SimpleSelectable<O> registerColumn(String expression, Class<O> javaType, @Nullable String alias) {
 		return addColumn(expression, javaType, alias);
 	}
 	

@@ -1,12 +1,14 @@
 package org.codefilarete.stalactite.engine;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
 
+import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
 import org.codefilarete.stalactite.dsl.entity.EntityMappingConfiguration;
@@ -24,6 +26,7 @@ import org.codefilarete.stalactite.engine.model.book.Author;
 import org.codefilarete.stalactite.engine.model.book.Book;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.id.AbstractIdentifier;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
@@ -64,6 +67,10 @@ import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterB
  */
 public class FluentEntityMappingConfigurationSupportInheritanceTest {
 	
+	private static final RecursiveComparisonConfiguration RECURSIVE_COMPARISON_CONFIGURATION = RecursiveComparisonConfiguration.builder()
+			.withComparatorForType((id1, id2) -> (int) ((long) id2.getDelegate() - (long) id1.getDelegate()), AbstractIdentifier.class)
+			.withComparatorForType(Comparator.nullsLast((c1, c2) -> c2.getRgb() - c1.getRgb()), Color.class)
+			.build();
 	private static final Dialect DIALECT = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private final ConnectionProvider connectionProvider = new CurrentThreadConnectionProvider(dataSource);
@@ -117,11 +124,15 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			List<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
 					.add(mappedSuperClassData.carTable.modelColumn, Car::setModel)
 					.add(mappedSuperClassData.carTable.colorColumn, Car::setColor));
-			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
+			assertThat(allCars)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyCar);
 			
 			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedCar).isEqualTo(dummyCar);
+			assertThat(loadedCar)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 		}
 		
 		@Test
@@ -155,11 +166,15 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			List<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
 					.add(mappedSuperClassData.carTable.modelColumn, Car::setModel)
 					.add(mappedSuperClassData.carTable.colorColumn, Car::setColor));
-			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
+			assertThat(allCars)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyCar);
 			
 			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedCar).isEqualTo(dummyCar);
+			assertThat(loadedCar)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 		}
 		
 		@Test
@@ -189,11 +204,15 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.map("model_col", Car::setModel)
 					.map("color_col", Car::setColor);
 			Set<Car> allCars = carExecutableQuery.execute(Accumulators.toSet());
-			assertThat(allCars).containsExactly(dummyCar);
+			assertThat(allCars)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactly(dummyCar);
 			
 			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedCar).isEqualTo(dummyCar);
+			assertThat(loadedCar)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 		}
 		
 		@Test
@@ -223,11 +242,15 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.map("model_supercol", Car::setModel)
 					.map("color_supercol", Car::setColor);
 			Set<Car> allCars = carExecutableQuery.execute(Accumulators.toSet());
-			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
+			assertThat(allCars)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyCar);
 			
 			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedCar).isEqualTo(dummyCar);
+			assertThat(loadedCar)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 		}
 		
 		@Test
@@ -264,11 +287,15 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.map("model_col", Car::setModel)
 					.map("color_col", Car::setColor);
 			Set<Car> allCars = carExecutableQuery.execute(Accumulators.toSet());
-			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
+			assertThat(allCars)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyCar);
 			
 			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedCar).isEqualTo(dummyCar);
+			assertThat(loadedCar)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 		}
 		
 		@Test
@@ -357,7 +384,9 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			
 			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedCar).isEqualTo(dummyCar);
+			assertThat(loadedCar)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 			
 			// checking with query to understand what's under the hood : rgb column is created instead of color
 			ExecutableQuery<Car> carExecutableQuery = persistenceContext.newQuery("select id, model, rgb from Car", Car.class)
@@ -365,7 +394,9 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.map("model", Car::setModel)
 					.map("rgb", Car::setColor, int.class, Color::new);
 			Set<Car> allCars = carExecutableQuery.execute(Accumulators.toSet());
-			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
+			assertThat(allCars)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyCar);
 		}
 	}
 	
@@ -407,11 +438,15 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			List<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
 					.add(mappedSuperClassData.carTable.modelColumn, Car::setModel)
 					.add(mappedSuperClassData.carTable.colorColumn, Car::setColor));
-			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
+			assertThat(allCars)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyCar);
 			
 			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedCar).isEqualTo(dummyCar);
+			assertThat(loadedCar)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 		}
 		
 		/**
@@ -486,11 +521,15 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			List<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
 					.add(mappedSuperClassData.carTable.modelColumn, Car::setModel)
 					.add(mappedSuperClassData.carTable.colorColumn, Car::setColor));
-			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
+			assertThat(allCars)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyCar);
 			
 			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedCar).isEqualTo(dummyCar);
+			assertThat(loadedCar)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 		}
 		
 		@Test
@@ -533,11 +572,15 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			List<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
 					.add(mappedSuperClassData.carTable.modelColumn, Car::setModel)
 					.add(mappedSuperClassData.carTable.colorColumn, Car::setColor));
-			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
+			assertThat(allCars)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyCar);
 			
 			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedCar).isEqualTo(dummyCar);
+			assertThat(loadedCar)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 		}
 		
 		@Test
@@ -596,11 +639,15 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.map(mappedSuperClassData.carTable.modelColumn, Car::setModel)
 					.map(mappedSuperClassData.vehicleTable.colorColumn, Car::setColor);
 			Set<Car> allCars = carExecutableQuery.execute(Accumulators.toSet());
-			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
+			assertThat(allCars)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyCar);
 			
 			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedCar).isEqualTo(dummyCar);
+			assertThat(loadedCar)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 		}
 		
 		@Test
@@ -629,7 +676,9 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			
 			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedCar).isEqualTo(dummyCar);
+			assertThat(loadedCar)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 			
 			// checking with query to understand what's under the hood : rgb column is created instead of color
 			ExecutableQuery<Car> carExecutableQuery = persistenceContext.newQuery("select id, model, rgb from Car", Car.class)
@@ -637,7 +686,9 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.map("model", Car::setModel)
 					.map("rgb", Car::setColor, int.class, Color::new);
 			Set<Car> allCars = carExecutableQuery.execute(Accumulators.toSet());
-			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
+			assertThat(allCars)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyCar);
 		}
 
 		@Test

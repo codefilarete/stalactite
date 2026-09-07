@@ -19,8 +19,6 @@ public class Vehicle extends AbstractVehicle {
 	
 	private Engine engine;
 	
-	private Person owner;
-	
 	private List<Wheel> wheels = new ArrayList<>();
 	
 	public Vehicle(Long id) {
@@ -48,14 +46,6 @@ public class Vehicle extends AbstractVehicle {
 	
 	public void setEngine(Engine engine) {
 		this.engine = engine;
-	}
-	
-	public Person getOwner() {
-		return owner;
-	}
-	
-	public void setOwner(Person owner) {
-		this.owner = owner;
 	}
 	
 	public List<Wheel> getWheels() {

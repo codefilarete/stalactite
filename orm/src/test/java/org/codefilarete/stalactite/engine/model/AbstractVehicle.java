@@ -1,7 +1,5 @@
 package org.codefilarete.stalactite.engine.model;
 
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.codefilarete.stalactite.id.Identified;
@@ -15,6 +13,8 @@ public abstract class AbstractVehicle implements Identified<Long> {
 	private Identifier<Long> id;
 	
 	private Timestamp timestamp;
+	
+	private Person owner;
 	
 	public AbstractVehicle() {
 	}
@@ -36,14 +36,12 @@ public abstract class AbstractVehicle implements Identified<Long> {
 		this.timestamp = timestamp;
 	}
 	
-	@Override
-	public boolean equals(Object o) {
-		return EqualsBuilder.reflectionEquals(this, o);
+	public Person getOwner() {
+		return owner;
 	}
 	
-	@Override
-	public int hashCode() {
-		return HashCodeBuilder.reflectionHashCode(this);
+	public void setOwner(Person owner) {
+		this.owner = owner;
 	}
 	
 	/**

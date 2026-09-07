@@ -98,6 +98,7 @@ public class Column<T extends Table, O> implements Selectable<O>, QualifiedSelec
 		return alias;
 	}
 	
+	@Override
 	@Nullable
 	public Size getSize() {
 		return size;

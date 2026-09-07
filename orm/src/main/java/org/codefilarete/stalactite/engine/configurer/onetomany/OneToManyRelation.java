@@ -83,7 +83,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	 */
 	public OneToManyRelation(ReadWritePropertyAccessPoint<SRC, S> collectionAccessor,
 							 BooleanSupplier sourceTablePerClassPolymorphic,
-							 EntityMappingConfigurationProvider<? super TRGT, TRGTID> targetMappingConfiguration) {
+							 EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration) {
 		this.collectionAccessor = collectionAccessor;
 		this.sourceTablePerClassPolymorphic = sourceTablePerClassPolymorphic;
 		this.targetMappingConfiguration = (EntityMappingConfigurationProvider<TRGT, TRGTID>) targetMappingConfiguration;
@@ -92,7 +92,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	
 	private OneToManyRelation(ReadWritePropertyAccessPoint<SRC, S> collectionAccessor,
 							  BooleanSupplier sourceTablePerClassPolymorphic,
-							  EntityMappingConfigurationProvider<? super TRGT, TRGTID> targetMappingConfiguration,
+							  EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration,
 							  MappedByConfiguration<TRGT, ?> mappedByConfiguration) {
 		this.collectionAccessor = collectionAccessor;
 		this.sourceTablePerClassPolymorphic = sourceTablePerClassPolymorphic;

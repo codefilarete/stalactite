@@ -2,9 +2,9 @@ package org.codefilarete.stalactite.engine.runtime.jointable;
 
 import java.sql.SQLException;
 import java.util.Comparator;
-import java.util.HashSet;
 import javax.sql.DataSource;
 
+import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
@@ -33,10 +33,12 @@ import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.function.Functions;
 import org.codefilarete.trace.ObjectPrinterBuilder;
+import org.codefilarete.trace.ObjectPrinterBuilder.ObjectPrinter;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration.builder;
 import static org.codefilarete.stalactite.dsl.FluentMappings.embeddableBuilder;
 import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.stalactite.dsl.FluentMappings.subentityBuilder;
@@ -49,10 +51,12 @@ import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterB
 
 class JoinTablePolymorphismWriterTest {
 	
+	private static final RecursiveComparisonConfiguration RECURSIVE_COMPARISON_CONFIGURATION = builder()
+			.withComparatorForType((id1, id2) -> (int) ((long) id2.getDelegate() - (long) id1.getDelegate()), AbstractIdentifier.class)
+			.withComparatorForType(Comparator.nullsLast((c1, c2) -> c2.getRgb() - c1.getRgb()), Color.class)
+			.build();
 	private static final Dialect DIALECT = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
-//	private final ConnectionProvider connectionProvider = new CurrentThreadConnectionProvider(dataSource);
-//	private PersistenceContext persistenceContext;
 	
 	@BeforeAll
 	static void initBinders() {
@@ -109,10 +113,15 @@ class JoinTablePolymorphismWriterTest {
 		
 		connectionProvider.giveConnection().rollback();
 		
-		assertThat(persister.select(dummyTruck.getId())).isEqualTo(dummyTruckModified);
-		assertThat(persister.select(dummyCar.getId())).isEqualTo(dummyCarModified);
-		assertThat(new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruck.getId())))).isEqualTo(Arrays.asSet(dummyCarModified,
-				dummyTruckModified));
+		assertThat(persister.select(dummyTruck.getId()))
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(dummyTruckModified);
+		assertThat(persister.select(dummyCar.getId()))
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(dummyCarModified);
+		assertThat(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruck.getId())))
+				.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+				.containsExactlyInAnyOrder(dummyCarModified, dummyTruckModified);
 	}
 	
 	
@@ -155,7 +164,9 @@ class JoinTablePolymorphismWriterTest {
 		person.setVehicle(car);
 		personPersister.insert(person);
 		Person loadedPerson = personPersister.select(person.getId());
-		assertThat(loadedPerson).isEqualTo(person);
+		assertThat(loadedPerson)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(person);
 		
 		// updating embedded value
 		person.setTimestamp(new Timestamp());
@@ -167,12 +178,14 @@ class JoinTablePolymorphismWriterTest {
 		// we use a printer to compare our results because entities override equals() which only keep "id" into account
 		// which is far from sufficient for ou checking
 		// Note that we don't use ObjectPrinterBuilder#printerFor because it takes getCities() into account whereas its code is not ready for recursion 
-		ObjectPrinterBuilder.ObjectPrinter<Vehicle> vehiclePrinter = new ObjectPrinterBuilder<Vehicle>()
+		ObjectPrinter<Vehicle> vehiclePrinter = new ObjectPrinterBuilder<Vehicle>()
 				.addProperty(Vehicle::getId)
 				.addProperty(Vehicle::getClass)
+				.addProperty(Vehicle::getColor)
 				.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
+				.withPrinter(Color.class, Functions.chain(Color::getRgb, String::valueOf))
 				.build();
-		ObjectPrinterBuilder.ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
+		ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
 				.addProperty(Person::getId)
 				.addProperty(Person::getName)
 				.addProperty(Person::getTimestamp)
@@ -214,7 +227,9 @@ class JoinTablePolymorphismWriterTest {
 		personPersister.update(person, loadedPerson, true);
 		
 		loadedPerson = personPersister.select(person.getId());
-		assertThat(loadedPerson).isEqualTo(person);
+		assertThat(loadedPerson)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(person);
 		
 		// testing deletion
 		personPersister.delete(person);

@@ -230,7 +230,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	@Override
 	public <O, J, S extends Collection<O>> FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> mapOneToMany(
 			SerializablePropertyAccessor<C, S> getter,
-			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
+			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
 		// we keep close to user demand : we keep its method reference
 		ReadWritePropertyAccessPoint<C, S> getterReference = Accessors.readWriteAccessPoint(getter);
 		return mapOneToMany(getterReference, mappingConfiguration);
@@ -239,7 +239,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	@Override
 	public <O, J, S extends Collection<O>> FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> mapOneToMany(
 			SerializablePropertyMutator<C, S> setter,
-			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
+			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
 		
 		// we keep close to user demand : we keep its method reference
 		ReadWritePropertyAccessPoint<C, S> getterReference = Accessors.readWriteAccessPoint(setter);
@@ -248,7 +248,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	
 	private <O, J, S extends Collection<O>> FluentEmbeddableMappingBuilderOneToManyOptions<C, O, S> mapOneToMany(
 			ReadWritePropertyAccessPoint<C, S> propertyAccessor,
-			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
+			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
 		OneToManyRelation<C, O, J, S> oneToManyRelation = new OneToManyRelation<>(
 				propertyAccessor,
 				() -> false,
@@ -350,19 +350,19 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	}
 	
 	@Override
-	public <O, J, S1 extends Collection<O>, S2 extends Collection<C>> FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2> mapManyToMany(SerializablePropertyAccessor<C, S1> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
+	public <O, J, S1 extends Collection<O>, S2 extends Collection<C>> FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2> mapManyToMany(SerializablePropertyAccessor<C, S1> getter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
 		// we keep close to user demand : we keep its method reference
 		return mapManyToMany(Accessors.readWriteAccessPoint(getter), mappingConfiguration);
 	}
 	
 	@Override
-	public <O, J, S1 extends Collection<O>, S2 extends Collection<C>> FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2> mapManyToMany(SerializablePropertyMutator<C, S1> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
+	public <O, J, S1 extends Collection<O>, S2 extends Collection<C>> FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2> mapManyToMany(SerializablePropertyMutator<C, S1> setter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
 		return mapManyToMany(Accessors.readWriteAccessPoint(setter), mappingConfiguration);
 	}
 	
 	private <O, J, S1 extends Collection<O>, S2 extends Collection<C>> FluentEmbeddableMappingBuilderManyToManyOptions<C, O, S1, S2> mapManyToMany(
 			ReadWritePropertyAccessPoint<C, S1> propertyAccessor,
-			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
+			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
 		ManyToManyRelation<C, O, J, S1, S2> manyToManyRelation = new ManyToManyRelation<>(
 				propertyAccessor,
 				() -> false,

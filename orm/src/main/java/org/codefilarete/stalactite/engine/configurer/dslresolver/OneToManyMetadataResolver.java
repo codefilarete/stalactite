@@ -136,19 +136,14 @@ public class OneToManyMetadataResolver {
 		} else {
 			// an association table is necessary to link source and target entities
 			// we don't create foreign key for table-per-class because source columns should reference different tables (the on per entity) which databases do not allow
-			boolean canCreateForeignKey = !source.isTablePerClass();
-			if (canCreateForeignKey) {
-				if (!targetEntity.isTablePerClass()) {
-					OneToManyWithAssociationTableHelper<SRC, TRGT, SRCID, TRGTID, SRCTABLE, TRGTTABLE, ?> helper = new OneToManyWithAssociationTableHelper<>(accessorDefinitionForTableNaming);
-					tablesJoin = helper.determineJoin(
-							oneToMany,
-							source.getTable().getPrimaryKey(),
-							targetEntity.getTable(),
-							namingConfiguration.getAssociationTableNamingStrategy(),
-							namingConfiguration.getForeignKeyNamingStrategy(),
-							namingConfiguration.getIndexColumnNamingStrategy());
-				}
-			} // else: creating foreign key is not possible, nothing special to do
+			OneToManyWithAssociationTableHelper<SRC, TRGT, SRCID, TRGTID, SRCTABLE, TRGTTABLE, ?> helper = new OneToManyWithAssociationTableHelper<>(accessorDefinitionForTableNaming);
+			tablesJoin = helper.determineJoin(
+					oneToMany,
+					source.getTable().getPrimaryKey(),
+					targetEntity.getTable().getPrimaryKey(),
+					namingConfiguration.getAssociationTableNamingStrategy(),
+					namingConfiguration.getForeignKeyNamingStrategy(),
+					namingConfiguration.getIndexColumnNamingStrategy());
 			
 			Mutator<TRGT, SRC> NOOP_REVERSE_SETTER = (o, i) -> {};
 			relationFixer = BeanRelationFixer.of(oneToMany.getCollectionAccessor(), collectionFactory, Objects.preventNull(oneToMany.getReverseLink(), NOOP_REVERSE_SETTER));
@@ -291,17 +286,15 @@ public class OneToManyMetadataResolver {
 		}
 		
 		protected RelationJoin determineJoin(OneToManyRelation<SRC, TRGT, TRGTID, ?> relation,
-		                                     PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey,
-		                                     RIGHTTABLE targetTable,
-		                                     AssociationTableNamingStrategy associationTableNamingStrategy,
-		                                     ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-		                                     ColumnNamingStrategy indexColumnNamingStrategy
-		) {
+											 PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey,
+											 PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey,
+											 AssociationTableNamingStrategy associationTableNamingStrategy,
+											 ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+											 ColumnNamingStrategy indexColumnNamingStrategy) {
 			// we don't create foreign key for table-per-class because source columns should reference different tables (the one
 			// per entity) which databases do not allow
 			boolean createOneSideForeignKey = !relation.isSourceTablePerClassPolymorphic();
 			boolean createManySideForeignKey = !relation.isTargetTablePerClassPolymorphic();
-			PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey = targetTable.getPrimaryKey();
 			ReferencedColumnNames<LEFTTABLE, RIGHTTABLE> columnNames = associationTableNamingStrategy.giveColumnNames(
 					accessorDefinitionForTableNaming,
 					leftPrimaryKey,
@@ -318,7 +311,6 @@ public class OneToManyMetadataResolver {
 			ASSOCIATIONTABLE intermediaryTable;
 			if (relation.isOrdered()) {
 				String indexingColumnName = nullable(relation.getIndexingColumnName()).getOr(() -> indexColumnNamingStrategy.giveName(accessorDefinitionForTableNaming));
-				
 				intermediaryTable = (ASSOCIATIONTABLE) new IndexedAssociationTable<>(
 						leftPrimaryKey.getTable().getSchema(),
 						associationTableName,
@@ -331,7 +323,6 @@ public class OneToManyMetadataResolver {
 						indexingColumnName
 				);
 			} else {
-				
 				intermediaryTable = (ASSOCIATIONTABLE) new AssociationTable<>(
 						leftPrimaryKey.getTable().getSchema(),
 						associationTableName,

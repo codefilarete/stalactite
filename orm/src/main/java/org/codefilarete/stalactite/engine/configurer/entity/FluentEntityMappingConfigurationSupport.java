@@ -914,7 +914,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	@Override
 	public <O, J, S extends Collection<O>> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
 			SerializablePropertyAccessor<C, S> getter,
-			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
+			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
 		
 		AccessorByMethodReference<C, S> getterReference = Accessors.accessorByMethodReference(getter);
 		ReadWritePropertyAccessPoint<C, S> propertyAccessor = new DefaultReadWritePropertyAccessPoint<>(
@@ -928,7 +928,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	@Override
 	public <O, J, S extends Collection<O>> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
 			SerializablePropertyMutator<C, S> setter,
-			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
+			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
 		
 		MutatorByMethodReference<C, S> setterReference = Accessors.mutatorByMethodReference(setter);
 		ReadWritePropertyAccessPoint<C, S> propertyAccessor = new DefaultReadWritePropertyAccessPoint<>(
@@ -942,7 +942,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	private <TRGT, TRGTID, S extends Collection<TRGT>> FluentMappingBuilderOneToManyOptions<C, I, TRGT, S> mapOneToMany(
 			ReadWritePropertyAccessPoint<C, S> propertyAccessor,
-			EntityMappingConfigurationProvider<? super TRGT, TRGTID> mappingConfiguration) {
+			EntityMappingConfigurationProvider<? extends TRGT, TRGTID> mappingConfiguration) {
 		OneToManyRelation<C, TRGT, TRGTID, S> oneToManyRelation = new OneToManyRelation<>(
 				propertyAccessor,
 				() -> this.polymorphismPolicy instanceof PolymorphismPolicy.TablePerClassPolymorphism,
@@ -1009,7 +1009,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	@Override
 	public <O, J, S1 extends Collection<O>, S2 extends Collection<C>>
 	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
-	mapManyToMany(SerializablePropertyAccessor<C, S1> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
+	mapManyToMany(SerializablePropertyAccessor<C, S1> getter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
 		// we keep close to user demand : we keep its method reference ...
 		return mapManyToMany(Accessors.readWriteAccessPoint(getter), mappingConfiguration);
 	}
@@ -1018,14 +1018,14 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	public <O, J, S1 extends Collection<O>, S2 extends Collection<C>>
 	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
 	mapManyToMany(SerializablePropertyMutator<C, S1> setter,
-				  EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
+				  EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
 		// we keep close to user demand : we keep its method reference ...
 		return mapManyToMany(Accessors.readWriteAccessPoint(setter), mappingConfiguration);
 	}
 	
-	private <O, J, S1 extends Collection<O>, S2 extends Collection<C>, T extends Table> FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> mapManyToMany(
+	private <O, J, S1 extends Collection<O>, S2 extends Collection<C>> FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> mapManyToMany(
 			ReadWritePropertyAccessPoint<C, S1> propertyAccessor,
-			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
+			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration) {
 		ManyToManyRelation<C, O, J, S1, S2> manyToManyRelation = new ManyToManyRelation<>(
 				propertyAccessor,
 				() -> this.polymorphismPolicy instanceof PolymorphismPolicy.TablePerClassPolymorphism,

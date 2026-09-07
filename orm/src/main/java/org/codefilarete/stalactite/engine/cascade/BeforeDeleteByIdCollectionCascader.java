@@ -1,11 +1,14 @@
 package org.codefilarete.stalactite.engine.cascade;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
+import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.collection.Iterables;
 
 /**
@@ -44,7 +47,10 @@ public abstract class BeforeDeleteByIdCollectionCascader<TRIGGER, TARGET> implem
 	 */
 	@Override
 	public void beforeDeleteById(Iterable<? extends TRIGGER> entities) {
-		this.persister.deleteById(Iterables.stream(entities).flatMap(c -> getTargets(c).stream()).collect(Collectors.toList()));
+		List<TARGET> targetEntities = Iterables.stream(entities)
+				.flatMap(c -> Objects.preventNull(getTargets(c), Collections.<TARGET>emptySet()).stream())
+				.collect(Collectors.toList());
+		this.persister.deleteById(targetEntities);
 	}
 	
 	/**

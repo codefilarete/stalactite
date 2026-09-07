@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.runtime.tableperclass;
 
 import java.util.Comparator;
+import java.util.TreeSet;
 import javax.sql.DataSource;
 
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
@@ -10,6 +11,7 @@ import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.PartialRepresentation;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver;
+import org.codefilarete.stalactite.engine.model.AbstractVehicle;
 import org.codefilarete.stalactite.engine.model.Car;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Person;
@@ -24,8 +26,10 @@ import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
+import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.function.Functions;
 import org.codefilarete.trace.ObjectPrinterBuilder;
+import org.codefilarete.trace.ObjectPrinterBuilder.ObjectPrinter;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -54,7 +58,7 @@ class TablePerClassPolymorphismReaderTest {
 	}
 	
 	@Test
-	void oneToTablePerClass_crud() {
+	void oneToTablePerClassOne_fetchSeparately() {
 		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
 		
 		FluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
@@ -97,15 +101,16 @@ class TablePerClassPolymorphismReaderTest {
 		// we use a printer to compare our results because entities override equals() which only keep "id" into account
 		// which is far from sufficient for ou checking
 		// Note that we don't use ObjectPrinterBuilder#printerFor because it takes getCities() into account whereas its code is not ready for recursion 
-		ObjectPrinterBuilder.ObjectPrinter<Vehicle> vehiclePrinter = new ObjectPrinterBuilder<Vehicle>()
+		ObjectPrinter<Vehicle> vehiclePrinter = new ObjectPrinterBuilder<Vehicle>()
 				.addProperty(Vehicle::getId)
 				.addProperty(Vehicle::getClass)
 				.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
 				.build();
-		ObjectPrinterBuilder.ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
+		ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
 				.addProperty(Person::getId)
 				.addProperty(Person::getName)
 				.addProperty(Person::getTimestamp)
+				.addProperty(Person::getVehicle)
 				.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
 				.withPrinter(Vehicle.class, vehiclePrinter::toString)
 				.build();
@@ -116,5 +121,71 @@ class TablePerClassPolymorphismReaderTest {
 				.isEqualTo(person);
 		// ensuring that reverse side is also set
 		assertThat(loadedPerson.getVehicle().getOwner()).isEqualTo(loadedPerson);
+	}
+	
+	@Test
+	void oneToTablePerClassMany_fetchSeparately() {
+		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
+		
+		FluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
+				embeddableBuilder(Person.class)
+						.map(Person::getName)
+						.embed(Person::getTimestamp, embeddableBuilder(Timestamp.class)
+								.map(Timestamp::getCreationDate)
+								.map(Timestamp::getModificationDate));
+		
+		FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
+				entityBuilder(Vehicle.class, LONG_TYPE)
+						.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
+						.map(Vehicle::getColor)
+						.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
+								.addSubClass(subentityBuilder(Truck.class), "TRUCK")
+								.addSubClass(subentityBuilder(Car.class), "CAR")
+						);
+		
+		Comparator<AbstractVehicle> vehicleComparator = Comparator.comparing(v -> v.getId().getDelegate());
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
+				.mapKey(Person::getId, ALREADY_ASSIGNED)
+				.mapOneToMany(Person::getVehicles, vehicleConfiguration)
+					.fetchSeparately()
+					.initializeWith(() -> new TreeSet<>(vehicleComparator))	// only for test stability
+				.mapSuperClass(timestampedPersistentBeanMapping);
+		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		// insert
+		Person person = new Person(1);
+		Car car = new Car(42L);
+		car.setColor(new Color(42));
+		Truck truck = new Truck(17L);
+		person.setVehicles(Arrays.asTreeSet(vehicleComparator, car, truck));
+		
+		personPersister.insert(person);
+		
+		Person loadedPerson = personPersister.select(person.getId());
+		
+		// we use a printer to compare our results because entities override equals() which only keep "id" into account
+		// which is far from sufficient for ou checking
+		// Note that we don't use ObjectPrinterBuilder#printerFor because it takes getCities() into account whereas its code is not ready for recursion 
+		ObjectPrinter<AbstractVehicle> vehiclePrinter = new ObjectPrinterBuilder<AbstractVehicle>()
+				.addProperty(AbstractVehicle::getId)
+				.addProperty(Vehicle::getColor)
+				.withPrinter(Identifier.class, Functions.chain(Identifier::getDelegate, String::valueOf))
+				.build();
+		ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
+				.addProperty(Person::getName)
+				.addProperty(Person::getTimestamp)
+				.addProperty(Person::getVehicles, AbstractVehicle.class)
+				.withPrinter(Vehicle.class, vehiclePrinter::toString)
+				.build();
+		
+		assertThat(loadedPerson)
+				.usingComparator(Comparator.comparing(personPrinter::toString))
+				.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
+				.isEqualTo(person);
 	}
 }

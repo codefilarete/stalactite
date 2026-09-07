@@ -358,8 +358,6 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * Declares a relation between current entity and some of type {@code O} through a {@link Collection}.
 	 * Depending on collection type, order persistence can be asked by one of the {@link OneToManyOptions#indexed()}
 	 * methods.
-	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
-	 * to handle any super type of current entity type. 
 	 *
 	 * @param getter the way to get the {@link Set} from source entities
 	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
@@ -371,14 +369,12 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 */
 	<O, J, S extends Collection<O>>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializablePropertyAccessor<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	mapOneToMany(SerializablePropertyAccessor<C, S> getter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a relation between current entity and some of type {@code O} through a {@link Collection}.
 	 * Depending on collection type, order persistence can be asked by one of the {@link OneToManyOptions#indexed()}
 	 * methods.
-	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
-	 * to handle any super type of current entity type.
 	 *
 	 * @param setter the way to set the {@link Set} from source entities
 	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
@@ -390,7 +386,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 */
 	<O, J, S extends Collection<O>>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializablePropertyMutator<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	mapOneToMany(SerializablePropertyMutator<C, S> setter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a many-to-many relation between current entity and some of type {@code O}.
@@ -398,8 +394,6 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * methods.
 	 * For bidirectional relation, you may be interested in using {@link ManyToManyOptions#reverseCollection(SerializablePropertyAccessor)}
 	 * or {@link ManyToManyOptions#reverselySetBy(SerializablePropertyMutator)} on returned instance.
-	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
-	 * to handle any super type of current entity type.
 	 *
 	 * @param getter the way to get the {@link Set} from source entities
 	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
@@ -411,7 +405,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 */
 	<O, J, S1 extends Collection<O>, S2 extends Collection<C>>
 	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
-	mapManyToMany(SerializablePropertyAccessor<C, S1> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	mapManyToMany(SerializablePropertyAccessor<C, S1> getter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a many-to-many relation between current entity and some of type {@code O}.
@@ -419,8 +413,6 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * methods.
 	 * For bidirectional relation, you may be interested in using {@link ManyToManyOptions#reverseCollection(SerializablePropertyAccessor)}
 	 * or {@link ManyToManyOptions#reverselySetBy(SerializablePropertyMutator)} on returned instance.
-	 * Note that given mapping configuration has a generic signature made of {@code ? super O} to handle polymorphic case: given persister is allowed
-	 * to handle any super type of current entity type.
 	 *
 	 * @param setter the way to get the {@link Set} from source entities
 	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
@@ -432,7 +424,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 */
 	<O, J, S1 extends Collection<O>, S2 extends Collection<C>>
 	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
-	mapManyToMany(SerializablePropertyMutator<C, S1> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	mapManyToMany(SerializablePropertyMutator<C, S1> setter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a direct relation between current entity and some of type {@code O}.

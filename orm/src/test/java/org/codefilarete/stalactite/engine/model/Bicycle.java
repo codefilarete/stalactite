@@ -1,13 +1,25 @@
 package org.codefilarete.stalactite.engine.model;
 
+import org.codefilarete.stalactite.id.Identifier;
+import org.codefilarete.stalactite.id.PersistableIdentifier;
+
 /**
  * @author Guillaume Mary
  */
 public class Bicycle extends AbstractVehicle {
 
 	private Color color;
-
-	private Person owner;
+	
+	public Bicycle() {
+	}
+	
+	public Bicycle(Long id) {
+		this(new PersistableIdentifier<>(id));
+	}
+	
+	public Bicycle(Identifier<Long> id) {
+		super(id);
+	}
 
 	public Color getColor() {
 		return color;
@@ -15,13 +27,5 @@ public class Bicycle extends AbstractVehicle {
 
 	public void setColor(Color color) {
 		this.color = color;
-	}
-
-	public Person getOwner() {
-		return owner;
-	}
-
-	public void setOwner(Person owner) {
-		this.owner = owner;
 	}
 }

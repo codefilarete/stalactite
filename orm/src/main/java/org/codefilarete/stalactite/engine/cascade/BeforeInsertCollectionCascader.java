@@ -1,14 +1,14 @@
 package org.codefilarete.stalactite.engine.cascade;
 
 import java.util.Collection;
-import java.util.Set;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
-import org.codefilarete.tool.collection.Collections;
+import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.collection.Iterables;
 
 /**
@@ -42,12 +42,10 @@ public abstract class BeforeInsertCollectionCascader<TRIGGER, TARGET> implements
 	 */
 	@Override
 	public void beforeInsert(Iterable<? extends TRIGGER> entities) {
-		Stream<TRIGGER> stream = Iterables.stream(entities);
-		Stream<TARGET> targetStream = stream.flatMap(c -> getTargets(c).stream());
-		// We collect things in a Set to avoid persisting duplicates twice which may produce constraint exception : the Set is an identity Set to
-		// avoid basing our comparison on implemented equals/hashCode although this could be sufficient, identity seems safer and match our logic.
-		Set<TARGET> collect = targetStream.collect(Collectors.toCollection(Collections::newIdentitySet));
-		this.persister.persist(collect);
+		List<TARGET> targetEntities = Iterables.stream(entities)
+				.flatMap(c -> Objects.preventNull(getTargets(c), Collections.<TARGET>emptySet()).stream())
+				.collect(Collectors.toList());
+		this.persister.persist(targetEntities);
 	}
 	
 	/**

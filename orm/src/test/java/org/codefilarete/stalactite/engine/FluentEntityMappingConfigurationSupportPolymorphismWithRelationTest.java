@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.codefilarete.stalactite.dsl.FluentMappings;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder;
@@ -69,6 +70,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentMatchers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy.alreadyAssigned;
@@ -93,6 +95,10 @@ import static org.mockito.Mockito.verify;
  */
 class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	
+	private static final RecursiveComparisonConfiguration RECURSIVE_COMPARISON_CONFIGURATION = RecursiveComparisonConfiguration.builder()
+			.withComparatorForType((id1, id2) -> (int) ((long) id2.getDelegate() - (long) id1.getDelegate()), AbstractIdentifier.class)
+			.withComparatorForType(Comparator.nullsLast((c1, c2) -> c2.getRgb() - c1.getRgb()), Color.class)
+			.build();
 	private static final Dialect DIALECT = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 	private PersistenceContext persistenceContext;
 	
@@ -191,10 +197,15 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		connectionProvider.giveConnection().rollback();
 		
-		assertThat(persister.select(dummyTruck.getId())).isEqualTo(dummyTruckModified);
-		assertThat(persister.select(dummyCar.getId())).isEqualTo(dummyCarModified);
-		assertThat(new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruck.getId())))).isEqualTo(Arrays.asSet(dummyCarModified,
-				dummyTruckModified));
+		assertThat(persister.select(dummyTruck.getId()))
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(dummyTruckModified);
+		assertThat(persister.select(dummyCar.getId()))
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(dummyCarModified);
+		assertThat(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruck.getId())))
+				.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+				.containsExactlyInAnyOrder(dummyCarModified, dummyTruckModified);
 	}
 	
 	static Object[][] polymorphism_trunkHasOneToMany_data() {
@@ -387,13 +398,20 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		connectionProvider.giveConnection().rollback();
 		
-		assertThat(persister.select(dummyTruck.getId())).isEqualTo(dummyTruckModified);
+		assertThat(persister.select(dummyTruck.getId()))
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(dummyTruckModified);
 		AbstractVehicle selectedCar = persister.select(dummyCar.getId());
-		assertThat(selectedCar).isEqualTo(dummyCarModified);
+		assertThat(selectedCar)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(dummyCarModified);
 		assertThat(((Car) selectedCar).getRadio().isPersisted()).isTrue();	// testing afterSelect listener of sub entities relations 
-		assertThat(((Car) selectedCar).getRadio()).isEqualTo(dummyCarModified.getRadio());
-		assertThat(new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruck.getId())))).isEqualTo(Arrays.asSet(dummyCarModified,
-				dummyTruckModified));
+		assertThat(((Car) selectedCar).getRadio())
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(dummyCarModified.getRadio());
+		assertThat(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruck.getId())))
+				.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+				.containsExactlyInAnyOrder(dummyCarModified, dummyTruckModified);
 	}
 	
 	static Object[][] polymorphism_subClassHasOneToMany_data() {
@@ -569,16 +587,24 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		connectionProvider.giveConnection().rollback();
 		
-		assertThat(persister.select(dummyTruck.getId())).isEqualTo(dummyTruckModified);
+		assertThat(persister.select(dummyTruck.getId()))
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(dummyTruckModified);
 		AbstractVehicle selectedCar = persister.select(dummyCar.getId());
 		// this is done only for equality check of reverse setting, because deletion set it to null (see CollectionUpdater) and not reverted on rollback
 		dummyCarModified.getWheels().forEach(w -> w.setVehicle(dummyCarModified));
-		assertThat(selectedCar).isEqualTo(dummyCarModified);
+		assertThat(selectedCar)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(dummyCarModified);
 		// testing afterSelect listener of sub entities relations
 		((Car) selectedCar).getWheels().forEach(wheel -> assertThat(wheel.isPersisted()).isTrue());
 			 
-		assertThat(((Car) selectedCar).getWheels()).isEqualTo(dummyCarModified.getWheels());
-		assertThat(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruck.getId()))).containsExactlyInAnyOrder(dummyCarModified, dummyTruckModified);
+		assertThat(((Car) selectedCar).getWheels())
+				.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(dummyCarModified.getWheels());
+		assertThat(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruck.getId())))
+				.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+				.containsExactlyInAnyOrder(dummyCarModified, dummyTruckModified);
 	}
 	
 	static Object[][] crud_polymorphism_subClassHasElementCollection() {
@@ -681,11 +707,17 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		assertThat(plateCount).isEqualTo(0);
 		persistenceContext.getConnectionProvider().giveConnection().rollback();
 		
-		assertThat(persister.select(dummyTruck.getId())).isEqualTo(dummyTruckModified);
+		assertThat(persister.select(dummyTruck.getId()))
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(dummyTruckModified);
 		AbstractVehicle selectedCar = persister.select(dummyCar.getId());
-		assertThat(selectedCar).isEqualTo(dummyCarModified);
+		assertThat(selectedCar)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(dummyCarModified);
 		assertThat(((Car) selectedCar).getPlates()).containsExactlyInAnyOrder("XYZ-ABC-02");
-		assertThat(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruck.getId()))).containsExactlyInAnyOrder(dummyCarModified, dummyTruckModified);
+		assertThat(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruck.getId())))
+				.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+				.containsExactlyInAnyOrder(dummyCarModified, dummyTruckModified);
 	}
 	
 	@Nested
@@ -740,7 +772,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// select test
 			AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedCar).isEqualTo(dummyCar);
+			assertThat(loadedCar)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 			
 			// delete test
 			abstractVehiclePersister.delete(dummyCar);
@@ -809,12 +843,18 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			// select test
 			AbstractVehicle loadedVehicle;
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedVehicle).isEqualTo(dummyCar);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertThat(loadedVehicle).isEqualTo(dummyTruck);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyTruck);
 			
 			Set<Vehicle> loadedVehicles = abstractVehiclePersister.selectAll();
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar, dummyTruck);
+			assertThat(loadedVehicles)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyCar, dummyTruck);
 			
 			// delete test
 			abstractVehiclePersister.delete(dummyCar);
@@ -891,22 +931,30 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			// select test
 			Vehicle loadedVehicle;
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedVehicle).isEqualTo(dummyCar);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 			
 			// update test by modifying only parent property
 			dummyCar.setColor(new Color(256));
 			abstractVehiclePersister.update(dummyCar, loadedVehicle, false);
 			
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertThat(loadedVehicle).isEqualTo(dummyTruck);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyTruck);
 			
 			ExecutableQuery<Vehicle> vehicleExecutableQuery1 = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42)));
 			Set<Vehicle> loadedVehicles = vehicleExecutableQuery1.execute(Accumulators.toSet());
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyTruck);
+			assertThat(loadedVehicles)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyTruck);
 			
 			ExecutableQuery<Vehicle> vehicleExecutableQuery = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(256)));
 			loadedVehicles = vehicleExecutableQuery.execute(Accumulators.toSet());
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar);
+			assertThat(loadedVehicles)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyCar);
 			
 			// delete test
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
@@ -1004,7 +1052,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			verify(updateListenerMock).afterUpdate(any(), eq(true));
 			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
 			dummyCar.setModel("Renault");	// we set back previous value to match verify(..)
-			verify(selectListenerMock, times(1)).afterSelect(Arrays.asHashSet(dummyCar));
+			Car finalDummyCar = dummyCar;
+			verify(selectListenerMock, times(1)).afterSelect(ArgumentMatchers.<Set<Car>>argThat(actualObject -> {
+				assertThat(actualObject).extracting(AbstractVehicle::getId).containsExactly(finalDummyCar.getId());
+				return true;
+			}));
 			
 			// select test
 			clearInvocations(selectListenerMock);
@@ -1065,7 +1117,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// select test
 			AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedCar).isEqualTo(dummyCar);
+			assertThat(loadedCar)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 			
 			// delete test
 			abstractVehiclePersister.delete(dummyCar);
@@ -1146,12 +1200,18 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			// select test
 			AbstractVehicle loadedVehicle;
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedVehicle).isEqualTo(dummyCar);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertThat(loadedVehicle).isEqualTo(dummyTruck);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyTruck);
 			
 			Set<Vehicle> loadedVehicles = abstractVehiclePersister.selectAll();
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar, dummyTruck);
+			assertThat(loadedVehicles)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyCar, dummyTruck);
 			
 			// delete test
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
@@ -1250,22 +1310,30 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			// select test
 			Vehicle loadedVehicle;
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedVehicle).isEqualTo(dummyCar);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 			
 			// update test by modifying only parent property
 			dummyCar.setColor(new Color(256));
 			abstractVehiclePersister.update(dummyCar, loadedVehicle, false);
 			
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertThat(loadedVehicle).isEqualTo(dummyTruck);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyTruck);
 			
 			ExecutableQuery<Vehicle> vehicleExecutableQuery1 = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42)));
 			Set<Vehicle> loadedVehicles = vehicleExecutableQuery1.execute(Accumulators.toSet());
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyTruck);
+			assertThat(loadedVehicles)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyTruck);
 			
 			ExecutableQuery<Vehicle> vehicleExecutableQuery = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(256)));
 			loadedVehicles = vehicleExecutableQuery.execute(Accumulators.toSet());
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar);
+			assertThat(loadedVehicles)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyCar);
 			
 			// delete test
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
@@ -1363,7 +1431,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			verify(updateListenerMock).afterUpdate(any(), eq(true));
 			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
 			dummyCar.setModel("Renault");	// we set back previous value to match verify(..)
-			verify(selectListenerMock, times(1)).afterSelect(Arrays.asHashSet(dummyCar));
+			Car finalDummyCar = dummyCar;
+			verify(selectListenerMock, times(1)).afterSelect(ArgumentMatchers.<Set<Car>>argThat(actualObject -> {
+				assertThat(actualObject).extracting(AbstractVehicle::getId).containsExactly(finalDummyCar.getId());
+				return true;
+			}));
 			
 			// select test
 			clearInvocations(selectListenerMock);
@@ -1425,7 +1497,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// select test
 			AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedCar).isEqualTo(dummyCar);
+			assertThat(loadedCar)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 			
 			// delete test
 			abstractVehiclePersister.delete(dummyCar);
@@ -1498,12 +1572,18 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			// select test
 			AbstractVehicle loadedVehicle;
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedVehicle).isEqualTo(dummyCar);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertThat(loadedVehicle).isEqualTo(dummyTruck);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyTruck);
 			
 			Set<Vehicle> loadedVehicles = abstractVehiclePersister.selectAll();
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar, dummyTruck);
+			assertThat(loadedVehicles)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyCar, dummyTruck);
 
 			// delete test
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
@@ -1587,17 +1667,25 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			// select test
 			Vehicle loadedVehicle;
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedVehicle).isEqualTo(dummyCar);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertThat(loadedVehicle).isEqualTo(dummyTruck);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyTruck);
 			
 			ExecutableQuery<Vehicle> vehicleExecutableQuery1 = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42)));
 			Set<Vehicle> loadedVehicles = vehicleExecutableQuery1.execute(Accumulators.toSet());
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyTruck);
+			assertThat(loadedVehicles)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyTruck);
 			
 			ExecutableQuery<Vehicle> vehicleExecutableQuery = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(666)));
 			loadedVehicles = vehicleExecutableQuery.execute(Accumulators.toSet());
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar);
+			assertThat(loadedVehicles)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyCar);
 
 			// delete test
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
@@ -1695,7 +1783,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			verify(updateListenerMock).afterUpdate(any(), eq(true));
 			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
 			dummyCar.setModel("Renault");	// we set back previous value to match verify(..)
-			verify(selectListenerMock, times(1)).afterSelect(Arrays.asHashSet(dummyCar));
+			Car finalDummyCar = dummyCar;
+			verify(selectListenerMock, times(1)).afterSelect(ArgumentMatchers.<Set<Car>>argThat(actualObject -> {
+				assertThat(actualObject).extracting(AbstractVehicle::getId).containsExactly(finalDummyCar.getId());
+				return true;
+			}));
 			
 			// select test
 			clearInvocations(selectListenerMock);
@@ -1740,21 +1832,27 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			person.setVehicle(new Car(42L));
 			testInstance.insert(person);
 			Person loadedPerson = testInstance.select(person.getId());
-			assertThat(loadedPerson).isEqualTo(person);
+			assertThat(loadedPerson)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(person);
 			
 			// updating embedded value
 			person.setTimestamp(new Timestamp());
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertThat(loadedPerson).isEqualTo(person);
+			assertThat(loadedPerson)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(person);
 			
 			// updating one-to-one relation
 			person.setVehicle(new Truck(666L));
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertThat(loadedPerson).isEqualTo(person);
+			assertThat(loadedPerson)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(person);
 			// checking for orphan removal (relation was marked as such)
 			assertThat(vehiclePersister.select(new PersistedIdentifier<>(42L))).isNull();
 			
@@ -1763,7 +1861,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertThat(loadedPerson).isEqualTo(person);
+			assertThat(loadedPerson)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(person);
 			// checking for orphan removal (relation was marked as such)
 			assertThat(vehiclePersister.select(new PersistedIdentifier<>(666L))).isNull();
 			
@@ -1773,7 +1873,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertThat(loadedPerson).isEqualTo(person);
+			assertThat(loadedPerson)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(person);
 			
 			// testing deletion
 			testInstance.delete(person);
@@ -1816,21 +1918,27 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			person.setVehicle(new Car(42L));
 			testInstance.insert(person);
 			Person loadedPerson = testInstance.select(person.getId());
-			assertThat(loadedPerson).isEqualTo(person);
+			assertThat(loadedPerson)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(person);
 			
 			// updating embedded value
 			person.setTimestamp(new Timestamp());
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertThat(loadedPerson).isEqualTo(person);
+			assertThat(loadedPerson)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(person);
 			
 			// updating one-to-one relation
 			person.setVehicle(new Truck(666L));
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertThat(loadedPerson).isEqualTo(person);
+			assertThat(loadedPerson)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(person);
 			// checking for orphan removal (relation was marked as such)
 			assertThat(vehiclePersister.select(new PersistedIdentifier<>(42L))).isNull();
 			
@@ -1839,7 +1947,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertThat(loadedPerson).isEqualTo(person);
+			assertThat(loadedPerson)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(person);
 			// checking for orphan removal (relation was marked as such)
 			assertThat(vehiclePersister.select(new PersistedIdentifier<>(666L))).isNull();
 			
@@ -1849,7 +1959,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertThat(loadedPerson).isEqualTo(person);
+			assertThat(loadedPerson)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(person);
 			
 			// testing deletion
 			testInstance.delete(person);
@@ -1893,7 +2005,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			person.setVehicle(car);
 			testInstance.insert(person);
 			Person loadedPerson = testInstance.select(person.getId());
-			assertThat(loadedPerson).isEqualTo(person);
+			assertThat(loadedPerson)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(person);
 			
 			// updating embedded value
 			person.setTimestamp(new Timestamp());
@@ -1942,7 +2056,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertThat(loadedPerson).isEqualTo(person);
+			assertThat(loadedPerson)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(person);
 			// checking for orphan removal (relation was marked as such)
 			assertThat(vehiclePersister.select(new PersistedIdentifier<>(666L))).isNull();
 			
@@ -1952,7 +2068,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertThat(loadedPerson).isEqualTo(person);
+			assertThat(loadedPerson)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(person);
 			
 			// testing deletion
 			testInstance.delete(person);
@@ -1998,7 +2116,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			person.setVehicle(car);
 			testInstance.insert(person);
 			Person loadedPerson = testInstance.select(person.getId());
-			assertThat(loadedPerson).isEqualTo(person);
+			assertThat(loadedPerson)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(person);
 			
 			// updating embedded value
 			person.setTimestamp(new Timestamp());
@@ -2047,7 +2167,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertThat(loadedPerson).isEqualTo(person);
+			assertThat(loadedPerson)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(person);
 			// checking for orphan removal (relation was marked as such)
 			assertThat(vehiclePersister.select(new PersistedIdentifier<>(666L))).isNull();
 			
@@ -2057,7 +2179,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertThat(loadedPerson).isEqualTo(person);
+			assertThat(loadedPerson)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(person);
 			
 			// testing deletion
 			testInstance.delete(person);
@@ -2165,7 +2289,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		person.setVehicle(car);
 		testInstance.insert(person);
 		Person loadedPerson = testInstance.select(person.getId());
-		assertThat(loadedPerson).isEqualTo(person);
+		assertThat(loadedPerson)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(person);
 		
 		// updating embedded value
 		person.setTimestamp(new Timestamp());
@@ -2215,7 +2341,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		testInstance.update(person, loadedPerson, true);
 		
 		loadedPerson = testInstance.select(person.getId());
-		assertThat(loadedPerson).isEqualTo(person);
+		assertThat(loadedPerson)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(person);
 		// checking for orphan removal (relation was marked as such)
 		assertThat(persistenceContext.findPersister(Vehicle.class).select(new PersistedIdentifier<>(666L))).isNull();
 		
@@ -2225,7 +2353,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		testInstance.update(person, loadedPerson, true);
 		
 		loadedPerson = testInstance.select(person.getId());
-		assertThat(loadedPerson).isEqualTo(person);
+		assertThat(loadedPerson)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(person);
 		
 		// testing deletion
 		testInstance.delete(person);

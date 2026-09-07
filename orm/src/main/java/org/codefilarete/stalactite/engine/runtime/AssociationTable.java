@@ -5,11 +5,11 @@ import java.util.Map;
 
 import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy.ReferencedColumnNames;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Database.Schema;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
-import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
@@ -33,7 +33,7 @@ public class AssociationTable<
 	 * Primary key of source entities table
 	 * Expected to be joined with {@link #oneSideForeignKey}
 	 */
-	private final PrimaryKey<LEFTTABLE, LEFTID> oneSideKey;
+	private final Key<LEFTTABLE, LEFTID> oneSideKey;
 	
 	/**
 	 * Foreign key pointing to right table primary key
@@ -45,11 +45,11 @@ public class AssociationTable<
 	 * Primary key of collection entities table
 	 * Expected to be joined with {@link #manySideForeignKey}
 	 */
-	private final PrimaryKey<RIGHTTABLE, RIGHTID> manySideKey;
+	private final Key<RIGHTTABLE, RIGHTID> manySideKey;
 	
-	private final Map<Column<LEFTTABLE, ?>, Column<SELF, ?>> leftIdentifierColumnMapping = new HashMap<>();
+	private final Map<QualifiedSelectable<LEFTTABLE, ?>, Column<SELF, ?>> leftIdentifierColumnMapping = new HashMap<>();
 	
-	private final Map<Column<RIGHTTABLE, ?>, Column<SELF, ?>> rightIdentifierColumnMapping = new HashMap<>();
+	private final Map<QualifiedSelectable<RIGHTTABLE, ?>, Column<SELF, ?>> rightIdentifierColumnMapping = new HashMap<>();
 	
 	/**
 	 * @param schema the database schema
@@ -63,8 +63,8 @@ public class AssociationTable<
 	 */
 	public AssociationTable(Schema schema,
 							String name,
-							PrimaryKey<LEFTTABLE, LEFTID> oneSideKey,
-							PrimaryKey<RIGHTTABLE, RIGHTID> manySideKey,
+							Key<LEFTTABLE, LEFTID> oneSideKey,
+							Key<RIGHTTABLE, RIGHTID> manySideKey,
 							ReferencedColumnNames<LEFTTABLE, RIGHTTABLE> columnNames,
 							ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 							boolean createOneSideForeignKey,
@@ -134,11 +134,11 @@ public class AssociationTable<
 		return manySideKey;
 	}
 	
-	public Map<Column<LEFTTABLE, ?>, Column<SELF, ?>> getLeftIdentifierColumnMapping() {
+	public Map<QualifiedSelectable<LEFTTABLE, ?>, Column<SELF, ?>> getLeftIdentifierColumnMapping() {
 		return leftIdentifierColumnMapping;
 	}
 	
-	public Map<Column<RIGHTTABLE, ?>, Column<SELF, ?>> getRightIdentifierColumnMapping() {
+	public Map<QualifiedSelectable<RIGHTTABLE, ?>, Column<SELF, ?>> getRightIdentifierColumnMapping() {
 		return rightIdentifierColumnMapping;
 	}
 }

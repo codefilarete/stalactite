@@ -94,11 +94,11 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 	 */
 	<O, J, S extends Collection<O>>
 	FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializablePropertyAccessor<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	mapOneToMany(SerializablePropertyAccessor<C, S> getter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
 	<O, J, S extends Collection<O>>
 	FluentSubEntityMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializablePropertyMutator<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	mapOneToMany(SerializablePropertyMutator<C, S> setter, EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration);
 	
 	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializablePropertyAccessor<C, O> getter,
 																							  EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);

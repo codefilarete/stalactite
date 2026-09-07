@@ -16,6 +16,7 @@ import org.codefilarete.stalactite.engine.runtime.load.JoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.SingleTablePolymorphicRelationJoinNode;
 import org.codefilarete.stalactite.engine.runtime.singletable.SingleTablePolymorphismReader;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 
@@ -54,18 +55,16 @@ public class SingleTableAppender {
 	}
 	
 	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
-	String appendForSeparateLoad(EntityJoinTree<SRC, SRCID> aggregateTree,
+	String appendForSeparateLoad(EntityJoinTree<?, ?> aggregateTree,
 								 SingleTablePolymorphismReader<TRGT, TRGTID, RIGHTTABLE, ?> targetReader,
-								 ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> relation,
 								 String mountPoint,
-								 ThreadLocal<RelationStorage<SRC, TRGTID>> relationIdsHolder) {
-		
-		DirectRelationJoin<LEFTTABLE, RIGHTTABLE, JOINID> join = relation.getJoin();
+								 ThreadLocal<RelationStorage<SRC, TRGTID>> relationIdsHolder,
+								 KeyMapping<LEFTTABLE, RIGHTTABLE, JOINID> join) {
 		
 		return aggregateTree.addMergeJoin(mountPoint,
 				new FirstPhaseRelationLoader<>(targetReader.getMapping().getIdMapping().getIdentifierAssembler()::assemble, targetReader.getMapping().getSelectableColumns(), relationIdsHolder),
-				join.getLeftKey(),
-				join.getRightKey(),
+				join.getSourceKey(),
+				join.getReferencedKey(),
 				OUTER);
 	}
 }

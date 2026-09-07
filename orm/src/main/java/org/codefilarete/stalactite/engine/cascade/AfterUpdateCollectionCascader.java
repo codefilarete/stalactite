@@ -1,13 +1,16 @@
 package org.codefilarete.stalactite.engine.cascade;
 
 import java.util.Collection;
-import java.util.Objects;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
-import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Iterables;
+
+import static org.codefilarete.tool.bean.Objects.preventNull;
 
 /**
  * Cascader for update, written for one-to-many style of cascade where Trigger owns the relation to Target.
@@ -42,8 +45,10 @@ public abstract class AfterUpdateCollectionCascader<TRIGGER, TARGET> implements 
 	 */
 	@Override
 	public void afterUpdate(Iterable<? extends Duo<TRIGGER, TRIGGER>> entities, boolean allColumnsStatement) {
-		this.persister.update(Iterables.stream(entities).flatMap(e -> getTargets(e.getLeft(), e.getRight()).stream()).filter(Objects::nonNull)
-				.collect(Collectors.toList()), allColumnsStatement);
+		List<Duo<TARGET, TARGET>> targetEntities = Iterables.stream(entities)
+				.flatMap(e -> preventNull(getTargets(e.getLeft(), e.getRight()), Collections.<Duo<TARGET, TARGET>>emptySet()).stream())
+				.collect(Collectors.toList());
+		this.persister.update(targetEntities, allColumnsStatement);
 	}
 	
 	/**

@@ -7,6 +7,7 @@ import java.util.TreeSet;
 
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.dsl.MappingConfigurationException;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -50,59 +51,59 @@ public interface AssociationTableNamingStrategy {
 	 */
 	class ReferencedColumnNames<LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>> {
 		
-		private final Map<Column<LEFTTABLE, Object>, String> leftColumnNames = new HashMap<>();
+		private final Map<QualifiedSelectable<LEFTTABLE, Object>, String> leftColumnNames = new HashMap<>();
 		
-		private final Map<Column<RIGHTTABLE, Object>, String> rightColumnNames = new HashMap<>();
+		private final Map<QualifiedSelectable<RIGHTTABLE, Object>, String> rightColumnNames = new HashMap<>();
 		
 		/**
-		 * Set left column name in association table that matches given left-table column
-		 * @param column the column coming from left table
-		 * @param name name of association table column for given left-table column
+		 * Sets the left column name in the association table that matches the given left-table column
+		 * @param column the column coming from the left table
+		 * @param name name of association table column for the given left-table column
 		 */
 		public void setLeftColumnName(Column<LEFTTABLE, ?> column, String name) {
-			this.leftColumnNames.put((Column<LEFTTABLE, Object>) column, name);
+			this.leftColumnNames.put((QualifiedSelectable<LEFTTABLE, Object>) column, name);
 		}
 		
 		/**
-		 * Give left column name in association table that matches given left-table column
+		 * Gives the left column name in the association table that matches the given left-table column
 		 * @param column the left-table column 
 		 */
-		public String getLeftColumnName(Column<LEFTTABLE, ?> column) {
+		public String getLeftColumnName(QualifiedSelectable<LEFTTABLE, ?> column) {
 			return leftColumnNames.get(column);
 		}
 		
 		/**
-		 * Exposes all column references to simplify column name modification : without this access the user has to use {@link #getLeftColumnName(Column)}
-		 * which implies to have the {@link Column} object, this is cumbersome because it means the user must have declared its {@link Table}.
+		 * Exposes all column references to simplify column name modification : without this access the user has to use {@link #getLeftColumnName(QualifiedSelectable)}
+		 * which implies to have the {@link QualifiedSelectable} object, this is cumbersome because it means the user must have declared its {@link Table}.
 		 * @return all column references
 		 */
-		public Map<Column<LEFTTABLE, Object>, String> getLeftColumnNames() {
+		public Map<QualifiedSelectable<LEFTTABLE, Object>, String> getLeftColumnNames() {
 			return leftColumnNames;
 		}
 		
 		/**
-		 * Set right column name in association table that matches given right-table column
-		 * @param column the column coming from left table
-		 * @param name name of association table column for given left-table column
+		 * Sets the right column name in the association table that matches the given right-table column
+		 * @param column the column coming from the right table
+		 * @param name name of association table column for the given right-table column
 		 */
-		public void setRightColumnName(Column<RIGHTTABLE, ?> column, String name) {
-			this.rightColumnNames.put((Column<RIGHTTABLE, Object>) column, name);
+		public void setRightColumnName(QualifiedSelectable<RIGHTTABLE, ?> column, String name) {
+			this.rightColumnNames.put((QualifiedSelectable<RIGHTTABLE, Object>) column, name);
 		}
 		
 		/**
-		 * Give right column name in association table that matches given right-table column
+		 * Gives the right column name in the association table that matches the given right-table column
 		 * @param column the right-table column
 		 */
-		public String getRightColumnName(Column<RIGHTTABLE, ?> column) {
+		public String getRightColumnName(QualifiedSelectable<RIGHTTABLE, ?> column) {
 			return rightColumnNames.get(column);
 		}
 		
 		/**
-		 * Exposes all column references to simplify column name modification : without this access the user has to use {@link #getRightColumnName(Column)}
-		 * which implies to have the {@link Column} object, this is cumbersome because it means the user must have declared its {@link Table}.
+		 * Exposes all column references to simplify column name modification : without this access the user has to use {@link #getRightColumnName(QualifiedSelectable)}
+		 * which implies to have the {@link QualifiedSelectable} object, this is cumbersome because it means the user must have declared its {@link Table}.
 		 * @return all column references
 		 */
-		public Map<Column<RIGHTTABLE, Object>, String> getRightColumnNames() {
+		public Map<QualifiedSelectable<RIGHTTABLE, Object>, String> getRightColumnNames() {
 			return rightColumnNames;
 		}
 	}

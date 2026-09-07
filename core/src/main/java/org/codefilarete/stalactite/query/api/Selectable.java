@@ -1,5 +1,9 @@
 package org.codefilarete.stalactite.query.api;
 
+import javax.annotation.Nullable;
+
+import org.codefilarete.stalactite.sql.ddl.Size;
+
 /**
  * Contract for elements to be put in a Select clause to be transformed to SQL
  * 
@@ -24,7 +28,7 @@ public interface Selectable<C> {
 	
 	/**
 	 * Implementation for String to be put in Select clause or as a criteria.
-	 * Be aware that expression given at constructor will be rendered as it is to SQL without transformation.
+	 * Be aware that the expression given at constructor will be rendered as it is to SQL without transformation.
 	 */
 	class SimpleSelectable<C> implements Selectable<C> {
 		
@@ -32,16 +36,24 @@ public interface Selectable<C> {
 		
 		private final Class<C> javaType;
 		
+		@Nullable
+		private final Size size;
+		
 		/**
 		 * Straight constructor.
-		 * Be aware that expression will be rendered as it is to SQL without transformation.
+		 * Be aware that the expression will be rendered as it is to SQL without transformation.
 		 * 
 		 * @param expression the text to be put into SQL
 		 * @param javaType type returned by expression
 		 */
 		public SimpleSelectable(String expression, Class<C> javaType) {
+			this(expression, javaType, null);
+		}
+		
+		public SimpleSelectable(String expression, Class<C> javaType, @Nullable Size size) {
 			this.expression = expression;
 			this.javaType = javaType;
+			this.size = size;
 		}
 		
 		@Override
@@ -52,6 +64,11 @@ public interface Selectable<C> {
 		@Override
 		public Class<C> getJavaType() {
 			return javaType;
+		}
+		
+		@Nullable
+		public Size getSize() {
+			return size;
 		}
 	}
 }

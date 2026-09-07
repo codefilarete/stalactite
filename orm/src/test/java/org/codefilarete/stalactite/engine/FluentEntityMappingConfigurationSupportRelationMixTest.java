@@ -1,41 +1,49 @@
 package org.codefilarete.stalactite.engine;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Set;
+import javax.sql.DataSource;
 
 import org.codefilarete.stalactite.dsl.FluentMappings;
-import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.configurer.AbstractRelationConfigurer;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
-import org.codefilarete.stalactite.engine.model.*;
+import org.codefilarete.stalactite.engine.model.AbstractVehicle;
+import org.codefilarete.stalactite.engine.model.Bicycle;
+import org.codefilarete.stalactite.engine.model.City;
+import org.codefilarete.stalactite.engine.model.Color;
+import org.codefilarete.stalactite.engine.model.Country;
+import org.codefilarete.stalactite.engine.model.Person;
+import org.codefilarete.stalactite.engine.model.State;
+import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
+import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
-import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static java.util.stream.Collectors.toSet;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy.databaseAutoIncrement;
@@ -354,8 +362,8 @@ public class FluentEntityMappingConfigurationSupportRelationMixTest {
 					// and we will expect foreign keys to be created for both of them
 					.mapOneToOne(Person::getVehicle, vehicleMappingConfiguration)
 					.mappedBy(Vehicle::getOwner)
-					.mapOneToMany(Person::getBicycles, bicycleMappingConfiguration)
-					.mappedBy(Bicycle::getOwner);
+					.mapOneToMany(Person::getVehicles, bicycleMappingConfiguration)
+					.mappedBy(AbstractVehicle::getOwner);
 
 			// we create both persisters to simulate a reuse of the mapping configuration
 			vehicleMappingConfiguration.build(persistenceContext);
@@ -395,8 +403,8 @@ public class FluentEntityMappingConfigurationSupportRelationMixTest {
 					// and we will expect foreign keys to be created for both of them
 					.mapOneToOne(Person::getVehicle, vehicleMappingConfiguration)
 					.mappedBy(Vehicle::getOwner)
-					.mapOneToMany(Person::getBicycles, bicycleMappingConfiguration)
-					.mappedBy(Bicycle::getOwner);
+					.mapOneToMany(Person::getVehicles, bicycleMappingConfiguration)
+					.mappedBy(AbstractVehicle::getOwner);
 			
 			// we create both persisters to simulate a reuse of the mapping configuration
 			vehicleMappingConfiguration.build(persistenceContext);
@@ -477,7 +485,7 @@ public class FluentEntityMappingConfigurationSupportRelationMixTest {
 					.map(Person::getName)
 					.mapOneToOne(Person::getVehicle, vehicleMappingConfiguration)
 					.mappedBy(Vehicle::getOwner)
-					.mapManyToMany(Person::getBicycles, bicycleMappingConfiguration);
+					.mapManyToMany(Person::getVehicles, bicycleMappingConfiguration);
 					// no mappedBy here because it's a many-to-many relation
 
 			// we create both persisters to simulate a reuse of the mapping configuration
@@ -486,21 +494,21 @@ public class FluentEntityMappingConfigurationSupportRelationMixTest {
 			personConfiguration.build(persistenceContext);
 
 			Collection<Table<?>> tables = DDLDeployer.collectTables(persistenceContext);
-			assertThat(tables).extracting(Table::getName).containsExactlyInAnyOrder("Person", "Vehicle", "Person_bicycles", "Bicycle");
+			assertThat(tables).extracting(Table::getName).containsExactlyInAnyOrder("Person", "Vehicle", "Person_vehicles", "Bicycle");
 			assertThat(tables.stream().flatMap(table -> table.getForeignKeys().stream()))
 					.extracting(ForeignKey::getName).containsExactlyInAnyOrder(
-							"FK_Person_bicycles_person_id_Person_id",
-							"FK_Person_bicycles_bicycles_id_Bicycle_id",
+							"FK_Person_vehicles_person_id_Person_id",
+							"FK_Person_vehicles_vehicles_id_Bicycle_id",
 							"FK_Vehicle_ownerId_Person_id");
 
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			assertThat(ddlDeployer.getCreationScripts()).containsExactlyInAnyOrder(
 					"create table Bicycle(color int, id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, unique (id))",
 					"create table Person(name varchar(255), id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, unique (id))",
-					"create table Person_bicycles(person_id int not null, bicycles_id int not null, unique (person_id, bicycles_id))",
+					"create table Person_vehicles(person_id int not null, vehicles_id int not null, unique (person_id, vehicles_id))",
 					"create table Vehicle(id int GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, ownerId int, unique (id))",
-					"alter table Person_bicycles add constraint FK_Person_bicycles_person_id_Person_id foreign key(person_id) references Person(id)",
-					"alter table Person_bicycles add constraint FK_Person_bicycles_bicycles_id_Bicycle_id foreign key(bicycles_id) references Bicycle(id)",
+					"alter table Person_vehicles add constraint FK_Person_vehicles_person_id_Person_id foreign key(person_id) references Person(id)",
+					"alter table Person_vehicles add constraint FK_Person_vehicles_vehicles_id_Bicycle_id foreign key(vehicles_id) references Bicycle(id)",
 					"alter table Vehicle add constraint FK_Vehicle_ownerId_Person_id foreign key(ownerId) references Person(id)"
 			);
 		}

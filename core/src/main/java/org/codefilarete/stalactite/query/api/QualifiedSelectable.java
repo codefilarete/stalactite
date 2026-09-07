@@ -1,6 +1,9 @@
 package org.codefilarete.stalactite.query.api;
 
+import javax.annotation.Nullable;
+
 import org.codefilarete.stalactite.query.model.From;
+import org.codefilarete.stalactite.sql.ddl.Size;
 
 /**
  * A {@link Selectable} qualified by the table/query it belongs to ({@link #getOwner()})
@@ -19,5 +22,9 @@ public interface QualifiedSelectable<T extends Fromable, O> extends Selectable<O
 	default String getName() {
 		return getExpression();
 	}
+	
+	/** Optional information, used only for schema generation */
+	@Nullable
+	Size getSize();
 	
 }

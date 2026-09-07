@@ -16,6 +16,7 @@ import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembl
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.SingleIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -57,7 +58,7 @@ public class AssociationRecordMapping<
 	 */
 	private static <ASSOCIATIONTABLE extends Table<ASSOCIATIONTABLE>, TARGETTABLE extends Table<TARGETTABLE>, ID>
 	Map<ReadWritePropertyAccessPoint<AssociationRecord, ?>, Column<ASSOCIATIONTABLE, Object>> mapping(
-			Map<Column<TARGETTABLE, ?>, Column<ASSOCIATIONTABLE, ?>> identifierColumnMapping,
+			Map<QualifiedSelectable<TARGETTABLE, ?>, Column<ASSOCIATIONTABLE, ?>> identifierColumnMapping,
 			IdentifierAssembler<ID, TARGETTABLE> identifierAssembler,
 			ReadWritePropertyAccessPoint<AssociationRecord, ID> valueAccessor) {
 		Map<ReadWritePropertyAccessPoint<AssociationRecord, ?>, Column<ASSOCIATIONTABLE, Object>> result = new HashMap<>();
@@ -71,7 +72,8 @@ public class AssociationRecordMapping<
 			mapping.forEach((accessor, column) -> {
 				ReadWriteAccessorChain<AssociationRecord, ID, ?> propertyAccessor = new ReadWriteAccessorChain<>(valueAccessor, accessor);
 				propertyAccessor.setNullValueHandler(new AccessorChain.ValueInitializerOnNullValue((accessor1, aClass) -> Reflections.newInstance(leftIdentifierAssembler1.getDefaultConstructor())));
-				result.put(propertyAccessor, (Column<ASSOCIATIONTABLE, Object>) identifierColumnMapping.get(column));
+				Column<ASSOCIATIONTABLE, Object> associationtableColumn = (Column<ASSOCIATIONTABLE, Object>) identifierColumnMapping.get(column);
+				result.put(propertyAccessor, associationtableColumn);
 			});
 		}
 		return result;
@@ -86,8 +88,8 @@ public class AssociationRecordMapping<
 	private AssociationRecordMapping(ASSOCIATIONTABLE targetTable,
 									IdentifierAssembler<LEFTID, LEFTTABLE> leftIdentifierAssembler,
 									IdentifierAssembler<RIGHTID, RIGHTTABLE> rightIdentifierAssembler,
-									Map<Column<LEFTTABLE, ?>, Column<ASSOCIATIONTABLE, ?>> leftIdentifierColumnMapping,
-									Map<Column<RIGHTTABLE, ?>, Column<ASSOCIATIONTABLE, ?>> rightIdentifierColumnMapping
+									Map<QualifiedSelectable<LEFTTABLE, ?>, Column<ASSOCIATIONTABLE, ?>> leftIdentifierColumnMapping,
+									Map<QualifiedSelectable<RIGHTTABLE, ?>, Column<ASSOCIATIONTABLE, ?>> rightIdentifierColumnMapping
 									) {
 		super(AssociationRecord.class,
 				targetTable,

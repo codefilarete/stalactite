@@ -2,9 +2,9 @@ package org.codefilarete.stalactite.engine.runtime.singletable;
 
 import java.sql.SQLException;
 import java.util.Comparator;
-import java.util.HashSet;
 import javax.sql.DataSource;
 
+import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
@@ -49,6 +49,9 @@ import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterB
 
 class SingleTablePolymorphismWriterTest {
 	
+	private static final RecursiveComparisonConfiguration RECURSIVE_COMPARISON_CONFIGURATION = RecursiveComparisonConfiguration.builder()
+			.withComparatorForType((id1, id2) -> (int) ((long) id2.getDelegate() - (long) id1.getDelegate()), AbstractIdentifier.class)
+			.build();
 	private static final Dialect DIALECT = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 //	private final ConnectionProvider connectionProvider = new CurrentThreadConnectionProvider(dataSource);
@@ -109,10 +112,15 @@ class SingleTablePolymorphismWriterTest {
 		
 		connectionProvider.giveConnection().rollback();
 		
-		assertThat(persister.select(dummyTruck.getId())).isEqualTo(dummyTruckModified);
-		assertThat(persister.select(dummyCar.getId())).isEqualTo(dummyCarModified);
-		assertThat(new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruck.getId())))).isEqualTo(Arrays.asSet(dummyCarModified,
-				dummyTruckModified));
+		assertThat(persister.select(dummyTruck.getId()))
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(dummyTruckModified);
+		assertThat(persister.select(dummyCar.getId()))
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(dummyCarModified);
+		assertThat(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruck.getId())))
+				.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+				.containsExactlyInAnyOrder(dummyCarModified, dummyTruckModified);
 	}
 	
 	@Test
@@ -154,7 +162,9 @@ class SingleTablePolymorphismWriterTest {
 		person.setVehicle(car);
 		personPersister.insert(person);
 		Person loadedPerson = personPersister.select(person.getId());
-		assertThat(loadedPerson).isEqualTo(person);
+		assertThat(loadedPerson)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(person);
 		
 		// updating embedded value
 		person.setTimestamp(new Timestamp());
@@ -192,8 +202,7 @@ class SingleTablePolymorphismWriterTest {
 		
 		loadedPerson = personPersister.select(person.getId());
 		assertThat(loadedPerson)
-				.usingComparator(Comparator.comparing(personPrinter::toString))
-				.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
 				.isEqualTo(person);
 		// checking for orphan removal (relation was marked as such)
 		assertThat(vehiclePersister.select(new PersistedIdentifier<>(42L))).isNull();
@@ -203,7 +212,9 @@ class SingleTablePolymorphismWriterTest {
 		personPersister.update(person, loadedPerson, true);
 		
 		loadedPerson = personPersister.select(person.getId());
-		assertThat(loadedPerson).isEqualTo(person);
+		assertThat(loadedPerson)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(person);
 		// checking for orphan removal (relation was marked as such)
 		assertThat(vehiclePersister.select(new PersistedIdentifier<>(666L))).isNull();
 		
@@ -213,7 +224,9 @@ class SingleTablePolymorphismWriterTest {
 		personPersister.update(person, loadedPerson, true);
 		
 		loadedPerson = personPersister.select(person.getId());
-		assertThat(loadedPerson).isEqualTo(person);
+		assertThat(loadedPerson)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(person);
 		
 		// testing deletion
 		personPersister.delete(person);

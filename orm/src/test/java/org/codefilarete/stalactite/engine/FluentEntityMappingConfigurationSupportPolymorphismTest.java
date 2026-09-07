@@ -1,10 +1,12 @@
 package org.codefilarete.stalactite.engine;
 
-import javax.sql.DataSource;
 import java.sql.SQLException;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
+import javax.sql.DataSource;
 
+import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
@@ -17,6 +19,7 @@ import org.codefilarete.stalactite.engine.model.Car;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Truck;
 import org.codefilarete.stalactite.engine.model.Vehicle;
+import org.codefilarete.stalactite.id.AbstractIdentifier;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
@@ -24,13 +27,13 @@ import org.codefilarete.stalactite.query.Operators;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
+import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
-import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
@@ -40,6 +43,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentMatchers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
@@ -61,6 +65,10 @@ import static org.mockito.Mockito.verify;
  */
 class FluentEntityMappingConfigurationSupportPolymorphismTest {
 	
+	private static final RecursiveComparisonConfiguration RECURSIVE_COMPARISON_CONFIGURATION = RecursiveComparisonConfiguration.builder()
+			.withComparatorForType((id1, id2) -> (int) ((long) id2.getDelegate() - (long) id1.getDelegate()), AbstractIdentifier.class)
+			.withComparatorForType(Comparator.nullsLast((c1, c2) -> c2.getRgb() - c1.getRgb()), Color.class)
+			.build();
 	private static final Dialect DIALECT = HSQLDBDialectBuilder.defaultHSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private final ConnectionProvider connectionProvider = new CurrentThreadConnectionProvider(dataSource);
@@ -159,10 +167,15 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 		
 		connectionProvider.giveConnection().rollback();
 		
-		assertThat(persister.select(dummyTruck.getId())).isEqualTo(dummyTruckModified);
-		assertThat(persister.select(dummyCar.getId())).isEqualTo(dummyCarModified);
-		assertThat(new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruck.getId())))).isEqualTo(Arrays.asSet(dummyCarModified,
-				dummyTruckModified));
+		assertThat(persister.select(dummyTruck.getId()))
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(dummyTruckModified);
+		assertThat(persister.select(dummyCar.getId()))
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(dummyCarModified);
+		assertThat(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruck.getId())))
+				.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+				.containsExactlyInAnyOrder(dummyCarModified, dummyTruckModified);
 	}
 	
 	@Nested
@@ -213,7 +226,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			
 			// select test
 			AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedCar).isEqualTo(dummyCar);
+			assertThat(loadedCar)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 			
 			// delete test
 			abstractVehiclePersister.delete(dummyCar);
@@ -274,12 +289,18 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			// select test
 			AbstractVehicle loadedVehicle;
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedVehicle).isEqualTo(dummyCar);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertThat(loadedVehicle).isEqualTo(dummyTruck);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyTruck);
 			
 			Set<AbstractVehicle> loadedVehicles = abstractVehiclePersister.selectAll();
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar, dummyTruck);
+			assertThat(loadedVehicles)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyCar, dummyTruck);
 			
 			// delete test
 			abstractVehiclePersister.delete(dummyCar);
@@ -421,22 +442,30 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			// select test
 			Vehicle loadedVehicle;
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedVehicle).isEqualTo(dummyCar);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 			
 			// update test by modifying only parent property
 			dummyCar.setColor(new Color(256));
 			abstractVehiclePersister.update(dummyCar, loadedVehicle, false);
 			
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertThat(loadedVehicle).isEqualTo(dummyTruck);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyTruck);
 			
 			ExecutableQuery<Vehicle> vehicleExecutableQuery1 = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42)));
 			Set<Vehicle> loadedVehicles = vehicleExecutableQuery1.execute(Accumulators.toSet());
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyTruck);
+			assertThat(loadedVehicles)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyTruck);
 			
 			ExecutableQuery<Vehicle> vehicleExecutableQuery = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(256)));
 			loadedVehicles = vehicleExecutableQuery.execute(Accumulators.toSet());
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar);
+			assertThat(loadedVehicles)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyCar);
 			
 			// delete test
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
@@ -526,7 +555,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			verify(updateListenerMock).afterUpdate(any(), eq(true));
 			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
 			dummyCar.setModel("Renault");	// we set back previous value to match verify(..)
-			verify(selectListenerMock, times(1)).afterSelect(Arrays.asHashSet(dummyCar));
+			Car finalDummyCar = dummyCar;
+			verify(selectListenerMock, times(1)).afterSelect(ArgumentMatchers.<Set<Car>>argThat(actualObject -> {
+				assertThat(actualObject).extracting(AbstractVehicle::getId).containsExactly(finalDummyCar.getId());
+				return true;
+			}));
 			
 			// select test
 			clearInvocations(selectListenerMock);
@@ -584,7 +617,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			
 			// select test
 			AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedCar).isEqualTo(dummyCar);
+			assertThat(loadedCar)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 			
 			// delete test
 			abstractVehiclePersister.delete(dummyCar);
@@ -654,12 +689,18 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			// select test
 			AbstractVehicle loadedVehicle;
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedVehicle).isEqualTo(dummyCar);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertThat(loadedVehicle).isEqualTo(dummyTruck);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyTruck);
 			
 			Set<AbstractVehicle> loadedVehicles = abstractVehiclePersister.selectAll();
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar, dummyTruck);
+			assertThat(loadedVehicles)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyCar, dummyTruck);
 			
 			// delete test
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
@@ -783,22 +824,30 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			// select test
 			Vehicle loadedVehicle;
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedVehicle).isEqualTo(dummyCar);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 			
 			// update test by modifying only parent property
 			dummyCar.setColor(new Color(256));
 			abstractVehiclePersister.update(dummyCar, loadedVehicle, false);
 			
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertThat(loadedVehicle).isEqualTo(dummyTruck);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyTruck);
 			
 			ExecutableQuery<Vehicle> vehicleExecutableQuery1 = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42)));
 			Set<Vehicle> loadedVehicles = vehicleExecutableQuery1.execute(Accumulators.toSet());
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyTruck);
+			assertThat(loadedVehicles)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyTruck);
 			
 			ExecutableQuery<Vehicle> vehicleExecutableQuery = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(256)));
 			loadedVehicles = vehicleExecutableQuery.execute(Accumulators.toSet());
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar);
+			assertThat(loadedVehicles)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyCar);
 			
 			// delete test
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
@@ -888,7 +937,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			verify(updateListenerMock).afterUpdate(any(), eq(true));
 			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
 			dummyCar.setModel("Renault");	// we set back previous value to match verify(..)
-			verify(selectListenerMock, times(1)).afterSelect(Arrays.asHashSet(dummyCar));
+			Car finalDummyCar = dummyCar;
+			verify(selectListenerMock, times(1)).afterSelect(ArgumentMatchers.<Set<Car>>argThat(actualObject -> {
+				assertThat(actualObject).extracting(AbstractVehicle::getId).containsExactly(finalDummyCar.getId());
+				return true;
+			}));
 			
 			// select test
 			clearInvocations(selectListenerMock);
@@ -945,7 +998,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			
 			// select test
 			AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedCar).isEqualTo(dummyCar);
+			assertThat(loadedCar)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 			
 			// delete test
 			abstractVehiclePersister.delete(dummyCar);
@@ -1008,12 +1063,18 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			// select test
 			AbstractVehicle loadedVehicle;
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedVehicle).isEqualTo(dummyCar);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertThat(loadedVehicle).isEqualTo(dummyTruck);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyTruck);
 			
 			Set<AbstractVehicle> loadedVehicles = abstractVehiclePersister.selectAll();
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyTruck, dummyCar);
+			assertThat(loadedVehicles)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyTruck, dummyCar);
 			
 			// delete test
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
@@ -1120,17 +1181,25 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			// select test
 			Vehicle loadedVehicle;
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertThat(loadedVehicle).isEqualTo(dummyCar);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyCar);
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertThat(loadedVehicle).isEqualTo(dummyTruck);
+			assertThat(loadedVehicle)
+					.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+					.isEqualTo(dummyTruck);
 			
 			ExecutableQuery<Vehicle> vehicleExecutableQuery1 = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42)));
 			Set<Vehicle> loadedVehicles = vehicleExecutableQuery1.execute(Accumulators.toSet());
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyTruck);
+			assertThat(loadedVehicles)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyTruck);
 			
 			ExecutableQuery<Vehicle> vehicleExecutableQuery = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(666)));
 			loadedVehicles = vehicleExecutableQuery.execute(Accumulators.toSet());
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar);
+			assertThat(loadedVehicles)
+					.usingRecursiveFieldByFieldElementComparator(RECURSIVE_COMPARISON_CONFIGURATION)
+					.containsExactlyInAnyOrder(dummyCar);
 
 			// delete test
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
@@ -1220,7 +1289,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			verify(updateListenerMock).afterUpdate(any(), eq(true));
 			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
 			dummyCar.setModel("Renault");	// we set back previous value to match verify(..)
-			verify(selectListenerMock, times(1)).afterSelect(Arrays.asHashSet(dummyCar));
+			Car finalDummyCar = dummyCar;
+			verify(selectListenerMock, times(1)).afterSelect(ArgumentMatchers.<Set<Car>>argThat(actualObject -> {
+					assertThat(actualObject).extracting(AbstractVehicle::getId).containsExactly(finalDummyCar.getId());
+					return true;
+			}));
 			
 			// select test
 			clearInvocations(selectListenerMock);

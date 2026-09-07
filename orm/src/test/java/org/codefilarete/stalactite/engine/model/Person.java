@@ -34,7 +34,7 @@ public class Person implements Identified<Long> {
 	
 	private Bicycle mainBicycle;
 	
-	private Set<Bicycle> bicycles;
+	private Set<AbstractVehicle> vehicles;
 	
 	private Set<String> nicknames;
 	
@@ -126,12 +126,12 @@ public class Person implements Identified<Long> {
 		this.mainBicycle = mainBicycle;
 	}
 	
-	public Set<Bicycle> getBicycles() {
-		return bicycles;
+	public Set<AbstractVehicle> getVehicles() {
+		return vehicles;
 	}
 	
-	public void setBicycles(Set<Bicycle> bicycles) {
-		this.bicycles = bicycles;
+	public void setVehicles(Set<? extends AbstractVehicle> vehicles) {
+		this.vehicles = (Set<AbstractVehicle>) vehicles;
 	}
 	
 	public Set<String> getNicknames() {
