@@ -14,6 +14,7 @@ import org.codefilarete.stalactite.engine.configurer.model.PolymorphicEntity;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.PolymorphicSkeletonAppender;
+import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.FirstPhaseRelationLoader;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.RelationStorage;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
@@ -95,7 +96,7 @@ public class AggregateOneToOneAppender {
 						relation.getJoin().getKeyMapping());
 			} else {
 				aggregateTree.addMergeJoin(mountPoint,
-						new org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.FirstPhaseRelationLoader<>(idMapping, (Set) targetReader.getMapping().getTargetTable().getPrimaryKey().getColumns(), current2PhasesLoadContext),
+						new FirstPhaseRelationLoader<>(idMapping, (Set) targetReader.getMapping().getTargetTable().getPrimaryKey().getColumns(), current2PhasesLoadContext),
 						join.getLeftKey(),
 						join.getRightKey(),
 						OUTER);

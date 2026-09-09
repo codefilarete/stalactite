@@ -36,7 +36,6 @@ import org.codefilarete.tool.collection.Maps;
 public class TablePerClassPolymorphismWriter<C, I, T extends Table<T>, SUBENTITY extends C> extends EntityWriter<C, I, T>
 		implements PolymorphicWriter<C, I, SUBENTITY> {
 	
-	private final EntityWriteExecutor<C, I> templatePersister;
 	private final Map<Class<SUBENTITY>, EntityWriteExecutor<SUBENTITY, I>> subEntitiesPersisters;
 	
 	public TablePerClassPolymorphismWriter(EntityWriteExecutor<C, I> templatePersister,
@@ -46,31 +45,12 @@ public class TablePerClassPolymorphismWriter<C, I, T extends Table<T>, SUBENTITY
 	) {
 		super(templatePersister.getMapping(), dialect, connectionConfiguration);
 		
-		this.templatePersister = templatePersister;
 		this.subEntitiesPersisters = (Map<Class<SUBENTITY>, EntityWriteExecutor<SUBENTITY, I>>) subEntitiesPersisters;
 	}
 	
 	public Map<Class<SUBENTITY>, EntityWriteExecutor<SUBENTITY, I>> getSubEntitiesPersisters() {
 		return subEntitiesPersisters;
 	}
-	
-	//	@Override
-//	public <LEFTTABLE extends Table<LEFTTABLE>, SUBTABLE extends Table<SUBTABLE>, JOINTYPE> void propagateMappedAssociationToSubTables(
-//			Key<SUBTABLE, JOINTYPE> foreignKey,
-//			PrimaryKey<LEFTTABLE, JOINTYPE> leftPrimaryKey, BiFunction<Key<SUBTABLE, JOINTYPE>, PrimaryKey<LEFTTABLE, JOINTYPE>, String> foreignKeyNamingFunction) {
-//		subEntitiesPersisters.values().stream().forEach(subPersister -> {
-//			SUBTABLE subTable = subPersister.getMainTable();
-//			KeyBuilder<SUBTABLE, JOINTYPE> projectedKeyBuilder = Key.from(subTable);
-//			foreignKey.<Column<SUBTABLE, ?>>getColumns().forEach(column -> {
-//				Column<SUBTABLE, ?> subtableColumn = subTable.addColumn(column.getName(), column.getJavaType(), column.getSize(), column.isNullable());
-//				projectedKeyBuilder.addColumn(subtableColumn);
-//				subPersister.getEntityJoinTree().getRoot().getOriginalColumnsToLocalOnes().put(subtableColumn, subtableColumn);
-//			});
-//			Key<SUBTABLE, JOINTYPE> projectedKey = projectedKeyBuilder.build();
-//			subPersister.getEntityJoinTree().addPassiveJoin(ROOT_JOIN_NAME, foreignKey, projectedKey, JoinType.INNER, Collections.emptySet());
-//			subTable.addForeignKey(foreignKeyNamingFunction, projectedKey, leftPrimaryKey);
-//		});
-//	}
 	
 	@Override
 	public Set<Class<? extends C>> getSupportedEntityTypes() {
@@ -147,7 +127,7 @@ public class TablePerClassPolymorphismWriter<C, I, T extends Table<T>, SUBENTITY
 	 */
 	@Override
 	public EntityMapping<C, I, T> getMapping() {
-		return new EntityMappingWrapper<C, I, T>(templatePersister.getMapping()) {
+		return new EntityMappingWrapper<C, I, T>(super.getMapping()) {
 			@Override
 			public void addTransformerListener(TransformerListener<? super C> listener) {
 				forEachSubPersister(p -> p.getMapping().addTransformerListener(listener));
@@ -171,6 +151,7 @@ public class TablePerClassPolymorphismWriter<C, I, T extends Table<T>, SUBENTITY
 			ShadowColumnValueProvider<D, SUBENTITYTABLE>
 			projectShadowColumnProvider(ShadowColumnValueProvider<C, T> provider, EntityWriteExecutor<D, I> subEntityPersister) {
 				
+				// we create the equivalent columns in the sub-entity table and keep a map to be able to project values from the main entity table to the sub-entity table
 				Map<Column<T, ?>, Column<SUBENTITYTABLE, ?>> projectedColumnMap = new HashMap<>(provider.getColumns().size());
 				provider.getColumns().forEach(c -> {
 					Column<SUBENTITYTABLE, ?> projectedColumn = (Column<SUBENTITYTABLE, ?>) subEntityPersister.getMapping().getTargetTable().addColumn(c.getName(), c.getJavaType(), c.getSize(), c.isNullable());
@@ -187,8 +168,8 @@ public class TablePerClassPolymorphismWriter<C, I, T extends Table<T>, SUBENTITY
 					
 					@Override
 					public Map<Column<SUBENTITYTABLE, ?>, ?> giveValue(D bean) {
-						Map<Column<T, ?>, ?> columnObjectMap = provider.giveValue(bean);
-						return Maps.innerJoin(projectedColumnMap, columnObjectMap);
+						Map<Column<T, ?>, ?> templateColumnValues = provider.giveValue(bean);
+						return Maps.innerJoin(projectedColumnMap, templateColumnValues);
 					}
 				};
 			}

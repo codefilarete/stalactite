@@ -21,7 +21,7 @@ import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
-import org.codefilarete.tool.function.Hanger;
+import org.codefilarete.tool.function.Hanger.Holder;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType.OUTER;
 
@@ -34,7 +34,7 @@ public class JoinTableAppender {
 					  String mountPoint) {
 		
 		DirectRelationJoin<LEFTTABLE, RIGHTTABLE, JOINID> join = relation.getJoin();
-		Hanger.Holder<JoinTablePolymorphicRelationJoinNode<TRGT, LEFTTABLE, RIGHTTABLE, JOINID, TRGTID>> createdJoinHolder = new Hanger.Holder<>();
+		Holder<JoinTablePolymorphicRelationJoinNode<TRGT, LEFTTABLE, RIGHTTABLE, JOINID, TRGTID>> createdJoinHolder = new Holder<>();
 		String joinName = aggregateTree.addJoin(mountPoint, parent -> {
 			JoinTablePolymorphicRelationJoinNode<TRGT, LEFTTABLE, RIGHTTABLE, JOINID, TRGTID> polymorphicRelationJoinNode = new JoinTablePolymorphicRelationJoinNode<>(
 					(JoinNode<SRC, LEFTTABLE>) (JoinNode) parent,

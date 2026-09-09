@@ -29,7 +29,6 @@ import org.codefilarete.tool.collection.KeepOrderSet;
 public class JoinTablePolymorphismWriter<C, I, T extends Table<T>, SUBENTITY extends C> extends EntityWriter<C, I, T>
 		implements PolymorphicWriter<C, I, SUBENTITY> {
 	
-	private final EntityWriteExecutor<C, I> mainPersister;
 	private final Map<Class<SUBENTITY>, EntityWriteExecutor<SUBENTITY, I>> subEntitiesPersisters;
 	
 	public JoinTablePolymorphismWriter(EntityWriteExecutor<C, I> mainPersister,
@@ -39,7 +38,6 @@ public class JoinTablePolymorphismWriter<C, I, T extends Table<T>, SUBENTITY ext
 	) {
 		super(mainPersister.getMapping(), dialect, connectionConfiguration);
 		
-		this.mainPersister = mainPersister;
 		this.subEntitiesPersisters = (Map<Class<SUBENTITY>, EntityWriteExecutor<SUBENTITY, I>>) subEntitiesPersisters;
 	}
 	
@@ -56,21 +54,21 @@ public class JoinTablePolymorphismWriter<C, I, T extends Table<T>, SUBENTITY ext
 	
 	@Override
 	public void doInsert(Iterable<? extends C> entities) {
-		mainPersister.insert(entities);
+		super.doInsert(entities);
 		Map<EntityWriteExecutor<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		entitiesPerType.forEach(InsertExecutor::insert);
 	}
 	
 	@Override
 	public void doUpdateById(Iterable<? extends C> entities) {
-		mainPersister.updateById(entities);
+		super.doUpdateById(entities);
 		Map<EntityWriteExecutor<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		entitiesPerType.forEach(UpdateExecutor::updateById);
 	}
 	
 	@Override
 	public void doUpdate(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
-		mainPersister.update(differencesIterable, allColumnsStatement);
+		super.doUpdate(differencesIterable, allColumnsStatement);
 		
 		doUpdateWithGenerics(differencesIterable, allColumnsStatement);
 	}
@@ -96,14 +94,14 @@ public class JoinTablePolymorphismWriter<C, I, T extends Table<T>, SUBENTITY ext
 	public void doDelete(Iterable<? extends C> entities) {
 		Map<EntityWriteExecutor<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		entitiesPerType.forEach(DeleteExecutor::delete);
-		mainPersister.delete(entities);
+		super.doDelete(entities);
 	}
 	
 	@Override
 	public void doDeleteById(Iterable<? extends C> entities) {
 		Map<EntityWriteExecutor<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		entitiesPerType.forEach(DeleteExecutor::deleteById);
-		mainPersister.deleteById(entities);
+		super.doDeleteById(entities);
 	}
 	
 	private <D extends C> Map<EntityWriteExecutor<D, I>, Set<D>> computeEntitiesPerPersister(Iterable<? extends C> entities) {
@@ -133,11 +131,25 @@ public class JoinTablePolymorphismWriter<C, I, T extends Table<T>, SUBENTITY ext
 	 */
 	@Override
 	public EntityMapping<C, I, T> getMapping() {
-		return new EntityMappingWrapper<C, I, T>(mainPersister.getMapping()) {
+		EntityMapping<C, I, T> superMapping = super.getMapping();
+		return new EntityMappingWrapper<C, I, T>(superMapping) {
 			@Override
 			public void addTransformerListener(TransformerListener<? super C> listener) {
 				super.addTransformerListener(listener);
 				subEntitiesPersisters.values().forEach(persister -> persister.getMapping().addTransformerListener(listener));
+			}
+			
+			// TODO: those methods are invoked for relation handling when it's owned by target (OneToOneOwnedByTargetEngine), which doesn't handle sub-entities relations: we don't know where to put the shadowColumn.
+			//  For now, doing it on superMapping is fine because we only handle template relations, but later, we'll face a problem, which promote a dedicated method
+			
+			@Override
+			public void addShadowColumnInsert(ShadowColumnValueProvider<C, T> provider) {
+				superMapping.addShadowColumnInsert(provider);
+			}
+			
+			@Override
+			public void addShadowColumnUpdate(ShadowColumnValueProvider<C, T> provider) {
+				superMapping.addShadowColumnUpdate(provider);
 			}
 		};
 	}

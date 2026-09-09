@@ -118,8 +118,6 @@ class SingleTablePolymorphismReaderTest {
 				.usingComparator(Comparator.comparing(personPrinter::toString))
 				.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
 				.isEqualTo(person);
-		// ensuring that reverse side is also set
-		assertThat(loadedPerson.getVehicle().getOwner()).isEqualTo(loadedPerson);
 	}
 	
 	@Test

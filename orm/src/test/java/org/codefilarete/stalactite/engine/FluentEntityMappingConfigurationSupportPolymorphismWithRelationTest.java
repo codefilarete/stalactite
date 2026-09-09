@@ -12,12 +12,12 @@ import java.util.stream.Stream;
 
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.codefilarete.stalactite.dsl.FluentMappings;
-import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.embeddable.FluentEmbeddableMappingBuilder;
 import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToManyOptions;
 import org.codefilarete.stalactite.dsl.entity.FluentMappingBuilderOneToOneOptions;
-import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
@@ -46,15 +46,15 @@ import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.query.Operators;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
+import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
-import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.StringAppender;
@@ -73,10 +73,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentMatchers;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy.alreadyAssigned;
 import static org.codefilarete.stalactite.dsl.FluentMappings.embeddableBuilder;
 import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.stalactite.dsl.FluentMappings.subentityBuilder;
+import static org.codefilarete.stalactite.dsl.idpolicy.IdentifierPolicy.alreadyAssigned;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
@@ -1903,7 +1903,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			EntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
-					.mapOneToOne(Person::getVehicle, vehicleConfiguration).mappedBy(Vehicle::getOwner).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+					.mapOneToOne(Person::getVehicle, vehicleConfiguration)
+						.mappedBy(Vehicle::getOwner)
+						.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapSuperClass(timestampedPersistentBeanMapping)
 					.build(persistenceContext);
 			
@@ -1915,7 +1917,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// insert
 			Person person = new Person(1);
-			person.setVehicle(new Car(42L));
+			Car car = new Car(42L);
+			person.setVehicle(car);
+			car.setOwner(person);
 			testInstance.insert(person);
 			Person loadedPerson = testInstance.select(person.getId());
 			assertThat(loadedPerson)
@@ -1932,7 +1936,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.isEqualTo(person);
 			
 			// updating one-to-one relation
-			person.setVehicle(new Truck(666L));
+			Truck truck = new Truck(666L);
+			person.setVehicle(truck);
+			truck.setOwner(person);
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
@@ -1955,7 +1961,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			
 			// setting new one-to-one relation
-			person.setVehicle(new Truck(17L));
+			Truck truck17 = new Truck(17L);
+			person.setVehicle(truck17);
+			truck17.setOwner(person);
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
@@ -2036,8 +2044,6 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.usingComparator(Comparator.comparing(personPrinter::toString))
 					.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
 					.isEqualTo(person);
-			// ensuring that reverse side is also set
-			assertThat(loadedPerson.getVehicle().getOwner()).isEqualTo(loadedPerson);
 			
 			// updating one-to-one relation
 			person.setVehicle(new Truck(666L));
@@ -2114,6 +2120,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			Car car = new Car(42L);
 			car.setColor(new Color(17));
 			person.setVehicle(car);
+			car.setOwner(person);
 			testInstance.insert(person);
 			Person loadedPerson = testInstance.select(person.getId());
 			assertThat(loadedPerson)
@@ -2175,7 +2182,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			
 			// setting new one-to-one relation
-			person.setVehicle(new Truck(17L));
+			Truck truck17 = new Truck(17L);
+			person.setVehicle(truck17);
+			truck17.setOwner(person);
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
@@ -2262,31 +2271,33 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		// - load relation separately
 		return Stream.of(PolymorphismType.values())
 				.flatMap(type -> Stream.of(true, false)
-						.flatMap(withAssociationTable -> Stream.of(true, false)
+						.flatMap(ownedByReverseSide -> Stream.of(true, false)
 								// we skip TABLE_PER_CLASS with relation owned by reverse side because it can't be implemented
-								.filter(x -> !(type == PolymorphismType.TABLE_PER_CLASS && !withAssociationTable))
+								.filter(x -> !(type == PolymorphismType.TABLE_PER_CLASS && !ownedByReverseSide))
 								.map(fetchSeparately -> {
 									PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
-									String testCaseName = new StringAppender().ccat(withAssociationTable ? "association table" : "relation owned by table", fetchSeparately ? "fetch separately" : "query with join", type, ", ").toString();
+									String testCaseName = new StringAppender().ccat(ownedByReverseSide ? "owned by target" : "owned by source", fetchSeparately ? "fetch separately" : "query with join", type, ", ").toString();
 									return new Object[] {
 											testCaseName,
-											generateOneToPolymorphicOneTestCase(type, withAssociationTable, fetchSeparately, persistenceContext), persistenceContext,
+											generateOneToPolymorphicOneTestCase(type, ownedByReverseSide, fetchSeparately, persistenceContext), persistenceContext,
 											// following info are only for assertion purpose
-											withAssociationTable,
-											type == PolymorphismType.TABLE_PER_CLASS };
+											ownedByReverseSide,
+											};
 								})));
 	}
 	
 	@ParameterizedTest(name = "{0}")
 	@MethodSource
 	void oneToPolymorphicOne_crud(String displayName, EntityPersister<Person, Identifier<Long>> testInstance, PersistenceContext persistenceContext,
-								   boolean withAssociationTable,
-								   boolean isTablePerClass) {
+								   boolean ownedByReverseSide) {
 		// insert
 		Person person = new Person(1);
 		Car car = new Car(42L);
 		car.setColor(new Color(17));
 		person.setVehicle(car);
+		if (ownedByReverseSide) {
+			car.setOwner(person);
+		}
 		testInstance.insert(person);
 		Person loadedPerson = testInstance.select(person.getId());
 		assertThat(loadedPerson)
@@ -2321,8 +2332,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 				.usingComparator(Comparator.comparing(personPrinter::toString))
 				.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
 				.isEqualTo(person);
-		// ensuring that reverse side is also set
-		assertThat(loadedPerson.getVehicle().getOwner()).isEqualTo(loadedPerson);
+		if (ownedByReverseSide) {
+			// ensuring that reverse side is also set
+			assertThat(loadedPerson.getVehicle().getOwner()).isEqualTo(loadedPerson);
+		}
 		
 		// updating one-to-one relation
 		person.setVehicle(new Truck(666L));
@@ -2349,7 +2362,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		
 		// setting new one-to-one relation
-		person.setVehicle(new Truck(17L));
+		Truck truck = new Truck(17L);
+		person.setVehicle(truck);
+		if (ownedByReverseSide) {
+			truck.setOwner(person);
+		}
 		testInstance.update(person, loadedPerson, true);
 		
 		loadedPerson = testInstance.select(person.getId());

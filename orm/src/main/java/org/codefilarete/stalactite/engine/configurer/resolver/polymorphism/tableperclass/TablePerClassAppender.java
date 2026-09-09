@@ -62,7 +62,7 @@ public class TablePerClassAppender {
 		
 		DirectRelationJoin<LEFTTABLE, RIGHTTABLE, JOINID> join = relation.getJoin();
 		
-		TablePerClassUnion<?, TRGTID> union = buildUnion(subPersisters, targetPersister.getMapping().getSelectableColumns());
+		TablePerClassUnion<?, TRGTID> union = buildUnion(subPersisters, targetPersister.getMapping().getSelectableColumns(), join.getRightKey());
 		PseudoTable pseudoTable = union.asPseudoTable(targetPersister.getClassToPersist().getSimpleName());
 		PseudoColumn<Integer> discriminatorPseudoColumn = pseudoTable.findColumn(union.getDiscriminatorColumn().getExpression());
 		
@@ -127,7 +127,8 @@ public class TablePerClassAppender {
 	
 	private <TRGT, TRGTID, RIGHTTABLE extends Table<RIGHTTABLE>, SUBTRGT extends TRGT>
 	TablePerClassUnion<SUBTRGT, TRGTID> buildUnion(Iterable<? extends ConfiguredEntityReader<? extends TRGT, TRGTID, ?>> subPersisters,
-												   Set<Column<RIGHTTABLE, ?>> persisterColumns) {
+												   Set<Column<RIGHTTABLE, ?>> persisterColumns,
+												   Key<RIGHTTABLE, ?> joinKey) {
 		// Union will contain only 3 columns :
 		// - discriminator
 		// - entity primary key
@@ -138,6 +139,10 @@ public class TablePerClassAppender {
 		// To build the union we need the columns that are common to all persisters
 		Set<QualifiedSelectable<?, ?>> commonColumns = new KeepOrderSet<>();
 		commonColumns.addAll(persisterColumns);
+		// We add the right join key which can be either the primary key (if relation is owned by source) or a foreign key (if relation is owned by target)
+		// If it is the primary key it will be a duplicate because persisterColumns already contains it but won't
+		// be added since we use a Set
+		commonColumns.addAll(joinKey.getColumns());
 
 		Set<String> commonColumnsNames = commonColumns.stream().map(QualifiedSelectable::getExpression).collect(Collectors.toSet());
 		

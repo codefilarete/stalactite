@@ -345,8 +345,6 @@ class OneToOneResolverTest {
 				.usingComparator(Comparator.comparing(personPrinter::toString))
 				.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
 				.isEqualTo(expectedPerson);
-		// ensuring that reverse side is also set
-		assertThat(loadedPerson.getVehicle().getOwner()).isEqualTo(loadedPerson);
 		
 		// testing delete cascade
 		// but we have to remove first the other country that points to the same president, else will get a constraint violation

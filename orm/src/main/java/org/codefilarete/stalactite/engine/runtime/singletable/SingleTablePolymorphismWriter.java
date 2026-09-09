@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.codefilarete.stalactite.engine.DeleteExecutor;
@@ -35,7 +36,6 @@ import org.codefilarete.tool.collection.KeepOrderSet;
 public class SingleTablePolymorphismWriter<C, I, T extends Table<T>, SUBENTITY extends C, DTYPE> extends EntityWriter<C, I, T>
 		implements PolymorphicWriter<C, I, SUBENTITY> {
 	
-	private final EntityWriteExecutor<C, I> mainPersister;
 	private final Map<Class<SUBENTITY>, EntityWriteExecutor<SUBENTITY, I>> subEntitiesPersisters;
 	
 	public SingleTablePolymorphismWriter(EntityWriteExecutor<C, I> mainPersister,
@@ -46,7 +46,6 @@ public class SingleTablePolymorphismWriter<C, I, T extends Table<T>, SUBENTITY e
 	                                     ConnectionConfiguration connectionConfiguration) {
 		super(mainPersister.getMapping(), dialect, connectionConfiguration);
 		
-		this.mainPersister = mainPersister;
 		this.subEntitiesPersisters = (Map<Class<SUBENTITY>, EntityWriteExecutor<SUBENTITY, I>>) subEntitiesPersisters;
 		
 		ShadowColumnValueProvider<C, T> discriminatorColumnValueProvider = new ShadowColumnValueProvider<C, T>() {
@@ -151,20 +150,24 @@ public class SingleTablePolymorphismWriter<C, I, T extends Table<T>, SUBENTITY e
 	 */
 	@Override
 	public EntityMapping<C, I, T> getMapping() {
-		return new EntityMappingWrapper<C, I, T>(mainPersister.getMapping()) {
+		return new EntityMappingWrapper<C, I, T>(super.getMapping()) {
 			@Override
 			public void addTransformerListener(TransformerListener<? super C> listener) {
-				subEntitiesPersisters.values().forEach(p -> ((EntityMapping) p.getMapping()).addTransformerListener(listener));
+				forEachSubPersister(p -> p.getMapping().addTransformerListener(listener));
 			}
 			
 			@Override
 			public void addShadowColumnInsert(ShadowColumnValueProvider<C, T> provider) {
-				subEntitiesPersisters.values().forEach(p -> ((EntityMapping) p.getMapping()).addShadowColumnInsert(provider));
+				forEachSubPersister(p -> ((EntityMapping) p.getMapping()).addShadowColumnInsert(provider));
 			}
 			
 			@Override
 			public void addShadowColumnUpdate(ShadowColumnValueProvider<C, T> provider) {
-				subEntitiesPersisters.values().forEach(p -> ((EntityMapping) p.getMapping()).addShadowColumnUpdate(provider));
+				forEachSubPersister(p -> ((EntityMapping) p.getMapping()).addShadowColumnUpdate(provider));
+			}
+			
+			void forEachSubPersister(Consumer<EntityWriteExecutor<SUBENTITY, I>> consumer) {
+				subEntitiesPersisters.values().forEach(consumer);
 			}
 		};
 	}
