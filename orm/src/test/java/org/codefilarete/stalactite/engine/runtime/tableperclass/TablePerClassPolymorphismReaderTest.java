@@ -1,6 +1,8 @@
 package org.codefilarete.stalactite.engine.runtime.tableperclass;
 
 import java.util.Comparator;
+import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 import javax.sql.DataSource;
 
@@ -29,6 +31,7 @@ import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
 import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Functions;
 import org.codefilarete.trace.ObjectPrinterBuilder;
 import org.codefilarete.trace.ObjectPrinterBuilder.ObjectPrinter;
@@ -268,5 +271,91 @@ class TablePerClassPolymorphismReaderTest {
 				.usingComparator(Comparator.comparing(personPrinter::toString))
 				.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
 				.isEqualTo(person);
+	}
+	
+	@Test
+	@UseCase(relation = @Relation(type = ONE_TO_MANY, polymorphism = TABLE_PER_CLASS, ownership = BY_TARGET, fetch = SEPARATE_QUERY))
+	void oneToTablePerClassMany_ownedByTarget_fetchSeparately() {
+		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
+		
+		FluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
+				embeddableBuilder(Person.class)
+						.map(Person::getName)
+						.embed(Person::getTimestamp, embeddableBuilder(Timestamp.class)
+								.map(Timestamp::getCreationDate)
+								.map(Timestamp::getModificationDate));
+		
+		FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
+				entityBuilder(Vehicle.class, LONG_TYPE)
+						.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
+						.map(Vehicle::getColor)
+						.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
+								.addSubClass(subentityBuilder(Truck.class), "TRUCK")
+								.addSubClass(subentityBuilder(Car.class), "CAR")
+						);
+		
+		Comparator<AbstractVehicle> vehicleComparator = Comparator.comparing(v -> v.getId().getDelegate());
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
+				.mapKey(Person::getId, ALREADY_ASSIGNED)
+				.mapOneToMany(Person::getVehicles, vehicleConfiguration)
+					.fetchSeparately()
+					.mappedBy(AbstractVehicle::getOwner)
+					.initializeWith(() -> new TreeSet<>(vehicleComparator))	// only for test stability
+				.mapSuperClass(timestampedPersistentBeanMapping);
+		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		// insert
+		Person person1 = new Person(1);
+		Car car1 = new Car(142L);
+		car1.setColor(new Color(42));
+		Truck truck1 = new Truck(117L);
+		person1.setVehicles(Arrays.asTreeSet(vehicleComparator, car1, truck1));
+		Person person2 = new Person(2);
+		Car car2 = new Car(242L);
+		car2.setColor(new Color(42));
+		Truck truck2 = new Truck(217L);
+		person2.setVehicles(Arrays.asTreeSet(vehicleComparator, car2, truck2));
+		
+		personPersister.insert(person1, person2);
+		
+		Set<Person> loadedPersons = personPersister.select(person1.getId(), person2.getId());
+		Map<Identifier<Long>, Person> loadedPersonsPerId = Iterables.map(loadedPersons, Person::getId);
+		Person loadedPerson1 = loadedPersonsPerId.get(person1.getId());
+		Person loadedPerson2 = loadedPersonsPerId.get(person2.getId());
+		
+		// we use a printer to compare our results because entities override equals() which only keep "id" into account
+		// which is far from sufficient for ou checking
+		// Note that we don't use ObjectPrinterBuilder#printerFor because it takes getCities() into account whereas its code is not ready for recursion 
+		ObjectPrinter<Person> personIdPrinter = new ObjectPrinterBuilder<Person>()
+				.addProperty(Person::getId)
+				.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
+				.build();
+		ObjectPrinter<AbstractVehicle> vehiclePrinter = new ObjectPrinterBuilder<AbstractVehicle>()
+				.addProperty(AbstractVehicle::getId)
+				.addProperty(Vehicle::getColor)
+				.addProperty(Vehicle::getOwner)
+				.withPrinter(Identifier.class, Functions.chain(Identifier::getDelegate, String::valueOf))
+				.build();
+		ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
+				.addProperty(Person::getName)
+				.addProperty(Person::getTimestamp)
+				.addProperty(Person::getVehicles, AbstractVehicle.class)
+				.withPrinter(Vehicle.class, vehiclePrinter::toString)
+				.build();
+		
+		assertThat(loadedPerson1)
+				.usingComparator(Comparator.comparing(personPrinter::toString))
+				.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
+				.isEqualTo(person1);
+		
+		assertThat(loadedPerson2)
+				.usingComparator(Comparator.comparing(personPrinter::toString))
+				.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
+				.isEqualTo(person2);
 	}
 }

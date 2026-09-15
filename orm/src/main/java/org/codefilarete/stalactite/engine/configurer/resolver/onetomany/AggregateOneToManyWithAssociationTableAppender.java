@@ -216,7 +216,7 @@ public class AggregateOneToManyWithAssociationTableAppender {
 						
 						// we sew the relations
 						result.forEach(src -> {
-							// filling final collection with a sorted collection
+							// filling the collection
 							Set<TRGTID> sourceTargetId = targetIdPerSource.get(src);
 							if (sourceTargetId != null) {  // targetIdPerIndex can be null if there's no associated entity in the database
 								Set<TRGT> sourceTargets = sourceTargetId.stream().map(targetPerId::get).collect(Collectors.toSet());

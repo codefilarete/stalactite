@@ -2,7 +2,9 @@ package org.codefilarete.stalactite.engine.configurer.resolver.onetomany;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.function.Function;
@@ -16,6 +18,7 @@ import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRela
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.GraftableRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.PolymorphicSkeletonAppender;
+import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.RelationStorage;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.FirstPhaseRelationLoader;
@@ -50,17 +53,69 @@ public class AggregateOneToManyWithMappedAssociationAppender {
 		
 		DirectRelationJoin<LEFTTABLE, RIGHTTABLE, SRCID> join = (DirectRelationJoin<LEFTTABLE, RIGHTTABLE, SRCID>) relation.getJoin();
 		if (relation.isFetchSeparately()) {
-			ThreadLocal<Queue<Set<RelationIds<SRC /* E */, TRGT /* target */, TRGTID /* target identifier */>>>> CURRENT_2PHASES_LOAD_CONTEXT = new ThreadLocal<>();
-			aggregateTree.addMergeJoin(mountPoint,
-					new FirstPhaseRelationLoader<>(targetReader.getMapping().getIdMapping(), targetReader,
-							(ThreadLocal<Queue<Set<RelationIds<Object, TRGT, TRGTID>>>>) (ThreadLocal) CURRENT_2PHASES_LOAD_CONTEXT),
-					join.getLeftKey(),
-					join.getRightKey(),
-					OUTER);
-			// adding second phase loader
-			sourceReader.addSelectListener(new SecondPhaseRelationLoader<>(relation.getRelationFixer(), CURRENT_2PHASES_LOAD_CONTEXT));
-			// Note that because the relation is loaded separately, next joins should be appended to the target entity join tree,
-			// not the given as argument one, so we return a GraftPoint with the target persister and its join tree. And it should be grafted on ROOT_JOIN_NAME
+			ThreadLocal<RelationStorage<SRC, TRGTID>> current2PhasesLoadContext = new ThreadLocal<>();
+			if (relation.getTargetEntity() instanceof PolymorphicEntity) {
+				EntityPolymorphism<TRGT, Object> polymorphism = ((PolymorphicEntity<TRGT, Object, RIGHTTABLE>) relation.getTargetEntity()).getPolymorphism();
+				
+				polymorphicSkeletonAppender.appendForSeparateLoad(
+						aggregateTree,
+						polymorphism,
+						targetReader,
+						mountPoint,
+						current2PhasesLoadContext,
+						join.getKeyMapping());
+				// adding second phase loader
+				sourceReader.addSelectListener(new SelectListener<SRC, SRCID>() {
+					@Override
+					public void beforeSelect(Iterable<SRCID> ids) {
+						current2PhasesLoadContext.set(new RelationStorage<>());
+					}
+					
+					@Override
+					public void afterSelect(Set<? extends SRC> result) {
+						// we load all the target entities (of all sources, for efficiency)
+						Map<SRC, Set<TRGTID>> targetIdPerSource = current2PhasesLoadContext.get().getTargetIdPerSource();
+						Set<TRGTID> trgtids = targetIdPerSource.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
+						if (!trgtids.isEmpty()) {	// we only avoid some extra work if there's nothing to do
+							Set<TRGT> targets = targetReader.select(trgtids);
+							Map<TRGTID, TRGT> targetPerId = new HashMap<>(Iterables.map(targets, targetReader.getMapping()::getId));
+							
+							// we sew the relations
+							result.forEach(src -> {
+								// filling the collection
+								Set<TRGTID> sourceTargetId = targetIdPerSource.get(src);
+								if (sourceTargetId != null) {  // targetIdPerIndex can be null if there's no associated entity in the database
+									Set<TRGT> sourceTargets = sourceTargetId.stream().map(targetPerId::get).collect(Collectors.toSet());
+									sourceTargets.forEach(target -> relation.getRelationFixer().apply(src, target));
+								}
+							});
+						}
+						
+						clearContext();
+					}
+					
+					@Override
+					public void onSelectError(Iterable<SRCID> ids, RuntimeException exception) {
+						clearContext();
+					}
+					
+					private void clearContext() {
+						current2PhasesLoadContext.remove();
+					}
+				});
+			} else {
+				ThreadLocal<Queue<Set<RelationIds<SRC /* E */, TRGT /* target */, TRGTID /* target identifier */>>>> CURRENT_2PHASES_LOAD_CONTEXT = new ThreadLocal<>();
+				aggregateTree.addMergeJoin(mountPoint,
+						new FirstPhaseRelationLoader<>(targetReader.getMapping().getIdMapping(), targetReader,
+								(ThreadLocal<Queue<Set<RelationIds<Object, TRGT, TRGTID>>>>) (ThreadLocal) CURRENT_2PHASES_LOAD_CONTEXT),
+						join.getLeftKey(),
+						join.getRightKey(),
+						OUTER);
+				// adding second phase loader
+				sourceReader.addSelectListener(new SecondPhaseRelationLoader<>(relation.getRelationFixer(), CURRENT_2PHASES_LOAD_CONTEXT));
+				// Note that because the relation is loaded separately, next joins should be appended to the target entity join tree,
+				// not the given as argument one, so we return a GraftPoint with the target persister and its join tree. And it should be grafted on ROOT_JOIN_NAME
+			}
 			result = new GraftPoint(relation.getTargetEntity(), targetReader, ROOT_JOIN_NAME, targetReader.getEntityJoinTree());
 		} else {
 			
