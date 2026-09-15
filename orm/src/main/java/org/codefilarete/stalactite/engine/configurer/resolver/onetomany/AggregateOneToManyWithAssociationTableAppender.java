@@ -16,6 +16,7 @@ import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJ
 import org.codefilarete.stalactite.engine.configurer.model.PolymorphicEntity;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.GraftableRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.PolymorphicSkeletonAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.AssociationTableLoader;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.RelationStorage;
@@ -59,6 +60,8 @@ import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.Joi
  */
 public class AggregateOneToManyWithAssociationTableAppender {
 	
+	private final PolymorphicSkeletonAppender polymorphicSkeletonAppender = new PolymorphicSkeletonAppender();
+	
 	public <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
 	GraftPoint append(ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
 	                  ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
@@ -68,49 +71,70 @@ public class AggregateOneToManyWithAssociationTableAppender {
 	                  Dialect dialect,
 	                  ConnectionProvider connectionProvider) {
 		
-		// Preparing for next iteration
 		// Note that we can't set the correct generics types to the GraftPoint instance
 		// because we go a step further in the relation by shifting the types from SRC to TRGT
 		return appendAssociation(sourcePersister, targetPersister, relation, relation.getAccessor(), aggregateTree, mountPoint, dialect, connectionProvider);
 	}
 	
 	private <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, ASSOCIATIONTABLE extends AssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
-	GraftPoint appendAssociation(ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
-	                             ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
+	GraftPoint appendAssociation(ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourceReader,
+	                             ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetReader,
 	                             ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
 	                             PropertyAccessor<SRC, S> accessor,
-	                             EntityJoinTree<SRC, SRCID> entityJoinTree,
+	                             EntityJoinTree<SRC, SRCID> aggregateTree,
 	                             String mountPoint,
 	                             Dialect dialect,
 	                             ConnectionProvider connectionProvider) {
+		GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> result;
+		
 		Function<ColumnedRow, Object> duplicateIdentifierProvider = null;
 		
 		IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID> join = (IntermediaryRelationJoin) relation.getJoin();
 		if (relation.isFetchSeparately()) {
 			// Note that the aggregate tree is not modified at all: the association table is the root of a dedicated
 			// tree owned by the loader below, which prevents the main query from returning too many rows
-			return appendSeparatelyFetchedAssociation(sourcePersister, targetPersister, relation, join, mountPoint, dialect, connectionProvider);
+			result = appendSeparatelyFetchedAssociation(sourceReader, targetReader, relation, join, mountPoint, dialect, connectionProvider);
 		} else {
-			// we join on the association table
-			String associationTableJoinName = entityJoinTree.addPassiveJoin(
-					mountPoint,
-					join.getLeftKey(),
-					join.getLeftAssociationKey(),
-					OUTER,
-					Collections.emptySet());
-			String manyJoinName = entityJoinTree.addRelationJoin(
-					associationTableJoinName,
-					new EntityMappingAdapter<>(targetPersister.<RIGHTTABLE>getMapping()),
-					accessor,
-					join.getRightAssociationKey(),
-					join.getRightKey(),
-					null,
-					OUTER,
-					relation.getRelationFixer(),
-					Collections.emptySet(),
-					duplicateIdentifierProvider);
-			return new GraftPoint(relation.getTargetEntity(), targetPersister, manyJoinName, entityJoinTree);
+			if (relation.getTargetEntity() instanceof PolymorphicEntity) {
+				EntityPolymorphism<TRGT, Object> polymorphism = ((PolymorphicEntity<TRGT, Object, RIGHTTABLE>) relation.getTargetEntity()).getPolymorphism();
+				
+				GraftableRelation<SRC, TRGT, TRGTID, ASSOCIATIONTABLE, RIGHTTABLE, TRGTID> graftableRelation = GraftableRelation.forOneToManyRelationWithAssociationTable(relation);
+				String associationTableJoinName = aggregateTree.addPassiveJoin(
+						mountPoint,
+						join.getLeftKey(),
+						join.getLeftAssociationKey(),
+						OUTER,
+						Collections.emptySet());
+				result = polymorphicSkeletonAppender.append(
+						aggregateTree,
+						polymorphism,
+						targetReader,
+						graftableRelation,
+						associationTableJoinName);
+			} else {
+				// we join on the association table
+				String associationTableJoinName = aggregateTree.addPassiveJoin(
+						mountPoint,
+						join.getLeftKey(),
+						join.getLeftAssociationKey(),
+						OUTER,
+						Collections.emptySet());
+				String manyJoinName = aggregateTree.addRelationJoin(
+						associationTableJoinName,
+						new EntityMappingAdapter<>(targetReader.<RIGHTTABLE>getMapping()),
+						accessor,
+						join.getRightAssociationKey(),
+						join.getRightKey(),
+						null,
+						OUTER,
+						relation.getRelationFixer(),
+						Collections.emptySet(),
+						duplicateIdentifierProvider);
+				result = new GraftPoint(relation.getTargetEntity(), targetReader, manyJoinName, aggregateTree);
+			}
 		}
+		
+		return result;
 	}
 	
 	/**

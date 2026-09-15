@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.runtime.jointable;
 
 import java.sql.SQLException;
 import java.util.Comparator;
+import java.util.TreeSet;
 import javax.sql.DataSource;
 
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
@@ -126,7 +127,7 @@ class JoinTablePolymorphismWriterTest {
 	
 	
 	@Test
-	void oneToJoinTable_crud() {
+	void oneToJoinTableOne_crud() {
 		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
 		
 		FluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
@@ -237,7 +238,7 @@ class JoinTablePolymorphismWriterTest {
 	}
 	
 	@Test
-	void oneToJoinTable_ownedByTarget_crud() {
+	void oneToJoinTableOne_ownedByTarget_crud() {
 		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
 		
 		FluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
@@ -356,5 +357,119 @@ class JoinTablePolymorphismWriterTest {
 		assertThat(personPersister.select(person.getId())).isNull();
 		// checking for orphan removal (relation was marked as such)
 		assertThat(vehiclePersister.select(new PersistedIdentifier<>(17L))).isNull();
+	}
+	
+	@Test
+	void oneToJoinTableMany_crud() {
+		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
+		
+		FluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
+				embeddableBuilder(Person.class)
+						.map(Person::getName)
+						.embed(Person::getTimestamp, embeddableBuilder(Timestamp.class)
+								.map(Timestamp::getCreationDate)
+								.map(Timestamp::getModificationDate));
+		
+		FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
+				entityBuilder(Vehicle.class, LONG_TYPE)
+						.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
+						.map(Vehicle::getColor)
+						.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
+								.addSubClass(subentityBuilder(Truck.class), "TRUCK")
+								.addSubClass(subentityBuilder(Car.class), "CAR")
+						);
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Vehicle, Identifier<Long>> vehiclePersister = testInstance.resolve(vehicleConfiguration.getConfiguration());
+		
+		Comparator<AbstractVehicle> vehicleComparator = Comparator.comparing(v -> v.getId().getDelegate());
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
+				.mapKey(Person::getId, ALREADY_ASSIGNED)
+				.mapOneToMany(Person::getVehicles, vehicleConfiguration)
+				.cascading(ALL_ORPHAN_REMOVAL)
+				.initializeWith(() -> new TreeSet<>(vehicleComparator))	// only for test stability
+				.mapSuperClass(timestampedPersistentBeanMapping);
+		
+		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		// insert
+		Person person = new Person(1);
+		Car car = new Car(42L);
+		car.setColor(new Color(42));
+		Truck truck = new Truck(17L);
+		person.setVehicles(Arrays.asTreeSet(vehicleComparator, car, truck));
+		
+		personPersister.insert(person);
+		Person loadedPerson = personPersister.select(person.getId());
+		assertThat(loadedPerson)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(person);
+		
+		// updating embedded value
+		person.setTimestamp(new Timestamp());
+		personPersister.update(person, loadedPerson, true);
+		
+		loadedPerson = personPersister.select(person.getId());
+		
+		
+		// we use a printer to compare our results because entities override equals() which only keep "id" into account
+		// which is far from sufficient for ou checking
+		// Note that we don't use ObjectPrinterBuilder#printerFor because it takes getCities() into account whereas its code is not ready for recursion 
+		ObjectPrinterBuilder.ObjectPrinter<AbstractVehicle> vehiclePrinter = new ObjectPrinterBuilder<AbstractVehicle>()
+				.addProperty(AbstractVehicle::getId)
+				.addProperty(Vehicle::getColor)
+				.withPrinter(Identifier.class, Functions.chain(Identifier::getDelegate, String::valueOf))
+				.build();
+		ObjectPrinterBuilder.ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
+				.addProperty(Person::getName)
+				.addProperty(Person::getTimestamp)
+				.addProperty(Person::getVehicles, AbstractVehicle.class)
+				.withPrinter(Vehicle.class, vehiclePrinter::toString)
+				.build();
+		
+		assertThat(loadedPerson)
+				.usingComparator(Comparator.comparing(personPrinter::toString))
+				.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
+				.isEqualTo(person);
+		
+		// updating one-to-one relation
+		person.getVehicles().removeIf(car::equals);
+		personPersister.update(person, loadedPerson, true);
+		
+		loadedPerson = personPersister.select(person.getId());
+		assertThat(loadedPerson)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(person);
+		// checking for orphan removal (relation was marked as such)
+		assertThat(vehiclePersister.select(car.getId())).isNull();
+		
+		// nullifying one-to-many relation
+		person.setVehicles(null);
+		personPersister.update(person, loadedPerson, true);
+		
+		loadedPerson = personPersister.select(person.getId());
+		assertThat(loadedPerson)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(person);
+		// checking for orphan removal (relation was marked as such)
+		assertThat(vehiclePersister.select(truck.getId())).isNull();
+		
+		// setting new one-to-one relation
+		Truck lonelyTruck = new Truck(666L);
+		person.setVehicles(Arrays.asTreeSet(vehicleComparator, lonelyTruck));
+		personPersister.update(person, loadedPerson, true);
+		
+		loadedPerson = personPersister.select(person.getId());
+		assertThat(loadedPerson)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(person);
+		
+		// testing deletion
+		personPersister.delete(person);
+		assertThat(personPersister.select(person.getId())).isNull();
+		// checking for orphan removal (relation was marked as such)
+		assertThat(vehiclePersister.select(lonelyTruck.getId())).isNull();
 	}
 }

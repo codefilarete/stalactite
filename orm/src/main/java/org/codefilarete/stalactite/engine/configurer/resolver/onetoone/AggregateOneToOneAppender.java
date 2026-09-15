@@ -13,6 +13,7 @@ import org.codefilarete.stalactite.engine.configurer.model.EntityPolymorphism;
 import org.codefilarete.stalactite.engine.configurer.model.PolymorphicEntity;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.GraftableRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.PolymorphicSkeletonAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.FirstPhaseRelationLoader;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.RelationStorage;
@@ -29,6 +30,7 @@ import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 
+import static org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.GraftableRelation.forOneToOneRelationOwnedByTarget;
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType.OUTER;
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
 
@@ -53,10 +55,10 @@ public class AggregateOneToOneAppender {
 	 */
 	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
 	GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> append(ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> relation,
-	                                                        ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
-	                                                        ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetReader,
-	                                                        String mountPoint,
-	                                                        EntityJoinTree<SRC, SRCID> aggregateTree) {
+																			  ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
+																			  ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetReader,
+																			  String mountPoint,
+																			  EntityJoinTree<SRC, SRCID> aggregateTree) {
 		
 		GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> result;
 		
@@ -152,11 +154,12 @@ public class AggregateOneToOneAppender {
 			if (relation.getTargetEntity() instanceof PolymorphicEntity) {
 				EntityPolymorphism<TRGT, Object> polymorphism = ((PolymorphicEntity<TRGT, Object, RIGHTTABLE>) relation.getTargetEntity()).getPolymorphism();
 				
+				GraftableRelation<SRC, TRGT, TRGTID, LEFTTABLE, RIGHTTABLE, JOINID> graftableRelation = forOneToOneRelationOwnedByTarget(relation);
 				result = polymorphicSkeletonAppender.append(
 						aggregateTree,
 						polymorphism,
 						targetReader,
-						relation,
+						graftableRelation,
 						mountPoint);
 			} else {
 				String joinName = aggregateTree.addRelationJoin(

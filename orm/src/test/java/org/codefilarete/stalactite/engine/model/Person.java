@@ -113,9 +113,6 @@ public class Person implements Identified<Long> {
 	
 	public void setVehicle(Vehicle vehicle) {
 		this.vehicle = vehicle;
-//		if (vehicle != null) {
-//			vehicle.setOwner(this);
-//		}
 	}
 	
 	public Bicycle getMainBicycle() {

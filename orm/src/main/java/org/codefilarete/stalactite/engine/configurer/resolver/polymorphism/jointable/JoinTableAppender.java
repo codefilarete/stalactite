@@ -3,9 +3,8 @@ package org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.join
 import java.util.HashSet;
 import java.util.Set;
 
-import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
-import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.GraftableRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.FirstPhaseRelationLoader;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.RelationStorage;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
@@ -20,7 +19,6 @@ import org.codefilarete.stalactite.engine.runtime.load.PolymorphicMergeJoinRowCo
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.function.Hanger.Holder;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType.OUTER;
@@ -29,23 +27,22 @@ public class JoinTableAppender {
 	
 	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
 	GraftPoint append(EntityJoinTree<SRC, SRCID> aggregateTree,
-					  JoinTablePolymorphismReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
-					  ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> relation,
-					  String mountPoint) {
+										JoinTablePolymorphismReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
+										GraftableRelation<SRC, TRGT, TRGTID, LEFTTABLE, RIGHTTABLE, JOINID> relation,
+										String mountPoint) {
 		
-		DirectRelationJoin<LEFTTABLE, RIGHTTABLE, JOINID> join = relation.getJoin();
 		Holder<JoinTablePolymorphicRelationJoinNode<TRGT, LEFTTABLE, RIGHTTABLE, JOINID, TRGTID>> createdJoinHolder = new Holder<>();
 		String joinName = aggregateTree.addJoin(mountPoint, parent -> {
 			JoinTablePolymorphicRelationJoinNode<TRGT, LEFTTABLE, RIGHTTABLE, JOINID, TRGTID> polymorphicRelationJoinNode = new JoinTablePolymorphicRelationJoinNode<>(
 					(JoinNode<SRC, LEFTTABLE>) (JoinNode) parent,
 					relation.getAccessor(),
-					join.getLeftKey(),
-					join.getRightKey(),
+					relation.getLeftKey(),
+					relation.getRightKey(),
 					OUTER,
 					targetPersister.<LEFTTABLE>getMainTable().getColumns(),
 					null,
 					new EntityInflater.EntityMappingAdapter<>(targetPersister.getMapping()),
-					(BeanRelationFixer<Object, TRGT>) relation.getRelationFixer(),
+					relation.getRelationFixer(),
 					null);
 			createdJoinHolder.set(polymorphicRelationJoinNode);
 			return polymorphicRelationJoinNode;

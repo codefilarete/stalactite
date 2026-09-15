@@ -8,9 +8,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.SelectExecutor;
-import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
-import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.GraftableRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.FirstPhaseRelationLoader;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.RelationStorage;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
@@ -35,7 +34,6 @@ import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
 import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -54,15 +52,13 @@ public class TablePerClassAppender {
 	
 	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
 	GraftPoint append(EntityJoinTree<SRC, SRCID> aggregateTree,
-					  TablePerClassPolymorphismReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
-					  ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> relation,
-	                  String mountPoint) {
+										TablePerClassPolymorphismReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
+										GraftableRelation<SRC, TRGT, TRGTID, LEFTTABLE, RIGHTTABLE, JOINID> relation,
+										String mountPoint) {
 		
 		Set<ConfiguredEntityReader<? extends TRGT, TRGTID, ?>> subPersisters = new HashSet<>(targetPersister.getSubEntitiesPersisters().values());
 		
-		DirectRelationJoin<LEFTTABLE, RIGHTTABLE, JOINID> join = relation.getJoin();
-		
-		TablePerClassUnion<?, TRGTID> union = buildUnion(subPersisters, targetPersister.getMapping().getSelectableColumns(), join.getRightKey());
+		TablePerClassUnion<?, TRGTID> union = buildUnion(subPersisters, targetPersister.getMapping().getSelectableColumns(), relation.getRightKey());
 		PseudoTable pseudoTable = union.asPseudoTable(targetPersister.getClassToPersist().getSimpleName());
 		PseudoColumn<Integer> discriminatorPseudoColumn = pseudoTable.findColumn(union.getDiscriminatorColumn().getExpression());
 		
@@ -72,16 +68,16 @@ public class TablePerClassAppender {
 					(JoinNode<SRC, LEFTTABLE>) (JoinNode) parent,
 					union,
 					relation.getAccessor(),
-					join.getLeftKey(),
-					join.getRightKey(),
+					relation.getLeftKey(),
+					relation.getRightKey(),
 					OUTER,
 					pseudoTable.getColumns(),
 					// we set a table alias else it is null which is transformed as "null" into the SQL which works
 					// but is not very clean and may cause problems if we have several table-per-class (all would
 					// be named "null") in the aggregate
-					relation.getTargetEntity().getEntityType().getSimpleName(),
+					targetPersister.getClassToPersist().getSimpleName(),
 					new EntityInflater.EntityMappingAdapter<>(targetPersister.getMapping()),
-					(BeanRelationFixer<Object, TRGT>) relation.getRelationFixer(),
+					relation.getRelationFixer(),
 					discriminatorPseudoColumn);
 			
 			createdJoinHolder.set(relationJoinNode);

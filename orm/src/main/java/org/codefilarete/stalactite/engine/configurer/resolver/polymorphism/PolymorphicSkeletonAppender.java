@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.engine.configurer.resolver.polymorphism;
 
 import org.codefilarete.stalactite.engine.configurer.model.EntityPolymorphism;
 import org.codefilarete.stalactite.engine.configurer.model.JoinTablePolymorphism;
-import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.model.SingleTablePolymorphism;
 import org.codefilarete.stalactite.engine.configurer.model.TablePerClassPolymorphism;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
@@ -26,28 +25,28 @@ public class PolymorphicSkeletonAppender {
 	
 	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
 	GraftPoint append(EntityJoinTree<SRC, SRCID> aggregateTree,
-					  EntityPolymorphism<TRGT, Object> polymorphism,
-					  ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
-					  ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> relation,
-					  String mountPoint) {
+										EntityPolymorphism<TRGT, Object> polymorphism,
+										ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetReader,
+										GraftableRelation<SRC, TRGT, TRGTID, LEFTTABLE, RIGHTTABLE, JOINID> graftableRelation,
+										String mountPoint) {
 		GraftPoint result = null;
 		if (polymorphism instanceof SingleTablePolymorphism) {
-			SingleTablePolymorphismReader<TRGT, TRGTID, RIGHTTABLE, Object> persisterAsSingleTable = (SingleTablePolymorphismReader<TRGT, TRGTID, RIGHTTABLE, Object>) targetPersister;
+			SingleTablePolymorphismReader<TRGT, TRGTID, RIGHTTABLE, Object> persisterAsSingleTable = (SingleTablePolymorphismReader<TRGT, TRGTID, RIGHTTABLE, Object>) targetReader;
 			
 			result = singleTableAppender.append(
 					aggregateTree,
 					persisterAsSingleTable,
-					relation,
+					graftableRelation,
 					(SingleTablePolymorphism<TRGT, TRGTID, Object, RIGHTTABLE>) polymorphism,
 					mountPoint);
 		} else if (polymorphism instanceof TablePerClassPolymorphism) {
-			TablePerClassPolymorphismReader<TRGT, TRGTID, RIGHTTABLE> persisterAsTablePerClass = (TablePerClassPolymorphismReader<TRGT, TRGTID, RIGHTTABLE>) targetPersister;
+			TablePerClassPolymorphismReader<TRGT, TRGTID, RIGHTTABLE> persisterAsTablePerClass = (TablePerClassPolymorphismReader<TRGT, TRGTID, RIGHTTABLE>) targetReader;
 			
-			result = tablePerClassAppender.append(aggregateTree, persisterAsTablePerClass, relation, mountPoint);
+			result = tablePerClassAppender.append(aggregateTree, persisterAsTablePerClass, graftableRelation, mountPoint);
 		} else if (polymorphism instanceof JoinTablePolymorphism) {
-			JoinTablePolymorphismReader<TRGT, TRGTID, RIGHTTABLE> persisterAsJoinTable = (JoinTablePolymorphismReader<TRGT, TRGTID, RIGHTTABLE>) targetPersister;
+			JoinTablePolymorphismReader<TRGT, TRGTID, RIGHTTABLE> persisterAsJoinTable = (JoinTablePolymorphismReader<TRGT, TRGTID, RIGHTTABLE>) targetReader;
 			
-			result = joinTableAppender.append(aggregateTree, persisterAsJoinTable, relation, mountPoint);
+			result = joinTableAppender.append(aggregateTree, persisterAsJoinTable, graftableRelation, mountPoint);
 		}
 		return result;
 	}
