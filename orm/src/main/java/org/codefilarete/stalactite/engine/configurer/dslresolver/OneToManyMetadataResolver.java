@@ -29,6 +29,7 @@ import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJ
 import org.codefilarete.stalactite.engine.configurer.model.RelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
+import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation.MappedByConfiguration;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
@@ -36,6 +37,8 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
+import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
+import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
@@ -107,15 +110,20 @@ public class OneToManyMetadataResolver {
 				oneToMany.getTargetMappingConfiguration().getEntityType());
 		
 		Column<TRGTTABLE, Integer> indexingColumn = null;
-		if (oneToMany.isOwnedByReverseSide()) {
+		if (oneToMany.isRelationOwnedByTarget()) {
 			// target owns the relation
 			// we don't create foreign key for table-per-class because source columns should reference different tables (the on per entity) which databases do not allow
 			boolean canCreateForeignKey = !source.isTablePerClass();
+			MappedByConfiguration<TRGT, SRC> mappedByConfiguration = oneToMany.getMappedByConfiguration();
 			if (canCreateForeignKey) {
-				if (!targetEntity.isTablePerClass()) {
-					OneToManyOwnedByTargetHelper<SRC, TRGT, SRCID, TRGTID, SRCTABLE, TRGTTABLE> helper = new OneToManyOwnedByTargetHelper<>();
-					tablesJoin = helper.determineJoin(oneToMany, source.getTable().getPrimaryKey(), targetEntity.getTable(), namingConfiguration.getJoinColumnNamingStrategy(), namingConfiguration.getForeignKeyNamingStrategy());
+				OneToManyOwnedByTargetHelper<SRC, TRGT, SRCID, TRGTID, SRCTABLE, TRGTTABLE> helper = new OneToManyOwnedByTargetHelper<>();
+				KeyMapping<TRGTTABLE, SRCTABLE, SRCID> foreignKey;
+				if (targetEntity.isTablePerClass()) {
+					foreignKey = helper.determineKeyMappingColumns(mappedByConfiguration, source.getTable().getPrimaryKey(), targetEntity.getTable(), namingConfiguration.getJoinColumnNamingStrategy());
+				} else {
+					foreignKey = helper.determineForeignKeyColumns(mappedByConfiguration, source.getTable().getPrimaryKey(), targetEntity.getTable(), namingConfiguration.getJoinColumnNamingStrategy(), namingConfiguration.getForeignKeyNamingStrategy());
 				}
+				tablesJoin = new DirectRelationJoin<>(foreignKey.getReferencedKey(), foreignKey);
 			} // else: creating foreign key is not possible, nothing special to do
 			
 			Mutator<TRGT, SRC> NOOP_REVERSE_SETTER = (o, i) -> {};
@@ -165,7 +173,7 @@ public class OneToManyMetadataResolver {
 				targetEntity,
 				oneToMany.getCollectionAccessor(),
 				oneToMany.getRelationMode(),
-				oneToMany.isOwnedByReverseSide(),
+				oneToMany.isRelationOwnedByTarget(),
 				reverseAccessPoint,
 				oneToMany.isFetchSeparately(),
 				tablesJoin,
@@ -189,25 +197,32 @@ public class OneToManyMetadataResolver {
 	
 	private static class OneToManyOwnedByTargetHelper<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>> {
 		
-		protected RelationJoin determineJoin(OneToManyRelation<SRC, TRGT, TRGTID, ?> relation,
-		                                     PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey,
-		                                     RIGHTTABLE targetTable,
-		                                     JoinColumnNamingStrategy joinColumnNamingStrategy,
-		                                     ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
-			ForeignKey<RIGHTTABLE, LEFTTABLE, SRCID> foreignKey = determineForeignKeyColumns(relation, leftPrimaryKey, targetTable, joinColumnNamingStrategy, foreignKeyNamingStrategy);
+		protected KeyMapping<RIGHTTABLE, LEFTTABLE, SRCID> determineKeyMappingColumns(MappedByConfiguration<TRGT, SRC> mappedByConfiguration,
+																					  PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey,
+																					  RIGHTTABLE rightTable,
+																					  JoinColumnNamingStrategy joinColumnNamingStrategy) {
+			// adding foreign key constraint
+			KeyBuilder<RIGHTTABLE, SRCID> rightKeyBuilder = Key.from(rightTable);
+			AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(mappedByConfiguration.giveReverseSetter());
+			leftPrimaryKey.getColumns().forEach(column -> {
+				String effectiveLeftColumnName = nullable(mappedByConfiguration.getReverseColumnName()).elseSet(() -> joinColumnNamingStrategy.giveName(accessorDefinition, column)).get();
+				Column<RIGHTTABLE, ?> foreignKeyColumn = rightTable.addColumn(effectiveLeftColumnName, column.getJavaType());
+				rightKeyBuilder.addColumn(foreignKeyColumn);
+			});
+			Key<RIGHTTABLE, SRCID> rightKey = rightKeyBuilder.build();
 			
-			return new DirectRelationJoin<>(foreignKey.getReferencedKey(), foreignKey);
+			return new KeyMapping<>(rightKey, leftPrimaryKey);
 		}
 		
-		private ForeignKey<RIGHTTABLE, LEFTTABLE, SRCID> determineForeignKeyColumns(OneToManyRelation<SRC, TRGT, TRGTID, ?> relation,
-		                                                                              PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey,
-		                                                                              RIGHTTABLE targetTable,
-		                                                                              JoinColumnNamingStrategy joinColumnNamingStrategy,
-		                                                                              ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
-			Key.KeyBuilder<RIGHTTABLE, SRCID> foreignKeyBuilder = Key.from(targetTable);
-			if (!relation.getForeignKeyNameMapping().isEmpty()) {
+		protected ForeignKey<RIGHTTABLE, LEFTTABLE, SRCID> determineForeignKeyColumns(MappedByConfiguration<TRGT, SRC> mappedByConfiguration,
+																					  PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey,
+																					  RIGHTTABLE targetTable,
+																					  JoinColumnNamingStrategy joinColumnNamingStrategy,
+																					  ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
+			KeyBuilder<RIGHTTABLE, SRCID> foreignKeyBuilder = Key.from(targetTable);
+			if (!mappedByConfiguration.getForeignKeyNameMapping().isEmpty()) {
 				Map<Accessor<SRCID, ?>, Column<RIGHTTABLE, ?>> foreignKeyColumnMapping = new HashMap<>();
-				relation.getForeignKeyNameMapping().forEach((valueAccessPoint, colName) -> {
+				mappedByConfiguration.getForeignKeyNameMapping().forEach((valueAccessPoint, colName) -> {
 					AccessorDefinition localAccessorDefinition = AccessorDefinition.giveDefinition(valueAccessPoint);
 					Accessor<SRCID, Object> accessor = valueAccessPoint instanceof Accessor
 							? (Accessor) valueAccessPoint
@@ -219,9 +234,9 @@ public class OneToManyMetadataResolver {
 					foreignKeyBuilder.addColumn(column);
 					foreignKeyColumnMapping.put(accessor, column);
 				});
-			} else if (!relation.getForeignKeyColumnMapping().isEmpty()) {
+			} else if (!mappedByConfiguration.getForeignKeyColumnMapping().isEmpty()) {
 				Map<Accessor<SRCID, ?>, Column<RIGHTTABLE, ?>> foreignKeyColumnMapping = new HashMap<>();
-				relation.getForeignKeyColumnMapping().forEach((valueAccessPoint, column) -> {
+				mappedByConfiguration.getForeignKeyColumnMapping().forEach((valueAccessPoint, column) -> {
 					Accessor<SRCID, Object> accessor = valueAccessPoint instanceof Accessor
 							? (Accessor) valueAccessPoint
 							: (valueAccessPoint instanceof ReversibleMutator ? ((ReversibleMutator) valueAccessPoint).toAccessor() : null);
@@ -231,30 +246,30 @@ public class OneToManyMetadataResolver {
 					foreignKeyBuilder.addColumn((Column<RIGHTTABLE, ?>) column);
 					foreignKeyColumnMapping.put(accessor, (Column<RIGHTTABLE, ?>) column);
 				});
-			} else if (relation.getReverseColumnName() != null || relation.getReverseColumn() != null) {
+			} else if (mappedByConfiguration.getReverseColumnName() != null || mappedByConfiguration.getReverseColumn() != null) {
 				Column<RIGHTTABLE, ?> reverseColumn;
-				if (relation.getReverseColumnName() != null) {
+				if (mappedByConfiguration.getReverseColumnName() != null) {
 					PrimaryKey<LEFTTABLE, SRCID> srcPrimaryKey = leftPrimaryKey;
 					// with a reverse column name, the primary key should be a single column key
 					if (srcPrimaryKey.isComposed()) {
 						throw new MappingConfigurationException("Giving reverse column whereas the primary key is composed :"
 								+ " primary key = [" + srcPrimaryKey.getColumns().stream().map(Column::getName).collect(Collectors.joining(", ")) + "] vs "
-								+ " reverse column = " + relation.getReverseColumnName());
+								+ " reverse column = " + mappedByConfiguration.getReverseColumnName());
 					}
 					Column<LEFTTABLE, ?> pk = first(srcPrimaryKey.getColumns());
 					reverseColumn = targetTable.addColumn(
-							relation.getReverseColumnName(),
+							mappedByConfiguration.getReverseColumnName(),
 							pk.getJavaType(),
 							pk.getSize());
 				} else {
-					reverseColumn = (Column<RIGHTTABLE, ?>) relation.getReverseColumn();
+					reverseColumn = (Column<RIGHTTABLE, ?>) mappedByConfiguration.getReverseColumn();
 				}
 				foreignKeyBuilder.addColumn(reverseColumn);
-			} else if (relation.giveReverseSetter() != null) {
+			} else if (mappedByConfiguration.giveReverseSetter() != null) {
 				// Please note that here Setter is only used to get foreign key column names, not to set values on reverse side
 				Map<Column<LEFTTABLE, ?>, Column<RIGHTTABLE, ?>> foreignKeyColumnMapping = new HashMap<>();
 				PrimaryKey<LEFTTABLE, SRCID> primaryKey = leftPrimaryKey;
-				AccessorDefinition reverseGetterDefinition = AccessorDefinition.giveDefinition(relation.giveReverseSetter());
+				AccessorDefinition reverseGetterDefinition = AccessorDefinition.giveDefinition(mappedByConfiguration.giveReverseSetter());
 				primaryKey.getColumns().forEach(pkColumn -> {
 					String colName = joinColumnNamingStrategy.giveName(reverseGetterDefinition, pkColumn);
 					Column<RIGHTTABLE, ?> fkColumn = targetTable.addColumn(colName, pkColumn.getJavaType(), pkColumn.getSize(), null);
@@ -265,12 +280,11 @@ public class OneToManyMetadataResolver {
 			  // invoked when reverse side is mapped (see OneToManyRelation.isOwnedByReverseSide())
 			Key<RIGHTTABLE, SRCID> foreignKey;
 			foreignKey = foreignKeyBuilder.build();
-			if (relation.isReverseAsMandatory() != null && relation.isReverseAsMandatory()) {
+			if (mappedByConfiguration.isMandatory() != null && mappedByConfiguration.isMandatory()) {
 				foreignKey.getColumns().stream().map(Column.class::cast).forEach(Column::notNull);
 			}
 			return targetTable.addForeignKey(foreignKeyNamingStrategy.giveName(foreignKey, leftPrimaryKey), foreignKey, leftPrimaryKey);
 		}
-		
 	}
 	
 	private static class OneToManyWithAssociationTableHelper<

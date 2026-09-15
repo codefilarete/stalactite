@@ -72,7 +72,7 @@ public class OneToManyRelationConfigurer<SRC, SRCID, TRGT, TRGTID> extends Abstr
 				foreignKeyNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy, indexingColumnName,
 				orphanRemoval, writeAuthorized);
 		OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, ?, ?, RIGHTTABLE> configurer;
-		if (oneToManyRelation.isOwnedByReverseSide()) {
+		if (oneToManyRelation.isRelationOwnedByTarget()) {
 			// case : reverse property is defined through one of the setter, getter or column on the reverse side
 			if (maintenanceMode == RelationMode.ASSOCIATION_ONLY) {
 				throw new MappingConfigurationException(RelationMode.ASSOCIATION_ONLY + " is only relevant with an association table");

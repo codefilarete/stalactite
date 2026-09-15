@@ -256,7 +256,6 @@ class JoinTablePolymorphismWriterTest {
 								.addSubClass(subentityBuilder(Truck.class), "TRUCK")
 								.addSubClass(subentityBuilder(Car.class), "CAR")
 						);
-		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
 		
 		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
 				.mapKey(Person::getId, ALREADY_ASSIGNED)
@@ -264,6 +263,7 @@ class JoinTablePolymorphismWriterTest {
 				.mappedBy(Vehicle::getOwner)
 				.mapSuperClass(timestampedPersistentBeanMapping);
 		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
 		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -393,6 +393,125 @@ class JoinTablePolymorphismWriterTest {
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
+		
+		// insert
+		Person person = new Person(1);
+		Car car = new Car(42L);
+		car.setColor(new Color(42));
+		Truck truck = new Truck(17L);
+		person.setVehicles(Arrays.asTreeSet(vehicleComparator, car, truck));
+		
+		personPersister.insert(person);
+		Person loadedPerson = personPersister.select(person.getId());
+		assertThat(loadedPerson)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(person);
+		
+		// updating embedded value
+		person.setTimestamp(new Timestamp());
+		personPersister.update(person, loadedPerson, true);
+		
+		loadedPerson = personPersister.select(person.getId());
+		
+		
+		// we use a printer to compare our results because entities override equals() which only keep "id" into account
+		// which is far from sufficient for ou checking
+		// Note that we don't use ObjectPrinterBuilder#printerFor because it takes getCities() into account whereas its code is not ready for recursion 
+		ObjectPrinterBuilder.ObjectPrinter<AbstractVehicle> vehiclePrinter = new ObjectPrinterBuilder<AbstractVehicle>()
+				.addProperty(AbstractVehicle::getId)
+				.addProperty(Vehicle::getColor)
+				.withPrinter(Identifier.class, Functions.chain(Identifier::getDelegate, String::valueOf))
+				.build();
+		ObjectPrinterBuilder.ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
+				.addProperty(Person::getName)
+				.addProperty(Person::getTimestamp)
+				.addProperty(Person::getVehicles, AbstractVehicle.class)
+				.withPrinter(Vehicle.class, vehiclePrinter::toString)
+				.build();
+		
+		assertThat(loadedPerson)
+				.usingComparator(Comparator.comparing(personPrinter::toString))
+				.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
+				.isEqualTo(person);
+		
+		// updating one-to-one relation
+		person.getVehicles().removeIf(car::equals);
+		personPersister.update(person, loadedPerson, true);
+		
+		loadedPerson = personPersister.select(person.getId());
+		assertThat(loadedPerson)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(person);
+		// checking for orphan removal (relation was marked as such)
+		assertThat(vehiclePersister.select(car.getId())).isNull();
+		
+		// nullifying one-to-many relation
+		person.setVehicles(null);
+		personPersister.update(person, loadedPerson, true);
+		
+		loadedPerson = personPersister.select(person.getId());
+		assertThat(loadedPerson)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(person);
+		// checking for orphan removal (relation was marked as such)
+		assertThat(vehiclePersister.select(truck.getId())).isNull();
+		
+		// setting new one-to-one relation
+		Truck lonelyTruck = new Truck(666L);
+		person.setVehicles(Arrays.asTreeSet(vehicleComparator, lonelyTruck));
+		personPersister.update(person, loadedPerson, true);
+		
+		loadedPerson = personPersister.select(person.getId());
+		assertThat(loadedPerson)
+				.usingRecursiveComparison(RECURSIVE_COMPARISON_CONFIGURATION)
+				.isEqualTo(person);
+		
+		// testing deletion
+		personPersister.delete(person);
+		assertThat(personPersister.select(person.getId())).isNull();
+		// checking for orphan removal (relation was marked as such)
+		assertThat(vehiclePersister.select(lonelyTruck.getId())).isNull();
+	}
+	
+	@Test
+	void oneToJoinTableMany_ownedByTarget_crud() {
+		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
+		
+		FluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
+				embeddableBuilder(Person.class)
+						.map(Person::getName)
+						.embed(Person::getTimestamp, embeddableBuilder(Timestamp.class)
+								.map(Timestamp::getCreationDate)
+								.map(Timestamp::getModificationDate));
+		
+		FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
+				entityBuilder(Vehicle.class, LONG_TYPE)
+						.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
+						.map(Vehicle::getColor)
+						.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
+								.addSubClass(subentityBuilder(Truck.class), "TRUCK")
+								.addSubClass(subentityBuilder(Car.class), "CAR")
+						);
+		
+		Comparator<AbstractVehicle> vehicleComparator = Comparator.comparing(v -> v.getId().getDelegate());
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
+				.mapKey(Person::getId, ALREADY_ASSIGNED)
+				.mapOneToMany(Person::getVehicles, vehicleConfiguration)
+				.cascading(ALL_ORPHAN_REMOVAL)
+				.mappedBy(AbstractVehicle::getOwner)
+				.initializeWith(() -> new TreeSet<>(vehicleComparator))	// only for test stability
+				.mapSuperClass(timestampedPersistentBeanMapping);
+		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		// we create the vehicle persister AFTER schema generation because its tables may conflict with the one generated by
+		// the person persister on the ownerId from time to time : this is random due to DDLDeployer that is agnostic about
+		// the persisters order in the persister registry
+		EntityPersister<Vehicle, Identifier<Long>> vehiclePersister = testInstance.resolve(vehicleConfiguration.getConfiguration());
 		
 		// insert
 		Person person = new Person(1);

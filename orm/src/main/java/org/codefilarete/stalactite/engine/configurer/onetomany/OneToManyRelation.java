@@ -109,6 +109,10 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		return collectionAccessor;
 	}
 	
+	public MappedByConfiguration<TRGT, SRC> getMappedByConfiguration() {
+		return mappedByConfiguration;
+	}
+	
 	public boolean isSourceTablePerClassPolymorphic() {
 		return sourceTablePerClassPolymorphic.getAsBoolean();
 	}
@@ -217,7 +221,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	 * Indicates if relation is owned by target entities table
 	 * @return true if one of {@link #giveReverseSetter()}, {@link #getReverseColumn()} is not null
 	 */
-	public boolean isOwnedByReverseSide() {
+	public boolean isRelationOwnedByTarget() {
 		return this.mappedByConfiguration.isNotEmpty();
 	}
 	
@@ -316,7 +320,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		return result;
 	}
 	
-	private static class MappedByConfiguration<TRGT, SRC> {
+	public static class MappedByConfiguration<TRGT, SRC> {
 		
 		/** The method that gets the "one" entity from the "many" entities, may be null */
 		protected ReadWritePropertyAccessPoint<TRGT, SRC> reverseGetter;
