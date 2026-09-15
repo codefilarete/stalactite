@@ -18,6 +18,8 @@ import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.engine.model.Truck;
 import org.codefilarete.stalactite.engine.model.Vehicle;
+import org.codefilarete.stalactite.engine.runtime.test.UseCase;
+import org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation;
 import org.codefilarete.stalactite.id.AbstractIdentifier;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -36,6 +38,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.dsl.FluentMappings.embeddableBuilder;
 import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.stalactite.dsl.FluentMappings.subentityBuilder;
+import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Polymorphism.SINGLE_TABLE;
+import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.Fetch.SEPARATE_QUERY;
+import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.RelationOwnership.BY_SOURCE;
+import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.Type.ONE_TO_MANY;
+import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.Type.ONE_TO_ONE;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
@@ -57,6 +64,7 @@ class SingleTablePolymorphismReaderTest {
 	}
 	
 	@Test
+	@UseCase(relation = @Relation(type = ONE_TO_ONE, polymorphism = SINGLE_TABLE, ownership = BY_SOURCE, fetch = SEPARATE_QUERY))
 	void oneToSingleTableOne_fetchSeparately() {
 		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
 		
@@ -121,6 +129,7 @@ class SingleTablePolymorphismReaderTest {
 	}
 	
 	@Test
+	@UseCase(relation = @Relation(type = ONE_TO_MANY, polymorphism = SINGLE_TABLE, ownership = BY_SOURCE, fetch = SEPARATE_QUERY))
 	void oneToSingleTableMany_fetchSeparately() {
 		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
 		

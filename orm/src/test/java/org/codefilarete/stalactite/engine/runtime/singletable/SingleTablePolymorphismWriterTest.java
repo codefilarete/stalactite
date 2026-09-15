@@ -20,6 +20,8 @@ import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.engine.model.Truck;
 import org.codefilarete.stalactite.engine.model.Vehicle;
+import org.codefilarete.stalactite.engine.runtime.test.UseCase;
+import org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation;
 import org.codefilarete.stalactite.id.AbstractIdentifier;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
@@ -42,6 +44,13 @@ import static org.codefilarete.stalactite.dsl.FluentMappings.embeddableBuilder;
 import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
 import static org.codefilarete.stalactite.dsl.FluentMappings.subentityBuilder;
 import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
+import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Polymorphism.SINGLE_TABLE;
+import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.Fetch.JOIN;
+import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.RelationOwnership.BY_ASSOCIATION_TABLE;
+import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.RelationOwnership.BY_SOURCE;
+import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.RelationOwnership.BY_TARGET;
+import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.Type.ONE_TO_MANY;
+import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.Type.ONE_TO_ONE;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
@@ -68,6 +77,7 @@ class SingleTablePolymorphismWriterTest {
 	}
 	
 	@Test
+	@UseCase(polymorphism = SINGLE_TABLE)
 	void crud() throws SQLException {
 		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
 		ConnectionProvider connectionProvider = persistenceContext.getConnectionProvider();
@@ -125,6 +135,7 @@ class SingleTablePolymorphismWriterTest {
 	}
 	
 	@Test
+	@UseCase(relation = @Relation(type = ONE_TO_ONE, polymorphism = SINGLE_TABLE, ownership = BY_SOURCE, fetch = JOIN))
 	void oneToSingleTableOne_crud() {
 		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
 		
@@ -235,6 +246,7 @@ class SingleTablePolymorphismWriterTest {
 	}
 	
 	@Test
+	@UseCase(relation = @Relation(type = ONE_TO_ONE, polymorphism = SINGLE_TABLE, ownership = BY_TARGET, fetch = JOIN))
 	void oneToSingleTableOne_ownedByTarget_crud() {
 		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
 		
@@ -357,6 +369,7 @@ class SingleTablePolymorphismWriterTest {
 	}
 	
 	@Test
+	@UseCase(relation = @Relation(type = ONE_TO_MANY, polymorphism = SINGLE_TABLE, ownership = BY_ASSOCIATION_TABLE, fetch = JOIN))
 	void oneToSingleTableMany_crud() {
 		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
 		
@@ -471,6 +484,7 @@ class SingleTablePolymorphismWriterTest {
 	}
 	
 	@Test
+	@UseCase(relation = @Relation(type = ONE_TO_MANY, polymorphism = SINGLE_TABLE, ownership = BY_TARGET, fetch = JOIN))
 	void oneToSingleTableMany_ownedByTarget_crud() {
 		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
 		
