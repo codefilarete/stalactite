@@ -17,6 +17,8 @@ import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver;
 import org.codefilarete.stalactite.engine.model.survey.Answer;
 import org.codefilarete.stalactite.engine.model.survey.Choice;
+import org.codefilarete.stalactite.engine.runtime.test.UseCase;
+import org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifier;
@@ -35,6 +37,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.dsl.FluentMappings.entityBuilder;
+import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.Fetch.JOIN;
+import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.Fetch.SEPARATE_QUERY;
+import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.RelationOwnership.BY_ASSOCIATION_TABLE;
+import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.Type.MANY_TO_MANY;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
@@ -146,6 +152,7 @@ public class ManyToManyResolverTest {
 	// -------------------------------------------------------------------------
 	
 	@Test
+	@UseCase(relation = @Relation(type = MANY_TO_MANY, ownership = BY_ASSOCIATION_TABLE, fetch = JOIN))
 	void crud_insertAndSelect() {
 		FluentEntityMappingBuilder<Answer, Identifier<Long>> answerBuilder = entityBuilder(Answer.class, LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
@@ -178,6 +185,7 @@ public class ManyToManyResolverTest {
 	}
 	
 	@Test
+	@UseCase(relation = @Relation(type = MANY_TO_MANY, ownership = BY_ASSOCIATION_TABLE, fetch = JOIN))
 	void crud_delete_associationRowsAreRemoved() {
 		FluentEntityMappingBuilder<Answer, Identifier<Long>> answerBuilder = entityBuilder(Answer.class, LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
@@ -207,11 +215,12 @@ public class ManyToManyResolverTest {
 	// -------------------------------------------------------------------------
 	
 	@Test
+	@UseCase(relation = @Relation(type = MANY_TO_MANY, ownership = BY_ASSOCIATION_TABLE, fetch = JOIN))
 	void select_reverseCollection_targetSideIsPopulated() {
 		FluentEntityMappingBuilder<Answer, Identifier<Long>> answerBuilder = entityBuilder(Answer.class, LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
 				.mapManyToMany(Answer::getChoices, choiceConfiguration)
-				.reverseCollection(Choice::getAnswers);
+					.reverseCollection(Choice::getAnswers);
 		
 		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
 		EntityPersister<Answer, Identifier<Long>> answerPersister = testInstance.resolve(answerBuilder.getConfiguration());
@@ -239,13 +248,14 @@ public class ManyToManyResolverTest {
 	// -------------------------------------------------------------------------
 	
 	@Test
+	@UseCase(relation = @Relation(type = MANY_TO_MANY, ownership = BY_ASSOCIATION_TABLE, fetch = JOIN))
 	void select_indexedCollection_orderIsPreserved() {
 		FluentEntityMappingBuilder<Answer, Identifier<Long>> answerBuilder = entityBuilder(Answer.class, LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
 				.mapManyToMany(Answer::getChoices, choiceConfiguration)
-				.indexedBy("myIdx")
-				.initializeWith(KeepOrderSet::new)
-				.cascading(RelationMode.ALL);
+					.indexedBy("myIdx")
+					.initializeWith(KeepOrderSet::new)
+					.cascading(RelationMode.ALL);
 		
 		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
 		EntityPersister<Answer, Identifier<Long>> answerPersister = testInstance.resolve(answerBuilder.getConfiguration());
@@ -280,13 +290,14 @@ public class ManyToManyResolverTest {
 	}
 	
 	@Test
+	@UseCase(relation = @Relation(type = MANY_TO_MANY, ownership = BY_ASSOCIATION_TABLE, fetch = SEPARATE_QUERY))
 	void select_indexedCollection_fetchSeparately_orderIsPreserved() {
 		FluentEntityMappingBuilder<Answer, Identifier<Long>> answerBuilder = entityBuilder(Answer.class, LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
 				.mapManyToMany(Answer::getChoices, choiceConfiguration)
-				.indexedBy("myIdx")
-				.initializeWith(KeepOrderSet::new)
-				.fetchSeparately()
+					.indexedBy("myIdx")
+					.initializeWith(KeepOrderSet::new)
+					.fetchSeparately()
 				.cascading(RelationMode.ALL);
 		
 		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
@@ -325,6 +336,7 @@ public class ManyToManyResolverTest {
 	// -------------------------------------------------------------------------
 	
 	@Test
+	@UseCase(relation = @Relation(type = MANY_TO_MANY, ownership = BY_ASSOCIATION_TABLE, fetch = JOIN))
 	void crud_associationOnly_targetNotDeleted() {
 		FluentEntityMappingBuilder<Answer, Identifier<Long>> answerBuilder = entityBuilder(Answer.class, LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
@@ -376,6 +388,10 @@ public class ManyToManyResolverTest {
 	// -------------------------------------------------------------------------
 	
 	@Test
+	@UseCase(relation = {
+			@Relation(type = MANY_TO_MANY, ownership = BY_ASSOCIATION_TABLE, fetch = JOIN),
+			@Relation(type = MANY_TO_MANY, ownership = BY_ASSOCIATION_TABLE, fetch = JOIN)
+	})
 	void crud_twoManyToManyRelationsOnSameEntity() {
 		FluentEntityMappingBuilder<Answer, Identifier<Long>> answerBuilder = entityBuilder(Answer.class, LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)

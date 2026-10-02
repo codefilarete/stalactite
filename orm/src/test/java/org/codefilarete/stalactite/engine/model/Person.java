@@ -40,6 +40,8 @@ public class Person implements Identified<Long> {
 	
 	private List<String> middleNames;
 	
+	private Set<City> residences;
+	
 	private Map<String, String> phoneNumbers;
 	
 	private Map<AddressBookType, String> addressBook;
@@ -157,6 +159,14 @@ public class Person implements Identified<Long> {
 	
 	public void addMiddleName(String middleName) {
 		this.middleNames.add(middleName);
+	}
+	
+	public Set<City> getResidences() {
+		return residences;
+	}
+	
+	public void setResidences(Set<City> residences) {
+		this.residences = residences;
 	}
 	
 	public Map<String, String> getPhoneNumbers() {

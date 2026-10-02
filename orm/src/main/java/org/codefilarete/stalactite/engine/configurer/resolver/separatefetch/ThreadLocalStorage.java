@@ -5,15 +5,20 @@ package org.codefilarete.stalactite.engine.configurer.resolver.separatefetch;
  * while the result set is read, then sewn onto the entity that owns the relation once the whole result set is
  * consumed. Made as a {@link ThreadLocal} to support concurrent selects.
  *
+ * @param <K> the key type
+ * @param <V> the value type
  * @param <S> the storage type
  * @author Guillaume Mary
- * @see SecondPhaseSelectListener
+ * @see FirstPhaseRelationLoader
+ * @see FirstPhaseIndexedManyRelationLoader
+ * @see SecondPhaseRelationSelectListener
+ * @see SecondPhaseIndexedManyRelationSelectListener
  */
-public abstract class ThreadLocalStorage<S> {
+public abstract class ThreadLocalStorage<K, V, S extends AbstractRelationStorage<K, V>> {
 	
 	private final ThreadLocal<S> storage = new ThreadLocal<>();
 	
-	protected S getStorage() {
+	public S getStorage() {
 		return storage.get();
 	}
 	

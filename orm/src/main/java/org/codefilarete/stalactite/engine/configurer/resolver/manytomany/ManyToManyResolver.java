@@ -9,6 +9,7 @@ import org.codefilarete.stalactite.engine.configurer.IndexedAssociationRecordMap
 import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.CreatedPersisterCollector;
+import org.codefilarete.stalactite.engine.configurer.resolver.EntitySkeletonResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.AbstractOneToManyEngine;
 import org.codefilarete.stalactite.engine.configurer.resolver.onetomany.IndexedAssociationTableManyRelationDescriptor;
@@ -43,14 +44,14 @@ import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMo
  */
 public class ManyToManyResolver {
 	
-	private final SkeletonAggregateResolver skeletonAggregateResolver;
+	private final EntitySkeletonResolver entitySkeletonResolver;
 	private final Dialect dialect;
 	private final ConnectionConfiguration connectionConfiguration;
 	
-	public ManyToManyResolver(SkeletonAggregateResolver skeletonAggregateResolver,
-	                          Dialect dialect,
-	                          ConnectionConfiguration connectionConfiguration) {
-		this.skeletonAggregateResolver = skeletonAggregateResolver;
+	public ManyToManyResolver(EntitySkeletonResolver entitySkeletonResolver,
+							  Dialect dialect,
+							  ConnectionConfiguration connectionConfiguration) {
+		this.entitySkeletonResolver = entitySkeletonResolver;
 		this.dialect = dialect;
 		this.connectionConfiguration = connectionConfiguration;
 	}
@@ -71,7 +72,7 @@ public class ManyToManyResolver {
 	             CreatedPersisterCollector<TRGT, TRGTID> persisterCollector) {
 		
 		EntityReadWriteExecutor<TRGT, TRGTID> targetPersister =
-				skeletonAggregateResolver.resolve(resolvedRelation.getTargetEntity(), persisterCollector);
+				entitySkeletonResolver.resolve(resolvedRelation.getTargetEntity(), persisterCollector);
 		
 		AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, S> engine;
 		if (resolvedRelation.isOrdered()) {

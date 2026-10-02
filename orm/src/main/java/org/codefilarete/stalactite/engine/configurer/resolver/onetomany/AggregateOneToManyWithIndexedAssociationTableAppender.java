@@ -4,35 +4,41 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import org.codefilarete.reflection.PropertyAccessPoint;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.configurer.IndexedAssociationRecordMapping;
+import org.codefilarete.stalactite.engine.configurer.model.EntityPolymorphism;
 import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
+import org.codefilarete.stalactite.engine.configurer.model.PolymorphicEntity;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.PolymorphicSkeletonAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.AssociationTableLoader;
+import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.FirstPhaseIndexedManyRelationLoader;
+import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.SecondPhaseIndexedManyRelationSelectListener;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.ThreadLocalIndexedRelationStorage;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
+import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.engine.runtime.load.EntityMerger;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.load.JoinNode;
 import org.codefilarete.stalactite.engine.runtime.onetomany.IndexedAssociationTableManyRelationDescriptor.InMemoryRelationHolder;
 import org.codefilarete.stalactite.query.api.Fromable;
 import org.codefilarete.stalactite.query.api.QualifiedSelectable;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Hanger.Holder;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType.OUTER;
@@ -78,7 +84,7 @@ public class AggregateOneToManyWithIndexedAssociationTableAppender {
 		if (relation.isFetchSeparately()) {
 			// Note that the aggregate tree is not modified at all: the association table is the root of a dedicated
 			// tree owned by the loader below, which prevents the main query from returning too many rows
-			return appendSeparatelyFetchedAssociation(sourcePersister, targetPersister, relation, join, collectionAccessPoint, dialect, connectionProvider);
+			return appendWithSeparateFetch(sourcePersister, targetPersister, relation, join, mountPoint, aggregateTree, dialect, connectionProvider);
 		} else {
 			Holder<String> associationTableJoinNodeNameHolder = new Holder<>();
 			Function<ColumnedRow, Object> duplicateIdentifierProvider = (columnedRow) -> {
@@ -169,18 +175,19 @@ public class AggregateOneToManyWithIndexedAssociationTableAppender {
 	 * loaded by that very same second-phase query
 	 */
 	private <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, ASSOCIATIONTABLE extends IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
-	GraftPoint appendSeparatelyFetchedAssociation(ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
-	                                              ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
-	                                              ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
-	                                              IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID> join,
-	                                              ReadWritePropertyAccessPoint<SRC, S> collectionAccessPoint,
-	                                              Dialect dialect,
-	                                              ConnectionProvider connectionProvider) {
+	GraftPoint appendWithSeparateFetch(ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourceReader,
+									   ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetReader,
+									   ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
+									   IntermediaryRelationJoin<LEFTTABLE, RIGHTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID> join,
+									   String mountPoint,
+									   EntityJoinTree<SRC, SRCID> aggregateTree,
+									   Dialect dialect,
+									   ConnectionProvider connectionProvider) {
 		ASSOCIATIONTABLE associationTable = join.getJoinTable();
 		IndexedAssociationRecordMapping<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID> associationRecordMapping = new IndexedAssociationRecordMapping<>(
 				associationTable,
-				sourcePersister.getMapping().getIdMapping().getIdentifierAssembler(),
-				targetPersister.getMapping().getIdMapping().getIdentifierAssembler(),
+				sourceReader.getMapping().getIdMapping().getIdentifierAssembler(),
+				targetReader.getMapping().getIdMapping().getIdentifierAssembler(),
 				associationTable.getLeftIdentifierColumnMapping(),
 				associationTable.getRightIdentifierColumnMapping());
 		
@@ -189,7 +196,7 @@ public class AggregateOneToManyWithIndexedAssociationTableAppender {
 		
 		AssociationTableLoader<IndexedAssociationRecord, IndexedAssociationRecord, SRC, SRCID, LEFTTABLE, ASSOCIATIONTABLE> associationRecordLoader =
 				new AssociationTableLoader<>(
-						sourcePersister.getMapping().getIdMapping(),
+						sourceReader.getMapping().getIdMapping(),
 						associationRecordMapping,
 						sourcePkToAssociationTableKey,
 						dialect,
@@ -198,50 +205,69 @@ public class AggregateOneToManyWithIndexedAssociationTableAppender {
 		// the target entity is joined onto the loader's tree so that association records and target entities are
 		// loaded by one and only one query. Entities are gathered in memory to be sewn onto their owner afterward,
 		// since the owner is not part of that query.
-		ThreadLocalIndexedRelationStorage<SRCID, TRGT> targetEntityHolder = new ThreadLocalIndexedRelationStorage<>();
-		String targetJoinName = associationRecordLoader.getEntityJoinTree().addRelationJoin(
-				ROOT_JOIN_NAME,
-				new EntityMappingAdapter<>(targetPersister.getMapping()),
-				(PropertyAccessPoint) collectionAccessPoint,
-				join.getRightAssociationKey(),
-				join.getRightKey(),
-				null,
-				OUTER,
-				(BeanRelationFixer<IndexedAssociationRecord, TRGT>) (record, target) ->
-						targetEntityHolder.storeRelation((SRCID) record.getLeft(), record.getIndex(), target),
-				Collections.emptySet(),
-				null);
-		
-		sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
+		if (relation.getTargetEntity() instanceof PolymorphicEntity) {
+			PolymorphicSkeletonAppender polymorphicSkeletonAppender = new PolymorphicSkeletonAppender();
+			ThreadLocalIndexedRelationStorage<SRC, TRGTID> current2PhasesLoadContext = new ThreadLocalIndexedRelationStorage<>();
 			
-			@Override
-			public void afterSelect(Set<? extends SRC> result) {
-				try {
-					targetEntityHolder.init();
-					
-					Map<SRCID, ? extends SRC> sourcePerId = Iterables.map(result, sourcePersister.getMapping()::getId);
-					
-					// loading the association records: target entities are collected in memory by the join relation fixer
-					associationRecordLoader.select(sourcePerId.keySet());
-					
-					// we sew the relations
-					sourcePerId.forEach((srcId, src) -> {
-						// targetPerIndex can be null if there's no associated entity in the database
-						Map<Integer, TRGT> targetPerIndex = targetEntityHolder.giveRelatedEntities(srcId);
-						if (targetPerIndex != null) {
-							// the values() are sorted thanks to the Map sorted on the index
-							targetPerIndex.values().forEach(target -> relation.getRelationFixer().apply(src, target));
+			EntityPolymorphism<TRGT, Object> polymorphism = ((PolymorphicEntity<TRGT, Object, RIGHTTABLE>) relation.getTargetEntity()).getPolymorphism();
+			
+			String associationTableJoinName = sourceReader.getEntityJoinTree().addPassiveJoin(
+					mountPoint,
+					join.getLeftKey(),
+					join.getLeftAssociationKey(),
+					OUTER,
+					Collections.emptySet(),
+					null);
+			
+			polymorphicSkeletonAppender.appendForSeparateLoad(
+					sourceReader.getEntityJoinTree(),
+					polymorphism,
+					targetReader,
+					associationTableJoinName,
+					new BiFunction<Function<ColumnedRow, TRGTID>, Set<? extends Selectable<?>>, EntityMerger<SRC>>() {
+						@Override
+						public EntityMerger<SRC> apply(Function<ColumnedRow, TRGTID> columnedRowTRGTIDFunction, Set<? extends Selectable<?>> selectables) {
+							return new FirstPhaseIndexedManyRelationLoader<>(columnedRowTRGTIDFunction, selectables, current2PhasesLoadContext, associationTable.getIndexColumn());
 						}
-					});
-				} finally {
-					// we remove the internal ThreadLocal
-					targetEntityHolder.clear();
-				}
-			}
-		});
+					},
+					new KeyMapping<>(join.getRightAssociationKey(), join.getRightKey()));
+			
+			sourceReader.addSelectListener(new SecondPhaseIndexedManyRelationSelectListener<>(
+					current2PhasesLoadContext,
+					targetReader.getMapping()::getId,
+					targetReader,
+					relation.getRelationFixer()::apply
+			));
+		} else {
+			ThreadLocalIndexedRelationStorage<SRC, TRGTID> current2PhasesLoadContext = new ThreadLocalIndexedRelationStorage<>();
+			Function<ColumnedRow, TRGTID> associationTableRecordAssembler = row -> {
+				AssociationRecord associationRecord = associationRecordMapping.getIdMapping().getIdentifierAssembler().assemble(row);
+				return associationRecord == null ? null : (TRGTID) associationRecord.getRight();
+			};
+			// we get all the columns of the association table to have the target id columns and make the target assembler able to assemble its id
+			Set<Column<ASSOCIATIONTABLE, ?>> associationTableColumns = join.getLeftAssociationKey().getTable().getColumns();
+			FirstPhaseIndexedManyRelationLoader<SRC, TRGTID> firstPhaseCollector = new FirstPhaseIndexedManyRelationLoader<>(
+					associationTableRecordAssembler,
+					associationTableColumns,
+					current2PhasesLoadContext,
+					associationTable.getIndexColumn());
+			aggregateTree.addMergeJoin(mountPoint,
+					firstPhaseCollector,
+					join.getLeftKey(),
+					join.getLeftAssociationKey(),
+					OUTER);
+			
+			// adding second phase loader
+			sourceReader.addSelectListener(new SecondPhaseIndexedManyRelationSelectListener<>(
+					current2PhasesLoadContext,
+					targetReader.getMapping()::getId,
+					targetReader,
+					relation.getRelationFixer()::apply
+			));
+		}
 		
 		// Note that because the relation is loaded separately, next joins should be appended to the loader's join tree,
 		// not the given as argument one, so that the target entity relations are loaded by the second-phase query too
-		return new GraftPoint(relation.getTargetEntity(), targetPersister, targetJoinName, associationRecordLoader.getEntityJoinTree());
+		return new GraftPoint(relation.getTargetEntity(), targetReader, ROOT_JOIN_NAME, associationRecordLoader.getEntityJoinTree());
 	}
 }

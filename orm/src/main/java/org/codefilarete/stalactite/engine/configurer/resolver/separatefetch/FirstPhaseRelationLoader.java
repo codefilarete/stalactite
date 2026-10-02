@@ -9,18 +9,34 @@ import org.codefilarete.stalactite.mapping.AbstractTransformer;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 
+/**
+ * Class aimed at collecting target entity ids for each source entity, in order to load them in a second phase.
+ * Target identifiers are collected from {@link java.sql.ResultSet} rows, represented by {@link ColumnedRow}, and stored
+ * in a {@link ThreadLocal} variable, thus they are available in a second phase (by the same thread), after the source
+ * entities have been loaded.
+ * This class works for *-to-one as for *-to-many, non-indexed, relations.
+ * For indexed relations see {@link FirstPhaseIndexedManyRelationLoader}.
+ * 
+ * @param <SRC>
+ * @param <TRGTID>
+ * @see SecondPhaseRelationSelectListener
+ */
 public class FirstPhaseRelationLoader<SRC, TRGTID> implements EntityMerger<SRC> {
 	
 	private final Function<ColumnedRow, TRGTID> idMapping;
-	private final ThreadLocal<RelationStorage<SRC, TRGTID>> relationIdsHolder;
+	private final ThreadLocalStorage<SRC, Set<TRGTID>, RelationStorage<SRC, TRGTID>> relationIdsHolder;
 	private final Set<Selectable<?>> selectableColumns;
 	
 	public FirstPhaseRelationLoader(Function<ColumnedRow, TRGTID> idMapping,
-	                                Set<? extends Selectable<?>> idColumns,
-	                                ThreadLocal<RelationStorage<SRC, TRGTID>> relationIdsHolder) {
+									Set<? extends Selectable<?>> idColumns,
+									ThreadLocalStorage<SRC, Set<TRGTID>, RelationStorage<SRC, TRGTID>> relationIdsHolder) {
 		this.idMapping = idMapping;
 		this.relationIdsHolder = relationIdsHolder;
 		this.selectableColumns = new HashSet<>(idColumns);
+	}
+	
+	public ThreadLocalStorage<SRC, Set<TRGTID>, RelationStorage<SRC, TRGTID>> getRelationIdsHolder() {
+		return relationIdsHolder;
 	}
 	
 	@Override
@@ -40,10 +56,9 @@ public class FirstPhaseRelationLoader<SRC, TRGTID> implements EntityMerger<SRC> 
 	}
 	
 	protected void fillCurrentRelationIds(ColumnedRow row, SRC bean) {
-		RelationStorage<SRC, TRGTID> relationIds = relationIdsHolder.get();
 		TRGTID id = idMapping.apply(row);
 		if (id != null) {
-			relationIds.add(bean, id);
+			relationIdsHolder.getStorage().add(bean, id);
 		}
 	}
 }

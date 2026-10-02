@@ -280,6 +280,17 @@ public class EntityJoinTree<C, I> {
 																				 Key<T1, ID> leftJoinColumn,
 																				 Key<T2, ID> rightJoinColumn,
 																				 JoinType joinType,
+																				 Set<Selectable<?>> selectableColumns) {
+		return this.addJoin(leftStrategyName, parent -> new MergeJoinNode<>((JoinNode<?, T1>) parent,
+				leftJoinColumn, rightJoinColumn, joinType,
+				null, entityMerger, selectableColumns));
+	}
+	
+	public <U, T1 extends Fromable, T2 extends Fromable, ID> String addMergeJoin(String leftStrategyName,
+																				 EntityMerger<U> entityMerger,
+																				 Key<T1, ID> leftJoinColumn,
+																				 Key<T2, ID> rightJoinColumn,
+																				 JoinType joinType,
 																				 Function<JoinNode<U, T2>, MergeJoinRowConsumer<U>> columnedRowConsumer) {
 		return this.addJoin(leftStrategyName, parent -> new MergeJoinNode<U, T1, T2, ID>((JoinNode<?, T1>) parent,
 				leftJoinColumn, rightJoinColumn, joinType,

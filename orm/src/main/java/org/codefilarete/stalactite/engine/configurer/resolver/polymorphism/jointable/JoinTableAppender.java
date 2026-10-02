@@ -2,11 +2,14 @@ package org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.join
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.GraftableRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.FirstPhaseRelationLoader;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.RelationStorage;
+import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.ThreadLocalStorage;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.jointable.JoinTablePolymorphismReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
@@ -17,8 +20,10 @@ import org.codefilarete.stalactite.engine.runtime.load.JoinTablePolymorphicRelat
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.PolymorphicMergeJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.EntityMapping;
+import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.function.Hanger.Holder;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType.OUTER;
@@ -86,11 +91,25 @@ public class JoinTableAppender {
 	String appendForSeparateLoad(EntityJoinTree<?, ?> aggregateTree,
 								 JoinTablePolymorphismReader<TRGT, TRGTID, RIGHTTABLE> targetReader,
 								 String mountPoint,
-								 ThreadLocal<RelationStorage<SRC, TRGTID>> relationIdsHolder,
+								 ThreadLocalStorage<SRC, Set<TRGTID>, RelationStorage<SRC, TRGTID>> relationIdsHolder,
 								 KeyMapping<LEFTTABLE, RIGHTTABLE, JOINID> join) {
 		
 		return aggregateTree.addMergeJoin(mountPoint,
 				new FirstPhaseRelationLoader<>(targetReader.getMapping().getIdMapping().getIdentifierAssembler()::assemble, targetReader.getMapping().getSelectableColumns(), relationIdsHolder),
+				join.getSourceKey(),
+				join.getReferencedKey(),
+				OUTER);
+	}
+	
+	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
+	String appendForSeparateLoad(EntityJoinTree<?, ?> aggregateTree,
+								 JoinTablePolymorphismReader<TRGT, TRGTID, RIGHTTABLE> targetReader,
+								 String mountPoint,
+								 BiFunction<Function<ColumnedRow, TRGTID>, Set<? extends Selectable<?>>, EntityMerger<SRC>> relationIdsHolderFactory,
+								 KeyMapping<LEFTTABLE, RIGHTTABLE, JOINID> join) {
+		
+		return aggregateTree.addMergeJoin(mountPoint,
+				relationIdsHolderFactory.apply(targetReader.getMapping().getIdMapping().getIdentifierAssembler()::assemble, targetReader.getMapping().getSelectableColumns()),
 				join.getSourceKey(),
 				join.getReferencedKey(),
 				OUTER);

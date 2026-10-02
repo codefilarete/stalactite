@@ -63,19 +63,23 @@ public class PolymorphismMetadataResolver {
 		
 		policy.getSubClasses().forEach(subConfig -> {
 			SubEntityMappingConfiguration<D> subEntityConfig = (SubEntityMappingConfiguration<D>) subConfig;
-			Mapping<D, T> mapping = createMapping(templateConfiguration, subEntityConfig, (T) templateConfiguration.getTable(), propertyMappingResolver);
+			Mapping<D, T> submapping = createMapping(templateConfiguration, subEntityConfig, (T) templateConfiguration.getTable(), propertyMappingResolver);
+			submapping.getPropertyMappingHolder().getWritablePropertyToColumn().forEach(property -> {
+				// subclass columns should be nullable in single-table to let sibling classes insert their own data without causing a mandatory column issue on others
+				property.getColumn().setNullable(true);
+			});
 			
 			// Adding template entity property mappings to the sub-entity to make it capable of filling
 			// those properties from the template/trunk table columns (single table case)
-			templateEntity.getMapping().getPropertyMappingHolder().getWritablePropertyToColumn().forEach(property -> {
-					mapping.getPropertyMappingHolder().addMapping((AbstractPropertyMapping<D, ?, ?>) property);
+			templateEntity.getMapping().getPropertyMappingHolder().getWritablePropertyToColumn().forEach(templateProperty -> {
+					submapping.getPropertyMappingHolder().addMapping((AbstractPropertyMapping<D, ?, ?>) templateProperty);
 			});
-			templateEntity.getMapping().getPropertyMappingHolder().getReadonlyPropertyToColumn().forEach(property -> {
-					mapping.getPropertyMappingHolder().addMapping((AbstractPropertyMapping<D, ?, ?>) property);
+			templateEntity.getMapping().getPropertyMappingHolder().getReadonlyPropertyToColumn().forEach(templateProperty -> {
+					submapping.getPropertyMappingHolder().addMapping((AbstractPropertyMapping<D, ?, ?>) templateProperty);
 			});
 			
 			DTYPE discriminatorValue = policy.getDiscriminatorValue(subConfig.getEntityType());
-			Entity<D, I, T> subEntity = new Entity<>(templateConfiguration.getIdentifierMapping(), mapping);
+			Entity<D, I, T> subEntity = new Entity<>(templateConfiguration.getIdentifierMapping(), submapping);
 			result.addSubEntity(discriminatorValue, subEntity);
 		});
 		
@@ -132,16 +136,16 @@ public class PolymorphismMetadataResolver {
 			SUBTABLE subTable = (SUBTABLE) nullable(policy.giveTable(subEntityConfig))
 					.getOr(() -> new Table<>(templateConfiguration.getNamingConfiguration().getTableNamingStrategy().giveName(subEntityConfig.getEntityType())));
 			// propagating parent class primaryKey to the subTable
-			KeepOrderSet<Column<SUBTABLE, ?>> columns = templateConfiguration.getTable().<I>getPrimaryKey().getColumns();
-			columns.forEach(column -> {
-				subTable.addColumn(column.getName(), column.getJavaType(), column.getSize(), column.isNullable())
+			KeepOrderSet<Column<SUBTABLE, ?>> templateColumns = templateConfiguration.getTable().<I>getPrimaryKey().getColumns();
+			templateColumns.forEach(templateColumn -> {
+				subTable.addColumn(templateColumn.getName(), templateColumn.getJavaType(), templateColumn.getSize(), templateColumn.isNullable())
 						.primaryKey();
 			});
 			Mapping<D, SUBTABLE> mapping = createMapping(templateConfiguration, subEntityConfig, subTable, propertyMappingResolver);
 			
 			// copying parent class properties to the subTable (table-per-class case)
-			templateEntity.getMapping().getPropertyMappingHolder().getWritablePropertyToColumn().forEach(property -> {
-				PropertyMapping<C, O, T> castProperty = (PropertyMapping<C, O, T>) property;
+			templateEntity.getMapping().getPropertyMappingHolder().getWritablePropertyToColumn().forEach(templateProperty -> {
+				PropertyMapping<C, O, T> castProperty = (PropertyMapping<C, O, T>) templateProperty;
 				Column<T, O> templateColumn = castProperty.getColumn();
 				Column<SUBTABLE, O> subtableColumn = subTable.addColumn(templateColumn.getName(), templateColumn.getJavaType(), templateColumn.getSize(), templateColumn.isNullable());
 				mapping.getPropertyMappingHolder().addMapping(new PropertyMapping<>(
@@ -152,8 +156,8 @@ public class PolymorphismMetadataResolver {
 						castProperty.getWriteConverter(),
 						castProperty.isUnique()));
 			});
-			templateEntity.getMapping().getPropertyMappingHolder().getReadonlyPropertyToColumn().forEach(property -> {
-				ReadOnlyPropertyMapping<C, O, T> castProperty = (ReadOnlyPropertyMapping<C, O, T>) property;
+			templateEntity.getMapping().getPropertyMappingHolder().getReadonlyPropertyToColumn().forEach(templateProperty -> {
+				ReadOnlyPropertyMapping<C, O, T> castProperty = (ReadOnlyPropertyMapping<C, O, T>) templateProperty;
 				Column<T, O> templateColumn = castProperty.getColumn();
 				Column<SUBTABLE, O> subtableColumn = subTable.addColumn(templateColumn.getName(), templateColumn.getJavaType(), templateColumn.getSize(), templateColumn.isNullable());
 				mapping.getPropertyMappingHolder().addMapping(new ReadOnlyPropertyMapping<>(

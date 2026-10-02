@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -12,9 +13,11 @@ import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.GraftableRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.FirstPhaseRelationLoader;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.RelationStorage;
+import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.ThreadLocalStorage;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.engine.runtime.load.EntityMerger;
 import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.JoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode;
@@ -182,7 +185,7 @@ public class TablePerClassAppender {
 	String appendForSeparateLoad(EntityJoinTree<?, ?> aggregateTree,
 								 TablePerClassPolymorphismReader<TRGT, TRGTID, RIGHTTABLE> targetReader,
 								 String mountPoint,
-								 ThreadLocal<RelationStorage<SRC, TRGTID>> relationIdsHolder,
+								 ThreadLocalStorage<SRC, Set<TRGTID>, RelationStorage<SRC, TRGTID>> relationIdsHolder,
 								 KeyMapping<LEFTTABLE, RIGHTTABLE, JOINID> join) {
 		
 		Set<ConfiguredEntityReader<? extends TRGT, TRGTID, ?>> subPersisters = new HashSet<>(targetReader.getSubEntitiesPersisters().values());
@@ -211,6 +214,49 @@ public class TablePerClassAppender {
 		
 		String joinName = aggregateTree.addMergeJoin(mountPoint,
 				new FirstPhaseRelationLoader<>(idMapping, pseudoTable.getColumns(), relationIdsHolder),
+				join.getSourceKey(),
+				rightKey.build(),
+				OUTER);
+		
+		pseudoTable.getColumns().forEach(column -> {
+			((MergeJoinNode) aggregateTree.getJoin(joinName)).getOriginalColumnsToLocalOnes().put(column, column);
+		});
+		return joinName;
+	}
+	
+	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
+	String appendForSeparateLoad(EntityJoinTree<?, ?> aggregateTree,
+								 TablePerClassPolymorphismReader<TRGT, TRGTID, RIGHTTABLE> targetReader,
+								 String mountPoint,
+								 BiFunction<Function<ColumnedRow, TRGTID>, Set<? extends Selectable<?>>, EntityMerger<SRC>> relationIdsHolderFactory,
+								 KeyMapping<LEFTTABLE, RIGHTTABLE, JOINID> join) {
+		
+		Set<ConfiguredEntityReader<? extends TRGT, TRGTID, ?>> subPersisters = new HashSet<>(targetReader.getSubEntitiesPersisters().values());
+		
+		TablePerClassUnion<TRGT, TRGTID> union = buildUnionForIdentifierRead(subPersisters, targetReader.getMapping().getSelectableColumns(), join.getReferencedKey());
+		PseudoTable pseudoTable = union.asPseudoTable(targetReader.getClassToPersist().getSimpleName());
+		Map<String, PseudoColumn<?>> unionColumnsPerName = pseudoTable.mapColumnsOnName();
+		IdentifierAssembler<TRGTID, RIGHTTABLE> targetIdentifierAssembler = targetReader.getMapping().getIdMapping().getIdentifierAssembler();
+		Function<ColumnedRow, TRGTID> idMapping = columnedRow -> targetIdentifierAssembler.assemble(new ColumnedRow() {
+			@Override
+			public <E> E get(Selectable<E> pkColumn) {
+				// we get the column from the union by its name, not from the target table, because the join is made on the union
+				Selectable<?> joinLink = unionColumnsPerName.get(pkColumn.getExpression());
+				if (joinLink == null) {
+					throw new IllegalStateException("No column found in union for " + pkColumn);
+				}
+				return (E) columnedRow.get(joinLink);
+			}
+		});
+		
+		// we build a key for the right side of the join, based on the pseudo table that is the union of all sub persisters
+		KeyBuilder<PseudoTable, JOINID> rightKey = Key.from(pseudoTable);
+		join.getReferencedKey().getColumns().forEach(referencedColumn -> {
+			rightKey.addColumn(unionColumnsPerName.get(referencedColumn.getName()));
+		});
+		
+		String joinName = aggregateTree.addMergeJoin(mountPoint,
+				relationIdsHolderFactory.apply(idMapping, pseudoTable.getColumns()),
 				join.getSourceKey(),
 				rightKey.build(),
 				OUTER);

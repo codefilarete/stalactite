@@ -21,6 +21,7 @@ import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy;
 import org.codefilarete.stalactite.dsl.PolymorphismPolicy.SingleTablePolymorphism;
+import org.codefilarete.stalactite.dsl.entity.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.EntitySelector.ExecutableProjectionQuery;
@@ -31,14 +32,18 @@ import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPrope
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListener;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
+import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver;
 import org.codefilarete.stalactite.engine.model.Car;
+import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Engine;
+import org.codefilarete.stalactite.engine.model.Town;
 import org.codefilarete.stalactite.engine.model.Truck;
 import org.codefilarete.stalactite.engine.model.Vehicle;
+import org.codefilarete.stalactite.engine.model.Village;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
-import org.codefilarete.stalactite.engine.runtime.EmptySubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalEntityPersister;
+import org.codefilarete.stalactite.engine.runtime.EmptySubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.ExecutableEntityQueryCriteria;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.id.Identified;
@@ -129,6 +134,29 @@ class SingleTablePolymorphismPersisterTest {
 		public long[] next() {
 			return rowCounts.next();
 		}
+	}
+	
+	@Test
+	void schema() {
+		Dialect dialect = HSQLDBDialectBuilder.defaultHSQLDBDialect();
+		dialect.getColumnBinderRegistry().register((Class) Identifier.class, identifierBinder(LONG_PRIMITIVE_BINDER));
+		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
+		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
+		
+		FluentEntityMappingBuilder<City, Identifier<Long>> cityMappingBuilder = entityBuilder(City.class, LONG_TYPE)
+				.mapKey(City::getId, ALREADY_ASSIGNED)
+				.mapPolymorphism(PolymorphismPolicy.<City>singleTable()
+						.addSubClass(subentityBuilder(Village.class)
+								.map(Village::getBarCount), "V")
+						.addSubClass(subentityBuilder(Town.class)
+								.map(Town::getDiscotecCount), "T")
+				);
+		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<City, Identifier<Long>> cityPersister = testInstance.resolve(cityMappingBuilder.getConfiguration());
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
 	}
 	
 	protected ConfiguredRelationalEntityPersister<TotoA, Identifier<Integer>, ?> initMappingTotoA(Table totoTable) {	

@@ -8,7 +8,6 @@ import java.util.stream.Stream;
 
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
-import org.codefilarete.stalactite.engine.configurer.resolver.EntityReader;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
@@ -57,8 +56,8 @@ public class AggregateManyToManyAppender {
 	public <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>,
 			LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
 	GraftPoint append(ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
-	                  ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
-	                  ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister,
+	                  ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourceReader,
+	                  ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetReader,
 	                  String mountPoint,
 	                  EntityJoinTree<SRC, SRCID> aggregateTree,
 	                  Dialect dialect,
@@ -69,21 +68,21 @@ public class AggregateManyToManyAppender {
 		GraftPoint result;
 		if (relation.isOrdered()) {
 			if (relation.isFetchSeparately()) {
-				result = fetchSeparatelyIndexedAppender.append(relation, sourcePersister, targetPersister, dialect, connectionProvider);
+				result = fetchSeparatelyIndexedAppender.append(relation, sourceReader, targetReader, mountPoint, aggregateTree, dialect, connectionProvider);
 			} else {
-				result = joinedIndexedAppender.append(relation, sourcePersister, targetPersister, relation.getAccessor(), mountPoint, aggregateTree);
+				result = joinedIndexedAppender.append(relation, sourceReader, targetReader, relation.getAccessor(), mountPoint, aggregateTree);
 			}
 		} else {
 			if (relation.isFetchSeparately()) {
-				result = fetchSeparatelyAppender.append(relation, sourcePersister, targetPersister, dialect, connectionProvider);
+				result = fetchSeparatelyAppender.append(relation, sourceReader, targetReader, mountPoint, aggregateTree, dialect, connectionProvider);
 			} else {
-				result = joinedAppender.append(relation, sourcePersister, targetPersister, relation.getAccessor(), mountPoint, aggregateTree);
+				result = joinedAppender.append(relation, sourceReader, targetReader, relation.getAccessor(), mountPoint, aggregateTree);
 			}
 		}
 		
 		// Forward SELECT lifecycle events from the source entity's persister down to the target persister
-		SelectListener<TRGT, TRGTID> targetSelectListener = targetPersister.getSelectListener();
-		sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
+		SelectListener<TRGT, TRGTID> targetSelectListener = targetReader.getSelectListener();
+		sourceReader.addSelectListener(new SelectListener<SRC, SRCID>() {
 			@Override
 			public void beforeSelect(Iterable<SRCID> ids) {
 				targetSelectListener.beforeSelect(Collections.emptyList());

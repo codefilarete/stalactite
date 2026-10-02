@@ -137,7 +137,7 @@ public class AggregateResolver {
 		this.entitySkeletonResolver = new EntitySkeletonResolver(persistenceContext);
 		this.oneToOneResolver = new OneToOneResolver(entitySkeletonResolver);
 		this.oneToManyResolver = new OneToManyResolver(entitySkeletonResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
-		this.manyToManyResolver = new ManyToManyResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
+		this.manyToManyResolver = new ManyToManyResolver(entitySkeletonResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 		this.manyToOneResolver = new ManyToOneResolver(skeletonAggregateResolver);
 		this.elementCollectionResolver = new ElementCollectionResolver(persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 		this.mapResolver = new MapResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
@@ -435,9 +435,7 @@ public class AggregateResolver {
 						if (relationPawn instanceof ResolvedManyToManyRelation) {
 							CreatedPersisterCollector<TRGT, TRGTID> localCreatedPersistor = (CreatedPersisterCollector<TRGT, TRGTID>) createdPersisters.get(relationPawn);
 							ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> localRelation = (ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE>) relationPawn;
-							EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister = new EntityReader<>(
-									localCreatedPersistor.getPersister().<RIGHTTABLE>getMapping(), persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
-							
+							ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister = (ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE>) ((DelegatingReadWriteEntityExecutor<TRGT, TRGTID>) localCreatedPersistor.getPersister()).getReader();							
 							GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> graftPoint = manyToManyAppender.append(
 									localRelation,
 									sourcePersister,
