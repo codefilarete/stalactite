@@ -44,6 +44,7 @@ public class IndexedElementRecord<TRGT, ID> extends ElementRecord<TRGT, ID> {
 	 * with best practices) which is not our case nor required by {@link CollectionDiffer}.
 	 * Note : name of this method is not important
 	 */
+	@Override
 	public int footprint() {
 		return super.footprint() + 31 * index;
 	}

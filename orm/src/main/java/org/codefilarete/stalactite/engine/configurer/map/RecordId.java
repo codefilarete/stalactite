@@ -2,8 +2,6 @@ package org.codefilarete.stalactite.engine.configurer.map;
 
 import java.util.Objects;
 
-import org.codefilarete.stalactite.engine.diff.CollectionDiffer;
-
 /**
  * Identifier of a {@link KeyValueRecord} table : since the relation is a kind of one-to-many, with entry key as
  * additional identifier, this class is composed of those elements :
@@ -60,17 +58,4 @@ public class RecordId<K, SRCID> {
 		result = 31 * result + key.hashCode();
 		return result;
 	}
-	
-	/**
-	 * Identifier for {@link CollectionDiffer} support (update use case), because it compares beans
-	 * through their "footprint" which is their id in default/entity case, but since we are value type, we must provide a dedicated footprint.
-	 * Could be hashCode() if it was implemented on identifier + element, but implementing it would require implementing equals() (to comply
-	 * with best practices) which is not our case nor required by {@link CollectionDiffer}.
-	 * Note : name of this method is not important
-	 */
-//	public int footprint() {
-//		int result = id.hashCode();
-//		result = 31 * result + key.hashCode();
-//		return result;
-//	}
 }
