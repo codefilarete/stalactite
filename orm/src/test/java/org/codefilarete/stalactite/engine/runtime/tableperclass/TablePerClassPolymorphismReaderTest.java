@@ -45,6 +45,7 @@ import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
+import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.function.Functions;
 import org.codefilarete.trace.ObjectPrinterBuilder;
 import org.codefilarete.trace.ObjectPrinterBuilder.ObjectPrinter;
@@ -1462,6 +1463,116 @@ class TablePerClassPolymorphismReaderTest {
 					.mapKey("cnt", Long.class)
 					.execute(Accumulators.getFirst());
 			assertThat(mapRowCount).isEqualTo(0L);
+		}
+		
+		@Test
+		void select_keyAndValueAreEntities() {
+			PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
+			
+			FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapMap(Person::getMapPropertyMadeOfEntityAsKeyAndValue, City.class, Country.class)
+					.withKeyMapping(entityBuilder(City.class, LONG_TYPE)
+							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.map(City::getName)
+							.mapPolymorphism(PolymorphismPolicy.<City>tablePerClass()
+									.addSubClass(subentityBuilder(Village.class)
+											.map(Village::getBarCount), "V")
+									.addSubClass(subentityBuilder(Town.class)
+											.map(Town::getDiscotecCount), "T")
+							)
+						)
+					.withValueMapping(entityBuilder(Country.class, LONG_TYPE)
+							.mapKey(Country::getId, ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.mapPolymorphism(PolymorphismPolicy.<Country>tablePerClass()
+									.addSubClass(subentityBuilder(Realm.class), "REALM")
+									.addSubClass(subentityBuilder(Republic.class), "REPUBLIC")
+							)
+						);
+			
+			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+			EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Town lyon = new Town(17L);
+			lyon.setName("Lyon");
+			lyon.setDiscotecCount(123);
+			Village grenoble = new Village(42L);
+			grenoble.setName("Grenoble");
+			grenoble.setBarCount(51);
+			Person person = new Person(new PersistableIdentifier<>(1L));
+			person.setMapPropertyMadeOfEntityAsKeyAndValue(Maps.forHashMap(City.class, Country.class)
+					.add(grenoble, new Realm(1))
+					.add(lyon, new Realm(2))
+			);
+			
+			personPersister.insert(person);
+			
+			Person loadedPerson = personPersister.select(person.getId());
+			assertThat(loadedPerson.getMapPropertyMadeOfEntityAsKeyAndValue()).isEqualTo(Maps.forHashMap(City.class, Country.class)
+					.add(grenoble, new Realm(1))
+					.add(lyon, new Realm(2))
+			);
+		}
+		
+		@Test
+		void select_keyAndValueAreEntities_bothFetchSeparately() {
+			PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
+			
+			FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapMap(Person::getMapPropertyMadeOfEntityAsKeyAndValue, City.class, Country.class)
+					.withKeyMapping(entityBuilder(City.class, LONG_TYPE)
+							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.map(City::getName)
+							.mapPolymorphism(PolymorphismPolicy.<City>tablePerClass()
+									.addSubClass(subentityBuilder(Village.class)
+											.map(Village::getBarCount), "V")
+									.addSubClass(subentityBuilder(Town.class)
+											.map(Town::getDiscotecCount), "T")
+							)
+					)
+					.fetchSeparately()
+					.withValueMapping(entityBuilder(Country.class, LONG_TYPE)
+							.mapKey(Country::getId, ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.mapPolymorphism(PolymorphismPolicy.<Country>tablePerClass()
+									.addSubClass(subentityBuilder(Realm.class), "REALM")
+									.addSubClass(subentityBuilder(Republic.class), "REPUBLIC")
+							)
+					)
+					.fetchSeparately();
+			
+			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+			EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Town lyon = new Town(17L);
+			lyon.setName("Lyon");
+			lyon.setDiscotecCount(123);
+			Village grenoble = new Village(42L);
+			grenoble.setName("Grenoble");
+			grenoble.setBarCount(51);
+			Person person = new Person(new PersistableIdentifier<>(1L));
+			person.setMapPropertyMadeOfEntityAsKeyAndValue(Maps.forHashMap(City.class, Country.class)
+					.add(grenoble, new Realm(1))
+					.add(lyon, new Realm(2))
+			);
+			
+			personPersister.insert(person);
+			
+			Person loadedPerson = personPersister.select(person.getId());
+			assertThat(loadedPerson.getMapPropertyMadeOfEntityAsKeyAndValue()).isEqualTo(Maps.forHashMap(City.class, Country.class)
+					.add(grenoble, new Realm(1))
+					.add(lyon, new Realm(2))
+			);
 		}
 	}
 }

@@ -12,10 +12,10 @@ Hereafter are the features that are supported by the resolver of map relations. 
 | map      | no               | yes             | separate  | no                 | [x]    |
 | map      | no               | yes             | separate  | yes                | [x]    |
 | -------- | ---------------- | --------------- | --------- | ------------------ | ------ |
-| map      | yes              | yes             | join      | no                 | [ ]    | MapResolverTest.crud_keyAndValueAreEntities
-| map      | yes              | yes             | join      | yes                | [ ]    |
-| map      | yes              | yes             | separate  | no                 | [ ]    | MapResolverTest.select_keyAndValueAreEntities_bothFetchSeparately
-| map      | yes              | yes             | separate  | yes                | [ ]    |
+| map      | yes              | yes             | join      | no                 | [x]    | MapResolverTest.crud_keyAndValueAreEntities
+| map      | yes              | yes             | join      | yes                | [x]    | *PolymorphismReaderTest.select_keyAndValueAreEntities
+| map      | yes              | yes             | separate  | no                 | [x]    | MapResolverTest.select_keyAndValueAreEntities_bothFetchSeparately
+| map      | yes              | yes             | separate  | yes                | [x]    | *PolymorphismReaderTest.select_keyAndValueAreEntities_bothFetchSeparately
 | -------- | ---------------- | --------------- | --------- | ------------------ | ------ |
 | map      | no               | no              | join      |                    | [x]    |
 
