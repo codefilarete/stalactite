@@ -15,6 +15,8 @@ public class City implements Identified<Long> {
 	
 	private Identifier<Long> id;
 	
+	private Timestamp timestamp;
+	
 	private String name;
 	
 	private Country country;
@@ -42,6 +44,14 @@ public class City implements Identified<Long> {
 	@Override
 	public Identifier<Long> getId() {
 		return id;
+	}
+	
+	public Timestamp getTimestamp() {
+		return timestamp;
+	}
+	
+	public void setTimestamp(Timestamp timestamp) {
+		this.timestamp = timestamp;
 	}
 	
 	/**

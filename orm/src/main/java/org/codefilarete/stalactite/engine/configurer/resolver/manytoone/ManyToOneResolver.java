@@ -8,37 +8,30 @@ import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneConfigurer.MandatoryRelationAssertBeforeInsertListener;
 import org.codefilarete.stalactite.engine.configurer.manytoone.ManyToOneConfigurer.MandatoryRelationAssertBeforeUpdateListener;
-import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.CreatedPersisterCollector;
+import org.codefilarete.stalactite.engine.configurer.resolver.EntitySkeletonResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
-import org.codefilarete.stalactite.engine.runtime.AssociationTable;
-import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 import static org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode.READ_ONLY;
 
 /**
- * Handles write-cascade wiring for a resolved {@link ResolvedManyToManyRelation}.
- * Many-to-many relations always use an intermediary association table; there is no "owned by reverse side" variant.
- * Two sub-paths are supported:
- * <ul>
- *   <li>Non-indexed: {@link AssociationTable} + {@link org.codefilarete.stalactite.engine.configurer.resolver.onetomany.OneToManyWithAssociationTableEngine}</li>
- *   <li>Indexed: {@link IndexedAssociationTable} + {@link org.codefilarete.stalactite.engine.configurer.resolver.onetomany.OneToManyWithIndexedAssociationTableEngine}</li>
- * </ul>
+ * Handles write-cascade wiring for a resolved {@link ResolvedManyToOneRelation}.
+ * Many-to-one relations are always mapped with the "owned by reverse side" paradigm.
  *
  * @author Guillaume Mary
  */
 public class ManyToOneResolver {
 	
-	private final SkeletonAggregateResolver skeletonAggregateResolver;
+	private final EntitySkeletonResolver entitySkeletonResolver;
 	
-	public ManyToOneResolver(SkeletonAggregateResolver skeletonAggregateResolver) {
-		this.skeletonAggregateResolver = skeletonAggregateResolver;
+	public ManyToOneResolver(EntitySkeletonResolver entitySkeletonResolver) {
+		this.entitySkeletonResolver = entitySkeletonResolver;
 	}
 	
 	/**
-	 * Resolves the given many-to-many relation by building a persister for the target entity and wiring write cascades
+	 * Resolves the given many-to-one relation by building a persister for the target entity and wiring write cascades
 	 * (INSERT / UPDATE / DELETE) onto the source persister via the appropriate association-table engine.
 	 *
 	 * @param resolvedRelation the resolved model relation carrying the join structure and cascade options
@@ -54,7 +47,7 @@ public class ManyToOneResolver {
 		
 		assertConfigurationIsSupported(resolvedRelation.getRelationMode());
 		
-		EntityReadWriteExecutor<TRGT, TRGTID> targetPersister = skeletonAggregateResolver.resolve(resolvedRelation.getTargetEntity(), persisterCollector);
+		EntityReadWriteExecutor<TRGT, TRGTID> targetPersister = entitySkeletonResolver.resolve(resolvedRelation.getTargetEntity(), persisterCollector);
 		
 		ManyToOneEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> engine = new ManyToOneEngine<>(
 				sourcePersister,

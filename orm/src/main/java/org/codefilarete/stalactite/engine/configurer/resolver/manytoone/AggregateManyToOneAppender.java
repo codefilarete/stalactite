@@ -7,6 +7,7 @@ import org.codefilarete.stalactite.engine.configurer.model.EntityPolymorphism;
 import org.codefilarete.stalactite.engine.configurer.model.PolymorphicEntity;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.GraftableRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.PolymorphicSkeletonAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.FirstPhaseRelationLoader;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.SecondPhaseRelationSelectListener;
@@ -15,6 +16,7 @@ import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType.OUTER;
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
@@ -38,40 +40,60 @@ public class AggregateManyToOneAppender {
 	 * so that deeper relations are also resolved
 	 */
 	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
-	GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> append(ResolvedManyToOneRelation<SRC, TRGT, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
+	GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> append(ResolvedManyToOneRelation<SRC, TRGT, SRCID, LEFTTABLE, RIGHTTABLE> relation,
 	                                                        ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourceReader,
 	                                                        ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetReader,
 	                                                        String mountPoint,
 	                                                        EntityJoinTree<SRC, SRCID> aggregateTree) {
 		GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> result;
 		
-		DirectRelationJoin<LEFTTABLE, RIGHTTABLE, TRGTID> join = relation.getJoin();
+		DirectRelationJoin<LEFTTABLE, RIGHTTABLE, SRCID> join = relation.getJoin();
 		if (relation.isFetchSeparately()) {
 			result = appendWithSeparateFetch(relation, sourceReader, targetReader, mountPoint, aggregateTree, join);
 		} else {
-			String joinName = aggregateTree.addRelationJoin(
-					mountPoint,
-					new EntityMappingAdapter<>(targetReader.getMapping()),
-					relation.getAccessor(),
-					relation.getJoin().getLeftKey(),
-					relation.getJoin().getRightKey(),
-					null,
-					OUTER,
-					relation.getRelationFixer(),
-					Collections.emptySet());
-			result = new GraftPoint(relation.getTargetEntity(), targetReader, joinName);
+			// we join the relation onto the aggregate root to build the whole select tree
+			if (relation.getTargetEntity() instanceof PolymorphicEntity) {
+				EntityPolymorphism<TRGT, Object> polymorphism = ((PolymorphicEntity<TRGT, Object, RIGHTTABLE>) relation.getTargetEntity()).getPolymorphism();
+				
+				// Note that there's no difference between relation being owned by source or target, because the join
+				// is defined by the DirectRelationJoin object, which is built accordingly to the relation owner
+				GraftableRelation<SRC, TRGT, TRGTID, LEFTTABLE, RIGHTTABLE, SRCID> graftableRelation = new GraftableRelation<>(
+						relation.getJoin().getLeftKey(),
+						relation.getJoin().getRightKey(),
+						relation.getAccessor(),
+						(BeanRelationFixer<Object, TRGT>) relation.getRelationFixer(),
+						relation.getTargetEntity());
+				result = polymorphicSkeletonAppender.append(
+						aggregateTree,
+						polymorphism,
+						targetReader,
+						graftableRelation,
+						mountPoint);
+			} else {
+				String joinName = aggregateTree.addRelationJoin(
+						mountPoint,
+						new EntityMappingAdapter<>(targetReader.getMapping()),
+						relation.getAccessor(),
+						relation.getJoin().getLeftKey(),
+						relation.getJoin().getRightKey(),
+						null,
+						OUTER,
+						relation.getRelationFixer(),
+						Collections.emptySet());
+				result = new GraftPoint(relation.getTargetEntity(), targetReader, joinName);
+			}
 		}
 		return result;
 	}
 	
 	private <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
 	GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID>
-	appendWithSeparateFetch(ResolvedManyToOneRelation<SRC, TRGT, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
+	appendWithSeparateFetch(ResolvedManyToOneRelation<SRC, TRGT, SRCID, LEFTTABLE, RIGHTTABLE> relation,
 							ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourceReader,
 							ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetReader,
 							String mountPoint,
 							EntityJoinTree<SRC, SRCID> aggregateTree,
-							DirectRelationJoin<LEFTTABLE, RIGHTTABLE, TRGTID> join) {
+							DirectRelationJoin<LEFTTABLE, RIGHTTABLE, SRCID> join) {
 		GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> result;
 		ThreadLocalRelationStorage<SRC, TRGTID> current2PhasesLoadContext = new ThreadLocalRelationStorage<>();
 		

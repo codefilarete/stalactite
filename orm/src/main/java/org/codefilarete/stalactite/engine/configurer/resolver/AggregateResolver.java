@@ -103,7 +103,6 @@ public class AggregateResolver {
 	private final ManyToOneResolver manyToOneResolver;
 	private final ElementCollectionResolver elementCollectionResolver;
 	private final MapResolver mapResolver;
-	private EntitySkeletonResolver entitySkeletonResolver;
 	
 	/**
 	 * Creates a resolver bound to the given {@link PersistenceContext}, publishing built persisters into the context's
@@ -134,11 +133,11 @@ public class AggregateResolver {
 		this.elementCollectionAppender = new AggregateElementCollectionAppender();
 		this.mapAppender = new AggregateMapAppender();
 		
-		this.entitySkeletonResolver = new EntitySkeletonResolver(persistenceContext);
+		EntitySkeletonResolver entitySkeletonResolver = new EntitySkeletonResolver(persistenceContext);
 		this.oneToOneResolver = new OneToOneResolver(entitySkeletonResolver);
 		this.oneToManyResolver = new OneToManyResolver(entitySkeletonResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 		this.manyToManyResolver = new ManyToManyResolver(entitySkeletonResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
-		this.manyToOneResolver = new ManyToOneResolver(skeletonAggregateResolver);
+		this.manyToOneResolver = new ManyToOneResolver(entitySkeletonResolver);
 		this.elementCollectionResolver = new ElementCollectionResolver(persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 		this.mapResolver = new MapResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 	}
@@ -451,9 +450,8 @@ public class AggregateResolver {
 						}
 						if (relationPawn instanceof ResolvedManyToOneRelation) {
 							CreatedPersisterCollector<TRGT, TRGTID> localCreatedPersistor = (CreatedPersisterCollector<TRGT, TRGTID>) createdPersisters.get(relationPawn);
-							ResolvedManyToOneRelation<SRC, TRGT, TRGTID, LEFTTABLE, RIGHTTABLE> localRelation = (ResolvedManyToOneRelation<SRC, TRGT, TRGTID, LEFTTABLE, RIGHTTABLE>) relationPawn;
-							EntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister = new EntityReader<>(
-									localCreatedPersistor.getPersister().<RIGHTTABLE>getMapping(), persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
+							ResolvedManyToOneRelation<SRC, TRGT, SRCID, LEFTTABLE, RIGHTTABLE> localRelation = (ResolvedManyToOneRelation<SRC, TRGT, SRCID, LEFTTABLE, RIGHTTABLE>) relationPawn;
+							ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetPersister = (ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE>) ((DelegatingReadWriteEntityExecutor<TRGT, TRGTID>) localCreatedPersistor.getPersister()).getReader();
 							GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> graftPoint = manyToOneAppender.append(
 									localRelation,
 									sourcePersister,

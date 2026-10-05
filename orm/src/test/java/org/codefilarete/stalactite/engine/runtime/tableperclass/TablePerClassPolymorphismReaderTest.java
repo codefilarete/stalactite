@@ -19,7 +19,10 @@ import org.codefilarete.stalactite.engine.model.AbstractVehicle;
 import org.codefilarete.stalactite.engine.model.Car;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Color;
+import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
+import org.codefilarete.stalactite.engine.model.Realm;
+import org.codefilarete.stalactite.engine.model.Republic;
 import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.engine.model.Town;
 import org.codefilarete.stalactite.engine.model.Truck;
@@ -43,6 +46,7 @@ import org.codefilarete.tool.function.Functions;
 import org.codefilarete.trace.ObjectPrinterBuilder;
 import org.codefilarete.trace.ObjectPrinterBuilder.ObjectPrinter;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,6 +60,7 @@ import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.R
 import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.RelationOwnership.BY_SOURCE;
 import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.RelationOwnership.BY_TARGET;
 import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.Type.MANY_TO_MANY;
+import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.Type.MANY_TO_ONE;
 import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.Type.ONE_TO_MANY;
 import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.Type.ONE_TO_ONE;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
@@ -890,5 +895,180 @@ class TablePerClassPolymorphismReaderTest {
 				.usingComparator(Comparator.comparing(personPrinter::toString))
 				.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
 				.isEqualTo(person2);
+	}
+	
+	@Nested
+	class ManyToOne {
+		
+		@Test
+		@UseCase(relation = @Relation(type = MANY_TO_ONE, polymorphism = TABLE_PER_CLASS, ownership = BY_SOURCE, fetch = JOIN))
+		void toTablePerClassOne() {
+			PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
+			
+			FluentEmbeddableMappingBuilder<City> timestampedPersistentBeanMapping =
+					embeddableBuilder(City.class)
+							.map(City::getName)
+							.embed(City::getTimestamp, embeddableBuilder(Timestamp.class)
+									.map(Timestamp::getCreationDate)
+									.map(Timestamp::getModificationDate));
+			
+			FluentEntityMappingBuilder<Country, Identifier<Long>> vehicleConfiguration =
+					entityBuilder(Country.class, LONG_TYPE)
+							.mapKey(Country::getId, ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.mapPolymorphism(PolymorphismPolicy.<Country>tablePerClass()
+									.addSubClass(subentityBuilder(Realm.class), "REALM")
+									.addSubClass(subentityBuilder(Republic.class), "REPUBLIC")
+							);
+			
+			FluentEntityMappingBuilder<City, Identifier<Long>> personBuilder = entityBuilder(City.class, LONG_TYPE)
+					.mapKey(City::getId, ALREADY_ASSIGNED)
+					.mapManyToOne(City::getCountry, vehicleConfiguration)
+					.mapSuperClass(timestampedPersistentBeanMapping);
+			
+			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+			EntityPersister<City, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// insert
+			Republic france = new Republic(42L);
+			france.setName("France");
+			City grenoble = new City(1);
+			grenoble.setCountry(france);
+			City lyon = new City(2);
+			lyon.setCountry(france);
+			Realm uk = new Realm(142L);
+			uk.setName("United Kingdom");
+			City london = new City(3);
+			london.setCountry(uk);
+			personPersister.insert(grenoble, lyon, london);
+			
+			Set<City> loadedCities = personPersister.select(Arrays.asList(grenoble.getId(), lyon.getId(), london.getId()));
+			
+			// we use a printer to compare our results because entities override equals() which only keep "id" into account
+			// which is far from sufficient for ou checking
+			// Note that we don't use ObjectPrinterBuilder#printerFor because it takes getCities() into account whereas its code is not ready for recursion 
+			ObjectPrinter<Country> vehiclePrinter = new ObjectPrinterBuilder<Country>()
+					.addProperty(Country::getId)
+					.addProperty(Country::getClass)
+					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
+					.build();
+			ObjectPrinter<City> cityPrinter = new ObjectPrinterBuilder<City>()
+					.addProperty(City::getId)
+					.addProperty(City::getName)
+					.addProperty(City::getTimestamp)
+					.addProperty(City::getCountry)
+					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
+					.withPrinter(Country.class, vehiclePrinter::toString)
+					.build();
+			
+			Map<Identifier<Long>, City> loadedCitiesPerId = Iterables.map(loadedCities, City::getId);
+			City loadedCity1 = loadedCitiesPerId.get(grenoble.getId());
+			City loadedCity2 = loadedCitiesPerId.get(lyon.getId());
+			City loadedCity3 = loadedCitiesPerId.get(london.getId());
+			
+			assertThat(loadedCity1)
+					.usingComparator(Comparator.comparing(cityPrinter::toString))
+					.withRepresentation(new PartialRepresentation<>(City.class, cityPrinter))
+					.isEqualTo(grenoble);
+			
+			assertThat(loadedCity2)
+					.usingComparator(Comparator.comparing(cityPrinter::toString))
+					.withRepresentation(new PartialRepresentation<>(City.class, cityPrinter))
+					.isEqualTo(lyon);
+			
+			assertThat(loadedCity3)
+					.usingComparator(Comparator.comparing(cityPrinter::toString))
+					.withRepresentation(new PartialRepresentation<>(City.class, cityPrinter))
+					.isEqualTo(london);
+		}
+		
+		@Test
+		@UseCase(relation = @Relation(type = MANY_TO_ONE, polymorphism = TABLE_PER_CLASS, ownership = BY_SOURCE, fetch = SEPARATE_QUERY))
+		void toTablePerClassOne_fetchSeparately() {
+			PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
+			
+			FluentEmbeddableMappingBuilder<City> timestampedPersistentBeanMapping =
+					embeddableBuilder(City.class)
+							.map(City::getName)
+							.embed(City::getTimestamp, embeddableBuilder(Timestamp.class)
+									.map(Timestamp::getCreationDate)
+									.map(Timestamp::getModificationDate));
+			
+			FluentEntityMappingBuilder<Country, Identifier<Long>> vehicleConfiguration =
+					entityBuilder(Country.class, LONG_TYPE)
+							.mapKey(Country::getId, ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.mapPolymorphism(PolymorphismPolicy.<Country>tablePerClass()
+									.addSubClass(subentityBuilder(Realm.class), "REALM")
+									.addSubClass(subentityBuilder(Republic.class), "REPUBLIC")
+							);
+			
+			FluentEntityMappingBuilder<City, Identifier<Long>> personBuilder = entityBuilder(City.class, LONG_TYPE)
+					.mapKey(City::getId, ALREADY_ASSIGNED)
+					.mapManyToOne(City::getCountry, vehicleConfiguration)
+						.fetchSeparately()
+					.mapSuperClass(timestampedPersistentBeanMapping);
+			
+			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+			EntityPersister<City, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// insert
+			Republic france = new Republic(42L);
+			france.setName("France");
+			City grenoble = new City(1);
+			grenoble.setCountry(france);
+			City lyon = new City(2);
+			lyon.setCountry(france);
+			Realm uk = new Realm(142L);
+			uk.setName("United Kingdom");
+			City london = new City(3);
+			london.setCountry(uk);
+			personPersister.insert(grenoble, lyon, london);
+			
+			Set<City> loadedCities = personPersister.select(Arrays.asList(grenoble.getId(), lyon.getId(), london.getId()));
+			
+			// we use a printer to compare our results because entities override equals() which only keep "id" into account
+			// which is far from sufficient for ou checking
+			// Note that we don't use ObjectPrinterBuilder#printerFor because it takes getCities() into account whereas its code is not ready for recursion 
+			ObjectPrinter<Country> vehiclePrinter = new ObjectPrinterBuilder<Country>()
+					.addProperty(Country::getId)
+					.addProperty(Country::getClass)
+					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
+					.build();
+			ObjectPrinter<City> cityPrinter = new ObjectPrinterBuilder<City>()
+					.addProperty(City::getId)
+					.addProperty(City::getName)
+					.addProperty(City::getTimestamp)
+					.addProperty(City::getCountry)
+					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
+					.withPrinter(Country.class, vehiclePrinter::toString)
+					.build();
+			
+			Map<Identifier<Long>, City> loadedCitiesPerId = Iterables.map(loadedCities, City::getId);
+			City loadedCity1 = loadedCitiesPerId.get(grenoble.getId());
+			City loadedCity2 = loadedCitiesPerId.get(lyon.getId());
+			City loadedCity3 = loadedCitiesPerId.get(london.getId());
+			
+			assertThat(loadedCity1)
+					.usingComparator(Comparator.comparing(cityPrinter::toString))
+					.withRepresentation(new PartialRepresentation<>(City.class, cityPrinter))
+					.isEqualTo(grenoble);
+			
+			assertThat(loadedCity2)
+					.usingComparator(Comparator.comparing(cityPrinter::toString))
+					.withRepresentation(new PartialRepresentation<>(City.class, cityPrinter))
+					.isEqualTo(lyon);
+			
+			assertThat(loadedCity3)
+					.usingComparator(Comparator.comparing(cityPrinter::toString))
+					.withRepresentation(new PartialRepresentation<>(City.class, cityPrinter))
+					.isEqualTo(london);
+		}
 	}
 }

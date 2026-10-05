@@ -30,7 +30,8 @@ public class ResolvedManyToOneRelation<
 	                                 RelationMode relationMode,
 	                                 boolean fetchSeparately,
 	                                 DirectRelationJoin<LEFTTABLE, RIGHTTABLE, TRGTID> join,
-	                                 BeanRelationFixer<SRC, TRGT> beanRelationFixer, boolean nullable) {
+	                                 BeanRelationFixer<SRC, TRGT> beanRelationFixer,
+									 boolean nullable) {
 		super(targetEntity, accessor, relationMode, fetchSeparately, join, beanRelationFixer);
 		this.nullable = nullable;
 	}
