@@ -175,7 +175,7 @@ public class OneToManyMetadataResolver {
 				oneToMany.getRelationMode(),
 				oneToMany.isRelationOwnedByTarget(),
 				reverseAccessPoint,
-				oneToMany.isFetchSeparately(),
+				oneToMany.isFetchedSeparately(),
 				tablesJoin,
 				relationFixer,
 				collectionFactory,

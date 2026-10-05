@@ -364,6 +364,6 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 				keyValueRecordToSourceForeignKey,
 				relationFixer,
 				null,
-                true, originalMapRelation.isFetchSeparately());
+                true, originalMapRelation.isFetchedSeparately());
 	}
 }

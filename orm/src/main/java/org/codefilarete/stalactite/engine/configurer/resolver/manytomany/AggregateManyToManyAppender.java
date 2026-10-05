@@ -26,7 +26,7 @@ import org.codefilarete.tool.Nullable;
  * <ul>
  * <li>{@link AggregateJoinedManyToManyAppender} and {@link AggregateJoinedIndexedManyToManyAppender} graft the relation onto the
  * aggregate's tree, hence everything is loaded by the very same query</li>
- * <li>{@link AggregateFetchSeparatelyManyToManyAppender} and {@link AggregateFetchSeparatelyIndexedManyToManyAppender} leave the
+ * <li>{@link AggregateFetchedSeparatelyManyToManyAppender} and {@link AggregateFetchedSeparatelyIndexedManyToManyAppender} leave the
  * aggregate's tree untouched and load the relation through a dedicated second-phase query, so that the main query
  * doesn't return the cartesian product of all the aggregate relations</li>
  * </ul>
@@ -39,8 +39,8 @@ public class AggregateManyToManyAppender {
 	
 	private final AggregateJoinedManyToManyAppender joinedAppender = new AggregateJoinedManyToManyAppender();
 	private final AggregateJoinedIndexedManyToManyAppender joinedIndexedAppender = new AggregateJoinedIndexedManyToManyAppender();
-	private final AggregateFetchSeparatelyManyToManyAppender fetchSeparatelyAppender = new AggregateFetchSeparatelyManyToManyAppender();
-	private final AggregateFetchSeparatelyIndexedManyToManyAppender fetchSeparatelyIndexedAppender = new AggregateFetchSeparatelyIndexedManyToManyAppender();
+	private final AggregateFetchedSeparatelyManyToManyAppender fetchedSeparatelyAppender = new AggregateFetchedSeparatelyManyToManyAppender();
+	private final AggregateFetchedSeparatelyIndexedManyToManyAppender fetchedSeparatelyIndexedAppender = new AggregateFetchedSeparatelyIndexedManyToManyAppender();
 	
 	/**
 	 * Appends the given many-to-many relation to the aggregate persister by:
@@ -67,14 +67,14 @@ public class AggregateManyToManyAppender {
 		// because we go a step further in the relation by shifting the types from SRC to TRGT
 		GraftPoint result;
 		if (relation.isOrdered()) {
-			if (relation.isFetchSeparately()) {
-				result = fetchSeparatelyIndexedAppender.append(relation, sourceReader, targetReader, mountPoint, aggregateTree, dialect, connectionProvider);
+			if (relation.isFetchedSeparately()) {
+				result = fetchedSeparatelyIndexedAppender.append(relation, sourceReader, targetReader, mountPoint, aggregateTree, dialect, connectionProvider);
 			} else {
 				result = joinedIndexedAppender.append(relation, sourceReader, targetReader, relation.getAccessor(), mountPoint, aggregateTree);
 			}
 		} else {
-			if (relation.isFetchSeparately()) {
-				result = fetchSeparatelyAppender.append(relation, sourceReader, targetReader, mountPoint, aggregateTree, dialect, connectionProvider);
+			if (relation.isFetchedSeparately()) {
+				result = fetchedSeparatelyAppender.append(relation, sourceReader, targetReader, mountPoint, aggregateTree, dialect, connectionProvider);
 			} else {
 				result = joinedAppender.append(relation, sourceReader, targetReader, relation.getAccessor(), mountPoint, aggregateTree);
 			}

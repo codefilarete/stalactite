@@ -63,7 +63,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 	/**
 	 * Indicates that relation must be loaded in same main query (through join) or in some separate query
 	 */
-	private boolean fetchSeparately;
+	private boolean fetchedSeparately;
 	
 	@Nullable
 	private Column<?, Integer> indexingColumn;
@@ -234,16 +234,16 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 		this.collectionFactory = collectionFactory;
 	}
 	
-	public boolean isFetchSeparately() {
-		return fetchSeparately;
+	public boolean isFetchedSeparately() {
+		return fetchedSeparately;
 	}
 	
-	public void setFetchSeparately(boolean fetchSeparately) {
-		this.fetchSeparately = fetchSeparately;
+	public void setFetchedSeparately(boolean fetchedSeparately) {
+		this.fetchedSeparately = fetchedSeparately;
 	}
 	
 	public void fetchSeparately() {
-		setFetchSeparately(true);
+		setFetchedSeparately(true);
 	}
 	
 	public void setIndexingColumn(@Nullable Column<?, Integer> indexingColumn) {
@@ -313,7 +313,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, S extends Collection<TRGT>> {
 				this.targetMappingConfiguration,
 				slidedMappedByConfiguration);
 		result.setRelationMode(this.getRelationMode());
-		result.setFetchSeparately(this.isFetchSeparately());
+		result.setFetchedSeparately(this.isFetchedSeparately());
 		result.setIndexingColumnName(this.getIndexingColumnName());
 		result.setOrdered(this.isOrdered());
 		result.setCollectionFactory(this.getCollectionFactory());

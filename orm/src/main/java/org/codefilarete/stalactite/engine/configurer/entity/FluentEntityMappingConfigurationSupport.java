@@ -702,7 +702,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					
 					@Override
 					public EmbeddableCollectionOptions<C, O, S> fetchSeparately() {
-						elementCollectionRelation.setFetchSeparately(true);
+						elementCollectionRelation.setFetchedSeparately(true);
 						return null;
 					}
 					
@@ -763,7 +763,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 			
 			@Override
 			public FluentMappingBuilderElementCollectionOptions<C, I, O, S> fetchSeparately() {
-				elementCollectionRelation.setFetchSeparately(true);
+				elementCollectionRelation.setFetchedSeparately(true);
 				return null;
 			}
 			

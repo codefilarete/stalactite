@@ -367,6 +367,6 @@ public class EntityAsValueMapRelationConfigurer<SRC, SRCID, K, V, VID, M extends
                 relationFixer,
                 null,
                 true,
-				originalMapRelation.isFetchSeparately());
+				originalMapRelation.isFetchedSeparately());
 	}
 }

@@ -301,7 +301,7 @@ class MapResolverTest {
 	}
 	
 	@Test
-	void crud_keyIsComplexType_fetchSeparately() {
+	void crud_keyIsComplexType_fetchedSeparately() {
 		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
@@ -386,7 +386,7 @@ class MapResolverTest {
 	}
 	
 	@Test
-	void crud_valueIsComplexType_fetchSeparately() {
+	void crud_valueIsComplexType_fetchedSeparately() {
 		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)

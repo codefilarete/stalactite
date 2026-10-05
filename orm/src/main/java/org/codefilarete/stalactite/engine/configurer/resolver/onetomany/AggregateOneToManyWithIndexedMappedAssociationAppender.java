@@ -49,7 +49,7 @@ public class AggregateOneToManyWithIndexedMappedAssociationAppender {
 		
 		EntityMapping<TRGT, TRGTID, RIGHTTABLE> targetPersisterMapping = targetReader.getMapping();
 		IdentifierAssembler<TRGTID, ?> targetIdentifierAssembler = targetPersisterMapping.getIdMapping().getIdentifierAssembler();
-		if (relation.isFetchSeparately()) {
+		if (relation.isFetchedSeparately()) {
 			result = appendWithSeparateFetch(relation, sourceReader, targetReader, mountPoint, aggregateTree, targetIdentifierAssembler, indexingColumn, join);
 		} else {
 			Function<ColumnedRow, Object> duplicateIdentifierProvider;

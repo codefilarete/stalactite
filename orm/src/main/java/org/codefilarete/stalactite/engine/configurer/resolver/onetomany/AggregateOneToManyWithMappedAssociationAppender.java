@@ -52,7 +52,7 @@ public class AggregateOneToManyWithMappedAssociationAppender {
 		GraftPoint result;
 		
 		DirectRelationJoin<LEFTTABLE, RIGHTTABLE, SRCID> join = (DirectRelationJoin<LEFTTABLE, RIGHTTABLE, SRCID>) relation.getJoin();
-		if (relation.isFetchSeparately()) {
+		if (relation.isFetchedSeparately()) {
 			result = appendWithSeparateFetch(relation, sourceReader, targetReader, mountPoint, aggregateTree, join);
 		} else {
 			

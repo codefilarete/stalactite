@@ -141,7 +141,7 @@ public class ElementCollectionMetadataResolver {
 		DirectRelationJoin<SRCTABLE, COLLECTIONTABLE, SRCID> join = new DirectRelationJoin<>(sourcePK, targetKeyBuilder.build());
 		return new ResolvedElementCollectionRelation<>(collectionRelation.getCollectionAccessor(),
 				ALL_ORPHAN_REMOVAL,
-				collectionRelation.isFetchSeparately(),
+				collectionRelation.isFetchedSeparately(),
 				join,
 				relationFixer,
 				collectionFactory,

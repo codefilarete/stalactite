@@ -43,7 +43,7 @@ public class AggregateElementCollectionAppender {
 				ConnectionProvider connectionProvider) {
 		
 		DirectRelationJoin<LEFTTABLE, COLLECTIONTABLE, SRCID> join = relation.getJoin();
-		if (relation.isFetchSeparately()) {
+		if (relation.isFetchedSeparately()) {
 			// adding second phase loader
 			KeyMapping<LEFTTABLE, COLLECTIONTABLE, SRCID> targetPkToRightKey = new KeyMapping<>(sourcePersister.getMapping().getTargetTable().getPrimaryKey(), join.getRightKey());
 			KeepOrderMap<QualifiedSelectable<LEFTTABLE, ?>, QualifiedSelectable<COLLECTIONTABLE, ?>> targetPkToAssociationTableKey = targetPkToRightKey.getMapping();

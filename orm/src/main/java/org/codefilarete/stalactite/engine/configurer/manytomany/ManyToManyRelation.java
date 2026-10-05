@@ -46,7 +46,7 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 	/**
 	 * Indicates that relation must be loaded in same main query (through join) or in some separate query
 	 */
-	private boolean fetchSeparately;
+	private boolean fetchedSeparately;
 	
 	/**
 	 * Indicates if target instances are indexed in their {@link Collection} (meaning that it is capable of storing order)
@@ -172,16 +172,16 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 		this.ordered = true;
 	}
 	
-	public boolean isFetchSeparately() {
-		return fetchSeparately;
+	public boolean isFetchedSeparately() {
+		return fetchedSeparately;
 	}
 	
-	public void setFetchSeparately(boolean fetchSeparately) {
-		this.fetchSeparately = fetchSeparately;
+	public void setFetchedSeparately(boolean fetchedSeparately) {
+		this.fetchedSeparately = fetchedSeparately;
 	}
 	
 	public void fetchSeparately() {
-		setFetchSeparately(true);
+		setFetchedSeparately(true);
 	}
 	
 	/**
@@ -218,7 +218,7 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 				this.targetMappingConfiguration,
 				shiftedMappedByConfiguration);
 		result.setRelationMode(this.getRelationMode());
-		result.setFetchSeparately(this.isFetchSeparately());
+		result.setFetchedSeparately(this.isFetchedSeparately());
 		result.setIndexingColumnName(this.getIndexingColumnName());
 		result.setOrdered(this.isOrdered());
 		result.setCollectionFactory(this.getCollectionFactory());

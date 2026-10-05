@@ -42,7 +42,7 @@ public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 	/**
 	 * Indicates that relation must be loaded in same main query (through join) or in some separate query
 	 */
-	private boolean fetchSeparately;
+	private boolean fetchedSeparately;
 	
 	private Table targetTable;
 	private String targetTableName;
@@ -193,12 +193,12 @@ public class ElementCollectionRelation<SRC, TRGT, S extends Collection<TRGT>> {
 		return this;
 	}
 	
-	public boolean isFetchSeparately() {
-		return fetchSeparately;
+	public boolean isFetchedSeparately() {
+		return fetchedSeparately;
 	}
 	
-	public void setFetchSeparately(boolean fetchSeparately) {
-		this.fetchSeparately = fetchSeparately;
+	public void setFetchedSeparately(boolean fetchedSeparately) {
+		this.fetchedSeparately = fetchedSeparately;
 	}
 	
 	public Class<TRGT> getComponentType() {

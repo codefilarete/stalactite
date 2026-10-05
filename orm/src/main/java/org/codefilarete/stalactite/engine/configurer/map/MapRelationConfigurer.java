@@ -296,7 +296,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
                 relationFixer,
                 null,
                 true,
-				mapRelation.isFetchSeparately());
+				mapRelation.isFetchedSeparately());
 	}
 	
 	/**

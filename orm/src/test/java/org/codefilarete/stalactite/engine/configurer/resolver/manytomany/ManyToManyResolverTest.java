@@ -249,7 +249,7 @@ public class ManyToManyResolverTest {
 	
 	@Test
 	@UseCase(relation = @Relation(type = MANY_TO_MANY, ownership = BY_ASSOCIATION_TABLE, fetch = JOIN))
-	void select_indexedCollection_orderIsPreserved() {
+	void select_indexed_orderIsPreserved() {
 		FluentEntityMappingBuilder<Answer, Identifier<Long>> answerBuilder = entityBuilder(Answer.class, LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
 				.mapManyToMany(Answer::getChoices, choiceConfiguration)
@@ -291,7 +291,7 @@ public class ManyToManyResolverTest {
 	
 	@Test
 	@UseCase(relation = @Relation(type = MANY_TO_MANY, ownership = BY_ASSOCIATION_TABLE, fetch = SEPARATE_QUERY))
-	void select_indexedCollection_fetchSeparately_orderIsPreserved() {
+	void select_indexed_fetchSeparately_orderIsPreserved() {
 		FluentEntityMappingBuilder<Answer, Identifier<Long>> answerBuilder = entityBuilder(Answer.class, LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
 				.mapManyToMany(Answer::getChoices, choiceConfiguration)

@@ -14,14 +14,14 @@ import org.codefilarete.tool.Duo;
 
 /**
  * Wires a {@link Map} relation to an aggregate's {@link EntityJoinTree}: depending on the need to fetch the relation
- * separately or not, the logic is dispatched to either {@link FetchSeparatelyMapAppender} or {@link JoinedMapAppender}.
+ * separately or not, the logic is dispatched to either {@link FetchedSeparatelyMapAppender} or {@link JoinedMapAppender}.
  *
  * @author Guillaume Mary
- * @see FetchSeparatelyMapAppender
+ * @see FetchedSeparatelyMapAppender
  */
 public class AggregateMapAppender {
 	
-	private final FetchSeparatelyMapAppender fetchSeparatelyMapAppender = new FetchSeparatelyMapAppender();
+	private final FetchedSeparatelyMapAppender fetchedSeparatelyMapAppender = new FetchedSeparatelyMapAppender();
 	private final JoinedMapAppender joinedMapAppender = new JoinedMapAppender();
 	
 	public <X, Y, SRC, SRCID, K, KID, V, VID, M extends Map<K, V>, LEFTTABLE extends Table<LEFTTABLE>, MAPTABLE extends Table<MAPTABLE>, KTABLE extends Table<KTABLE>, VTABLE extends Table<VTABLE>>
@@ -35,8 +35,8 @@ public class AggregateMapAppender {
 	                                                                                       Dialect dialect,
 	                                                                                       ConnectionProvider connectionProvider) {
 		
-		if (relation.isFetchSeparately()) {
-			return fetchSeparatelyMapAppender.append(relation, sourcePersister, keyValueRecordPersister, keyEntityReader, valueEntityReader, dialect, connectionProvider);
+		if (relation.isFetchedSeparately()) {
+			return fetchedSeparatelyMapAppender.append(relation, sourcePersister, keyValueRecordPersister, keyEntityReader, valueEntityReader, dialect, connectionProvider);
 		} else {
 			return joinedMapAppender.append(relation, aggregateTree, sourcePersister, mountPoint, keyValueRecordPersister, keyEntityReader, valueEntityReader);
 		}

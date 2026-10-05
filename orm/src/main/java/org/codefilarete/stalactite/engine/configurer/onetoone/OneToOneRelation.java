@@ -55,7 +55,7 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	/**
 	 * Indicates that relation must be loaded in same main query (through join) or in some separate query
 	 */
-	private boolean fetchSeparately;
+	private boolean fetchedSeparately;
 	
 	private String columnName;
 	
@@ -165,16 +165,16 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 				|| getReverseColumn() != null || getReverseColumnName() != null;
 	}
 	
-	public boolean isFetchSeparately() {
-		return fetchSeparately;
+	public boolean isFetchedSeparately() {
+		return fetchedSeparately;
 	}
 	
-	public void setFetchSeparately(boolean fetchSeparately) {
-		this.fetchSeparately = fetchSeparately;
+	public void setFetchedSeparately(boolean fetchedSeparately) {
+		this.fetchedSeparately = fetchedSeparately;
 	}
 	
 	public void fetchSeparately() {
-		setFetchSeparately(true);
+		setFetchedSeparately(true);
 	}
 	
 	public String getColumnName() {
@@ -199,7 +199,7 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 		OneToOneRelation<C, TRGT, TRGTID> result = new OneToOneRelation<>(shiftedTargetProvider, this::isSourceTablePerClassPolymorphic, this::getTargetMappingConfiguration);
 		result.setRelationMode(this.getRelationMode());
 		result.setNullable(this.isNullable());
-		result.setFetchSeparately(this.isFetchSeparately());
+		result.setFetchedSeparately(this.isFetchedSeparately());
 		result.setColumnName(this.getColumnName());
 		return result;
 	}

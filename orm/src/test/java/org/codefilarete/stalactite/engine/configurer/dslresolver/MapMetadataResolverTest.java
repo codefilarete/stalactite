@@ -105,7 +105,7 @@ class MapMetadataResolverTest {
 		ResolvedMapRelation<Person, ?, String, ?, String, ?, ?, ?, ?, ?, ?> relation =
 				(ResolvedMapRelation<Person, ?, String, ?, String, ?, ?, ?, ?, ?, ?>) first(personEntity.getRelations());
 
-		assertThat(relation.isFetchSeparately()).isTrue();
+		assertThat(relation.isFetchedSeparately()).isTrue();
 	}
 
 	@Test

@@ -50,7 +50,7 @@ import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROO
  * Wires an ordered one-to-many relation owned by an indexed association table onto the aggregate's
  * {@link EntityJoinTree}.
  * <p>
- * Two strategies are available, depending on {@link ResolvedOneToManyRelation#isFetchSeparately()}:
+ * Two strategies are available, depending on {@link ResolvedOneToManyRelation#isFetchedSeparately()}:
  * <ul>
  * <li>the joined one: the association table and the target table are joined onto the aggregate's tree, hence
  * everything is loaded by the very same query</li>
@@ -85,7 +85,7 @@ public class AggregateOneToManyWithIndexedAssociationTableAppender {
 		Column<ASSOCIATIONTABLE, Integer> indexingColumn = (Column<ASSOCIATIONTABLE, Integer>) relation.<IndexedAssociationTable>getIndexingAssociationColumn();
 		ReadWritePropertyAccessPoint<SRC, S> collectionAccessPoint = relation.getAccessor();
 		
-		if (relation.isFetchSeparately()) {
+		if (relation.isFetchedSeparately()) {
 			// Note that the aggregate tree is not modified at all: the association table is the root of a dedicated
 			// tree owned by the loader below, which prevents the main query from returning too many rows
 			return appendWithSeparateFetch(sourcePersister, targetPersister, relation, join, mountPoint, aggregateTree, dialect, connectionProvider);

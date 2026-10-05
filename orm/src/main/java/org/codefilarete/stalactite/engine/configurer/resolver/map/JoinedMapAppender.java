@@ -36,7 +36,7 @@ import static org.codefilarete.tool.Nullable.nullable;
  * resulting {@link Map} can be rebuilt and set onto the owning entity right after selection.
  * 
  * @author Guillaume Mary
- * @see FetchSeparatelyMapAppender
+ * @see FetchedSeparatelyMapAppender
  */
 public class JoinedMapAppender {
 	

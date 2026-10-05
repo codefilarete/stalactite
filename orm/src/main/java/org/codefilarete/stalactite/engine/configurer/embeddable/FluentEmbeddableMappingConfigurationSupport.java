@@ -697,7 +697,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					
 					@Override
 					public EmbeddableCollectionOptions<C, O, S> fetchSeparately() {
-						elementCollectionRelation.setFetchSeparately(true);
+						elementCollectionRelation.setFetchedSeparately(true);
 						return null;
 					}
 					
@@ -758,7 +758,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 			
 			@Override
 			public ElementCollectionOptions<C, O, S> fetchSeparately() {
-				elementCollectionRelation.setFetchSeparately(true);
+				elementCollectionRelation.setFetchedSeparately(true);
 				return null;
 			}
 			

@@ -716,6 +716,186 @@ class TablePerClassPolymorphismReaderTest {
 	}
 	
 	@Test
+	@UseCase(relation = @Relation(type = MANY_TO_MANY, polymorphism = TABLE_PER_CLASS, fetch = JOIN))
+	void manyToTablePerClassMany() {
+		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
+		
+		FluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
+				embeddableBuilder(Person.class)
+						.map(Person::getName)
+						.embed(Person::getTimestamp, embeddableBuilder(Timestamp.class)
+								.map(Timestamp::getCreationDate)
+								.map(Timestamp::getModificationDate));
+		
+		FluentEntityMappingBuilder<City, Identifier<Long>> vehicleConfiguration = entityBuilder(City.class, LONG_TYPE)
+				.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(City::getName)
+				.mapPolymorphism(PolymorphismPolicy.<City>tablePerClass()
+						.addSubClass(subentityBuilder(Village.class)
+								.map(Village::getBarCount), "V")
+						.addSubClass(subentityBuilder(Town.class)
+								.map(Town::getDiscotecCount), "T")
+				);
+		
+		Comparator<City> vehicleComparator = Comparator.comparing(v -> v.getId().getDelegate());
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
+				.mapKey(Person::getId, ALREADY_ASSIGNED)
+				.mapManyToMany(Person::getResidences, vehicleConfiguration)
+					.initializeWith(() -> new TreeSet<>(vehicleComparator))	// only for test stability
+				.mapSuperClass(timestampedPersistentBeanMapping);
+		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		// insert
+		Village grenoble = new Village(42L);
+		grenoble.setName("Grenoble");
+		grenoble.setBarCount(51);
+		Town lyon = new Town(17L);
+		lyon.setDiscotecCount(123);
+		lyon.setName("Lyon");
+		Town paris = new Town(19L);
+		paris.setName("Paris");
+		
+		Person person1 = new Person(1);
+		Person person2 = new Person(2);
+		
+		person1.setResidences(Arrays.asTreeSet(vehicleComparator, grenoble, paris));
+		person2.setResidences(Arrays.asTreeSet(vehicleComparator, lyon, paris));
+		
+		grenoble.setPersons(Arrays.asHashSet(person1));
+		lyon.setPersons(Arrays.asHashSet(person2));
+		paris.setPersons(Arrays.asHashSet(person1, person2));
+		
+		personPersister.insert(person1, person2);
+		
+		Set<Person> loadedPersons = personPersister.select(person1.getId(), person2.getId());
+		Map<Identifier<Long>, Person> loadedPersonsPerId = Iterables.map(loadedPersons, Person::getId);
+		Person loadedPerson1 = loadedPersonsPerId.get(person1.getId());
+		Person loadedPerson2 = loadedPersonsPerId.get(person2.getId());
+		
+		// we use a printer to compare our results because entities override equals() which only keep "id" into account
+		// which is far from sufficient for ou checking
+		// Note that we don't use ObjectPrinterBuilder#printerFor because it takes getCities() into account whereas its code is not ready for recursion 
+		ObjectPrinter<City> cityIdPrinter = new ObjectPrinterBuilder<City>()
+				.addProperty(City::getId)
+				.addProperty(City::getName)
+				.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
+				.build();
+		ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
+				.addProperty(Person::getName)
+				.addProperty(Person::getTimestamp)
+				.addProperty(Person::getResidences, City.class)
+				.withPrinter(City.class, cityIdPrinter::toString)
+				.build();
+		
+		assertThat(loadedPerson1)
+				.usingComparator(Comparator.comparing(personPrinter::toString))
+				.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
+				.isEqualTo(person1);
+		
+		assertThat(loadedPerson2)
+				.usingComparator(Comparator.comparing(personPrinter::toString))
+				.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
+				.isEqualTo(person2);
+	}
+	
+	@Test
+	@UseCase(relation = @Relation(type = MANY_TO_MANY, polymorphism = TABLE_PER_CLASS, fetch = JOIN))
+	void manyToTablePerClassMany_indexed() {
+		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
+		
+		FluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
+				embeddableBuilder(Person.class)
+						.map(Person::getName)
+						.embed(Person::getTimestamp, embeddableBuilder(Timestamp.class)
+								.map(Timestamp::getCreationDate)
+								.map(Timestamp::getModificationDate));
+		
+		FluentEntityMappingBuilder<City, Identifier<Long>> vehicleConfiguration = entityBuilder(City.class, LONG_TYPE)
+				.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(City::getName)
+				.mapPolymorphism(PolymorphismPolicy.<City>tablePerClass()
+						.addSubClass(subentityBuilder(Village.class)
+								.map(Village::getBarCount), "V")
+						.addSubClass(subentityBuilder(Town.class)
+								.map(Town::getDiscotecCount), "T")
+				);
+		
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
+				.mapKey(Person::getId, ALREADY_ASSIGNED)
+				.mapManyToMany(Person::getResidences, vehicleConfiguration)
+					.indexed()
+					.initializeWith(KeepOrderSet::new)	// to be coherent with indexed nature of the relation
+				.mapSuperClass(timestampedPersistentBeanMapping);
+		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		// insert
+		Village grenoble = new Village(42L);
+		grenoble.setName("Grenoble");
+		grenoble.setBarCount(51);
+		Town lyon = new Town(17L);
+		lyon.setDiscotecCount(123);
+		lyon.setName("Lyon");
+		Town paris = new Town(19L);
+		paris.setName("Paris");
+		
+		Person person1 = new Person(1);
+		Person person2 = new Person(2);
+		
+		List<City> cities1 = Arrays.asList(grenoble, paris);
+		Collections.shuffle(cities1);
+		person1.setResidences(new KeepOrderSet<>(cities1));
+		List<City> cities2 = Arrays.asList(lyon, paris);
+		Collections.shuffle(cities2);
+		person2.setResidences(new KeepOrderSet<>(cities2));
+		
+		grenoble.setPersons(Arrays.asHashSet(person1));
+		lyon.setPersons(Arrays.asHashSet(person2));
+		paris.setPersons(Arrays.asHashSet(person1, person2));
+		
+		personPersister.insert(person1, person2);
+		
+		Set<Person> loadedPersons = personPersister.select(person1.getId(), person2.getId());
+		Map<Identifier<Long>, Person> loadedPersonsPerId = Iterables.map(loadedPersons, Person::getId);
+		Person loadedPerson1 = loadedPersonsPerId.get(person1.getId());
+		Person loadedPerson2 = loadedPersonsPerId.get(person2.getId());
+		
+		// we use a printer to compare our results because entities override equals() which only keep "id" into account
+		// which is far from sufficient for ou checking
+		// Note that we don't use ObjectPrinterBuilder#printerFor because it takes getCities() into account whereas its code is not ready for recursion 
+		ObjectPrinter<City> cityIdPrinter = new ObjectPrinterBuilder<City>()
+				.addProperty(City::getId)
+				.addProperty(City::getName)
+				.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
+				.build();
+		ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
+				.addProperty(Person::getName)
+				.addProperty(Person::getTimestamp)
+				.addProperty(Person::getResidences, City.class)
+				.withPrinter(City.class, cityIdPrinter::toString)
+				.build();
+		
+		assertThat(loadedPerson1)
+				.usingComparator(Comparator.comparing(personPrinter::toString))
+				.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
+				.isEqualTo(person1);
+		
+		assertThat(loadedPerson2)
+				.usingComparator(Comparator.comparing(personPrinter::toString))
+				.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
+				.isEqualTo(person2);
+	}
+	
+	@Test
 	@UseCase(relation = @Relation(type = MANY_TO_MANY, polymorphism = TABLE_PER_CLASS, fetch = SEPARATE_QUERY))
 	void manyToTablePerClassMany_fetchSeparately() {
 		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);

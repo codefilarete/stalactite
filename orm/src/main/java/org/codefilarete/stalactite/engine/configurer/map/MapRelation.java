@@ -95,7 +95,7 @@ public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 	/** Default relation mode is {@link RelationMode#ALL} */
 	private RelationMode valueEntityRelationMode = RelationMode.ALL;
 	
-	private boolean fetchSeparately;
+	private boolean fetchedSeparately;
 	
 	public MapRelation(SerializablePropertyMutator<SRC, M> setter,
 					   Class<K> keyType,
@@ -306,12 +306,12 @@ public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 		this.valueEntityRelationMode = valueEntityRelationMode;
 	}
 	
-	public boolean isFetchSeparately() {
-		return fetchSeparately;
+	public boolean isFetchedSeparately() {
+		return fetchedSeparately;
 	}
 	
 	public void fetchSeparately() {
-		this.fetchSeparately = true;
+		this.fetchedSeparately = true;
 	}
 	
 	public boolean isOrdered() {

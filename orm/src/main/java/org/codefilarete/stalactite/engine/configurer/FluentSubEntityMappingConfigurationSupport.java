@@ -249,7 +249,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 					
 					@Override
 					public EmbeddableCollectionOptions<C, O, S> fetchSeparately() {
-						elementCollectionRelation.setFetchSeparately(true);
+						elementCollectionRelation.setFetchedSeparately(true);
 						return null;
 					}
 					
@@ -310,7 +310,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 			
 			@Override
 			public FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> fetchSeparately() {
-				elementCollectionRelation.setFetchSeparately(true);
+				elementCollectionRelation.setFetchedSeparately(true);
 				return null;
 			}
 			

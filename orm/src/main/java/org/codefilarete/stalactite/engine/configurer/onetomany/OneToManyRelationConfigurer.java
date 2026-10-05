@@ -77,10 +77,10 @@ public class OneToManyRelationConfigurer<SRC, SRCID, TRGT, TRGTID> extends Abstr
 			if (maintenanceMode == RelationMode.ASSOCIATION_ONLY) {
 				throw new MappingConfigurationException(RelationMode.ASSOCIATION_ONLY + " is only relevant with an association table");
 			}
-			configurer = new OneToManyWithMappedAssociationConfigurer<>(associationConfiguration, oneToManyRelation.isFetchSeparately());
+			configurer = new OneToManyWithMappedAssociationConfigurer<>(associationConfiguration, oneToManyRelation.isFetchedSeparately());
 		} else {
 			configurer = new OneToManyWithAssociationTableConfigurer<>(associationConfiguration,
-					oneToManyRelation.isFetchSeparately(),
+					oneToManyRelation.isFetchedSeparately(),
 					associationTableNamingStrategy,
 					dialect,
 					connectionConfiguration);

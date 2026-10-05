@@ -83,7 +83,7 @@ public class OneToOneRelationConfigurer<C, I, TRGT, TRGTID> extends AbstractRela
 			// we replace dot character by underscore one to take embedded relation properties into account: their accessor is an AccessorChain
 			// which is printed with dots by AccessorDefinition
 			String tableAlias = relationName.replace('.', '_');
-			configurer.configure(tableAlias, targetPersister, oneToOneRelation.isFetchSeparately());
+			configurer.configure(tableAlias, targetPersister, oneToOneRelation.isFetchedSeparately());
 		}
 	}
 	

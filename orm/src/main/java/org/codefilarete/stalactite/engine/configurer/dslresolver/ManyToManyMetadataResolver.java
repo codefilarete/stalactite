@@ -208,7 +208,7 @@ public class ManyToManyMetadataResolver {
 						targetEntity,
 						manyToMany.getCollectionAccessor(),
 						manyToMany.getRelationMode(),
-						manyToMany.isFetchSeparately(),
+						manyToMany.isFetchedSeparately(),
 						(IntermediaryRelationJoin) join,
 						relationFixer,
 						collectionFactory

@@ -6,6 +6,7 @@ import org.codefilarete.reflection.PropertyAccessPoint;
 import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
+import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
@@ -36,6 +37,18 @@ public class GraftableRelation<SRC, TRGT, TRGTID, SRCTABLE extends Table<SRCTABL
 	public static
 	<SRC, TRGT, S extends Collection<TRGT>, SRCID, TRGTID, SRCTABLE extends Table<SRCTABLE>, TRGTTABLE extends Table<TRGTTABLE>, ASSOCIATIONTABLE extends AssociationTable<ASSOCIATIONTABLE, SRCTABLE, TRGTTABLE, SRCID, TRGTID>>
 	GraftableRelation<SRC, TRGT, TRGTID, ASSOCIATIONTABLE, TRGTTABLE, TRGTID> forOneToManyRelationWithAssociationTable(ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, SRCTABLE, TRGTTABLE> relation) {
+		IntermediaryRelationJoin<SRCTABLE, TRGTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID> intermediaryRelationJoin = (IntermediaryRelationJoin<SRCTABLE, TRGTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID>) relation.getJoin();
+		return new GraftableRelation<>(
+				intermediaryRelationJoin.getRightAssociationKey(),
+				intermediaryRelationJoin.getRightKey(),
+				relation.getAccessor(),
+				(BeanRelationFixer<Object, TRGT>) relation.getRelationFixer(),
+				relation.getTargetEntity());
+	}
+	
+	public static
+	<SRC, TRGT, S extends Collection<TRGT>, SRCID, TRGTID, SRCTABLE extends Table<SRCTABLE>, TRGTTABLE extends Table<TRGTTABLE>, ASSOCIATIONTABLE extends AssociationTable<ASSOCIATIONTABLE, SRCTABLE, TRGTTABLE, SRCID, TRGTID>>
+	GraftableRelation<SRC, TRGT, TRGTID, ASSOCIATIONTABLE, TRGTTABLE, TRGTID> forManyToManyRelation(ResolvedManyToManyRelation<SRC, TRGT, S, SRCID, TRGTID, SRCTABLE, TRGTTABLE> relation) {
 		IntermediaryRelationJoin<SRCTABLE, TRGTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID> intermediaryRelationJoin = (IntermediaryRelationJoin<SRCTABLE, TRGTTABLE, ASSOCIATIONTABLE, SRCID, TRGTID>) relation.getJoin();
 		return new GraftableRelation<>(
 				intermediaryRelationJoin.getRightAssociationKey(),

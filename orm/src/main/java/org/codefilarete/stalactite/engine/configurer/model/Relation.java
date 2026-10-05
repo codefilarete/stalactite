@@ -10,17 +10,17 @@ public abstract class Relation<SRC, TRGT, LEFTTABLE extends Table<LEFTTABLE>, RI
 	
 	private final ReadWritePropertyAccessPoint<SRC, TRGT> accessor;
 	
-	private final boolean fetchSeparately;
+	private final boolean fetchedSeparately;
 	
 	private final RelationMode relationMode;
 	
 	protected Relation(ReadWritePropertyAccessPoint<SRC, TRGT> accessor,
 	                   RelationMode relationMode,
-	                   boolean fetchSeparately,
+	                   boolean fetchedSeparately,
 	                   RelationJoin join) {
 		super(join);
 		this.accessor = accessor;
-		this.fetchSeparately = fetchSeparately;
+		this.fetchedSeparately = fetchedSeparately;
 		this.relationMode = relationMode;
 	}
 	
@@ -28,8 +28,8 @@ public abstract class Relation<SRC, TRGT, LEFTTABLE extends Table<LEFTTABLE>, RI
 		return accessor;
 	}
 	
-	public boolean isFetchSeparately() {
-		return fetchSeparately;
+	public boolean isFetchedSeparately() {
+		return fetchedSeparately;
 	}
 	
 	public RelationMode getRelationMode() {

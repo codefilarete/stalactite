@@ -130,7 +130,7 @@ public class ManyToOneMetadataResolver {
 						targetEntity,
 						manyToOne.getTargetProvider(),
 						manyToOne.getRelationMode(),
-						manyToOne.isFetchSeparately(),
+						manyToOne.isFetchedSeparately(),
 						join,
 						relationFixer,
 						manyToOne.isNullable()

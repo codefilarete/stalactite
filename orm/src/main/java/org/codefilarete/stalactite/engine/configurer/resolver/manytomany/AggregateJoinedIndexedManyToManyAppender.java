@@ -8,9 +8,13 @@ import java.util.function.Function;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.configurer.IndexedAssociationRecordMapping;
+import org.codefilarete.stalactite.engine.configurer.model.EntityPolymorphism;
 import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
+import org.codefilarete.stalactite.engine.configurer.model.PolymorphicEntity;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.GraftableRelation;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.PolymorphicSkeletonAppender;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationRecord;
@@ -23,6 +27,7 @@ import org.codefilarete.stalactite.engine.runtime.onetomany.IndexedAssociationTa
 import org.codefilarete.stalactite.query.api.Fromable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.function.Hanger.Holder;
 
@@ -39,9 +44,11 @@ import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.Joi
  * whole result set is read.
  *
  * @author Guillaume Mary
- * @see AggregateFetchSeparatelyIndexedManyToManyAppender
+ * @see AggregateFetchedSeparatelyIndexedManyToManyAppender
  */
 public class AggregateJoinedIndexedManyToManyAppender {
+	
+	private final PolymorphicSkeletonAppender polymorphicSkeletonAppender = new PolymorphicSkeletonAppender();
 	
 	/**
 	 * @return the graft point of the target entity onto the aggregate tree, so that the relations of the target entity
@@ -112,17 +119,38 @@ public class AggregateJoinedIndexedManyToManyAppender {
 		});
 		
 		// Relation join: association table → target table
-		String manyJoinName = aggregateTree.addRelationJoin(
-				associationTableJoinName,
-				new EntityMappingAdapter<>(targetPersister.getMapping()),
-				accessor,
-				join.getRightAssociationKey(),
-				join.getRightKey(),
-				null,
-				OUTER,
-				inMemoryRelationFixer,
-				Collections.emptySet(),
-				duplicateIdentifierProvider);
+		String manyJoinName;
+		if (relation.getTargetEntity() instanceof PolymorphicEntity) {
+			EntityPolymorphism<TRGT, Object> polymorphism = ((PolymorphicEntity<TRGT, Object, RIGHTTABLE>) relation.getTargetEntity()).getPolymorphism();
+			
+			GraftableRelation<SRC, TRGT, TRGTID, ASSOCIATIONTABLE, RIGHTTABLE, TRGTID> graftableRelation = new GraftableRelation<>(
+					join.getRightAssociationKey(),
+					join.getRightKey(),
+					collectionAccessPoint,
+					(BeanRelationFixer<Object, TRGT>) inMemoryRelationFixer,
+					relation.getTargetEntity());
+			
+			GraftPoint graftPoint = polymorphicSkeletonAppender.append(
+					aggregateTree,
+					polymorphism,
+					targetPersister,
+					graftableRelation,
+					associationTableJoinName);
+			
+			manyJoinName = graftPoint.getParentJoinPoint();
+		} else {
+			manyJoinName = aggregateTree.addRelationJoin(
+					associationTableJoinName,
+					new EntityMappingAdapter<>(targetPersister.getMapping()),
+					accessor,
+					join.getRightAssociationKey(),
+					join.getRightKey(),
+					null,
+					OUTER,
+					inMemoryRelationFixer,
+					Collections.emptySet(),
+					duplicateIdentifierProvider);
+		}
 		
 		// Attach a consumption listener: each time a target row is consumed, record its position from the association table row
 		JoinNode<TRGT, Fromable> joinNode = (JoinNode<TRGT, Fromable>) aggregateTree.getJoin(manyJoinName);

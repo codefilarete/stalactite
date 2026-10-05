@@ -381,7 +381,7 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 				relationFixer,
 				null,
                 true,
-				originalMapRelation.isFetchSeparately());
+				originalMapRelation.isFetchedSeparately());
 	}
 	
 	static class InMemoryRelationHolder<I, ENTRY_KEY, ENTRY_VALUE, KEY_ENTITY, VALUE_ENTITY> {

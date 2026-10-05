@@ -224,7 +224,7 @@ public class MapMetadataResolver {
 		
 		ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, SRCTABLE, MAPTABLE, KTABLE, VTABLE> relation = new ResolvedMapRelation<>(
 				mapRelation.getMapProvider(),
-				mapRelation.isFetchSeparately(),
+				mapRelation.isFetchedSeparately(),
 				mapJoin,
 				relationFixer,
 				mapFactory,

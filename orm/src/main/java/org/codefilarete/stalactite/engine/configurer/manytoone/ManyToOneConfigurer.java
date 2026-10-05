@@ -100,7 +100,7 @@ public class ManyToOneConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Tab
 		
 		BeanRelationFixer<SRC, TRGT> beanRelationFixer = determineRelationFixer(targetPersister);
 		
-		String relationJoinNodeName = addSelectJoin(tableAlias, targetPersister, foreignKeyColumns.getLeft(), foreignKeyColumns.getRight(), beanRelationFixer, manyToOneRelation.isFetchSeparately());
+		String relationJoinNodeName = addSelectJoin(tableAlias, targetPersister, foreignKeyColumns.getLeft(), foreignKeyColumns.getRight(), beanRelationFixer, manyToOneRelation.isFetchedSeparately());
 		addWriteCascades(targetPersister);
 		return relationJoinNodeName;
 	}

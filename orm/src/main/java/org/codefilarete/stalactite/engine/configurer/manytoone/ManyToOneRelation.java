@@ -44,7 +44,7 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, S extends Collection<SRC>> {
 	/**
 	 * Indicates that relation must be loaded in same main query (through join) or in some separate query
 	 */
-	private boolean fetchSeparately;
+	private boolean fetchedSeparately;
 	
 	@javax.annotation.Nullable
 	private String columnName;
@@ -105,16 +105,16 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, S extends Collection<SRC>> {
 		return mappedByConfiguration;
 	}
 	
-	public boolean isFetchSeparately() {
-		return fetchSeparately;
+	public boolean isFetchedSeparately() {
+		return fetchedSeparately;
 	}
 	
-	public void setFetchSeparately(boolean fetchSeparately) {
-		this.fetchSeparately = fetchSeparately;
+	public void setFetchedSeparately(boolean fetchedSeparately) {
+		this.fetchedSeparately = fetchedSeparately;
 	}
 	
 	public void fetchSeparately() {
-		setFetchSeparately(true);
+		setFetchedSeparately(true);
 	}
 	
 	@javax.annotation.Nullable
@@ -175,7 +175,7 @@ public class ManyToOneRelation<SRC, TRGT, TRGTID, S extends Collection<SRC>> {
 		ManyToOneRelation<E, TRGT, TRGTID, CC> result = new ManyToOneRelation<>(new ReadWriteAccessorChain<>(shiftedTargetProvider), this::isSourceTablePerClassPolymorphic, this::getTargetMappingConfiguration);
 		result.setRelationMode(this.getRelationMode());
 		result.setNullable(this.isNullable());
-		result.setFetchSeparately(this.isFetchSeparately());
+		result.setFetchedSeparately(this.isFetchedSeparately());
 		result.setColumnName(this.getColumnName());
 		result.setOwningColumn(this.getOwningColumn());
 		return result;

@@ -57,7 +57,7 @@ public class AggregateOneToOneAppender {
 		GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> result;
 		
 		DirectRelationJoin<LEFTTABLE, RIGHTTABLE, JOINID> join = relation.getJoin();
-		if (relation.isFetchSeparately()) {
+		if (relation.isFetchedSeparately()) {
 			result = appendWithSeparateFetch(relation, sourcePersister, targetReader, mountPoint, aggregateTree, join);
 		} else {
 			// we join the relation onto the aggregate root to build the whole select tree

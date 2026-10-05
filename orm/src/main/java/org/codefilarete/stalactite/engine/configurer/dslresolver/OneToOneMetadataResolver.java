@@ -122,7 +122,7 @@ public class OneToOneMetadataResolver {
 				targetEntity,
 				oneToOne.getTargetProvider(),
 				oneToOne.getRelationMode(),
-				oneToOne.isFetchSeparately(),
+				oneToOne.isFetchedSeparately(),
 				tablesJoin,
 				relationFixer,
 				oneToOne.isRelationOwnedByTarget(),
