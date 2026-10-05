@@ -50,12 +50,11 @@ public class MapEntryLoader<SRC, SRCID, K, V, LEFTTABLE extends Table<LEFTTABLE>
 	// - OVERALL to avoid a bug due to multiple instantiations of JoinRowConsumer instances which make the EntityTreeInflater
 	// internal tree being out-of-sync with some RelationJoinNode. See TablePerClassAppender.addTablePerClassPolymorphicSubPersistersJoins
 	// for some usage that may lead to this bug
-	private final ThreadSafeLazyInitializer<SeparateFetchQueryExecutor<KeyValueRecord<K, V, SRCID>, SRCID, LEFTTABLE, MAPTABLE>> queryExecutorInitializer
-			= new ThreadSafeLazyInitializer<SeparateFetchQueryExecutor<KeyValueRecord<K, V, SRCID>, SRCID, LEFTTABLE, MAPTABLE>>() {
+	private final ThreadSafeLazyInitializer<EntityTreeQuery<KeyValueRecord<K, V, SRCID>>> queryCache
+			= new ThreadSafeLazyInitializer<EntityTreeQuery<KeyValueRecord<K, V, SRCID>>>() {
 		@Override
-		protected SeparateFetchQueryExecutor<KeyValueRecord<K, V, SRCID>, SRCID, LEFTTABLE, MAPTABLE> createInstance() {
-			EntityTreeQuery<KeyValueRecord<K, V, SRCID>> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
-			return new SeparateFetchQueryExecutor<>(entityTreeQuery, sourceIdMapping, reverseForeignKey, dialect, connectionProvider);
+		protected EntityTreeQuery<KeyValueRecord<K, V, SRCID>> createInstance() {
+			return new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		}
 	};
 	
@@ -82,17 +81,19 @@ public class MapEntryLoader<SRC, SRCID, K, V, LEFTTABLE extends Table<LEFTTABLE>
 	
 	@Override
 	public Set<KeyValueRecord<K, V, SRCID>> select(Iterable<SRCID> ids) {
+		SeparateFetchQueryExecutor<KeyValueRecord<K, V, SRCID>, SRCID, LEFTTABLE, MAPTABLE> queryExecutor
+				= new SeparateFetchQueryExecutor<>(queryCache.get().copyWithQueryClone(), sourceIdMapping, reverseForeignKey, dialect, connectionProvider);
+		
 		int estimatedResultSize = Iterables.size(ids);
 		// we avoid relying on Entity equals/Hashcode by using a Map based on System.identityHashCode(..)
 		Set<KeyValueRecord<K, V, SRCID>> result = Collections.newSetFromMap(new IdentityLinkedMap<>(estimatedResultSize));
-		
 		Iterables.forEachChunk(
 				ids,
 				dialect.getInOperatorMaxSize(),
 				chunks -> {},
 				chunkSize -> null,    // no particular initialization to do
 				(context, chunk) -> {
-					result.addAll(queryExecutorInitializer.get().select(chunk));
+					result.addAll(queryExecutor.select(chunk));
 				},
 				context -> {}
 		);

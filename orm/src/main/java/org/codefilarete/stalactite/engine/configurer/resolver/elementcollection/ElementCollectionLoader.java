@@ -48,12 +48,11 @@ public class ElementCollectionLoader<SRC, SRCID, TRGT, LEFTTABLE extends Table<L
 	// - OVERALL to avoid a bug due to multiple instantiations of JoinRowConsumer instances which make the EntityTreeInflater
 	// internal tree being out-of-sync with some RelationJoinNode. See TablePerClassAppender.addTablePerClassPolymorphicSubPersistersJoins
 	// for some usage that may lead to this bug
-	private final ThreadSafeLazyInitializer<SeparateFetchQueryExecutor<ElementRecord<TRGT, SRCID>, SRCID, LEFTTABLE, COLLECTIONTABLE>> queryExecutorInitializer
-			= new ThreadSafeLazyInitializer<SeparateFetchQueryExecutor<ElementRecord<TRGT, SRCID>, SRCID, LEFTTABLE, COLLECTIONTABLE>>() {
+	private final ThreadSafeLazyInitializer<EntityTreeQuery<ElementRecord<TRGT, SRCID>>> queryCache
+			= new ThreadSafeLazyInitializer<EntityTreeQuery<ElementRecord<TRGT, SRCID>>>() {
 		@Override
-		protected SeparateFetchQueryExecutor<ElementRecord<TRGT, SRCID>, SRCID, LEFTTABLE, COLLECTIONTABLE> createInstance() {
-			EntityTreeQuery<ElementRecord<TRGT, SRCID>> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
-			return new SeparateFetchQueryExecutor<>(entityTreeQuery, sourceIdMapping, reverseForeignKey, dialect, connectionProvider);
+		protected EntityTreeQuery<ElementRecord<TRGT, SRCID>> createInstance() {
+			return new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		}
 	};
 	
@@ -71,6 +70,9 @@ public class ElementCollectionLoader<SRC, SRCID, TRGT, LEFTTABLE extends Table<L
 	
 	@Override
 	public Set<ElementRecord<TRGT, SRCID>> select(Iterable<SRCID> ids) {
+		SeparateFetchQueryExecutor<ElementRecord<TRGT, SRCID>, SRCID, LEFTTABLE, COLLECTIONTABLE> queryExecutor
+				= new SeparateFetchQueryExecutor<>(queryCache.get().copyWithQueryClone(), sourceIdMapping, reverseForeignKey, dialect, connectionProvider);
+		
 		int estimatedResultSize = Iterables.size(ids);
 		// we avoid relying on Entity equals/Hashcode by using a Map based on System.identityHashCode(..)
 		Set<ElementRecord<TRGT, SRCID>> result = Collections.newSetFromMap(new IdentityLinkedMap<>(estimatedResultSize));
@@ -80,7 +82,7 @@ public class ElementCollectionLoader<SRC, SRCID, TRGT, LEFTTABLE extends Table<L
 				chunks -> {},
 				chunkSize -> null,    // no particular initialization to do
 				(context, chunk) -> {
-					result.addAll(queryExecutorInitializer.get().select(chunk));
+					result.addAll(queryExecutor.select(chunk));
 				},
 				context -> {}
 		);

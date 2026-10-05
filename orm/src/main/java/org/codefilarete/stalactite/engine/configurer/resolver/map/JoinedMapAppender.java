@@ -131,9 +131,9 @@ public class JoinedMapAppender {
 				return Iterables.collect(duos, duo -> {
 					// We change Duo values by replacing them by the adapters value
 					// Note that we could have recreated a new IndexedDuo instance with those values, it would have been
-					// clearer, but it's kind of superflous and would consume some more memory, and also may require
+					// clearer, but it's kind of superfluous and would consume some more memory, and also may require
 					// some more code maintenance if we change MemoryHolder internal storage type : the right one must
-					// be instanciated again here.
+					// be instantiated again here.
 					((InMemoryRelationHolder<SRCID, K, V>.MapEntry) duo).setLeft(keyAdapter.apply(srcid, duo.getLeft()));
 					((InMemoryRelationHolder<SRCID, K, V>.MapEntry) duo).setRight(valueAdapter.apply(srcid, duo.getRight()));
 					return (InMemoryRelationHolder<SRCID, K, V>.MapEntry) duo;	

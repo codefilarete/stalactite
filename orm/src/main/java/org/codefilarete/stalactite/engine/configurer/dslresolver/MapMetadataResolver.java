@@ -148,7 +148,6 @@ public class MapMetadataResolver {
 					mapRelation.getKeyColumnName(),
 					mapRelation.getKeyColumnSize(),
 					targetTable,
-					namingConfiguration.getForeignKeyNamingStrategy(),
 					namingConfiguration.getJoinColumnNamingStrategy());
 			
 			// building identifier mapping projected on Map Table 
@@ -156,8 +155,11 @@ public class MapMetadataResolver {
 			// entry key columns must be part of the Map Table primary key
 			if (!keyEntitySource.getEntity().isTablePerClass()) {
 				ForeignKey<MAPTABLE, KTABLE, KID> foreignKey = targetTable.addForeignKey(namingConfiguration.getForeignKeyNamingStrategy()::giveName, keyEntityReferenceMapping.getSourceKey(), keyEntityReferenceMapping.getReferencedKey());
-				foreignKey.getColumns().forEach(Column::primaryKey);
 			} // else : in case of table per class, the foreign key is not possible because it would reference several tables which is not possible in SQL
+			
+			// the columns that store the reference to the key entity must be part of the Map Table primary key
+			keyEntityReferenceMapping.<Column<MAPTABLE, ?>>getSourceColumns().forEach(Column::primaryKey);
+			
 			keyEntityDefinition = new MapMemberAsEntity<>(
 					keyEntity, keyEntityReferenceMapping, mapRelation.getKeyEntityRelationMode());
 		} else if (mapRelation.getKeyEmbeddableConfigurationProvider() != null) {
@@ -193,7 +195,6 @@ public class MapMetadataResolver {
 					mapRelation.getValueColumnName(),
 					mapRelation.getValueColumnSize(),
 					targetTable,
-					namingConfiguration.getForeignKeyNamingStrategy(),
 					namingConfiguration.getJoinColumnNamingStrategy());
 			// building identifier mapping projected on Map Table 
 			valueMapping = (EntryMemberMapping<Y, MAPTABLE>) buildEntityMemberMapping(valueEntity.getIdentifierMapping(), valueEntityReferenceMapping);
@@ -252,7 +253,6 @@ public class MapMetadataResolver {
 	                                                                  @Nullable String columnName,
 	                                                                  @Nullable Size columnSize,
 	                                                                  MAPTABLE mapTable,
-	                                                                  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 																	  JoinColumnNamingStrategy joinColumnNamingStrategy) {
 		PrimaryKey<XTABLE, XID> entityPrimaryKey = entitySource.<XTABLE>getEntity().getTable().getPrimaryKey();
 		KeepOrderMap<QualifiedSelectable<MAPTABLE, ?>, QualifiedSelectable<XTABLE, ?>> mapping = new KeepOrderMap<>();

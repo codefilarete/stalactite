@@ -12,7 +12,12 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.Consum
 import org.codefilarete.stalactite.query.api.Fromable;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.model.From;
+import org.codefilarete.stalactite.query.model.GroupBy;
+import org.codefilarete.stalactite.query.model.Having;
+import org.codefilarete.stalactite.query.model.Limit;
+import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -216,6 +221,18 @@ public class EntityTreeQueryBuilder<C> {
 		
 		public EntityTreeInflater<C> getInflater() {
 			return entityTreeInflater;
+		}
+		
+		public EntityTreeQuery<C> copyWithQueryClone() {
+			Query queryClone = new Query(query.getSelect(),
+					query.getFrom(),
+					new Where(query.getWhere()),	// this is where the clone interest stands : we want to be able to add new where conditions without affecting the original query
+					new GroupBy(),
+					new Having(),
+					new OrderBy(),
+					new Limit()
+			);
+			return new EntityTreeQuery<>(queryClone, selectParameterBinders, entityTreeInflater);
 		}
 		
 	}
