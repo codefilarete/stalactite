@@ -53,7 +53,7 @@ public class AggregateManyToOneAppender {
 		} else {
 			// we join the relation onto the aggregate root to build the whole select tree
 			if (relation.getTargetEntity() instanceof PolymorphicEntity) {
-				EntityPolymorphism<TRGT, Object> polymorphism = ((PolymorphicEntity<TRGT, Object, RIGHTTABLE>) relation.getTargetEntity()).getPolymorphism();
+				EntityPolymorphism<TRGT, TRGTID> polymorphism = ((PolymorphicEntity<TRGT, TRGTID, RIGHTTABLE>) relation.getTargetEntity()).getPolymorphism();
 				
 				// Note that there's no difference between relation being owned by source or target, because the join
 				// is defined by the DirectRelationJoin object, which is built accordingly to the relation owner

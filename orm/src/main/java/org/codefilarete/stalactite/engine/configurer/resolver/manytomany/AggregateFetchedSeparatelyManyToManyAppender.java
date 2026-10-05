@@ -131,9 +131,8 @@ public class AggregateFetchedSeparatelyManyToManyAppender {
 					join.getLeftKey(),
 					join.getLeftAssociationKey(),
 					OUTER);
-			
-			// adding second phase loader
 		}
+		// adding second phase loader
 		sourceReader.addSelectListener(new SecondPhaseRelationSelectListener<>(
 				current2PhasesLoadContext,
 				targetReader.getMapping()::getId,
@@ -143,6 +142,6 @@ public class AggregateFetchedSeparatelyManyToManyAppender {
 		
 		// Note that because the relation is loaded separately, next joins should be appended to the loader's join tree,
 		// not the aggregate one, so that the target entity relations are loaded by the second-phase query too
-		return new GraftPoint(relation.getTargetEntity(), targetReader, ROOT_JOIN_NAME, associationRecordLoader.getEntityJoinTree());
+		return new GraftPoint(relation.getTargetEntity(), targetReader, ROOT_JOIN_NAME, targetReader.getEntityJoinTree());
 	}
 }

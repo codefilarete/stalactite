@@ -8,7 +8,7 @@ import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
+import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 
@@ -129,19 +129,19 @@ public class ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M extends Map<K, V>
 	
 	public static class MapMemberAsEntity<ENTITY, ENTITY_ID, MAPTABLE extends Table<MAPTABLE>, ENTITY_TABLE extends Table<ENTITY_TABLE>, X /* is either ENTITY or ENTITY_ID */> {
 		
-		private final ForeignKey<MAPTABLE, ENTITY_TABLE, ENTITY_ID> foreignKey;
+		private final KeyMapping<MAPTABLE, ENTITY_TABLE, ENTITY_ID> foreignKey;
 		private final AbstractEntity<ENTITY, ENTITY_ID, ENTITY_TABLE> entity;
 		private final RelationMode relationMode;
 		
 		public MapMemberAsEntity(AbstractEntity<ENTITY, ENTITY_ID, ENTITY_TABLE> entity,
-		                         ForeignKey<MAPTABLE, ENTITY_TABLE, ENTITY_ID> foreignKey,
+								 KeyMapping<MAPTABLE, ENTITY_TABLE, ENTITY_ID> foreignKey,
 		                         RelationMode relationMode) {
 			this.foreignKey = foreignKey;
 			this.entity = entity;
 			this.relationMode = relationMode;
 		}
 		
-		public ForeignKey<MAPTABLE, ENTITY_TABLE, ENTITY_ID> getForeignKey() {
+		public KeyMapping<MAPTABLE, ENTITY_TABLE, ENTITY_ID> getForeignKey() {
 			return foreignKey;
 		}
 		

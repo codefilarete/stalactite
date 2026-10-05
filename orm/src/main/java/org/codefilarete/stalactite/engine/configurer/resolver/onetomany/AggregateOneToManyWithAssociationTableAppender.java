@@ -76,7 +76,7 @@ public class AggregateOneToManyWithAssociationTableAppender {
 			result = appendWithSeparateFetch(sourceReader, targetReader, relation, join, mountPoint, aggregateTree, dialect, connectionProvider);
 		} else {
 			if (relation.getTargetEntity() instanceof PolymorphicEntity) {
-				EntityPolymorphism<TRGT, Object> polymorphism = ((PolymorphicEntity<TRGT, Object, RIGHTTABLE>) relation.getTargetEntity()).getPolymorphism();
+				EntityPolymorphism<TRGT, TRGTID> polymorphism = ((PolymorphicEntity<TRGT, TRGTID, RIGHTTABLE>) relation.getTargetEntity()).getPolymorphism();
 				
 				GraftableRelation<SRC, TRGT, TRGTID, ASSOCIATIONTABLE, RIGHTTABLE, TRGTID> graftableRelation = GraftableRelation.forOneToManyRelationWithAssociationTable(relation);
 				String associationTableJoinName = aggregateTree.addPassiveJoin(

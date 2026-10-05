@@ -57,7 +57,7 @@ public class AggregateOneToManyWithMappedAssociationAppender {
 		} else {
 			
 			if (relation.getTargetEntity() instanceof PolymorphicEntity) {
-				EntityPolymorphism<TRGT, Object> polymorphism = ((PolymorphicEntity<TRGT, Object, RIGHTTABLE>) relation.getTargetEntity()).getPolymorphism();
+				EntityPolymorphism<TRGT, TRGTID> polymorphism = ((PolymorphicEntity<TRGT, TRGTID, RIGHTTABLE>) relation.getTargetEntity()).getPolymorphism();
 				
 				GraftableRelation<SRC, TRGT, TRGTID, LEFTTABLE, RIGHTTABLE, TRGTID> graftableRelation = GraftableRelation.forOneToManyRelationOwnedByTarget(relation);
 				result = polymorphicSkeletonAppender.append(

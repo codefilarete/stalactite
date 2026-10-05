@@ -12,15 +12,20 @@ import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord;
+import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity;
+import org.codefilarete.stalactite.engine.configurer.model.EntityPolymorphism;
+import org.codefilarete.stalactite.engine.configurer.model.PolymorphicEntity;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation.MapMemberAsEntity;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
 import org.codefilarete.stalactite.engine.configurer.resolver.map.EntryMapResolver.KeyValueRecordPersister;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.GraftableRelation;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.PolymorphicSkeletonAppender;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
-import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
+import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.Duo;
@@ -40,11 +45,13 @@ import static org.codefilarete.tool.Nullable.nullable;
  */
 public class JoinedMapAppender {
 	
+	private final PolymorphicSkeletonAppender polymorphicSkeletonAppender = new PolymorphicSkeletonAppender();
+	
 	public <X, Y, SRC, SRCID, K, KID, V, VID, M extends Map<K, V>, LEFTTABLE extends Table<LEFTTABLE>, MAPTABLE extends Table<MAPTABLE>, KTABLE extends Table<KTABLE>, VTABLE extends Table<VTABLE>>
 	Duo<GraftPoint /* key assembly point */, GraftPoint /* value assembly point */> append(ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, LEFTTABLE, MAPTABLE, KTABLE, VTABLE> relation,
 	                                                                                       EntityJoinTree<SRC, SRCID> aggregateTree,
-	                                                                                       ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
-	                                                                                       String mountPoint,
+																						   String mountPoint,
+																						   ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
 	                                                                                       KeyValueRecordPersister<X, Y, SRCID, MAPTABLE> keyValueRecordPersister,
 	                                                                                       ConfiguredEntityReader<K, KID, KTABLE> keyEntityReader,
 	                                                                                       ConfiguredEntityReader<V, VID, VTABLE> valueEntityReader) {
@@ -211,9 +218,8 @@ public class JoinedMapAppender {
 			}
 		});
 		
-		String entityJoinNodeName = appendEntityJoin(aggregateTree, mapJoinNodeName, (ReadWritePropertyAccessPoint) mapAccessor,
-				entityReader, entityDefinition.getForeignKey(), inMemoryEntityRelationHolder, rawIdExtractor);
-		GraftPoint graftPoint = new GraftPoint(entityDefinition.getEntity(), entityReader, entityJoinNodeName);
+		GraftPoint graftPoint = appendEntityJoin(aggregateTree, mapJoinNodeName, (ReadWritePropertyAccessPoint) mapAccessor,
+				entityReader, entityDefinition.getEntity(), entityDefinition.getForeignKey(), inMemoryEntityRelationHolder, rawIdExtractor);
 		
 		return new EntityRelationAdapter<>(adapter, initializer, clearer, graftPoint);
 	}
@@ -251,32 +257,59 @@ public class JoinedMapAppender {
 	}
 	
 	private <SRC, SRCID, K, V, ENTITY, ENTITY_ID, M extends Map<K, V>, MAPTABLE extends Table<MAPTABLE>, ENTITYTABLE extends Table<ENTITYTABLE>>
-	String appendEntityJoin(EntityJoinTree<SRC, SRCID> aggregateTree,
+	GraftPoint appendEntityJoin(EntityJoinTree<SRC, SRCID> aggregateTree,
 	                        String mapJoinNodeName,
 	                        ReadWritePropertyAccessPoint<SRC, M> mapAccessor,
-	                        ConfiguredEntityReader<ENTITY, ENTITY_ID, ENTITYTABLE> entityPersister,
-	                        ForeignKey<MAPTABLE, ENTITYTABLE, ENTITY_ID> foreignKey,
+	                        ConfiguredEntityReader<ENTITY, ENTITY_ID, ENTITYTABLE> entityReader,
+							AbstractEntity<ENTITY, ENTITY_ID, ENTITYTABLE> entity,
+							KeyMapping<MAPTABLE, ENTITYTABLE, ENTITY_ID> foreignKey,
 	                        InMemoryRelationHolder<SRCID, ENTITY_ID, ENTITY> inMemoryRelationHolder,
 	                        Function<KeyValueRecord<?, ?, SRCID>, ENTITY_ID> entityIdExtractor) {
 		
-		return aggregateTree.addRelationJoin(
-				mapJoinNodeName,
-				new EntityMappingAdapter<>(entityPersister.getMapping()),
-				mapAccessor,
-				foreignKey.getSourceKey(),
-				foreignKey.getReferencedKey(),
-				null,
-				OUTER,
-				(bean, entity) -> {
-					// because we joined with the map association table and KeyValueRecordPersister, we know that the given object is a KeyValueRecord
-					KeyValueRecord<?, ?, SRCID> record = (KeyValueRecord<?, ?, SRCID>) bean;
-					// We only store the link between source entity and related entity, here we don't care about the index
-					// since that's not the goal of the current logic, and, anyway not possible. Index is the responsibility
-					// of the association table join.
-					inMemoryRelationHolder.storeRelation(record.getId().getId(), entityIdExtractor.apply(record), entity);
-				},
-				Collections.emptySet(),
-				null);
+		if (entity instanceof PolymorphicEntity) {
+			GraftableRelation<SRC, ENTITY, ENTITY_ID, MAPTABLE, ENTITYTABLE, ENTITY_ID> graftableRelation = new GraftableRelation<>(
+					foreignKey.getSourceKey(),
+					foreignKey.getReferencedKey(),
+					mapAccessor,
+					(target, relatedEntity) -> {
+						// because we joined with the map association table and KeyValueRecordPersister, we know that the given object is a KeyValueRecord
+						KeyValueRecord<?, ?, SRCID> record = (KeyValueRecord<?, ?, SRCID>) target;
+						// We only store the link between source entity and related entity, here we don't care about the index
+						// since that's not the goal of the current logic, and, anyway not possible. Index is the responsibility
+						// of the association table join.
+						inMemoryRelationHolder.storeRelation(record.getId().getId(), entityIdExtractor.apply(record), relatedEntity);
+					},
+					entity);
+			
+			EntityPolymorphism<ENTITY, ENTITY_ID> polymorphism = ((PolymorphicEntity<ENTITY, ENTITY_ID, ENTITYTABLE>) entity).getPolymorphism();
+			return polymorphicSkeletonAppender.append(
+					aggregateTree,
+					polymorphism,
+					entityReader,
+					graftableRelation,
+					mapJoinNodeName);
+		} else {
+			String entityJoinNodeName = aggregateTree.addRelationJoin(
+					mapJoinNodeName,
+					new EntityMappingAdapter<>(entityReader.getMapping()),
+					mapAccessor,
+					foreignKey.getSourceKey(),
+					foreignKey.getReferencedKey(),
+					null,
+					OUTER,
+					(bean, relatedEntity) -> {
+						// because we joined with the map association table and KeyValueRecordPersister, we know that the given object is a KeyValueRecord
+						KeyValueRecord<?, ?, SRCID> record = (KeyValueRecord<?, ?, SRCID>) bean;
+						// We only store the link between source entity and related entity, here we don't care about the index
+						// since that's not the goal of the current logic, and, anyway not possible. Index is the responsibility
+						// of the association table join.
+						inMemoryRelationHolder.storeRelation(record.getId().getId(), entityIdExtractor.apply(record), relatedEntity);
+					},
+					Collections.emptySet(),
+					null);
+			
+			return new GraftPoint(entity, entityReader, entityJoinNodeName);
+		}
 	}
 	
 	private static class EntityRelationAdapter<SRC, SRCID, RAW, ENTITY> {

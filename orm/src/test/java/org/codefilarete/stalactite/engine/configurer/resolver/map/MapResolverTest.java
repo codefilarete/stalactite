@@ -38,6 +38,7 @@ import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -386,7 +387,7 @@ class MapResolverTest {
 	}
 	
 	@Test
-	void crud_valueIsComplexType_fetchedSeparately() {
+	void crud_valueIsComplexType_fetchSeparately() {
 		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
@@ -630,218 +631,226 @@ class MapResolverTest {
 		assertThat(remainingAddressBook).isEmpty();
 	}
 	
-	@Test
-	void crud_entityAsKeyMap() {
-		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
-				.mapKey(Person::getId, ALREADY_ASSIGNED)
-				.map(Person::getName)
-				.mapMap(Person::getMapPropertyMadeOfEntityAsKey, Country.class, String.class)
-				.withKeyMapping(entityBuilder(Country.class, LONG_TYPE)
-						.mapKey(Country::getId, ALREADY_ASSIGNED)
-						.map(Country::getName)
-						.map(Country::getDescription));
+	@Nested
+	class EntityAsMapKey {
 		
-		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
-		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+		@Test
+		void crud_entityAsMapKey() {
+			FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapMap(Person::getMapPropertyMadeOfEntityAsKey, Country.class, String.class)
+					.withKeyMapping(entityBuilder(Country.class, LONG_TYPE)
+							.mapKey(Country::getId, ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.map(Country::getDescription));
+			
+			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+			EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+			
+			new DDLDeployer(persistenceContext).deployDDL();
+			
+			Person person = new Person(new PersistableIdentifier<>(10L));
+			person.setMapPropertyMadeOfEntityAsKey(new LinkedHashMap<>());
+			person.getMapPropertyMadeOfEntityAsKey().put(new Country(1), "Grenoble");
+			person.getMapPropertyMadeOfEntityAsKey().put(new Country(2), "Lyon");
+			personPersister.insert(person);
+			
+			Person loaded = personPersister.select(person.getId());
+			assertThat(loaded.getMapPropertyMadeOfEntityAsKey())
+					.containsEntry(new Country(1), "Grenoble")
+					.containsEntry(new Country(2), "Lyon");
+			
+			loaded.getMapPropertyMadeOfEntityAsKey().remove(new Country(1));
+			loaded.getMapPropertyMadeOfEntityAsKey().put(new Country(2), "Paris");
+			loaded.getMapPropertyMadeOfEntityAsKey().put(new Country(3), "Marseille");
+			personPersister.update(loaded, person, true);
+			
+			Person reloaded = personPersister.select(person.getId());
+			assertThat(reloaded.getMapPropertyMadeOfEntityAsKey())
+					.containsOnlyKeys(new Country(2), new Country(3))
+					.containsEntry(new Country(2), "Paris")
+					.containsEntry(new Country(3), "Marseille");
+			
+			personPersister.delete(reloaded);
+			
+			Long mapRowCount = persistenceContext.newQuery("select count(*) as cnt from Person_mapPropertyMadeOfEntityAsKey", Long.class)
+					.mapKey("cnt", Long.class)
+					.execute(Accumulators.getFirst());
+			assertThat(mapRowCount).isEqualTo(0L);
+		}
 		
-		new DDLDeployer(persistenceContext).deployDDL();
+		@Test
+		void select_entityAsMapKey_fetchSeparately() {
+			FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapMap(Person::getMapPropertyMadeOfEntityAsKey, Country.class, String.class)
+					.withKeyMapping(entityBuilder(Country.class, LONG_TYPE)
+							.mapKey(Country::getId, ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.map(Country::getDescription))
+					.fetchSeparately();
+			
+			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+			EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+			
+			new DDLDeployer(persistenceContext).deployDDL();
+			
+			Person person = new Person(new PersistableIdentifier<>(10L));
+			person.setMapPropertyMadeOfEntityAsKey(new LinkedHashMap<>());
+			person.getMapPropertyMadeOfEntityAsKey().put(new Country(1), "Grenoble");
+			person.getMapPropertyMadeOfEntityAsKey().put(new Country(2), "Lyon");
+			personPersister.insert(person);
+			
+			Person loaded = personPersister.select(person.getId());
+			assertThat(loaded.getMapPropertyMadeOfEntityAsKey())
+					.containsEntry(new Country(1), "Grenoble")
+					.containsEntry(new Country(2), "Lyon");
+		}
 		
-		Person person = new Person(new PersistableIdentifier<>(10L));
-		person.setMapPropertyMadeOfEntityAsKey(new LinkedHashMap<>());
-		person.getMapPropertyMadeOfEntityAsKey().put(new Country(1), "Grenoble");
-		person.getMapPropertyMadeOfEntityAsKey().put(new Country(2), "Lyon");
-		personPersister.insert(person);
-		
-		Person loaded = personPersister.select(person.getId());
-		assertThat(loaded.getMapPropertyMadeOfEntityAsKey())
-				.containsEntry(new Country(1), "Grenoble")
-				.containsEntry(new Country(2), "Lyon");
-		
-		loaded.getMapPropertyMadeOfEntityAsKey().remove(new Country(1));
-		loaded.getMapPropertyMadeOfEntityAsKey().put(new Country(2), "Paris");
-		loaded.getMapPropertyMadeOfEntityAsKey().put(new Country(3), "Marseille");
-		personPersister.update(loaded, person, true);
-		
-		Person reloaded = personPersister.select(person.getId());
-		assertThat(reloaded.getMapPropertyMadeOfEntityAsKey())
-				.containsOnlyKeys(new Country(2), new Country(3))
-				.containsEntry(new Country(2), "Paris")
-				.containsEntry(new Country(3), "Marseille");
-		
-		personPersister.delete(reloaded);
-		
-		Long mapRowCount = persistenceContext.newQuery("select count(*) as cnt from Person_mapPropertyMadeOfEntityAsKey", Long.class)
-				.mapKey("cnt", Long.class)
-				.execute(Accumulators.getFirst());
-		assertThat(mapRowCount).isEqualTo(0L);
+		@Test
+		void select_entityAsMapKey_complexType_fetchSeparately() {
+			Set<PersonId> persistedPersons = new HashSet<>();
+			FluentEntityMappingBuilder<org.codefilarete.stalactite.engine.model.compositekey.Person, PersonId> personBuilder = entityBuilder(org.codefilarete.stalactite.engine.model.compositekey.Person.class, PersonId.class)
+					.mapKey(org.codefilarete.stalactite.engine.model.compositekey.Person::getId, compositeKeyBuilder(PersonId.class)
+							.map(PersonId::getFirstName)
+							.map(PersonId::getLastName)
+							.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
+					.mapMap(org.codefilarete.stalactite.engine.model.compositekey.Person::getMapPropertyMadeOfCompositeIdEntityAsKey, House.class, String.class)
+					.withKeyMapping(entityBuilder(House.class, HouseId.class)
+							.mapKey(House::getHouseId, compositeKeyBuilder(HouseId.class)
+									.map(HouseId::getNumber)
+									.map(HouseId::getStreet)
+									.map(HouseId::getZipCode)
+									.map(HouseId::getCity)))
+					.fetchSeparately();
+			
+			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+			EntityPersister<org.codefilarete.stalactite.engine.model.compositekey.Person, PersonId> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+			
+			new DDLDeployer(persistenceContext).deployDDL();
+			
+			org.codefilarete.stalactite.engine.model.compositekey.Person person1 = new org.codefilarete.stalactite.engine.model.compositekey.Person(new PersonId("John", "Do", "nowhere"));
+			person1.setMapPropertyMadeOfCompositeIdEntityAsKey(new LinkedHashMap<>());
+			person1.getMapPropertyMadeOfCompositeIdEntityAsKey().put(new House(new HouseId(42, "Stalactite street", "142", "CodeFilarete City")), "home");
+			person1.getMapPropertyMadeOfCompositeIdEntityAsKey().put(new House(new HouseId(43, "Another street", "143", "Another City")), "work");
+			org.codefilarete.stalactite.engine.model.compositekey.Person person2 = new org.codefilarete.stalactite.engine.model.compositekey.Person(new PersonId("Jane", "Do", "nowhere"));
+			person2.setMapPropertyMadeOfCompositeIdEntityAsKey(new LinkedHashMap<>());
+			person2.getMapPropertyMadeOfCompositeIdEntityAsKey().put(new House(new HouseId(52, "Stalactite street", "242", "CodeFilarete City")), "home");
+			person2.getMapPropertyMadeOfCompositeIdEntityAsKey().put(new House(new HouseId(53, "Another street", "243", "Another City")), "work");
+			personPersister.insert(person1, person2);
+			
+			org.codefilarete.stalactite.engine.model.compositekey.Person loadedPerson1 = personPersister.select(person1.getId());
+			// we extract the identifier from the map because it is comparable with equals() (by contract of Stalactite)
+			// which allows AssertJ to check equality on it, else (with House instances) AssertJ won't be able to check
+			// equality, except if with implement equals(..) on it, which we don't want to keep close to Stalactite philosophy
+			Map<HouseId, String> homeTypePerAddress = map(loadedPerson1.getMapPropertyMadeOfCompositeIdEntityAsKey().entrySet(), e -> e.getKey().getHouseId(), Map.Entry::getValue);
+			assertThat(homeTypePerAddress)
+					.containsEntry(new HouseId(42, "Stalactite street", "142", "CodeFilarete City"), "home")
+					.containsEntry(new HouseId(43, "Another street", "143", "Another City"), "work");
+			
+			
+			Set<org.codefilarete.stalactite.engine.model.compositekey.Person> loadedPersons = personPersister.select(person1.getId(), person2.getId());
+			// we extract the identifier from the map because it is comparable with equals() (by contract of Stalactite)
+			// which allows AssertJ to check equality on it, else (with House instances) AssertJ won't be able to check
+			// equality, except if with implement equals(..) on it, which we don't want to keep close to Stalactite philosophy
+			Set<Map.Entry<House, String>> entries = loadedPersons.stream().flatMap(p -> p.getMapPropertyMadeOfCompositeIdEntityAsKey().entrySet().stream())
+					.collect(Collectors.toSet());
+			Map<HouseId, String> homeTypePerAddresses = map(entries, e -> e.getKey().getHouseId(), Map.Entry::getValue);
+			assertThat(homeTypePerAddresses)
+					.containsEntry(new HouseId(42, "Stalactite street", "142", "CodeFilarete City"), "home")
+					.containsEntry(new HouseId(43, "Another street", "143", "Another City"), "work")
+					.containsEntry(new HouseId(52, "Stalactite street", "242", "CodeFilarete City"), "home")
+					.containsEntry(new HouseId(53, "Another street", "243", "Another City"), "work");
+		}
 	}
 	
-	@Test
-	void select_entityAsKeyMap_fetchSeparately() {
-		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
-				.mapKey(Person::getId, ALREADY_ASSIGNED)
-				.map(Person::getName)
-				.mapMap(Person::getMapPropertyMadeOfEntityAsKey, Country.class, String.class)
-				.withKeyMapping(entityBuilder(Country.class, LONG_TYPE)
-						.mapKey(Country::getId, ALREADY_ASSIGNED)
-						.map(Country::getName)
-						.map(Country::getDescription))
-				.fetchSeparately();
+	@Nested
+	class EntityAsMapValue {
 		
-		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
-		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+		@Test
+		void crud_entityAsMapValue() {
+			FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapMap(Person::getMapPropertyMadeOfEntityAsValue, String.class, Country.class)
+					.withValueMapping(entityBuilder(Country.class, LONG_TYPE)
+							.mapKey(Country::getId, ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.map(Country::getDescription));
+			
+			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+			EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+			
+			new DDLDeployer(persistenceContext).deployDDL();
+			
+			Person person = new Person(new PersistableIdentifier<>(1L));
+			person.setMapPropertyMadeOfEntityAsValue(new LinkedHashMap<>());
+			person.getMapPropertyMadeOfEntityAsValue().put("home", new Country(1));
+			person.getMapPropertyMadeOfEntityAsValue().put("office", new Country(2));
+			personPersister.insert(person);
+			
+			Person loaded = personPersister.select(person.getId());
+			assertThat(loaded.getMapPropertyMadeOfEntityAsValue())
+					.containsEntry("home", new Country(1))
+					.containsEntry("office", new Country(2));
+			
+			loaded.getMapPropertyMadeOfEntityAsValue().remove("home");
+			loaded.getMapPropertyMadeOfEntityAsValue().put("office", new Country(3));
+			loaded.getMapPropertyMadeOfEntityAsValue().put("secondary", new Country(4));
+			personPersister.update(loaded, person, true);
+			
+			Person reloaded = personPersister.select(person.getId());
+			assertThat(reloaded.getMapPropertyMadeOfEntityAsValue())
+					.containsOnlyKeys("office", "secondary")
+					.containsEntry("office", new Country(3))
+					.containsEntry("secondary", new Country(4));
+			
+			personPersister.delete(reloaded);
+			
+			Long mapRowCount = persistenceContext.newQuery("select count(*) as cnt from Person_mapPropertyMadeOfEntityAsValue", Long.class)
+					.mapKey("cnt", Long.class)
+					.execute(Accumulators.getFirst());
+			assertThat(mapRowCount).isEqualTo(0L);
+		}
 		
-		new DDLDeployer(persistenceContext).deployDDL();
-		
-		Person person = new Person(new PersistableIdentifier<>(10L));
-		person.setMapPropertyMadeOfEntityAsKey(new LinkedHashMap<>());
-		person.getMapPropertyMadeOfEntityAsKey().put(new Country(1), "Grenoble");
-		person.getMapPropertyMadeOfEntityAsKey().put(new Country(2), "Lyon");
-		personPersister.insert(person);
-		
-		Person loaded = personPersister.select(person.getId());
-		assertThat(loaded.getMapPropertyMadeOfEntityAsKey())
-				.containsEntry(new Country(1), "Grenoble")
-				.containsEntry(new Country(2), "Lyon");
-	}
-	
-	@Test
-	void select_entityAsKeyMap_complexType_fetchSeparately() {
-		Set<PersonId> persistedPersons = new HashSet<>();
-		FluentEntityMappingBuilder<org.codefilarete.stalactite.engine.model.compositekey.Person, PersonId> personBuilder = entityBuilder(org.codefilarete.stalactite.engine.model.compositekey.Person.class, PersonId.class)
-				.mapKey(org.codefilarete.stalactite.engine.model.compositekey.Person::getId, compositeKeyBuilder(PersonId.class)
-						.map(PersonId::getFirstName)
-						.map(PersonId::getLastName)
-						.map(PersonId::getAddress), p -> persistedPersons.add(p.getId()), p -> persistedPersons.contains(p.getId()))
-				.mapMap(org.codefilarete.stalactite.engine.model.compositekey.Person::getMapPropertyMadeOfCompositeIdEntityAsKey, House.class, String.class)
-				.withKeyMapping(entityBuilder(House.class, HouseId.class)
-						.mapKey(House::getHouseId, compositeKeyBuilder(HouseId.class)
-								.map(HouseId::getNumber)
-								.map(HouseId::getStreet)
-								.map(HouseId::getZipCode)
-								.map(HouseId::getCity)))
-				.fetchSeparately();
-		
-		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
-		EntityPersister<org.codefilarete.stalactite.engine.model.compositekey.Person, PersonId> personPersister = testInstance.resolve(personBuilder.getConfiguration());
-		
-		new DDLDeployer(persistenceContext).deployDDL();
-		
-		org.codefilarete.stalactite.engine.model.compositekey.Person person1 = new org.codefilarete.stalactite.engine.model.compositekey.Person(new PersonId("John", "Do", "nowhere"));
-		person1.setMapPropertyMadeOfCompositeIdEntityAsKey(new LinkedHashMap<>());
-		person1.getMapPropertyMadeOfCompositeIdEntityAsKey().put(new House(new HouseId(42, "Stalactite street", "142", "CodeFilarete City")), "home");
-		person1.getMapPropertyMadeOfCompositeIdEntityAsKey().put(new House(new HouseId(43, "Another street", "143", "Another City")), "work");
-		org.codefilarete.stalactite.engine.model.compositekey.Person person2 = new org.codefilarete.stalactite.engine.model.compositekey.Person(new PersonId("Jane", "Do", "nowhere"));
-		person2.setMapPropertyMadeOfCompositeIdEntityAsKey(new LinkedHashMap<>());
-		person2.getMapPropertyMadeOfCompositeIdEntityAsKey().put(new House(new HouseId(52, "Stalactite street", "242", "CodeFilarete City")), "home");
-		person2.getMapPropertyMadeOfCompositeIdEntityAsKey().put(new House(new HouseId(53, "Another street", "243", "Another City")), "work");
-		personPersister.insert(person1, person2);
-		
-		org.codefilarete.stalactite.engine.model.compositekey.Person loadedPerson1 = personPersister.select(person1.getId());
-		// we extract the identifier from the map because it is comparable with equals() (by contract of Stalactite)
-		// which allows AssertJ to check equality on it, else (with House instances) AssertJ won't be able to check
-		// equality, except if with implement equals(..) on it, which we don't want to keep close to Stalactite philosophy
-		Map<HouseId, String> homeTypePerAddress = map(loadedPerson1.getMapPropertyMadeOfCompositeIdEntityAsKey().entrySet(), e -> e.getKey().getHouseId(), Map.Entry::getValue);
-		assertThat(homeTypePerAddress)
-				.containsEntry(new HouseId(42, "Stalactite street", "142", "CodeFilarete City"), "home")
-				.containsEntry(new HouseId(43, "Another street", "143", "Another City"), "work");
-		
-		
-		Set<org.codefilarete.stalactite.engine.model.compositekey.Person> loadedPersons = personPersister.select(person1.getId(), person2.getId());
-		// we extract the identifier from the map because it is comparable with equals() (by contract of Stalactite)
-		// which allows AssertJ to check equality on it, else (with House instances) AssertJ won't be able to check
-		// equality, except if with implement equals(..) on it, which we don't want to keep close to Stalactite philosophy
-		Set<Map.Entry<House, String>> entries = loadedPersons.stream().flatMap(p -> p.getMapPropertyMadeOfCompositeIdEntityAsKey().entrySet().stream())
-				.collect(Collectors.toSet());
-		Map<HouseId, String> homeTypePerAddresses = map(entries, e -> e.getKey().getHouseId(), Map.Entry::getValue);
-		assertThat(homeTypePerAddresses)
-				.containsEntry(new HouseId(42, "Stalactite street", "142", "CodeFilarete City"), "home")
-				.containsEntry(new HouseId(43, "Another street", "143", "Another City"), "work")
-				.containsEntry(new HouseId(52, "Stalactite street", "242", "CodeFilarete City"), "home")
-				.containsEntry(new HouseId(53, "Another street", "243", "Another City"), "work");
-	}
-	
-	@Test
-	void crud_entityAsValueMap() {
-		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
-				.mapKey(Person::getId, ALREADY_ASSIGNED)
-				.map(Person::getName)
-				.mapMap(Person::getMapPropertyMadeOfEntityAsValue, String.class, Country.class)
-				.withValueMapping(entityBuilder(Country.class, LONG_TYPE)
-						.mapKey(Country::getId, ALREADY_ASSIGNED)
-						.map(Country::getName)
-						.map(Country::getDescription));
-		
-		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
-		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
-		
-		new DDLDeployer(persistenceContext).deployDDL();
-		
-		Person person = new Person(new PersistableIdentifier<>(1L));
-		person.setMapPropertyMadeOfEntityAsValue(new LinkedHashMap<>());
-		person.getMapPropertyMadeOfEntityAsValue().put("home", new Country(1));
-		person.getMapPropertyMadeOfEntityAsValue().put("office", new Country(2));
-		personPersister.insert(person);
-		
-		Person loaded = personPersister.select(person.getId());
-		assertThat(loaded.getMapPropertyMadeOfEntityAsValue())
-				.containsEntry("home", new Country(1))
-				.containsEntry("office", new Country(2));
-		
-		loaded.getMapPropertyMadeOfEntityAsValue().remove("home");
-		loaded.getMapPropertyMadeOfEntityAsValue().put("office", new Country(3));
-		loaded.getMapPropertyMadeOfEntityAsValue().put("secondary", new Country(4));
-		personPersister.update(loaded, person, true);
-		
-		Person reloaded = personPersister.select(person.getId());
-		assertThat(reloaded.getMapPropertyMadeOfEntityAsValue())
-				.containsOnlyKeys("office", "secondary")
-				.containsEntry("office", new Country(3))
-				.containsEntry("secondary", new Country(4));
-		
-		personPersister.delete(reloaded);
-		
-		Long mapRowCount = persistenceContext.newQuery("select count(*) as cnt from Person_mapPropertyMadeOfEntityAsValue", Long.class)
-				.mapKey("cnt", Long.class)
-				.execute(Accumulators.getFirst());
-		assertThat(mapRowCount).isEqualTo(0L);
-	}
-	
-	@Test
-	void select_entityAsValueMap_fetchSeparately() {
-		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
-				.mapKey(Person::getId, ALREADY_ASSIGNED)
-				.map(Person::getName)
-				.mapMap(Person::getMapPropertyMadeOfEntityAsValue, String.class, Country.class)
-				.withValueMapping(entityBuilder(Country.class, LONG_TYPE)
-						.mapKey(Country::getId, ALREADY_ASSIGNED)
-						.map(Country::getName)
-						.map(Country::getDescription))
-				.fetchSeparately();
-		
-		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
-		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
-		
-		new DDLDeployer(persistenceContext).deployDDL();
-		
-		Person person1 = new Person(new PersistableIdentifier<>(1L));
-		person1.setMapPropertyMadeOfEntityAsValue(new LinkedHashMap<>());
-		person1.getMapPropertyMadeOfEntityAsValue().put("home", new Country(1));
-		person1.getMapPropertyMadeOfEntityAsValue().put("office", new Country(2));
-		Person person2 = new Person(new PersistableIdentifier<>(2L));
-		person2.setMapPropertyMadeOfEntityAsValue(new LinkedHashMap<>());
-		person2.getMapPropertyMadeOfEntityAsValue().put("home", new Country(3));
-		person2.getMapPropertyMadeOfEntityAsValue().put("office", new Country(4));
-		personPersister.insert(Arrays.asList(person1, person2));
-		
-		Set<Person> loaded = personPersister.select(person1.getId(), person2.getId());
-		Map<Identifier<Long>, Person> personMap = map(loaded, Person::getId);
-		assertThat(personMap.get(person1.getId()).getMapPropertyMadeOfEntityAsValue())
-				.containsEntry("home", new Country(1))
-				.containsEntry("office", new Country(2));
-		assertThat(personMap.get(person2.getId()).getMapPropertyMadeOfEntityAsValue())
-				.containsEntry("home", new Country(3))
-				.containsEntry("office", new Country(4));
+		@Test
+		void select_entityAsMapValue_fetchSeparately() {
+			FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapMap(Person::getMapPropertyMadeOfEntityAsValue, String.class, Country.class)
+					.withValueMapping(entityBuilder(Country.class, LONG_TYPE)
+							.mapKey(Country::getId, ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.map(Country::getDescription))
+					.fetchSeparately();
+			
+			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+			EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+			
+			new DDLDeployer(persistenceContext).deployDDL();
+			
+			Person person1 = new Person(new PersistableIdentifier<>(1L));
+			person1.setMapPropertyMadeOfEntityAsValue(new LinkedHashMap<>());
+			person1.getMapPropertyMadeOfEntityAsValue().put("home", new Country(1));
+			person1.getMapPropertyMadeOfEntityAsValue().put("office", new Country(2));
+			Person person2 = new Person(new PersistableIdentifier<>(2L));
+			person2.setMapPropertyMadeOfEntityAsValue(new LinkedHashMap<>());
+			person2.getMapPropertyMadeOfEntityAsValue().put("home", new Country(3));
+			person2.getMapPropertyMadeOfEntityAsValue().put("office", new Country(4));
+			personPersister.insert(Arrays.asList(person1, person2));
+			
+			Set<Person> loaded = personPersister.select(person1.getId(), person2.getId());
+			Map<Identifier<Long>, Person> personMap = map(loaded, Person::getId);
+			assertThat(personMap.get(person1.getId()).getMapPropertyMadeOfEntityAsValue())
+					.containsEntry("home", new Country(1))
+					.containsEntry("office", new Country(2));
+			assertThat(personMap.get(person2.getId()).getMapPropertyMadeOfEntityAsValue())
+					.containsEntry("home", new Country(3))
+					.containsEntry("office", new Country(4));
+		}
 	}
 	
 	@Test

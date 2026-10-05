@@ -33,10 +33,10 @@ public class PolymorphicSkeletonAppender {
 	
 	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
 	GraftPoint append(EntityJoinTree<SRC, SRCID> aggregateTree,
-										EntityPolymorphism<TRGT, Object> polymorphism,
-										ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetReader,
-										GraftableRelation<SRC, TRGT, TRGTID, LEFTTABLE, RIGHTTABLE, JOINID> graftableRelation,
-										String mountPoint) {
+					  EntityPolymorphism<TRGT, TRGTID> polymorphism,
+					  ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetReader,
+					  GraftableRelation<SRC, TRGT, TRGTID, LEFTTABLE, RIGHTTABLE, JOINID> graftableRelation,
+					  String mountPoint) {
 		GraftPoint result = null;
 		if (polymorphism instanceof SingleTablePolymorphism) {
 			SingleTablePolymorphismReader<TRGT, TRGTID, RIGHTTABLE, Object> persisterAsSingleTable = (SingleTablePolymorphismReader<TRGT, TRGTID, RIGHTTABLE, Object>) targetReader;

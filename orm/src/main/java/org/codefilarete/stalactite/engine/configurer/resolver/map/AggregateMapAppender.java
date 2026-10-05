@@ -38,7 +38,7 @@ public class AggregateMapAppender {
 		if (relation.isFetchedSeparately()) {
 			return fetchedSeparatelyMapAppender.append(relation, sourcePersister, keyValueRecordPersister, keyEntityReader, valueEntityReader, dialect, connectionProvider);
 		} else {
-			return joinedMapAppender.append(relation, aggregateTree, sourcePersister, mountPoint, keyValueRecordPersister, keyEntityReader, valueEntityReader);
+			return joinedMapAppender.append(relation, aggregateTree, mountPoint, sourcePersister, keyValueRecordPersister, keyEntityReader, valueEntityReader);
 		}
 	}
 }

@@ -141,7 +141,7 @@ public class AggregateOneToManyWithIndexedAssociationTableAppender {
 			
 			String manyJoinName;
 			if (relation.getTargetEntity() instanceof PolymorphicEntity) {
-				EntityPolymorphism<TRGT, Object> polymorphism = ((PolymorphicEntity<TRGT, Object, RIGHTTABLE>) relation.getTargetEntity()).getPolymorphism();
+				EntityPolymorphism<TRGT, TRGTID> polymorphism = ((PolymorphicEntity<TRGT, TRGTID, RIGHTTABLE>) relation.getTargetEntity()).getPolymorphism();
 				
 				GraftableRelation<SRC, TRGT, TRGTID, ASSOCIATIONTABLE, RIGHTTABLE, TRGTID> graftableRelation = new GraftableRelation<>(
 								join.getRightAssociationKey(),
@@ -236,7 +236,7 @@ public class AggregateOneToManyWithIndexedAssociationTableAppender {
 			
 			EntityPolymorphism<TRGT, Object> polymorphism = ((PolymorphicEntity<TRGT, Object, RIGHTTABLE>) relation.getTargetEntity()).getPolymorphism();
 			
-			String associationTableJoinName = sourceReader.getEntityJoinTree().addPassiveJoin(
+			String associationTableJoinName = aggregateTree.addPassiveJoin(
 					mountPoint,
 					join.getLeftKey(),
 					join.getLeftAssociationKey(),
@@ -244,10 +244,10 @@ public class AggregateOneToManyWithIndexedAssociationTableAppender {
 					Collections.singleton(associationTable.getIndexColumn()),
 					null);
 			
-			JoinNode<?, ?> associationJoinNode = sourceReader.getEntityJoinTree().getJoin(associationTableJoinName);
+			JoinNode<?, ?> associationJoinNode = aggregateTree.getJoin(associationTableJoinName);
 			
 			polymorphicSkeletonAppender.appendForSeparateLoad(
-					sourceReader.getEntityJoinTree(),
+					aggregateTree,
 					polymorphism,
 					targetReader,
 					associationTableJoinName,

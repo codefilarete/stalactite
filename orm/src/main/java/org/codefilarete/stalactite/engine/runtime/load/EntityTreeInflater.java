@@ -92,10 +92,13 @@ public class EntityTreeInflater<C> {
 		// duplicate can happen if equals/hashCode depends on relation, in particular Collection ones, because they are filled from row to row
 		// making hashCode value change. Moreover we need to keep track of the order because query might be sorted through "order by" clause.
 		Set<C> result = java.util.Collections.newSetFromMap(new IdentityLinkedMap<>(resultSize));
+		int i = 0;
 		for (ColumnedRow row : rows) {
+			LOGGER.debug("Consuming row {}", ++i);
 			Nullable<C> newInstance = transform(row, context);
 			newInstance.invoke(result::add);
 		}
+		LOGGER.debug("End of result set (row count {})", i);
 		return result;
 	}
 	
@@ -129,8 +132,8 @@ public class EntityTreeInflater<C> {
 						EntityReference<?, ?> relatedEntityReference = ((RelationJoinRowConsumer) consumer).applyRelatedEntity(entityReference, nodeRow, context);
 						EntityCreationResult result;
 						if (consumer instanceof ForkJoinRowConsumer) {
-							// In case of join-table polymorphism we have to provide the tree branch on which id was found
-							// in order to let created entity filled with right consumers. "Wrong" branches serve no purpose. 
+							// In case of polymorphism we have to provide the tree branch on which the identifier was found
+							// to let the created entity being filled with the right consumers. "Wrong" branches serve no purpose. 
 							JoinRowConsumer nextRowConsumer = ((ForkJoinRowConsumer) consumer).giveNextConsumer();
 							if (nextRowConsumer == null) {
 								// means no identifier of polymorphic entity
@@ -138,6 +141,12 @@ public class EntityTreeInflater<C> {
 							} else {
 								Optional<ConsumerNode> consumerNode = join.consumers.stream().filter(c -> nextRowConsumer == c.consumer).findFirst();
 								if (!consumerNode.isPresent()) {
+									// Possible reason : EntityTreeQueryBuilder.buildSelectQuery() is called several times for the same Query
+									// Deep understanding : the EntityTreeQuery is built several times which calls the buildConsumerTree() several times too,
+									// which invokes toConsumer(..) which is bound to some lambda / factory-function that, thus, instantiates multiple times
+									// the same JoinRowConsumer-subclass instance and add it to same RelationJoinNode.
+									// This leads to having an out-of-sync join.consumers list and the one found by giveNextConsumer()
+									// See TablePerClassAppender.addTablePerClassPolymorphicSubPersistersJoins for some usage that may lead to this problem
 									throw new IllegalStateException("Can't find consumer node for " + nextRowConsumer + " in " + join.consumers);
 								} else {
 									result = new EntityCreationResult(relatedEntityReference, Arrays.asList(consumerNode.get()));

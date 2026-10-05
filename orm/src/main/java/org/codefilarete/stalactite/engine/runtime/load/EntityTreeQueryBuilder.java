@@ -25,6 +25,8 @@ import org.codefilarete.tool.Strings;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.IdentityMap;
 import org.codefilarete.tool.collection.Iterables;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Builder of a {@link Query} from an {@link EntityJoinTree}
@@ -32,6 +34,8 @@ import org.codefilarete.tool.collection.Iterables;
  * @author Guillaume Mary
  */
 public class EntityTreeQueryBuilder<C> {
+	
+	private static final Logger LOGGER = LoggerFactory.getLogger(EntityTreeQueryBuilder.class);
 	
 	private final EntityJoinTree<C, Object> tree;
 	private final ResultSetReaderRegistry parameterBinderProvider;
@@ -166,6 +170,7 @@ public class EntityTreeQueryBuilder<C> {
 			JoinNode root = tree.getRoot();
 			ConsumerNode consumerRoot = new ConsumerNode(tree.getRoot().toConsumer(root));
 			tree.foreachJoinWithDepth(consumerRoot, (targetOwner, currentNode) -> {
+				LOGGER.debug("Building consumer for join node {} on target owner {}", currentNode, targetOwner);
 				JoinRowConsumer consumer = currentNode.toConsumer((JoinNode) currentNode);
 				ConsumerNode consumerNode = new ConsumerNode(consumer);
 				targetOwner.addConsumer(consumerNode);

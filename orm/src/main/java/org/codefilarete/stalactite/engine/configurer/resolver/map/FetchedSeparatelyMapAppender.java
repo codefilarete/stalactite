@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -15,10 +14,14 @@ import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
 import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecord;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
+import org.codefilarete.stalactite.engine.configurer.model.EntityPolymorphism;
+import org.codefilarete.stalactite.engine.configurer.model.PolymorphicEntity;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedMapRelation.MapMemberAsEntity;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
 import org.codefilarete.stalactite.engine.configurer.resolver.map.EntryMapResolver.KeyValueRecordPersister;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.GraftableRelation;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.PolymorphicSkeletonAppender;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
@@ -26,13 +29,13 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
+import org.codefilarete.tool.collection.KeepOrderSet;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType.OUTER;
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
@@ -49,9 +52,11 @@ import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROO
  */
 public class FetchedSeparatelyMapAppender {
 	
+	private final PolymorphicSkeletonAppender polymorphicSkeletonAppender = new PolymorphicSkeletonAppender();
+	
 	public <X, Y, SRC, SRCID, K, KID, V, VID, M extends Map<K, V>, LEFTTABLE extends Table<LEFTTABLE>, MAPTABLE extends Table<MAPTABLE>, KTABLE extends Table<KTABLE>, VTABLE extends Table<VTABLE>>
 	Duo<GraftPoint /* key assembly point */, GraftPoint /* value assembly point */> append(ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, LEFTTABLE, MAPTABLE, KTABLE, VTABLE> relation,
-	                                                                                       ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
+																						   ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourceReader,
 	                                                                                       KeyValueRecordPersister<X, Y, SRCID, MAPTABLE> keyValueRecordPersister,
 	                                                                                       ConfiguredEntityReader<K, KID, KTABLE> keyEntityReader,
 	                                                                                       ConfiguredEntityReader<V, VID, VTABLE> valueEntityReader,
@@ -63,11 +68,11 @@ public class FetchedSeparatelyMapAppender {
 		DirectRelationJoin<LEFTTABLE, MAPTABLE, SRCID> join = relation.getJoin();
 		
 		// adding second phase loader
-		KeyMapping<LEFTTABLE, MAPTABLE, SRCID> targetPkToRightKey = new KeyMapping<>(sourcePersister.getMapping().getTargetTable().getPrimaryKey(), join.getRightKey());
+		KeyMapping<LEFTTABLE, MAPTABLE, SRCID> targetPkToRightKey = new KeyMapping<>(sourceReader.getMapping().getTargetTable().getPrimaryKey(), join.getRightKey());
 		KeepOrderMap<QualifiedSelectable<LEFTTABLE, ?>, QualifiedSelectable<MAPTABLE, ?>> targetPkToAssociationTableKey = targetPkToRightKey.getMapping();
 		
 		MapEntryLoader<SRC, SRCID, X, Y, LEFTTABLE, MAPTABLE> mapEntryLoader = new MapEntryLoader<>(
-				sourcePersister.getMapping().getIdMapping(),
+				sourceReader.getMapping().getIdMapping(),
 				keyValueRecordPersister,
 				targetPkToAssociationTableKey,
 				dialect,
@@ -120,20 +125,20 @@ public class FetchedSeparatelyMapAppender {
 				return entries;
 			}
 		};
-		sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
+		sourceReader.addSelectListener(new SelectListener<SRC, SRCID>() {
 			
 			@Override
 			public void afterSelect(Set<? extends SRC> result) {
 				// we load all the target entities (of all sources, for efficiency)
-				Set<SRCID> srcIds = Iterables.collect(result, sourcePersister.getMapping()::getId, HashSet::new);
+				Set<SRCID> srcIds = Iterables.collect(result, sourceReader.getMapping()::getId, HashSet::new);
 				Set<KeyValueRecord<X, Y, SRCID>> select = eventuallyRearrangingMapEntrySelectExecutor.select(srcIds);
 				
 				// we sew the relations
 				result.forEach(src -> {
 					// filling final collection with a sorted collection
-					LinkedHashSet<KeyValueRecord<X, Y, SRCID>> collect = select.stream()
-							.filter(record -> record.getId().getId().equals(sourcePersister.getMapping().getId(src)))
-							.collect(Collectors.toCollection(LinkedHashSet::new));
+					KeepOrderSet<KeyValueRecord<X, Y, SRCID>> collect = select.stream()
+							.filter(record -> record.getId().getId().equals(sourceReader.getMapping().getId(src)))
+							.collect(Collectors.toCollection(KeepOrderSet::new));
 					finalInMemoryRelationAdapterWithOrdering.apply(collect)
 							.forEach(entry -> originalRelationFixer.apply(src, (KeyValueRecord<K, V, SRCID>) entry));
 				});
@@ -147,34 +152,34 @@ public class FetchedSeparatelyMapAppender {
 	 * on the {@link MapEntryLoader} entity join tree to collect the entity in-memory, then wraps the given select
 	 * executor so it rearranges its result by replacing the raw identifier with the found entity.
 	 */
-	private <X, Y, SRC, SRCID, ENTITY_ID, ENTITY, RAW, LEFTTABLE extends Table<LEFTTABLE>, MAPTABLE extends Table<MAPTABLE>, ENTITYTABLE extends Table<ENTITYTABLE>>
-	Duo<SelectExecutor<KeyValueRecord<X, Y, SRCID>, SRCID>, GraftPoint> appendSeparatelyFetchedEntityJoin(
-			MapEntryLoader<SRC, SRCID, X, Y, LEFTTABLE, MAPTABLE> mapEntryLoader,
+	private <K, V, SRC, SRCID, ENTITY, ENTITY_ID, RAW, LEFTTABLE extends Table<LEFTTABLE>, MAPTABLE extends Table<MAPTABLE>, ENTITYTABLE extends Table<ENTITYTABLE>>
+	Duo<SelectExecutor<KeyValueRecord<K, V, SRCID>, SRCID>, GraftPoint> appendSeparatelyFetchedEntityJoin(
+			MapEntryLoader<SRC, SRCID, K, V, LEFTTABLE, MAPTABLE> mapEntryLoader,
 			ReadWritePropertyAccessPoint<SRC, ?> mapAccessor,
 			ConfiguredEntityReader<ENTITY, ENTITY_ID, ENTITYTABLE> entityReader,
 			MapMemberAsEntity<ENTITY, ENTITY_ID, MAPTABLE, ENTITYTABLE, ?> entityDefinition,
-			SelectExecutor<KeyValueRecord<X, Y, SRCID>, SRCID> currentSelectExecutor,
-			Function<KeyValueRecord<X, Y, SRCID>, RAW> rawValueGetter,
-			BiConsumer<KeyValueRecord<X, Y, SRCID>, RAW> rawValueSetter) {
+			SelectExecutor<KeyValueRecord<K, V, SRCID>, SRCID> mapEntrySelectExecutor,
+			Function<KeyValueRecord<K, V, SRCID>, RAW> rawValueGetter,
+			BiConsumer<KeyValueRecord<K, V, SRCID>, RAW> rawValueSetter) {
 		
 		InMemoryRelationHolder<SRCID, ENTITY_ID, ENTITY> inMemoryEntityHolder = new InMemoryRelationHolder<>();
 		
 		// We add a join on the MapEntryLoader to collect the entity in-memory, then we rearrange the result
-		String entityJoinNodeName = appendEntityJoin(
+		GraftPoint entityGraftPoint = appendEntityJoin(
 				(EntityJoinTree<SRC, SRCID>) mapEntryLoader.getEntityJoinTree(),
 				ROOT_JOIN_NAME,
 				(ReadWritePropertyAccessPoint) mapAccessor,
 				entityReader,
-				entityDefinition.getForeignKey(),
+				entityDefinition,
 				inMemoryEntityHolder,
-				record -> (ENTITY_ID) rawValueGetter.apply((KeyValueRecord<X, Y, SRCID>) record));
+				record -> (ENTITY_ID) rawValueGetter.apply((KeyValueRecord<K, V, SRCID>) record));
 		
 		// we wrap the entry loader by some code that rearranges its result by getting the entities from the in-memory relation holder
-		SelectExecutor<KeyValueRecord<X, Y, SRCID>, SRCID> wrappedSelectExecutor = ids -> {
+		SelectExecutor<KeyValueRecord<K, V, SRCID>, SRCID> wrappedSelectExecutor = ids -> {
 			try {
 				inMemoryEntityHolder.init();
 				
-				Set<KeyValueRecord<X, Y, SRCID>> select = currentSelectExecutor.select(ids);
+				Set<KeyValueRecord<K, V, SRCID>> select = mapEntrySelectExecutor.select(ids);
 				
 				// rearranging the previous result which contains only the raw identifier by replacing it with the final entity
 				// tempering with this allows not to change the final relation sewing
@@ -193,36 +198,65 @@ public class FetchedSeparatelyMapAppender {
 			}
 		};
 		
-		return new Duo<>(wrappedSelectExecutor, new GraftPoint(entityDefinition.getEntity(), entityReader, entityJoinNodeName));
+		return new Duo<>(wrappedSelectExecutor, entityGraftPoint);
 	}
 	
 	private <SRC, SRCID, K, V, ENTITY, ENTITY_ID, M extends Map<K, V>, MAPTABLE extends Table<MAPTABLE>, ENTITYTABLE extends Table<ENTITYTABLE>>
-	String appendEntityJoin(EntityJoinTree<SRC, SRCID> aggregateTree,
+	GraftPoint appendEntityJoin(EntityJoinTree<SRC, SRCID> aggregateTree,
 	                        String mapJoinNodeName,
 	                        ReadWritePropertyAccessPoint<SRC, M> mapAccessor,
-	                        ConfiguredEntityReader<ENTITY, ENTITY_ID, ENTITYTABLE> entityPersister,
-	                        ForeignKey<MAPTABLE, ENTITYTABLE, ENTITY_ID> foreignKey,
+	                        ConfiguredEntityReader<ENTITY, ENTITY_ID, ENTITYTABLE> entityReader,
+							MapMemberAsEntity<ENTITY, ENTITY_ID, MAPTABLE, ENTITYTABLE, ?> mapMemberAsEntity,
 	                        InMemoryRelationHolder<SRCID, ENTITY_ID, ENTITY> inMemoryRelationHolder,
 	                        Function<KeyValueRecord<?, ?, SRCID>, ENTITY_ID> entityIdExtractor) {
 		
-		return aggregateTree.addRelationJoin(
-				mapJoinNodeName,
-				new EntityMappingAdapter<>(entityPersister.getMapping()),
-				mapAccessor,
-				foreignKey.getSourceKey(),
-				foreignKey.getReferencedKey(),
-				null,
-				OUTER,
-				(bean, entity) -> {
-					// because we joined with the map association table and KeyValueRecordPersister, we know that the given object is a KeyValueRecord
-					KeyValueRecord<?, ?, SRCID> record = (KeyValueRecord<?, ?, SRCID>) bean;
-					// We only store the link between source entity and related entity, here we don't care about the index
-					// since that's not the goal of the current logic, and, anyway not possible. Index is the responsibility
-					// of the association table join.
-					inMemoryRelationHolder.storeRelation(record.getId().getId(), entityIdExtractor.apply(record), entity);
-				},
-				Collections.emptySet(),
-				null);
+		KeyMapping<MAPTABLE, ENTITYTABLE, ENTITY_ID> foreignKey = mapMemberAsEntity.getForeignKey();
+		if (mapMemberAsEntity.getEntity() instanceof PolymorphicEntity) {
+			
+			EntityPolymorphism<ENTITY, ENTITY_ID> polymorphism = ((PolymorphicEntity<ENTITY, ENTITY_ID, ENTITYTABLE>) mapMemberAsEntity.getEntity()).getPolymorphism();
+			
+			GraftableRelation<SRC, ENTITY, ENTITY_ID, MAPTABLE, ENTITYTABLE, ENTITY_ID> graftableRelation = new GraftableRelation<>(
+					foreignKey.getSourceKey(),
+					foreignKey.getReferencedKey(),
+					mapAccessor,
+					(target, input) -> {
+						// because we joined with the map association table and KeyValueRecordPersister, we know that the given object is a KeyValueRecord
+						KeyValueRecord<?, ?, SRCID> record = (KeyValueRecord<?, ?, SRCID>) target;
+						// We only store the link between source entity and related entity, here we don't care about the index
+						// since that's not the goal of the current logic, and, anyway not possible. Index is the responsibility
+						// of the association table join.
+						inMemoryRelationHolder.storeRelation(record.getId().getId(), entityIdExtractor.apply(record), input);
+						
+					},
+					mapMemberAsEntity.getEntity());
+			
+			return polymorphicSkeletonAppender.append(
+					aggregateTree,
+					polymorphism,
+					entityReader,
+					graftableRelation,
+					mapJoinNodeName);
+		} else {
+			String entityJoinNodeName = aggregateTree.addRelationJoin(
+					mapJoinNodeName,
+					new EntityMappingAdapter<>(entityReader.getMapping()),
+					mapAccessor,
+					foreignKey.getSourceKey(),
+					foreignKey.getReferencedKey(),
+					null,
+					OUTER,
+					(bean, entity) -> {
+						// because we joined with the map association table and KeyValueRecordPersister, we know that the given object is a KeyValueRecord
+						KeyValueRecord<?, ?, SRCID> record = (KeyValueRecord<?, ?, SRCID>) bean;
+						// We only store the link between source entity and related entity, here we don't care about the index
+						// since that's not the goal of the current logic, and, anyway not possible. Index is the responsibility
+						// of the association table join.
+						inMemoryRelationHolder.storeRelation(record.getId().getId(), entityIdExtractor.apply(record), entity);
+					},
+					Collections.emptySet(),
+					null);
+			return new GraftPoint(mapMemberAsEntity.getEntity(), entityReader, entityJoinNodeName);
+		}
 	}
 }
 

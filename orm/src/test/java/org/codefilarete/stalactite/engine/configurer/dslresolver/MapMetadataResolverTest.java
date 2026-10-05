@@ -13,10 +13,12 @@ import org.codefilarete.stalactite.engine.model.compositekey.House;
 import org.codefilarete.stalactite.engine.model.compositekey.House.HouseId;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
+import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.test.DefaultDialect;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -180,7 +182,8 @@ class MapMetadataResolverTest {
 		assertThat(mapTable.getColumn("street")).isNotNull();
 		assertThat(mapTable.getColumn("zipCode")).isNotNull();
 		assertThat(mapTable.getColumn("city")).isNotNull();
-		assertThat(relation.getKeyEntityDefinition().getForeignKey().getColumns()).extracting(Column::getName)
+		KeepOrderSet<? extends QualifiedSelectable<?, ?>> columns = relation.getKeyEntityDefinition().getForeignKey().getColumns();
+		assertThat(columns).extracting(QualifiedSelectable::getName)
 				.containsExactly("number", "street", "zipCode", "city");
 		CompositeMemberMapping<HouseId, ?> keyEntityIdentifierMapping = (CompositeMemberMapping) relation.<HouseId>getKeyMapping();
 		assertThat(keyEntityIdentifierMapping.getMapping().keySet())
@@ -229,9 +232,10 @@ class MapMetadataResolverTest {
 		assertThat(mapTable.getColumn("street")).isNotNull();
 		assertThat(mapTable.getColumn("zipCode")).isNotNull();
 		assertThat(mapTable.getColumn("city")).isNotNull();
-		assertThat(relation.getValueEntityDefinition().getForeignKey().getColumns()).extracting(Column::getName)
+		KeepOrderSet<? extends QualifiedSelectable<?, ?>> columns = relation.getValueEntityDefinition().getForeignKey().getColumns();
+		assertThat(columns).extracting(QualifiedSelectable::getName)
 				.contains("number", "street", "zipCode", "city");
-		CompositeMemberMapping<HouseId, ?> valueEntityIdentifierMapping = (CompositeMemberMapping) relation.<HouseId>getValueMapping();
+		CompositeMemberMapping<HouseId, ?> valueEntityIdentifierMapping = (CompositeMemberMapping) relation.getValueMapping();
 		assertThat(valueEntityIdentifierMapping.getMapping().keySet())
 				.extracting(AccessorDefinition::giveDefinition)
 				.extracting(AccessorDefinition::getName)

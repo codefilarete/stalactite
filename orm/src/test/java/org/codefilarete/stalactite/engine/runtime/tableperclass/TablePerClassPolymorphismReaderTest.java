@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.runtime.tableperclass;
 
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,11 +33,13 @@ import org.codefilarete.stalactite.engine.runtime.test.UseCase;
 import org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation;
 import org.codefilarete.stalactite.id.AbstractIdentifier;
 import org.codefilarete.stalactite.id.Identifier;
+import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.hsqldb.HSQLDBDialectBuilder;
 import org.codefilarete.stalactite.sql.hsqldb.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
 import org.codefilarete.tool.collection.Arrays;
@@ -1249,6 +1252,113 @@ class TablePerClassPolymorphismReaderTest {
 					.usingComparator(Comparator.comparing(cityPrinter::toString))
 					.withRepresentation(new PartialRepresentation<>(City.class, cityPrinter))
 					.isEqualTo(london);
+		}
+	}
+	
+	@Nested
+	class MapWithEntities {
+		
+		@Test
+		void crud_valueAreEntities() {
+			PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
+			
+			FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapMap(Person::getMapPropertyMadeOfEntityAsValue, String.class, Country.class)
+					.withValueMapping(entityBuilder(Country.class, LONG_TYPE)
+							.mapKey(Country::getId, ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.mapPolymorphism(PolymorphismPolicy.<Country>tablePerClass()
+									.addSubClass(subentityBuilder(Realm.class), "REALM")
+									.addSubClass(subentityBuilder(Republic.class), "REPUBLIC")
+							));
+			
+			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+			EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+			
+			new DDLDeployer(persistenceContext).deployDDL();
+			
+			Person person = new Person(new PersistableIdentifier<>(1L));
+			person.setMapPropertyMadeOfEntityAsValue(new LinkedHashMap<>());
+			person.getMapPropertyMadeOfEntityAsValue().put("home", new Realm(1));
+			person.getMapPropertyMadeOfEntityAsValue().put("office", new Republic(2));
+			personPersister.insert(person);
+			
+			Person loaded = personPersister.select(person.getId());
+			assertThat(loaded.getMapPropertyMadeOfEntityAsValue())
+					.containsEntry("home", new Realm(1))
+					.containsEntry("office", new Republic(2));
+			
+			loaded.getMapPropertyMadeOfEntityAsValue().remove("home");
+			loaded.getMapPropertyMadeOfEntityAsValue().put("office", new Realm(3));
+			loaded.getMapPropertyMadeOfEntityAsValue().put("secondary", new Republic(4));
+			personPersister.update(loaded, person, true);
+			
+			Person reloaded = personPersister.select(person.getId());
+			assertThat(reloaded.getMapPropertyMadeOfEntityAsValue())
+					.containsOnlyKeys("office", "secondary")
+					.containsEntry("office", new Realm(3))
+					.containsEntry("secondary", new Republic(4));
+			
+			personPersister.delete(reloaded);
+			
+			Long mapRowCount = persistenceContext.newQuery("select count(*) as cnt from Person_mapPropertyMadeOfEntityAsValue", Long.class)
+					.mapKey("cnt", Long.class)
+					.execute(Accumulators.getFirst());
+			assertThat(mapRowCount).isEqualTo(0L);
+		}
+		
+		@Test
+		void crud_valueAreEntities_fetchSeparately() {
+			PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
+			
+			FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapMap(Person::getMapPropertyMadeOfEntityAsValue, String.class, Country.class)
+					.withValueMapping(entityBuilder(Country.class, LONG_TYPE)
+							.mapKey(Country::getId, ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.mapPolymorphism(PolymorphismPolicy.<Country>tablePerClass()
+									.addSubClass(subentityBuilder(Realm.class), "REALM")
+									.addSubClass(subentityBuilder(Republic.class), "REPUBLIC")
+							)
+						).fetchSeparately();
+			
+			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+			EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+			
+			new DDLDeployer(persistenceContext).deployDDL();
+			
+			Person person = new Person(new PersistableIdentifier<>(1L));
+			person.setMapPropertyMadeOfEntityAsValue(new LinkedHashMap<>());
+			person.getMapPropertyMadeOfEntityAsValue().put("home", new Realm(1));
+			person.getMapPropertyMadeOfEntityAsValue().put("office", new Republic(2));
+			personPersister.insert(person);
+			
+			Person loaded = personPersister.select(person.getId());
+			assertThat(loaded.getMapPropertyMadeOfEntityAsValue())
+					.containsEntry("home", new Realm(1))
+					.containsEntry("office", new Republic(2));
+			
+			loaded.getMapPropertyMadeOfEntityAsValue().remove("home");
+			loaded.getMapPropertyMadeOfEntityAsValue().put("office", new Realm(3));
+			loaded.getMapPropertyMadeOfEntityAsValue().put("secondary", new Republic(4));
+			personPersister.update(loaded, person, true);
+			
+			Person reloaded = personPersister.select(person.getId());
+			assertThat(reloaded.getMapPropertyMadeOfEntityAsValue())
+					.containsOnlyKeys("office", "secondary")
+					.containsEntry("office", new Realm(3))
+					.containsEntry("secondary", new Republic(4));
+			
+			personPersister.delete(reloaded);
+			
+			Long mapRowCount = persistenceContext.newQuery("select count(*) as cnt from Person_mapPropertyMadeOfEntityAsValue", Long.class)
+					.mapKey("cnt", Long.class)
+					.execute(Accumulators.getFirst());
+			assertThat(mapRowCount).isEqualTo(0L);
 		}
 	}
 }

@@ -142,7 +142,7 @@ public class MapMetadataResolver {
 			EntitySource<K, KID> keyEntitySource = buildEntity((EntityMappingConfigurationProvider<K, KID>) mapRelation.getKeyEntityConfigurationProvider());
 			AbstractEntity<K, KID, KTABLE> keyEntity = keyEntitySource.getEntity();
 			targetEntities.add(keyEntitySource);
-			ForeignKey<MAPTABLE, KTABLE, KID> keyEntityReferenceMapping = buildForeignEntityColumnMapping(
+			KeyMapping<MAPTABLE, KTABLE, KID> keyEntityReferenceMapping = buildForeignEntityColumnMapping(
 					keyEntitySource,
 					RECORD_KEY_ACCESSOR,
 					mapRelation.getKeyColumnName(),
@@ -154,7 +154,10 @@ public class MapMetadataResolver {
 			// building identifier mapping projected on Map Table 
 			keyMapping = (EntryMemberMapping<X, MAPTABLE>) buildEntityMemberMapping(keyEntity.getIdentifierMapping(), keyEntityReferenceMapping);
 			// entry key columns must be part of the Map Table primary key
-			keyEntityReferenceMapping.getColumns().forEach(Column::primaryKey);
+			if (!keyEntitySource.getEntity().isTablePerClass()) {
+				ForeignKey<MAPTABLE, KTABLE, KID> foreignKey = targetTable.addForeignKey(namingConfiguration.getForeignKeyNamingStrategy()::giveName, keyEntityReferenceMapping.getSourceKey(), keyEntityReferenceMapping.getReferencedKey());
+				foreignKey.getColumns().forEach(Column::primaryKey);
+			} // else : in case of table per class, the foreign key is not possible because it would reference several tables which is not possible in SQL
 			keyEntityDefinition = new MapMemberAsEntity<>(
 					keyEntity, keyEntityReferenceMapping, mapRelation.getKeyEntityRelationMode());
 		} else if (mapRelation.getKeyEmbeddableConfigurationProvider() != null) {
@@ -184,7 +187,7 @@ public class MapMetadataResolver {
 			EntitySource<V, VID> valueEntitySource = buildEntity((EntityMappingConfigurationProvider<V, VID>) mapRelation.getValueEntityConfigurationProvider());
 			AbstractEntity<V, VID, VTABLE> valueEntity = valueEntitySource.getEntity();
 			targetEntities.add(valueEntitySource);
-			ForeignKey<MAPTABLE, VTABLE, VID> valueEntityReferenceMapping = buildForeignEntityColumnMapping(
+			KeyMapping<MAPTABLE, VTABLE, VID> valueEntityReferenceMapping = buildForeignEntityColumnMapping(
 					valueEntitySource,
 					RECORD_VALUE_ACCESSOR,
 					mapRelation.getValueColumnName(),
@@ -194,6 +197,9 @@ public class MapMetadataResolver {
 					namingConfiguration.getJoinColumnNamingStrategy());
 			// building identifier mapping projected on Map Table 
 			valueMapping = (EntryMemberMapping<Y, MAPTABLE>) buildEntityMemberMapping(valueEntity.getIdentifierMapping(), valueEntityReferenceMapping);
+			if (!valueEntitySource.getEntity().isTablePerClass()) {
+				targetTable.addForeignKey(namingConfiguration.getForeignKeyNamingStrategy()::giveName, valueEntityReferenceMapping.getSourceKey(), valueEntityReferenceMapping.getReferencedKey());
+			} // else : in case of table per class, the foreign key is not possible because it would reference several tables which is not possible in SQL
 			valueEntityDefinition = new MapMemberAsEntity<>(
 					valueEntity, valueEntityReferenceMapping, mapRelation.getValueEntityRelationMode());
 		} else if (mapRelation.getValueEmbeddableConfigurationProvider() != null) {
@@ -241,7 +247,7 @@ public class MapMetadataResolver {
 	}
 	
 	private <X, XID, XTABLE extends Table<XTABLE>, MAPTABLE extends Table<MAPTABLE>>
-	ForeignKey<MAPTABLE, XTABLE, XID> buildForeignEntityColumnMapping(EntitySource<X, XID> entitySource,
+	KeyMapping<MAPTABLE, XTABLE, XID> buildForeignEntityColumnMapping(EntitySource<X, XID> entitySource,
 	                                                                  ReadWritePropertyAccessPoint<? extends KeyValueRecord<?, ?, ?>, ?> recordMemberAccessor,
 	                                                                  @Nullable String columnName,
 	                                                                  @Nullable Size columnSize,
@@ -264,13 +270,13 @@ public class MapMetadataResolver {
 				mapping.put(maptableKeyColumn, entityKeyColumn);
 			});
 		}
-		return mapTable.addForeignKey(foreignKeyNamingStrategy::giveName, new KeySupport<>(new KeepOrderSet<>(mapping.keySet())), new KeySupport<>(new KeepOrderSet<>(mapping.values())));
+		return new KeyMapping<>(new KeySupport<>(new KeepOrderSet<>(mapping.keySet())), new KeySupport<>(new KeepOrderSet<>(mapping.values())));
 	}
 	
 	// X is K or V
 	private <X, XID, XTABLE extends Table<XTABLE>, MAPTABLE extends Table<MAPTABLE>>
 	EntryMemberMapping<XID, MAPTABLE> buildEntityMemberMapping(IdentifierMapping<X, XID> identifierMapping,
-	                                                           ForeignKey<MAPTABLE, XTABLE, XID> foreignKeyEntityReferenceMapping) {
+															   KeyMapping<MAPTABLE, XTABLE, XID> foreignKeyEntityReferenceMapping) {
 		if (identifierMapping instanceof CompositeIdentifierMapping) {
 			CompositeIdentifierMapping<X, XID, XTABLE> compositeIdentifierMapping = (CompositeIdentifierMapping<X, XID, XTABLE>) identifierMapping;
 			
@@ -279,7 +285,7 @@ public class MapMetadataResolver {
 			
 			return new CompositeMemberMapping<>(compositeIdentifierMapping.getCompositeKeyMapping().getBeanType(), identifierMappingInMapTable);
 		} else if (identifierMapping instanceof SingleIdentifierMapping) {
-			return new ScalarMemberMapping<>((Column<MAPTABLE, XID>) first(foreignKeyEntityReferenceMapping.getColumns()));
+			return new ScalarMemberMapping<>(first(foreignKeyEntityReferenceMapping.getColumns()));
 		} else if (identifierMapping instanceof AssignedByAnotherIdentifierMapping) {
 			return buildEntityMemberMapping(((AssignedByAnotherIdentifierMapping<X, XID>) identifierMapping).getSource(), foreignKeyEntityReferenceMapping);
 		} else {

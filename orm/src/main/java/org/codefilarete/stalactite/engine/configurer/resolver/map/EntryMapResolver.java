@@ -18,7 +18,7 @@ import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReadWriteAccessorChain;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
-import org.codefilarete.stalactite.dsl.property.CascadeOptions;
+import org.codefilarete.stalactite.dsl.property.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.EntityReadWriteExecutor;
 import org.codefilarete.stalactite.engine.EntityWriteExecutor;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
@@ -141,7 +141,7 @@ public class EntryMapResolver {
 			
 			// The single association table is maintained according to the value side mode as soon as the value is an entity,
 			// otherwise the key side one (this preserves the previous per-case behavior).
-			CascadeOptions.RelationMode maintenanceMode = valueIsEntity
+			RelationMode maintenanceMode = valueIsEntity
 					? resolvedRelation.getValueEntityDefinition().getRelationMode()
 					: resolvedRelation.getKeyEntityDefinition().getRelationMode();
 			
@@ -184,7 +184,7 @@ public class EntryMapResolver {
 			sourcePersister.addUpdateListener(new AfterUpdateTrigger<>(mapUpdater));
 		}
 		
-		if (resolvedRelation.getRelationMode() != CascadeOptions.RelationMode.READ_ONLY) {
+		if (resolvedRelation.getRelationMode() != RelationMode.READ_ONLY) {
 			// We persist Map entries (key/value adapters are shared with the update cascade above)
 			Accessor<SRC, Collection<KeyValueRecord<X, Y, SRCID>>> collectionProviderForInsert = toRecordCollectionProvider(resolvedRelation, srcIdAccessor, keyAdapter, valueAdapter, false);
 			sourcePersister.addInsertListener(new TargetInstancesInsertCascader<>(relationRecordPersister, collectionProviderForInsert));

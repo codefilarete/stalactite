@@ -139,7 +139,7 @@ public class AggregateResolver {
 		this.manyToManyResolver = new ManyToManyResolver(entitySkeletonResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 		this.manyToOneResolver = new ManyToOneResolver(entitySkeletonResolver);
 		this.elementCollectionResolver = new ElementCollectionResolver(persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
-		this.mapResolver = new MapResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
+		this.mapResolver = new MapResolver(entitySkeletonResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 	}
 	
 	/**
@@ -501,13 +501,11 @@ public class AggregateResolver {
 		ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, LEFTTABLE, MAPTABLE, KTABLE, VTABLE> typedRelation = (ResolvedMapRelation<SRC, SRCID, K, KID, V, VID, M, LEFTTABLE, MAPTABLE, KTABLE, VTABLE>) relation;
 		ConfiguredEntityReader<K, KID, KTABLE> keyEntityReader = null;
 		if (typedMapCreatedPersisterCollector.getKeyPersisterCollector() != null) {
-			keyEntityReader = new EntityReader<>(
-					typedMapCreatedPersisterCollector.getKeyPersisterCollector().getPersister().<KTABLE>getMapping(), persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
+			keyEntityReader = (ConfiguredEntityReader<K, KID, KTABLE>) ((DelegatingReadWriteEntityExecutor<K, KID>) collectedPersisters.getKeyPersisterCollector().getPersister()).getReader();
 		}
 		ConfiguredEntityReader<V, VID, VTABLE> valueEntityReader = null;
 		if (typedMapCreatedPersisterCollector.getValuePersisterCollector() != null) {
-			valueEntityReader = new EntityReader<>(
-					typedMapCreatedPersisterCollector.getValuePersisterCollector().getPersister().<VTABLE>getMapping(), persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
+			valueEntityReader = (ConfiguredEntityReader<V, VID, VTABLE>) ((DelegatingReadWriteEntityExecutor<V, VID>) collectedPersisters.getValuePersisterCollector().getPersister()).getReader();
 		}
 		
 		return mapAppender.append(

@@ -121,7 +121,7 @@ public class AggregateJoinedIndexedManyToManyAppender {
 		// Relation join: association table → target table
 		String manyJoinName;
 		if (relation.getTargetEntity() instanceof PolymorphicEntity) {
-			EntityPolymorphism<TRGT, Object> polymorphism = ((PolymorphicEntity<TRGT, Object, RIGHTTABLE>) relation.getTargetEntity()).getPolymorphism();
+			EntityPolymorphism<TRGT, TRGTID> polymorphism = ((PolymorphicEntity<TRGT, TRGTID, RIGHTTABLE>) relation.getTargetEntity()).getPolymorphism();
 			
 			GraftableRelation<SRC, TRGT, TRGTID, ASSOCIATIONTABLE, RIGHTTABLE, TRGTID> graftableRelation = new GraftableRelation<>(
 					join.getRightAssociationKey(),

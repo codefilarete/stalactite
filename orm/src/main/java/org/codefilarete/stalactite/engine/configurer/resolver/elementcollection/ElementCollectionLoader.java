@@ -19,6 +19,7 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.function.ThreadSafeLazyInitializer;
 
 /**
  * Particular {@link SelectExecutor} that loads {@link ElementRecord} from a collection table by the source identifier.
@@ -41,6 +42,20 @@ public class ElementCollectionLoader<SRC, SRCID, TRGT, LEFTTABLE extends Table<L
 	private final Map<QualifiedSelectable<LEFTTABLE, ?>, QualifiedSelectable<COLLECTIONTABLE, ?>> reverseForeignKey;
 	private final Dialect dialect;
 	private final ConnectionProvider connectionProvider;
+	// we use a lazy initializer to avoid creating the query several times :
+	// - for potential performance issues
+	// - to avoid unnecessary extra CPU work
+	// - OVERALL to avoid a bug due to multiple instantiations of JoinRowConsumer instances which make the EntityTreeInflater
+	// internal tree being out-of-sync with some RelationJoinNode. See TablePerClassAppender.addTablePerClassPolymorphicSubPersistersJoins
+	// for some usage that may lead to this bug
+	private final ThreadSafeLazyInitializer<SeparateFetchQueryExecutor<ElementRecord<TRGT, SRCID>, SRCID, LEFTTABLE, COLLECTIONTABLE>> queryExecutorInitializer
+			= new ThreadSafeLazyInitializer<SeparateFetchQueryExecutor<ElementRecord<TRGT, SRCID>, SRCID, LEFTTABLE, COLLECTIONTABLE>>() {
+		@Override
+		protected SeparateFetchQueryExecutor<ElementRecord<TRGT, SRCID>, SRCID, LEFTTABLE, COLLECTIONTABLE> createInstance() {
+			EntityTreeQuery<ElementRecord<TRGT, SRCID>> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
+			return new SeparateFetchQueryExecutor<>(entityTreeQuery, sourceIdMapping, reverseForeignKey, dialect, connectionProvider);
+		}
+	};
 	
 	public ElementCollectionLoader(IdMapping<SRC, SRCID> sourceIdMapping,
 	                               ElementRecordPersister<TRGT, SRCID, COLLECTIONTABLE, ElementRecord<TRGT, SRCID>> collectionPersister,
@@ -59,16 +74,13 @@ public class ElementCollectionLoader<SRC, SRCID, TRGT, LEFTTABLE extends Table<L
 		int estimatedResultSize = Iterables.size(ids);
 		// we avoid relying on Entity equals/Hashcode by using a Map based on System.identityHashCode(..)
 		Set<ElementRecord<TRGT, SRCID>> result = Collections.newSetFromMap(new IdentityLinkedMap<>(estimatedResultSize));
-		EntityTreeQuery<ElementRecord<TRGT, SRCID>> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
-		SeparateFetchQueryExecutor<ElementRecord<TRGT, SRCID>, SRCID, LEFTTABLE, COLLECTIONTABLE> queryExecutor =
-				new SeparateFetchQueryExecutor<>(entityTreeQuery, sourceIdMapping, reverseForeignKey, dialect, connectionProvider);
 		Iterables.forEachChunk(
 				ids,
 				dialect.getInOperatorMaxSize(),
 				chunks -> {},
 				chunkSize -> null,    // no particular initialization to do
 				(context, chunk) -> {
-					result.addAll(queryExecutor.select(chunk));
+					result.addAll(queryExecutorInitializer.get().select(chunk));
 				},
 				context -> {}
 		);

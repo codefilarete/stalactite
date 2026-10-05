@@ -52,7 +52,7 @@ public class AggregateJoinedManyToManyAppender {
 		GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> result;
 		
 		if (relation.getTargetEntity() instanceof PolymorphicEntity) {
-			EntityPolymorphism<TRGT, Object> polymorphism = ((PolymorphicEntity<TRGT, Object, RIGHTTABLE>) relation.getTargetEntity()).getPolymorphism();
+			EntityPolymorphism<TRGT, TRGTID> polymorphism = ((PolymorphicEntity<TRGT, TRGTID, RIGHTTABLE>) relation.getTargetEntity()).getPolymorphism();
 			
 			GraftableRelation<SRC, TRGT, TRGTID, ASSOCIATIONTABLE, RIGHTTABLE, TRGTID> graftableRelation = GraftableRelation.forManyToManyRelation(relation);
 			String associationTableJoinName = aggregateTree.addPassiveJoin(
