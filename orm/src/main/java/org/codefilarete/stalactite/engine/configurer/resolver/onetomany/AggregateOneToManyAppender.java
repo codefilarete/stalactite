@@ -8,7 +8,6 @@ import java.util.stream.Stream;
 
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
-import org.codefilarete.stalactite.engine.configurer.resolver.EntityReader;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
@@ -36,7 +35,7 @@ public class AggregateOneToManyAppender {
 		
 		// we dispatch the logic to dedicated classes due to their own complexity (especially the indexed ones) and to avoid long and complex methods
 		GraftPoint result;
-		if (relation.isOwnedByReverseSide()) {
+		if (relation.isOwnedByTarget()) {
 			if (relation.isOrdered()) {
 				result = indexedMappedAssociationGrafter.append(relation, sourcePersister, targetPersister, mountPoint, aggregateTree);
 			} else {

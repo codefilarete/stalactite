@@ -14,6 +14,7 @@ import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJ
 import org.codefilarete.stalactite.engine.configurer.model.PolymorphicEntity;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.AggregateResolver.GraftPoint;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.GraftableRelation;
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.PolymorphicSkeletonAppender;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.AssociationTableLoader;
 import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.FirstPhaseIndexedManyRelationLoader;
@@ -38,6 +39,7 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.KeyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.ColumnedRow;
 import org.codefilarete.tool.function.Hanger.Holder;
 
@@ -67,6 +69,8 @@ import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROO
  * @see AssociationTableLoader
  */
 public class AggregateOneToManyWithIndexedAssociationTableAppender {
+	
+	private final PolymorphicSkeletonAppender polymorphicSkeletonAppender = new PolymorphicSkeletonAppender();
 	
 	public <SRC, SRCID, TRGT, TRGTID, S extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, ASSOCIATIONTABLE extends IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
 	GraftPoint append(ResolvedOneToManyRelation<SRC, TRGT, S, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> relation,
@@ -135,17 +139,38 @@ public class AggregateOneToManyWithIndexedAssociationTableAppender {
 				}
 			});
 			
-			String manyJoinName = aggregateTree.addRelationJoin(
-					associationTableJoinName,
-					new EntityMappingAdapter<>(targetPersister.getMapping()),
-					collectionAccessPoint,
-					join.getRightAssociationKey(),
-					join.getRightKey(),
-					null,
-					OUTER,
-					inMemoryRelationFixer,
-					Collections.emptySet(),
-					duplicateIdentifierProvider);
+			String manyJoinName;
+			if (relation.getTargetEntity() instanceof PolymorphicEntity) {
+				EntityPolymorphism<TRGT, Object> polymorphism = ((PolymorphicEntity<TRGT, Object, RIGHTTABLE>) relation.getTargetEntity()).getPolymorphism();
+				
+				GraftableRelation<SRC, TRGT, TRGTID, ASSOCIATIONTABLE, RIGHTTABLE, TRGTID> graftableRelation = new GraftableRelation<>(
+								join.getRightAssociationKey(),
+								join.getRightKey(),
+								collectionAccessPoint,
+								(BeanRelationFixer<Object, TRGT>) inMemoryRelationFixer,
+								relation.getTargetEntity());
+				
+				GraftPoint graftPoint = polymorphicSkeletonAppender.append(
+						aggregateTree,
+						polymorphism,
+						targetPersister,
+						graftableRelation,
+						associationTableJoinName);
+				
+				manyJoinName = graftPoint.getParentJoinPoint();
+			} else {
+				manyJoinName = aggregateTree.addRelationJoin(
+						associationTableJoinName,
+						new EntityMappingAdapter<>(targetPersister.getMapping()),
+						collectionAccessPoint,
+						join.getRightAssociationKey(),
+						join.getRightKey(),
+						null,
+						OUTER,
+						inMemoryRelationFixer,
+						Collections.emptySet(),
+						duplicateIdentifierProvider);
+			}
 			
 			JoinNode<TRGT, Fromable> joinNode = (JoinNode<TRGT, Fromable>) aggregateTree.getJoin(manyJoinName);
 			JoinNode<?, Fromable> associationJoinNode = aggregateTree.getJoin(associationTableJoinName);
@@ -216,8 +241,10 @@ public class AggregateOneToManyWithIndexedAssociationTableAppender {
 					join.getLeftKey(),
 					join.getLeftAssociationKey(),
 					OUTER,
-					Collections.emptySet(),
+					Collections.singleton(associationTable.getIndexColumn()),
 					null);
+			
+			JoinNode<?, ?> associationJoinNode = sourceReader.getEntityJoinTree().getJoin(associationTableJoinName);
 			
 			polymorphicSkeletonAppender.appendForSeparateLoad(
 					sourceReader.getEntityJoinTree(),
@@ -227,7 +254,12 @@ public class AggregateOneToManyWithIndexedAssociationTableAppender {
 					new BiFunction<Function<ColumnedRow, TRGTID>, Set<? extends Selectable<?>>, EntityMerger<SRC>>() {
 						@Override
 						public EntityMerger<SRC> apply(Function<ColumnedRow, TRGTID> columnedRowTRGTIDFunction, Set<? extends Selectable<?>> selectables) {
-							return new FirstPhaseIndexedManyRelationLoader<>(columnedRowTRGTIDFunction, selectables, current2PhasesLoadContext, associationTable.getIndexColumn());
+							return new FirstPhaseIndexedManyRelationLoader<>(columnedRowTRGTIDFunction,
+									selectables,
+									current2PhasesLoadContext,
+									row -> EntityTreeInflater.currentContext()
+											.getDecoder(associationJoinNode)
+											.get(associationTable.getIndexColumn()));
 						}
 					},
 					new KeyMapping<>(join.getRightAssociationKey(), join.getRightKey()));

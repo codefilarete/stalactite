@@ -26,7 +26,7 @@ public class ResolvedOneToManyRelation<SRC, TRGT, S extends Collection<TRGT>, SR
 	
 	private final AbstractEntity<TRGT, TRGTID, RIGHTTABLE> targetEntity;
 	
-	private final boolean ownedByReverseSide;
+	private final boolean ownedByTarget;
 	
 	@Nullable
 	private final PropertyMutator<TRGT, SRC> mappedByAccessor;
@@ -36,7 +36,7 @@ public class ResolvedOneToManyRelation<SRC, TRGT, S extends Collection<TRGT>, SR
 	public ResolvedOneToManyRelation(AbstractEntity<TRGT, TRGTID, RIGHTTABLE> targetEntity,
 	                                 ReadWritePropertyAccessPoint<SRC, S> accessor,
 	                                 RelationMode relationMode,
-	                                 boolean ownedByReverseSide,
+	                                 boolean ownedByTarget,
 	                                 @Nullable PropertyMutator<TRGT, SRC> mappedByAccessor,
 	                                 boolean fetchSeparately,
 	                                 RelationJoin join,
@@ -46,7 +46,7 @@ public class ResolvedOneToManyRelation<SRC, TRGT, S extends Collection<TRGT>, SR
 		super(accessor, relationMode, fetchSeparately, join, beanRelationFixer, collectionFactory);
 		this.targetEntity = targetEntity;
 		this.mappedByAccessor = mappedByAccessor;
-		this.ownedByReverseSide = ownedByReverseSide;
+		this.ownedByTarget = ownedByTarget;
 		this.indexColumn = indexColumn;
 	}
 	
@@ -54,8 +54,8 @@ public class ResolvedOneToManyRelation<SRC, TRGT, S extends Collection<TRGT>, SR
 		return targetEntity;
 	}
 	
-	public boolean isOwnedByReverseSide() {
-		return ownedByReverseSide;
+	public boolean isOwnedByTarget() {
+		return ownedByTarget;
 	}
 	
 	@Nullable

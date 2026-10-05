@@ -66,7 +66,7 @@ public class OneToManyResolver {
 		EntityReadWriteExecutor<TRGT, TRGTID> targetPersister = entitySkeletonResolver.resolve(resolvedRelation.getTargetEntity(), persisterCollector);
 		
 		AbstractOneToManyEngine<SRC, TRGT, SRCID, TRGTID, S> oneToManyEngine;
-		if (resolvedRelation.isOwnedByReverseSide()) {
+		if (resolvedRelation.isOwnedByTarget()) {
 			
 			DirectRelationJoin<LEFTTABLE, RIGHTTABLE, SRCID> join = (DirectRelationJoin<LEFTTABLE, RIGHTTABLE, SRCID>) resolvedRelation.getJoin();
 			KeyMapping<LEFTTABLE, RIGHTTABLE, SRCID> foreignKeyColumnsMapping = join.getLeftKey().reference(join.getRightKey());

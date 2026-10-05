@@ -195,7 +195,6 @@ public class AggregateOneToManyWithMappedAssociationAppender {
 			// Note that because the relation is loaded separately, next joins should be appended to the target entity join tree,
 			// not the given as argument one, so we return a GraftPoint with the target persister and its join tree. And it should be grafted on ROOT_JOIN_NAME
 		}
-		result = new GraftPoint(relation.getTargetEntity(), targetReader, ROOT_JOIN_NAME, targetReader.getEntityJoinTree());
-		return result;
+		return new GraftPoint(relation.getTargetEntity(), targetReader, ROOT_JOIN_NAME, targetReader.getEntityJoinTree());
 	}
 }

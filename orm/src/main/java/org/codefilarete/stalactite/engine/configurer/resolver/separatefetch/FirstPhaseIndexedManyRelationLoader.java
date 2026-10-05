@@ -24,7 +24,7 @@ public class FirstPhaseIndexedManyRelationLoader<SRC, TRGTID> implements EntityM
 	
 	private final Function<ColumnedRow, TRGTID> idMapping;
 	private final ThreadLocalStorage<SRC, Map<Integer, TRGTID>, IndexedRelationStorage<SRC, TRGTID>> relationIdsHolder;
-	private final Column<?, Integer> indexColumn;
+	private final Function<ColumnedRow, Integer> indexMapping;
 	private final Set<Selectable<?>> selectableColumns;
 	
 	public FirstPhaseIndexedManyRelationLoader(Function<ColumnedRow, TRGTID> idMapping,
@@ -33,7 +33,17 @@ public class FirstPhaseIndexedManyRelationLoader<SRC, TRGTID> implements EntityM
 											   Column<?, Integer> indexColumn) {
 		this.idMapping = idMapping;
 		this.relationIdsHolder = relationIdsHolder;
-		this.indexColumn = indexColumn;
+		this.indexMapping = columnedRow -> columnedRow.get(indexColumn);
+		this.selectableColumns = new HashSet<>(idColumns);
+	}
+	
+	public FirstPhaseIndexedManyRelationLoader(Function<ColumnedRow, TRGTID> idMapping,
+											   Set<? extends Selectable<?>> idColumns,
+											   ThreadLocalStorage<SRC, Map<Integer, TRGTID>, IndexedRelationStorage<SRC, TRGTID>> relationIdsHolder,
+											   Function<ColumnedRow, Integer> indexMapping) {
+		this.idMapping = idMapping;
+		this.relationIdsHolder = relationIdsHolder;
+		this.indexMapping = indexMapping;
 		this.selectableColumns = new HashSet<>(idColumns);
 	}
 	
@@ -60,7 +70,7 @@ public class FirstPhaseIndexedManyRelationLoader<SRC, TRGTID> implements EntityM
 	protected void fillCurrentRelationIds(ColumnedRow row, SRC bean) {
 		TRGTID id = idMapping.apply(row);
 		if (id != null) {
-			relationIdsHolder.getStorage().add(bean, id, row.get(indexColumn));
+			relationIdsHolder.getStorage().add(bean, id, indexMapping.apply(row));
 		}
 	}
 }

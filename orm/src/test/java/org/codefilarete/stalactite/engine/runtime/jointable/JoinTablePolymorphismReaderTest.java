@@ -52,6 +52,7 @@ import static org.codefilarete.stalactite.dsl.FluentMappings.subentityBuilder;
 import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Polymorphism.JOIN_TABLE;
 import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.Fetch.JOIN;
 import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.Fetch.SEPARATE_QUERY;
+import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.RelationOwnership.BY_ASSOCIATION_TABLE;
 import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.RelationOwnership.BY_SOURCE;
 import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.RelationOwnership.BY_TARGET;
 import static org.codefilarete.stalactite.engine.runtime.test.UseCase.Relation.Type.MANY_TO_MANY;
@@ -352,6 +353,72 @@ class JoinTablePolymorphismReaderTest {
 	}
 	
 	@Test
+	@UseCase(relation = @Relation(type = ONE_TO_MANY, polymorphism = JOIN_TABLE, ownership = BY_ASSOCIATION_TABLE, fetch = JOIN))
+	void oneToJoinTableMany() {
+		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
+		
+		FluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
+				embeddableBuilder(Person.class)
+						.map(Person::getName)
+						.embed(Person::getTimestamp, embeddableBuilder(Timestamp.class)
+								.map(Timestamp::getCreationDate)
+								.map(Timestamp::getModificationDate));
+		
+		FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
+				entityBuilder(Vehicle.class, LONG_TYPE)
+						.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
+						.map(Vehicle::getColor)
+						.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
+								.addSubClass(subentityBuilder(Truck.class), "TRUCK")
+								.addSubClass(subentityBuilder(Car.class), "CAR")
+						);
+		
+		Comparator<AbstractVehicle> vehicleComparator = Comparator.comparing(v -> v.getId().getDelegate());
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
+				.mapKey(Person::getId, ALREADY_ASSIGNED)
+				.mapOneToMany(Person::getVehicles, vehicleConfiguration)
+					.initializeWith(() -> new TreeSet<>(vehicleComparator))	// only for test stability
+				.mapSuperClass(timestampedPersistentBeanMapping);
+		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		// insert
+		Person person = new Person(1);
+		Car car = new Car(42L);
+		car.setColor(new Color(42));
+		Truck truck = new Truck(17L);
+		person.setVehicles(Arrays.asTreeSet(vehicleComparator, car, truck));
+		
+		personPersister.insert(person);
+		
+		Person loadedPerson = personPersister.select(person.getId());
+		
+		// we use a printer to compare our results because entities override equals() which only keep "id" into account
+		// which is far from sufficient for ou checking
+		// Note that we don't use ObjectPrinterBuilder#printerFor because it takes getCities() into account whereas its code is not ready for recursion 
+		ObjectPrinter<AbstractVehicle> vehiclePrinter = new ObjectPrinterBuilder<AbstractVehicle>()
+				.addProperty(AbstractVehicle::getId)
+				.addProperty(Vehicle::getColor)
+				.withPrinter(Identifier.class, Functions.chain(Identifier::getDelegate, String::valueOf))
+				.build();
+		ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
+				.addProperty(Person::getName)
+				.addProperty(Person::getTimestamp)
+				.addProperty(Person::getVehicles, AbstractVehicle.class)
+				.withPrinter(Vehicle.class, vehiclePrinter::toString)
+				.build();
+		
+		assertThat(loadedPerson)
+				.usingComparator(Comparator.comparing(personPrinter::toString))
+				.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
+				.isEqualTo(person);
+	}
+	
+	@Test
 	@UseCase(relation = @Relation(type = ONE_TO_MANY, polymorphism = JOIN_TABLE, ownership = BY_SOURCE, fetch = SEPARATE_QUERY))
 	void oneToJoinTableMany_fetchSeparately() {
 		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
@@ -392,6 +459,145 @@ class JoinTablePolymorphismReaderTest {
 		car.setColor(new Color(42));
 		Truck truck = new Truck(17L);
 		person.setVehicles(Arrays.asTreeSet(vehicleComparator, car, truck));
+		
+		personPersister.insert(person);
+		
+		Person loadedPerson = personPersister.select(person.getId());
+		
+		// we use a printer to compare our results because entities override equals() which only keep "id" into account
+		// which is far from sufficient for ou checking
+		// Note that we don't use ObjectPrinterBuilder#printerFor because it takes getCities() into account whereas its code is not ready for recursion 
+		ObjectPrinter<AbstractVehicle> vehiclePrinter = new ObjectPrinterBuilder<AbstractVehicle>()
+				.addProperty(AbstractVehicle::getId)
+				.addProperty(Vehicle::getColor)
+				.withPrinter(Identifier.class, Functions.chain(Identifier::getDelegate, String::valueOf))
+				.build();
+		ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
+				.addProperty(Person::getName)
+				.addProperty(Person::getTimestamp)
+				.addProperty(Person::getVehicles, AbstractVehicle.class)
+				.withPrinter(Vehicle.class, vehiclePrinter::toString)
+				.build();
+		
+		assertThat(loadedPerson)
+				.usingComparator(Comparator.comparing(personPrinter::toString))
+				.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
+				.isEqualTo(person);
+	}
+	
+	@Test
+	@UseCase(relation = @Relation(type = ONE_TO_MANY, polymorphism = JOIN_TABLE, ownership = BY_ASSOCIATION_TABLE, fetch = JOIN))
+	void oneToJoinTableMany_indexed() {
+		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
+		
+		FluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
+				embeddableBuilder(Person.class)
+						.map(Person::getName)
+						.embed(Person::getTimestamp, embeddableBuilder(Timestamp.class)
+								.map(Timestamp::getCreationDate)
+								.map(Timestamp::getModificationDate));
+		
+		FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
+				entityBuilder(Vehicle.class, LONG_TYPE)
+						.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
+						.map(Vehicle::getColor)
+						.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
+								.addSubClass(subentityBuilder(Truck.class), "TRUCK")
+								.addSubClass(subentityBuilder(Car.class), "CAR")
+						);
+		
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
+				.mapKey(Person::getId, ALREADY_ASSIGNED)
+				.mapOneToMany(Person::getVehicles, vehicleConfiguration)
+					.indexed()
+					.initializeWith(KeepOrderSet::new)	// only for test stability
+				.mapSuperClass(timestampedPersistentBeanMapping);
+		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		// insert
+		Person person = new Person(1);
+		Car car = new Car(42L);
+		car.setColor(new Color(42));
+		Truck truck = new Truck(17L);
+		List<Vehicle> vehicles = Arrays.asList(car, truck);
+		Collections.shuffle(vehicles);	// we shuffle to check that order is important
+		KeepOrderSet<Vehicle> treeSet = new KeepOrderSet<>(vehicles);
+		person.setVehicles(treeSet);
+		
+		personPersister.insert(person);
+		
+		Person loadedPerson = personPersister.select(person.getId());
+		
+		// we use a printer to compare our results because entities override equals() which only keep "id" into account
+		// which is far from sufficient for ou checking
+		// Note that we don't use ObjectPrinterBuilder#printerFor because it takes getCities() into account whereas its code is not ready for recursion 
+		ObjectPrinter<AbstractVehicle> vehiclePrinter = new ObjectPrinterBuilder<AbstractVehicle>()
+				.addProperty(AbstractVehicle::getId)
+				.addProperty(Vehicle::getColor)
+				.withPrinter(Identifier.class, Functions.chain(Identifier::getDelegate, String::valueOf))
+				.build();
+		ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
+				.addProperty(Person::getName)
+				.addProperty(Person::getTimestamp)
+				.addProperty(Person::getVehicles, AbstractVehicle.class)
+				.withPrinter(Vehicle.class, vehiclePrinter::toString)
+				.build();
+		
+		assertThat(loadedPerson)
+				.usingComparator(Comparator.comparing(personPrinter::toString))
+				.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
+				.isEqualTo(person);
+	}
+	
+	@Test
+	@UseCase(relation = @Relation(type = ONE_TO_MANY, polymorphism = JOIN_TABLE, ownership = BY_ASSOCIATION_TABLE, fetch = JOIN))
+	void oneToJoinTableMany_indexed_fetchSeparately() {
+		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
+		
+		FluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
+				embeddableBuilder(Person.class)
+						.map(Person::getName)
+						.embed(Person::getTimestamp, embeddableBuilder(Timestamp.class)
+								.map(Timestamp::getCreationDate)
+								.map(Timestamp::getModificationDate));
+		
+		FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
+				entityBuilder(Vehicle.class, LONG_TYPE)
+						.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
+						.map(Vehicle::getColor)
+						.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
+								.addSubClass(subentityBuilder(Truck.class), "TRUCK")
+								.addSubClass(subentityBuilder(Car.class), "CAR")
+						);
+		
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personBuilder = entityBuilder(Person.class, LONG_TYPE)
+				.mapKey(Person::getId, ALREADY_ASSIGNED)
+				.mapOneToMany(Person::getVehicles, vehicleConfiguration)
+					.indexed()
+					.fetchSeparately()
+					.initializeWith(KeepOrderSet::new)	// only for test stability
+				.mapSuperClass(timestampedPersistentBeanMapping);
+		
+		AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+		EntityPersister<Person, Identifier<Long>> personPersister = testInstance.resolve(personBuilder.getConfiguration());
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		// insert
+		Person person = new Person(1);
+		Car car = new Car(42L);
+		car.setColor(new Color(42));
+		Truck truck = new Truck(17L);
+		List<Vehicle> vehicles = Arrays.asList(car, truck);
+		Collections.shuffle(vehicles);	// we shuffle to check that order is important
+		KeepOrderSet<Vehicle> treeSet = new KeepOrderSet<>(vehicles);
+		person.setVehicles(treeSet);
 		
 		personPersister.insert(person);
 		

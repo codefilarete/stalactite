@@ -385,6 +385,37 @@ public class OneToManyResolverTest {
 		}
 		
 		@Test
+		void select_fetchSeparately() {
+			FluentEntityMappingBuilder<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
+					.mapKey(Choice::getId, ALREADY_ASSIGNED)
+					.map(Choice::getLabel);
+			
+			Comparator<Choice> choiceComparator = Comparator.comparing(v -> v.getId().getDelegate());
+			FluentEntityMappingBuilder<Question, Identifier<Long>> questionPersisterConfiguration = entityBuilder(Question.class, LONG_TYPE)
+					.mapKey(Question::getId, ALREADY_ASSIGNED)
+					.mapOneToMany(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::setQuestion)
+						.fetchSeparately()
+						.cascading(ALL);
+			
+			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+			EntityPersister<Question, Identifier<Long>> questionPersister = testInstance.resolve(questionPersisterConfiguration.getConfiguration());
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Question newQuestion = new Question(1L);
+			Choice choice1 = new Choice(10L);
+			Choice choice2 = new Choice(20L);
+			Choice choice3 = new Choice(30L);
+			newQuestion.setChoices(Arrays.asList(choice1, choice2, choice3));
+			questionPersister.insert(newQuestion);
+			
+			Question select = questionPersister.select(new PersistedIdentifier<>(1L));
+			assertThat(select.getChoices()).extracting(chain(Choice::getId, StatefulIdentifier::getDelegate))
+					.containsExactlyInAnyOrderElementsOf(Iterables.collectToList(newQuestion.getChoices(), chain(Choice::getId, StatefulIdentifier::getDelegate)));
+		}
+		
+		@Test
 		void select_indexed() {
 			FluentEntityMappingBuilder<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
 					.mapKey(Choice::getId, ALREADY_ASSIGNED)
@@ -393,7 +424,7 @@ public class OneToManyResolverTest {
 			FluentEntityMappingBuilder<Question, Identifier<Long>> questionPersisterConfiguration = entityBuilder(Question.class, LONG_TYPE)
 					.mapKey(Question::getId, ALREADY_ASSIGNED)
 					.mapOneToMany(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::setQuestion)
-					.indexed()
+						.indexed()
 					.cascading(ALL);
 			
 			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
@@ -424,8 +455,8 @@ public class OneToManyResolverTest {
 			FluentEntityMappingBuilder<Question, Identifier<Long>> questionPersisterConfiguration = entityBuilder(Question.class, LONG_TYPE)
 					.mapKey(Question::getId, ALREADY_ASSIGNED)
 					.mapOneToMany(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::setQuestion)
-					.fetchSeparately()
-					.indexed()
+						.fetchSeparately()
+						.indexed()
 					.cascading(ALL);
 			
 			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
@@ -623,8 +654,8 @@ public class OneToManyResolverTest {
 			FluentEntityMappingBuilder<Question, Identifier<Long>> questionPersisterConfiguration = entityBuilder(Question.class, LONG_TYPE)
 					.mapKey(Question::getId, ALREADY_ASSIGNED)
 					.mapOneToMany(Question::getChoices, choiceMappingConfiguration)
-					.fetchSeparately()
-					.cascading(ALL);
+						.fetchSeparately()
+						.cascading(ALL);
 			
 			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
 			EntityPersister<Question, Identifier<Long>> questionPersister = testInstance.resolve(questionPersisterConfiguration.getConfiguration());
@@ -641,7 +672,7 @@ public class OneToManyResolverTest {
 			
 			Question select = questionPersister.select(new PersistedIdentifier<>(1L));
 			assertThat(select.getChoices()).extracting(chain(Choice::getId, StatefulIdentifier::getDelegate))
-					.containsExactlyInAnyOrderElementsOf(Iterables.collectToList(Arrays.asList(choice1, choice2, choice3), chain(Choice::getId, StatefulIdentifier::getDelegate)));
+					.containsExactlyInAnyOrderElementsOf(Iterables.collectToList(newQuestion.getChoices(), chain(Choice::getId, StatefulIdentifier::getDelegate)));
 		}
 		
 		@Test
@@ -658,8 +689,43 @@ public class OneToManyResolverTest {
 			FluentEntityMappingBuilder<Question, Identifier<Long>> questionPersisterConfiguration = entityBuilder(Question.class, LONG_TYPE)
 					.mapKey(Question::getId, ALREADY_ASSIGNED)
 					.mapOneToMany(Question::getChoices, choiceMappingConfiguration)
-					.fetchSeparately()
-					.indexedBy(idx).cascading(ALL);
+						.fetchSeparately()
+						.indexedBy(idx).cascading(ALL);
+			
+			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+			EntityPersister<Question, Identifier<Long>> questionPersister = testInstance.resolve(questionPersisterConfiguration.getConfiguration());
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Question newQuestion = new Question(1L);
+			Choice choice1 = new Choice(10L);
+			Choice choice2 = new Choice(20L);
+			Choice choice3 = new Choice(30L);
+			List<Choice> list = Arrays.asList(choice1, choice2, choice3);
+			Collections.shuffle(list);
+			newQuestion.setChoices(list);
+			questionPersister.insert(newQuestion);
+			
+			Question select = questionPersister.select(new PersistedIdentifier<>(1L));
+			assertThat(select.getChoices()).extracting(chain(Choice::getId, StatefulIdentifier::getDelegate)).containsExactlyElementsOf(Iterables.collectToList(list, chain(Choice::getId, StatefulIdentifier::getDelegate)));
+		}
+		
+		@Test
+		void select_indexed() {
+			Table choiceTable = new Table("Choice");
+			// we declare the column that will store our List index
+			Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
+			Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
+			
+			FluentEntityMappingBuilder<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
+					.mapKey(Choice::getId, ALREADY_ASSIGNED)
+					.map(Choice::getLabel);
+			
+			FluentEntityMappingBuilder<Question, Identifier<Long>> questionPersisterConfiguration = entityBuilder(Question.class, LONG_TYPE)
+					.mapKey(Question::getId, ALREADY_ASSIGNED)
+					.mapOneToMany(Question::getChoices, choiceMappingConfiguration)
+						.indexedBy(idx).cascading(ALL);
 			
 			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
 			EntityPersister<Question, Identifier<Long>> questionPersister = testInstance.resolve(questionPersisterConfiguration.getConfiguration());
