@@ -71,7 +71,7 @@ class OneToOneMetadataResolverTest {
 					.mapOneToOne(Country::getPresident, entityBuilder(Person.class, Identifier.LONG_TYPE)
 							.mapKey(Person::getId, ALREADY_ASSIGNED)
 							.map(Person::getName))
-					.columnName("president");
+					.joinColumn("president");
 			
 			// because building the objects consumed by OneToOneMetadataResolver is complex, we use AggregateMetadataResolver, which do it, as a test instance 
 			AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
@@ -85,6 +85,37 @@ class OneToOneMetadataResolverTest {
 			Table countryTable = leftKey.getTable();
 			KeepOrderSet<Column<Table, ?>> leftKeyColumns = leftKey.getColumns();
 			assertThat(leftKeyColumns).containsExactly(countryTable.getColumn("president"));
+			
+			Key<Table, ?> rightKey = (Key<Table, ?>) relation.getJoin().getRightKey();
+			Table personTable = rightKey.getTable();
+			KeepOrderSet<Column<Table, ?>> rightKeyColumns = rightKey.getColumns();
+			assertThat(rightKeyColumns).containsExactly(personTable.getColumn("id"));
+		}
+		
+		@Test
+		void ownedBySource_column() {
+			Table countryTable = new Table<>("country");
+			Column<Table, Identifier<Long>> presidentColumn = countryTable.addColumn("president", Identifier.LONG_TYPE);
+			
+			FluentEntityMappingBuilder<Country, Identifier<Long>> mappingBuilder = entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.mapKey(Country::getId, ALREADY_ASSIGNED)
+					.map(Country::getName)
+					.mapOneToOne(Country::getPresident, entityBuilder(Person.class, Identifier.LONG_TYPE)
+							.mapKey(Person::getId, ALREADY_ASSIGNED)
+							.map(Person::getName))
+					.joinColumn(presidentColumn);
+			
+			// because building the objects consumed by OneToOneMetadataResolver is complex, we use AggregateMetadataResolver, which do it, as a test instance 
+			AggregateMetadataResolver testInstance = new AggregateMetadataResolver(new DefaultDialect(), mock(ConnectionConfiguration.class));
+			AbstractEntity<Country, Identifier<Long>, ?> countryEntity = testInstance.resolve(mappingBuilder.getConfiguration());
+			
+			assertThat(countryEntity.getRelations()).hasSize(1);
+			EntityRelation<?, ?, ?, ?, ?> relation = (EntityRelation<?, ?, ?, ?, ?>) first(countryEntity.getRelations());
+			assertThat(relation).isInstanceOf(ResolvedOneToOneRelation.class);
+			
+			Key<Table, ?> leftKey = (Key<Table, ?>) relation.getJoin().getLeftKey();
+			KeepOrderSet<Column<Table, ?>> leftKeyColumns = leftKey.getColumns();
+			assertThat(leftKeyColumns).containsExactly(presidentColumn);
 			
 			Key<Table, ?> rightKey = (Key<Table, ?>) relation.getJoin().getRightKey();
 			Table personTable = rightKey.getTable();
@@ -300,7 +331,7 @@ class OneToOneMetadataResolverTest {
 					.mapOneToOne(Address::getCity, entityBuilder(City.class, Identifier.LONG_TYPE)
 							.mapKey(City::getId, ALREADY_ASSIGNED)
 							.map(City::getName))
-					.columnName("locationCityId");
+					.joinColumn("locationCityId");
 			
 			FluentEntityMappingBuilder<Device, Identifier<Long>> mappingBuilder = entityBuilder(Device.class, Identifier.LONG_TYPE)
 					.mapKey(Device::getId, ALREADY_ASSIGNED)

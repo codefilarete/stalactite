@@ -391,7 +391,7 @@ public class ManyToOneResolverTest {
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Device::getName)
 					.mapManyToOne(Device::getLocation, addressConfiguration)
-					.columnName("positionId")
+					.joinColumn("positionId")
 					.mandatory();
 			
 			AggregateResolver testInstance = new AggregateResolver(persistenceContext);

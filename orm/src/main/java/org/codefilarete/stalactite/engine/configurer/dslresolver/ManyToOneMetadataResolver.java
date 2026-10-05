@@ -169,10 +169,10 @@ public class ManyToOneMetadataResolver {
 		// priority 1: take user definition of the owning column
 		Key.KeyBuilder<LEFTTABLE, TRGTID> leftKeyBuilder = Key.from(leftTable);
 		if (providedColumn == null) {
-			String reverseColumnName = manyToOne.getColumnName();
-			if (reverseColumnName != null) {
+			String joinColumnName = manyToOne.getColumnName();
+			if (joinColumnName != null) {
 				Column<RIGHTTABLE, TRGTID> rightPKColumn = (Column<RIGHTTABLE, TRGTID>) first(rightPrimaryKey.getColumns());
-				providedColumn = leftTable.addColumn(reverseColumnName, rightPKColumn.getJavaType());
+				providedColumn = leftTable.addColumn(joinColumnName, rightPKColumn.getJavaType());
 				leftKeyBuilder.addColumn(providedColumn);
 			}
 		} else {

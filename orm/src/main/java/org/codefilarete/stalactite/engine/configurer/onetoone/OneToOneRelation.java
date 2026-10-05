@@ -59,6 +59,9 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	
 	private String columnName;
 	
+	@javax.annotation.Nullable
+	private Column<?, ?> owningColumn;
+	
 	private boolean unique;
 	
 	public OneToOneRelation(ReadWritePropertyAccessPoint<SRC, TRGT> targetProvider,
@@ -183,6 +186,15 @@ public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	
 	public void setColumnName(String columnName) {
 		this.columnName = columnName;
+	}
+	
+	@javax.annotation.Nullable
+	public Column<?, ?> getOwningColumn() {
+		return owningColumn;
+	}
+	
+	public void setOwningColumn(@javax.annotation.Nullable Column<?, ?> owningColumn) {
+		this.owningColumn = owningColumn;
 	}
 	
 	/**

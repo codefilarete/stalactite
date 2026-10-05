@@ -212,7 +212,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					}
 					
 					@Override
-					public OneToOneOptions<C, O> columnName(String columnName) {
+					public OneToOneOptions<C, O> joinColumn(String columnName) {
 						oneToOneRelation.setColumnName(columnName);
 						return null;	// we can return null because dispatcher will return proxy
 					}
@@ -340,7 +340,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					}
 					
 					@Override
-					public ManyToOneOptions<C, O, S> columnName(String columnName) {
+					public ManyToOneOptions<C, O, S> joinColumn(String columnName) {
 						manyToOneRelation.setColumnName(columnName);
 						return null;
 					}

@@ -59,7 +59,7 @@ public interface FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S extends 
 	 *
 	 * @return the global mapping configurer
 	 */
-	FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S> columnName(String columnName);
+	FluentEmbeddableMappingBuilderManyToOneOptions<C, O, S> joinColumn(String columnName);
 	
 	/**
 	 * {@inheritDoc}

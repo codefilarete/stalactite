@@ -55,7 +55,7 @@ public interface OneToOneEntityOptions<C, I, O> extends OneToOneOptions<C, O> {
 	 *
 	 * @param reverseColumnName opposite owner of the relation
 	 * @return the global mapping configurer
-	 * @see #columnName(String)
+	 * @see #joinColumn(String)
 	 */
 	OneToOneEntityOptions<C, I, O> reverseJoinColumn(String reverseColumnName);
 	
@@ -86,7 +86,9 @@ public interface OneToOneEntityOptions<C, I, O> extends OneToOneOptions<C, O> {
 	 *
 	 * @return the global mapping configurer
 	 */
-	OneToOneOptions<C, O> columnName(String columnName);
+	OneToOneOptions<C, O> joinColumn(String columnName);
+	
+	OneToOneOptions<C, O> joinColumn(Column<?, ?> column);
 	
 	/**
 	 * {@inheritDoc}

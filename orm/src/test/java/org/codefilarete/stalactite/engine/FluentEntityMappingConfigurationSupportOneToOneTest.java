@@ -447,7 +447,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.map(Country::getName)
 					.map(Country::getDescription)
 					.mapOneToOne(Country::getCapital, cityConfiguration).mandatory()
-					.columnName("mainTownId")
+					.joinColumn("mainTownId")
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

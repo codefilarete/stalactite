@@ -66,7 +66,7 @@ public interface FluentMappingBuilderManyToOneOptions<C, I, O, S extends Collect
 	FluentMappingBuilderManyToOneOptions<C, I, O, S> fetchSeparately();
 	
 	@Override
-	FluentMappingBuilderManyToOneOptions<C, I, O, S> columnName(String columnName);
+	FluentMappingBuilderManyToOneOptions<C, I, O, S> joinColumn(String columnName);
 
 	/**
 	 * {@inheritDoc}
@@ -76,5 +76,5 @@ public interface FluentMappingBuilderManyToOneOptions<C, I, O, S extends Collect
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentMappingBuilderManyToOneOptions<C, I, O, S> mappedBy(Column<?, ?> reverseLink);
+	FluentMappingBuilderManyToOneOptions<C, I, O, S> joinColumn(Column<?, ?> reverseLink);
 }

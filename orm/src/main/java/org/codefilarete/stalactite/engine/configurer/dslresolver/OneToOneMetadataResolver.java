@@ -183,28 +183,50 @@ public class OneToOneMetadataResolver {
 		 * As a difference with {@link #determineForeignKeyColumns(OneToOneRelation, Table, PrimaryKey, JoinColumnNamingStrategy, ForeignKeyNamingStrategy)}
 		 * this method doesn't create a {@link ForeignKey} hence the result won't participate in the schema generation
 		 * 
-		 * @param oneToOneRelation the one-to-one relation to get some metadata from
+		 * @param oneToOne the one-to-one relation to get some metadata from
 		 * @param leftTable the left table of the relation
 		 * @param rightPrimaryKey the primary key of the right table
 		 * @param joinColumnNamingStrategy the strategy to name the join columns
 		 * @return a {@link KeyMapping} between the left and right tables
 		 */
-		protected KeyMapping<LEFTTABLE, RIGHTTABLE, TRGTID> determineKeyMappingColumns(OneToOneRelation<SRC, TRGT, ?> oneToOneRelation,
+		protected KeyMapping<LEFTTABLE, RIGHTTABLE, TRGTID> determineKeyMappingColumns(OneToOneRelation<SRC, TRGT, ?> oneToOne,
 		                                                                               LEFTTABLE leftTable,
 		                                                                               PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey,
 		                                                                               JoinColumnNamingStrategy joinColumnNamingStrategy) {
-			// adding foreign key constraint
-			KeyBuilder<LEFTTABLE, TRGTID> leftKeyBuilder = Key.from(leftTable);
-			AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(oneToOneRelation.getTargetProvider());
-			rightPrimaryKey.getColumns().forEach(column -> {
-				String effectiveLeftColumnName = nullable(oneToOneRelation.getColumnName()).elseSet(() -> joinColumnNamingStrategy.giveName(accessorDefinition, column)).get();
-				Column<LEFTTABLE, ?> foreignKeyColumn = leftTable.addColumn(effectiveLeftColumnName, column.getJavaType());
-				leftKeyBuilder.addColumn(foreignKeyColumn);
-			});
+			
+			Column<LEFTTABLE, TRGTID> providedColumn = (Column<LEFTTABLE, TRGTID>) oneToOne.getOwningColumn();
+			// small check for incongruous reverse column definition: it can't be possible when key is composite
+			if (providedColumn != null && rightPrimaryKey.isComposed()) {
+				throw new UnsupportedOperationException("Can't map composite primary key " + rightPrimaryKey + " on single foreign key : " + providedColumn);
+			}
+			
+			// priority 1: take user definition of the owning column
+			Key.KeyBuilder<LEFTTABLE, TRGTID> leftKeyBuilder = Key.from(leftTable);
+			if (providedColumn == null) {
+				String joinColumnName = oneToOne.getColumnName();
+				if (joinColumnName != null) {
+					Column<RIGHTTABLE, TRGTID> rightPKColumn = (Column<RIGHTTABLE, TRGTID>) first(rightPrimaryKey.getColumns());
+					providedColumn = leftTable.addColumn(joinColumnName, rightPKColumn.getJavaType());
+					leftKeyBuilder.addColumn(providedColumn);
+				}
+			} else {
+				leftKeyBuilder.addColumn(providedColumn);
+			}
+			
+			// priority 2: user didn't define the owning column, but we can guess it from the target accessor
+			if (providedColumn == null) {
+				AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(oneToOne.getTargetProvider());
+				rightPrimaryKey.getColumns().forEach(pkColumn -> {
+					String effectiveLeftColumnName = joinColumnNamingStrategy.giveName(accessorDefinition, pkColumn);
+					Column<LEFTTABLE, ?> foreignKeyColumn = leftTable.addColumn(effectiveLeftColumnName, pkColumn.getJavaType());
+					leftKeyBuilder.addColumn(foreignKeyColumn);
+				});
+			}
+			
 			Key<LEFTTABLE, TRGTID> leftKey = leftKeyBuilder.build();
 			
 			// According to the nullable option, we specify the ddl schema option
-			leftKey.getColumns().forEach(c -> ((Column) c).nullable(oneToOneRelation.isNullable()));
+			leftKey.getColumns().forEach(c -> ((Column) c).nullable(oneToOne.isNullable()));
 			
 			return new KeyMapping<>(leftKey, rightPrimaryKey);
 		}

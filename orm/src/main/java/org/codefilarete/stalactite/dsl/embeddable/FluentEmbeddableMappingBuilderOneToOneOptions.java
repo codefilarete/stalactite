@@ -61,7 +61,7 @@ public interface FluentEmbeddableMappingBuilderOneToOneOptions<C, O> extends Flu
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentEmbeddableMappingBuilderOneToOneOptions<C, O> columnName(String columnName);
+	FluentEmbeddableMappingBuilderOneToOneOptions<C, O> joinColumn(String columnName);
 	
 	/**
 	 * {@inheritDoc}

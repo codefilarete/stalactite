@@ -69,5 +69,5 @@ public interface ManyToOneOptions<C, O, S extends Collection<C>> extends Cascade
 	 * @param columnName foreign key column name
 	 * @return the global mapping configurer
 	 */
-	ManyToOneOptions<C, O, S> columnName(String columnName);
+	ManyToOneOptions<C, O, S> joinColumn(String columnName);
 }

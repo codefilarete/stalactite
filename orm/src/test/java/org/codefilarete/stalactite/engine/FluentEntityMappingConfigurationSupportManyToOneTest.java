@@ -376,7 +376,7 @@ public class FluentEntityMappingConfigurationSupportManyToOneTest {
 					.mapKey(Device::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Device::getName)
 					.mapManyToOne(Device::getLocation, addressConfiguration)
-					.columnName("positionId")
+					.joinColumn("positionId")
 						.mandatory()
 					.build(persistenceContext);
 			

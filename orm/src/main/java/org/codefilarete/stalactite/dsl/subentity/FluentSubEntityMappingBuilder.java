@@ -267,7 +267,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		 * @return the global mapping configurer
 		 */
 		@Override
-		FluentMappingBuilderOneToOneOptions<C, I, O> columnName(String columnName);
+		FluentMappingBuilderOneToOneOptions<C, I, O> joinColumn(String columnName);
 		
 		/**
 		 * {@inheritDoc}

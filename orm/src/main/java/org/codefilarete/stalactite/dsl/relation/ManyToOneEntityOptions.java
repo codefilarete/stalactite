@@ -17,10 +17,10 @@ public interface ManyToOneEntityOptions<C, O, S extends Collection<C>> extends M
 
 	/**
 	 * Defines the foreign key column referencing the target entity key.
-	 * This is the typed equivalent of {@link #columnName(String)} and is valuable only for single key cases.
+	 * This is the typed equivalent of {@link #joinColumn(String)} and is valuable only for single key cases.
 	 *
 	 * @param reverseLink foreign key column referencing the target entity key
 	 * @return the global mapping configurer
 	 */
-	ManyToOneEntityOptions<C, O, S> mappedBy(Column<?, ?> reverseLink);
+	ManyToOneEntityOptions<C, O, S> joinColumn(Column<?, ?> reverseLink);
 }

@@ -896,8 +896,14 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					}
 					
 					@Override
-					public OneToOneOptions<C, O> columnName(String columnName) {
+					public OneToOneOptions<C, O> joinColumn(String columnName) {
 						oneToOneRelation.setColumnName(columnName);
+						return null;	// we can return null because dispatcher will return proxy
+					}
+					
+					@Override
+					public OneToOneOptions<C, O> joinColumn(Column<?, ?> column) {
+						oneToOneRelation.setOwningColumn(column);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
@@ -1140,13 +1146,13 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					}
 					
 					@Override
-					public ManyToOneOptions<C, O, S> columnName(String columnName) {
+					public ManyToOneOptions<C, O, S> joinColumn(String columnName) {
 						manyToOneRelation.setColumnName(columnName);
 						return null;
 					}
 
 					@Override
-					public ManyToOneEntityOptions<C, O, S> mappedBy(Column<?, ?> reverseLink) {
+					public ManyToOneEntityOptions<C, O, S> joinColumn(Column<?, ?> reverseLink) {
 						manyToOneRelation.setOwningColumn(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}

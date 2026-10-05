@@ -98,7 +98,7 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 					.mapOneToOne(Location::getCountry, entityBuilder(Country.class, Identifier.LONG_TYPE)
 							.mapKey(Country::getId, ALREADY_ASSIGNED)
 							.map(Country::getName).mandatory())
-						.columnName("country");
+						.joinColumn("country");
 			
 			FluentEntityMappingBuilder<Address, Identifier<Long>> addressMappingBuilder = entityBuilder(Address.class, Identifier.LONG_TYPE)
 					.mapKey(Location::getId, ALREADY_ASSIGNED)
@@ -207,7 +207,7 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 					.mapOneToOne(Address::getCity, entityBuilder(City.class, Identifier.LONG_TYPE)
 							.mapKey(City::getId, ALREADY_ASSIGNED)
 							.map(City::getName).mandatory())
-						.columnName("cityId");
+						.joinColumn("cityId");
 
 			EntityPersister<Device, Identifier<Long>> devicePersister = entityBuilder(Device.class, Identifier.LONG_TYPE)
 					.mapKey(Device::getId, ALREADY_ASSIGNED)
@@ -569,7 +569,7 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 					.mapManyToOne(Publisher::getCategory, entityBuilder(BusinessCategory.class, Long.class)
 							.mapKey(BusinessCategory::getId, databaseAutoIncrement())
 							.map(BusinessCategory::getName))
-						.columnName("catId");
+						.joinColumn("catId");
 			
 			FluentEntityMappingBuilder<Address, Identifier<Long>> addressMappingBuilder = entityBuilder(Address.class, Identifier.LONG_TYPE)
 					.mapKey(Location::getId, ALREADY_ASSIGNED)
@@ -684,7 +684,7 @@ public class FluentEmbeddableWithRelationMappingConfigurationSupportTest {
 					.mapManyToOne(Publisher::getCategory, entityBuilder(BusinessCategory.class, Long.class)
 							.mapKey(BusinessCategory::getId, databaseAutoIncrement())
 							.map(BusinessCategory::getName))
-						.columnName("catId");
+						.joinColumn("catId");
 			
 			FluentEntityMappingBuilder<Book, Long> mappingBuilder = FluentMappings.entityBuilder(Book.class, Long.class)
 					.mapKey(Book::getId, databaseAutoIncrement())

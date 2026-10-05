@@ -53,7 +53,7 @@ public interface OneToOneOptions<C, O> extends CascadeOptions {
 	 * @param columnName foreign key column name
 	 * @return the global mapping configurer
 	 */
-	OneToOneOptions<C, O> columnName(String columnName);
+	OneToOneOptions<C, O> joinColumn(String columnName);
 	
 	/**
 	 * Marks the relation column as a unique key.

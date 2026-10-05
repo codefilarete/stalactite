@@ -82,7 +82,10 @@ public interface FluentMappingBuilderOneToOneOptions<C, I, O> extends FluentEnti
 	 * @return the global mapping configurer
 	 */
 	@Override
-	FluentMappingBuilderOneToOneOptions<C, I, O> columnName(String columnName);
+	FluentMappingBuilderOneToOneOptions<C, I, O> joinColumn(String columnName);
+	
+	@Override
+	FluentMappingBuilderOneToOneOptions<C, I, O> joinColumn(Column<?, ?> column);
 	
 	/**
 	 * {@inheritDoc}
