@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -69,6 +70,9 @@ import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.trace.MutableInt;
 
+import static java.util.Comparator.comparing;
+
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType.OUTER;
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
 import static org.codefilarete.stalactite.query.Operators.cast;
 
@@ -80,15 +84,15 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 	@SuppressWarnings("java:S5164" /* remove() is called by SecondPhaseRelationLoader.afterSelect() */)
 	private static final ThreadLocal<Queue<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */>>>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
-	public TablePerClassPolymorphismPersister(ConfiguredRelationalEntityPersister<C, I, T> mainPersister,
-	                                          Map<Class<? extends C>, ? extends ConfiguredRelationalEntityPersister<? extends C, I, ?>> subEntitiesPersisters,
+	public <SUBENTITY extends C> TablePerClassPolymorphismPersister(ConfiguredRelationalEntityPersister<C, I, T> mainPersister,
+	                                          Map<Class<? extends C>, ? extends ConfiguredRelationalEntityPersister<SUBENTITY, I, ?>> subEntitiesPersisters,
 	                                          ConnectionProvider connectionProvider,
 	                                          Dialect dialect) {
 		super(mainPersister,
 				subEntitiesPersisters,
 				new TablePerClassPolymorphismEntityFinder<>(
 						mainPersister,
-						subEntitiesPersisters,
+						new HashSet<>(subEntitiesPersisters.values()),
 						connectionProvider,
 						dialect));
 		
@@ -349,7 +353,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 						new FirstPhaseRelationLoader<>((IdMapping<C, I>) subPersister.getMapping().getIdMapping(), this, (ThreadLocal) DIFFERED_ENTITY_LOADER),
 						leftColumn,
 						joinColumnPerSubPersister.get(subPersister),
-						JoinType.OUTER);
+						OUTER);
 			});
 			
 			// adding second phase loader
@@ -398,7 +402,9 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		
 		Set<String> commonColumnsNames = commonColumns.stream().map(QualifiedSelectable::getExpression).collect(Collectors.toSet());
 		
-		Set<ConfiguredEntityReader<? extends C, I, ?>> subPersisters = new HashSet<>(this.subEntitiesPersisters.values());
+		// we sort the sub persister in a stable way to have a deterministic order of the discriminator values for tests stability
+		Set<ConfiguredEntityReader<? extends C, I, ?>> subPersisters = new TreeSet<>(comparing(subPersister -> subPersister.getMainTable().getName()));
+		subPersisters.addAll(this.subEntitiesPersisters.values());
 		
 		KeepOrderSet<Column<?, ?>> nonCommonColumns = new KeepOrderSet<>();
 		subPersisters.forEach(subPersister -> {
@@ -416,9 +422,11 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			subEntityQuery.select(String.valueOf(discriminatorComputer.increment()), Integer.class, entityTypeDiscriminatorName);
 			subPersistersUnion.unionAll(subEntityQuery);
 			
-			commonColumns.forEach(column -> {
-				subEntityQuery.select(column.getExpression(), column.getJavaType());
-				subPersistersUnion.registerColumn(column.getExpression(), column.getJavaType());
+			commonColumns.forEach(commonColumn -> {
+				// We add the column by its name and type, not by finding it in the sub-persister table because,
+				// for unknown yet reason, the column is not found in the sub-persister table
+				subEntityQuery.select(commonColumn.getExpression(), commonColumn.getJavaType());
+				subPersistersUnion.registerColumn(commonColumn.getExpression(), commonColumn.getJavaType());
 			});
 			
 			nonCommonColumns.forEach(column -> {
@@ -446,7 +454,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 					propertyAccessor,
 					leftJoinColumn,
 					rightJoinColumn,
-					JoinType.OUTER,
+					OUTER,
 					pseudoTable.getColumns(),
 					mainPersister.getClassToPersist().getSimpleName(),
 					new EntityMappingAdapter<>(mainPersister.<T1>getMapping()),
@@ -481,7 +489,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 					new EntityMergerAdapter<>(localSubPersister.<T1>getMapping()),
 					leftKey.build(),
 					localSubPersister.getMainTable().getPrimaryKey(),
-					JoinType.OUTER,
+					OUTER,
 					joinNode -> {
 						PolymorphicMergeJoinRowConsumer<V, I> joinRowConsumer = new PolymorphicMergeJoinRowConsumer<>(
 								(MergeJoinNode) joinNode,
@@ -513,7 +521,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		subPersistersUnion.registerColumn(entityTypeDiscriminatorName, Integer.class);
 		
 		// adding the pseudo columns for the primary key of the main entity to create the entity identifier
-		PrimaryKey<T, I> primaryKey = mainPersister.<T>getMainTable().getPrimaryKey();
+		PrimaryKey<T, I> primaryKey = mainPersister.getMainTable().getPrimaryKey();
 		primaryKey.getColumns().forEach(column -> {
 			subPersistersUnion.registerColumn(column.getExpression(), column.getJavaType(), column.getExpression());
 		});
@@ -529,13 +537,17 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			subPersistersUnion.unionAll(subEntityQuery);
 			
 			rightJoinColumn.getColumns().forEach(column -> {
+				// We add the column by its name and type, not by finding it in the sub-persister table because,
+				// for unknown yet reason, the column is not found in the sub-persister table
 				subEntityQuery.select(column.getExpression(), column.getJavaType());
+				subPersistersUnion.registerColumn(column.getExpression(), column.getJavaType());
 			});
 			
 			// we add sub primary key columns to make them available to the union, then they can be used to create the entity identifier
 			// through idMapping.getIdentifierAssembler().getColumns()
 			primaryKey.getColumns().forEach(column -> {
-				subEntityQuery.select(column.getName(), column.getJavaType());
+				Column<T, ?> subPersisterColumn = (Column<T, ?>) subPersister.getMainTable().findColumn(column.getName());
+				subEntityQuery.select(subPersisterColumn);
 			});
 		});
 		
@@ -571,7 +583,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 				tablePerClassFirstPhaseRelationLoader,
 				leftJoinColumn,
 				rightJoinLinkBuilder.build(),
-				JoinType.OUTER);
+				OUTER);
 		
 		// Because sub-entities are part of the union and not in the tree as a join node, there are not seen as some DDL participant,
 		// hence we add them to it. That's a bit ugly, but I didn't find a better way to do it.

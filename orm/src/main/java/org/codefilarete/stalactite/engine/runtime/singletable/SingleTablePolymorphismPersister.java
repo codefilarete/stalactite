@@ -78,7 +78,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 		super(mainPersister,
 				subEntitiesPersisters,
 				new SingleTablePolymorphismEntityFinder<>(mainPersister,
-						subEntitiesPersisters,
+						new HashSet<>(subEntitiesPersisters.values()),
 						discriminatorColumn,
 						polymorphismPolicy::getClass,
 						connectionProvider,

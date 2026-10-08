@@ -30,7 +30,7 @@ public class SingleTableAppender {
 	
 	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
 	GraftPoint append(EntityJoinTree<SRC, SRCID> aggregateTree,
-										SingleTablePolymorphismReader<TRGT, TRGTID, RIGHTTABLE, ?> targetReader,
+										SingleTablePolymorphismReader<TRGT, TRGTID, RIGHTTABLE, ?, ?> targetReader,
 										GraftableRelation<SRC, TRGT, TRGTID, LEFTTABLE, RIGHTTABLE, JOINID> relation,
 										SingleTablePolymorphism<TRGT, TRGTID, Object, RIGHTTABLE> polymorphismPolicy,
 										String mountPoint) {
@@ -59,7 +59,7 @@ public class SingleTableAppender {
 	
 	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
 	String appendForSeparateLoad(EntityJoinTree<?, ?> aggregateTree,
-								 SingleTablePolymorphismReader<TRGT, TRGTID, RIGHTTABLE, ?> targetReader,
+								 SingleTablePolymorphismReader<TRGT, TRGTID, RIGHTTABLE, ?, ?> targetReader,
 								 String mountPoint,
 								 ThreadLocalStorage<SRC, Set<TRGTID>, RelationStorage<SRC, TRGTID>> relationIdsHolder,
 								 KeyMapping<LEFTTABLE, RIGHTTABLE, JOINID> join) {
@@ -76,7 +76,7 @@ public class SingleTableAppender {
 	
 	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
 	String appendForSeparateLoad(EntityJoinTree<?, ?> aggregateTree,
-								 SingleTablePolymorphismReader<TRGT, TRGTID, RIGHTTABLE, ?> targetReader,
+								 SingleTablePolymorphismReader<TRGT, TRGTID, RIGHTTABLE, ?, ?> targetReader,
 								 String mountPoint,
 								 BiFunction<Function<ColumnedRow, TRGTID>, Set<? extends Selectable<?>>, EntityMerger<SRC>> relationIdsHolderFactory,
 								 KeyMapping<LEFTTABLE, RIGHTTABLE, JOINID> join) {

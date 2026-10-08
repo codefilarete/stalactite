@@ -44,7 +44,7 @@ public class Select implements FluentSelect<Select> {
 	
 	@Override
 	public Select add(Selectable<?> expression, Selectable<?>... expressions) {
-		this.columns.put(expression, null);
+		add(expression, (String) null);
 		for (Selectable<?> expr : expressions) {
 			add(expr);
 		}
@@ -66,12 +66,18 @@ public class Select implements FluentSelect<Select> {
 	
 	@Override
 	public Select add(Selectable<?> column) {
-		this.columns.put(column, null);
+		add(column, (String) null);
 		return this;
 	}
 	
 	@Override
 	public Select add(Selectable<?> column, String alias) {
+		if (column == null || column.getExpression() == null) {
+			// this is a development safeguard, it should not happen because Selectable is supposed to be built with
+			// a non-null expression but sometimes, an argument is given that creates a null-value expression. Throwing an
+			// exception here is better than letting the query trying to be built with a latter failure without knowing the source
+			throw new IllegalArgumentException("Column expression is null for alias " + alias);
+		}
 		this.columns.put(column, alias);
 		return this;
 	}

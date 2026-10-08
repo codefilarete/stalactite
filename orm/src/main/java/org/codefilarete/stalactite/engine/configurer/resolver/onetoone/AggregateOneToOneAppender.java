@@ -16,6 +16,7 @@ import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.Thre
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.engine.runtime.tableperclass.TablePerClassPolymorphismReader;
 import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
@@ -49,7 +50,7 @@ public class AggregateOneToOneAppender {
 	 */
 	public <SRC, SRCID, TRGT, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
 	GraftPoint<TRGT, TRGTID, RIGHTTABLE, SRC, SRCID> append(ResolvedOneToOneRelation<SRC, TRGT, LEFTTABLE, RIGHTTABLE, JOINID> relation,
-															ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourcePersister,
+															ConfiguredEntityReader<SRC, SRCID, LEFTTABLE> sourceReader,
 															ConfiguredEntityReader<TRGT, TRGTID, RIGHTTABLE> targetReader,
 															String mountPoint,
 															EntityJoinTree<SRC, SRCID> aggregateTree) {
@@ -58,7 +59,7 @@ public class AggregateOneToOneAppender {
 		
 		DirectRelationJoin<LEFTTABLE, RIGHTTABLE, JOINID> join = relation.getJoin();
 		if (relation.isFetchedSeparately()) {
-			result = appendWithSeparateFetch(relation, sourcePersister, targetReader, mountPoint, aggregateTree, join);
+			result = appendWithSeparateFetch(relation, sourceReader, targetReader, mountPoint, aggregateTree, join);
 		} else {
 			// we join the relation onto the aggregate root to build the whole select tree
 			if (relation.getTargetEntity() instanceof PolymorphicEntity) {
@@ -74,6 +75,11 @@ public class AggregateOneToOneAppender {
 						graftableRelation,
 						mountPoint);
 			} else {
+				if (sourceReader instanceof TablePerClassPolymorphismReader) {
+					relation.getJoin().getLeftKey().getColumns().forEach(column ->
+					((TablePerClassPolymorphismReader<SRC, SRCID, LEFTTABLE, ?>) sourceReader).getTablePerClassUnion()
+							.addColumn(column.getName(), column.getJavaType()));
+				}
 				// Note that there's no difference between relation being owned by source or target, because the join
 				// is defined by the DirectRelationJoin object, which is built accordingly to the relation owner
 				String joinName = aggregateTree.addRelationJoin(

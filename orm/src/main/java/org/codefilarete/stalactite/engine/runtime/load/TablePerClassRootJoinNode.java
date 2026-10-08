@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine.runtime.load;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -15,6 +16,7 @@ import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.RootJoinR
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer;
+import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.api.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.api.Selectable.SimpleSelectable;
@@ -39,17 +41,17 @@ import static org.codefilarete.tool.Nullable.nullable;
  */
 public class TablePerClassRootJoinNode<C, I> extends JoinRoot<C, I, PseudoTable> {
 
-	private final Map<String, EntityReadExecutor<C, I>> subPersisters;
-	private final SimpleSelectable<String> discriminatorColumn;
+	private final Map<Integer, EntityReadExecutor<? extends C, I>> subPersisters;
+	private final SimpleSelectable<Integer> discriminatorColumn;
 	private TablePerClassPolymorphicJoinRootRowConsumer<C, I> rootConsumer;
 	
-	public TablePerClassRootJoinNode(EntityJoinTree<C, I> tree,
-									 EntityMapping<C, I, ?> mainMapping,
-									 Map<String, ? extends EntityReadExecutor<C, I>> subPersisters,
-									 PseudoTable union,
-									 SimpleSelectable<String> discriminatorColumn) {
+	public <SUBENTITY extends C> TablePerClassRootJoinNode(EntityJoinTree<C, I> tree,
+														   EntityMapping<C, I, ?> mainMapping,
+														   Map<Integer, ? extends EntityReadExecutor<SUBENTITY, I>> subPersisters,
+														   PseudoTable union,
+														   SimpleSelectable<Integer> discriminatorColumn) {
 		super(tree, new EntityMappingAdapter<>(mainMapping), union);
-		this.subPersisters = (Map<String, EntityReadExecutor<C, I>>) subPersisters;
+		this.subPersisters = new HashMap<>(subPersisters);
 		this.discriminatorColumn = discriminatorColumn;
 	}
 	
@@ -60,13 +62,7 @@ public class TablePerClassRootJoinNode<C, I> extends JoinRoot<C, I, PseudoTable>
 	
 	@Override
 	public RootJoinRowConsumer<C, I> toConsumer(JoinNode<C, PseudoTable> joinNode) {
-		Set<SubPersisterConsumer<C, I>> subEntityConsumers = subPersisters.values().stream().map(subPersister -> {
-			EntityMapping<C, I, ?> mapping = subPersister.getMapping();
-			return new SubPersisterConsumer<>(
-					row -> mapping.getIdMapping().getIdentifierAssembler().assemble(row),
-					mapping.getClassToPersist(),
-					mapping.getRowTransformer());
-		}).collect(Collectors.toSet());
+		Set<SubPersisterConsumer<C, I>> subEntityConsumers = buildSubEntityConsumers();
 		rootConsumer = new TablePerClassPolymorphicJoinRootRowConsumer<>(
 				joinNode,
 				subEntityConsumers,
@@ -77,7 +73,18 @@ public class TablePerClassRootJoinNode<C, I> extends JoinRoot<C, I, PseudoTable>
 		return rootConsumer;
 	}
 	
-	public void addSubPersister(EntityReadExecutor<C, I> persister, MergeJoinRowConsumer<? extends C> subConsumer, String discriminatorValue) {
+	private <SUBENTITY extends C> Set<SubPersisterConsumer<SUBENTITY, I>> buildSubEntityConsumers() {
+		return subPersisters.values().stream().map(subPersister -> {
+			EntityMapping<SUBENTITY, I, ?> mapping = (EntityMapping<SUBENTITY, I, ?>) subPersister.getMapping();
+			IdentifierAssembler<I, ?> identifierAssembler = mapping.getIdMapping().getIdentifierAssembler();
+			return new SubPersisterConsumer<>(
+					identifierAssembler::assemble,
+					mapping.getClassToPersist(),
+					mapping.getRowTransformer());
+		}).collect(Collectors.toSet());
+	}
+	
+	public void addSubPersister(EntityReadExecutor<? extends C, I> persister, MergeJoinRowConsumer<? extends C> subConsumer, Integer discriminatorValue) {
 		rootConsumer.subConsumers.forEach(pawnConsumer -> {
 			if (pawnConsumer.subEntityType == persister.getClassToPersist()) {
 				pawnConsumer.subPropertiesApplier = subConsumer;
@@ -91,7 +98,7 @@ public class TablePerClassRootJoinNode<C, I> extends JoinRoot<C, I, PseudoTable>
 		private final Class<C> subEntityType;
 		private final RowTransformer<C> subEntityFactory;
 		private MergeJoinRowConsumer<? extends C> subPropertiesApplier;
-		private String discriminatorValue;
+		private Integer discriminatorValue;
 		
 		private SubPersisterConsumer(Function<ColumnedRow, I> identifierAssembler,
 									 Class<C> subEntityType,
@@ -112,13 +119,13 @@ public class TablePerClassRootJoinNode<C, I> extends JoinRoot<C, I, PseudoTable>
 		/** Optional listener of ResultSet decoding */
 		@Nullable
 		private final BiConsumer<C, ColumnedRow> consumptionListener;
-		private final Function<ColumnedRow, String> discriminatorValueReader;
+		private final Function<ColumnedRow, Integer> discriminatorValueReader;
 		
 		private TablePerClassPolymorphicJoinRootRowConsumer(
 				JoinNode<C, ?> node,
 				Set<SubPersisterConsumer<C, I>> subConsumers,
 				@Nullable BiConsumer<C, ColumnedRow> consumptionListener,
-				Function<ColumnedRow, String> discriminatorValueReader) {
+				Function<ColumnedRow, Integer> discriminatorValueReader) {
 			this.node = node;
 			this.subConsumers = subConsumers;
 			this.consumptionListener = consumptionListener;
@@ -153,7 +160,7 @@ public class TablePerClassRootJoinNode<C, I> extends JoinRoot<C, I, PseudoTable>
 		@Nullable
 		public SubPersisterConsumer<C, I> findSubInflater(ColumnedRow row) {
 			// NB: we trim because some database (as HSQLDB) adds some padding in order that all values get same length
-			String discriminatorValue = nullable(discriminatorValueReader.apply(row)).map(String::trim).get();
+			Integer discriminatorValue = nullable(discriminatorValueReader.apply(row)).get();
 			return Iterables.find(subConsumers,
 					subConsumer -> subConsumer.discriminatorValue.equals(discriminatorValue));
 		}

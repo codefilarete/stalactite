@@ -175,17 +175,4 @@ public class TablePerClassPolymorphismWriter<C, I, T extends Table<T>, SUBENTITY
 			}
 		};
 	}
-	
-//	private <MAINTABLE extends Table<MAINTABLE>, SUBTABLE extends Table<SUBTABLE>, JOINID> KeyBuilder<SUBTABLE, Object>
-//	projectPrimaryKey(Key<MAINTABLE, JOINID> rightColumn, ConfiguredRelationalPersister<? extends C, I> subPersister) {
-//		EntityMapping<? extends C, I, SUBTABLE> subTypeMapping = subPersister.getMapping();
-//		KeyBuilder<SUBTABLE, Object> reverseKey = Key.from(subTypeMapping.getTargetTable());
-//		rightColumn.getColumns().forEach(col -> {
-//			Column<SUBTABLE, ?> column = subTypeMapping.getTargetTable().addColumn(col.getExpression(), col.getJavaType());
-//			subTypeMapping.addShadowColumnSelect(column);
-//			reverseKey.addColumn(column);
-//		});
-//		return reverseKey;
-//	}
-	
 }

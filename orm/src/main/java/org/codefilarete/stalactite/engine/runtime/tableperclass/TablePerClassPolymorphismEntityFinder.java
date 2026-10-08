@@ -13,6 +13,8 @@ import java.util.stream.Collectors;
 import org.codefilarete.stalactite.engine.EntityReadExecutor;
 import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListener;
 import org.codefilarete.stalactite.engine.configurer.builder.PersisterBuilderContext;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.tableperclass.TablePerClassAppender;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.tableperclass.TablePerClassAppender.TablePerClassUnion;
 import org.codefilarete.stalactite.engine.runtime.AbstractPolymorphicEntityFinder;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
@@ -30,19 +32,16 @@ import org.codefilarete.stalactite.engine.runtime.query.EntityQueryCriteriaSuppo
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
-import org.codefilarete.stalactite.query.Operators;
 import org.codefilarete.stalactite.query.api.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.query.api.Selectable.SimpleSelectable;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
-import org.codefilarete.stalactite.query.model.FluentQueries;
 import org.codefilarete.stalactite.query.model.GroupBy;
 import org.codefilarete.stalactite.query.model.Having;
 import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Select;
-import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -67,41 +66,76 @@ import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROO
 public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> extends AbstractPolymorphicEntityFinder<C, I, T> {
 	
 	@VisibleForTesting
-	static final String DISCRIMINATOR_ALIAS = "DISCRIMINATOR";
-	private static final SimpleSelectable<String> DISCRIMINATOR_COLUMN = new SimpleSelectable<>(DISCRIMINATOR_ALIAS, String.class);
+	static final String DISCRIMINATOR_ALIAS = TablePerClassAppender.ENTITY_TYPE_DISCRIMINATOR_NAME;
+	private static final SimpleSelectable<Integer> DISCRIMINATOR_COLUMN = new SimpleSelectable<>(DISCRIMINATOR_ALIAS, Integer.class);
 	
 	private final T mainTable;
 	private final IdentifierAssembler<I, T> identifierAssembler;
-	private final Map<String, Class> discriminatorValues;
+	private final Set<? extends ConfiguredEntityReader<? extends C, I, ?>> subPersisters;
 	private final SingleLoadEntityJoinTree<C, I> singleLoadEntityJoinTree;
+	private final TablePerClassUnion<? extends C, I> tablePerClassUnion;
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	private Query query;
 	private EntityTreeQuery<C> entityTreeQuery;
 	
-	public TablePerClassPolymorphismEntityFinder(
+	public <SUBENTITY extends C> TablePerClassPolymorphismEntityFinder(
 			ConfiguredRelationalPersister<C, I, T> mainPersister,
-			Map<Class<? extends C>, ? extends ConfiguredRelationalPersister<? extends C, I, ?>> persisterPerSubclass,
+			Set<? extends ConfiguredEntityReader<SUBENTITY, I, ?>> subPersisters,
 			ConnectionProvider connectionProvider,
 			Dialect dialect
 	) {
-		this(mainPersister.getEntityJoinTree(), mainPersister, persisterPerSubclass, connectionProvider, dialect);
+		this(mainPersister.getEntityJoinTree(), mainPersister, subPersisters, connectionProvider, dialect);
+	}
+	
+	public <SUBENTITY extends C> TablePerClassPolymorphismEntityFinder(
+			EntityJoinTree<C, I> mainEntityJoinTree,
+			ConfiguredEntityReader<C, I, T> mainReader,
+			Set<? extends ConfiguredEntityReader<SUBENTITY, I, ?>> subPersisters,
+			ConnectionProvider connectionProvider,
+			Dialect dialect) {
+		super(mainEntityJoinTree, mainReader, subPersisters, connectionProvider, dialect);
+		
+		this.identifierAssembler = mainReader.getMapping().getIdMapping().getIdentifierAssembler();
+		this.mainTable = mainReader.getMapping().getTargetTable();
+		// building readers and aliases for union-all query
+		this.subPersisters = subPersisters;
+		// we give all table columns to the union to, in particular, give the existing join columns which are needed by
+		// the projectTo(..) method to build the final tree
+		this.tablePerClassUnion = TablePerClassAppender.buildUnionForIdentifierRead(subPersisters, mainReader.<T>getMainTable().getColumns());
+		this.singleLoadEntityJoinTree = buildSingleLoadEntityJoinTree(tablePerClassUnion);
+		mainEntityJoinTree.projectTo(this.singleLoadEntityJoinTree, ROOT_JOIN_NAME);
+		this.criteriaSupport = new EntityCriteriaSupport<>(singleLoadEntityJoinTree);
+		
+		// made for optimization (to avoid creating multiple times the query) but also to avoid adding several times the polymorphic JoinNode consumers
+		// to itself by calling several time the "toConsumer(..)" method that usually calls some "add" method, which declares duplicates of consumers,
+		// which, at the very end, implies an exception during the aggregate inflation phase : "Can't find consumer node"
+		PersisterBuilderContext.CURRENT.get().addBuildLifeCycleListener(new BuildLifeCycleListener() {
+			@Override
+			public void afterBuild() {
+			}
+			
+			@Override
+			public void afterAllBuild() {
+				buildQuery();
+			}
+		});
 	}
 	
 	public TablePerClassPolymorphismEntityFinder(
 			EntityJoinTree<C, I> mainEntityJoinTree,
 			ConfiguredEntityReader<C, I, T> mainReader,
-			Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> persisterPerSubclass,
+			Set<? extends ConfiguredEntityReader<? extends C, I, ?>> subPersisters,
+			TablePerClassUnion<? extends C, I> tablePerClassUnion,
 			ConnectionProvider connectionProvider,
 			Dialect dialect) {
-		super(mainEntityJoinTree, mainReader, persisterPerSubclass, connectionProvider, dialect);
+		super(mainEntityJoinTree, mainReader, subPersisters, connectionProvider, dialect);
 		
 		this.identifierAssembler = mainReader.getMapping().getIdMapping().getIdentifierAssembler();
 		this.mainTable = mainReader.getMapping().getTargetTable();
 		// building readers and aliases for union-all query
-		this.discriminatorValues = new HashMap<>();
-		persisterPerSubclass.forEach((subEntityType, subEntityPersister) ->
-				discriminatorValues.put(subEntityType.getSimpleName(), subEntityType));
-		this.singleLoadEntityJoinTree = buildSingleLoadEntityJoinTree();
+		this.subPersisters = subPersisters;
+		this.singleLoadEntityJoinTree = buildSingleLoadEntityJoinTree(tablePerClassUnion);
+		this.tablePerClassUnion = tablePerClassUnion;
 		this.criteriaSupport = new EntityCriteriaSupport<>(singleLoadEntityJoinTree);
 		
 		// made for optimization (to avoid creating multiple times the query) but also to avoid adding several times the polymorphic JoinNode consumers
@@ -143,62 +177,33 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 	 * Creates an {@link EntityJoinTree} which main Table is actually a Union clause made of sub-entities tables
 	 * @return an appropriate {@link EntityJoinTree}
 	 */
-	private <SUBTABLE extends Table<SUBTABLE>> SingleLoadEntityJoinTree<C, I> buildSingleLoadEntityJoinTree() {
-		Union union = new Union();
-		Set<Column<T, ?>> allColumnsInHierarchy = mainTable.getColumns();
-		
-		Map<String, ConfiguredEntityReader<C, I, SUBTABLE>> discriminatorPerSubPersister = new HashMap<>();
-		persisterPerSubclass.forEach((subEntityType, subEntityPersister) -> {
-			String discriminatorValue = subEntityType.getSimpleName();
-			
-			subEntityPersister.getMainTable().getColumns();
-			Map<Selectable<?>, String> subQueryColumns = new KeepOrderMap<>();
-			allColumnsInHierarchy.forEach(pseudoColumn -> {
-				Column column = subEntityPersister.getMainTable().findColumn(pseudoColumn.getExpression());
-				if (column != null) {
-					subQueryColumns.put(column, column.getName());
-				} else {
-					subQueryColumns.put(Operators.cast((String) null, pseudoColumn.getJavaType()), pseudoColumn.getExpression());
-				}
-			});
-			subQueryColumns.put(new SimpleSelectable<>("'" + discriminatorValue + "'", String.class), DISCRIMINATOR_ALIAS);
-			Query subQuery = FluentQueries.
-					select(subQueryColumns)
-					.from(subEntityPersister.getMainTable())
-					.getQuery();
-			union.getQueries().add(subQuery);
-			discriminatorPerSubPersister.put(discriminatorValue, (ConfiguredEntityReader<C, I, SUBTABLE>) subEntityPersister);
-		});
-		allColumnsInHierarchy.forEach(column -> {
-			union.registerColumn(column.getExpression(), column.getJavaType(), column.getName());
-		});
-		union.registerColumn(DISCRIMINATOR_COLUMN.getExpression(), String.class, DISCRIMINATOR_ALIAS);
-		
-		// Note that it's very important to use main table name to mimic virtual main table else joins (below) won't work
-		PseudoTable pseudoTable = union.asPseudoTable(mainTable.getName());
+	private SingleLoadEntityJoinTree<C, I> buildSingleLoadEntityJoinTree(TablePerClassUnion<? extends C, I> tablePerClassUnion) {
 		// we add joins to the union clause
-		SingleLoadEntityJoinTree<C, I> result = new SingleLoadEntityJoinTree<>(mainTable, mainReader.getMapping(), discriminatorPerSubPersister, pseudoTable, DISCRIMINATOR_COLUMN);
-		mainEntityJoinTree.projectTo(result, ROOT_JOIN_NAME);
+		SingleLoadEntityJoinTree<C, I> result = new SingleLoadEntityJoinTree<>(
+				mainTable,
+				mainReader.getMapping(),
+				tablePerClassUnion.getSubtypeSelectorPerDiscriminatorValue(),
+				tablePerClassUnion.asPseudoTable(mainTable.getName()),
+				tablePerClassUnion.getDiscriminatorColumn());
 		
-		addTablePerClassPolymorphicSubPersistersJoins(result, discriminatorPerSubPersister);
+		addTablePerClassPolymorphicSubPersistersJoins(result, tablePerClassUnion.getSubtypeSelectorPerDiscriminatorValue());
 		return result;
 	}
 	
-	private <V extends C, T2 extends Table<T2>> void addTablePerClassPolymorphicSubPersistersJoins(
+	private <SUBENTITY extends C, SUBTABLE extends Table<SUBTABLE>> void addTablePerClassPolymorphicSubPersistersJoins(
 			SingleLoadEntityJoinTree<C, I> entityJoinTree,
-			Map<String, ConfiguredEntityReader<C, I, T2>> discriminatorPerSubPersister) {
+			Map<Integer, ConfiguredEntityReader<SUBENTITY, I, ?>> discriminatorPerSubPersister) {
 		
 		discriminatorPerSubPersister.forEach((discriminatorValue, subPersister) -> {
-						ConfiguredEntityReader<V, I, T2> localSubPersister = (ConfiguredEntityReader<V, I, T2>) subPersister;
-			String mergeJoinName = entityJoinTree.<V, T, T2, I>addMergeJoin(EntityJoinTree.ROOT_JOIN_NAME,
-					new EntityMergerAdapter<>(localSubPersister.getMapping()),
+			String mergeJoinName = entityJoinTree.<SUBENTITY, T, SUBTABLE, I>addMergeJoin(ROOT_JOIN_NAME,
+					new EntityMergerAdapter<>(subPersister.getMapping()),
 					mainTable.getPrimaryKey(),
-					localSubPersister.<T2>getMainTable().getPrimaryKey(),
+					subPersister.<SUBTABLE>getMainTable().getPrimaryKey(),
 					JoinType.OUTER,
 					joinNode -> {
-						MergeJoinRowConsumer<V> joinRowConsumer = new MergeJoinRowConsumer<>(
-								(MergeJoinNode<V, ?, ?, ?>) joinNode,
-                                localSubPersister.getMapping().getRowTransformer());
+						MergeJoinRowConsumer<SUBENTITY> joinRowConsumer = new MergeJoinRowConsumer<>(
+								(MergeJoinNode<SUBENTITY, ?, ?, ?>) joinNode,
+                                subPersister.getMapping().getRowTransformer());
 						entityJoinTree.getRoot().addSubPersister(subPersister, joinRowConsumer, discriminatorValue);
 						return joinRowConsumer;
 					}
@@ -269,39 +274,36 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 		});
 		columnReaders.put(DISCRIMINATOR_COLUMN, dialect.getColumnBinderRegistry().getBinder(DISCRIMINATOR_COLUMN.getJavaType()));
 		
-		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(values), columnReaders, queryClone.getAliases());
+		Map<ConfiguredEntityReader<? extends C, I, ?>, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(values), columnReaders, queryClone.getAliases());
 		
 		// Second phase : selecting entities by delegating it to each subclass loader
 		// It will generate 1 query per found subclass, made as this :
 		// - to avoid superfluous join and complex query in case of relation
 		// - make it simpler to implement
-		Set<I> ids = idsPerSubtype.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
-		
 		if (hasSubPolymorphicPersister) {
 			LOGGER.debug("Asking sub-polymorphic persisters to load the entities");
 			Set<C> result = new HashSet<>();
-			idsPerSubtype.forEach((k, v) -> result.addAll(persisterPerSubclass.get(k).select(v)));
+			idsPerSubtype.forEach((subreader, ids) -> result.addAll(subreader.select(ids)));
 			return result;
 		} else {
+			Set<I> ids = idsPerSubtype.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
 			return selectWithSingleQueryWhereIdIn(ids);
 		}
 	}
 	
-	private Map<Class, Set<I>> readIds(PreparedSQL preparedSQL, Map<Selectable<?>, ResultSetReader<?>> columnReaders, Map<Selectable<?>, String> aliases) {
+	private Map<ConfiguredEntityReader<? extends C, I, ?>, Set<I>> readIds(PreparedSQL preparedSQL, Map<Selectable<?>, ResultSetReader<?>> columnReaders, Map<Selectable<?>, String> aliases) {
 		try (ReadOperation<Integer> closeableOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = closeableOperation.execute();
 			ColumnedRowIterator rowIterator = new ColumnedRowIterator(resultSet, columnReaders, aliases);
 			// Below we keep the order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
 			// impacts but it's very difficult to measure
-			Map<Class, Set<I>> idsPerSubclass = new KeepOrderMap<>();
+			Map<ConfiguredEntityReader<? extends C, I, ?>, Set<I>> idsPerSubclass = new KeepOrderMap<>();
 			rowIterator.forEachRemaining(row -> {
 				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the good one
-				String discriminatorValue = row.get(DISCRIMINATOR_COLUMN);
-				// NB: we trim because some database (as HSQLDB) adds some padding in order that all values get same length
-				Class<? extends C> entitySubclass = discriminatorValues.get(discriminatorValue.trim());
+				Integer discriminatorValue = row.get(DISCRIMINATOR_COLUMN);
 				
 				// adding identifier to subclass' ids
-				idsPerSubclass.computeIfAbsent(entitySubclass, k -> new HashSet<>())
+				idsPerSubclass.computeIfAbsent(tablePerClassUnion.getSubtypeSelectorPerDiscriminatorValue().get(discriminatorValue), k -> new HashSet<>())
 						.add(identifierAssembler.assemble(row));
 			});
 			return idsPerSubclass;
@@ -314,11 +316,11 @@ public class TablePerClassPolymorphismEntityFinder<C, I, T extends Table<T>> ext
 		
 		private final IdentityHashMap<Column<?, ?>, Selectable<?>> mainColumnToPseudoColumn = new IdentityHashMap<>();
 		
-		public <T extends Table<T>> SingleLoadEntityJoinTree(T mainTable,
-															 EntityMapping<C, I, T> mainMapping,
-															 Map<String, ? extends EntityReadExecutor<C, I>> subPersisterPerDiscriminator,
-															 PseudoTable pseudoTable,
-															 SimpleSelectable<String> discriminatorColumn) {
+		public <SUBENTITY extends C, T extends Table<T>> SingleLoadEntityJoinTree(T mainTable,
+																				  EntityMapping<C, I, T> mainMapping,
+																				  Map<Integer, ? extends EntityReadExecutor<SUBENTITY, I>> subPersisterPerDiscriminator,
+																				  PseudoTable pseudoTable,
+																				  SimpleSelectable<Integer> discriminatorColumn) {
 			super(self -> new TablePerClassRootJoinNode<>(self, mainMapping, subPersisterPerDiscriminator, pseudoTable, discriminatorColumn));
 			// Building a mapping between main persister columns and those of union
 			// this will allow us to lookup for main persister columns values in final ResultSet

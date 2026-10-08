@@ -66,7 +66,6 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 	
 	protected final EntityJoinTree<C, I> mainEntityJoinTree;
 	protected final ConfiguredEntityReader<C, I, T> mainReader;
-	protected final Map<Class<? extends C>, ConfiguredEntityReader<? extends C, I, ?>> persisterPerSubclass;
 	protected final ConnectionProvider connectionProvider;
 	protected final Dialect dialect;
 	protected final boolean hasSubPolymorphicPersister;
@@ -76,24 +75,23 @@ public abstract class AbstractPolymorphicEntityFinder<C, I, T extends Table<T>> 
 	
 	protected AbstractPolymorphicEntityFinder(
 			ConfiguredRelationalPersister<C, I, T> mainPersister,
-			Map<Class<? extends C>, ? extends ConfiguredRelationalPersister<? extends C, I, ?>> persisterPerSubclass,
+			Set<? extends ConfiguredEntityReader<? extends C, I, ?>> subPersisters,
 			ConnectionProvider connectionProvider,
 			Dialect dialect) {
-		this(mainPersister.getEntityJoinTree(), mainPersister, persisterPerSubclass, connectionProvider, dialect);
+		this(mainPersister.getEntityJoinTree(), mainPersister, subPersisters, connectionProvider, dialect);
 	}
 	
 	protected AbstractPolymorphicEntityFinder(
 			EntityJoinTree<C, I> mainEntityJoinTree,
 			ConfiguredEntityReader<C, I, T> mainReader,
-			Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> persisterPerSubclass,
+			Set<? extends ConfiguredEntityReader<? extends C, I, ?>> subPersisters,
 			ConnectionProvider connectionProvider,
 			Dialect dialect) {
 		this.mainEntityJoinTree = mainEntityJoinTree;
 		this.mainReader = mainReader;
-		this.persisterPerSubclass = (Map<Class<? extends C>, ConfiguredEntityReader<? extends C, I, ?>>) persisterPerSubclass;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
-		this.hasSubPolymorphicPersister = Iterables.find(persisterPerSubclass.values(), subPersister -> subPersister instanceof AbstractPolymorphismPersister) != null;
+		this.hasSubPolymorphicPersister = Iterables.find(subPersisters, subPersister -> subPersister instanceof AbstractPolymorphismPersister) != null;
 		AccessorWrapperIdAccessor<C, I> idAccessor = (AccessorWrapperIdAccessor<C, I>) mainReader.getMapping().getIdMapping().getIdAccessor();
 		this.entityIdAccessor = new AccessorChain<>(idAccessor.getIdAccessor());
 	}

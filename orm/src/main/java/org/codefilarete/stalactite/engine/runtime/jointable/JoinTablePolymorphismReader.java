@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine.runtime.jointable;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -16,14 +17,14 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
-public class JoinTablePolymorphismReader<C, I, T extends Table<T>> extends ReadListenerWrapper<C, I> implements ConfiguredEntityReader<C, I, T> {
+public class JoinTablePolymorphismReader<C, I, T extends Table<T>, SUBENTITY extends C> extends ReadListenerWrapper<C, I> implements ConfiguredEntityReader<C, I, T> {
 	
 	private final JoinTablePolymorphismEntityFinder<C, I, T> entityFinder;
 	private final ConfiguredEntityReader<C, I, T> mainReader;
-	private final Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> subEntitiesPersisters;
+	private final Map<Class<SUBENTITY>, ? extends ConfiguredEntityReader<? extends C, I, ?>> subEntitiesPersisters;
 	
 	public JoinTablePolymorphismReader(ConfiguredEntityReader<C, I, T> mainReader,
-	                                   Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> subEntitiesPersisters,
+	                                   Map<Class<SUBENTITY>, ? extends ConfiguredEntityReader<SUBENTITY, I, ?>> subEntitiesPersisters,
 	                                   ConnectionProvider connectionProvider,
 	                                   Dialect dialect) {
 		this.mainReader = mainReader;
@@ -31,12 +32,12 @@ public class JoinTablePolymorphismReader<C, I, T extends Table<T>> extends ReadL
 		this.entityFinder = new JoinTablePolymorphismEntityFinder<>(
 				mainReader.getEntityJoinTree(),
 				mainReader,
-				subEntitiesPersisters,
+				new HashSet<>(subEntitiesPersisters.values()),
 				connectionProvider,
 				dialect);
 	}
 	
-	public Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> getSubEntitiesPersisters() {
+	public Map<Class<SUBENTITY>, ? extends ConfiguredEntityReader<? extends C, I, ?>> getSubEntitiesPersisters() {
 		return subEntitiesPersisters;
 	}
 	

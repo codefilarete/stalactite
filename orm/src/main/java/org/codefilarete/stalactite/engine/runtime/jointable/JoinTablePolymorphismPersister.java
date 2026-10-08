@@ -84,7 +84,7 @@ public class JoinTablePolymorphismPersister<C, I, T extends Table<T>> extends Ab
 				subEntitiesPersisters,
 				new JoinTablePolymorphismEntityFinder<>(
 						mainPersister,
-						subEntitiesPersisters,
+						new HashSet<>(subEntitiesPersisters.values()),
 						connectionProvider,
 						dialect));
 		Table<?> mainTable = mainPersister.getMapping().getTargetTable();

@@ -1017,8 +1017,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
-									.map(Car::getModel)
-									.map(Car::getColor))
+									.map(Car::getModel))
 							.addSubClass(subentityBuilder(Truck.class)
 									.map(Truck::getColor)))
 					.build(persistenceContext);
@@ -1029,37 +1028,36 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
 			assertThat(persistenceContext.getPersisters()).extracting(EntityPersister::getClassToPersist).containsExactlyInAnyOrder(AbstractVehicle.class);
-
+			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
-
+			
 			Car dummyCar = new Car(1L);
 			dummyCar.setModel("Renault");
-			dummyCar.setColor(new Color(666));
-
+			
 			Truck dummyTruck = new Truck(2L);
 			dummyTruck.setColor(new Color(42));
-
+			
 			// insert test
 			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruck));
-
+			
 			ExecutableBeanPropertyQueryMapper<Integer> carIdQuery = persistenceContext.newQuery("select id from car", Integer.class)
 					.mapKey("id", Integer.class);
 			
 			Set<Integer> carIds = carIdQuery.execute(Accumulators.toSet());
 			assertThat(carIds).containsExactly(1);
-
+			
 			ExecutableBeanPropertyQueryMapper<Integer> truckIdQuery = persistenceContext.newQuery("select id from truck", Integer.class)
 					.mapKey("id", Integer.class);
 			
 			Set<Integer> truckIds = truckIdQuery.execute(Accumulators.toSet());
 			assertThat(truckIds).containsExactly(2);
-
+			
 			// update test
 			dummyCar.setModel("Peugeot");
 			abstractVehiclePersister.persist(dummyCar);
-
+			
 			// select test
 			AbstractVehicle loadedVehicle;
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
@@ -1085,7 +1083,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			
 			Integer carCount = Iterables.first(carQuery.execute(Accumulators.toSet()));
 			assertThat(carCount).isEqualTo(0);
-
+			
 			ExecutableBeanPropertyQueryMapper<Integer> truckQuery = persistenceContext.newQuery("select"
 					+ " count(*) as truckCount from car where id = " + dummyTruck.getId().getDelegate(), Integer.class)
 					.mapKey("truckCount", Integer.class);

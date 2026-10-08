@@ -168,7 +168,7 @@ class AggregateAccessPointToColumnMappingTest {
 				entityMappingMock,
 				Collections.emptyMap(),    // sub-persisters are not necessary for our test case
 				pseudoTable,
-				new SimpleSelectable<>("discriminatorColumn", String.class)));
+				new SimpleSelectable<>("discriminatorColumn", Integer.class)));
 		AggregateAccessPointToColumnMapping<Person> testInstance = new AggregateAccessPointToColumnMapping<>(personTree, true);
 		Map<List<? extends ValueAccessPoint<?>>, QualifiedSelectable<?, ?>> result = testInstance.getPropertyToColumn();
 		

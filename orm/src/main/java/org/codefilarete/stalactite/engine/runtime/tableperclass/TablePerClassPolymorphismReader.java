@@ -1,9 +1,12 @@
 package org.codefilarete.stalactite.engine.runtime.tableperclass;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.tableperclass.TablePerClassAppender.TablePerClassUnion;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.ReadListenerWrapper;
@@ -16,30 +19,38 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
-public class TablePerClassPolymorphismReader<C, I, T extends Table<T>> extends ReadListenerWrapper<C, I> implements ConfiguredEntityReader<C, I, T> {
+public class TablePerClassPolymorphismReader<C, I, T extends Table<T>, SUBENTITY extends C> extends ReadListenerWrapper<C, I> implements ConfiguredEntityReader<C, I, T> {
 	
 	private final TablePerClassPolymorphismEntityFinder<C, I, T> entityFinder;
 	private final ConfiguredEntityReader<C, I, T> mainReader;
-	private final Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> subEntitiesPersisters;
+	private final Map<Class<SUBENTITY>, ? extends ConfiguredEntityReader<SUBENTITY, I, ?>> subEntitiesPersisters;
+	private final TablePerClassUnion<SUBENTITY, I> tablePerClassUnion;
 	
 	public TablePerClassPolymorphismReader(ConfiguredEntityReader<C, I, T> mainReader,
-	                                       Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> subEntitiesPersisters,
+	                                       Map<Class<SUBENTITY>, ? extends ConfiguredEntityReader<SUBENTITY, I, ?>> subEntitiesPersisters,
+										   TablePerClassUnion<SUBENTITY, I> tablePerClassUnion,
 	                                       ConnectionProvider connectionProvider,
 	                                       Dialect dialect) {
 		this.mainReader = mainReader;
 		this.subEntitiesPersisters = subEntitiesPersisters;
+		this.tablePerClassUnion = tablePerClassUnion;
 		this.entityFinder = new TablePerClassPolymorphismEntityFinder<>(
 				mainReader.getEntityJoinTree(),
 				mainReader,
-				subEntitiesPersisters,
+				new HashSet<>(subEntitiesPersisters.values()),
+				tablePerClassUnion,
 				connectionProvider,
 				dialect);
 	}
 	
-	public Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> getSubEntitiesPersisters() {
-		return subEntitiesPersisters;
+	public Map<Class<SUBENTITY>, ConfiguredEntityReader<SUBENTITY, I, ?>> getSubEntitiesPersisters() {
+		return new HashMap<>(subEntitiesPersisters);
 	}
 	
+	public TablePerClassUnion<SUBENTITY, I> getTablePerClassUnion() {
+		return tablePerClassUnion;
+	}
+
 	@Override
 	public EntityJoinTree<C, I> getEntityJoinTree() {
 		return entityFinder.getEntityJoinTree();

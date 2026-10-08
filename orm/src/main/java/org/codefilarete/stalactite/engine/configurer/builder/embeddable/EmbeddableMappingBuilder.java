@@ -344,7 +344,7 @@ public class EmbeddableMappingBuilder<C, T extends Table<T>> {
 			Class<O> columnType;
 			if (linkage.getColumnType().isEnum()) {
 				if (linkage.getEnumBindType() == null) {
-					columnType = (Class<O>) Enum.class;
+					columnType = linkage.getColumnType();
 				} else {
 					columnType = linkage.getEnumBindType() == EnumBindType.NAME
 							? (Class<O>) String.class

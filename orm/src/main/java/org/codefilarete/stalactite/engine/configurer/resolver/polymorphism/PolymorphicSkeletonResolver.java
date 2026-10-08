@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine.configurer.resolver.polymorphism;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.function.BiFunction;
 
@@ -17,6 +18,8 @@ import org.codefilarete.stalactite.engine.configurer.resolver.EntityReader;
 import org.codefilarete.stalactite.engine.configurer.resolver.SkeletonAggregateResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.jointable.JoinTableResolver;
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.singletable.SingleTableResolver;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.tableperclass.TablePerClassAppender;
+import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.tableperclass.TablePerClassAppender.TablePerClassUnion;
 import org.codefilarete.stalactite.engine.configurer.resolver.polymorphism.tableperclass.TablePerClassResolver;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.PolymorphicWriter;
@@ -41,16 +44,21 @@ public class PolymorphicSkeletonResolver {
 		this.skeletonAggregateResolver = new SkeletonAggregateResolver(persistenceContext);
 	}
 	
-	public <C, I, T extends Table<T>> DelegatingReadWriteEntityExecutor<C, I> resolve(PolymorphicEntity<C, I, T> polymorphicEntity, CreatedPersisterCollector<C, I> persisterCollector) {
+	public <C, I, T extends Table<T>, SUBENTITY extends C> DelegatingReadWriteEntityExecutor<C, I> resolve(PolymorphicEntity<C, I, T> polymorphicEntity, CreatedPersisterCollector<C, I> persisterCollector) {
 		PolymorphismResolver<?> polymorphismResolver = null;
-		BiFunction<EntityReader<C, I, T>, Map<Class<? extends C>, EntityReader<? extends C, I, ?>>, ConfiguredEntityReader<C, I, T>> readerBuilder = null;
+		BiFunction<EntityReader<C, I, T>, Map<Class<SUBENTITY>, EntityReader<SUBENTITY, I, ?>>, ConfiguredEntityReader<C, I, T>> readerBuilder = null;
 		EntityPolymorphism<C, I> polymorphism = polymorphicEntity.getPolymorphism();
 		if (polymorphism instanceof TablePerClassPolymorphism) {
 			polymorphismResolver = new TablePerClassResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
-			readerBuilder = (templateReader, subReaders) -> new TablePerClassPolymorphismReader<>(templateReader,
-					subReaders,
-					persistenceContext.getConnectionProvider(),
-					persistenceContext.getDialect());
+			readerBuilder = (templateReader, subReaders) -> {
+				Collection<EntityReader<SUBENTITY, I, ?>> values = subReaders.values();
+				TablePerClassUnion<SUBENTITY, I> tablePerClassUnion = TablePerClassAppender.buildUnionForIdentifierRead(values, templateReader.getMapping().getSelectableColumns());
+				return new TablePerClassPolymorphismReader<>(templateReader,
+						subReaders,
+						tablePerClassUnion,
+						persistenceContext.getConnectionProvider(),
+						persistenceContext.getDialect());
+			};
 		} else if (polymorphism instanceof JoinTablePolymorphism) {
 			polymorphismResolver = new JoinTableResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 			readerBuilder = (templateReader, subReaders) -> new JoinTablePolymorphismReader<>(templateReader,
@@ -61,16 +69,16 @@ public class PolymorphicSkeletonResolver {
 			polymorphismResolver = new SingleTableResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 			readerBuilder = (templateReader, subReaders) -> new SingleTablePolymorphismReader<>(templateReader,
 					subReaders,
-					(SingleTablePolymorphism<C, I, ?, T>) polymorphism,
+					(SingleTablePolymorphism<C, I, SUBENTITY, T>) polymorphism,
 					persistenceContext.getConnectionProvider(),
 					persistenceContext.getDialect());
 		}
-		PolymorphicWriter<C, I, ?> entityWriter = polymorphismResolver.resolve(polymorphicEntity, persisterCollector);
+		PolymorphicWriter<C, I, SUBENTITY> entityWriter = polymorphismResolver.resolve(polymorphicEntity, persisterCollector);
 		
 		EntityReader<C, I, T> templateReader = new EntityReader<>(entityWriter.<T>getMapping(),
 				persistenceContext.getConnectionProvider(),
 				persistenceContext.getDialect());
-		Map<Class<? extends C>, EntityReader<? extends C, I, ?>> subReaders = buildSubReaders(entityWriter);
+		Map<Class<SUBENTITY>, EntityReader<SUBENTITY, I, ?>> subReaders = buildSubReaders(entityWriter);
 		ConfiguredEntityReader<C, I, T> entityReader = readerBuilder.apply(templateReader, subReaders);
 		
 		DelegatingReadWriteEntityExecutor<C, I> result = new DelegatingReadWriteEntityExecutor<>(entityWriter, entityReader);
@@ -87,11 +95,11 @@ public class PolymorphicSkeletonResolver {
 	 * @param polymorphicWriter the writer holding the abstract entity mapping (the polymorphic root)
 	 * @return the sub-entity readers per class
 	 */
-	private <C, I> Map<Class<? extends C>, EntityReader<? extends C, I, ?>> buildSubReaders(PolymorphicWriter<C, I, ? extends C> polymorphicWriter) {
+	private <C, I, SUBENTITY extends C> Map<Class<SUBENTITY>, EntityReader<SUBENTITY, I, ?>> buildSubReaders(PolymorphicWriter<C, I, SUBENTITY> polymorphicWriter) {
 		return Iterables.map(polymorphicWriter.getSubEntitiesPersisters().values(),
 				EntityWriteExecutor::getClassToPersist,
 				subWriter -> {
-					EntityMapping<? extends C, I, ?> mapping = subWriter.getMapping();
+					EntityMapping<SUBENTITY, I, ?> mapping = subWriter.getMapping();
 					return new EntityReader<>(mapping, persistenceContext.getConnectionProvider(), persistenceContext.getDialect());
 				});
 	}

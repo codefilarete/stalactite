@@ -182,7 +182,7 @@ public class EntityJoinTree<C, I> {
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
 	 * @see RelationJoinNode.RelationJoinRowConsumer#applyRelatedEntity(JoinRowConsumer.EntityReference, ColumnedRow, TreeInflationContext)
 	 */
-	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID, JOINTYPE> String addRelationJoin(String leftStrategyName,
+	public <U, T1 extends Fromable, T2 extends Table<T2>, ID, JOINTYPE> String addRelationJoin(String leftStrategyName,
 																								EntityInflater<U, ID> inflater,
 																								// Second generic type should be U, or a type containing U (like a Collection<U>or even Map<K, U>) which makes it
 																								// impossible to implement; thus, we have to use the ? wildcard.
@@ -377,7 +377,12 @@ public class EntityJoinTree<C, I> {
 		Key.KeyBuilder<T, JOINTYPE> leftJoinLinkBuilder = Key.from(leftJoinColumn.getTable());
 		Map<String, ? extends Selectable<?>> parentNodeColumnPerName = Iterables.map(table.getColumns(), Selectable::getExpression);
 		leftJoinColumn.getColumns().forEach(column -> {
-			leftJoinLinkBuilder.addColumn((QualifiedSelectable<T, ?>) parentNodeColumnPerName.get(column.getExpression()));
+			Selectable<?> selectable = parentNodeColumnPerName.get(column.getExpression());
+			if (selectable == null) {
+				throw new IllegalStateException("Column '" + column.getOwner().getName() + "." + column.getExpression() + "'" +
+						" not found in " + (table instanceof PseudoTable ? "union/subquery" : "table") + " " + table.getName() + " : " + Iterables.collectToList(table.getColumns(), Selectable::getExpression));
+			}
+			leftJoinLinkBuilder.addColumn((QualifiedSelectable<T, ?>) selectable);
 		});
 		return leftJoinLinkBuilder.build();
 	}
@@ -473,11 +478,12 @@ public class EntityJoinTree<C, I> {
 		foreachJoinWithDepth(joinNode, (targetOwner, currentNode) -> {
 			// cloning each node, the only difference lays on left column : target gets its matching column
 			currentNode.getLeftJoinLink().getColumns().forEach(leftColumn -> {
-				Selectable<?> projectedLeftColumn = targetOwner.getTable().findColumn(leftColumn.getExpression());
+				Fromable targetTable = targetOwner.getTable();
+				Selectable<?> projectedLeftColumn = targetTable.findColumn(leftColumn.getExpression());
 				if (projectedLeftColumn == null) {
-					throw new IllegalArgumentException("Expected column "
-							+ leftColumn.getExpression() + " to exist in target table " + targetOwner.getTable().getName()
-							+ " but couldn't be found among " + Iterables.collect(targetOwner.getTable().getColumns(), Selectable::getExpression, ArrayList::new));
+					throw new IllegalStateException("Expected column "
+							+ leftColumn.getExpression() + " to exist in target " + (targetTable instanceof PseudoTable ? "union/subquery" : "table") + " " + targetTable.getName()
+							+ " but couldn't be found among " + Iterables.collect(targetTable.getColumns(), Selectable::getExpression, ArrayList::new));
 				}
 			});
 			AbstractJoinNode nodeClone = cloneNodeForParent(currentNode, targetOwner, currentNode.getLeftJoinLink());

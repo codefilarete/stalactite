@@ -5,8 +5,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.configurer.builder.BuildLifeCycleListener;
@@ -42,8 +42,9 @@ import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
-import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.KeepOrderMap;
+
+import static java.util.Comparator.comparing;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_JOIN_NAME;
 
@@ -52,6 +53,7 @@ import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROO
  */
 public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends AbstractPolymorphicEntityFinder<C, I, T> {
 	
+	private final Set<? extends ConfiguredEntityReader<? extends C, I, ?>> subPersisters;
 	private final SingleLoadEntityJoinTree<C, I> singleLoadEntityJoinTree;
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	
@@ -60,12 +62,12 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 	
 	public JoinTablePolymorphismEntityFinder(
 			ConfiguredRelationalPersister<C, I, T> mainPersister,
-			Map<Class<? extends C>, ? extends ConfiguredRelationalPersister<? extends C, I, ?>> persisterPerSubclass,
+			Set<? extends ConfiguredEntityReader<? extends C, I, ?>> subPersisters,
 			ConnectionProvider connectionProvider,
 			Dialect dialect) {
 		this(mainPersister.getEntityJoinTree(),
 				mainPersister,
-				persisterPerSubclass,
+				subPersisters,
 				connectionProvider,
 				dialect);
 	}
@@ -73,10 +75,11 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 	public JoinTablePolymorphismEntityFinder(
 			EntityJoinTree<C, I> mainEntityJoinTree,
 			ConfiguredEntityReader<C, I, T> mainReader,
-			Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> persisterPerSubclass,
+			Set<? extends ConfiguredEntityReader<? extends C, I, ?>> subPersisters,
 			ConnectionProvider connectionProvider,
 			Dialect dialect) {
-		super(mainEntityJoinTree, mainReader, persisterPerSubclass, connectionProvider, dialect);
+		super(mainEntityJoinTree, mainReader, subPersisters, connectionProvider, dialect);
+		this.subPersisters = subPersisters;
 		this.singleLoadEntityJoinTree = buildSingleLoadEntityJoinTree();
 		this.criteriaSupport = new EntityCriteriaSupport<>(singleLoadEntityJoinTree);
 		
@@ -118,26 +121,31 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 	private <D extends C> SingleLoadEntityJoinTree<C, I> buildSingleLoadEntityJoinTree() {
 		SingleLoadEntityJoinTree<C, I> result = new SingleLoadEntityJoinTree<>(
 				mainReader,
-				new HashSet<>(persisterPerSubclass.values())
+				new HashSet<>(subPersisters)
 		);
+		
+		// we sort the sub persister in a stable way to have a deterministic order of the discriminator values for tests stability
+		Set<ConfiguredEntityReader<D, I, ?>> subPersisters = new TreeSet<>(comparing(subPersister -> subPersister.getMainTable().getName()));
+		subPersisters.addAll((Collection<? extends ConfiguredEntityReader<D, I, ?>>) this.subPersisters);
+		
 		// sub entities persisters will be used to create entities
-		((Map<Class<D>, ConfiguredEntityReader<D, I, ?>>) (Map) persisterPerSubclass).forEach((type, persister) -> {
+		subPersisters.forEach(subPersister -> {
 			String mergeJoin = result.addMergeJoin(
                     ROOT_JOIN_NAME,
-					new EntityMergerAdapter<>(persister.<T>getMapping()),
+					new EntityMergerAdapter<>(subPersister.<T>getMapping()),
 					mainReader.getMainTable().getPrimaryKey(),
-					persister.getMainTable().getPrimaryKey(),
+					subPersister.getMainTable().getPrimaryKey(),
 					JoinType.OUTER,
 					joinNode -> {
 						// implemented to add newly created sub consumer to root one, therefore it will be able to create the right sub-instance
-						MergeJoinRowConsumer<D> subEntityConsumer = new MergeJoinRowConsumer<>((MergeJoinNode<D, ?, ?, ?>) joinNode, persister.getMapping().getRowTransformer());
-						result.getRoot().addSubPersister(persister, subEntityConsumer);
+						MergeJoinRowConsumer<D> subEntityConsumer = new MergeJoinRowConsumer<>((MergeJoinNode<D, ?, ?, ?>) joinNode, subPersister.getMapping().getRowTransformer());
+						result.getRoot().addSubPersister(subPersister, subEntityConsumer);
 						return subEntityConsumer;
 					}
 			);
 			// we add all relations of sub-persister to the join tree to make the data available in the final query
 			// because JoinTableRootJoinNode of SingleLoadEntityJoinTree need them
-			persister.getEntityJoinTree().projectTo(result, mergeJoin);
+			subPersister.getEntityJoinTree().projectTo(result, mergeJoin);
 		});
 		// we project main persister tree to keep its relations
 		mainEntityJoinTree.projectTo(result, ROOT_JOIN_NAME);
@@ -170,24 +178,23 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 		Map<Selectable<?>, ResultSetReader<?>> columnReaders = new HashMap<>();
 		queryClone.getColumns().forEach((selectable) -> columnReaders.put(selectable, dialect.getColumnBinderRegistry().getBinder((Column) selectable)));
 		
-		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(values), columnReaders, queryClone.getAliases());
-		
-		Set<I> ids = idsPerSubtype.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
+		Map<ConfiguredEntityReader<? extends C, I, ?>, Set<I>> idsPerSubreader = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(values), columnReaders, queryClone.getAliases());
 		
 		if (hasSubPolymorphicPersister) {
 			LOGGER.debug("Asking sub-polymorphic persisters to load the entities");
 			Set<C> result = new HashSet<>();
-			idsPerSubtype.forEach((k, v) -> result.addAll(persisterPerSubclass.get(k).select(v)));
+			idsPerSubreader.forEach((subreader, ids) -> result.addAll(subreader.select(ids)));
 			return result;
 		} else {
+			Set<I> ids = idsPerSubreader.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
 			return selectWithSingleQueryWhereIdIn(ids);
 		}
 	}
 	
-	private Map<Class, Set<I>> readIds(PreparedSQL preparedSQL, Map<Selectable<?>, ResultSetReader<?>> columnReaders, Map<Selectable<?>, String> aliases) {
+	private Map<ConfiguredEntityReader<? extends C, I, ?>, Set<I>> readIds(PreparedSQL preparedSQL, Map<Selectable<?>, ResultSetReader<?>> columnReaders, Map<Selectable<?>, String> aliases) {
 		// Below we keep the order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
 		// impacts but it's very difficult to measure
-		Map<Class, Set<I>> result = new KeepOrderMap<>();
+		Map<ConfiguredEntityReader<? extends C, I, ?>, Set<I>> result = new KeepOrderMap<>();
 		try (ReadOperation<Integer> readOperation = dialect.getReadOperationFactory().createInstance(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
 			
@@ -196,17 +203,12 @@ public class JoinTablePolymorphismEntityFinder<C, I, T extends Table<T>> extends
 				
 				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the 
 				// right one
-				Set<Entry<Class<? extends C>, ConfiguredEntityReader<? extends C, I, ?>>> entries = persisterPerSubclass.entrySet();
-				Duo<Class, I> duo = null;
-				I identifier;
-				for (Entry<Class<? extends C>, ConfiguredEntityReader<? extends C, I, ?>> entry : entries) {
-					identifier = entry.getValue().getMapping().getIdMapping().getIdentifierAssembler().assemble(row);
+				subPersisters.forEach(subReader -> {
+					I identifier = subReader.getMapping().getIdMapping().getIdentifierAssembler().assemble(row);
 					if (identifier != null) {
-						duo = new Duo<>(entry.getKey(), identifier);
-						break;
+						result.computeIfAbsent(subReader, k -> new HashSet<>()).add(identifier);
 					}
-				}
-				result.computeIfAbsent(duo.getLeft(), k -> new HashSet<>()).add(duo.getRight());
+				});
 			});
 			return result;
 		} catch (RuntimeException e) {

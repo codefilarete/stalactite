@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine.runtime.singletable;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -18,14 +19,14 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Iterables;
 
-public class SingleTablePolymorphismReader<C, I, T extends Table<T>, DTYPE> extends ReadListenerWrapper<C, I> implements ConfiguredEntityReader<C, I, T> {
+public class SingleTablePolymorphismReader<C, I, T extends Table<T>, DTYPE, SUBENTITY extends C> extends ReadListenerWrapper<C, I> implements ConfiguredEntityReader<C, I, T> {
 	
 	private final SingleTablePolymorphismEntityFinder<C, I, T, DTYPE> entityFinder;
 	private final ConfiguredEntityReader<C, I, T> mainReader;
-	private final Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> subEntitiesPersisters;
+	private final Map<Class<SUBENTITY>, ? extends ConfiguredEntityReader<SUBENTITY, I, ?>> subEntitiesPersisters;
 	
 	public SingleTablePolymorphismReader(ConfiguredEntityReader<C, I, T> mainReader,
-	                                     Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> subEntitiesPersisters,
+	                                     Map<Class<SUBENTITY>, ? extends ConfiguredEntityReader<SUBENTITY, I, ?>> subEntitiesPersisters,
 	                                     SingleTablePolymorphism<C, I, DTYPE, T> polymorphism,
 										 ConnectionProvider connectionProvider,
 	                                     Dialect dialect) {
@@ -35,14 +36,14 @@ public class SingleTablePolymorphismReader<C, I, T extends Table<T>, DTYPE> exte
 		this.entityFinder = new SingleTablePolymorphismEntityFinder<>(
 				mainReader.getEntityJoinTree(),
 				mainReader,
-				subEntitiesPersisters,
+				new HashSet<>(subEntitiesPersisters.values()),
 				polymorphism.getDiscriminatorColumn(),
 				subTypePerDiscriminatorValue::get,
 				connectionProvider,
 				dialect);
 	}
 	
-	public Map<Class<? extends C>, ? extends ConfiguredEntityReader<? extends C, I, ?>> getSubEntitiesPersisters() {
+	public Map<Class<SUBENTITY>, ? extends ConfiguredEntityReader<SUBENTITY, I, ?>> getSubEntitiesPersisters() {
 		return subEntitiesPersisters;
 	}
 	
