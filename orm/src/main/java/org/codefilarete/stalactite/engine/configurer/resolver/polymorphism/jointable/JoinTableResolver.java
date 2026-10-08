@@ -29,6 +29,7 @@ public class JoinTableResolver implements PolymorphismResolver<JoinTablePolymorp
 		this.connectionConfiguration = connectionConfiguration;
 	}
 	
+	@Override
 	public <TRGT, TRGTID, RIGHTTABLE extends Table<RIGHTTABLE>, SUBTRGT extends TRGT, DTYPE>
 	JoinTablePolymorphismWriter<TRGT, TRGTID, RIGHTTABLE, SUBTRGT> resolve(PolymorphicEntity<TRGT, TRGTID, RIGHTTABLE> targetEntity,
 	                                                                       CreatedPersisterCollector<TRGT, TRGTID> persisterCollector) {

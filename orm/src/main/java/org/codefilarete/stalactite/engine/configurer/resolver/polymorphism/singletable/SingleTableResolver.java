@@ -31,6 +31,7 @@ public class SingleTableResolver implements PolymorphismResolver<SingleTablePoly
 		this.connectionConfiguration = connectionConfiguration;
 	}
 	
+	@Override
 	public <TRGT, TRGTID, RIGHTTABLE extends Table<RIGHTTABLE>, SUBTRGT extends TRGT, DTYPE>
 	SingleTablePolymorphismWriter<TRGT, TRGTID, RIGHTTABLE, SUBTRGT, DTYPE> resolve(PolymorphicEntity<TRGT, TRGTID, RIGHTTABLE> targetEntity,
 	                                                                                CreatedPersisterCollector<TRGT, TRGTID> persisterCollector) {

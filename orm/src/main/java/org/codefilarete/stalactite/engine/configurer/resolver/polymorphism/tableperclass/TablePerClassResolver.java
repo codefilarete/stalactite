@@ -29,6 +29,7 @@ public class TablePerClassResolver implements PolymorphismResolver<TablePerClass
 		this.connectionConfiguration = connectionConfiguration;
 	}
 	
+	@Override
 	public <TRGT, TRGTID, RIGHTTABLE extends Table<RIGHTTABLE>, SUBTRGT extends TRGT, DTYPE>
 	TablePerClassPolymorphismWriter<TRGT, TRGTID, RIGHTTABLE, SUBTRGT> resolve(PolymorphicEntity<TRGT, TRGTID, RIGHTTABLE> targetEntity,
 	                                                                           CreatedPersisterCollector<TRGT, TRGTID> persisterCollector) {

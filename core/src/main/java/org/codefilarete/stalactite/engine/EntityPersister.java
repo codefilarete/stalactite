@@ -153,8 +153,6 @@ public interface EntityPersister<C, I> extends EntityReadWriteExecutor<C, I>, En
 	
 	Set<C> selectAll();
 	
-//	I getId(C entity);
-	
 	Class<C> getClassToPersist();
 	
 }
