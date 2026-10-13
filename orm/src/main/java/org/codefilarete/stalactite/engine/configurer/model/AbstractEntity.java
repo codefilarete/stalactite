@@ -5,6 +5,7 @@ import javax.annotation.Nullable;
 
 import org.codefilarete.reflection.PropertyMutator;
 import org.codefilarete.reflection.ReadWritePropertyAccessPoint;
+import org.codefilarete.stalactite.sql.ddl.Size;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.function.Converter;
@@ -79,6 +80,62 @@ public abstract class AbstractEntity<C, I, T extends Table<T>> {
 	}
 	
 	public abstract boolean isTablePerClass();
+	
+	/**
+	 * Adds a column to this entity table, shortcut for {@code getTable().addColumn(name, javaType)}.
+	 * Made to be overridden by table-per-class polymorphism case to add the parent column also to the sub-entity one because
+	 * the table-per-class resolver logic requires those sub-columns to be present for the union build. Without creating them
+	 * at this early stage, ensuring their presence become a nightmare due to
+	 * {@link org.codefilarete.stalactite.query.api.QueryStatement.PseudoTable} creation or table cloning.
+	 * Thus, developers are expected to use this method rather than accessing the table and adding the column to it directly.
+	 *
+	 * @param name column name
+	 * @param javaType column type
+	 * @param <O> column type
+	 * @return the created column or the existing one
+	 */
+	public <O> Column<T, O> addColumn(String name, Class<O> javaType) {
+		return getTable().addColumn(name, javaType);
+	}
+	
+	/**
+	 * Adds a column to this entity table, shortcut for {@code getTable().addColumn(name, javaType)}.
+	 * Made to be overridden by table-per-class polymorphism case to add the parent column also to the sub-entity one because
+	 * the table-per-class resolver logic requires those sub-columns to be present for the union build. Without creating them
+	 * at this early stage, ensuring their presence become a nightmare due to
+	 * {@link org.codefilarete.stalactite.query.api.QueryStatement.PseudoTable} creation or table cloning.
+	 * Thus, developers are expected to use this method rather than accessing the table and adding the column to it directly.
+	 *
+	 * @param name column name
+	 * @param javaType column type
+	 * @param size column type size, null if type doesn't require any size ({@link #addColumn(String, Class)} should be preferred in this case)
+	 *             but let as such for column copy use case
+	 * @param <O> column type
+	 * @return the created column or the existing one
+	 */
+	public <O> Column<T, O> addColumn(String name, Class<O> javaType, @Nullable Size size) {
+		return getTable().addColumn(name, javaType, size);
+	}
+	
+	/**
+	 * Adds a column to this entity table, shortcut for {@code getTable().addColumn(name, javaType)}.
+	 * Made to be overridden by table-per-class polymorphism case to add the parent column also to the sub-entity one because
+	 * the table-per-class resolver logic requires those sub-columns to be present for the union build. Without creating them
+	 * at this early stage, ensuring their presence become a nightmare due to
+	 * {@link org.codefilarete.stalactite.query.api.QueryStatement.PseudoTable} creation or table cloning.
+	 * Thus, developers are expected to use this method rather than accessing the table and adding the column to it directly.
+	 *
+	 * @param name column name
+	 * @param javaType column type
+	 * @param size column type size, null if type doesn't require any size ({@link #addColumn(String, Class)} should be preferred in this case)
+	 *             but let as such for column copy use case
+	 * @param nullable column nullability, null or false if type doesn't require any nullability
+	 * @param <O> column type
+	 * @return the created column or the existing one
+	 */
+	public <O> Column<T, O> addColumn(String name, Class<O> javaType, @Nullable Size size, @Nullable Boolean nullable) {
+		return getTable().addColumn(name, javaType, size, nullable);
+	}
 	
 	public static abstract class AbstractPropertyMapping<C, O, T extends Table<T>> {
 		

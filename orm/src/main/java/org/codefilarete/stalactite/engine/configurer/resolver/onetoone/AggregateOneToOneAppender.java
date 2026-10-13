@@ -16,7 +16,6 @@ import org.codefilarete.stalactite.engine.configurer.resolver.separatefetch.Thre
 import org.codefilarete.stalactite.engine.runtime.ConfiguredEntityReader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
-import org.codefilarete.stalactite.engine.runtime.tableperclass.TablePerClassPolymorphismReader;
 import org.codefilarete.stalactite.query.api.QualifiedSelectable;
 import org.codefilarete.stalactite.query.api.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
@@ -75,11 +74,6 @@ public class AggregateOneToOneAppender {
 						graftableRelation,
 						mountPoint);
 			} else {
-				if (sourceReader instanceof TablePerClassPolymorphismReader) {
-					relation.getJoin().getLeftKey().getColumns().forEach(column ->
-					((TablePerClassPolymorphismReader<SRC, SRCID, LEFTTABLE, ?>) sourceReader).getTablePerClassUnion()
-							.addColumn(column.getName(), column.getJavaType()));
-				}
 				// Note that there's no difference between relation being owned by source or target, because the join
 				// is defined by the DirectRelationJoin object, which is built accordingly to the relation owner
 				String joinName = aggregateTree.addRelationJoin(

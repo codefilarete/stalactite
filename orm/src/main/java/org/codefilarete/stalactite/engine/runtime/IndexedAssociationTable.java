@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine.runtime;
 import javax.annotation.Nullable;
 
 import org.codefilarete.stalactite.dsl.naming.AssociationTableNamingStrategy.ReferencedColumnNames;
+import org.codefilarete.stalactite.dsl.naming.ColumnNamingStrategy;
 import org.codefilarete.stalactite.dsl.naming.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Database.Schema;
@@ -21,8 +22,6 @@ public class IndexedAssociationTable<
 		LEFTID,
 		RIGHTID>
 		extends AssociationTable<SELF, LEFTTABLE, RIGHTTABLE, LEFTID, RIGHTID> {
-	
-	private static final String DEFAULT_INDEX_COLUMN_NAME = "idx";
 	
 	private final Column<SELF, Integer> indexColumn;
 	
@@ -48,7 +47,7 @@ public class IndexedAssociationTable<
 								   @Nullable String indexColumnName) {
 		super(schema, name, oneSidePrimaryKey, manySidePrimaryKey, columnNames, foreignKeyNamingStrategy, createOneSideForeignKey, createManySideForeignKey);
 		// index column is part of the primary key for indexed association 
-		this.indexColumn = addColumn(preventNull(indexColumnName, DEFAULT_INDEX_COLUMN_NAME), int.class).primaryKey();
+		this.indexColumn = addColumn(preventNull(indexColumnName, ColumnNamingStrategy.DEFAULT_INDEX_COLUMN_NAME), int.class).primaryKey();
 		getPrimaryKey().addColumn(indexColumn);
 	}
 	
@@ -73,7 +72,7 @@ public class IndexedAssociationTable<
 								   boolean createManySideForeignKey,
 								   Column<SELF, Integer> indexColumn) {
 		super(schema, name, oneSidePrimaryKey, manySidePrimaryKey, columnNames, foreignKeyNamingStrategy, createOneSideForeignKey, createManySideForeignKey);
-		this.indexColumn = indexColumn == null ? addColumn(DEFAULT_INDEX_COLUMN_NAME, int.class) : indexColumn;
+		this.indexColumn = indexColumn == null ? addColumn(ColumnNamingStrategy.DEFAULT_INDEX_COLUMN_NAME, int.class) : indexColumn;
 		// index column is part of the primary key for indexed association 
 		this.indexColumn.primaryKey();
 		getPrimaryKey().addColumn(this.indexColumn);

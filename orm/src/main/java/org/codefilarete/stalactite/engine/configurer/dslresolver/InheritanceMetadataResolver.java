@@ -130,7 +130,7 @@ public class InheritanceMetadataResolver<C, I, T extends Table<T>> {
 		
 		PolymorphismPolicy<X> polymorphismPolicy = configuration.getMappingConfiguration().getPolymorphismPolicy();
 		if (polymorphismPolicy != null) {
-			// we transforme the result to a PolymorphicEntity
+			// we transform the result to a PolymorphicEntity
 			PolymorphismMetadataResolver polymorphismMetadataResolver = new PolymorphismMetadataResolver(dialect);
 			EntityPolymorphism<X, I> entityPolymorphism = polymorphismMetadataResolver.resolve(configuration, polymorphismPolicy, (Entity<X, I, ?>) result);
 			result = new PolymorphicEntity<>(configuration.getIdentifierMapping(), result.getMapping(), entityPolymorphism);

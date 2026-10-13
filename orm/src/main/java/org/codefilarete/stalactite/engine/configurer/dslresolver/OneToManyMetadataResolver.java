@@ -26,6 +26,7 @@ import org.codefilarete.stalactite.engine.configurer.dslresolver.MetadataSolving
 import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.IntermediaryRelationJoin;
+import org.codefilarete.stalactite.engine.configurer.model.PolymorphicEntity;
 import org.codefilarete.stalactite.engine.configurer.model.RelationJoin;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
@@ -119,9 +120,15 @@ public class OneToManyMetadataResolver {
 				OneToManyOwnedByTargetHelper<SRC, TRGT, SRCID, TRGTID, SRCTABLE, TRGTTABLE> helper = new OneToManyOwnedByTargetHelper<>();
 				KeyMapping<TRGTTABLE, SRCTABLE, SRCID> foreignKey;
 				if (targetEntity.isTablePerClass()) {
-					foreignKey = helper.determineKeyMappingColumns(mappedByConfiguration, source.getTable().getPrimaryKey(), targetEntity.getTable(), namingConfiguration.getJoinColumnNamingStrategy());
+					foreignKey = helper.createKeyMappingColumns(mappedByConfiguration, source.getTable().getPrimaryKey(), targetEntity.getTable(), namingConfiguration.getJoinColumnNamingStrategy());
+					((PolymorphicEntity<TRGT, TRGTID, TRGTTABLE>) targetEntity).getPolymorphism().getSubEntities().forEach(subEntity -> {
+						// Adding the foreign key of the sub-entity to the target entity because we're in table-per-class polymorphism
+						// Note that we don't reuse the foreign key created from the source table because it will share
+						// the constraint name which is not supported by all database vendors
+						helper.createForeignKeyColumns(mappedByConfiguration, source.getTable().getPrimaryKey(), (TRGTTABLE) subEntity.getTable(), namingConfiguration.getJoinColumnNamingStrategy(), namingConfiguration.getForeignKeyNamingStrategy());
+					});
 				} else {
-					foreignKey = helper.determineForeignKeyColumns(mappedByConfiguration, source.getTable().getPrimaryKey(), targetEntity.getTable(), namingConfiguration.getJoinColumnNamingStrategy(), namingConfiguration.getForeignKeyNamingStrategy());
+					foreignKey = helper.createForeignKeyColumns(mappedByConfiguration, source.getTable().getPrimaryKey(), targetEntity.getTable(), namingConfiguration.getJoinColumnNamingStrategy(), namingConfiguration.getForeignKeyNamingStrategy());
 				}
 				tablesJoin = new DirectRelationJoin<>(foreignKey.getReferencedKey(), foreignKey);
 			} // else: creating foreign key is not possible, nothing special to do
@@ -137,7 +144,7 @@ public class OneToManyMetadataResolver {
 					Class indexColumnType = oneToMany.getRelationMode() == CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL
 							? int.class
 							: Integer.class;	// column must be nullable since row won't be deleted through orphan removal but only "detached" from parent row
-					indexingColumn = targetEntity.getTable().addColumn(indexingColumnName, indexColumnType);
+					indexingColumn = targetEntity.addColumn(indexingColumnName, indexColumnType);
 				}
 			}
 			
@@ -164,7 +171,7 @@ public class OneToManyMetadataResolver {
 					Class indexColumnType = oneToMany.getRelationMode() == CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL
 							? int.class
 							: Integer.class;	// column must be nullable since row won't be deleted through orphan removal but only "detached" from parent row
-					indexingColumn = targetEntity.getTable().addColumn(indexingColumnName, indexColumnType);
+					indexingColumn = targetEntity.addColumn(indexingColumnName, indexColumnType);
 				}
 			}
 		}
@@ -197,10 +204,10 @@ public class OneToManyMetadataResolver {
 	
 	private static class OneToManyOwnedByTargetHelper<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>> {
 		
-		protected KeyMapping<RIGHTTABLE, LEFTTABLE, SRCID> determineKeyMappingColumns(MappedByConfiguration<TRGT, SRC> mappedByConfiguration,
-																					  PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey,
-																					  RIGHTTABLE rightTable,
-																					  JoinColumnNamingStrategy joinColumnNamingStrategy) {
+		protected KeyMapping<RIGHTTABLE, LEFTTABLE, SRCID> createKeyMappingColumns(MappedByConfiguration<TRGT, SRC> mappedByConfiguration,
+																				   PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey,
+																				   RIGHTTABLE rightTable,
+																				   JoinColumnNamingStrategy joinColumnNamingStrategy) {
 			// adding foreign key constraint
 			KeyBuilder<RIGHTTABLE, SRCID> rightKeyBuilder = Key.from(rightTable);
 			AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(mappedByConfiguration.giveReverseSetter());
@@ -214,11 +221,11 @@ public class OneToManyMetadataResolver {
 			return new KeyMapping<>(rightKey, leftPrimaryKey);
 		}
 		
-		protected ForeignKey<RIGHTTABLE, LEFTTABLE, SRCID> determineForeignKeyColumns(MappedByConfiguration<TRGT, SRC> mappedByConfiguration,
-																					  PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey,
-																					  RIGHTTABLE targetTable,
-																					  JoinColumnNamingStrategy joinColumnNamingStrategy,
-																					  ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
+		protected ForeignKey<RIGHTTABLE, LEFTTABLE, SRCID> createForeignKeyColumns(MappedByConfiguration<TRGT, SRC> mappedByConfiguration,
+																				   PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey,
+																				   RIGHTTABLE targetTable,
+																				   JoinColumnNamingStrategy joinColumnNamingStrategy,
+																				   ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
 			KeyBuilder<RIGHTTABLE, SRCID> foreignKeyBuilder = Key.from(targetTable);
 			if (!mappedByConfiguration.getForeignKeyNameMapping().isEmpty()) {
 				Map<Accessor<SRCID, ?>, Column<RIGHTTABLE, ?>> foreignKeyColumnMapping = new HashMap<>();

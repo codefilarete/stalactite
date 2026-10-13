@@ -364,6 +364,82 @@ class TablePerClassPolymorphismReaderTest {
 					.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
 					.isEqualTo(person);
 		}
+		
+		@Test
+		@UseCase(relation = @Relation(type = ONE_TO_ONE, polymorphism = TABLE_PER_CLASS, ownership = BY_SOURCE, fetch = JOIN))
+		void tablePerClassOneToOne() {
+			PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
+			
+			FluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
+					embeddableBuilder(Person.class)
+							.map(Person::getName)
+							.embed(Person::getTimestamp, embeddableBuilder(Timestamp.class)
+									.map(Timestamp::getCreationDate)
+									.map(Timestamp::getModificationDate));
+			
+			FluentEntityMappingBuilder<Person, Identifier<Long>> personConfiguration = entityBuilder(Person.class, LONG_TYPE)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
+					.mapSuperClass(timestampedPersistentBeanMapping);
+			
+			FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
+					entityBuilder(Vehicle.class, LONG_TYPE)
+							.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
+							.map(Vehicle::getColor)
+							.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
+									.addSubClass(subentityBuilder(Truck.class), "TRUCK")
+									.addSubClass(subentityBuilder(Car.class), "CAR")
+							)
+							.mapOneToOne(Vehicle::getOwner, personConfiguration);
+			
+			AggregateResolver testInstance = new AggregateResolver(persistenceContext);
+			EntityPersister<Vehicle, Identifier<Long>> vehiclePersister = testInstance.resolve(vehicleConfiguration.getConfiguration());
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// insert
+			Person person1 = new Person(1);
+			Car car = new Car(42L);
+			car.setColor(new Color(42));
+			car.setOwner(person1);
+			Person person2 = new Person(2);
+			Truck truck = new Truck(17L);
+			truck.setColor(new Color(17));
+			truck.setOwner(person2);
+			vehiclePersister.insert(car, truck);
+			
+			Set<Vehicle> loadedVehicles = vehiclePersister.select(car.getId(), truck.getId());
+			
+			// we use a printer to compare our results because entities override equals() which only keep "id" into account
+			// which is far from sufficient for ou checking
+			// Note that we don't use ObjectPrinterBuilder#printerFor because it takes getCities() into account whereas its code is not ready for recursion 
+			ObjectPrinter<Person> personPrinter = new ObjectPrinterBuilder<Person>()
+					.addProperty(Person::getId)
+					.addProperty(Person::getTimestamp)
+					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
+					.build();
+			ObjectPrinter<Vehicle> vehiclePrinter = new ObjectPrinterBuilder<Vehicle>()
+					.addProperty(Vehicle::getId)
+					.addProperty(Vehicle::getClass)
+					.addProperty(Vehicle::getOwner)
+					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getDelegate, String::valueOf))
+					.withPrinter(Person.class, personPrinter::toString)
+					.build();
+			
+			Map<Identifier<Long>, Vehicle> loadedVehiclesPerId = Iterables.map(loadedVehicles, Vehicle::getId);
+			
+			Vehicle loadedCar = loadedVehiclesPerId.get(car.getId());
+			assertThat(loadedCar)
+					.usingComparator(Comparator.comparing(vehiclePrinter::toString))
+					.withRepresentation(new PartialRepresentation<>(Vehicle.class, vehiclePrinter))
+					.isEqualTo(car);
+			
+			Vehicle loadedTruck = loadedVehiclesPerId.get(truck.getId());
+			assertThat(loadedTruck)
+					.usingComparator(Comparator.comparing(vehiclePrinter::toString))
+					.withRepresentation(new PartialRepresentation<>(Vehicle.class, vehiclePrinter))
+					.isEqualTo(truck);
+		}
 	}
 	
 	@Test

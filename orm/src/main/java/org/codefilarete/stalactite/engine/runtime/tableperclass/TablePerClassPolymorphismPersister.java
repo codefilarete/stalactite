@@ -425,6 +425,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			commonColumns.forEach(commonColumn -> {
 				// We add the column by its name and type, not by finding it in the sub-persister table because,
 				// for unknown yet reason, the column is not found in the sub-persister table
+				// TODO: replace this last resort by the real column lookup when the new resolver system will be in place : the not-found column problem resides in the old engine
 				subEntityQuery.select(commonColumn.getExpression(), commonColumn.getJavaType());
 				subPersistersUnion.registerColumn(commonColumn.getExpression(), commonColumn.getJavaType());
 			});
@@ -539,6 +540,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			rightJoinColumn.getColumns().forEach(column -> {
 				// We add the column by its name and type, not by finding it in the sub-persister table because,
 				// for unknown yet reason, the column is not found in the sub-persister table
+				// TODO: replace this last resort by the real column lookup when the new resolver system will be in place : the not-found column problem resides in the old engine
 				subEntityQuery.select(column.getExpression(), column.getJavaType());
 				subPersistersUnion.registerColumn(column.getExpression(), column.getJavaType());
 			});

@@ -133,7 +133,7 @@ public class TablePerClassAppender {
 		});
 	}
 	
-	private static <TRGT, TRGTID, RIGHTTABLE extends Table<RIGHTTABLE>, SUBTRGT extends TRGT>
+	public static <TRGT, TRGTID, RIGHTTABLE extends Table<RIGHTTABLE>, SUBTRGT extends TRGT>
 	TablePerClassUnion<SUBTRGT, TRGTID> buildUnion(
 			Collection<? extends ConfiguredEntityReader<SUBTRGT, TRGTID, ?>> subPersistersInput,
 			Collection<Column<RIGHTTABLE, ?>> commonColumns) {
@@ -328,7 +328,7 @@ public class TablePerClassAppender {
 			return subtypeSelectorPerDiscriminatorValue;
 		}
 		
-		private Query findSubQuery(ConfiguredEntityReader<SUBTRGT, TRGTID, ?> subPersister) {
+		public Query findSubQuery(ConfiguredEntityReader<SUBTRGT, TRGTID, ?> subPersister) {
 			return subQueryPerSubtypeSelector.get(subPersister);
 		}
 	}

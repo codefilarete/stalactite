@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.engine.configurer.resolver.polymorphism;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.function.BiFunction;
 
@@ -51,8 +50,20 @@ public class PolymorphicSkeletonResolver {
 		if (polymorphism instanceof TablePerClassPolymorphism) {
 			polymorphismResolver = new TablePerClassResolver(skeletonAggregateResolver, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 			readerBuilder = (templateReader, subReaders) -> {
-				Collection<EntityReader<SUBENTITY, I, ?>> values = subReaders.values();
-				TablePerClassUnion<SUBENTITY, I> tablePerClassUnion = TablePerClassAppender.buildUnionForIdentifierRead(values, templateReader.getMapping().getSelectableColumns());
+				// we create a union of the sub-entities tables
+				// The union should also contain the join columns for eventual further relation joins. Caution : a first approach was
+				// to use the templateReader.getMapping().getSelectableColumns() but it does not contain the join columns which is
+				// normal because relations are maintained by ShadowColumnValueProvider, as for many other relations. But, overall,
+				// the getMapping().getSelectableColumns() returns the columns of a Union instance created by the
+				// TablePerClassPolymorphismReader (to support polymorphism selection) which doesn't contain the relation join columns,
+				// because at the time the Reader is created, the relations are not resolved, and, it is very very very hard (understand impossible)
+				// to add (or more generally, make visible) the relation join columns to the Union instance later, due to that some objects (PseudoTable)
+				// contains some kind of copy of the original columns, and the JoinNode mechanism also maintain some column clones. Globally, trying
+				// to fix it is a nightmare, and the only solution is to use the main table columns of the templateReader, which contains all columns (including relation join columns).
+				// The identified side effect is if the user gave the Table instance during the DSL usage : this join will contain the eventual superfluous columns
+				// that the user maintain himself and are not part of the persistence mapping. This is considered a minor side effect, even more if we consider
+				// who uses table-per-class polymorphism ?
+				TablePerClassUnion<SUBENTITY, I> tablePerClassUnion = TablePerClassAppender.buildUnion(subReaders.values(), templateReader.getMainTable().getColumns());
 				return new TablePerClassPolymorphismReader<>(templateReader,
 						subReaders,
 						tablePerClassUnion,

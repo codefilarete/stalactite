@@ -16,6 +16,7 @@ import org.codefilarete.stalactite.engine.configurer.dslresolver.InheritanceConf
 import org.codefilarete.stalactite.engine.configurer.dslresolver.MetadataSolvingCache.EntitySource;
 import org.codefilarete.stalactite.engine.configurer.model.AbstractEntity;
 import org.codefilarete.stalactite.engine.configurer.model.DirectRelationJoin;
+import org.codefilarete.stalactite.engine.configurer.model.PolymorphicEntity;
 import org.codefilarete.stalactite.engine.configurer.model.ResolvedOneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
@@ -85,9 +86,22 @@ public class OneToOneMetadataResolver {
 				OneToOneOwnedByTargetHelper<SRC, TRGT, SRCID, TRGTID, SRCTABLE, TRGTTABLE> helper = new OneToOneOwnedByTargetHelper<>();
 				KeyMapping<TRGTTABLE, SRCTABLE, SRCID> foreignKey;
 				if (targetEntity.isTablePerClass()) {
-					foreignKey = helper.determineKeyMappingColumns(oneToOne, source.getTable().getPrimaryKey(), targetEntity.getTable(), namingConfiguration.getJoinColumnNamingStrategy());
+					// the foreign key is created from the source table, but, actually, it's not a real foreign key.
+					// Indeed, the source table is a table-per-class template one and doesn't exist in the database schema.
+					// However, we must add the foreign key columns on each sub-entity table because they are independent tables.
+					foreignKey = helper.createKeyMappingColumns(oneToOne, source.getTable().getPrimaryKey(), targetEntity.getTable(), namingConfiguration.getJoinColumnNamingStrategy());
+					((PolymorphicEntity<TRGT, TRGTID, TRGTTABLE>) targetEntity).getPolymorphism().getSubEntities().forEach(subEntity -> {
+						// Adding the foreign key of the sub-entity to the target entity because we're in table-per-class polymorphism
+						// Note that we don't reuse the foreign key created from the source table because it will share
+						// the constraint name which is not supported by all database vendors
+						ForeignKey<TRGTTABLE, SRCTABLE, SRCID> subEntityForeignKey = helper.createForeignKeyColumns(oneToOne, source.getTable().getPrimaryKey(), (TRGTTABLE) subEntity.getTable(), namingConfiguration.getJoinColumnNamingStrategy(), namingConfiguration.getForeignKeyNamingStrategy());
+						// eventually adding unique constraint
+						if (oneToOne.isUnique() && !foreignKey.isComposed()) {
+							helper.addUniqueConstraint(subEntityForeignKey, namingConfiguration.getUniqueConstraintNamingStrategy(), oneToOne.getReverseAccessor().getAccessor());
+						}
+					});
 				} else {
-					foreignKey = helper.determineForeignKeyColumns(oneToOne, source.getTable().getPrimaryKey(), targetEntity.getTable(), namingConfiguration.getJoinColumnNamingStrategy(), namingConfiguration.getForeignKeyNamingStrategy());
+					foreignKey = helper.createForeignKeyColumns(oneToOne, source.getTable().getPrimaryKey(), targetEntity.getTable(), namingConfiguration.getJoinColumnNamingStrategy(), namingConfiguration.getForeignKeyNamingStrategy());
 					
 					// eventually adding unique constraint
 					if (oneToOne.isUnique() && !foreignKey.isComposed()) {
@@ -104,13 +118,30 @@ public class OneToOneMetadataResolver {
 			KeyMapping<SRCTABLE, TRGTTABLE, TRGTID> foreignKey;
 			if (targetEntity.isTablePerClass()) {
 				// we don't create the foreign key targeting a table-per-class because source columns should reference different tables (one per sub-entity) which databases do not allow
-				foreignKey = helper.determineKeyMappingColumns(oneToOne, source.getTable(), targetEntity.getTable().getPrimaryKey(), namingConfiguration.getJoinColumnNamingStrategy());
+				foreignKey = helper.createKeyMappingColumns(oneToOne, source.getTable(), targetEntity.getTable().getPrimaryKey(), namingConfiguration.getJoinColumnNamingStrategy());
 			} else {
-				foreignKey = helper.determineForeignKeyColumns(oneToOne, source.getTable(), targetEntity.getTable().getPrimaryKey(), namingConfiguration.getJoinColumnNamingStrategy(), namingConfiguration.getForeignKeyNamingStrategy());
-				
-				// eventually adding unique constraint
-				if (oneToOne.isUnique() && !foreignKey.isComposed()) {
-					helper.addUniqueConstraint((ForeignKey<SRCTABLE, TRGTTABLE, TRGTID>) foreignKey, namingConfiguration.getUniqueConstraintNamingStrategy(), oneToOne.getTargetProvider());
+				if (source.isTablePerClass()) {
+					// the foreign key is created from the source table, but, actually, it's not a real foreign key.
+					// Indeed, the source table is a table-per-class template one and doesn't exist in the database schema.
+					// However, we must add the foreign key columns on each sub-entity table because they are independent tables.
+					foreignKey = helper.createKeyMappingColumns(oneToOne, source.getTable(), targetEntity.getTable().getPrimaryKey(), namingConfiguration.getJoinColumnNamingStrategy());
+					((PolymorphicEntity<SRC, SRCID, SRCTABLE>) source).getPolymorphism().getSubEntities().forEach(subEntity -> {
+						// Adding the foreign key of the sub-entity to the target entity because we're in table-per-class polymorphism
+						// Note that we don't reuse the foreign key created from the source table because it will share
+						// the constraint name which is not supported by all database vendors
+						ForeignKey<SRCTABLE, TRGTTABLE, TRGTID> subEntityForeignKey = helper.createForeignKeyColumns(oneToOne, (SRCTABLE) subEntity.getTable(), targetEntity.getTable().getPrimaryKey(), namingConfiguration.getJoinColumnNamingStrategy(), namingConfiguration.getForeignKeyNamingStrategy());
+						// eventually adding unique constraint
+						if (oneToOne.isUnique() && !foreignKey.isComposed()) {
+							helper.addUniqueConstraint(subEntityForeignKey, namingConfiguration.getUniqueConstraintNamingStrategy(), oneToOne.getTargetProvider());
+						}
+					});
+				} else {
+					foreignKey = helper.createForeignKeyColumns(oneToOne, source.getTable(), targetEntity.getTable().getPrimaryKey(), namingConfiguration.getJoinColumnNamingStrategy(), namingConfiguration.getForeignKeyNamingStrategy());
+					
+					// eventually adding unique constraint
+					if (oneToOne.isUnique() && !foreignKey.isComposed()) {
+						helper.addUniqueConstraint((ForeignKey<SRCTABLE, TRGTTABLE, TRGTID>) foreignKey, namingConfiguration.getUniqueConstraintNamingStrategy(), oneToOne.getTargetProvider());
+					}
 				}
 			}
 			tablesJoin = new DirectRelationJoin<>(foreignKey);
@@ -180,7 +211,7 @@ public class OneToOneMetadataResolver {
 		
 		/**
 		 * Creates a {@link KeyMapping} between the left and right tables of a one-to-one relation.
-		 * As a difference with {@link #determineForeignKeyColumns(OneToOneRelation, Table, PrimaryKey, JoinColumnNamingStrategy, ForeignKeyNamingStrategy)}
+		 * As a difference with {@link #createForeignKeyColumns(OneToOneRelation, Table, PrimaryKey, JoinColumnNamingStrategy, ForeignKeyNamingStrategy)}
 		 * this method doesn't create a {@link ForeignKey} hence the result won't participate in the schema generation
 		 * 
 		 * @param oneToOne the one-to-one relation to get some metadata from
@@ -189,10 +220,10 @@ public class OneToOneMetadataResolver {
 		 * @param joinColumnNamingStrategy the strategy to name the join columns
 		 * @return a {@link KeyMapping} between the left and right tables
 		 */
-		protected KeyMapping<LEFTTABLE, RIGHTTABLE, TRGTID> determineKeyMappingColumns(OneToOneRelation<SRC, TRGT, ?> oneToOne,
-		                                                                               LEFTTABLE leftTable,
-		                                                                               PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey,
-		                                                                               JoinColumnNamingStrategy joinColumnNamingStrategy) {
+		protected KeyMapping<LEFTTABLE, RIGHTTABLE, TRGTID> createKeyMappingColumns(OneToOneRelation<SRC, TRGT, TRGTID> oneToOne,
+																					LEFTTABLE leftTable,
+																					PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey,
+																					JoinColumnNamingStrategy joinColumnNamingStrategy) {
 			
 			Column<LEFTTABLE, TRGTID> providedColumn = (Column<LEFTTABLE, TRGTID>) oneToOne.getOwningColumn();
 			// small check for incongruous reverse column definition: it can't be possible when key is composite
@@ -201,7 +232,7 @@ public class OneToOneMetadataResolver {
 			}
 			
 			// priority 1: take user definition of the owning column
-			Key.KeyBuilder<LEFTTABLE, TRGTID> leftKeyBuilder = Key.from(leftTable);
+			KeyBuilder<LEFTTABLE, TRGTID> leftKeyBuilder = Key.from(leftTable);
 			if (providedColumn == null) {
 				String joinColumnName = oneToOne.getColumnName();
 				if (joinColumnName != null) {
@@ -231,13 +262,13 @@ public class OneToOneMetadataResolver {
 			return new KeyMapping<>(leftKey, rightPrimaryKey);
 		}
 		
-		protected ForeignKey<LEFTTABLE, RIGHTTABLE, TRGTID> determineForeignKeyColumns(OneToOneRelation<SRC, TRGT, ?> oneToOneRelation,
-		                                                                               LEFTTABLE leftTable,
-		                                                                               PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey,
-		                                                                               JoinColumnNamingStrategy joinColumnNamingStrategy,
-		                                                                               ForeignKeyNamingStrategy foreignKeyNamingStrategy
+		protected ForeignKey<LEFTTABLE, RIGHTTABLE, TRGTID> createForeignKeyColumns(OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation,
+																					LEFTTABLE leftTable,
+																					PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey,
+																					JoinColumnNamingStrategy joinColumnNamingStrategy,
+																					ForeignKeyNamingStrategy foreignKeyNamingStrategy
 		) {
-			KeyMapping<LEFTTABLE, RIGHTTABLE, TRGTID> keyMapping = determineKeyMappingColumns(oneToOneRelation, leftTable, rightPrimaryKey, joinColumnNamingStrategy);
+			KeyMapping<LEFTTABLE, RIGHTTABLE, TRGTID> keyMapping = createKeyMappingColumns(oneToOneRelation, leftTable, rightPrimaryKey, joinColumnNamingStrategy);
 			
 			String foreignKeyName = foreignKeyNamingStrategy.giveName(keyMapping, rightPrimaryKey);
 			return leftTable.addForeignKey(foreignKeyName, keyMapping, rightPrimaryKey);
@@ -254,7 +285,7 @@ public class OneToOneMetadataResolver {
 		
 		/**
 		 * Creates a {@link KeyMapping} between the left and right tables of a one-to-one relation.
-		 * As a difference with {@link #determineForeignKeyColumns(OneToOneRelation, PrimaryKey, Table, JoinColumnNamingStrategy, ForeignKeyNamingStrategy)}
+		 * As a difference with {@link #createForeignKeyColumns(OneToOneRelation, PrimaryKey, Table, JoinColumnNamingStrategy, ForeignKeyNamingStrategy)}
 		 * this method doesn't create a {@link ForeignKey} hence the result won't participate in the schema generation
 		 *
 		 * @param oneToOneRelation the one-to-one relation to get some metadata from
@@ -263,10 +294,10 @@ public class OneToOneMetadataResolver {
 		 * @param joinColumnNamingStrategy the strategy to name the join columns
 		 * @return a {@link KeyMapping} between the left and right tables
 		 */
-		protected KeyMapping<RIGHTTABLE, LEFTTABLE, SRCID> determineKeyMappingColumns(OneToOneRelation<SRC, TRGT, ?> oneToOneRelation,
-																					   PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey,
-																					   RIGHTTABLE rightTable,
-																					   JoinColumnNamingStrategy joinColumnNamingStrategy) {
+		protected KeyMapping<RIGHTTABLE, LEFTTABLE, SRCID> createKeyMappingColumns(OneToOneRelation<SRC, TRGT, ?> oneToOneRelation,
+																				   PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey,
+																				   RIGHTTABLE rightTable,
+																				   JoinColumnNamingStrategy joinColumnNamingStrategy) {
 			// adding foreign key constraint
 			KeyBuilder<RIGHTTABLE, SRCID> rightKeyBuilder = Key.from(rightTable);
 			AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(oneToOneRelation.getReverseAccessor().getAccessor());
@@ -283,11 +314,11 @@ public class OneToOneMetadataResolver {
 			return new KeyMapping<>(rightKey, leftPrimaryKey);
 		}
 		
-		protected ForeignKey<RIGHTTABLE, LEFTTABLE, SRCID> determineForeignKeyColumns(OneToOneRelation<SRC, TRGT, ?> oneToOneRelation,
-		                                                                              PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey,
-		                                                                              RIGHTTABLE rightTable,
-		                                                                              JoinColumnNamingStrategy joinColumnNamingStrategy,
-		                                                                              ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
+		protected ForeignKey<RIGHTTABLE, LEFTTABLE, SRCID> createForeignKeyColumns(OneToOneRelation<SRC, TRGT, ?> oneToOneRelation,
+																				   PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey,
+																				   RIGHTTABLE rightTable,
+																				   JoinColumnNamingStrategy joinColumnNamingStrategy,
+																				   ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
 			
 			Column<RIGHTTABLE, SRCID> reverseColumn = oneToOneRelation.getReverseColumn();
 			// small to check for incongruous reverse column definition: it can't be possible when key is composite

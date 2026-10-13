@@ -138,7 +138,7 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	 *
 	 * @param name column name
 	 * @param javaType column type
-	 * @param size column type size, null if type doesn't require any size ({@link #addColumn(String, Class)} should be prefered in this case)
+	 * @param size column type size, null if type doesn't require any size ({@link #addColumn(String, Class)} should be preferred in this case)
 	 *             but let as such for column copy use case
 	 * @param <O> column type
 	 * @return the created column or the existing one
